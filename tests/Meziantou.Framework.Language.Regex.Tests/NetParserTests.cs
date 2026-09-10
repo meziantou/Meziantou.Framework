@@ -10,9 +10,9 @@ public sealed class NetParserTests
         where T : RegexSyntaxNode
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var term = Assert.Single(tree.Root.Alternation.Branches[0].Terms);
+        var term = Assert.Single(tree.GetRoot().Alternation.Branches[0].Terms);
 
         return Assert.IsType<T>(term);
     }
@@ -22,7 +22,7 @@ public sealed class NetParserTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("abc", RegexDialect.Net);
 
-        var terms = tree.Root.Alternation.Branches[0].Terms;
+        var terms = tree.GetRoot().Alternation.Branches[0].Terms;
         Assert.Equal(3, terms.Count);
         Assert.Equal(['a', 'b', 'c'], terms.Cast<RegexLiteralSyntax>().Select(literal => literal.Value));
     }
@@ -36,7 +36,7 @@ public sealed class NetParserTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("\U0001F600*", RegexDialect.Net);
 
-        var terms = tree.Root.Alternation.Branches[0].Terms;
+        var terms = tree.GetRoot().Alternation.Branches[0].Terms;
         Assert.Equal(2, terms.Count);
         Assert.IsType<RegexLiteralSyntax>(terms[0]);
         Assert.IsType<RegexQuantifiedSyntax>(terms[1]);
@@ -110,9 +110,9 @@ public sealed class NetParserTests
     public void AGroupHeaderSelectsTheNodeType(string pattern, Type expected)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
+        var group = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
         Assert.IsType(expected, group);
     }
 
@@ -134,9 +134,9 @@ public sealed class NetParserTests
     public void ABalancingGroupReportsBothNames()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?<a>x)(?<b-a>y)", RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var balancing = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBalancingGroupSyntax>());
+        var balancing = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexBalancingGroupSyntax>());
         Assert.Equal("b", balancing.Name);
         Assert.Equal("a", balancing.PreviousName);
     }
@@ -145,9 +145,9 @@ public sealed class NetParserTests
     public void ABalancingGroupMayOnlyPop()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(a)(?<-1>b)", RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var balancing = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBalancingGroupSyntax>());
+        var balancing = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexBalancingGroupSyntax>());
         Assert.Equal("", balancing.Name);
         Assert.Equal("1", balancing.PreviousName);
     }
@@ -157,7 +157,7 @@ public sealed class NetParserTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"(a)\1", RegexDialect.Net);
 
-        var backreference = Assert.Single(tree.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>());
+        var backreference = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexBackreferenceSyntax>());
         Assert.Equal(1, backreference.Number);
     }
 
@@ -169,12 +169,12 @@ public sealed class NetParserTests
     public void TenIsAnOctalEscapeUntilThereAreTenGroups()
     {
         var withoutGroups = RegexSyntaxAssert.TextIsFaithful(@"\10", RegexDialect.Net);
-        Assert.Empty(withoutGroups.Diagnostics);
-        Assert.Single(withoutGroups.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        Assert.Empty(withoutGroups.GetDiagnostics());
+        Assert.Single(withoutGroups.GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
 
         var withGroups = RegexSyntaxAssert.TextIsFaithful(@"(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)\10", RegexDialect.Net);
-        Assert.Empty(withGroups.Diagnostics);
-        Assert.Equal(10, Assert.Single(withGroups.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
+        Assert.Empty(withGroups.GetDiagnostics());
+        Assert.Equal(10, Assert.Single(withGroups.GetRoot().DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
     }
 
     [Theory]
@@ -184,18 +184,18 @@ public sealed class NetParserTests
     public void ANamedBackreferenceReportsItsName(string pattern)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        Assert.Equal("n", Assert.Single(tree.Root.DescendantNodes().OfType<RegexNamedBackreferenceSyntax>()).Name);
+        Assert.Equal("n", Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexNamedBackreferenceSyntax>()).Name);
     }
 
     [Fact]
     public void AConditionalOnAGroupReferenceKeepsTheReferenceAndBothBranches()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(x)(?(1)a|b)", RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var conditional = Assert.Single(tree.Root.DescendantNodes().OfType<RegexConditionalSyntax>());
+        var conditional = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexConditionalSyntax>());
         var reference = Assert.IsType<RegexConditionalReferenceSyntax>(conditional.Condition);
         Assert.Equal("1", reference.Name);
         Assert.Equal(2, conditional.Alternation.Branches.Count);
@@ -206,9 +206,9 @@ public sealed class NetParserTests
     public void AConditionOnAnUndefinedNameIsAnExpression()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(?(foo)a|b)", RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        var conditional = Assert.Single(tree.Root.DescendantNodes().OfType<RegexConditionalSyntax>());
+        var conditional = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexConditionalSyntax>());
         Assert.IsNotType<RegexConditionalReferenceSyntax>(conditional.Condition);
     }
 
@@ -298,10 +298,10 @@ public sealed class NetParserTests
     public void ABraceThatDoesNotOpenABoundIsAnOrdinaryCharacter()
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("a{a}", RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexQuantifiedSyntax>());
-        Assert.Equal(4, tree.Root.Alternation.Branches[0].Terms.Count);
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexQuantifiedSyntax>());
+        Assert.Equal(4, tree.GetRoot().Alternation.Branches[0].Terms.Count);
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public sealed class NetParserTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("a||b", RegexDialect.Net);
 
-        Assert.Equal(3, tree.Root.Alternation.Branches.Count);
-        Assert.Empty(tree.Root.Alternation.Branches[1].Terms);
+        Assert.Equal(3, tree.GetRoot().Alternation.Branches.Count);
+        Assert.Empty(tree.GetRoot().Alternation.Branches[1].Terms);
     }
 }

@@ -1,36 +1,46 @@
-using Meziantou.Framework.Language.Shell.Internals;
+using Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Shell;
 
-/// <summary>Represents an immutable shell syntax tree with source text and diagnostics.</summary>
-public sealed class ShellSyntaxTree
+/// <summary>A shell script read from source text, together with what is wrong with it.</summary>
+/// <example>
+/// <code>
+/// var tree = ShellSyntaxTree.ParseText("ls -l | wc -l", ShellDialect.Bash);
+/// var updated = tree.WithChanges(new TextChange(new TextSpan(0, 2), "dir"));
+/// </code>
+/// </example>
+public sealed class ShellSyntaxTree : SyntaxTree
 {
+    private readonly SourceText _text;
+    private readonly ShellScriptSyntax _root;
     private readonly List<Diagnostic> _diagnostics;
 
-    private ShellSyntaxTree(SourceText sourceText, ShellParseOptions options, ShellScriptSyntax root, List<Diagnostic> diagnostics)
+    private ShellSyntaxTree(SourceText text, ShellParseOptions options, Syntax.InternalSyntax.ShellScriptSyntax green, List<Diagnostic> diagnostics)
     {
-        Text = sourceText.Text;
-        SourceText = sourceText;
+        _text = text;
         Options = options;
-        Root = root;
         _diagnostics = diagnostics;
-        Root.SetParentAndTree(parent: null, this);
+        _root = (ShellScriptSyntax)green.CreateRed();
+        _root.AttachToTree(this);
     }
 
-    public string Text { get; }
-    public SourceText SourceText { get; }
     public ShellParseOptions Options { get; }
 
-    /// <summary>The dialect the text was parsed as.</summary>
+    /// <summary>Gets the dialect the text was read as.</summary>
     public ShellDialect Dialect => Options.Dialect;
 
-    public ShellScriptSyntax Root { get; }
-    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
+    public override string? FilePath => null;
 
-    public ShellScriptSyntax GetRoot() => Root;
-    public IReadOnlyList<Diagnostic> GetDiagnostics() => Diagnostics;
+    public override SourceText GetText() => _text;
+
+    /// <summary>Gets the script this tree holds.</summary>
+    public new ShellScriptSyntax GetRoot() => _root;
+
+    /// <summary>Gets everything wrong with the script, in the order the parser found it.</summary>
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <summary>Parses <paramref name="text"/> as a complete script. Never throws; problems are reported as diagnostics.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static ShellSyntaxTree ParseText(string text, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(dialect);
@@ -48,7 +58,7 @@ public sealed class ShellSyntaxTree
         var source = SourceText.From(text);
 
         // The dialect family selects the parser; dialect features handle the differences within a family.
-        ShellScriptSyntax root;
+        Syntax.InternalSyntax.ShellScriptSyntax root;
         IReadOnlyList<Diagnostic> diagnostics;
         switch (options.Dialect.Family)
         {
@@ -78,6 +88,7 @@ public sealed class ShellSyntaxTree
     /// Parses <paramref name="text"/> as a single command, pipeline, or command list. Content after the first
     /// statement is reported as <c>SHELL0101</c> and kept as skipped text so the backing tree still round-trips.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static ShellStatementSyntax ParseCommand(string text, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(dialect);
@@ -91,14 +102,9 @@ public sealed class ShellSyntaxTree
         ArgumentNullException.ThrowIfNull(options);
 
         var tree = ParseText(text, options);
-        var statements = tree.Root.Statements.Statements;
+        var statements = tree.GetRoot().Statements.Statements;
         if (statements.Count == 0)
-        {
-            var empty = new ShellSkippedTextSyntax([], 0);
-            empty.SetParentAndTree(tree.Root, tree);
-
-            return empty;
-        }
+            return SyntaxFactory.ShellSkippedText(default);
 
         for (var index = 1; index < statements.Count; index++)
         {
@@ -110,6 +116,59 @@ public sealed class ShellSyntaxTree
         }
 
         return statements[0];
+    }
+
+    /// <exception cref="ArgumentNullException"><paramref name="changes"/> is <see langword="null"/>.</exception>
+    public ShellSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
+
+    /// <exception cref="ArgumentNullException"><paramref name="changes"/> is <see langword="null"/>.</exception>
+    public ShellSyntaxTree WithChanges(IEnumerable<TextChange> changes)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+
+        return ParseText(_text.WithChanges(changes).Text, Options);
+    }
+
+    /// <summary>
+    /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
+    /// suffix are trimmed, so an edit in the middle of a script reports only the part that actually differs.
+    /// </summary>
+    /// <remarks>
+    /// This compares the two texts rather than the two trees. Editing by text reparses, so the trees never share
+    /// nodes and a structural comparison would report the whole script as replaced.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
+    public override IReadOnlyList<TextChange> GetChanges(SyntaxTree oldTree)
+    {
+        ArgumentNullException.ThrowIfNull(oldTree);
+
+        var newText = GetText();
+
+        return [.. newText.GetChangeRanges(oldTree.GetText()).Select(range =>
+            new TextChange(range.Span, newText.ToString(new TextSpan(range.Span.Start, range.NewLength))))];
+    }
+
+    /// <summary>
+    /// Compares this tree with <paramref name="other"/> structurally, ignoring whitespace and comments. Two scripts
+    /// that differ only in formatting are equivalent; two scripts parsed as different dialects never are.
+    /// </summary>
+    public bool IsEquivalentTo(ShellSyntaxTree? other)
+    {
+        if (other is null || other.Dialect != Dialect)
+            return false;
+
+        return string.Equals(_text.Text, other._text.Text, StringComparison.Ordinal) || _root.IsEquivalentTo(other._root);
+    }
+
+    protected override SyntaxNode GetRootCore() => _root;
+
+    protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText.Text, Options);
+
+    protected override SyntaxTree WithRootCore(SyntaxNode root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        return ParseText(root.ToFullString(), Options);
     }
 
     /// <summary>
@@ -136,74 +195,5 @@ public sealed class ShellSyntaxTree
     }
 
     private void AddTrailingContentDiagnostic(TextSpan span)
-    {
-        _diagnostics.Add(new Diagnostic("SHELL0101", "Unexpected content after the parsed statement.", DiagnosticSeverity.Error, new Location(span, SourceText)));
-    }
-
-    public ShellSyntaxTree WithChanges(params TextChange[] changes) => WithChanges((IEnumerable<TextChange>)changes);
-
-    public ShellSyntaxTree WithChanges(IEnumerable<TextChange> changes)
-    {
-        ArgumentNullException.ThrowIfNull(changes);
-
-        return ParseText(SourceText.WithChanges(changes).Text, Options);
-    }
-
-    /// <summary>
-    /// Returns the edit that turns <paramref name="oldTree"/>'s text into this tree's text. The common prefix and
-    /// suffix are trimmed, so an edit in the middle of a script reports only the part that actually differs.
-    /// </summary>
-    public IReadOnlyList<TextChange> GetChanges(ShellSyntaxTree oldTree)
-    {
-        ArgumentNullException.ThrowIfNull(oldTree);
-
-        var oldText = oldTree.Text;
-        var newText = Text;
-        if (string.Equals(oldText, newText, StringComparison.Ordinal))
-            return [];
-
-        var prefix = 0;
-        var maxPrefix = Math.Min(oldText.Length, newText.Length);
-        while (prefix < maxPrefix && oldText[prefix] == newText[prefix])
-        {
-            prefix++;
-        }
-
-        // Never split a surrogate pair: the two halves are not text on their own.
-        if (prefix > 0 && char.IsHighSurrogate(oldText[prefix - 1]))
-        {
-            prefix--;
-        }
-
-        var suffix = 0;
-        var maxSuffix = Math.Min(oldText.Length, newText.Length) - prefix;
-        while (suffix < maxSuffix && oldText[oldText.Length - suffix - 1] == newText[newText.Length - suffix - 1])
-        {
-            suffix++;
-        }
-
-        if (suffix > 0 && char.IsLowSurrogate(oldText[oldText.Length - suffix]))
-        {
-            suffix--;
-        }
-
-        return [new TextChange(
-            TextSpan.FromBounds(prefix, oldText.Length - suffix),
-            newText[prefix..(newText.Length - suffix)])];
-    }
-
-    /// <summary>
-    /// Compares this tree with <paramref name="other"/> structurally, ignoring whitespace and comments. Two scripts
-    /// that differ only in formatting are equivalent; two scripts parsed as different dialects never are.
-    /// </summary>
-    public bool IsEquivalentTo(ShellSyntaxTree? other)
-    {
-        if (other is null)
-            return false;
-
-        if (other.Dialect != Dialect)
-            return false;
-
-        return string.Equals(Text, other.Text, StringComparison.Ordinal) || Root.IsEquivalentTo(other.Root);
-    }
+        => _diagnostics.Add(new Diagnostic("SHELL0101", "Unexpected content after the parsed statement.", DiagnosticSeverity.Error, new Location(span, _text)));
 }

@@ -1,0 +1,5 @@
+[*.cs]
+# MA0182: Internal type is apparently never used.
+# The immutable half of the tree is built by the parser and projected into the public nodes; the analyzer does not
+# follow that, and reports every green node type as unused.
+dotnet_diagnostic.MA0182.severity = none

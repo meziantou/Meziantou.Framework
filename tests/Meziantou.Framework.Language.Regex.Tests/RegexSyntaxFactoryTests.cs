@@ -31,10 +31,10 @@ public sealed class RegexSyntaxFactoryTests
         var built = SyntaxFactory.LiteralText(Text, RegexDialect.Net).ToFullString();
         var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexQuantifiedSyntax>());
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexQuantifiedSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class RegexSyntaxFactoryTests
         Assert.Equal(expected, built);
 
         var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         Assert.Equal(min, quantified.Quantifier.MinCount);
         Assert.Equal(max, quantified.Quantifier.MaxCount);
     }
@@ -96,7 +96,7 @@ public sealed class RegexSyntaxFactoryTests
         Assert.Equal(@"[^a-z\d]", built);
 
         var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.Net);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class RegexSyntaxFactoryTests
             var built = SyntaxFactory.Anchor(kind).ToFullString();
             var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.PcrePerl);
 
-            var anchor = Assert.Single(tree.Root.DescendantNodes().OfType<RegexAnchorSyntax>());
+            var anchor = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
             Assert.Equal(kind, anchor.AnchorKind);
         }
     }
@@ -158,11 +158,11 @@ public sealed class RegexSyntaxFactoryTests
             var built = SyntaxFactory.Literal(value, dialect).ToFullString();
             var tree = RegexSyntaxAssert.TextIsFaithful(built, dialect);
 
-            Assert.Empty(tree.Diagnostics, $"[{built}] built for {value} in {dialectName}");
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexQuantifiedSyntax>());
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
-            Assert.Single(tree.Root.Alternation.Branches[0].Terms);
+            Assert.Empty(tree.GetDiagnostics(), $"[{built}] built for {value} in {dialectName}");
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexQuantifiedSyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
+            Assert.Single(tree.GetRoot().Alternation.Branches[0].Terms);
         }
     }
 

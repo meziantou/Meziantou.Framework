@@ -248,7 +248,18 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             if (!_isProcessingPending)
             {
                 _isProcessingPending = true;
-                _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
+                try
+                {
+                    _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
+                }
+                catch
+                {
+                    // The synchronization context refused the callback, so nothing will process the queue. The events stay
+                    // queued and the flag is restored, so the next modification posts again and raises every pending
+                    // notification as soon as the context accepts a callback.
+                    _isProcessingPending = false;
+                    throw;
+                }
             }
 
             return;

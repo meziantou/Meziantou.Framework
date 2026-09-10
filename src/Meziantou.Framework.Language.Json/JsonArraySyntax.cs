@@ -1,56 +1,61 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Json;
 
-/// <summary>Represents a JSON array value.</summary>
+/// <summary>An array: brackets around a comma-separated list of values.</summary>
 public sealed class JsonArraySyntax : JsonValueSyntax
 {
-    private readonly IReadOnlyList<JsonSyntaxNode> _childNodes;
+    private SyntaxNode? _elements;
 
-    public JsonArraySyntax(JsonSyntaxToken openBracketToken, IReadOnlyList<JsonSyntaxNode> childNodes, JsonSyntaxToken closeBracketToken)
-        : base(JsonSyntaxKind.JsonArray, BuildText(openBracketToken, childNodes, closeBracketToken), openBracketToken.FullSpan.Start, [openBracketToken, closeBracketToken])
+    internal JsonArraySyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        OpenBracketToken = openBracketToken;
-        CloseBracketToken = closeBracketToken;
-        _childNodes = childNodes ?? [];
-        Elements = _childNodes.OfType<JsonArrayElementSyntax>().ToArray();
     }
 
-    public JsonSyntaxToken OpenBracketToken { get; }
-    public IReadOnlyList<JsonArrayElementSyntax> Elements { get; }
-    public JsonSyntaxToken CloseBracketToken { get; }
-    public override IReadOnlyList<JsonSyntaxNode> ChildNodes => _childNodes;
+    public SyntaxToken OpenBracketToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
-    public JsonArraySyntax WithElements(IEnumerable<JsonArrayElementSyntax>? elements)
+    /// <summary>Gets the values in the array. The commas between them are the separators of the list.</summary>
+    public SeparatedSyntaxList<JsonValueSyntax> Elements
     {
-        var updatedElements = elements?.ToArray() ?? [];
-        if (updatedElements.SequenceEqual(Elements))
-            return this;
-
-        return SyntaxFactory.Array(updatedElements);
-    }
-
-    public JsonArraySyntax WithChildNodes(IEnumerable<JsonSyntaxNode>? childNodes)
-    {
-        var nodes = childNodes?.ToArray() ?? [];
-        if (nodes.SequenceEqual(ChildNodes))
-            return this;
-
-        return new JsonArraySyntax(OpenBracketToken, nodes, CloseBracketToken);
-    }
-
-    public override void Accept(JsonSyntaxVisitor visitor) => visitor.VisitArray(this);
-    public override TResult Accept<TResult>(JsonSyntaxVisitor<TResult> visitor) => visitor.VisitArray(this);
-
-    private static string BuildText(JsonSyntaxToken openBracketToken, IReadOnlyList<JsonSyntaxNode>? childNodes, JsonSyntaxToken closeBracketToken)
-    {
-        var builder = new StringBuilder();
-        builder.Append(openBracketToken.ToFullString());
-        foreach (var child in childNodes ?? [])
+        get
         {
-            builder.Append(child.ToFullString());
+            var red = GetRed(ref _elements, 1);
+
+            return red is null ? default : new SeparatedSyntaxList<JsonValueSyntax>(new SyntaxNodeOrTokenList(red, GetChildIndex(1)));
         }
+    }
 
-        builder.Append(closeBracketToken.ToFullString());
+    public SyntaxToken CloseBracketToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
-        return builder.ToString();
+    /// <summary>Returns this array with the given parts, or itself when nothing changed.</summary>
+    public JsonArraySyntax Update(SyntaxToken openBracketToken, SeparatedSyntaxList<JsonValueSyntax> elements, SyntaxToken closeBracketToken)
+    {
+        if (openBracketToken.Node == Green.GetSlot(0) && elements.Green == Green.GetSlot(1) && closeBracketToken.Node == Green.GetSlot(2))
+            return this;
+
+        return SyntaxFactory.JsonArray(openBracketToken, elements, closeBracketToken).WithAnnotationsFrom(this);
+    }
+
+    public JsonArraySyntax WithOpenBracketToken(SyntaxToken openBracketToken) => Update(openBracketToken, Elements, CloseBracketToken);
+    public JsonArraySyntax WithElements(SeparatedSyntaxList<JsonValueSyntax> elements) => Update(OpenBracketToken, elements, CloseBracketToken);
+    public JsonArraySyntax WithCloseBracketToken(SyntaxToken closeBracketToken) => Update(OpenBracketToken, Elements, closeBracketToken);
+    public JsonArraySyntax AddElements(params JsonValueSyntax[] items) => WithElements(Elements.AddRange(items));
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index == 1 ? GetRed(ref _elements, 1) : null;
+    internal override SyntaxNode? GetCachedSlot(int index) => index == 1 ? _elements : null;
+
+    public override void Accept(JsonSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitJsonArray(this);
+    }
+
+    public override TResult? Accept<TResult>(JsonSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitJsonArray(this);
     }
 }

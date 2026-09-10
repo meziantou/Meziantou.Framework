@@ -1,226 +1,122 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Xml;
 
-/// <summary>
-/// Represents an XML declaration (for example <c>&lt;?xml version="1.0"?&gt;</c>).
-/// </summary>
-/// <example>
-/// <code>
-/// var declaration = SyntaxFactory.Declaration("1.0", "utf-8", "yes");
-/// var updated = declaration.WithEncoding("utf-16");
-/// </code>
-/// </example>
-public sealed class XmlDeclarationSyntax : XmlSyntaxNode
+/// <summary>The XML declaration, whose version, encoding and standalone are written as attributes.</summary>
+public sealed class XmlDeclarationSyntax : XmlNodeSyntax
 {
-    private readonly IReadOnlyList<XmlSyntaxNode> _childNodes;
-    private readonly List<DeclarationAttributeSegment> _attributeSegments;
+    private SyntaxNode? _attributes;
 
-    public XmlDeclarationSyntax(string version, string? encoding, string? standalone, string fullText, int fullStart = 0)
-        : base(XmlSyntaxKind.XmlDeclaration, fullText, [new XmlSyntaxToken(XmlSyntaxKind.DeclarationToken, fullText, fullStart: fullStart)], fullStart)
+    internal XmlDeclarationSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        Version = version;
-        Encoding = encoding;
-        Standalone = standalone;
-        _attributeSegments = ParseAttributeSegments(fullText, fullStart);
-        _childNodes = _attributeSegments.Select(item => (XmlSyntaxNode)item.Attribute).ToArray();
-        VersionAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "version", StringComparison.Ordinal)).Attribute;
-        EncodingAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "encoding", StringComparison.Ordinal)).Attribute;
-        StandaloneAttribute = _attributeSegments.FirstOrDefault(item => string.Equals(item.Attribute.Name, "standalone", StringComparison.Ordinal)).Attribute;
     }
 
-    public override IReadOnlyList<XmlSyntaxNode> ChildNodes => _childNodes;
-    public string Version { get; }
-    public string? Encoding { get; }
-    public string? Standalone { get; }
-    public XmlAttributeSyntax? VersionAttribute { get; }
-    public XmlAttributeSyntax? EncodingAttribute { get; }
-    public XmlAttributeSyntax? StandaloneAttribute { get; }
+    public SyntaxToken StartDeclarationToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
+    public SyntaxList<XmlAttributeSyntax> Attributes => new(GetRed(ref _attributes, 1));
+    public SyntaxToken EndDeclarationToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
+    /// <summary>Gets the version the declaration states, or <c>1.0</c> when it states none.</summary>
+    public string Version => GetAttribute("version")?.Value ?? "1.0";
+
+    /// <summary>Gets the encoding the declaration states, or <see langword="null"/> when it states none.</summary>
+    public string? Encoding => GetAttribute("encoding")?.Value;
+
+    /// <summary>Gets what the declaration states for standalone, or <see langword="null"/> when it states nothing.</summary>
+    public string? Standalone => GetAttribute("standalone")?.Value;
+
+    public XmlAttributeSyntax? VersionAttribute => GetAttribute("version");
+    public XmlAttributeSyntax? EncodingAttribute => GetAttribute("encoding");
+    public XmlAttributeSyntax? StandaloneAttribute => GetAttribute("standalone");
+
+    /// <summary>Gets the first attribute called <paramref name="name"/>, or <see langword="null"/> when there is none.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public XmlAttributeSyntax? GetAttribute(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        foreach (var attribute in Attributes)
+        {
+            if (string.Equals(attribute.Name, name, StringComparison.Ordinal))
+                return attribute;
+        }
+
+        return null;
+    }
+
+    /// <exception cref="ArgumentNullException"><paramref name="version"/> is <see langword="null"/>.</exception>
     public XmlDeclarationSyntax WithVersion(string version)
     {
         ArgumentNullException.ThrowIfNull(version);
-        if (string.Equals(version, Version, StringComparison.Ordinal))
-            return this;
 
-        return UpdateRequiredAttributeValue("version", version, version, Encoding, Standalone);
+        return SetAttribute("version", version);
     }
 
-    public XmlDeclarationSyntax WithEncoding(string? encoding)
+    public XmlDeclarationSyntax WithEncoding(string? encoding) => SetAttribute("encoding", encoding);
+
+    public XmlDeclarationSyntax WithStandalone(string? standalone) => SetAttribute("standalone", standalone);
+
+    /// <summary>
+    /// Sets, adds, or removes one pseudo-attribute, leaving the rest of the declaration exactly as it was written.
+    /// </summary>
+    /// <remarks>
+    /// An attribute that is already there keeps its position and its spacing; a new one is added at the end, in front
+    /// of whatever whitespace stands before the <c>?&gt;</c>.
+    /// </remarks>
+    private XmlDeclarationSyntax SetAttribute(string name, string? value)
     {
-        if (string.Equals(encoding, Encoding, StringComparison.Ordinal))
-            return this;
-
-        return UpdateOptionalAttributeValue("encoding", encoding, Version, encoding, Standalone);
-    }
-
-    public XmlDeclarationSyntax WithStandalone(string? standalone)
-    {
-        if (string.Equals(standalone, Standalone, StringComparison.Ordinal))
-            return this;
-
-        return UpdateOptionalAttributeValue("standalone", standalone, Version, Encoding, standalone);
-    }
-
-    public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitDeclaration(this);
-    public override TResult Accept<TResult>(XmlSyntaxVisitor<TResult> visitor) => visitor.VisitDeclaration(this);
-
-    private XmlDeclarationSyntax UpdateRequiredAttributeValue(string attributeName, string value, string version, string? encoding, string? standalone)
-    {
-        if (TryGetAttributeSegment(attributeName, out var segment))
-        {
-            var updatedAttribute = segment.Attribute.WithValue(value);
-            return ReplaceSpan(segment.Span, updatedAttribute.ToFullString(), version, encoding, standalone);
-        }
-
-        return SyntaxFactory.Declaration(version, encoding, standalone);
-    }
-
-    private XmlDeclarationSyntax UpdateOptionalAttributeValue(string attributeName, string? value, string version, string? encoding, string? standalone)
-    {
-        if (TryGetAttributeSegment(attributeName, out var segment))
+        var existing = GetAttribute(name);
+        if (existing is not null)
         {
             if (value is null)
-                return ReplaceSpan(segment.Span, string.Empty, version, encoding, standalone);
+                return WithAttributes(Attributes.Remove(existing));
 
-            var updatedAttribute = segment.Attribute.WithValue(value);
-            return ReplaceSpan(segment.Span, updatedAttribute.ToFullString(), version, encoding, standalone);
+            return WithAttributes(Attributes.Replace(existing, existing.WithValue(value)));
         }
 
         if (value is null)
             return this;
 
-        var fullText = ToFullString();
-        var declarationEnd = fullText.LastIndexOf("?>", StringComparison.Ordinal);
-        if (declarationEnd < 0)
-            return SyntaxFactory.Declaration(version, encoding, standalone);
-
-        var insertionIndex = declarationEnd;
-        while (insertionIndex > 0 && char.IsWhiteSpace(fullText[insertionIndex - 1]))
-        {
-            insertionIndex--;
-        }
-
-        var newAttributeText = " " + SyntaxFactory.Attribute(attributeName, value).ToFullString();
-        var updatedText = fullText[..insertionIndex] + newAttributeText + fullText[insertionIndex..];
-        return new XmlDeclarationSyntax(version, encoding, standalone, updatedText, FullSpan.Start);
+        return WithAttributes(Attributes.Add(SyntaxFactory.XmlAttribute(name, value).WithLeadingTrivia(SyntaxFactory.Space)));
     }
 
-    private XmlDeclarationSyntax ReplaceSpan(TextSpan span, string replacement, string version, string? encoding, string? standalone)
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public XmlDeclarationSyntax Update(SyntaxToken startDeclarationToken, SyntaxList<XmlAttributeSyntax> attributes, SyntaxToken endDeclarationToken)
     {
-        var fullText = ToFullString();
-        var builder = new StringBuilder(fullText.Length - span.Length + replacement.Length);
-        builder.Append(fullText.AsSpan(0, span.Start));
-        builder.Append(replacement);
-        builder.Append(fullText.AsSpan(span.End));
-        return new XmlDeclarationSyntax(version, encoding, standalone, builder.ToString(), FullSpan.Start);
+        if (startDeclarationToken.Node == Green.GetSlot(0) && attributes.Green == Green.GetSlot(1) && endDeclarationToken.Node == Green.GetSlot(2))
+            return this;
+
+        return SyntaxFactory.XmlDeclaration(startDeclarationToken, attributes, endDeclarationToken).WithAnnotationsFrom(this);
     }
 
-    private bool TryGetAttributeSegment(string attributeName, out DeclarationAttributeSegment segment)
+    public XmlDeclarationSyntax WithStartDeclarationToken(SyntaxToken startDeclarationToken) => Update(startDeclarationToken, Attributes, EndDeclarationToken);
+    public XmlDeclarationSyntax WithAttributes(SyntaxList<XmlAttributeSyntax> attributes) => Update(StartDeclarationToken, attributes, EndDeclarationToken);
+    public XmlDeclarationSyntax WithEndDeclarationToken(SyntaxToken endDeclarationToken) => Update(StartDeclarationToken, Attributes, endDeclarationToken);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+{
+        1 => GetRed(ref _attributes, 1),
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+{
+        1 => _attributes,
+        _ => null,
+    };
+
+    public override void Accept(XmlSyntaxVisitor visitor)
     {
-        foreach (var attributeSegment in _attributeSegments)
-        {
-            if (string.Equals(attributeSegment.Attribute.Name, attributeName, StringComparison.Ordinal))
-            {
-                segment = attributeSegment;
-                return true;
-            }
-        }
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        segment = default;
-        return false;
+        visitor.VisitDeclaration(this);
     }
 
-    /// <remarks>
-    /// The returned <see cref="DeclarationAttributeSegment.Span"/> stays relative to <paramref name="declarationText"/>,
-    /// because <see cref="ReplaceSpan"/> slices that text with it. Only the attribute nodes are given absolute
-    /// positions, by offsetting them with <paramref name="fullStart"/>.
-    /// </remarks>
-    private static List<DeclarationAttributeSegment> ParseAttributeSegments(string declarationText, int fullStart)
+    public override TResult? Accept<TResult>(XmlSyntaxVisitor<TResult> visitor)
+        where TResult : default
     {
-        if (declarationText.Length == 0)
-            return [];
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        var start = declarationText.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase) ? 5 : 0;
-        var end = declarationText.LastIndexOf("?>", StringComparison.Ordinal);
-        if (end < 0 || start >= end)
-            return [];
-
-        var result = new List<DeclarationAttributeSegment>();
-        var index = start;
-        while (index < end)
-        {
-            var attributeStart = index;
-            while (index < end && char.IsWhiteSpace(declarationText[index]))
-            {
-                index++;
-            }
-
-            var nameStart = index;
-            while (index < end && !char.IsWhiteSpace(declarationText[index]) && declarationText[index] != '=')
-            {
-                index++;
-            }
-
-            if (index == nameStart)
-                break;
-
-            var name = declarationText[nameStart..index];
-
-            while (index < end && char.IsWhiteSpace(declarationText[index]))
-            {
-                index++;
-            }
-
-            if (index >= end || declarationText[index] != '=')
-                break;
-
-            index++;
-            while (index < end && char.IsWhiteSpace(declarationText[index]))
-            {
-                index++;
-            }
-
-            if (index >= end)
-                break;
-
-            string value;
-            if (declarationText[index] is '"' or '\'')
-            {
-                var quote = declarationText[index];
-                index++;
-                var valueStart = index;
-                while (index < end && declarationText[index] != quote)
-                {
-                    index++;
-                }
-
-                value = declarationText[valueStart..Math.Min(index, end)];
-                if (index < end && declarationText[index] == quote)
-                {
-                    index++;
-                }
-            }
-            else
-            {
-                var valueStart = index;
-                while (index < end && !char.IsWhiteSpace(declarationText[index]))
-                {
-                    index++;
-                }
-
-                value = declarationText[valueStart..index];
-            }
-
-            var attributeEnd = index;
-            if (attributeEnd <= attributeStart)
-                continue;
-
-            var attributeText = declarationText[attributeStart..attributeEnd];
-            var attribute = new XmlAttributeSyntax(name, value, attributeText, fullStart + attributeStart);
-            result.Add(new DeclarationAttributeSegment(attribute, TextSpan.FromBounds(attributeStart, attributeEnd)));
-        }
-
-        return result;
+        return visitor.VisitDeclaration(this);
     }
-
-    private readonly record struct DeclarationAttributeSegment(XmlAttributeSyntax Attribute, TextSpan Span);
 }

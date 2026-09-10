@@ -1,217 +1,78 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Xml;
 
-/// <summary>Represents an XML attribute in a start tag.</summary>
-/// <example>
-/// <code>
-/// var attribute = SyntaxFactory.Attribute("version", "1.0.0");
-/// var updated = attribute.WithValue("2.0.0");
-/// </code>
-/// </example>
+/// <summary>An attribute of a tag: a name, an equals sign, and a quoted value.</summary>
 public sealed class XmlAttributeSyntax : XmlSyntaxNode
 {
-    public XmlAttributeSyntax(string name, string value, string fullText, int fullStart = 0)
-        : base(XmlSyntaxKind.XmlAttribute, fullText, BuildTokens(name, value, fullText, fullStart), fullStart)
+    internal XmlAttributeSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        Name = name;
-        Value = value;
     }
 
-    public string Name { get; }
-    public string Value { get; }
+    public SyntaxToken NameToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
+    public SyntaxToken EqualsToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
+    public SyntaxToken StartQuoteToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+    public SyntaxToken ValueToken => new(this, Green.GetSlot(3), GetChildPosition(3), GetChildIndex(3));
+    public SyntaxToken EndQuoteToken => new(this, Green.GetSlot(4), GetChildPosition(4), GetChildIndex(4));
 
+    /// <summary>Gets the name of the attribute.</summary>
+    public string Name => NameToken.Text;
+
+    /// <summary>Gets the value of the attribute, with any escape the source used resolved.</summary>
+    public string Value => ValueToken.ValueText;
+
+    /// <summary>Returns this attribute renamed.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public XmlAttributeSyntax WithName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        if (string.Equals(name, Name, StringComparison.Ordinal))
-            return this;
 
-        return SyntaxFactory.Attribute(name, Value);
+        return string.Equals(name, Name, StringComparison.Ordinal) ? this : WithNameToken(SyntaxFactory.Identifier(name).WithTriviaFrom(NameToken));
     }
 
+    /// <summary>Returns this attribute carrying a different value, escaped for the quote character it is written with.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public XmlAttributeSyntax WithValue(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+
         if (string.Equals(value, Value, StringComparison.Ordinal))
             return this;
 
-        var fullText = ToFullString();
-        if (TryGetAttributeValueSpan(fullText, out var valueSpan, out var quoteCharacter))
-        {
-            var escapedValue = EscapeAttributeValue(value, quoteCharacter);
-            var builder = new StringBuilder(fullText.Length - valueSpan.Length + escapedValue.Length);
-            builder.Append(fullText.AsSpan(0, valueSpan.Start));
-            builder.Append(escapedValue);
-            builder.Append(fullText.AsSpan(valueSpan.End));
-            return new XmlAttributeSyntax(Name, value, builder.ToString(), FullSpan.Start);
-        }
-
-        return SyntaxFactory.Attribute(Name, value);
+        return WithValueToken(SyntaxFactory.AttributeValue(value, StartQuoteToken.Text.Length == 1 ? StartQuoteToken.Text[0] : '"').WithTriviaFrom(ValueToken));
     }
 
-    public XmlAttributeSyntax WithLeadingTrivia(IEnumerable<XmlSyntaxTrivia>? leadingTrivia)
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public XmlAttributeSyntax Update(SyntaxToken nameToken, SyntaxToken equalsToken, SyntaxToken startQuoteToken, SyntaxToken valueToken, SyntaxToken endQuoteToken)
     {
-        var triviaText = ConcatenateTrivia(leadingTrivia);
-        var fullText = ToFullString();
-        var nameStart = GetAttributeNameStart(fullText);
-        if (nameStart < 0)
+        if (nameToken.Node == Green.GetSlot(0) && equalsToken.Node == Green.GetSlot(1) && startQuoteToken.Node == Green.GetSlot(2) && valueToken.Node == Green.GetSlot(3) && endQuoteToken.Node == Green.GetSlot(4))
             return this;
 
-        var updated = triviaText + fullText[nameStart..];
-        if (string.Equals(updated, fullText, StringComparison.Ordinal))
-            return this;
-
-        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
+        return SyntaxFactory.XmlAttribute(nameToken, equalsToken, startQuoteToken, valueToken, endQuoteToken).WithAnnotationsFrom(this);
     }
 
-    public XmlAttributeSyntax WithTrailingTrivia(IEnumerable<XmlSyntaxTrivia>? trailingTrivia)
+    public XmlAttributeSyntax WithNameToken(SyntaxToken nameToken) => Update(nameToken, EqualsToken, StartQuoteToken, ValueToken, EndQuoteToken);
+    public XmlAttributeSyntax WithEqualsToken(SyntaxToken equalsToken) => Update(NameToken, equalsToken, StartQuoteToken, ValueToken, EndQuoteToken);
+    public XmlAttributeSyntax WithStartQuoteToken(SyntaxToken startQuoteToken) => Update(NameToken, EqualsToken, startQuoteToken, ValueToken, EndQuoteToken);
+    public XmlAttributeSyntax WithValueToken(SyntaxToken valueToken) => Update(NameToken, EqualsToken, StartQuoteToken, valueToken, EndQuoteToken);
+    public XmlAttributeSyntax WithEndQuoteToken(SyntaxToken endQuoteToken) => Update(NameToken, EqualsToken, StartQuoteToken, ValueToken, endQuoteToken);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => null;
+    internal override SyntaxNode? GetCachedSlot(int index) => null;
+
+    public override void Accept(XmlSyntaxVisitor visitor)
     {
-        var triviaText = ConcatenateTrivia(trailingTrivia);
-        var fullText = ToFullString();
-        var nameStart = GetAttributeNameStart(fullText);
-        if (nameStart < 0)
-            return this;
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        var nameEnd = nameStart + Name.Length;
-        var separatorStart = nameEnd;
-        while (separatorStart < fullText.Length && char.IsWhiteSpace(fullText[separatorStart]))
-        {
-            separatorStart++;
-        }
-
-        var equalsIndex = fullText.IndexOf('=', separatorStart, StringComparison.Ordinal);
-        if (equalsIndex < 0)
-            return this;
-
-        var updated = fullText[..nameEnd] + triviaText + fullText[equalsIndex..];
-        if (string.Equals(updated, fullText, StringComparison.Ordinal))
-            return this;
-
-        return new XmlAttributeSyntax(Name, Value, updated, FullSpan.Start);
+        visitor.VisitAttribute(this);
     }
 
-    private static XmlSyntaxToken[] BuildTokens(string name, string value, string fullText, int fullStart)
+    public override TResult? Accept<TResult>(XmlSyntaxVisitor<TResult> visitor)
+        where TResult : default
     {
-        var nameToken = new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, fullStart: fullStart + Math.Max(0, GetAttributeNameStart(fullText)));
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        // The value token covers the source between the quotes, which is not the value itself when the source
-        // escapes a character. Text therefore carries the source slice and ValueText the decoded value, so the
-        // token's span measures the range it actually occupies.
-        if (TryGetAttributeValueSpan(fullText, out var valueSpan, out _))
-        {
-            var sourceText = fullText.Substring(valueSpan.Start, valueSpan.Length);
-            return [nameToken, new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, sourceText, value, fullStart: fullStart + valueSpan.Start)];
-        }
-
-        return [nameToken, new XmlSyntaxToken(XmlSyntaxKind.AttributeValueToken, value, fullStart: fullStart)];
+        return visitor.VisitAttribute(this);
     }
-
-    private static bool TryGetAttributeValueSpan(string attributeText, out TextSpan span, out char quoteCharacter)
-    {
-        var index = attributeText.IndexOf('=', StringComparison.Ordinal);
-        if (index < 0)
-        {
-            span = default;
-            quoteCharacter = '\0';
-            return false;
-        }
-
-        var current = index + 1;
-        while (current < attributeText.Length && char.IsWhiteSpace(attributeText[current]))
-        {
-            current++;
-        }
-
-        if (current >= attributeText.Length)
-        {
-            span = default;
-            quoteCharacter = '\0';
-            return false;
-        }
-
-        if (attributeText[current] is '"' or '\'')
-        {
-            var quote = attributeText[current];
-            var valueStart = current + 1;
-            var valueEnd = attributeText.IndexOf(quote, valueStart, StringComparison.Ordinal);
-            if (valueEnd < 0)
-            {
-                span = default;
-                quoteCharacter = '\0';
-                return false;
-            }
-
-            span = TextSpan.FromBounds(valueStart, valueEnd);
-            quoteCharacter = quote;
-            return true;
-        }
-
-        var unquotedValueStart = current;
-        while (current < attributeText.Length && !char.IsWhiteSpace(attributeText[current]) && attributeText[current] != '>')
-        {
-            current++;
-        }
-
-        span = TextSpan.FromBounds(unquotedValueStart, current);
-        quoteCharacter = '\0';
-        return true;
-    }
-
-    private static string EscapeAttributeValue(string value, char quoteCharacter)
-    {
-        var builder = new StringBuilder(value.Length);
-        foreach (var character in value)
-        {
-            switch (character)
-            {
-                case '&':
-                    builder.Append("&amp;");
-                    break;
-                case '<':
-                    builder.Append("&lt;");
-                    break;
-                case '>':
-                    builder.Append("&gt;");
-                    break;
-                case '"' when quoteCharacter is '"' or '\0':
-                    builder.Append("&quot;");
-                    break;
-                case '\'' when quoteCharacter is '\'' or '\0':
-                    builder.Append("&apos;");
-                    break;
-                default:
-                    builder.Append(character);
-                    break;
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    private static int GetAttributeNameStart(string attributeText)
-    {
-        var current = 0;
-        while (current < attributeText.Length && char.IsWhiteSpace(attributeText[current]))
-        {
-            current++;
-        }
-
-        return current < attributeText.Length ? current : -1;
-    }
-
-    private static string ConcatenateTrivia(IEnumerable<XmlSyntaxTrivia>? trivia)
-    {
-        if (trivia is null)
-            return string.Empty;
-
-        var builder = new StringBuilder();
-        foreach (var currentTrivia in trivia)
-        {
-            builder.Append(currentTrivia.Text);
-        }
-
-        return builder.ToString();
-    }
-
-    public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitAttribute(this);
-    public override TResult Accept<TResult>(XmlSyntaxVisitor<TResult> visitor) => visitor.VisitAttribute(this);
 }

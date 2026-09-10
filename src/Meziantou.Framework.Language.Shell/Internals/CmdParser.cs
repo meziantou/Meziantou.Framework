@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>Parser for the Windows command interpreter. Never throws; unrecognized text is kept as skipped text.</summary>
 internal sealed partial class CmdParser
@@ -7,7 +12,7 @@ internal sealed partial class CmdParser
     private readonly string _text;
     private readonly List<Diagnostic> _diagnostics = [];
     private readonly ShellParseOptions _options;
-    private readonly List<ShellSyntaxTrivia> _pendingTrivia = [];
+    private readonly List<GreenNode?> _pendingTrivia = [];
     private int _position;
     private int _pendingTriviaStart;
     private int _depth;
@@ -42,9 +47,9 @@ internal sealed partial class CmdParser
     {
         var statements = ParseStatementList(stopAtCloseParen: false);
         var (trivia, fullStart) = TakeTrivia();
-        var endOfFileToken = new ShellSyntaxToken(ShellSyntaxKind.EndOfFileToken, string.Empty, string.Empty, leadingTrivia: trivia, fullStart: fullStart);
+        var endOfFileToken = new ScannedToken(SyntaxKind.EndOfFileToken, string.Empty, string.Empty, leadingTrivia: trivia, fullStart: fullStart);
 
-        return new ShellScriptSyntax(statements, endOfFileToken, _text);
+        return new ShellScriptSyntax(statements, endOfFileToken);
     }
 
     // ---- statements ----
@@ -52,7 +57,7 @@ internal sealed partial class CmdParser
     private ShellStatementListSyntax ParseStatementList(bool stopAtCloseParen)
     {
         var statements = new List<ShellStatementSyntax>();
-        var separators = new List<ShellSyntaxToken>();
+        var separators = new List<ScannedToken>();
 
         while (true)
         {
@@ -64,12 +69,12 @@ internal sealed partial class CmdParser
 
             if (Current == '&' && Peek(1) != '&')
             {
-                var stray = ReadToken(ShellSyntaxKind.AmpersandToken, length: 1);
+                var stray = ReadToken(SyntaxKind.AmpersandToken, length: 1);
 
                 // The separator belongs to the statement in front of it, so pad first to land at the right index.
                 while (separators.Count + 1 < statements.Count)
                 {
-                    separators.Add(MissingToken(ShellSyntaxKind.AmpersandToken, stray.FullSpan.Start));
+                    separators.Add(MissingToken(SyntaxKind.AmpersandToken, stray.FullSpan.Start));
                 }
 
                 if (separators.Count < statements.Count)
@@ -79,8 +84,8 @@ internal sealed partial class CmdParser
                 else
                 {
                     AddDiagnostic(stray.Span, "SHELL0002", "Unexpected '&'.");
-                    statements.Add(new ShellSkippedTextSyntax([stray], stray.FullSpan.Start));
-                    separators.Add(MissingToken(ShellSyntaxKind.AmpersandToken, _position));
+                    statements.Add(new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([stray])));
+                    separators.Add(MissingToken(SyntaxKind.AmpersandToken, _position));
                 }
 
                 continue;
@@ -90,7 +95,7 @@ internal sealed partial class CmdParser
             // still needs a placeholder; without one the next `&` would be rebuilt against the wrong statement.
             while (separators.Count < statements.Count)
             {
-                separators.Add(MissingToken(ShellSyntaxKind.AmpersandToken, _position));
+                separators.Add(MissingToken(SyntaxKind.AmpersandToken, _position));
             }
 
             statements.Add(ParseAndOrList(stopAtCloseParen));
@@ -98,7 +103,7 @@ internal sealed partial class CmdParser
             AccumulateInlineTrivia();
             if (!IsAtEnd && Current == '&' && Peek(1) != '&')
             {
-                separators.Add(ReadToken(ShellSyntaxKind.AmpersandToken, length: 1));
+                separators.Add(ReadToken(SyntaxKind.AmpersandToken, length: 1));
             }
 
             if (_position == positionBefore)
@@ -107,26 +112,26 @@ internal sealed partial class CmdParser
             }
         }
 
-        return new ShellStatementListSyntax(statements, separators);
+        return new ShellStatementListSyntax(ParserHelpers.Separated(statements, separators));
     }
 
     private ShellStatementSyntax ParseAndOrList(bool stopAtCloseParen)
     {
         var first = ParsePipeline(stopAtCloseParen);
         List<ShellStatementSyntax>? pipelines = null;
-        List<ShellSyntaxToken>? operators = null;
+        List<ScannedToken>? operators = null;
 
         while (true)
         {
             AccumulateInlineTrivia();
             var kind = (Current, Peek(1)) switch
             {
-                ('&', '&') => ShellSyntaxKind.AmpersandAmpersandToken,
-                ('|', '|') => ShellSyntaxKind.PipePipeToken,
-                _ => ShellSyntaxKind.None,
+                ('&', '&') => SyntaxKind.AmpersandAmpersandToken,
+                ('|', '|') => SyntaxKind.PipePipeToken,
+                _ => SyntaxKind.None,
             };
 
-            if (kind == ShellSyntaxKind.None)
+            if (kind == SyntaxKind.None)
                 break;
 
             pipelines ??= [first];
@@ -136,14 +141,14 @@ internal sealed partial class CmdParser
             pipelines.Add(ParsePipeline(stopAtCloseParen));
         }
 
-        return pipelines is null ? first : new ShellCommandListSyntax(pipelines, operators);
+        return pipelines is null ? first : new ShellCommandListSyntax(ParserHelpers.Separated(pipelines, operators));
     }
 
     private ShellStatementSyntax ParsePipeline(bool stopAtCloseParen)
     {
         var first = ParseStatement(stopAtCloseParen);
         List<ShellStatementSyntax>? commands = null;
-        List<ShellSyntaxToken>? operators = null;
+        List<ScannedToken>? operators = null;
 
         while (true)
         {
@@ -153,12 +158,12 @@ internal sealed partial class CmdParser
 
             commands ??= [first];
             operators ??= [];
-            operators.Add(ReadToken(ShellSyntaxKind.PipeToken, length: 1));
+            operators.Add(ReadToken(SyntaxKind.PipeToken, length: 1));
             AccumulateStatementTrivia();
             commands.Add(ParseStatement(stopAtCloseParen));
         }
 
-        return commands is null ? first : new ShellPipelineSyntax(bangToken: null, commands, operators);
+        return commands is null ? first : new ShellPipelineSyntax(bangToken: null, ParserHelpers.Separated(commands, operators));
     }
 
     private ShellStatementSyntax ParseStatement(bool stopAtCloseParen)
@@ -202,19 +207,19 @@ internal sealed partial class CmdParser
 
     private CmdParenthesizedBlockSyntax ParseParenthesizedBlock()
     {
-        var openParen = ReadToken(ShellSyntaxKind.OpenParenToken, length: 1);
+        var openParen = ReadToken(SyntaxKind.OpenParenToken, length: 1);
         var statements = ParseStatementList(stopAtCloseParen: true);
 
         AccumulateStatementTrivia();
-        ShellSyntaxToken closeParen;
+        ScannedToken closeParen;
         if (Current == ')')
         {
-            closeParen = ReadToken(ShellSyntaxKind.CloseParenToken, length: 1);
+            closeParen = ReadToken(SyntaxKind.CloseParenToken, length: 1);
         }
         else
         {
             AddDiagnostic(openParen.Span, "SHELL0009", "Expected ')' to close the block.");
-            closeParen = MissingToken(ShellSyntaxKind.CloseParenToken, _position);
+            closeParen = MissingToken(SyntaxKind.CloseParenToken, _position);
         }
 
         return new CmdParenthesizedBlockSyntax(openParen, statements, closeParen);
@@ -222,7 +227,7 @@ internal sealed partial class CmdParser
 
     private CmdLabelStatementSyntax ParseLabel()
     {
-        var colonToken = ReadToken(ShellSyntaxKind.ColonToken, length: 1);
+        var colonToken = ReadToken(SyntaxKind.ColonToken, length: 1);
         var start = _position;
 
         // A label takes the rest of its line, except that inside a block the `)` still closes the block, which is what
@@ -232,7 +237,7 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new CmdLabelStatementSyntax(colonToken, CreateToken(ShellSyntaxKind.GenericToken, start, [], start));
+        return new CmdLabelStatementSyntax(colonToken, CreateToken(SyntaxKind.GenericToken, start, null, start));
     }
 
     private CmdGotoStatementSyntax ParseGotoStatement()
@@ -248,7 +253,7 @@ internal sealed partial class CmdParser
 
         var (trivia, _) = TakeTrivia();
 
-        return new CmdGotoStatementSyntax(gotoKeyword, CreateToken(ShellSyntaxKind.GenericToken, start, trivia, fullStart));
+        return new CmdGotoStatementSyntax(gotoKeyword, CreateToken(SyntaxKind.GenericToken, start, trivia, fullStart));
     }
 
     private CmdCallStatementSyntax ParseCallStatement(bool stopAtCloseParen)
@@ -262,16 +267,16 @@ internal sealed partial class CmdParser
     {
         var setKeyword = ReadKeyword();
 
-        ShellSyntaxToken? switchToken = null;
+        ScannedToken switchToken = default;
         AccumulateInlineTrivia();
         if (Current == '/' && char.IsAsciiLetter(Peek(1)))
         {
-            switchToken = ReadToken(ShellSyntaxKind.ParameterToken, length: 2);
+            switchToken = ReadToken(SyntaxKind.ParameterToken, length: 2);
         }
 
         AccumulateInlineTrivia();
-        ShellSyntaxToken? nameToken = null;
-        ShellSyntaxToken? equalsToken = null;
+        ScannedToken nameToken = default;
+        ScannedToken equalsToken = default;
         ShellWordSyntax? value = null;
 
         var nameFullStart = PendingFullStart;
@@ -297,12 +302,12 @@ internal sealed partial class CmdParser
         {
             _position = scan;
             var (trivia, _) = TakeTrivia();
-            nameToken = CreateToken(ShellSyntaxKind.VariableNameToken, start, trivia, nameFullStart);
+            nameToken = CreateToken(SyntaxKind.VariableNameToken, start, trivia, nameFullStart);
         }
 
         if (Current == '=')
         {
-            equalsToken = ReadToken(ShellSyntaxKind.EqualsToken, length: 1);
+            equalsToken = ReadToken(SyntaxKind.EqualsToken, length: 1);
             if (!IsAtEnd && GetLineBreakLength(_position) == 0)
             {
                 value = ParseSetValue();
@@ -316,14 +321,14 @@ internal sealed partial class CmdParser
     {
         var ifKeyword = ReadKeyword();
 
-        ShellSyntaxToken? caseInsensitiveToken = null;
+        ScannedToken caseInsensitiveToken = default;
         AccumulateInlineTrivia();
         if (Current == '/' && Peek(1) is 'i' or 'I')
         {
-            caseInsensitiveToken = ReadToken(ShellSyntaxKind.ParameterToken, length: 2);
+            caseInsensitiveToken = ReadToken(SyntaxKind.ParameterToken, length: 2);
         }
 
-        ShellSyntaxToken? notKeyword = null;
+        ScannedToken notKeyword = default;
         if (PeekKeywordAfterTrivia() == "not")
         {
             notKeyword = ReadKeyword();
@@ -354,9 +359,9 @@ internal sealed partial class CmdParser
         var keyword = PeekKeyword();
         if (keyword is "errorlevel" or "defined" or "exist" or "cmdextversion")
         {
-            var unaryToken = ReadToken(ShellSyntaxKind.OperatorToken, keyword.Length);
+            var unaryToken = ReadToken(SyntaxKind.OperatorToken, keyword.Length);
 
-            return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, unaryToken, ParseIfConditionOperand(), postfixOperatorToken: null);
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, unaryToken, ParseIfConditionOperand(), postfixOperatorToken: null);
         }
 
         var previousStopAtEquality = _stopAtEquality;
@@ -374,7 +379,7 @@ internal sealed partial class CmdParser
         AccumulateInlineTrivia();
         if (Current == '=' && Peek(1) == '=')
         {
-            var equalsToken = ReadToken(ShellSyntaxKind.OperatorToken, length: 2);
+            var equalsToken = ReadToken(SyntaxKind.OperatorToken, length: 2);
 
             return new ShellBinaryExpressionSyntax(left, equalsToken, ParseIfConditionOperand());
         }
@@ -382,7 +387,7 @@ internal sealed partial class CmdParser
         var comparison = PeekKeyword();
         if (comparison is "equ" or "neq" or "lss" or "leq" or "gtr" or "geq")
         {
-            var comparisonToken = ReadToken(ShellSyntaxKind.OperatorToken, comparison.Length);
+            var comparisonToken = ReadToken(SyntaxKind.OperatorToken, comparison.Length);
 
             return new ShellBinaryExpressionSyntax(left, comparisonToken, ParseIfConditionOperand());
         }
@@ -395,11 +400,11 @@ internal sealed partial class CmdParser
         AccumulateInlineTrivia();
 
         var word = ParseWord();
-        if (word.Parts.Count == 0)
+        if (word.PartCount() == 0)
         {
             // A word with no parts reports no position of its own, which would leave every span around it wrong. An
             // empty token keeps the position and, with it, the trivia that has piled up in front of the missing operand.
-            word = new ShellWordSyntax([new ShellLiteralWordPartSyntax(ReadToken(ShellSyntaxKind.BareTextToken, length: 0))]);
+            word = new ShellWordSyntax(GreenFactory.List([new ShellLiteralWordPartSyntax(ReadToken(SyntaxKind.BareTextToken, length: 0))]));
         }
 
         return new ShellOperandExpressionSyntax(word);
@@ -409,11 +414,11 @@ internal sealed partial class CmdParser
     {
         var forKeyword = ReadKeyword();
 
-        ShellSyntaxToken? switchToken = null;
+        ScannedToken switchToken = default;
         AccumulateInlineTrivia();
         if (Current == '/' && char.IsAsciiLetter(Peek(1)))
         {
-            switchToken = ReadToken(ShellSyntaxKind.ParameterToken, length: 2);
+            switchToken = ReadToken(SyntaxKind.ParameterToken, length: 2);
         }
 
         // `/f "tokens=1,2"` puts an option string between the switch and the loop variable.
@@ -440,11 +445,11 @@ internal sealed partial class CmdParser
 
         var (variableTrivia, _) = TakeTrivia();
         var variableToken = _position > variableStart
-            ? CreateToken(ShellSyntaxKind.VariableNameToken, variableStart, variableTrivia, variableFullStart)
-            : MissingToken(ShellSyntaxKind.VariableNameToken, variableFullStart, variableTrivia);
+            ? CreateToken(SyntaxKind.VariableNameToken, variableStart, variableTrivia, variableFullStart)
+            : MissingToken(SyntaxKind.VariableNameToken, variableFullStart, variableTrivia);
 
         var inKeyword = ExpectKeyword("in");
-        var openParen = ExpectCharacter('(', ShellSyntaxKind.OpenParenToken);
+        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
 
         var items = new List<ShellWordSyntax>();
         var previousStopAtCloseParen = _stopAtCloseParen;
@@ -467,10 +472,10 @@ internal sealed partial class CmdParser
         }
 
         _stopAtCloseParen = previousStopAtCloseParen;
-        var closeParen = ExpectCharacter(')', ShellSyntaxKind.CloseParenToken);
+        var closeParen = ExpectCharacter(')', SyntaxKind.CloseParenToken);
         var doKeyword = ExpectKeyword("do");
 
-        return new CmdForStatementSyntax(forKeyword, switchToken, switchArguments, variableToken, inKeyword, openParen, items, closeParen, doKeyword, ParseStatement(stopAtCloseParen: true));
+        return new CmdForStatementSyntax(forKeyword, switchToken, ParserHelpers.List(switchArguments), variableToken, inKeyword, openParen, ParserHelpers.List(items), closeParen, doKeyword, ParseStatement(stopAtCloseParen: true));
     }
 
     private ShellStatementSyntax ParseCommand()
@@ -506,10 +511,10 @@ internal sealed partial class CmdParser
             var (trivia, fullStart) = TakeTrivia();
             AddDiagnostic(new TextSpan(_position, 0), "SHELL0001", "Expected a command.");
 
-            return new ShellSkippedTextSyntax([MissingToken(ShellSyntaxKind.GenericToken, fullStart, trivia)], fullStart);
+            return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([MissingToken(SyntaxKind.GenericToken, fullStart, trivia)]));
         }
 
-        return new ShellCommandSyntax(elements);
+        return new ShellCommandSyntax(ParserHelpers.List(elements));
     }
 
     private bool TryParseRedirection([NotNullWhen(true)] out ShellRedirectionSyntax? redirection)
@@ -526,24 +531,24 @@ internal sealed partial class CmdParser
 
         var (kind, length) = (At(0), At(1)) switch
         {
-            ('>', '>') => (ShellSyntaxKind.GreaterThanGreaterThanToken, 2),
-            ('>', '&') => (ShellSyntaxKind.GreaterThanAmpersandToken, 2),
-            ('>', _) => (ShellSyntaxKind.GreaterThanToken, 1),
-            ('<', _) => (ShellSyntaxKind.LessThanToken, 1),
-            _ => (ShellSyntaxKind.None, 0),
+            ('>', '>') => (SyntaxKind.GreaterThanGreaterThanToken, 2),
+            ('>', '&') => (SyntaxKind.GreaterThanAmpersandToken, 2),
+            ('>', _) => (SyntaxKind.GreaterThanToken, 1),
+            ('<', _) => (SyntaxKind.LessThanToken, 1),
+            _ => (SyntaxKind.None, 0),
         };
 
-        if (kind == ShellSyntaxKind.None)
+        if (kind == SyntaxKind.None)
             return false;
 
         var (trivia, fullStart) = TakeTrivia();
-        ShellSyntaxToken? ioNumberToken = null;
+        ScannedToken ioNumberToken = default;
         if (scan > _position)
         {
             var ioStart = _position;
             _position = scan;
-            ioNumberToken = CreateToken(ShellSyntaxKind.IoNumberToken, ioStart, trivia, fullStart);
-            trivia = [];
+            ioNumberToken = CreateToken(SyntaxKind.IoNumberToken, ioStart, trivia, fullStart);
+            trivia = null;
             fullStart = _position;
         }
 

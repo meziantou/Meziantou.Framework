@@ -1,153 +1,120 @@
 namespace Meziantou.Framework.Language.Shell;
 
-/// <summary>Visitor that produces a rewritten shell syntax tree.</summary>
+/// <summary>Builds a new tree by visiting an old one and returning replacements.</summary>
 /// <remarks>
-/// <para>
-/// Override any <c>Visit</c> method and return a different node to replace it. Returning the node unchanged, which is
-/// what the base implementations do, means "leave this alone and keep looking inside it", so every node type is
-/// descended into regardless of dialect.
-/// </para>
-/// <para>
-/// A replaced node is spliced into the source text and the script is reparsed once, the same mechanism
-/// <see cref="ShellSyntaxNode.ReplaceNode"/> uses. <c>Visit(tree.Root)</c> returns a rewritten
-/// <see cref="ShellScriptSyntax"/>; visiting a node further down rebuilds through its script and returns the node
-/// that took its place, so a rewrite can be scoped to one subtree. A node with no script above it, one built by
-/// <see cref="SyntaxFactory"/> rather than parsed, is returned unchanged because there is no text to splice into.
-/// </para>
-/// <para>
-/// As with <see cref="ShellSyntaxNode.ReplaceNode"/>, a replacement that carries no leading trivia of its own keeps
-/// the whitespace and comments in front of the node it replaces.
-/// </para>
+/// A node whose parts all come back unchanged is returned as it was, so rewriting a tree and changing nothing in it
+/// costs nothing and keeps every node.
 /// </remarks>
-public class ShellSyntaxRewriter : ShellSyntaxVisitor<ShellSyntaxNode?>
+/// <example>
+/// <code>
+/// sealed class RenameCommand : ShellSyntaxRewriter
+/// {
+///     public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
+///         => node.NameValue == "ls" ? node.WithName("dir") : base.VisitCommand(node);
+/// }
+/// </code>
+/// </example>
+public partial class ShellSyntaxRewriter : ShellSyntaxVisitor<SyntaxNode?>
 {
-    private bool _isWalking;
-
-    public override ShellSyntaxNode? Visit(ShellSyntaxNode? node)
+    /// <summary>Rewrites a token, putting the trivia around it through <see cref="VisitTrivia"/>.</summary>
+    /// <remarks>
+    /// Nothing else reaches a token's trivia, so an override of <see cref="VisitTrivia"/> would never be called if
+    /// this returned the token untouched. A rewrite that returns the default trivium removes it.
+    /// </remarks>
+    public virtual SyntaxToken VisitToken(SyntaxToken token)
     {
-        if (node is null)
-            return null;
+        var leading = VisitList(token.LeadingTrivia);
+        var trailing = VisitList(token.TrailingTrivia);
+        if (leading == token.LeadingTrivia && trailing == token.TrailingTrivia)
+            return token;
 
-        // Inner dispatch during a walk: just ask the overrides what to do with this node.
-        if (_isWalking)
-            return node.Accept(this);
-
-        _isWalking = true;
-        try
-        {
-            var replaced = node.Accept(this);
-            if (replaced is not null && !ReferenceEquals(replaced, node))
-                return replaced;
-
-            var edits = new List<TextEdit>();
-            foreach (var child in node.ChildNodes)
-            {
-                CollectEdits(child, edits);
-            }
-
-            if (edits.Count == 0)
-                return node;
-
-            if (node is ShellScriptSyntax script)
-                return Rebuild(script, edits);
-
-            // Below the root, rebuild the whole script and hand back the node that took this one's place. Every edit
-            // sits inside this node, so its start offset is unchanged and identifies it in the new tree.
-            var owner = node.AncestorsAndSelf().OfType<ShellScriptSyntax>().FirstOrDefault() ?? node.SyntaxTree?.Root;
-            if (owner is null)
-                return node;
-
-            var rebuilt = Rebuild(owner, edits);
-
-            return FindCounterpart(rebuilt, node) ?? node;
-        }
-        finally
-        {
-            _isWalking = false;
-        }
+        return token.WithLeadingTrivia(leading).WithTrailingTrivia(trailing);
     }
 
-    /// <summary>Returns <paramref name="node"/> unchanged, so the walk keeps descending into it.</summary>
-    protected override ShellSyntaxNode? DefaultVisit(ShellSyntaxNode node)
+    public virtual SyntaxTrivia VisitTrivia(SyntaxTrivia trivia) => trivia;
+
+    /// <summary>Rewrites each trivium of a list, dropping the ones a rewrite turned into the default trivium.</summary>
+    public virtual SyntaxTriviaList VisitList(SyntaxTriviaList list)
     {
-        ArgumentNullException.ThrowIfNull(node);
-
-        return node;
-    }
-
-    protected virtual ShellSyntaxNode? VisitCore(ShellSyntaxNode node)
-    {
-        ArgumentNullException.ThrowIfNull(node);
-
-        return Visit(node);
-    }
-
-    /// <summary>
-    /// Asks the overrides about <paramref name="node"/>. A node that was replaced is recorded and not descended into,
-    /// since its replacement stands for the whole subtree.
-    /// </summary>
-    private void CollectEdits(ShellSyntaxNode node, List<TextEdit> edits)
-    {
-        // Walked with a stack rather than by recursion, so a deeply nested tree cannot run the stack out.
-        var pending = new Stack<ShellSyntaxNode>();
-        pending.Push(node);
-
-        while (pending.Count > 0)
+        List<SyntaxTrivia>? rewritten = null;
+        for (var i = 0; i < list.Count; i++)
         {
-            var current = pending.Pop();
-            var updated = VisitCore(current);
-            if (updated is not null && !ReferenceEquals(updated, current))
-            {
-                // Keep the trivia in front of the node when the replacement brings none of its own.
-                var span = updated.StartsWithTrivia ? current.FullSpan : current.SpanWithoutLeadingTrivia;
-                edits.Add(new TextEdit(span, updated.ToFullString()));
-
-                continue;
-            }
-
-            foreach (var child in current.ChildNodes)
-            {
-                pending.Push(child);
-            }
-        }
-    }
-
-    private static ShellScriptSyntax Rebuild(ShellScriptSyntax script, List<TextEdit> edits)
-    {
-        var source = script.ToFullString();
-        var builder = new StringBuilder(source.Length);
-        var position = 0;
-
-        foreach (var edit in edits.OrderBy(edit => edit.Span.Start))
-        {
-            // The walk never descends into a replaced node, so overlaps only happen if an override rewrote a node
-            // and one of its ancestors. Keeping the outer edit is the safe reading.
-            if (edit.Span.Start < position || edit.Span.End > source.Length)
+            var visited = VisitTrivia(list[i]);
+            if (rewritten is null && visited == list[i])
                 continue;
 
-            builder.Append(source, position, edit.Span.Start - position);
-            builder.Append(edit.Text);
-            position = edit.Span.End;
+            rewritten ??= [.. list.Take(i)];
+            if (visited.RawKind != 0)
+            {
+                rewritten.Add(visited);
+            }
         }
 
-        builder.Append(source, position, source.Length - position);
-
-        var options = script.SyntaxTree?.Options ?? new ShellParseOptions(script.Dialect ?? ShellDialect.Bash);
-
-        return ShellSyntaxTree.ParseText(builder.ToString(), options).Root;
+        return rewritten is null ? list : new SyntaxTriviaList(rewritten);
     }
 
-    /// <summary>Finds the node that replaced <paramref name="original"/> in the reparsed script.</summary>
-    private static ShellSyntaxNode? FindCounterpart(ShellScriptSyntax rebuilt, ShellSyntaxNode original)
+    public virtual SyntaxList<TNode> VisitList<TNode>(SyntaxList<TNode> list)
+        where TNode : ShellSyntaxNode
     {
-        foreach (var candidate in rebuilt.DescendantNodesAndSelf())
+        List<TNode>? rewritten = null;
+        for (var i = 0; i < list.Count; i++)
         {
-            if (candidate.Kind == original.Kind && candidate.FullSpan.Start == original.FullSpan.Start)
-                return candidate;
+            var visited = Visit(list[i]) as TNode;
+            if (rewritten is null && visited is not null && ReferenceEquals(visited, list[i]))
+                continue;
+
+            rewritten ??= [.. list.Take(i)];
+            if (visited is not null)
+            {
+                rewritten.Add(visited);
+            }
         }
 
-        return null;
+        return rewritten is null ? list : new SyntaxList<TNode>(rewritten);
     }
 
-    private readonly record struct TextEdit(TextSpan Span, string Text);
+    /// <summary>Rewrites the elements of a separated list, keeping its separators in place.</summary>
+    public virtual SeparatedSyntaxList<TNode> VisitList<TNode>(SeparatedSyntaxList<TNode> list)
+        where TNode : ShellSyntaxNode
+    {
+        var withSeparators = list.GetWithSeparators();
+        List<SyntaxNodeOrToken>? rewritten = null;
+        for (var i = 0; i < withSeparators.Count; i++)
+        {
+            var item = withSeparators[i];
+            SyntaxNodeOrToken visited;
+            if (item.AsNode(out var node))
+            {
+                visited = Visit((ShellSyntaxNode)node) ?? node;
+            }
+            else
+            {
+                visited = VisitToken(item.AsToken());
+            }
+
+            if (rewritten is null && visited == item)
+                continue;
+
+            rewritten ??= [.. withSeparators.Take(i)];
+            rewritten.Add(visited);
+        }
+
+        return rewritten is null ? list : new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(rewritten));
+    }
+
+    public virtual SyntaxTokenList VisitList(SyntaxTokenList list)
+    {
+        List<SyntaxToken>? rewritten = null;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var visited = VisitToken(list[i]);
+            if (rewritten is null && visited == list[i])
+                continue;
+
+            rewritten ??= [.. list.Take(i)];
+            rewritten.Add(visited);
+        }
+
+        return rewritten is null ? list : new SyntaxTokenList(rewritten);
+    }
 }

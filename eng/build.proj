@@ -19,4 +19,13 @@
     <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </ItemGroup>
+
+  <!-- The database server tests drive a real client (Microsoft.Data.SqlClient, Npgsql), which
+       needs globalization data, so every test class in these projects is skipped in invariant
+       globalization mode. A traversal left with only these projects runs zero tests, which the
+       test runner reports as a failure, so the traversals that run tests drop them. -->
+  <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND '$(InvariantGlobalization)' == 'true'">
+    <ProjectReference Remove="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
+  </ItemGroup>
 </Project>

@@ -681,6 +681,20 @@ public sealed partial class SnapshotEndToEndTests
         ]);
     }
 
+    [Theory]
+    [InlineData(SnapshotTestFramework.XunitV3)]
+    [InlineData(SnapshotTestFramework.NUnit)]
+    [InlineData(SnapshotTestFramework.TUnit)]
+    public async Task Validate_EndToEnd_UsesTestClassName_WhenCalledFromAsyncHelperInAnotherClass(SnapshotTestFramework testFramework)
+    {
+        var snapshotFiles = await AssertSnapshot(GetAsyncHelperSource(testFramework), testFramework: testFramework);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
     [Fact]
     public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput()
     {
@@ -916,6 +930,65 @@ public sealed partial class SnapshotEndToEndTests
         File.WriteAllText(snapshotPath, "-- not valid Visual Basic --");
 
         await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["build", "--disable-build-servers"], expectedExitCode: 0);
+    }
+
+    private static string GetAsyncHelperSource(SnapshotTestFramework framework)
+    {
+        // The helper awaits before asserting, so the test method is no longer on the call stack and only the
+        // test framework context can tell which test is running.
+        const string Helper = """
+            using System.Runtime.CompilerServices;
+            using System.Threading.Tasks;
+
+            public static class SnapshotHelpers
+            {
+                public static async Task ValidateAsync(object value, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                {
+                    await Task.Yield();
+                    Snapshot.Validate(value, null, SnapshotTestUtilities.CreateSuccessSettings(), filePath, lineNumber);
+                }
+            }
+
+            """;
+
+        return Helper + framework switch
+        {
+            SnapshotTestFramework.XunitV3 =>
+                """
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Fact]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            SnapshotTestFramework.NUnit =>
+                """
+                [TestFixture]
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            SnapshotTestFramework.TUnit =>
+                """
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            _ => throw new ArgumentOutOfRangeException(nameof(framework), framework, null),
+        };
     }
 
     private static string GetFrameworkSmokeSource(SnapshotTestFramework framework)

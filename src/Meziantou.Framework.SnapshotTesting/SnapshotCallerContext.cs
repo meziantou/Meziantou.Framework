@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
-internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? ContainingTypeName, string? MemberName, int LineNumber)
+internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, string MethodName, string? ContainingTypeName, string? MemberName, int LineNumber, bool TestMethodResolved)
 {
     [GeneratedRegex(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
     private static partial Regex LambdaContainingMethodNameRegex { get; }
@@ -33,6 +33,7 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
         var stackAnalysisStartIndex = GetStackAnalysisStartIndex(stackTrace);
         string? discoveredMethodName = null;
         string? discoveredContainingTypeName = null;
+        var testMethodResolved = false;
 
         for (var i = stackAnalysisStartIndex; i < stackTrace.FrameCount; i++)
         {
@@ -47,6 +48,7 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
             {
                 discoveredMethodName = stackFrameMethod.NormalizedMethodName;
                 discoveredContainingTypeName = stackFrameMethod.NormalizedTypeName;
+                testMethodResolved = true;
                 break;
             }
 
@@ -73,7 +75,7 @@ internal sealed partial record SnapshotCallerContext(FullPath SourceFilePath, st
             throw new SnapshotException("Cannot find the file to update from the call stack. The PDB may be missing.");
 
         discoveredMethodName ??= memberName ?? "Snapshot";
-        return new SnapshotCallerContext(ResolveSourceFilePath(sourceFilePath), discoveredMethodName, discoveredContainingTypeName, memberName, lineNumber);
+        return new SnapshotCallerContext(ResolveSourceFilePath(sourceFilePath), discoveredMethodName, discoveredContainingTypeName, memberName, lineNumber, testMethodResolved);
     }
 
     private static int GetStackAnalysisStartIndex(StackTrace stackTrace)

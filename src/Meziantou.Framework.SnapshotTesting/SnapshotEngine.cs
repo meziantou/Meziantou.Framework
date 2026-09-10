@@ -256,6 +256,18 @@ internal static class SnapshotEngine
         IReadOnlyList<SnapshotData> serialized,
         SnapshotTestContext? testContext)
     {
+        // The call stack only contains the test method as long as the assertion runs synchronously below it.
+        // A helper method that awaited before asserting runs on a continuation where the test method is gone,
+        // and the innermost frames then describe the helper. The test framework still knows which test is
+        // running, so its own view wins whenever the stack could not produce one.
+        var className = callerContext.ContainingTypeName;
+        var methodName = callerContext.MethodName;
+        if (!callerContext.TestMethodResolved)
+        {
+            className = testContext?.ClassName ?? className;
+            methodName = testContext?.MethodName ?? methodName;
+        }
+
         var result = new List<SnapshotFile>(serialized.Count);
         for (var index = 0; index < serialized.Count; index++)
         {
@@ -263,8 +275,8 @@ internal static class SnapshotEngine
             var extension = ResolveSnapshotExtension(type, snapshotData);
             var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
                 callerContext.SourceFilePath,
-                callerContext.ContainingTypeName,
-                callerContext.MethodName,
+                className,
+                methodName,
                 callerContext.LineNumber,
                 type,
                 index,

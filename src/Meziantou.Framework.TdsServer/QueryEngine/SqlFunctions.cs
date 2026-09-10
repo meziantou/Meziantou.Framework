@@ -315,7 +315,7 @@ internal static class SqlFunctions
     {
         ValidateArgCount(arguments, expectedCount: 2, "ROUND");
 
-        // T-SQL rounds a halfway value away from zero, while Math.Round(double, int) rounds it to even.
+        // T-SQL rounds midpoint values away from zero whereas Math.Round(double, int) defaults to ties-to-even.
         return Expression.Call(
             typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
             EnsureDouble(arguments[0]),

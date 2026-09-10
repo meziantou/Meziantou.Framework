@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- Every test that goes through SqlClient is skipped when globalization is invariant -->
+    <!-- All the tests are skipped when globalization is invariant -->
     <MinimumExpectedTests>0</MinimumExpectedTests>
   </PropertyGroup>
 

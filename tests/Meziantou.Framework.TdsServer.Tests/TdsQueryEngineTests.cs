@@ -2668,6 +2668,28 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointAwayFromZero()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(2.5, 0) AS PositiveMidpoint, ROUND(-2.5, 0) AS NegativeMidpoint, ROUND(0.25, 1) AS PositiveScaledMidpoint, ROUND(-0.25, 1) AS NegativeScaledMidpoint
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            PositiveMidpoint NegativeMidpoint PositiveScaledMidpoint NegativeScaledMidpoint
+            3 -3 0.3 -0.3
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {PositiveMidpoint = Round(Convert(ConvertToTypeCore(Convert(2.5, Object), System.Double), Double), 0, AwayFromZero), NegativeMidpoint = Round(Convert(ConvertToTypeCore(Convert(-2.5, Object), System.Double), Double), 0, AwayFromZero), PositiveScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(0.25, Object), System.Double), Double), 1, AwayFromZero), NegativeScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(-0.25, Object), System.Double), Double), 1, AwayFromZero)})");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_CeilingFunction_ReturnsFilteredRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -3726,28 +3748,6 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
-    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointsAwayFromZero()
-    {
-        var queryEngineOptions = CreateQueryEngineOptions();
-
-        await ExecuteQuery(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT ROUND(2.5, 0) AS Positive, ROUND(-2.5, 0) AS Negative
-                    FROM customers
-                    WHERE Id = 1
-                    """;
-            },
-            """
-            Positive Negative
-            3 -3
-            """,
-            expectedMaterializedQueries: null);
-    }
-
-    [Fact]
     public async Task SqlClient_QueryEngine_DistinctWithOffsetFetch_PagesTheDistinctRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -3768,6 +3768,28 @@ public sealed class TdsQueryEngineTests
             2
             """,
             expectedMaterializedQueries: "DuplicateIdRow[].Select(duplicateIdRow => new TdsProjection() {Id = duplicateIdRow.Id}).Distinct().OrderBy(projection => projection.Id).Skip(1).Take(1)");
+    }
+
+    [Fact]
+    public void ProjectionTypeCache_WhenTheShapeLimitIsReached_KeepsServingKnownShapesAndRejectsNewOnes()
+    {
+        // The shared cache is process-wide and its emitted types can never be reclaimed, so the limit is
+        // exercised on a private cache instead of by sending 1024 distinct aliases through a server.
+        var cache = new TdsProjectionTypeCache(maxCachedTypes: 2);
+        var first = cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]);
+        var second = cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]);
+
+        Assert.NotSame(first, second);
+
+        var exception = Assert.Throws<TdsQueryEngineException>(() => cache.GetProjectionType([new TdsProjectionMember("Third", typeof(int))]));
+        Assert.Contains("2 distinct query projection shapes", exception.Message);
+
+        // Carrier types draw from the same budget as projection types.
+        _ = Assert.Throws<TdsQueryEngineException>(() => cache.GetCarrierType([new TdsProjectionMember("First", typeof(int))]));
+
+        // A shape that was cached before the limit was reached keeps being served.
+        Assert.Same(first, cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]));
+        Assert.Same(second, cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]));
     }
 
     private static TdsQueryEngineOptions CreateQueryEngineOptions()

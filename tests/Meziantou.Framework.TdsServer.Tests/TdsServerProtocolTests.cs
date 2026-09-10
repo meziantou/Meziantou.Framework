@@ -600,6 +600,51 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(payload, parameter.AsBinary());
     }
 
+    [Theory]
+    [InlineData(50)]
+    [InlineData(-1)]
+    public async Task SqlClient_RpcParameter_VarChar_WithNonAsciiCharacters_PreservesValue(int size)
+    {
+        // varchar values are not Unicode: the client encodes them with the code page of the collation the server
+        // advertised at login (CP1252 here), so 'é' travels as the single byte 0xE9.
+        const string Expected = "café €";
+
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @value";
+        _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.VarChar, size) { Value = Expected });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(capturedContext.HasCompleteParameters);
+        var parameter = Assert.Single(capturedContext.Parameters, candidate => candidate.Name == "@value");
+        Assert.Equal(Expected, parameter.AsString());
+    }
+
     [Fact]
     public async Task SqlClient_RpcParameters_CommonSqlTypes_AreAllDecoded()
     {
@@ -731,6 +776,67 @@ public sealed class TdsServerProtocolTests
 
         Assert.False(context.HasCompleteParameters);
         Assert.Empty(context.Parameters);
+    }
+
+    [Fact]
+    public async Task RawClient_RpcParameter_VarChar_WithAWindowsCollation_UsesTheLocaleCodePage()
+    {
+        // Latin1_General_CI_AS: LCID 0x0409 and no sort id, so the code page comes from the locale.
+        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x00, 0x00], [0x63, 0x61, 0x66, 0xE9]));
+
+        Assert.True(context.HasCompleteParameters);
+        var parameter = Assert.Single(context.Parameters);
+        Assert.Equal("café", parameter.AsString());
+    }
+
+    [Fact]
+    public async Task RawClient_RpcParameter_VarChar_WithAJapaneseCollation_UsesTheSortIdCodePage()
+    {
+        // Japanese_CI_AS: sort id 192 names code page 932, which is nothing like the Latin code pages.
+        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x11, 0x04, 0xD0, 0x00, 192], [0x93, 0xFA, 0x96, 0x7B]));
+
+        Assert.True(context.HasCompleteParameters);
+        var parameter = Assert.Single(context.Parameters);
+        Assert.Equal("日本", parameter.AsString());
+    }
+
+    [Fact]
+    public async Task RawClient_RpcParameter_VarChar_WithAUtf8Collation_IsDecodedAsUtf8()
+    {
+        // A UTF-8 collation keeps the LCID of the Windows collation it derives from, so only the flag at bit 26
+        // tells the two apart.
+        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x04, 0x00], [0x63, 0x61, 0x66, 0xC3, 0xA9]));
+
+        Assert.True(context.HasCompleteParameters);
+        var parameter = Assert.Single(context.Parameters);
+        Assert.Equal("café", parameter.AsString());
+    }
+
+    [Fact]
+    public async Task RawClient_RpcParameter_VarChar_WithAnUnknownCollation_ReportsIncompleteParameters()
+    {
+        // Decoding with an arbitrary code page would replace every byte the encoding cannot map, which loses the
+        // value without saying so. An unknown collation has to take the same path as an unknown type.
+        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x00, 0xFF], [0x63, 0x61, 0x66, 0xE9]));
+
+        Assert.False(context.HasCompleteParameters);
+        Assert.Empty(context.Parameters);
+    }
+
+    private static byte[] CreateVarCharRpcPayload(byte[] collation, byte[] value)
+    {
+        var payload = new List<byte> { 0x01, 0x00 };
+        payload.AddRange(Encoding.Unicode.GetBytes("p"));
+        payload.AddRange([0x00, 0x00]); // option flags
+        payload.Add(0x02); // parameter name length, in characters
+        payload.AddRange(Encoding.Unicode.GetBytes("@v"));
+        payload.Add(0x00); // status
+        payload.Add(0xA7); // BIGVARCHRTYPE
+        payload.AddRange([0x40, 0x1F]); // max length: 8000
+        payload.AddRange(collation);
+        payload.AddRange([(byte)value.Length, 0x00]); // value length
+        payload.AddRange(value);
+        return [.. payload];
     }
 
     private static async Task<TdsQueryContext> SendRawRpcRequestAsync(byte[] rpcPayload)

@@ -11,7 +11,6 @@
 #nullable enable
 
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework.Threading.Tasks;
 
@@ -65,16 +64,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1>> WhenAll<T1>(ValueTask<T1> task1)
+    public static ValueTask<ValueTuple<T1>> WhenAll<T1>(ValueTask<T1> task1)
+    {
+        if (task1.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1>(task1.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1>(TaskCompletionSource<ValueTuple<T1>> taskCompletionSource, ValueTask<T1> task1)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -82,7 +92,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -94,12 +104,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1>(result1));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1>> GetAwaiter<T1>(this ValueTuple<ValueTask<T1>> tasks) => WhenAll(tasks.Item1).GetAwaiter();
@@ -108,16 +122,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2>> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
+    public static ValueTask<ValueTuple<T1, T2>> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2>(task1.Result, task2.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2>(TaskCompletionSource<ValueTuple<T1, T2>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -125,7 +150,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -141,7 +166,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -153,12 +178,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2>(result1, result2));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this ValueTuple<ValueTask<T1>, ValueTask<T2>> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
@@ -167,16 +196,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
+    public static ValueTask<ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2, T3>(task1.Result, task2.Result, task3.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3>(TaskCompletionSource<ValueTuple<T1, T2, T3>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -184,7 +224,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -200,7 +240,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -216,7 +256,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result3);
         }
         catch (Exception ex)
@@ -228,12 +268,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2, result3);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3>(result1, result2, result3));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
@@ -242,16 +286,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
+    public static ValueTask<ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2, T3, T4>(task1.Result, task2.Result, task3.Result, task4.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -259,7 +314,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -275,7 +330,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -291,7 +346,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result3);
         }
         catch (Exception ex)
@@ -307,7 +362,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result4);
         }
         catch (Exception ex)
@@ -319,12 +374,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2, result3, result4);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4>(result1, result2, result3, result4));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
@@ -333,16 +392,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2, T3, T4, T5>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -350,7 +420,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -366,7 +436,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -382,7 +452,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result3);
         }
         catch (Exception ex)
@@ -398,7 +468,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result4);
         }
         catch (Exception ex)
@@ -414,7 +484,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result5);
         }
         catch (Exception ex)
@@ -426,12 +496,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2, result3, result4, result5);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5>(result1, result2, result3, result4, result5));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
@@ -440,16 +514,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2, T3, T4, T5, T6>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5, T6>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -457,7 +542,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -473,7 +558,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -489,7 +574,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result3);
         }
         catch (Exception ex)
@@ -505,7 +590,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result4);
         }
         catch (Exception ex)
@@ -521,7 +606,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result5);
         }
         catch (Exception ex)
@@ -537,7 +622,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result6);
         }
         catch (Exception ex)
@@ -549,12 +634,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2, result3, result4, result5, result6);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5, T6>(result1, result2, result3, result4, result5, result6));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
@@ -563,16 +652,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully && task7.IsCompletedSuccessfully)
+        {
+            return new(new ValueTuple<T1, T2, T3, T4, T5, T6, T7>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result, task7.Result));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6, T7>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6, task7);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5, T6, T7>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         T1 result1;
         try
         {
@@ -580,7 +680,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result1);
         }
         catch (Exception ex)
@@ -596,7 +696,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result2);
         }
         catch (Exception ex)
@@ -612,7 +712,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result3);
         }
         catch (Exception ex)
@@ -628,7 +728,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result4);
         }
         catch (Exception ex)
@@ -644,7 +744,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result5);
         }
         catch (Exception ex)
@@ -660,7 +760,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result6);
         }
         catch (Exception ex)
@@ -676,7 +776,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result7);
         }
         catch (Exception ex)
@@ -688,27 +788,45 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(result1, result2, result3, result4, result5, result6, result7);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5, T6, T7>(result1, result2, result3, result4, result5, result6, result7));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
     private static ValueTask WhenAll(ValueTask task1) => task1;
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -721,7 +839,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -731,24 +849,45 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -761,7 +900,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -774,7 +913,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -784,24 +923,46 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -814,7 +975,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -827,7 +988,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -840,7 +1001,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -850,24 +1011,47 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -880,7 +1064,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -893,7 +1077,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -906,7 +1090,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -919,7 +1103,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -929,24 +1113,48 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            task6.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -959,7 +1167,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -972,7 +1180,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -985,7 +1193,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -998,7 +1206,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1011,7 +1219,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1021,24 +1229,49 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully && task7.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            task6.GetAwaiter().GetResult();
+            task7.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6, task7);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
         try
         {
             await task1.ConfigureAwait(false);
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1051,7 +1284,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1064,7 +1297,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1077,7 +1310,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1090,7 +1323,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1103,7 +1336,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1116,7 +1349,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -1126,10 +1359,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();

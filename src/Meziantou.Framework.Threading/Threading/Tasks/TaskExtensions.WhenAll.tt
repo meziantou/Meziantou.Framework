@@ -16,7 +16,6 @@
 #nullable enable
 
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework.Threading.Tasks;
 
@@ -47,16 +46,27 @@ public static partial class TaskExtensions
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
-    /// All the tasks are awaited, even when one of them does not complete successfully. If at least one task fails,
-    /// the returned task fails with an <see cref="AggregateException"/> containing every observed failure. Otherwise,
-    /// if at least one task is canceled, the returned task is canceled with the first observed
-    /// <see cref="OperationCanceledException"/>. Faults therefore take precedence over cancellations, which matches
-    /// the behavior of <see cref="Task.WhenAll(Task[])"/>.
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
     /// </remarks>
-    public static async ValueTask<ValueTuple<<#= GetTemplateString(i) #>>> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    public static ValueTask<ValueTuple<<#= GetTemplateString(i) #>>> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    {
+        if (<#= Join(" && ", i, i => "task" + i + ".IsCompletedSuccessfully") #>)
+        {
+            return new(new ValueTuple<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "task" + i + ".Result") #>));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<<#= GetTemplateString(i) #>>>();
+        _ = CompleteWhenAll(taskCompletionSource, <#= Join(", ", i, i => "task" + i) #>);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<<#= GetTemplateString(i) #>>(TaskCompletionSource<ValueTuple<<#= GetTemplateString(i) #>>> taskCompletionSource, <#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
 <# for (int j = 1; j <= i; j++) { #>
         T<#=j#> result<#=j#>;
         try
@@ -65,7 +75,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
             Unsafe.SkipInit(out result<#=j#>);
         }
         catch (Exception ex)
@@ -78,22 +88,41 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
-
-        return new(<#= Join(", ", i, i => "result" + i) #>);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "result" + i) #>));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<<#= GetTemplateString(i) #>>> GetAwaiter<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
 <# } #>
     private static ValueTask WhenAll(ValueTask task1) => task1;
 <# for (int i = 2; i <= count; i++) { #>
-    private static async ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
+    private static ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
+    {
+        if (<#= Join(" && ", i, i => "task" + i + ".IsCompletedSuccessfully") #>)
+        {
+<# for (int j = 1; j <= i; j++) { #>
+            task<#=j#>.GetAwaiter().GetResult();
+<# } #>
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, <#= Join(", ", i, i => "task" + i) #>);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, <#= Join(", ", i, i => "ValueTask task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
-        ExceptionDispatchInfo? observedCancellation = null;
+        CancellationToken? observedCancellation = null;
 <# for (int j = 1; j <= i; j++) { #>
         try
         {
@@ -101,7 +130,7 @@ public static partial class TaskExtensions
         }
         catch (OperationCanceledException ex)
         {
-            observedCancellation ??= ExceptionDispatchInfo.Capture(ex);
+            observedCancellation ??= ex.CancellationToken;
         }
         catch (Exception ex)
         {
@@ -112,10 +141,16 @@ public static partial class TaskExtensions
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        observedCancellation?.Throw();
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
+        }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<<#= Join(", ", i, i => "ValueTask") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();

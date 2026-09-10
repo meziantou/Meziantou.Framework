@@ -63,6 +63,33 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
+    public void WhenAll_ConfigureAwait_SuppressThrowingIsRejectedWhenTheTasksHaveAResult()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing));
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void WhenAll_ConfigureAwait_SuppressThrowingIsRejectedWhenCombinedWithOtherOptions()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing));
+    }
+
+    [Fact]
+    public async Task WhenAll_ConfigureAwait_OtherOptionsAreStillSupportedWhenTheTasksHaveAResult()
+    {
+        var (a, b) = await (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext);
+        Assert.Equal(0, a);
+        Assert.Equal("test", b);
+    }
+
+    [Fact]
+    public async Task WhenAll_NonGenericTask_ConfigureAwait_SuppressThrowingIsSupported()
+    {
+        await (Task.CompletedTask, Task.FromException(new InvalidOperationException("test"))).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    [Fact]
     [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
     public async Task WhenAll_ValueTask()
     {

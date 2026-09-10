@@ -27,17 +27,98 @@ public static partial class TaskExtensions
     public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
     public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);
     public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
     public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
     public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
     public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
     public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
     public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
-    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+
+    /// <summary>
+    /// Configures how the awaits on the tasks are performed.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="options"/> contains <see cref="ConfigureAwaitOptions.SuppressThrowing"/>, which the tasks results cannot express.
+    /// </exception>
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options)
+    {
+        ThrowIfSuppressThrowing(options);
+        return new(tasks, options);
+    }
+
+    /// <summary>
+    /// Rejects <see cref="ConfigureAwaitOptions.SuppressThrowing"/> the way <see cref="Task{TResult}.ConfigureAwait(ConfigureAwaitOptions)"/> does.
+    /// </summary>
+    /// <remarks>
+    /// A tuple of tasks that have a result has no value to return once the exception is suppressed, so the option is rejected
+    /// instead of being honored. Tuples of non-generic tasks support it.
+    /// </remarks>
+    private static void ThrowIfSuppressThrowing(ConfigureAwaitOptions options)
+    {
+        if ((options & ConfigureAwaitOptions.SuppressThrowing) is not 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "ConfigureAwaitOptions.SuppressThrowing is not supported for tasks that have a result, as there would be no result to return. To suppress throwing, cast each Task<TResult> to its base class Task and await the resulting tuple.");
+        }
+    }
     public static TaskAwaiter GetAwaiter(this ValueTuple<Task> tasks) => tasks.Item1.GetAwaiter();
     public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
     public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);

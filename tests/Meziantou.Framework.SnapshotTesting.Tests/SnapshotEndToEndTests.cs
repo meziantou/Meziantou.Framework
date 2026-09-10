@@ -141,19 +141,42 @@ public sealed partial class SnapshotEndToEndTests
     [Fact]
     public async Task Validate_EndToEnd_Fails_WhenExpectedHasMoreFilesThanActual()
     {
+        // The assertion used to produce two snapshots and now produces one, so the indexed files it left
+        // behind are reported as unexpected and the file it produces now is reported as missing.
         var snapshotFiles = await AssertSnapshot(
             CreateFixedCountSerializerSource(count: 1),
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"u8.ToArray()),
                 new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.actual.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"),
             ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Succeeds_WhenAnotherTestOwnsAFileWithAnIndexSuffix()
+    {
+        // 'SampleTest_1' is the snapshot of a test called SampleTest_1, not a file this assertion left
+        // behind: there is no 'SampleTest_0' to make it the tail of an index sequence.
+        var snapshotFiles = await AssertSnapshot(
+            CreateFixedCountSerializerSource(count: 1),
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "unrelated"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "unrelated"),
         ]);
     }
 

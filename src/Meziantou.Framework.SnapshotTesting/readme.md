@@ -51,7 +51,10 @@ Notes:
 - By default, snapshot names include class name and test name to avoid collisions across test classes.
 - `.actual` files are always written when a snapshot does not match.
 - If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
-- If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
+- If names are too long, already end with `.verified` / `.actual`, or contain characters that are not
+  valid in a file name, a stable hash is added. Removing those characters would let two test names -
+  `Case_a/b` and `Case_a?b`, say - claim the same snapshot file, and the hash keeps them apart. The hash
+  does not depend on where the repository is checked out.
 
 ## Storing snapshots in git
 

@@ -144,8 +144,12 @@ public sealed record SnapshotSettings
             }
         }
 
-        var rawStartPart = context.Settings.SnapshotNamingStrategy(context);
-        var startPart = SanitizeFragment(rawStartPart ?? "");
+        var rawStartPart = context.Settings.SnapshotNamingStrategy(context) ?? "";
+        var startPart = SanitizeFragment(rawStartPart);
+
+        // Sanitizing loses information - 'Case_a/b' and 'Case_a?b' both become 'Case_a_b' - so a name it
+        // changed only stays distinct once the hash of the original name is part of the file name.
+        var isNameSanitized = !string.Equals(startPart, rawStartPart, StringComparison.Ordinal);
         if (startPart.Length == 0)
         {
             startPart = "snapshot";
@@ -155,6 +159,7 @@ public sealed record SnapshotSettings
         var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
         var suffixWithoutHash = hasMultipleSnapshots ? "_" + indexPart + ".verified." + extension : ".verified." + extension;
         var shouldAddHashSuffix =
+            isNameSanitized ||
             startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
             IsReservedSnapshotName(startPart);
 
@@ -164,7 +169,10 @@ public sealed record SnapshotSettings
             // The line number is deliberately not part of the hash: it would rename the snapshot whenever
             // anything above the assertion moves, and it adds no uniqueness since two assertions in one
             // test are already separated by the index suffix.
-            var hashInput = $"{context.SourceFilePath}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+            // The source file name is used rather than its full path: the snapshot is stored next to the
+            // source file, so the name is enough to tell two files of that directory apart, while the
+            // absolute path would tie the file name to where the repository happens to be checked out.
+            var hashInput = $"{context.SourceFilePath.Name}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
             var hash = ToHexSha256(hashInput, length: 8);
             suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
         }

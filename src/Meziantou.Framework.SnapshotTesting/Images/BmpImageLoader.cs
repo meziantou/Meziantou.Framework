@@ -13,6 +13,9 @@ internal static class BmpImageLoader
     {
         const int BmpFileHeaderSize = 14;
         const int BmpInfoHeaderSize = 40;
+        const int BmpV4HeaderSize = 108;
+        const int BmpV4AlphaMaskOffset = BmpFileHeaderSize + 52;
+        const uint StandardAlphaMask = 0xFF000000;
 
         if (data.Length < BmpFileHeaderSize + BmpInfoHeaderSize)
             throw new InvalidDataException("The BMP data is too small.");
@@ -49,6 +52,15 @@ internal static class BmpImageLoader
         if (pixelDataOffset < BmpFileHeaderSize + dibHeaderSize || pixelDataOffset >= data.Length)
             throw new InvalidDataException("The BMP pixel data offset is invalid.");
 
+        // The fourth byte of a 32-bit pixel is only an alpha channel when the header declares an alpha mask,
+        // which BITMAPV4HEADER is the first to carry. A plain BITMAPINFOHEADER leaves that byte unused, and
+        // writers commonly leave it at zero, so reading it as alpha makes an opaque image fully transparent.
+        var alphaMask = bitsPerPixel == 32 && dibHeaderSize >= BmpV4HeaderSize
+            ? ReadUInt32LittleEndian(data, BmpV4AlphaMaskOffset)
+            : 0;
+        if (alphaMask is not 0 and not StandardAlphaMask)
+            throw new NotSupportedException("Unsupported BMP alpha mask.");
+
         var bytesPerPixel = bitsPerPixel / 8;
         var absoluteHeight = Math.Abs(height);
         var topDown = height < 0;
@@ -72,7 +84,7 @@ internal static class BmpImageLoader
                 var b = data[pixelOffset];
                 var g = data[pixelOffset + 1];
                 var r = data[pixelOffset + 2];
-                var a = bitsPerPixel == 32 ? data[pixelOffset + 3] : (byte)0xFF;
+                var a = alphaMask is StandardAlphaMask ? data[pixelOffset + 3] : (byte)0xFF;
                 pixels[destinationOffset + x] = new Argb((uint)(a << 24 | r << 16 | g << 8 | b));
             }
         }

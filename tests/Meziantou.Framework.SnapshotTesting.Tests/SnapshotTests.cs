@@ -107,7 +107,7 @@ public sealed partial class SnapshotTests
             Type: SnapshotType.Default,
             Index: 2,
             Extension: "png",
-            TestContext: new SnapshotTestContext(TestName: "Image snapshot"),
+            TestContext: new SnapshotTestContext(TestName: "Image_snapshot"),
             Settings: settings,
             SnapshotCount: 3);
 
@@ -129,7 +129,7 @@ public sealed partial class SnapshotTests
             Type: SnapshotType.Default,
             Index: 0,
             Extension: "png",
-            TestContext: new SnapshotTestContext(TestName: "Image snapshot"),
+            TestContext: new SnapshotTestContext(TestName: "Image_snapshot"),
             Settings: settings,
             SnapshotCount: 1);
 
@@ -1843,4 +1843,273 @@ public sealed partial class SnapshotTests
 
     [GeneratedRegex("Line[2]", RegexOptions.None, matchTimeoutMilliseconds: 10000)]
     private static partial Regex Line2Regex();
+
+    [Fact]
+    public void Validate_ForceUpdate_WritesTheCurrentSnapshotOverAStaleActualFile()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "correct") with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            ForceUpdateSnapshots = true,
+        };
+
+        var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
+        File.WriteAllText(verifiedPath, "correct");
+        File.WriteAllText(directory.GetFullPath("snapshot.actual.txt"), "wrong");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("correct", File.ReadAllText(verifiedPath));
+    }
+
+    [Fact]
+    public void Validate_ForceUpdate_SucceedsWhenTheSnapshotMatchesAndNoActualFileExists()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "correct") with
+        {
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            ForceUpdateSnapshots = true,
+        };
+
+        var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
+        File.WriteAllText(verifiedPath, "correct");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("correct", File.ReadAllText(verifiedPath));
+    }
+
+    [Fact]
+    public void Validate_ForceUpdate_WritesEverySnapshotWhenOnlySomeOfThemChanged()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"),
+            ForceUpdateSnapshots = true,
+        };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+
+        File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
+        File.WriteAllText(directory.GetFullPath("snapshot_0.actual.txt"), "stale");
+        File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "outdated");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("value_0", File.ReadAllText(directory.GetFullPath("snapshot_0.verified.txt")));
+        Assert.Equal("value_1", File.ReadAllText(directory.GetFullPath("snapshot_1.verified.txt")));
+    }
+
+    [Fact]
+    public void Validate_KeepsTheSnapshotOfATestWhoseNameEndsWithAnIndex()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedValueSerializer("value"));
+
+        var siblingPath = directory.GetFullPath("snapshot_1.verified.txt");
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "value");
+        File.WriteAllText(siblingPath, "sibling");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.True(File.Exists(siblingPath));
+        Assert.Equal("sibling", File.ReadAllText(siblingPath));
+    }
+
+    [Fact]
+    public void Validate_DoesNotReportTheSnapshotOfATestWhoseNameEndsWithAnIndex()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedValueSerializer("value"));
+
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "value");
+        File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "sibling");
+
+        Snapshot.Validate("sample", settings);
+    }
+
+    [Fact]
+    public void Validate_DeletesTheIndexedSnapshotsLeftBehindWhenTheAssertionProducesASingleOne()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedValueSerializer("value"));
+
+        File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
+        File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "value_1");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("value", File.ReadAllText(directory.GetFullPath("snapshot.verified.txt")));
+        Assert.False(File.Exists(directory.GetFullPath("snapshot_0.verified.txt")));
+        Assert.False(File.Exists(directory.GetFullPath("snapshot_1.verified.txt")));
+    }
+
+    [Fact]
+    public void Validate_DeletesTheSingleSnapshotLeftBehindWhenTheAssertionProducesSeveral()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "value_0");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.False(File.Exists(directory.GetFullPath("snapshot.verified.txt")));
+        Assert.Equal("value_0", File.ReadAllText(directory.GetFullPath("snapshot_0.verified.txt")));
+        Assert.Equal("value_1", File.ReadAllText(directory.GetFullPath("snapshot_1.verified.txt")));
+    }
+
+    [Fact]
+    public void Validate_ReportsTheSingleSnapshotLeftBehindWhenTheAssertionProducesSeveral()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+
+        var obsoletePath = directory.GetFullPath("snapshot.verified.txt");
+        File.WriteAllText(obsoletePath, "value_0");
+        File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
+        File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "value_1");
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+
+        Assert.Contains("Unexpected snapshot files:", exception.Message);
+        Assert.Contains(obsoletePath.Value, exception.Message);
+    }
+
+    [Fact]
+    public void Validate_ComparesEachSnapshotFileOnce()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var comparer = new RecordingSnapshotComparer();
+        var settings = CreateDeterministicSnapshotSettings(directory, "actual");
+        settings.Comparers.Set(SnapshotType.Default, comparer);
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "expected");
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+
+        Assert.Equal(1, comparer.InvocationCount);
+    }
+
+    [Fact]
+    public void DefaultSnapshotPath_DoesNotDependOnTheCheckoutDirectory()
+    {
+        var settings = new SnapshotSettings();
+        var methodName = "SampleTest" + new string('a', 200);
+
+        SnapshotPathContext CreateContext(string root) => new(
+            FullPath.FromPath(Path.Combine(root, "Tests", "SampleTests.cs")),
+            "SampleTests",
+            methodName,
+            LineNumber: 12,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: null,
+            settings);
+
+        var firstCheckout = settings.SnapshotPathStrategy(CreateContext(Path.Combine(Path.GetTempPath(), "repo-a")));
+        var secondCheckout = settings.SnapshotPathStrategy(CreateContext(Path.Combine(Path.GetTempPath(), "repo-b")));
+
+        Assert.Equal(firstCheckout.Name, secondCheckout.Name);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), firstCheckout.Name);
+    }
+
+    [Fact]
+    public void DefaultSnapshotPath_DistinguishesTestNamesThatSanitizeToTheSameFileName()
+    {
+        var settings = new SnapshotSettings();
+
+        SnapshotPathContext CreateContext(string testName) => new(
+            FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            "SampleTests",
+            "SampleTheory",
+            LineNumber: 12,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            new SnapshotTestContext(TestName: testName),
+            settings);
+
+        var slash = settings.SnapshotPathStrategy(CreateContext("Case_a/b"));
+        var question = settings.SnapshotPathStrategy(CreateContext("Case_a?b"));
+
+        Assert.NotEqual(slash.Name, question.Name);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), slash.Name);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), question.Name);
+    }
+
+    [Fact]
+    public void DefaultSnapshotPath_DoesNotHashANameThatSanitizationLeavesUnchanged()
+    {
+        var settings = new SnapshotSettings();
+        var context = new SnapshotPathContext(
+            FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            "SampleTests",
+            "SampleTest",
+            LineNumber: 12,
+            SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: null,
+            settings);
+
+        var path = settings.SnapshotPathStrategy(context);
+
+        Assert.Equal("SampleTests_SampleTest.verified.txt", path.Name);
+    }
+
+    // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void SnapshotUpdateStrategy_Default_EnvironmentVariableNamingTheDefaultStrategy_UsesDisallow()
+    {
+        // Resolving 'Default' through the property lookup it is computed by used to recurse until the
+        // process ran out of stack.
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, nameof(SnapshotUpdateStrategy.Default));
+
+        var settings = new SnapshotSettings();
+
+        Assert.Same(SnapshotUpdateStrategy.Disallow, settings.SnapshotUpdateStrategy);
+    }
+
+    // Mirrors the default path strategy: several snapshots get an index suffix, a single one keeps the bare name.
+    private static SnapshotPathStrategy CreateIndexedSnapshotPathStrategy(TemporaryDirectory directory)
+    {
+        return context => directory / (context.SnapshotCount > 1
+            ? "snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"
+            : "snapshot.verified.txt");
+    }
 }

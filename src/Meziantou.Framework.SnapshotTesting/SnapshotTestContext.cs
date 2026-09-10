@@ -109,6 +109,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
             var metadataType = metadataProperty.PropertyType;
             var displayNameProperty = metadataType.GetProperty("DisplayName", BindingFlags.Public | BindingFlags.Instance);
             var testNameProperty = metadataType.GetProperty("TestName", BindingFlags.Public | BindingFlags.Instance);
+            var testDetailsProperty = metadataType.GetProperty("TestDetails", BindingFlags.Public | BindingFlags.Instance);
 
             return () =>
             {
@@ -122,8 +123,28 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     if (metadata is null)
                         return null;
 
-                    return displayNameProperty?.GetValue(metadata) as string ??
-                           testNameProperty?.GetValue(metadata) as string;
+                    var displayName = displayNameProperty?.GetValue(metadata) as string ??
+                                      testNameProperty?.GetValue(metadata) as string;
+
+                    var testDetails = testDetailsProperty?.GetValue(metadata);
+                    if (testDetails is null)
+                        return displayName;
+
+                    var methodName = GetStringPropertyValue(testDetails, "MethodName") ?? GetMethodName(displayName);
+                    if (methodName is null)
+                        return displayName;
+
+                    // The display name of a parameterized test spells the arguments out between parentheses.
+                    // Rebuilding the name from the method name and the arguments keeps the snapshot file name
+                    // readable, as the xunit and NUnit contexts do, while a name the user chose is kept.
+                    if (ShouldPreferDisplayName(displayName, methodName))
+                        return displayName;
+
+                    var arguments = GetObjectArrayPropertyValue(testDetails, "TestMethodArguments");
+                    if (arguments is null || arguments.Length == 0)
+                        return methodName;
+
+                    return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));
                 }
                 catch
                 {

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework.Collections.Concurrent;
 
@@ -10,6 +11,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private readonly SynchronizationContext _synchronizationContext;
 
     private volatile bool _isProcessingPending;
+    private int _isDraining;
 
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
         : base(collection)
@@ -102,7 +104,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         {
             // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            _collection[index] = (T)value!;
+            ((IList)_collection)[index] = value;
         }
     }
 
@@ -202,6 +204,37 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         EnqueueEvent(PendingEvent.InsertRange(index, items));
     }
 
+    /// <summary>Enqueues one <see cref="PendingEventType.Add"/> event per item of a range committed to the source collection.</summary>
+    internal void EnqueueAddRangeAsSingleItemEvents(System.Collections.Immutable.ImmutableList<T> items)
+    {
+        if (items.IsEmpty)
+            return;
+
+        // The whole range is queued before anything is dispatched. A handler invoked while dispatching can modify the
+        // source collection, and the events it enqueues must come after the ones of the range that is already committed.
+        foreach (var item in items)
+        {
+            _pendingEvents.Enqueue(PendingEvent.Add(item));
+        }
+
+        ProcessPendingEventsOrPost();
+    }
+
+    /// <summary>Enqueues one <see cref="PendingEventType.Insert"/> event per item of a range committed to the source collection.</summary>
+    internal void EnqueueInsertRangeAsSingleItemEvents(int index, System.Collections.Immutable.ImmutableList<T> items)
+    {
+        if (items.IsEmpty)
+            return;
+
+        foreach (var item in items)
+        {
+            _pendingEvents.Enqueue(PendingEvent.Insert(index, item));
+            index++;
+        }
+
+        ProcessPendingEventsOrPost();
+    }
+
     private void EnqueueEvent(PendingEvent<T> @event)
     {
         _pendingEvents.Enqueue(@event);
@@ -215,7 +248,18 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             if (!_isProcessingPending)
             {
                 _isProcessingPending = true;
-                _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
+                try
+                {
+                    _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
+                }
+                catch
+                {
+                    // The synchronization context refused the callback, so nothing will process the queue. The events stay
+                    // queued and the flag is restored, so the next modification posts again and raises every pending
+                    // notification as soon as the context accepts a callback.
+                    _isProcessingPending = false;
+                    throw;
+                }
             }
 
             return;
@@ -226,47 +270,95 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     private void ProcessPendingEvents()
     {
-        _isProcessingPending = false;
-        while (_pendingEvents.TryDequeue(out var pendingEvent))
+        // Only one drain at a time. A handler invoked below can modify the source collection, which enqueues new
+        // events and re-enters this method on the same thread: dispatching them right away would apply them before
+        // the events already queued and leave the view ordered differently from the source. The running loop picks
+        // them up instead.
+        if (Interlocked.Exchange(ref _isDraining, 1) is 1)
+            return;
+
+        List<Exception>? exceptions = null;
+        do
         {
-            switch (pendingEvent.Type)
+            try
             {
-                case PendingEventType.Add:
-                    AddItem(pendingEvent.Item);
-                    break;
-
-                case PendingEventType.AddRange:
-                    AddItems(pendingEvent.Items!);
-                    break;
-
-                case PendingEventType.Remove:
-                    RemoveItem(pendingEvent.Item);
-                    break;
-
-                case PendingEventType.Clear:
-                    ClearItems();
-                    break;
-
-                case PendingEventType.Insert:
-                    InsertItem(pendingEvent.Index, pendingEvent.Item);
-                    break;
-
-                case PendingEventType.InsertRange:
-                    InsertItems(pendingEvent.Index, pendingEvent.Items!);
-                    break;
-
-                case PendingEventType.RemoveAt:
-                    RemoveItemAt(pendingEvent.Index);
-                    break;
-
-                case PendingEventType.Replace:
-                    ReplaceItem(pendingEvent.Index, pendingEvent.Item);
-                    break;
-
-                case PendingEventType.Reset:
-                    Reset(pendingEvent.Items!);
-                    break;
+                _isProcessingPending = false;
+                while (_pendingEvents.TryDequeue(out var pendingEvent))
+                {
+                    try
+                    {
+                        ApplyPendingEvent(pendingEvent);
+                    }
+                    catch (Exception ex)
+                    {
+                        // The view is updated before its handlers are notified, so a handler that throws doesn't undo
+                        // the change. The remaining events are still applied to keep the view synchronized with the
+                        // source collection, and the failures are reported once the queue is drained.
+                        exceptions ??= [];
+                        exceptions.Add(ex);
+                    }
+                }
             }
+            finally
+            {
+                Volatile.Write(ref _isDraining, 0);
+            }
+
+            // Events enqueued while the drain was running are processed here instead of waiting for the next
+            // modification, unless another thread took over the drain in the meantime.
+        }
+        while (!_pendingEvents.IsEmpty && Interlocked.Exchange(ref _isDraining, 1) is 0);
+
+        if (exceptions is not null)
+        {
+            if (exceptions.Count is 1)
+            {
+                ExceptionDispatchInfo.Throw(exceptions[0]);
+            }
+
+            throw new AggregateException(exceptions);
+        }
+    }
+
+    private void ApplyPendingEvent(PendingEvent<T> pendingEvent)
+    {
+        switch (pendingEvent.Type)
+        {
+            case PendingEventType.Add:
+                AddItem(pendingEvent.Item);
+                break;
+
+            case PendingEventType.AddRange:
+                AddItems(pendingEvent.Items!);
+                break;
+
+            case PendingEventType.Remove:
+                RemoveItem(pendingEvent.Item);
+                break;
+
+            case PendingEventType.Clear:
+                ClearItems();
+                break;
+
+            case PendingEventType.Insert:
+                InsertItem(pendingEvent.Index, pendingEvent.Item);
+                break;
+
+            case PendingEventType.InsertRange:
+                InsertItems(pendingEvent.Index, pendingEvent.Items!);
+                break;
+
+            case PendingEventType.RemoveAt:
+                RemoveItemAt(pendingEvent.Index);
+                break;
+
+            case PendingEventType.Replace:
+                ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                break;
+
+            case PendingEventType.Reset:
+                Reset(pendingEvent.Items!);
+                break;
         }
     }
 
@@ -320,9 +412,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     bool IList.Contains(object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
+        // The lookup targets the replica, which can still be behind the source collection
         AssertIsOnSynchronizationContextThread();
-        return ((IList)_collection).Contains(value);
+        if (ConcurrentObservableCollection<T>.IsCompatibleObject(value))
+        {
+            return Contains((T)value!);
+        }
+
+        return false;
     }
 
     void IList.Clear()
@@ -335,7 +432,12 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     int IList.IndexOf(object? value)
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.IndexOf((T)value!);
+        if (ConcurrentObservableCollection<T>.IsCompatibleObject(value))
+        {
+            return IndexOf((T)value!);
+        }
+
+        return -1;
     }
 
     void IList.Insert(int index, object? value)

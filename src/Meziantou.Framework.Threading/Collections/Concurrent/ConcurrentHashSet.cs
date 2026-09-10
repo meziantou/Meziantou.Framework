@@ -17,6 +17,7 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// }
 /// ]]></code>
 /// </example>
+/// <remarks>The set comparison methods (<see cref="IsSubsetOf(IEnumerable{T})"/>, <see cref="IsSupersetOf(IEnumerable{T})"/>, <see cref="Overlaps(IEnumerable{T})"/>, <see cref="SetEquals(IEnumerable{T})"/> and their proper variants) do not take an atomic snapshot of the set: elements can be added or removed while they run, so their result is best-effort and only reflects a set that was not modified concurrently.</remarks>
 public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     where T : notnull
 {
@@ -153,11 +154,18 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a superset of a specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until an element that is not in the set is found, so the elements after it are never looked up.</remarks>
     public bool IsSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).IsSupersetOf(other);
+        foreach (var item in other)
+        {
+            if (!Contains(item))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper subset of a specified collection.</summary>
@@ -183,11 +191,21 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> overlaps with the specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> and <paramref name="other"/> share at least one common element; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until a common element is found, so the elements after it are never looked up. It is not enumerated at all when the set is empty.</remarks>
     public bool Overlaps(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).Overlaps(other);
+        if (IsEmpty)
+            return false;
+
+        foreach (var item in other)
+        {
+            if (Contains(item))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> and the specified collection contain the same elements.</summary>

@@ -8,8 +8,23 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// </summary>
 /// <typeparam name="T">The type of elements in the collection.</typeparam>
 /// <remarks>
+/// <para>
 /// The collection itself can be modified from any thread. The collection exposed by <see cref="AsObservable"/> raises
 /// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
+/// </para>
+/// <para>
+/// All the notifications of an operation are queued before any of them is raised, and the notifications are never raised
+/// recursively: a handler that modifies the collection gets the notifications of its own modification after the ones
+/// already queued, so <see cref="AsObservable"/> ends up in the same state as this collection. A handler that throws
+/// doesn't prevent the remaining notifications from being raised; the exception is rethrown to the caller of the
+/// modification once the queued notifications have all been raised, as an <see cref="AggregateException"/> when several
+/// handlers threw.
+/// </para>
+/// <para>
+/// When the synchronization context refuses the callback, for instance because the thread it is bound to is gone, the exception is
+/// propagated to the caller that modified the collection. The modification is kept, and its notification stays queued until a later
+/// modification succeeds in posting to the context.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -206,13 +221,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
             }
             else
             {
-                if (_observableCollection is not null)
-                {
-                    foreach (var item in Items.GetRange(count, Items.Count - count))
-                    {
-                        _observableCollection.EnqueueAdd(item);
-                    }
-                }
+                _observableCollection?.EnqueueAddRangeAsSingleItemEvents(Items.GetRange(count, Items.Count - count));
             }
         }
     }
@@ -233,15 +242,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
             }
             else
             {
-                if (_observableCollection is not null)
-                {
-                    var i = index;
-                    foreach (var item in Items.GetRange(index, addedItemsCount))
-                    {
-                        _observableCollection.EnqueueInsert(i, item);
-                        i++;
-                    }
-                }
+                _observableCollection?.EnqueueInsertRangeAsSingleItemEvents(index, Items.GetRange(index, addedItemsCount));
             }
         }
     }
@@ -446,7 +447,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         ((ICollection)Items).CopyTo(array, index);
     }
 
-    private static bool IsCompatibleObject(object? value)
+    internal static bool IsCompatibleObject(object? value)
     {
         // Non-null values are fine. Only accept nulls if T is a class or Nullable<U>.
         // Note that default(T) is not equal to null for value types except when T is Nullable<U>.

@@ -1,10 +1,12 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Shell;
 
-/// <summary>Base type for shell constructs that can appear in a statement list.</summary>
+/// <summary>A construct that can stand in a statement list.</summary>
 public abstract class ShellStatementSyntax : ShellSyntaxNode
 {
-    protected ShellStatementSyntax(ShellSyntaxKind kind, string fullText, int fullStart = 0, IReadOnlyList<ShellSyntaxToken>? tokens = null)
-        : base(kind, fullText, fullStart, tokens)
+    private protected ShellStatementSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
     }
 }

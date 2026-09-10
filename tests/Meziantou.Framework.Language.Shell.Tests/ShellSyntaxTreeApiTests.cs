@@ -94,8 +94,8 @@ public sealed class ShellSyntaxTreeApiTests
     [Fact]
     public void NodesCanBeComparedStructurallyToo()
     {
-        var a = ShellSyntaxTree.ParseText("echo   a", ShellDialect.Bash).Root.Statements.Statements[0];
-        var b = ShellSyntaxTree.ParseText("echo a", ShellDialect.Bash).Root.Statements.Statements[0];
+        var a = ShellSyntaxTree.ParseText("echo   a", ShellDialect.Bash).GetRoot().Statements.Statements[0];
+        var b = ShellSyntaxTree.ParseText("echo a", ShellDialect.Bash).GetRoot().Statements.Statements[0];
 
         Assert.True(a.IsEquivalentTo(b));
         Assert.True(a.IsEquivalentTo(a));

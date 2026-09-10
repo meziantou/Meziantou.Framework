@@ -47,12 +47,14 @@ public sealed class ResettableCancellationTokenSourceTests
 
         Assert.True(token.IsCancellationRequested);
         Assert.False(cts.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
     }
 
     [Fact]
     public void Reset_ProducesAFreshTokenAfterCancellation()
     {
         using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
         cts.Cancel();
         Assert.True(cts.IsCancellationRequested);
 
@@ -60,6 +62,99 @@ public sealed class ResettableCancellationTokenSourceTests
 
         Assert.False(cts.IsCancellationRequested);
         Assert.False(cts.Token.IsCancellationRequested);
+        Assert.NotEqual(token, cts.Token);
+    }
+
+    [Fact]
+    public void Reset_ReusesTheToken_WhenCancellationWasNotRequested()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var token = cts.Token;
+
+        cts.Reset();
+
+        Assert.Equal(token, cts.Token);
+
+        cts.Cancel();
+
+        Assert.True(token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_DropsTheRegistrationsOfTheReusedToken()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        var invoked = false;
+        using (cts.Token.Register(() => invoked = true))
+        {
+            cts.Reset();
+            cts.Cancel();
+        }
+
+        Assert.False(invoked);
+    }
+
+    [Fact]
+    public void Reset_DisarmsAPendingCancelAfter()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
+        cts.Reset();
+
+        Assert.False(cts.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(1)));
+        Assert.False(cts.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Dispose_DisposesTheUnderlyingSource_WhenACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+
+        // The underlying source must be disposed even though the callback threw, otherwise the resources it holds
+        // (such as an allocated wait handle) stay alive until the finalizer runs.
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent_AfterACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Reset_ProducesAFreshToken_WhenACancellationCallbackThrows()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        var token = cts.Token;
+        token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Reset);
+
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+        Assert.False(cts.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_IsAbandoned_WhenACancellationCallbackDisposesTheInstance()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        cts.Token.Register(cts.Dispose);
+
+        cts.Reset();
+
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        cts.Dispose();
     }
 
     [Fact]

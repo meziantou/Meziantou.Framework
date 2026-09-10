@@ -206,7 +206,7 @@ public static class JsonPathExtensions
 
     private static JsonValueSyntax? GetJsonSyntaxRoot(JsonSyntaxTree? root)
     {
-        return root?.Root.Value;
+        return root?.GetRoot().Value;
     }
 
     private static JsonSyntaxNode? GetJsonSyntaxRoot(JsonSyntaxNode? root)

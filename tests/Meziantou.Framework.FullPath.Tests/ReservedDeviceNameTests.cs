@@ -89,4 +89,35 @@ public sealed class ReservedDeviceNameTests
         Assert.Equal(@"C:\temp\CON\b.txt", path.RawValue);
         Assert.Equal(FullPath.FromPath(@"C:\temp\CON\b.txt"), path);
     }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public async Task TryGetCanonicalPath_ReservedName_FindsTheRealFile()
+    {
+        await using var temp = TemporaryDirectory.Create();
+
+        // Only the extended path creates a real file; the ordinary one addresses the NUL device, and so does a
+        // canonical lookup that is given the unprotected value
+        var file = temp.GetFullPath("NUL.txt");
+        File.WriteAllText(file.Value, "content");
+
+        Assert.False(file.IsSymbolicLink());
+        Assert.True(file.TryGetCanonicalPath(out var canonical));
+        Assert.Equal("NUL.txt", canonical.Value.Name);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public async Task TryGetSymbolicLinkTarget_ReservedName_FindsTheRealLink()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var target = temp.CreateTextFile("target.txt", "content");
+
+        var link = temp.GetFullPath("NUL.txt");
+        File.CreateSymbolicLink(link.Value, target.Value);
+
+        Assert.True(link.IsSymbolicLink());
+        Assert.True(link.TryGetSymbolicLinkTarget(out var resolved));
+        Assert.Equal(target, resolved.Value);
+    }
 }

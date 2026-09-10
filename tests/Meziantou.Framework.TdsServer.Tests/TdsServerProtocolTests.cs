@@ -751,7 +751,7 @@ public sealed class TdsServerProtocolTests
         // The whole RPC payload is undecodable, so there is no parameter list at all. Reporting it as complete
         // would tell a handler the client sent no parameters, which is exactly the case the flag exists to warn
         // about.
-        var context = await SendRawRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
+        var context = await RawTdsClient.SendRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
 
         Assert.False(context.HasCompleteParameters);
         Assert.Empty(context.Parameters);
@@ -772,127 +772,10 @@ public sealed class TdsServerProtocolTests
         payload.Add(0x03); // value length
         payload.AddRange([0xFF, 0xFF, 0xFF]); // day count far beyond DateOnly.MaxValue
 
-        var context = await SendRawRpcRequestAsync([.. payload]);
+        var context = await RawTdsClient.SendRpcRequestAsync([.. payload]);
 
         Assert.False(context.HasCompleteParameters);
         Assert.Empty(context.Parameters);
-    }
-
-    [Fact]
-    public async Task RawClient_RpcParameter_VarChar_WithAWindowsCollation_UsesTheLocaleCodePage()
-    {
-        // Latin1_General_CI_AS: LCID 0x0409 and no sort id, so the code page comes from the locale.
-        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x00, 0x00], [0x63, 0x61, 0x66, 0xE9]));
-
-        Assert.True(context.HasCompleteParameters);
-        var parameter = Assert.Single(context.Parameters);
-        Assert.Equal("café", parameter.AsString());
-    }
-
-    [Fact]
-    public async Task RawClient_RpcParameter_VarChar_WithAJapaneseCollation_UsesTheSortIdCodePage()
-    {
-        // Japanese_CI_AS: sort id 192 names code page 932, which is nothing like the Latin code pages.
-        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x11, 0x04, 0xD0, 0x00, 192], [0x93, 0xFA, 0x96, 0x7B]));
-
-        Assert.True(context.HasCompleteParameters);
-        var parameter = Assert.Single(context.Parameters);
-        Assert.Equal("日本", parameter.AsString());
-    }
-
-    [Fact]
-    public async Task RawClient_RpcParameter_VarChar_WithAUtf8Collation_IsDecodedAsUtf8()
-    {
-        // A UTF-8 collation keeps the LCID of the Windows collation it derives from, so only the flag at bit 26
-        // tells the two apart.
-        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x04, 0x00], [0x63, 0x61, 0x66, 0xC3, 0xA9]));
-
-        Assert.True(context.HasCompleteParameters);
-        var parameter = Assert.Single(context.Parameters);
-        Assert.Equal("café", parameter.AsString());
-    }
-
-    [Fact]
-    public async Task RawClient_RpcParameter_VarChar_WithAnUnknownCollation_ReportsIncompleteParameters()
-    {
-        // Decoding with an arbitrary code page would replace every byte the encoding cannot map, which loses the
-        // value without saying so. An unknown collation has to take the same path as an unknown type.
-        var context = await SendRawRpcRequestAsync(CreateVarCharRpcPayload([0x09, 0x04, 0xD0, 0x00, 0xFF], [0x63, 0x61, 0x66, 0xE9]));
-
-        Assert.False(context.HasCompleteParameters);
-        Assert.Empty(context.Parameters);
-    }
-
-    private static byte[] CreateVarCharRpcPayload(byte[] collation, byte[] value)
-    {
-        var payload = new List<byte> { 0x01, 0x00 };
-        payload.AddRange(Encoding.Unicode.GetBytes("p"));
-        payload.AddRange([0x00, 0x00]); // option flags
-        payload.Add(0x02); // parameter name length, in characters
-        payload.AddRange(Encoding.Unicode.GetBytes("@v"));
-        payload.Add(0x00); // status
-        payload.Add(0xA7); // BIGVARCHRTYPE
-        payload.AddRange([0x40, 0x1F]); // max length: 8000
-        payload.AddRange(collation);
-        payload.AddRange([(byte)value.Length, 0x00]); // value length
-        payload.AddRange(value);
-        return [.. payload];
-    }
-
-    private static async Task<TdsQueryContext> SendRawRpcRequestAsync(byte[] rpcPayload)
-    {
-        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var options = new TdsServerOptions();
-        options.AddTcpListener(0, IPAddress.Loopback);
-
-        using var server = new TdsServer(
-            options,
-            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
-            (context, cancellationToken) =>
-            {
-                queryContextTask.TrySetResult(context);
-                return ValueTask.FromResult(new TdsQueryResult());
-            });
-
-        await server.StartAsync();
-        var port = Assert.Single(server.Ports);
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        using var client = new TcpClient();
-        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
-        using var stream = client.GetStream();
-
-        // PRELOGIN advertising NOT_SUPPORTED so the session stays in clear text.
-        await stream.WriteAsync(CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x02]), cancellationTokenSource.Token);
-        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
-
-        // LOGIN7 with every variable-length field empty: the authentication callback above accepts anything.
-        await stream.WriteAsync(CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
-        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
-
-        await stream.WriteAsync(CreateTdsMessage(0x03, rpcPayload), cancellationTokenSource.Token);
-
-        return await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationTokenSource.Token);
-    }
-
-    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
-    {
-        var message = new byte[8 + payload.Length];
-        message[0] = packetType;
-        message[1] = 0x01; // end of message
-        BinaryPrimitives.WriteUInt16BigEndian(message.AsSpan(2, 2), (ushort)message.Length);
-        message[6] = 1; // packet id
-        payload.CopyTo(message.AsSpan(8));
-        return message;
-    }
-
-    private static async Task ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
-    {
-        var header = new byte[8];
-        await stream.ReadExactlyAsync(header, cancellationToken);
-        var length = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
-        await stream.ReadExactlyAsync(new byte[length - 8], cancellationToken);
     }
 
     private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)

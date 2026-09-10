@@ -1023,6 +1023,25 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
+    [Fact]
+    public void ObservableCollectionDoesNotReportItselfAsReadOnly()
+    {
+        // The items are stored in an ImmutableList<T>, which reports itself as read-only, fixed-size and synchronized,
+        // and hands out itself as SyncRoot. Delegating to it would tell a UI control the collection cannot be edited.
+        var collection = CreateCollection<int>();
+        var observable = collection.AsObservable;
+
+        Assert.False(((ICollection<int>)observable).IsReadOnly);
+        Assert.False(((IList)observable).IsReadOnly);
+        Assert.False(((IList)observable).IsFixedSize);
+        Assert.False(((ICollection)observable).IsSynchronized);
+
+        // The items are replaced by every change, so they cannot be the object callers synchronize on
+        var syncRoot = ((ICollection)observable).SyncRoot;
+        collection.Add(1);
+        Assert.Same(syncRoot, ((ICollection)observable).SyncRoot);
+    }
+
     private sealed class QueuedSynchronizationContext : SynchronizationContext
     {
         private readonly System.Collections.Concurrent.ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();

@@ -7,33 +7,29 @@ namespace Meziantou.Framework.Collections.Concurrent;
 internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, INotifyPropertyChanged
 {
     // A SynchronizationContext is not required to run its callbacks on a single thread, so the items can be read while
-    // the pending events are being applied. Every access to the list holds this lock. The notifications are raised
-    // outside of it: a handler can call back into the collection, or block on a thread that needs the lock.
-    private readonly Lock _itemsLock = new();
+    // the pending events are applied. They are held as an immutable snapshot published through a fence: a reader takes
+    // the reference once and walks a list nobody can mutate, and the drain, the only writer and never running twice at
+    // a time, swaps the reference. That keeps the reads free of locks and lets an enumerator outlive the call that
+    // created it. It also matches how ConcurrentObservableCollection<T> stores its own items.
+    private ImmutableList<T> _items;
 
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    /// <summary>Guards <see cref="Items"/>. Every read and every write of the list must hold it.</summary>
-    private protected Lock ItemsLock => _itemsLock;
-
-    private protected List<T> Items { get; }
+    private protected ImmutableList<T> Items
+    {
+        get => Volatile.Read(ref _items);
+        private set => Volatile.Write(ref _items, value);
+    }
 
     protected ObservableCollectionBase()
     {
-        Items = [];
+        _items = ImmutableList<T>.Empty;
     }
 
     protected ObservableCollectionBase(IEnumerable<T> items)
     {
-        if (items is null)
-        {
-            Items = [];
-        }
-        else
-        {
-            Items = new List<T>(items);
-        }
+        _items = items is null ? ImmutableList<T>.Empty : ImmutableList.CreateRange(items);
     }
 
     /// <summary>
@@ -44,22 +40,11 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
     {
     }
 
-    public void EnsureCapacity(int capacity)
-    {
-        lock (ItemsLock)
-        {
-            Items.EnsureCapacity(capacity);
-        }
-    }
-
     protected void ReplaceItem(int index, T item)
     {
-        T oldItem;
-        lock (ItemsLock)
-        {
-            oldItem = Items[index];
-            Items[index] = item;
-        }
+        var items = Items;
+        var oldItem = items[index];
+        Items = items.SetItem(index, item);
 
         OnItemsMutated();
         OnIndexerPropertyChanged();
@@ -68,10 +53,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void InsertItem(int index, T item)
     {
-        lock (ItemsLock)
-        {
-            Items.Insert(index, item);
-        }
+        Items = Items.Insert(index, item);
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -81,10 +63,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void InsertItems(int index, ImmutableList<T> items)
     {
-        lock (ItemsLock)
-        {
-            Items.InsertRange(index, items);
-        }
+        Items = Items.InsertRange(index, items);
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -94,12 +73,9 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void AddItem(T item)
     {
-        int index;
-        lock (ItemsLock)
-        {
-            index = Items.Count;
-            Items.Add(item);
-        }
+        var items = Items;
+        var index = items.Count;
+        Items = items.Add(item);
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -109,12 +85,9 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void AddItems(ImmutableList<T> items)
     {
-        int index;
-        lock (ItemsLock)
-        {
-            index = Items.Count;
-            Items.AddRange(items);
-        }
+        var currentItems = Items;
+        var index = currentItems.Count;
+        Items = currentItems.AddRange(items);
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -124,12 +97,9 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void RemoveItemAt(int index)
     {
-        T item;
-        lock (ItemsLock)
-        {
-            item = Items[index];
-            Items.RemoveAt(index);
-        }
+        var items = Items;
+        var item = items[index];
+        Items = items.RemoveAt(index);
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -139,14 +109,11 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected bool RemoveItem(T item)
     {
-        int index;
-        lock (ItemsLock)
+        var items = Items;
+        var index = items.IndexOf(item);
+        if (index >= 0)
         {
-            index = Items.IndexOf(item);
-            if (index >= 0)
-            {
-                Items.RemoveAt(index);
-            }
+            Items = items.RemoveAt(index);
         }
 
         // The event is processed whether or not the item was there, so the hook runs in both cases
@@ -162,10 +129,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void ClearItems()
     {
-        lock (ItemsLock)
-        {
-            Items.Clear();
-        }
+        Items = ImmutableList<T>.Empty;
 
         OnItemsMutated();
         OnCountPropertyChanged();
@@ -175,11 +139,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected void Reset(ImmutableList<T> items)
     {
-        lock (ItemsLock)
-        {
-            Items.Clear();
-            Items.AddRange(items);
-        }
+        Items = items;
 
         OnItemsMutated();
         OnIndexerPropertyChanged();

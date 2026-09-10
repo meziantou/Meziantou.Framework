@@ -13,6 +13,7 @@ namespace Meziantou.Framework.Collections.Concurrent;
 internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>, IList<T>, IList
 {
     private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new();
+    private readonly object _syncRoot = new();
     private readonly ConcurrentObservableCollection<T> _collection;
     private readonly SynchronizationContext _synchronizationContext;
 
@@ -58,10 +59,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            lock (ItemsLock)
-            {
-                return Items.Count;
-            }
+            return Items.Count;
         }
     }
 
@@ -69,8 +67,10 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
+            // Not delegated to the items: they are stored in an ImmutableList<T>, which reports itself as read-only,
+            // fixed-size and synchronized, while this collection supports the IList<T> and IList modifications below.
             AssertIsOnSynchronizationContextThread();
-            return ((ICollection<T>)Items).IsReadOnly;
+            return false;
         }
     }
 
@@ -87,8 +87,9 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         get
         {
+            // The items are replaced by every change, so they cannot be the object callers synchronize on
             AssertIsOnSynchronizationContextThread();
-            return ((ICollection)Items).SyncRoot;
+            return _syncRoot;
         }
     }
 
@@ -97,7 +98,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            return ((ICollection)Items).IsSynchronized;
+            return false;
         }
     }
 
@@ -106,7 +107,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            return ((IList)Items).IsReadOnly;
+            return false;
         }
     }
 
@@ -115,7 +116,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            return ((IList)Items).IsFixedSize;
+            return false;
         }
     }
 
@@ -152,12 +153,9 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     {
         AssertIsOnSynchronizationContextThread();
 
-        // The enumerator outlives the lock, and the pending events can be applied on another thread while the caller
-        // walks it, so it walks a snapshot instead of the live list.
-        lock (ItemsLock)
-        {
-            return Items.ToList().GetEnumerator();
-        }
+        // The items are immutable, so the enumerator keeps walking the snapshot it started on even when the pending
+        // events are applied on another thread in the meantime.
+        return Items.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -165,28 +163,19 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     public void CopyTo(T[] array, int arrayIndex)
     {
         AssertIsOnSynchronizationContextThread();
-        lock (ItemsLock)
-        {
-            Items.CopyTo(array, arrayIndex);
-        }
+        Items.CopyTo(array, arrayIndex);
     }
 
     public int IndexOf(T item)
     {
         AssertIsOnSynchronizationContextThread();
-        lock (ItemsLock)
-        {
-            return Items.IndexOf(item);
-        }
+        return Items.IndexOf(item);
     }
 
     public bool Contains(T item)
     {
         AssertIsOnSynchronizationContextThread();
-        lock (ItemsLock)
-        {
-            return Items.Contains(item);
-        }
+        return Items.Contains(item);
     }
 
     public T this[int index]
@@ -194,10 +183,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            lock (ItemsLock)
-            {
-                return Items[index];
-            }
+            return Items[index];
         }
     }
 
@@ -486,10 +472,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     void ICollection.CopyTo(Array array, int index)
     {
         AssertIsOnSynchronizationContextThread();
-        lock (ItemsLock)
-        {
-            ((ICollection)Items).CopyTo(array, index);
-        }
+        ((ICollection)Items).CopyTo(array, index);
     }
 
     int IList.Add(object? value)

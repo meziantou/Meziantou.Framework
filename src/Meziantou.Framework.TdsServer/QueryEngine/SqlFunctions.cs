@@ -302,10 +302,13 @@ internal static class SqlFunctions
     private static Expression BuildRoundFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 2, "ROUND");
+
+        // T-SQL rounds midpoint values away from zero whereas Math.Round(double, int) defaults to ties-to-even.
         return Expression.Call(
-            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int)])!,
+            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
             EnsureDouble(arguments[0]),
-            EnsureInt(arguments[1]));
+            EnsureInt(arguments[1]),
+            Expression.Constant(MidpointRounding.AwayFromZero));
     }
 
     private static Expression BuildCeilingFunction(IReadOnlyList<Expression> arguments)

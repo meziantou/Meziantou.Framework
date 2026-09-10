@@ -14,12 +14,13 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public static class Formatter
 {
-    public static XmlSyntaxAnnotation Annotation { get; } = new("Formatter");
+    /// <summary>Marks the nodes this formatter produced, so a later pass can find them again.</summary>
+    public static SyntaxAnnotation Annotation { get; } = new("Formatter");
 
     public static XmlDocumentSyntax Format(XmlSyntaxTree syntaxTree)
     {
         ArgumentNullException.ThrowIfNull(syntaxTree);
-        return Format(syntaxTree.Root, XmlFormattingOptions.Default);
+        return Format(syntaxTree.GetRoot(), XmlFormattingOptions.Default);
     }
 
     public static XmlDocumentSyntax Format(XmlDocumentSyntax document)
@@ -52,7 +53,7 @@ public static class Formatter
             using var xmlWriter = XmlWriter.Create(writer, settings);
             source.Save(xmlWriter);
             xmlWriter.Flush();
-            return XmlSyntaxTree.ParseText(writer.ToString()).Root;
+            return XmlSyntaxTree.ParseText(writer.ToString()).GetRoot();
         }
         catch (XmlException)
         {

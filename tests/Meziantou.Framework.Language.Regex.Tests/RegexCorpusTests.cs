@@ -43,7 +43,7 @@ public sealed class RegexCorpusTests
         {
             var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-            Assert.Empty(tree.Diagnostics, $"[{pattern}] should parse cleanly");
+            Assert.Empty(tree.GetDiagnostics(), $"[{pattern}] should parse cleanly");
         }
     }
 
@@ -54,7 +54,7 @@ public sealed class RegexCorpusTests
         {
             var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-            Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should report at least one diagnostic");
+            Assert.NotEmpty(tree.GetDiagnostics(), $"[{pattern}] should report at least one diagnostic");
         }
     }
 

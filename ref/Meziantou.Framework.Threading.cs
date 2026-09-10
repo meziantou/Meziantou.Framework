@@ -176,8 +176,8 @@ namespace Meziantou.Framework.Threading
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }
         public System.TimeSpan WaitTimeout { get => throw null; set { } }
-        public System.TimeSpan DequeueTimeout { get => throw null; set { } }
         public int QueueCount { get => throw null; }
+        public System.Exception? WorkerException { get => throw null; }
         public override int MaximumConcurrencyLevel { get => throw null; }
         public MonoThreadedTaskScheduler(string? threadName) { }
         public void Dispose() { }

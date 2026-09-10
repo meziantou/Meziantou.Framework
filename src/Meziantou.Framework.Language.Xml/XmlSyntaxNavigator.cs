@@ -180,7 +180,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             ["xmlns"] = XmlnsNamespaceUri,
         };
 
-        foreach (var child in document.ChildNodes)
+        foreach (var child in document.Nodes)
         {
             AddChild(root, CreateNode(child, nameTable, namespaces));
         }
@@ -192,7 +192,8 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
     {
         return node switch
         {
-            XmlElementSyntax element => CreateElementNode(element, nameTable, namespaces),
+            XmlElementSyntax element => CreateElementNode(element, element.Name, element.Attributes, element.Content, nameTable, namespaces),
+            XmlEmptyElementSyntax element => CreateElementNode(element, element.Name, element.Attributes, default, nameTable, namespaces),
             XmlAttributeSyntax attribute => CreateAttributeNode(attribute, nameTable, namespaces),
             XmlTextSyntax text => CreateTextNode(text),
             XmlCommentSyntax comment => CreateCommentNode(comment),
@@ -204,10 +205,20 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
         };
     }
 
-    private static NavigatorNode CreateElementNode(XmlElementSyntax element, XmlNameTable nameTable, IReadOnlyDictionary<string, string> inheritedNamespaces)
+    /// <remarks>
+    /// An element written with two tags and one written as a self-closing tag are different node types but the same
+    /// thing to XPath, so both arrive here.
+    /// </remarks>
+    private static NavigatorNode CreateElementNode(
+        XmlSyntaxNode element,
+        string name,
+        SyntaxList<XmlAttributeSyntax> attributes,
+        SyntaxList<XmlNodeSyntax> content,
+        XmlNameTable nameTable,
+        IReadOnlyDictionary<string, string> inheritedNamespaces)
     {
         var localNamespaces = new Dictionary<string, string>(inheritedNamespaces, StringComparer.Ordinal);
-        foreach (var attribute in element.Attributes)
+        foreach (var attribute in attributes)
         {
             if (TryGetNamespaceDeclaration(attribute, out var namespacePrefix, out var namespaceUri))
             {
@@ -215,7 +226,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             }
         }
 
-        var (prefix, localName) = SplitName(element.Name);
+        var (prefix, localName) = SplitName(name);
         var result = new NavigatorNode(
             nodeType: XPathNodeType.Element,
             localName: AddName(nameTable, localName),
@@ -224,12 +235,12 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             value: string.Empty,
             underlyingObject: element);
 
-        foreach (var attribute in element.Attributes)
+        foreach (var attribute in attributes)
         {
             AddAttribute(result, CreateAttributeNode(attribute, nameTable, localNamespaces));
         }
 
-        foreach (var contentNode in element.Content)
+        foreach (var contentNode in content)
         {
             AddChild(result, CreateNode(contentNode, nameTable, localNamespaces));
         }

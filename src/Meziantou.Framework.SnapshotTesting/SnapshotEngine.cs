@@ -36,7 +36,7 @@ internal static class SnapshotEngine
         {
             if (comparison.HasDifferences)
             {
-                ThrowAssertion(settings, comparison.Message);
+                ThrowAssertion(comparison.Message);
             }
 
             return;
@@ -51,7 +51,7 @@ internal static class SnapshotEngine
 
         if (comparison.HasDifferences && settings.SnapshotUpdateStrategy.MustReportError(settings, callerContext.SourceFilePath))
         {
-            ThrowAssertion(settings, comparison.Message);
+            ThrowAssertion(comparison.Message);
         }
     }
 
@@ -496,9 +496,10 @@ internal static class SnapshotEngine
         }
     }
 
-    private static void ThrowAssertion(SnapshotSettings settings, string message)
+    [DoesNotReturn]
+    private static void ThrowAssertion(string message)
     {
-        throw settings.AssertionExceptionCreator.CreateException(message);
+        throw new SnapshotAssertionException(message);
     }
 
     private readonly record struct SnapshotComparisonResult(

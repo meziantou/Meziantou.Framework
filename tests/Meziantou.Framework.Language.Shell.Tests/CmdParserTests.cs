@@ -86,7 +86,7 @@ public sealed class CmdParserTests
     [MemberData(nameof(Samples))]
     public void ParseText_RoundTripsExactly(string text)
     {
-        Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).Root.ToFullString());
+        Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).GetRoot().ToFullString());
     }
 
     [Theory]
@@ -220,7 +220,7 @@ public sealed class CmdParserTests
     public void IfCondition_UnrecognizedForm_IsALoneOperand(string text)
     {
         var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
-        var statement = Assert.IsType<CmdIfStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var statement = Assert.IsType<CmdIfStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
 
         Assert.IsNotType<ShellRawExpressionSyntax>(statement.Condition);
     }
@@ -231,7 +231,7 @@ public sealed class CmdParserTests
         var statement = Assert.IsType<CmdForStatementSyntax>(ShellSyntaxTree.ParseCommand("for %%i in (a b c) do echo %%i", ShellDialect.Cmd));
 
         Assert.Equal("i", statement.VariableName);
-        Assert.Null(statement.SwitchToken);
+        Assert.False(statement.SwitchToken.IsPresent());
         Assert.Equal(3, statement.Items.Count);
         Assert.IsType<ShellCommandSyntax>(statement.Body);
     }
@@ -242,7 +242,7 @@ public sealed class CmdParserTests
         var statement = Assert.IsType<CmdForStatementSyntax>(
             ShellSyntaxTree.ParseCommand("for /f \"tokens=1,2\" %%a in (data.txt) do echo %%a", ShellDialect.Cmd));
 
-        Assert.Equal("/f", statement.SwitchToken?.Text);
+        Assert.Equal("/f", statement.SwitchToken.Text);
         Assert.Single(statement.SwitchArguments);
         Assert.Equal("a", statement.VariableName);
     }
@@ -251,21 +251,21 @@ public sealed class CmdParserTests
     public void VariableReferences_AreClassified()
     {
         var tree = ShellSyntaxTree.ParseText("echo %PATH% %1 %~dp0", ShellDialect.Cmd);
-        var references = tree.Root.DescendantNodes().OfType<CmdVariableReferenceSyntax>().ToArray();
+        var references = tree.GetRoot().DescendantNodes().OfType<CmdVariableReferenceSyntax>().ToArray();
 
         Assert.HasCount(3, references);
         Assert.Equal("PATH", references[0].Name);
         Assert.False(references[0].IsDelayed);
         Assert.False(references[0].IsLoopVariable);
         Assert.Equal("1", references[1].Name);
-        Assert.Null(references[1].CloseToken);
+        Assert.False(references[1].CloseToken.IsPresent());
     }
 
     [Fact]
     public void DelayedExpansion_IsRecognized()
     {
         var tree = ShellSyntaxTree.ParseText("echo !COUNT!", ShellDialect.Cmd);
-        var reference = Assert.Single(tree.Root.DescendantNodes().OfType<CmdVariableReferenceSyntax>());
+        var reference = Assert.Single(tree.GetRoot().DescendantNodes().OfType<CmdVariableReferenceSyntax>());
 
         Assert.True(reference.IsDelayed);
         Assert.Equal("COUNT", reference.Name);
@@ -275,7 +275,7 @@ public sealed class CmdParserTests
     public void LoopVariable_IsRecognized()
     {
         var tree = ShellSyntaxTree.ParseText("for %%i in (a) do echo %%i", ShellDialect.Cmd);
-        var reference = Assert.Single(tree.Root.DescendantNodes().OfType<CmdVariableReferenceSyntax>());
+        var reference = Assert.Single(tree.GetRoot().DescendantNodes().OfType<CmdVariableReferenceSyntax>());
 
         Assert.True(reference.IsLoopVariable);
         Assert.Equal("i", reference.Name);
@@ -285,13 +285,13 @@ public sealed class CmdParserTests
     public void CommentsAreTrivia()
     {
         var tree = ShellSyntaxTree.ParseText("rem first\r\n:: second\r\necho hi\r\n", ShellDialect.Cmd);
-        var comments = tree.Root.DescendantTrivia()
-            .Where(trivia => trivia.Kind is ShellSyntaxKind.CmdRemCommentTrivia or ShellSyntaxKind.CmdDoubleColonCommentTrivia)
+        var comments = tree.GetRoot().DescendantTrivia()
+            .Where(trivia => trivia.Kind() is SyntaxKind.CmdRemCommentTrivia or SyntaxKind.CmdDoubleColonCommentTrivia)
             .ToArray();
 
         Assert.HasCount(2, comments);
-        Assert.Equal("rem first", comments[0].Text);
-        Assert.Equal(":: second", comments[1].Text);
+        Assert.Equal("rem first", comments[0].ToString());
+        Assert.Equal(":: second", comments[1].ToString());
     }
 
     [Fact]
@@ -299,7 +299,7 @@ public sealed class CmdParserTests
     {
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo hi rem not a comment", ShellDialect.Cmd));
 
-        Assert.DoesNotContain(command.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.CmdRemCommentTrivia);
+        Assert.DoesNotContain(command.DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.CmdRemCommentTrivia);
         Assert.Contains(command.Arguments, argument => argument.Value == "rem");
     }
 
@@ -307,7 +307,7 @@ public sealed class CmdParserTests
     public void CaretEscape_IsAWordPart()
     {
         var tree = ShellSyntaxTree.ParseText("echo a^&b", ShellDialect.Cmd);
-        var escape = Assert.Single(tree.Root.DescendantNodes().OfType<ShellEscapeSequenceSyntax>());
+        var escape = Assert.Single(tree.GetRoot().DescendantNodes().OfType<ShellEscapeSequenceSyntax>());
 
         Assert.Equal("^&", escape.EscapeToken.Text);
         Assert.Equal("&", escape.Value);
@@ -352,8 +352,8 @@ public sealed class CmdParserTests
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Cmd);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
     }
 
     [Theory]
@@ -365,8 +365,8 @@ public sealed class CmdParserTests
         // `@` only suppresses echoing, so it does not stop `rem` from starting a comment.
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Cmd);
 
-        Assert.Equal(text, Assert.Single(tree.Root.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.CmdRemCommentTrivia).Text + "\r\n");
-        Assert.Empty(tree.Root.Statements.Statements);
+        Assert.Equal(text, Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.CmdRemCommentTrivia).ToString() + "\r\n");
+        Assert.Empty(tree.GetRoot().Statements.Statements);
     }
 
     [Fact]
@@ -374,8 +374,8 @@ public sealed class CmdParserTests
     {
         var tree = ShellSyntaxTree.ParseText("@echo off\r\n", ShellDialect.Cmd);
 
-        Assert.DoesNotContain(tree.Root.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.CmdRemCommentTrivia);
-        Assert.Single(tree.Root.Statements.Statements);
+        Assert.DoesNotContain(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.CmdRemCommentTrivia);
+        Assert.Single(tree.GetRoot().Statements.Statements);
     }
 
     [Fact]
@@ -505,27 +505,27 @@ public sealed class CmdParserTests
     public void GotoTargetSpanStartsAtTheTarget()
     {
         var tree = ShellSyntaxTree.ParseText("goto :eof", ShellDialect.Cmd);
-        var statement = Assert.IsType<CmdGotoStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var statement = Assert.IsType<CmdGotoStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
 
-        Assert.Equal(":eof", tree.Text[statement.LabelToken.Span.Start..statement.LabelToken.Span.End]);
+        Assert.Equal(":eof", tree.GetText().Text[statement.LabelToken.Span.Start..statement.LabelToken.Span.End]);
     }
 
     [Fact]
     public void SetNameSpanStartsAtTheName()
     {
         var tree = ShellSyntaxTree.ParseText("set NAME=value", ShellDialect.Cmd);
-        var statement = Assert.IsType<CmdSetStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var statement = Assert.IsType<CmdSetStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         var name = statement.NameToken!;
 
-        Assert.Equal("NAME", tree.Text[name.Span.Start..name.Span.End]);
+        Assert.Equal("NAME", tree.GetText().Text[name.Span.Start..name.Span.End]);
     }
 
     [Fact]
     public void ForVariableSpanStartsAtTheVariable()
     {
         var tree = ShellSyntaxTree.ParseText("for %%i in (a) do echo %%i", ShellDialect.Cmd);
-        var statement = Assert.IsType<CmdForStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        var statement = Assert.IsType<CmdForStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
 
-        Assert.Equal("%%i", tree.Text[statement.VariableToken.Span.Start..statement.VariableToken.Span.End]);
+        Assert.Equal("%%i", tree.GetText().Text[statement.VariableToken.Span.Start..statement.VariableToken.Span.End]);
     }
 }

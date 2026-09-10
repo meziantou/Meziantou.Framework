@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
-using Xunit.Sdk;
 using GifFrameData = Meziantou.Framework.SnapshotTesting.Tests.ImageTestData.GifFrameData;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
@@ -19,7 +18,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
         };
 
@@ -37,7 +35,6 @@ public sealed partial class SnapshotTests
         var baseSettings = new SnapshotSettings()
         {
             AutoDetectContinuousEnvironment = false,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_fixed_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
         };
@@ -330,7 +327,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
         };
 
@@ -351,7 +347,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / (context.Type.Type + "_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + context.Extension),
         };
 
@@ -1023,7 +1018,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"),
         };
         settings.Serializers.Add(new FixedCountSerializer(count: 2));
@@ -1047,15 +1041,6 @@ public sealed partial class SnapshotTests
         Assert.Contains("To update snapshots automatically, re-run the test with SNAPSHOTTESTING_STRATEGY=Overwrite (or OverwriteWithoutFailure).", exception.Message);
         Assert.True(File.Exists(actualPath0));
         Assert.True(File.Exists(actualPath1));
-    }
-
-    [Fact]
-    public void DefaultAssertionExceptionBuilder_UsesTheXunitExceptionType()
-    {
-        var exception = AssertionExceptionBuilder.Default.CreateException("the message");
-
-        Assert.IsType<XunitException>(exception);
-        Assert.Equal("the message", exception.Message);
     }
 
     // Sets the process-wide SNAPSHOTTESTING_STRATEGY variable, which every 'new SnapshotSettings()' reads, so it must not run beside any other test
@@ -1105,7 +1090,6 @@ public sealed partial class SnapshotTests
         var baseSettings = new SnapshotSettings()
         {
             AutoDetectContinuousEnvironment = false,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_fixed_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified." + (context.Extension ?? "txt")),
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
         };
@@ -1316,7 +1300,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = _ => directory / "snapshot.verified.txt",
         };
 
@@ -1330,7 +1313,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = _ => directory / "snapshot.verified.txt",
         };
     }
@@ -1529,7 +1511,6 @@ public sealed partial class SnapshotTests
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            AssertionExceptionCreator = new FixedAssertionExceptionBuilder(),
             SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.png"),
         };
         settings.Serializers.AddGifSerializer();
@@ -1573,14 +1554,6 @@ public sealed partial class SnapshotTests
     private sealed class NonSeekableStream(byte[] data) : MemoryStream(data)
     {
         public override bool CanSeek => false;
-    }
-
-    private sealed class FixedAssertionExceptionBuilder : AssertionExceptionBuilder
-    {
-        public override Exception CreateException(string message)
-        {
-            return new SnapshotAssertionException(message);
-        }
     }
 
     private sealed class EnvironmentVariableScope : IDisposable

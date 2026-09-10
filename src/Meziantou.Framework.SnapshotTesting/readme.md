@@ -119,7 +119,6 @@ Use `SnapshotSettings` to customize behavior:
 - `Serializers` (`SnapshotSerializerCollection`)
 - `Comparers` (`SnapshotComparerCollection`)
 - `SnapshotUpdateStrategy` (`Disallow`, `Overwrite`, `OverwriteWithoutFailure`, `MergeTool`, `MergeToolSync`)
-- `AssertionExceptionCreator` and `ErrorMessageFormatter`
 - `SnapshotPathStrategy` for full path generation
 
 You can also set the default strategy using the `SNAPSHOTTESTING_STRATEGY` environment variable.

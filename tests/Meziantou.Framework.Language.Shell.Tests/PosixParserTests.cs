@@ -64,7 +64,7 @@ public sealed class PosixParserTests
         {
             var tree = ShellSyntaxTree.ParseText(text, dialect);
 
-            Assert.Equal(text, tree.Root.ToFullString());
+            Assert.Equal(text, tree.GetRoot().ToFullString());
         }
     }
 
@@ -83,8 +83,8 @@ public sealed class PosixParserTests
     {
         var tree = ShellSyntaxTree.ParseText("if a; then b; elif c; then d; else e; fi", ShellDialect.Bash);
 
-        var statement = Assert.IsType<PosixIfStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
-        Assert.Empty(tree.Diagnostics);
+        var statement = Assert.IsType<PosixIfStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+        Assert.Empty(tree.GetDiagnostics());
         Assert.Equal("if", statement.IfKeyword.Text);
         Assert.Equal("a", Assert.IsType<ShellCommandSyntax>(statement.Condition.Statements[0]).NameValue);
         Assert.Equal("b", Assert.IsType<ShellCommandSyntax>(statement.Body.Statements[0]).NameValue);
@@ -110,7 +110,7 @@ public sealed class PosixParserTests
         var statement = Assert.IsType<PosixForStatementSyntax>(ShellSyntaxTree.ParseCommand("for f in a b c; do echo $f; done", ShellDialect.Bash));
 
         Assert.Equal("f", statement.VariableName);
-        Assert.NotNull(statement.InKeyword);
+        Assert.True(statement.InKeyword.IsPresent());
         Assert.Equal(["a", "b", "c"], statement.Items.Select(item => item.Value));
         Assert.False(statement.IsSelect);
     }
@@ -120,7 +120,7 @@ public sealed class PosixParserTests
     {
         var statement = Assert.IsType<PosixForStatementSyntax>(ShellSyntaxTree.ParseCommand("for i; do echo $i; done", ShellDialect.Bash));
 
-        Assert.Null(statement.InKeyword);
+        Assert.False(statement.InKeyword.IsPresent());
         Assert.Empty(statement.Items);
     }
 
@@ -141,7 +141,7 @@ public sealed class PosixParserTests
         Assert.Equal(["a"], statement.Clauses[0].Patterns.Select(pattern => pattern.Value));
         Assert.Equal(["b", "c"], statement.Clauses[1].Patterns.Select(pattern => pattern.Value));
         Assert.Single(statement.Clauses[1].PatternSeparatorTokens);
-        Assert.Equal(ShellSyntaxKind.SemicolonSemicolonToken, statement.Clauses[0].TerminatorToken?.Kind);
+        Assert.Equal(SyntaxKind.SemicolonSemicolonToken, statement.Clauses[0].TerminatorToken.Kind());
         Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(statement.Clauses[0].Body.Statements[0]).NameValue);
     }
 
@@ -154,8 +154,8 @@ public sealed class PosixParserTests
         var definition = Assert.IsType<PosixFunctionDefinitionSyntax>(ShellSyntaxTree.ParseCommand(text, ShellDialect.Bash));
 
         Assert.Equal("greet", definition.Name);
-        Assert.Equal(expectedKeyword, definition.FunctionKeyword?.Text);
-        Assert.Equal(ShellSyntaxKind.PosixGroup, definition.Body.Kind);
+        Assert.Equal(expectedKeyword ?? "", definition.FunctionKeyword.Text);
+        Assert.Equal(SyntaxKind.PosixGroup, definition.Body.Kind());
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class PosixParserTests
     {
         var bash = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(ShellSyntaxTree.ParseCommand("[[ -n $x ]]", ShellDialect.Bash));
 
-        Assert.Equal(ShellSyntaxKind.PosixConditionalExpression, bash.Kind);
+        Assert.Equal(SyntaxKind.PosixConditionalExpression, bash.Kind());
         Assert.Equal(" -n $x", bash.Expression.ToFullString());
         Assert.False(bash.IsArithmetic);
 
@@ -202,7 +202,7 @@ public sealed class PosixParserTests
     public void ArrayAssignment_ExposesElements()
     {
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("files=(one two three)", ShellDialect.Bash));
-        var array = Assert.Single(command.ChildNodes.OfType<PosixArrayAssignmentSyntax>());
+        var array = Assert.Single(command.ChildNodes().OfType<PosixArrayAssignmentSyntax>());
 
         Assert.Equal("files", array.Name);
         Assert.Equal(["one", "two", "three"], array.Elements.Select(element => element.Value));
@@ -234,14 +234,14 @@ public sealed class PosixParserTests
     {
         const string Text = "cat <<EOF\nline one\nline two\nEOF\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
         var hereDocument = Assert.Single(command.Redirections.Select(r => r.HereDocument).OfType<PosixHereDocumentSyntax>());
 
         Assert.Equal("\nline one\nline two\n", hereDocument.BodyToken.Text);
         Assert.Equal("EOF\n", hereDocument.DelimiterToken.Text);
         Assert.False(hereDocument.StripsLeadingTabs);
         Assert.False(hereDocument.IsQuotedDelimiter);
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public sealed class PosixParserTests
     public void HereDocument_TwoOnOneLineAreReadInOrder()
     {
         var tree = ShellSyntaxTree.ParseText("cat <<A <<B\nfirst\nA\nsecond\nB\n", ShellDialect.Bash);
-        var command = Assert.IsType<ShellCommandSyntax>(tree.Root.Statements.Statements[0]);
+        var command = Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[0]);
         var hereDocuments = command.Redirections.Select(r => r.HereDocument).OfType<PosixHereDocumentSyntax>().ToArray();
 
         Assert.HasCount(2, hereDocuments);
@@ -280,19 +280,19 @@ public sealed class PosixParserTests
     {
         var tree = ShellSyntaxTree.ParseText("cat <<EOF\nbody\n", ShellDialect.Bash);
 
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0011");
-        Assert.Equal("cat <<EOF\nbody\n", tree.Root.ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0011");
+        Assert.Equal("cat <<EOF\nbody\n", tree.GetRoot().ToFullString());
     }
 
     [Fact]
     public void TimeAndCoproc_ArePrefixStatements()
     {
         var timed = Assert.IsType<PosixPrefixedStatementSyntax>(ShellSyntaxTree.ParseCommand("time ls -la", ShellDialect.Bash));
-        Assert.Equal(ShellSyntaxKind.PosixTimeStatement, timed.Kind);
+        Assert.Equal(SyntaxKind.PosixTimeStatement, timed.Kind());
         Assert.Equal("ls", Assert.IsType<ShellCommandSyntax>(timed.Statement).NameValue);
 
         var coproc = Assert.IsType<PosixPrefixedStatementSyntax>(ShellSyntaxTree.ParseCommand("coproc worker { read x; }", ShellDialect.Bash));
-        Assert.Equal("worker", coproc.NameToken?.Text);
+        Assert.Equal("worker", coproc.NameToken.Text);
     }
 
     [Fact]
@@ -310,8 +310,8 @@ public sealed class PosixParserTests
         const string Text = "if true; then echo a";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0012");
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0012");
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]

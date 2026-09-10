@@ -63,20 +63,43 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
-    public void WhenAll_ConfigureAwait_SuppressThrowingIsRejectedWhenTheTasksHaveAResult()
+    public void WhenAll_ConfigureAwait_SuppressThrowing_IsRejected()
     {
-        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing));
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing); });
         Assert.Equal("options", exception.ParamName);
     }
 
     [Fact]
-    public void WhenAll_ConfigureAwait_SuppressThrowingIsRejectedWhenCombinedWithOtherOptions()
+    public void WhenAll_ConfigureAwait_SuppressThrowing_IsRejected_SingleTask()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing));
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = new ValueTuple<Task<int>>(Task.FromResult(0)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing); });
+        Assert.Equal("options", exception.ParamName);
     }
 
     [Fact]
-    public async Task WhenAll_ConfigureAwait_OtherOptionsAreStillSupportedWhenTheTasksHaveAResult()
+    public void WhenAll_ConfigureAwait_SuppressThrowing_IsRejected_SevenTasks()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = (Task.FromResult(0), Task.FromResult(1), Task.FromResult(2), Task.FromResult(3), Task.FromResult(4), Task.FromResult(5), Task.FromResult(6)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing); });
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void WhenAll_ConfigureAwait_SuppressThrowing_IsRejectedBeforeAwaitingTheTasks()
+    {
+        var pending = new TaskCompletionSource<int>();
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = (pending.Task, Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing); });
+        Assert.False(pending.Task.IsCompleted);
+    }
+
+    [Fact]
+    public void WhenAll_ConfigureAwait_SuppressThrowing_IsRejected_CombinedWithOtherOptions()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext | ConfigureAwaitOptions.SuppressThrowing); });
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public async Task WhenAll_ConfigureAwait_OtherOptionsAreSupported()
     {
         var (a, b) = await (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(ConfigureAwaitOptions.ContinueOnCapturedContext);
         Assert.Equal(0, a);
@@ -84,7 +107,7 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
-    public async Task WhenAll_NonGenericTask_ConfigureAwait_SuppressThrowingIsSupported()
+    public async Task WhenAll_NonGenericTask_ConfigureAwait_SuppressThrowing()
     {
         await (Task.CompletedTask, Task.FromException(new InvalidOperationException("test"))).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }

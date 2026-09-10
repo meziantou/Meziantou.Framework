@@ -15,7 +15,6 @@ public sealed class InlineSnapshotSettingsTests
         var settings = new InlineSnapshotSettings()
         {
             AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw,
-            AssertionExceptionCreator = new AssertionExceptionBuilder(),
             AutoDetectContinuousEnvironment = false,
             EndOfLine = "\r\n",
             FileEncoding = Encoding.ASCII,
@@ -32,7 +31,6 @@ public sealed class InlineSnapshotSettingsTests
         var clone = settings.Clone();
 
         Assert.Same(settings.SnapshotSerializer, clone.SnapshotSerializer);
-        Assert.Same(settings.AssertionExceptionCreator, clone.AssertionExceptionCreator);
         Assert.Same(settings.SnapshotUpdateStrategy, clone.SnapshotUpdateStrategy);
         Assert.Equal(settings.AllowedStringFormats, clone.AllowedStringFormats);
         Assert.Equal(settings.AutoDetectContinuousEnvironment, clone.AutoDetectContinuousEnvironment);

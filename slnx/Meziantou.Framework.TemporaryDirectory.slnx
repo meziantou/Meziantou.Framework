@@ -26,6 +26,9 @@
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language.Shell/Meziantou.Framework.Language.Shell.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language.Tool/Meziantou.Framework.Language.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
@@ -64,6 +67,7 @@
     <Project Path="../tests/Meziantou.Framework.HtmlToMarkdown.Tool.Tests/Meziantou.Framework.HtmlToMarkdown.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Http.Recording.Tests/Meziantou.Framework.Http.Recording.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Language.Tool.Tests/Meziantou.Framework.Language.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />

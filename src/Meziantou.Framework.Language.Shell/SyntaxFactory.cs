@@ -1,27 +1,40 @@
+using Green = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Shell;
 
-/// <summary>Creates shell syntax nodes, tokens, and trivia programmatically.</summary>
-public static class SyntaxFactory
+/// <summary>Builds shell nodes, tokens, and trivia.</summary>
+/// <remarks>
+/// A node built here is not part of any script, so its span starts at zero. Putting it into a tree with
+/// <see cref="SyntaxNodeExtensions.ReplaceNode{TRoot}(TRoot, SyntaxNode, SyntaxNode)"/> gives it a real position,
+/// without re-reading any text.
+/// </remarks>
+/// <example>
+/// <code>
+/// var command = SyntaxFactory.Command(ShellDialect.Bash, "echo", "hello world");
+/// </code>
+/// </example>
+public static partial class SyntaxFactory
 {
-    public static ShellSyntaxTree ParseText(string text, ShellDialect dialect) => ShellSyntaxTree.ParseText(text, dialect);
+    /// <summary>A single space.</summary>
+    public static SyntaxTrivia Space => Whitespace(" ");
 
-    public static ShellSyntaxToken Token(
-        ShellSyntaxKind kind,
-        string text,
-        string? valueText = null,
-        bool isMissing = false,
-        IReadOnlyList<ShellSyntaxTrivia>? leadingTrivia = null,
-        IReadOnlyList<ShellSyntaxTrivia>? trailingTrivia = null)
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static SyntaxTrivia Whitespace(string text = " ") => Trivia(SyntaxKind.WhitespaceTrivia, text);
+
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static SyntaxTrivia EndOfLine(string text = "\n") => Trivia(SyntaxKind.EndOfLineTrivia, text);
+
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static SyntaxTrivia Trivia(SyntaxKind kind, string text)
     {
-        return new ShellSyntaxToken(kind, text, valueText, isMissing, leadingTrivia, trailingTrivia);
+        ArgumentNullException.ThrowIfNull(text);
+
+        return new SyntaxTrivia(token: default, Green.SyntaxFactory.Trivia(kind, text), position: 0, index: 0);
     }
 
-    public static ShellSyntaxTrivia Trivia(ShellSyntaxKind kind, string text) => new(kind, text);
-    public static ShellSyntaxTrivia Whitespace(string text = " ") => new(ShellSyntaxKind.WhitespaceTrivia, text);
-    public static ShellSyntaxTrivia EndOfLine(string text = "\n") => new(ShellSyntaxKind.EndOfLineTrivia, text);
-
     /// <summary>Creates comment trivia, adding the dialect's comment marker when <paramref name="text"/> omits it.</summary>
-    public static ShellSyntaxTrivia Comment(string text, ShellDialect dialect)
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="dialect"/> is <see langword="null"/>.</exception>
+    public static SyntaxTrivia Comment(string text, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(dialect);
@@ -29,39 +42,44 @@ public static class SyntaxFactory
         var marker = dialect.Family == ShellDialectFamily.Cmd ? "::" : "#";
         var content = text.StartsWith(marker, StringComparison.Ordinal) ? text : marker + " " + text;
 
-        return new ShellSyntaxTrivia(ShellSyntaxKind.SingleLineCommentTrivia, content);
+        return Trivia(SyntaxKind.SingleLineCommentTrivia, content);
     }
 
-    /// <summary>Creates an unquoted literal word part. The text is used verbatim.</summary>
-    public static ShellLiteralWordPartSyntax Literal(string text, IReadOnlyList<ShellSyntaxTrivia>? leadingTrivia = null)
+    /// <summary>Creates a token of <paramref name="kind"/> spelled <paramref name="text"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static SyntaxToken Token(SyntaxKind kind, string text, string? valueText = null)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return new ShellLiteralWordPartSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text, leadingTrivia: leadingTrivia));
+        return new SyntaxToken(parent: null, Green.SyntaxFactory.TokenWithValue(leading: null, kind, text, valueText ?? text, trailing: null), position: 0, index: 0);
     }
 
+    /// <summary>Creates a token of <paramref name="kind"/>, spelled the only way that kind can be.</summary>
+    public static SyntaxToken Token(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.Token(kind), position: 0, index: 0);
+
+    /// <summary>Creates a zero-width token standing in for one the source does not have.</summary>
+    public static SyntaxToken MissingToken(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.MissingToken(kind), position: 0, index: 0);
+
+    /// <summary>Creates an unquoted literal word part. The text is used verbatim.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static ShellLiteralWordPartSyntax Literal(string text) => ShellLiteralWordPart(Token(SyntaxKind.BareTextToken, text));
+
     /// <summary>Creates a word from parts.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="parts"/> is <see langword="null"/>.</exception>
     public static ShellWordSyntax Word(params ShellWordPartSyntax[] parts)
     {
         ArgumentNullException.ThrowIfNull(parts);
 
-        return new ShellWordSyntax(parts);
+        return ShellWord(new SyntaxList<ShellWordPartSyntax>(parts));
     }
 
     /// <summary>
     /// Creates a word holding <paramref name="text"/>, quoting it for <paramref name="dialect"/> only when the text
     /// would otherwise be split, expanded, or globbed.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static ShellWordSyntax Word(string text, ShellDialect dialect)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        ArgumentNullException.ThrowIfNull(dialect);
-
-        if (!RequiresQuoting(text, dialect))
-            return new ShellWordSyntax([Literal(text)]);
-
-        return new ShellWordSyntax([QuotedString(text, dialect)]);
-    }
+        => RequiresQuoting(text, dialect) ? Word(QuotedString(text, dialect)) : Word(Literal(text));
 
     /// <summary>Creates a quoted string that reproduces <paramref name="value"/> literally in <paramref name="dialect"/>.</summary>
     /// <remarks>
@@ -70,6 +88,7 @@ public static class SyntaxFactory
     /// quoted string and no way to carry a line break in a word, so a value holding either cannot be written as cmd
     /// text that parses back to it.
     /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> or <paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static ShellQuotedStringSyntax QuotedString(string value, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -80,105 +99,40 @@ public static class SyntaxFactory
             // A single-quoted POSIX string has no escapes at all, so a value holding a quote is double-quoted
             // instead, with the characters the shell would still act on written as escape sequences.
             ShellDialectFamily.Posix => value.Contains('\'', StringComparison.Ordinal)
-                ? Quote('"', ShellSyntaxKind.DoubleQuoteToken, EscapeParts(value, PosixDoubleQuoteSpecials))
-                : Quote('\'', ShellSyntaxKind.SingleQuoteToken, VerbatimParts(value)),
+                ? Quote(SyntaxKind.DoubleQuoteToken, EscapeParts(value, PosixDoubleQuoteSpecials))
+                : Quote(SyntaxKind.SingleQuoteToken, VerbatimParts(value)),
 
             // PowerShell and cmd double the quote character inside the string rather than escaping it.
-            ShellDialectFamily.PowerShell => Quote('\'', ShellSyntaxKind.SingleQuoteToken, DoubledParts(value, '\'')),
-            _ => Quote('"', ShellSyntaxKind.DoubleQuoteToken, DoubledParts(value, '"')),
+            ShellDialectFamily.PowerShell => Quote(SyntaxKind.SingleQuoteToken, DoubledParts(value, '\'')),
+            _ => Quote(SyntaxKind.DoubleQuoteToken, DoubledParts(value, '"')),
         };
 
-        static ShellQuotedStringSyntax Quote(char quote, ShellSyntaxKind kind, IReadOnlyList<ShellWordPartSyntax> parts)
-        {
-            var text = quote.ToString();
-
-            return new ShellQuotedStringSyntax(
-                new ShellSyntaxToken(kind, text, text),
-                parts,
-                new ShellSyntaxToken(kind, text, text));
-        }
-    }
-
-    /// <summary>The characters a POSIX shell still acts on inside a double-quoted string.</summary>
-    private static ReadOnlySpan<char> PosixDoubleQuoteSpecials => ['$', '`', '"', '\\'];
-
-    private static ShellWordPartSyntax[] VerbatimParts(string value) => value.Length == 0 ? [] : [Literal(value)];
-
-    /// <summary>
-    /// Splits <paramref name="value"/> into literal runs and backslash escapes, the way the parser reads a
-    /// double-quoted string back, so the parts resolve to the original value.
-    /// </summary>
-    private static ShellWordPartSyntax[] EscapeParts(string value, ReadOnlySpan<char> specials)
-    {
-        var parts = new List<ShellWordPartSyntax>();
-        var run = new StringBuilder();
-        foreach (var character in value)
-        {
-            if (specials.IndexOf(character) < 0)
-            {
-                run.Append(character);
-                continue;
-            }
-
-            if (run.Length > 0)
-            {
-                parts.Add(Literal(run.ToString()));
-                run.Clear();
-            }
-
-            parts.Add(new ShellEscapeSequenceSyntax(new ShellSyntaxToken(ShellSyntaxKind.EscapeToken, "\\" + character, character.ToString())));
-        }
-
-        if (run.Length > 0)
-        {
-            parts.Add(Literal(run.ToString()));
-        }
-
-        return [.. parts];
-    }
-
-    /// <summary>
-    /// Writes <paramref name="value"/> with every <paramref name="quote"/> doubled, keeping the original text as the
-    /// token's value so the part resolves to what was asked for.
-    /// </summary>
-    private static ShellWordPartSyntax[] DoubledParts(string value, char quote)
-    {
-        if (value.Length == 0)
-            return [];
-
-        var text = value.Replace(quote.ToString(), new string(quote, 2), StringComparison.Ordinal);
-
-        return [new ShellLiteralWordPartSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, value))];
+        static ShellQuotedStringSyntax Quote(SyntaxKind kind, ShellWordPartSyntax[] parts)
+            => ShellQuotedString(Token(kind), new SyntaxList<ShellWordPartSyntax>(parts), Token(kind));
     }
 
     /// <summary>Creates a reference to <paramref name="name"/> using the syntax of <paramref name="dialect"/>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> or <paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static ShellVariableReferenceSyntax VariableReference(string name, ShellDialect dialect, bool braced = false)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(dialect);
 
+        var nameToken = Token(SyntaxKind.VariableNameToken, name);
         if (dialect.Family == ShellDialectFamily.Cmd)
         {
-            return new ShellVariableReferenceSyntax(
-                new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, "%", "%"),
-                openBraceToken: null,
-                new ShellSyntaxToken(ShellSyntaxKind.VariableNameToken, name, name),
-                new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, "%", "%"));
+            return ShellVariableReference(Token(SyntaxKind.BareTextToken, "%"), default, nameToken, Token(SyntaxKind.BareTextToken, "%"));
         }
 
-        var dollarToken = new ShellSyntaxToken(ShellSyntaxKind.DollarToken, "$", "$");
-        var nameToken = new ShellSyntaxToken(ShellSyntaxKind.VariableNameToken, name, name);
-        if (!braced)
-            return new ShellVariableReferenceSyntax(dollarToken, openBraceToken: null, nameToken, closeBraceToken: null);
+        var dollarToken = Token(SyntaxKind.DollarToken);
 
-        return new ShellVariableReferenceSyntax(
-            dollarToken,
-            new ShellSyntaxToken(ShellSyntaxKind.OpenBraceToken, "{", "{"),
-            nameToken,
-            new ShellSyntaxToken(ShellSyntaxKind.CloseBraceToken, "}", "}"));
+        return braced
+            ? ShellVariableReference(dollarToken, Token(SyntaxKind.OpenBraceToken), nameToken, Token(SyntaxKind.CloseBraceToken))
+            : ShellVariableReference(dollarToken, default, nameToken, default);
     }
 
     /// <summary>Creates a command whose name and arguments are quoted for <paramref name="dialect"/> as needed.</summary>
+    /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
     public static ShellCommandSyntax Command(ShellDialect dialect, string name, params string[] arguments)
     {
         ArgumentNullException.ThrowIfNull(dialect);
@@ -189,87 +143,78 @@ public static class SyntaxFactory
     }
 
     /// <summary>Creates a command from existing words, separated by single spaces.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> or <paramref name="arguments"/> is <see langword="null"/>.</exception>
     public static ShellCommandSyntax Command(ShellWordSyntax name, params ShellWordSyntax[] arguments)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(arguments);
 
         var elements = new List<ShellSyntaxNode>(arguments.Length + 1) { name };
-        foreach (var argument in arguments)
-        {
-            elements.Add(WithLeadingSpace(argument));
-        }
+        elements.AddRange(arguments.Select(WithLeadingSpace));
 
-        return new ShellCommandSyntax(elements);
+        return ShellCommand(new SyntaxList<ShellSyntaxNode>(elements));
     }
 
-    public static ShellRedirectionSyntax Redirection(ShellSyntaxKind operatorKind, string operatorText, ShellWordSyntax target)
+    /// <exception cref="ArgumentNullException"><paramref name="operatorText"/> or <paramref name="target"/> is <see langword="null"/>.</exception>
+    public static ShellRedirectionSyntax Redirection(SyntaxKind operatorKind, string operatorText, ShellWordSyntax target)
     {
         ArgumentNullException.ThrowIfNull(operatorText);
         ArgumentNullException.ThrowIfNull(target);
 
-        return new ShellRedirectionSyntax(ioNumberToken: null, new ShellSyntaxToken(operatorKind, operatorText, operatorText), target);
+        return ShellRedirection(default, Token(operatorKind, operatorText), target);
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static ShellAssignmentSyntax Assignment(string name, ShellWordSyntax? value)
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        return new ShellAssignmentSyntax(
-            new ShellSyntaxToken(ShellSyntaxKind.VariableNameToken, name, name),
-            new ShellSyntaxToken(ShellSyntaxKind.EqualsToken, "=", "="),
-            value);
+        return ShellAssignment(Token(SyntaxKind.VariableNameToken, name), Token(SyntaxKind.EqualsToken), value);
     }
 
     /// <summary>Creates a pipeline joining <paramref name="commands"/> with <c>|</c>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="commands"/> is <see langword="null"/>.</exception>
     public static ShellPipelineSyntax Pipeline(params ShellStatementSyntax[] commands)
     {
         ArgumentNullException.ThrowIfNull(commands);
 
-        var operators = new List<ShellSyntaxToken>();
-        for (var index = 0; index < commands.Length - 1; index++)
-        {
-            operators.Add(new ShellSyntaxToken(ShellSyntaxKind.PipeToken, "|", "|", leadingTrivia: [Whitespace()], trailingTrivia: [Whitespace()]));
-        }
+        var pipe = Token(SyntaxKind.PipeToken).WithLeadingTrivia(Space).WithTrailingTrivia(Space);
 
-        return new ShellPipelineSyntax(bangToken: null, commands, operators);
+        return ShellPipeline(default, Separated(commands, pipe));
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="statements"/> is <see langword="null"/>.</exception>
     public static ShellStatementListSyntax StatementList(params ShellStatementSyntax[] statements)
     {
         ArgumentNullException.ThrowIfNull(statements);
 
-        var separators = new List<ShellSyntaxToken>();
-        for (var index = 0; index < statements.Length - 1; index++)
-        {
-            separators.Add(new ShellSyntaxToken(ShellSyntaxKind.SemicolonToken, ";", ";", trailingTrivia: [Whitespace()]));
-        }
+        var semicolon = Token(SyntaxKind.SemicolonToken).WithTrailingTrivia(Space);
 
-        return new ShellStatementListSyntax(statements, separators);
+        return ShellStatementList(Separated(statements, semicolon));
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="statements"/> is <see langword="null"/>.</exception>
     public static ShellScriptSyntax Script(ShellStatementListSyntax statements)
     {
         ArgumentNullException.ThrowIfNull(statements);
 
-        return new ShellScriptSyntax(statements, new ShellSyntaxToken(ShellSyntaxKind.EndOfFileToken, string.Empty));
+        return ShellScript(statements, Token(SyntaxKind.EndOfFileToken));
     }
 
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static ShellSkippedTextSyntax SkippedText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return new ShellSkippedTextSyntax([new ShellSyntaxToken(ShellSyntaxKind.BadToken, text, text)], fullStart: 0);
+        return (ShellSkippedTextSyntax)new Green.ShellSkippedTextSyntax(
+            Green.ParserHelpers.SkippedTokens([Green.SyntaxFactory.Token(leading: null, SyntaxKind.BadToken, text, trailing: null)])).CreateRed();
     }
 
-    public static ShellRawExpressionSyntax RawExpression(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-
-        return new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, text, text));
-    }
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    public static ShellRawExpressionSyntax RawExpression(string text) => ShellRawExpression(Token(SyntaxKind.BareTextToken, text));
 
     /// <summary>Returns whether <paramref name="text"/> would change meaning if written unquoted.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> or <paramref name="dialect"/> is <see langword="null"/>.</exception>
     public static bool RequiresQuoting(string text, ShellDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -297,44 +242,84 @@ public static class SyntaxFactory
         return false;
     }
 
+    /// <summary>The characters a POSIX shell still acts on inside a double-quoted string.</summary>
+    private static ReadOnlySpan<char> PosixDoubleQuoteSpecials => ['$', '`', '"', '\\'];
+
+    /// <summary>Weaves nodes and one separator between each pair into the sequence a separated list holds.</summary>
+    private static SeparatedSyntaxList<TNode> Separated<TNode>(TNode[] nodes, SyntaxToken separator)
+        where TNode : ShellSyntaxNode
+    {
+        var items = new List<SyntaxNodeOrToken>(Math.Max(0, (nodes.Length * 2) - 1));
+        for (var index = 0; index < nodes.Length; index++)
+        {
+            if (index > 0)
+            {
+                items.Add(separator);
+            }
+
+            items.Add(nodes[index]);
+        }
+
+        return new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(items));
+    }
+
+    private static ShellWordPartSyntax[] VerbatimParts(string value) => value.Length == 0 ? [] : [Literal(value)];
+
+    /// <summary>
+    /// Splits <paramref name="value"/> into literal runs and backslash escapes, the way the parser reads a
+    /// double-quoted string back, so the parts resolve to the original value.
+    /// </summary>
+    private static ShellWordPartSyntax[] EscapeParts(string value, ReadOnlySpan<char> specials)
+    {
+        var parts = new List<ShellWordPartSyntax>();
+        var run = new StringBuilder();
+        foreach (var character in value)
+        {
+            if (specials.IndexOf(character) < 0)
+            {
+                run.Append(character);
+                continue;
+            }
+
+            if (run.Length > 0)
+            {
+                parts.Add(Literal(run.ToString()));
+                run.Clear();
+            }
+
+            parts.Add(ShellEscapeSequence(Token(SyntaxKind.EscapeToken, "\\" + character, character.ToString())));
+        }
+
+        if (run.Length > 0)
+        {
+            parts.Add(Literal(run.ToString()));
+        }
+
+        return [.. parts];
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> with every <paramref name="quote"/> doubled, keeping the original text as the
+    /// token's value so the part resolves to what was asked for.
+    /// </summary>
+    private static ShellWordPartSyntax[] DoubledParts(string value, char quote)
+    {
+        if (value.Length == 0)
+            return [];
+
+        var text = value.Replace(quote.ToString(), new string(quote, 2), StringComparison.Ordinal);
+
+        return [ShellLiteralWordPart(Token(SyntaxKind.BareTextToken, text, value))];
+    }
+
     /// <summary>
     /// Puts a space in front of <paramref name="word"/> so it stays a word of its own instead of being glued to what
     /// precedes it. A word that already starts with trivia is returned unchanged.
     /// </summary>
     internal static ShellWordSyntax WithLeadingSpace(ShellWordSyntax word)
-    {
-        if (word.Parts.Count == 0 || word.StartsWithTrivia)
-            return word;
+        => word.GetLeadingTrivia().Count > 0 ? word : word.WithLeadingTrivia(Space);
 
-        var rebuilt = WithLeadingSpace(word.Parts[0]);
-
-        // A part type this does not know how to rebuild, which includes any defined outside this assembly, carries
-        // the space in a part of its own. Less tidy than putting it on the first token, but never glued.
-        return rebuilt is null
-            ? new ShellWordSyntax([Literal(string.Empty, [Whitespace()]), .. word.Parts])
-            : new ShellWordSyntax([rebuilt, .. word.Parts.Skip(1)]);
-    }
-
-    /// <summary>
-    /// Rebuilds <paramref name="part"/> with a space on its first token, the way the parser holds the whitespace in
-    /// front of a word. Returns <see langword="null"/> for a part whose first token this cannot reach.
-    /// </summary>
-    private static ShellWordPartSyntax? WithLeadingSpace(ShellWordPartSyntax part)
-    {
-        return part switch
-        {
-            ShellLiteralWordPartSyntax literal => new ShellLiteralWordPartSyntax(Spaced(literal.TextToken)),
-            ShellQuotedStringSyntax quoted => new ShellQuotedStringSyntax(Spaced(quoted.OpenQuoteToken), quoted.Parts, quoted.CloseQuoteToken),
-            ShellGlobSyntax glob => new ShellGlobSyntax(Spaced(glob.GlobToken)),
-            ShellEscapeSequenceSyntax escape => new ShellEscapeSequenceSyntax(Spaced(escape.EscapeToken)),
-            ShellVariableReferenceSyntax reference => new ShellVariableReferenceSyntax(Spaced(reference.IntroducerToken), reference.OpenBraceToken, reference.NameToken, reference.CloseBraceToken),
-            CmdVariableReferenceSyntax reference => new CmdVariableReferenceSyntax(Spaced(reference.OpenToken), reference.NameToken, reference.CloseToken),
-            ShellCommandSubstitutionSyntax substitution => new ShellCommandSubstitutionSyntax(Spaced(substitution.OpenToken), substitution.Statements, substitution.CloseToken),
-            PosixProcessSubstitutionSyntax substitution => new PosixProcessSubstitutionSyntax(Spaced(substitution.OpenToken), substitution.Statements, substitution.CloseToken),
-            PosixArithmeticExpansionSyntax expansion => new PosixArithmeticExpansionSyntax(Spaced(expansion.OpenToken), expansion.Expression, expansion.CloseToken),
-            _ => null,
-        };
-
-        static ShellSyntaxToken Spaced(ShellSyntaxToken token) => token.WithLeadingTrivia([Whitespace()]);
-    }
+    /// <summary>Unwraps a token that a node requires, rejecting the default one no factory should produce.</summary>
+    private static Meziantou.Framework.Language.InternalSyntax.GreenNode Required(SyntaxToken token)
+        => token.Node ?? throw new ArgumentException("A required token was not given.", nameof(token));
 }

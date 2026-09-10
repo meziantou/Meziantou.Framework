@@ -1,209 +1,115 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Xml;
 
-/// <summary>Represents an XML element, including its attributes and child content.</summary>
-/// <example>
-/// <code>
-/// var element = SyntaxFactory.Element("package", [], [new XmlTextSyntax("value")]);
-/// var updated = element.WithName("dependency");
-/// </code>
-/// </example>
-public sealed class XmlElementSyntax : XmlSyntaxNode
+/// <summary>An element written with a start tag and an end tag, and whatever stands between them.</summary>
+public sealed class XmlElementSyntax : XmlNodeSyntax
 {
-    private readonly IReadOnlyList<XmlSyntaxNode> _childNodes;
+    private SyntaxNode? _startTag;
+    private SyntaxNode? _content;
+    private SyntaxNode? _endTag;
 
-    public XmlElementSyntax(
-        string name,
-        IReadOnlyList<XmlAttributeSyntax> attributes,
-        IReadOnlyList<XmlSyntaxNode> content,
-        XmlEndTagSyntax? endTag,
-        bool isSelfClosing,
-        string fullText,
-        string startTagText,
-        int fullStart = 0)
-        : base(isSelfClosing ? XmlSyntaxKind.XmlEmptyElement : XmlSyntaxKind.XmlElement, fullText, [new XmlSyntaxToken(XmlSyntaxKind.IdentifierToken, name, name, fullStart: GetNameStart(startTagText, fullStart))], fullStart)
+    internal XmlElementSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        Name = name;
-        Attributes = attributes ?? [];
-        Content = content ?? [];
-        EndTag = endTag;
-        IsSelfClosing = isSelfClosing;
-        StartTagText = startTagText;
-
-        var nodes = new List<XmlSyntaxNode>(Attributes.Count + Content.Count + 1);
-        nodes.AddRange(Attributes);
-        nodes.AddRange(Content);
-        if (EndTag is not null)
-            nodes.Add(EndTag);
-
-        _childNodes = nodes;
     }
 
-    public string Name { get; }
-    public IReadOnlyList<XmlAttributeSyntax> Attributes { get; }
-    public IReadOnlyList<XmlSyntaxNode> Content { get; }
-    public XmlEndTagSyntax? EndTag { get; }
-    public bool IsSelfClosing { get; }
-    public string StartTagText { get; }
-    public override IReadOnlyList<XmlSyntaxNode> ChildNodes => _childNodes;
+    public XmlElementStartTagSyntax StartTag => (XmlElementStartTagSyntax)GetRed(ref _startTag, 0)!;
+    public SyntaxList<XmlNodeSyntax> Content => new(GetRed(ref _content, 1));
+    public XmlElementEndTagSyntax? EndTag => (XmlElementEndTagSyntax?)GetRed(ref _endTag, 2);
 
+    /// <summary>Gets the name the start tag declares.</summary>
+    public string Name => StartTag.NameToken.Text;
+
+    /// <summary>Gets the attributes the start tag declares.</summary>
+    public SyntaxList<XmlAttributeSyntax> Attributes => StartTag.Attributes;
+
+    /// <summary>Gets the first attribute called <paramref name="name"/>, or <see langword="null"/> when there is none.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public XmlAttributeSyntax? GetAttribute(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return Attributes.FirstOrDefault(attribute => string.Equals(attribute.Name, name, StringComparison.Ordinal));
+
+        foreach (var attribute in Attributes)
+        {
+            if (string.Equals(attribute.Name, name, StringComparison.Ordinal))
+                return attribute;
+        }
+
+        return null;
     }
 
-    public string GetInnerText()
-    {
-        if (IsSelfClosing)
-            return string.Empty;
+    /// <summary>Gets the text between the two tags, exactly as it was written.</summary>
+    public string GetInnerText() => Content.ToFullString();
 
-        var endTagText = EndTag?.ToFullString() ?? string.Empty;
-        var innerTextLength = ToFullString().Length - StartTagText.Length - endTagText.Length;
-        if (innerTextLength <= 0)
-            return string.Empty;
-
-        return ToFullString().Substring(StartTagText.Length, innerTextLength);
-    }
-
-    public XmlElementSyntax WithName(string name)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        if (string.Equals(name, Name, StringComparison.Ordinal))
-            return this;
-
-        return SyntaxFactory.Element(name, Attributes, Content, IsSelfClosing);
-    }
-
-    public XmlElementSyntax WithAttributes(IEnumerable<XmlAttributeSyntax>? attributes)
-    {
-        var updatedAttributes = attributes?.ToArray() ?? [];
-        if (updatedAttributes.SequenceEqual(Attributes))
-            return this;
-
-        return SyntaxFactory.Element(Name, updatedAttributes, Content, IsSelfClosing);
-    }
-
-    public XmlElementSyntax WithContent(IEnumerable<XmlSyntaxNode>? content)
-    {
-        var updatedContent = content?.ToArray() ?? [];
-        if (updatedContent.SequenceEqual(Content))
-            return this;
-
-        return SyntaxFactory.Element(Name, Attributes, updatedContent, IsSelfClosing);
-    }
-
-    public XmlElementSyntax WithEndTag(XmlEndTagSyntax? endTag)
-    {
-        if (ReferenceEquals(endTag, EndTag))
-            return this;
-
-        return SyntaxFactory.Element(Name, Attributes, Content, endTag is null);
-    }
-
+    /// <summary>Returns this element with <paramref name="text"/> as its only content.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public XmlElementSyntax WithInnerText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        if (IsSelfClosing)
-            throw new InvalidOperationException("Cannot set the inner text of a self-closing XML element.");
-
         if (string.Equals(GetInnerText(), text, StringComparison.Ordinal))
             return this;
 
-        var endTagText = EndTag?.ToFullString() ?? string.Empty;
-        return new XmlElementSyntax(
-            Name,
-            Attributes,
-            [new XmlTextSyntax(text)],
-            EndTag,
-            isSelfClosing: false,
-            StartTagText + text + endTagText,
-            StartTagText,
-            FullSpan.Start);
+        return WithContent(new SyntaxList<XmlNodeSyntax>(SyntaxFactory.XmlText(text)));
     }
 
-    public XmlElementSyntax WithLeadingTrivia(params ReadOnlySpan<XmlSyntaxTrivia> leadingTrivia)
+    /// <summary>Returns this element renamed, in both of its tags.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public XmlElementSyntax WithName(string name)
     {
-        var triviaText = ConcatenateTrivia(leadingTrivia);
-        var nameStart = GetElementNameStart(StartTagText);
-        if (nameStart < 0)
+        ArgumentNullException.ThrowIfNull(name);
+
+        if (string.Equals(name, Name, StringComparison.Ordinal))
             return this;
 
-        var updatedStartTag = "<" + triviaText + StartTagText[nameStart..];
-        if (string.Equals(updatedStartTag, StartTagText, StringComparison.Ordinal))
+        var startTag = StartTag.WithNameToken(SyntaxFactory.Identifier(name).WithTriviaFrom(StartTag.NameToken));
+        var endTag = EndTag?.WithNameToken(SyntaxFactory.Identifier(name).WithTriviaFrom(EndTag.NameToken));
+
+        return Update(startTag, Content, endTag);
+    }
+
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public XmlElementSyntax Update(XmlElementStartTagSyntax startTag, SyntaxList<XmlNodeSyntax> content, XmlElementEndTagSyntax? endTag)
+    {
+        if (ReferenceEquals(startTag.Green, Green.GetSlot(0)) && content.Green == Green.GetSlot(1) && ReferenceEquals(endTag?.Green, Green.GetSlot(2)))
             return this;
 
-        return WithStartTagText(updatedStartTag);
+        return SyntaxFactory.XmlElement(startTag, content, endTag).WithAnnotationsFrom(this);
     }
 
-    public XmlElementSyntax WithTrailingTrivia(params ReadOnlySpan<XmlSyntaxTrivia> trailingTrivia)
+    public XmlElementSyntax WithStartTag(XmlElementStartTagSyntax startTag) => Update(startTag, Content, EndTag);
+    public XmlElementSyntax WithContent(SyntaxList<XmlNodeSyntax> content) => Update(StartTag, content, EndTag);
+    public XmlElementSyntax WithEndTag(XmlElementEndTagSyntax? endTag) => Update(StartTag, Content, endTag);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+{
+        0 => GetRed(ref _startTag, 0),
+        1 => GetRed(ref _content, 1),
+        2 => GetRed(ref _endTag, 2),
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+{
+        0 => _startTag,
+        1 => _content,
+        2 => _endTag,
+        _ => null,
+    };
+
+    public override void Accept(XmlSyntaxVisitor visitor)
     {
-        var triviaText = ConcatenateTrivia(trailingTrivia);
-        var nameStart = GetElementNameStart(StartTagText);
-        if (nameStart < 0)
-            return this;
+        ArgumentNullException.ThrowIfNull(visitor);
 
-        var nameEnd = nameStart + Name.Length;
-        if (nameEnd > StartTagText.Length)
-            return this;
-
-        var separatorEnd = nameEnd;
-        while (separatorEnd < StartTagText.Length && char.IsWhiteSpace(StartTagText[separatorEnd]))
-        {
-            separatorEnd++;
-        }
-
-        var updatedStartTag = StartTagText[..nameEnd] + triviaText + StartTagText[separatorEnd..];
-        if (string.Equals(updatedStartTag, StartTagText, StringComparison.Ordinal))
-            return this;
-
-        return WithStartTagText(updatedStartTag);
+        visitor.VisitElement(this);
     }
 
-    private XmlElementSyntax WithStartTagText(string startTagText)
+    public override TResult? Accept<TResult>(XmlSyntaxVisitor<TResult> visitor)
+        where TResult : default
     {
-        var endTagText = EndTag?.ToFullString() ?? string.Empty;
-        var innerTextLength = ToFullString().Length - StartTagText.Length - endTagText.Length;
-        var innerText = innerTextLength > 0 ? ToFullString().Substring(StartTagText.Length, innerTextLength) : string.Empty;
-        return new XmlElementSyntax(Name, Attributes, Content, EndTag, IsSelfClosing, startTagText + innerText + endTagText, startTagText, FullSpan.Start);
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitElement(this);
     }
-
-    /// <summary>Returns where the element name starts, skipping the <c>&lt;</c> the start tag begins with.</summary>
-    private static int GetNameStart(string startTagText, int fullStart)
-    {
-        var nameStart = GetElementNameStart(startTagText);
-
-        return nameStart < 0 ? fullStart : fullStart + nameStart;
-    }
-
-    private static int GetElementNameStart(string startTagText)
-    {
-        if (string.IsNullOrEmpty(startTagText) || startTagText[0] != '<')
-            return -1;
-
-        var current = 1;
-        while (current < startTagText.Length && char.IsWhiteSpace(startTagText[current]))
-        {
-            current++;
-        }
-
-        return current < startTagText.Length ? current : -1;
-    }
-
-    private static string ConcatenateTrivia(ReadOnlySpan<XmlSyntaxTrivia> trivia)
-    {
-        if (trivia.IsEmpty)
-            return string.Empty;
-
-        var builder = new StringBuilder();
-        foreach (var currentTrivia in trivia)
-        {
-            builder.Append(currentTrivia.Text);
-        }
-
-        return builder.ToString();
-    }
-
-    public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitElement(this);
-    public override TResult Accept<TResult>(XmlSyntaxVisitor<TResult> visitor) => visitor.VisitElement(this);
 }

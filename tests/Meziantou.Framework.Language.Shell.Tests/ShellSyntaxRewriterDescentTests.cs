@@ -10,7 +10,7 @@ public sealed class ShellSyntaxRewriterDescentTests
     private static string Rewrite(string text, ShellDialect dialect)
     {
         var tree = ShellSyntaxTree.ParseText(text, dialect);
-        var rewritten = new CommandRenamer("echo", "printf").Visit(tree.Root);
+        var rewritten = new CommandRenamer("echo", "printf").Visit(tree.GetRoot());
 
         return Assert.IsType<ShellScriptSyntax>(rewritten).ToFullString();
     }
@@ -77,7 +77,7 @@ public sealed class ShellSyntaxRewriterDescentTests
     {
         var tree = ShellSyntaxTree.ParseText("if true; then echo a; fi\n", ShellDialect.Bash);
 
-        Assert.Same(tree.Root, new ShellSyntaxRewriter().Visit(tree.Root));
+        Assert.Same(tree.GetRoot(), new ShellSyntaxRewriter().Visit(tree.GetRoot()));
     }
 
     [Fact]
@@ -105,21 +105,21 @@ public sealed class ShellSyntaxRewriterDescentTests
     {
         // The whole if-statement is replaced, so the `echo` inside it must not also be rewritten.
         var tree = ShellSyntaxTree.ParseText("if true; then echo a; fi\n", ShellDialect.Bash);
-        var rewritten = new StatementReplacer().Visit(tree.Root);
+        var rewritten = new StatementReplacer().Visit(tree.GetRoot());
 
         Assert.Equal("replaced\n", Assert.IsType<ShellScriptSyntax>(rewritten).ToFullString());
     }
 
     private sealed class CommandRenamer(string oldName, string newName) : ShellSyntaxRewriter
     {
-        public override ShellSyntaxNode? VisitCommand(ShellCommandSyntax node)
+        public override SyntaxNode? VisitCommand(ShellCommandSyntax node)
         {
             if (node.NameValue != oldName || node.Name is null)
                 return base.VisitCommand(node);
 
             var renamed = node.Name.WithText(newName);
 
-            return node.WithChildNodes(node.ChildNodes.Select(child => ReferenceEquals(child, node.Name) ? renamed : child));
+            return node.WithElements(new SyntaxList<ShellSyntaxNode>(node.Elements.Select(child => ReferenceEquals(child, node.Name) ? (ShellSyntaxNode)renamed : child)));
         }
     }
 
@@ -133,12 +133,12 @@ public sealed class ShellSyntaxRewriterDescentTests
     public void RewritingASubtreeReturnsTheReplacementForThatSubtree()
     {
         var tree = ShellSyntaxTree.ParseText("if true; then echo a; fi\necho b\n", ShellDialect.Bash);
-        var ifStatement = tree.Root.Statements.Statements[0];
+        var ifStatement = tree.GetRoot().Statements.Statements[0];
 
         var rewritten = new CommandRenamer("echo", "printf").Visit(ifStatement);
 
         Assert.NotNull(rewritten);
-        Assert.Equal(ShellSyntaxKind.PosixIfStatement, rewritten.Kind);
+        Assert.Equal(SyntaxKind.PosixIfStatement, rewritten.Kind());
         Assert.Equal("if true; then printf a; fi", rewritten.ToFullString());
     }
 
@@ -146,7 +146,7 @@ public sealed class ShellSyntaxRewriterDescentTests
     public void RewritingASubtreeLeavesItsSiblingsAlone()
     {
         var tree = ShellSyntaxTree.ParseText("echo a\necho b\n", ShellDialect.Bash);
-        var first = tree.Root.Statements.Statements[0];
+        var first = tree.GetRoot().Statements.Statements[0];
 
         var rewritten = new CommandRenamer("echo", "printf").Visit(first);
 
@@ -158,7 +158,7 @@ public sealed class ShellSyntaxRewriterDescentTests
     public void RewritingASubtreeWithNoChangeReturnsTheSameInstance()
     {
         var tree = ShellSyntaxTree.ParseText("if true; then ls; fi\n", ShellDialect.Bash);
-        var ifStatement = tree.Root.Statements.Statements[0];
+        var ifStatement = tree.GetRoot().Statements.Statements[0];
 
         Assert.Same(ifStatement, new CommandRenamer("echo", "printf").Visit(ifStatement));
     }

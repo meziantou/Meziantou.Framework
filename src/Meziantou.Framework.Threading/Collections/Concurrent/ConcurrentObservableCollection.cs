@@ -12,6 +12,11 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
 /// That context must run its callbacks one at a time, as the UI ones do: the notifications mutate the state exposed by
 /// <see cref="AsObservable"/>, so a context running two callbacks concurrently would corrupt it.
+/// <para>
+/// When the synchronization context refuses the callback, for instance because the thread it is bound to is gone, the exception is
+/// propagated to the caller that modified the collection. The modification is kept, and its notification stays queued until a later
+/// modification succeeds in posting to the context.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

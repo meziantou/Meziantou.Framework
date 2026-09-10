@@ -3,9 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Language</RootNamespace>
-    <Description>Primitives shared by the Meziantou.Framework.Language parsers: source text, lines, spans, text changes, locations, and diagnostics.</Description>
+    <Description>The syntax tree Meziantou.Framework.Language.* is built on: immutable green nodes, the nodes and tokens projected from them, source text, spans, locations, and diagnostics.</Description>
     <PackageTags>syntax-tree, cst, parser, diagnostics, source-text</PackageTags>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

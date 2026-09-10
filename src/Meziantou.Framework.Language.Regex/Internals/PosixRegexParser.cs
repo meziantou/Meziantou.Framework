@@ -1,4 +1,8 @@
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>Parses POSIX basic and extended regular expressions.</summary>
 /// <remarks>
@@ -93,7 +97,7 @@ internal sealed class PosixRegexParser : PerlStyleRegexParser
         return 0;
     }
 
-    protected override RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    protected override RegexAtomSyntax ParseAtom(GreenNode? leadingTrivia)
     {
         if (!DelimitersAreEscaped)
             return base.ParseAtom(leadingTrivia);
@@ -122,11 +126,11 @@ internal sealed class PosixRegexParser : PerlStyleRegexParser
     private bool IsAtBranchEnd(int position) =>
         position >= Text.Length || AlternationSeparatorLength(position) > 0 || GroupCloseLength(position) > 0;
 
-    private RegexLiteralSyntax ReadLiteral(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexLiteralSyntax ReadLiteral(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         Scanner.Position++;
 
-        return WithOptions(new RegexLiteralSyntax(Scanner.Token(RegexSyntaxKind.LiteralToken, start, leadingTrivia)));
+        return new RegexLiteralSyntax(Scanner.Token(SyntaxKind.LiteralToken, start, leadingTrivia), Options);
     }
 }

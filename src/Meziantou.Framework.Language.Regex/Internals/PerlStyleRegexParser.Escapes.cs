@@ -9,7 +9,11 @@
 // than RegexNode instances and exceptions. What each of them consumes is unchanged, which is what the differential
 // test against the runtime checks.
 
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 internal partial class PerlStyleRegexParser
 {
@@ -23,16 +27,16 @@ internal partial class PerlStyleRegexParser
             (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None);
 
     /// <summary>Parses a backslash escape used as an atom of a sequence.</summary>
-    private RegexAtomSyntax ParseBackslashAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexAtomSyntax ParseBackslashAtom(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         if (Scanner.Position + 1 >= Text.Length)
         {
             Scanner.Position = Text.Length;
-            var stray = Scanner.Token(RegexSyntaxKind.BadToken, start, leadingTrivia);
+            var stray = Scanner.Token(SyntaxKind.BadToken, start, leadingTrivia);
             AddDiagnostic(TextSpan.FromBounds(start, Scanner.Position), RegexDiagnosticIds.UnescapedEndingBackslash, "The pattern ends with an unescaped backslash.");
 
-            return WithOptions(new RegexSkippedTextSyntax([stray], stray.FullSpan.Start));
+            return new RegexSkippedTextSyntax(stray, Options);
         }
 
         switch (Scanner.Peek())
@@ -40,21 +44,21 @@ internal partial class PerlStyleRegexParser
             case 'b':
             case 'B':
                 Scanner.Position += 2;
-                return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
+                return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
             // Where the dialect has no such anchor the escape is not an anchor at all: it falls through and stands for
             // the letter, which is what an engine without it does.
             case 'A' or 'G' or 'z' or 'Z' when Dialect.HasFeature(RegexDialectFeatures.AnchorsAZ):
                 Scanner.Position += 2;
-                return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
+                return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
             case 'K' when Dialect.HasFeature(RegexDialectFeatures.KeepOut):
                 Scanner.Position += 2;
-                return WithOptions(new RegexAnchorSyntax(Scanner.Token(RegexSyntaxKind.AnchorToken, start, leadingTrivia)));
+                return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
             case var letter when IsShorthandClassLetter(letter):
                 Scanner.Position += 2;
-                return WithOptions(new RegexCharacterClassEscapeSyntax(Scanner.Token(RegexSyntaxKind.ClassEscapeToken, start, leadingTrivia)));
+                return new RegexCharacterClassEscapeSyntax(Scanner.Token(SyntaxKind.ClassEscapeToken, start, leadingTrivia), Options);
 
             case 'p' or 'P' when SupportsUnicodeCategories:
                 return ParseUnicodeCategory(leadingTrivia);
@@ -65,7 +69,7 @@ internal partial class PerlStyleRegexParser
             // "\E" with no "\Q" in front of it closes nothing and matches nothing, which the engines simply ignore.
             case 'E' when Dialect.HasFeature(RegexDialectFeatures.QuotedLiterals):
                 Scanner.Position += 2;
-                return WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, start, leadingTrivia, string.Empty)));
+                return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, start, leadingTrivia, string.Empty), Options);
 
             default:
                 return TryParseDialectEscape(leadingTrivia) ?? ParseBackreferenceOrEscape(leadingTrivia);
@@ -74,26 +78,26 @@ internal partial class PerlStyleRegexParser
 
     /// <summary>Parses a <c>\Q…\E</c> run, in which every character stands for itself.</summary>
     /// <remarks>An unterminated run reaches the end of the pattern, which is what the engines that have it do.</remarks>
-    private RegexQuotedLiteralSyntax ParseQuotedLiteral(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexQuotedLiteralSyntax ParseQuotedLiteral(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         Scanner.Position += 2;
-        var startToken = Scanner.Token(RegexSyntaxKind.QuoteStartToken, start, leadingTrivia);
+        var startToken = Scanner.Token(SyntaxKind.QuoteStartToken, start, leadingTrivia);
 
         var textStart = Scanner.Position;
         var end = Text.AsSpan(textStart).IndexOf("\\E", StringComparison.Ordinal);
         Scanner.Position = end < 0 ? Text.Length : textStart + end;
-        var textToken = Scanner.Position > textStart ? Scanner.Token(RegexSyntaxKind.QuoteTextToken, textStart) : null;
+        var textToken = Scanner.Position > textStart ? Scanner.Token(SyntaxKind.QuoteTextToken, textStart) : default;
 
-        RegexSyntaxToken? endToken = null;
+        ScannedToken endToken = default;
         if (end >= 0)
         {
             var endStart = Scanner.Position;
             Scanner.Position += 2;
-            endToken = Scanner.Token(RegexSyntaxKind.QuoteEndToken, endStart);
+            endToken = Scanner.Token(SyntaxKind.QuoteEndToken, endStart);
         }
 
-        return WithOptions(new RegexQuotedLiteralSyntax(startToken, textToken, endToken));
+        return new RegexQuotedLiteralSyntax(startToken, textToken, endToken, Options);
     }
 
     /// <summary>Parses <c>\p{Name}</c> or <c>\P{Name}</c>.</summary>
@@ -102,17 +106,17 @@ internal partial class PerlStyleRegexParser
     /// of the pattern before it looks at anything, which is why an incomplete escape is reported as invalid rather than
     /// malformed.
     /// </remarks>
-    private RegexUnicodeCategorySyntax ParseUnicodeCategory(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexUnicodeCategorySyntax ParseUnicodeCategory(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         Scanner.Position += 2;
-        var categoryStartToken = Scanner.Token(RegexSyntaxKind.CategoryStartToken, start, leadingTrivia);
+        var categoryStartToken = Scanner.Token(SyntaxKind.CategoryStartToken, start, leadingTrivia);
 
         if (Scanner.Position + 2 > Text.Length && !(AllowsBracelessProperty && !Scanner.IsAtEnd && char.IsAsciiLetter(Scanner.Current)))
         {
             AddDiagnostic(categoryStartToken.Span, RegexDiagnosticIds.InvalidUnicodePropertyEscape, "Incomplete '\\p{...}' character escape.");
 
-            return WithOptions(new RegexUnicodeCategorySyntax(categoryStartToken, null, null, null));
+            return new RegexUnicodeCategorySyntax(categoryStartToken, null, null, null, Options);
         }
 
         if (Scanner.Current != '{')
@@ -123,17 +127,17 @@ internal partial class PerlStyleRegexParser
                 var letterStart = Scanner.Position;
                 Scanner.Position++;
 
-                return WithOptions(new RegexUnicodeCategorySyntax(categoryStartToken, null, Scanner.Token(RegexSyntaxKind.CategoryNameToken, letterStart), null));
+                return new RegexUnicodeCategorySyntax(categoryStartToken, null, Scanner.Token(SyntaxKind.CategoryNameToken, letterStart), null, Options);
             }
 
             AddDiagnostic(categoryStartToken.Span, RegexDiagnosticIds.MalformedUnicodePropertyEscape, "Malformed '\\p{...}' character escape.");
 
-            return WithOptions(new RegexUnicodeCategorySyntax(categoryStartToken, null, null, null));
+            return new RegexUnicodeCategorySyntax(categoryStartToken, null, null, null, Options);
         }
 
         var braceStart = Scanner.Position;
         Scanner.Position++;
-        var openBraceToken = Scanner.Token(RegexSyntaxKind.OpenBraceToken, braceStart);
+        var openBraceToken = Scanner.Token(SyntaxKind.OpenBraceToken, braceStart);
 
         // Dialects that name a property as well as a value accept "Script=Greek", so the separator has to be part of
         // the name rather than the character that ends it.
@@ -153,14 +157,14 @@ internal partial class PerlStyleRegexParser
         }
 
         var name = Text[nameStart..Scanner.Position];
-        var nameToken = Scanner.Token(RegexSyntaxKind.CategoryNameToken, nameStart);
+        var nameToken = Scanner.Token(SyntaxKind.CategoryNameToken, nameStart);
 
-        RegexSyntaxToken? closeBraceToken = null;
+        ScannedToken closeBraceToken = default;
         if (Scanner.Current == '}')
         {
             var closeStart = Scanner.Position;
             Scanner.Position++;
-            closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
+            closeBraceToken = Scanner.Token(SyntaxKind.CloseBraceToken, closeStart);
 
             // An empty name is wrong in every dialect, whatever set of names it recognizes.
             if (name.Length == 0)
@@ -183,7 +187,7 @@ internal partial class PerlStyleRegexParser
                 "Incomplete '\\p{...}' character escape.");
         }
 
-        return WithOptions(new RegexUnicodeCategorySyntax(categoryStartToken, openBraceToken, nameToken, closeBraceToken));
+        return new RegexUnicodeCategorySyntax(categoryStartToken, openBraceToken, nameToken, closeBraceToken, Options);
     }
 
     /// <summary>Parses a backreference, or falls back to a character escape.</summary>
@@ -191,7 +195,7 @@ internal partial class PerlStyleRegexParser
     /// Ported from <c>ScanBasicBackslash</c>, including the asymmetry that makes <c>\10</c> the octal escape for a
     /// backspace when the pattern has fewer than ten groups while <c>\5</c> with two groups is an undefined reference.
     /// </remarks>
-    private RegexAtomSyntax ParseBackreferenceOrEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexAtomSyntax ParseBackreferenceOrEscape(GreenNode? leadingTrivia)
     {
         var backpos = Scanner.Position;
         Scanner.Position++;
@@ -199,8 +203,8 @@ internal partial class PerlStyleRegexParser
         var angled = false;
         var close = '\0';
         var ch = Scanner.Current;
-        RegexSyntaxToken? startToken = null;
-        RegexSyntaxToken? openNameToken = null;
+        ScannedToken startToken = default;
+        ScannedToken openNameToken = default;
 
         // "\k" introduces a named backreference only where the dialect has named groups at all.
         if (ch == 'k' && Dialect.HasFeature(RegexDialectFeatures.NamedGroups))
@@ -208,7 +212,7 @@ internal partial class PerlStyleRegexParser
             if (Scanner.Position + 1 < Text.Length)
             {
                 Scanner.Position++;
-                startToken = Scanner.Token(RegexSyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
+                startToken = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
 
                 var openStart = Scanner.Position;
                 ch = Text[Scanner.Position++];
@@ -216,7 +220,7 @@ internal partial class PerlStyleRegexParser
                 {
                     angled = true;
                     close = ch == '\'' ? '\'' : '>';
-                    openNameToken = Scanner.Token(RegexSyntaxKind.OpenNameToken, openStart);
+                    openNameToken = Scanner.Token(SyntaxKind.OpenNameToken, openStart);
                 }
                 else
                 {
@@ -231,17 +235,17 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position = backpos + 1;
                 var identity = ScanCharEscape();
 
-                return WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, backpos, leadingTrivia, identity)));
+                return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, backpos, leadingTrivia, identity), Options);
             }
 
             if (!angled || Scanner.IsAtEnd)
             {
                 Scanner.Position = backpos;
                 Scanner.Position += Math.Min(2, Text.Length - backpos);
-                var malformed = Scanner.Token(RegexSyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
+                var malformed = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
                 AddDiagnostic(malformed.Span, RegexDiagnosticIds.MalformedNamedReference, "Malformed '\\k<...>' named backreference.");
 
-                return WithOptions(new RegexNamedBackreferenceSyntax(malformed, null, null, null));
+                return new RegexNamedBackreferenceSyntax(malformed, null, null, null, Options);
             }
 
             ch = Scanner.Current;
@@ -250,11 +254,11 @@ internal partial class PerlStyleRegexParser
         {
             angled = true;
             close = ch == '\'' ? '\'' : '>';
-            startToken = Scanner.Token(RegexSyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
+            startToken = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
 
             var openStart = Scanner.Position;
             Scanner.Position++;
-            openNameToken = Scanner.Token(RegexSyntaxKind.OpenNameToken, openStart);
+            openNameToken = Scanner.Token(SyntaxKind.OpenNameToken, openStart);
             ch = Scanner.Current;
         }
 
@@ -262,18 +266,18 @@ internal partial class PerlStyleRegexParser
         {
             var nameStart = Scanner.Position;
             var number = ReadDecimal(out _);
-            var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+            var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart);
             if (!Scanner.IsAtEnd && Text[Scanner.Position] == close)
             {
                 var closeStart = Scanner.Position;
                 Scanner.Position++;
-                var closeNameToken = Scanner.Token(RegexSyntaxKind.CloseNameToken, closeStart);
+                var closeNameToken = Scanner.Token(SyntaxKind.CloseNameToken, closeStart);
                 if (!CaptureTable.ContainsNumber(number))
                 {
                     AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {FormatNumber(number)}.");
                 }
 
-                return WithOptions(new RegexNamedBackreferenceSyntax(startToken!, openNameToken, nameToken, closeNameToken));
+                return new RegexNamedBackreferenceSyntax(startToken, openNameToken, nameToken, closeNameToken, Options);
             }
         }
         else if (!angled && ch is >= '1' and <= '9')
@@ -285,18 +289,18 @@ internal partial class PerlStyleRegexParser
         {
             var nameStart = Scanner.Position;
             var name = ReadCaptureName();
-            var nameToken = Scanner.Token(RegexSyntaxKind.NameToken, nameStart);
+            var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart);
             if (!Scanner.IsAtEnd && Text[Scanner.Position] == close)
             {
                 var closeStart = Scanner.Position;
                 Scanner.Position++;
-                var closeNameToken = Scanner.Token(RegexSyntaxKind.CloseNameToken, closeStart);
+                var closeNameToken = Scanner.Token(SyntaxKind.CloseNameToken, closeStart);
                 if (!CaptureTable.TryGetNumber(name, out _) && !(AllowsUndefinedNamedBackreference && !HasAnyGroupName))
                 {
                     AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UndefinedNamedReference, $"Reference to undefined group name '{name}'.");
                 }
 
-                return WithOptions(new RegexNamedBackreferenceSyntax(startToken!, openNameToken, nameToken, closeNameToken));
+                return new RegexNamedBackreferenceSyntax(startToken, openNameToken, nameToken, closeNameToken, Options);
             }
         }
 
@@ -304,11 +308,11 @@ internal partial class PerlStyleRegexParser
         Scanner.Position = backpos + 1;
         var value = ScanCharEscape();
 
-        return WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, backpos, leadingTrivia, value)));
+        return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, backpos, leadingTrivia, value), Options);
     }
 
     /// <summary>Reads <c>\1</c>-style backreferences, which are octal escapes when no such group exists.</summary>
-    private bool TryParseUnangledBackreference(int backpos, IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, out RegexAtomSyntax result)
+    private bool TryParseUnangledBackreference(int backpos, GreenNode? leadingTrivia, out RegexAtomSyntax result)
     {
         if (UsesEcmaScriptBehavior)
         {
@@ -332,7 +336,7 @@ internal partial class PerlStyleRegexParser
 
             if (capnum >= 0)
             {
-                result = WithOptions(new RegexBackreferenceSyntax(Scanner.Token(RegexSyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(capnum))));
+                result = new RegexBackreferenceSyntax(Scanner.Token(SyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(capnum)), Options);
 
                 return true;
             }
@@ -340,9 +344,9 @@ internal partial class PerlStyleRegexParser
             // Nothing to refer back to. Where octal is not a fallback the reference is simply undefined.
             if (!AllowsOctalEscape)
             {
-                var undefined = Scanner.Token(RegexSyntaxKind.BackreferenceToken, backpos, leadingTrivia, "0");
+                var undefined = Scanner.Token(SyntaxKind.BackreferenceToken, backpos, leadingTrivia, "0");
                 AddDiagnostic(undefined.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {undefined.Text[1..]}.");
-                result = WithOptions(new RegexBackreferenceSyntax(undefined));
+                result = new RegexBackreferenceSyntax(undefined, Options);
 
                 return true;
             }
@@ -352,16 +356,16 @@ internal partial class PerlStyleRegexParser
             var number = ReadDecimal(out _);
             if (CaptureTable.ContainsNumber(number))
             {
-                result = WithOptions(new RegexBackreferenceSyntax(Scanner.Token(RegexSyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(number))));
+                result = new RegexBackreferenceSyntax(Scanner.Token(SyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(number)), Options);
 
                 return true;
             }
 
             if (number <= 9)
             {
-                var token = Scanner.Token(RegexSyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(number));
+                var token = Scanner.Token(SyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber(number));
                 AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {FormatNumber(number)}.");
-                result = WithOptions(new RegexBackreferenceSyntax(token));
+                result = new RegexBackreferenceSyntax(token, Options);
 
                 return true;
             }

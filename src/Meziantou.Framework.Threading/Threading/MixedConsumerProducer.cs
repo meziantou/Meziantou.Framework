@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 
 namespace Meziantou.Framework.Threading;
@@ -35,22 +36,12 @@ public static class MixedConsumerProducer
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(action);
 
+        var cancellationToken = options.CancellationToken;
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)
             return;
 
-        var pendingItems = Channel.CreateUnbounded<T>();
-        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
-        var hasItem = false;
-        foreach (var item in initialItems)
-        {
-            context.Enqueue(item);
-            hasItem = true;
-        }
-
-        if (!hasItem)
-            return;
-
-        var cancellationToken = options.CancellationToken;
         // ParallelOptions treats a null scheduler as "the current one", so mirror that behavior.
         var scheduler = options.TaskScheduler ?? TaskScheduler.Current;
         var isDefaultScheduler = scheduler == TaskScheduler.Default;
@@ -69,6 +60,13 @@ public static class MixedConsumerProducer
             degreeOfParallelism = maximumConcurrencyLevel;
         }
 
+        var pendingItems = Channel.CreateUnbounded<T>();
+        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
+
+        // The initial items are streamed to the consumers while they run, so the enumeration itself
+        // is a producer and must be accounted for until it completes.
+        context.ReserveProducer();
+
         var exceptionsLock = new Lock();
         List<Exception>? exceptions = null;
 
@@ -82,7 +80,38 @@ public static class MixedConsumerProducer
             consumers[i] = Task.Factory.StartNew(consume, cancellationToken, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap();
         }
 
-        await Task.WhenAll(consumers).ConfigureAwait(false);
+        ExceptionDispatchInfo? enumerationFailure = null;
+        try
+        {
+            foreach (var item in initialItems)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                context.Enqueue(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            enumerationFailure = ExceptionDispatchInfo.Capture(ex);
+        }
+        finally
+        {
+            // Must run even when the enumeration fails, otherwise the channel is never completed and
+            // the consumers never stop.
+            context.ReleaseProducer();
+        }
+
+        try
+        {
+            await Task.WhenAll(consumers).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (enumerationFailure is not null)
+        {
+            // The enumeration failed first, so report that failure instead of the cancellation it caused.
+        }
+
+        // A failure while enumerating the initial items cuts the processing short, so it takes
+        // precedence over the exceptions thrown by the actions that did run.
+        enumerationFailure?.Throw();
 
         // All consumers have completed, so nothing can be mutating the list anymore.
         if (exceptions is not null)

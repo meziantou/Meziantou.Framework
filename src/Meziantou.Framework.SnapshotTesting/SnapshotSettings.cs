@@ -34,16 +34,6 @@ public sealed record SnapshotSettings
         }
     }
 
-    public AssertionExceptionBuilder AssertionExceptionCreator
-    {
-        get;
-        set
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            field = value;
-        }
-    }
-
     public int MaxSnapshotFileNameLength
     {
         get;
@@ -105,7 +95,6 @@ public sealed record SnapshotSettings
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
         Scrubbers = new CopyOnWriteList<Scrubber>();
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
-        AssertionExceptionCreator = AssertionExceptionBuilder.Default;
         MaxSnapshotFileNameLength = 128;
         SnapshotNamingStrategy = SnapshotNamingStrategies.ClassName_TestName;
         SnapshotPathStrategy = DefaultSnapshotPath;
@@ -122,7 +111,6 @@ public sealed record SnapshotSettings
         AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
         ForceUpdateSnapshots = options.ForceUpdateSnapshots;
         SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
-        AssertionExceptionCreator = options.AssertionExceptionCreator;
         MaxSnapshotFileNameLength = options.MaxSnapshotFileNameLength;
         SnapshotNamingStrategy = options.SnapshotNamingStrategy;
         SnapshotPathStrategy = options.SnapshotPathStrategy;

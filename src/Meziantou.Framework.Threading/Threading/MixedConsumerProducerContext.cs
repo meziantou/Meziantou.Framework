@@ -23,7 +23,8 @@ public sealed class MixedConsumerProducerContext<T>
     public void Enqueue(T item)
     {
         // Count the item before writing it, so the count cannot transiently reach 0 while the item
-        // is in flight. The caller is processing an item of its own, so the count is at least 1 here.
+        // is in flight. The caller is either processing an item of its own or holding a producer
+        // reservation, so the count is at least 1 here.
         Interlocked.Increment(ref _pendingItems);
         if (!_writer.TryWrite(item))
         {
@@ -31,6 +32,13 @@ public sealed class MixedConsumerProducerContext<T>
             throw new InvalidOperationException("Item cannot be enqueued");
         }
     }
+
+    // Accounts for a producer that can enqueue items while not processing an item of its own. The
+    // enumeration of the initial items is such a producer: without the reservation, the count could
+    // reach 0 between two initial items and complete the channel while more items are still coming.
+    internal void ReserveProducer() => Interlocked.Increment(ref _pendingItems);
+
+    internal void ReleaseProducer() => OnItemProcessed();
 
     internal void OnItemProcessed()
     {

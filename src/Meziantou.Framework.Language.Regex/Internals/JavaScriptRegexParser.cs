@@ -1,4 +1,8 @@
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>Parses an ECMAScript pattern, and the delimiters and flags of a literal when there are any.</summary>
 internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
@@ -55,18 +59,18 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
 
     protected override bool AllowsUndefinedNamedBackreference => !UsesStrictGrammar;
 
-    protected override RegexSyntaxToken? ReadLiteralPrefix()
+    protected override ScannedToken ReadLiteralPrefix()
     {
         if (_literal is not { HasOpeningSlash: true })
-            return null;
+            return default;
 
         var start = Scanner.Position;
         Scanner.Position = _literal.BodyStart;
 
-        return Scanner.Token(RegexSyntaxKind.SlashToken, start);
+        return Scanner.Token(SyntaxKind.SlashToken, start);
     }
 
-    protected override (RegexSyntaxToken? CloseSlash, RegexSyntaxToken? Flags, RegexSyntaxToken? Trailing) ReadLiteralSuffix()
+    protected override (ScannedToken CloseSlash, ScannedToken Flags, ScannedToken Trailing) ReadLiteralSuffix()
     {
         if (_literal is { LineTerminatorPosition: >= 0 } broken)
         {
@@ -75,7 +79,7 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
                 RegexDiagnosticIds.LineTerminatorInLiteral,
                 "A regular-expression literal cannot contain a line terminator.");
 
-            return (null, null, ReadTrailingContent());
+            return (default, default, ReadTrailingContent());
         }
 
         if (_literal is not { HasClosingSlash: true })
@@ -90,22 +94,22 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
                     "Unterminated regular-expression literal: expected a closing '/'.");
             }
 
-            return (null, null, null);
+            return (default, default, default);
         }
 
         var slashStart = Scanner.Position;
         if (slashStart >= Text.Length || Text[slashStart] != '/')
-            return (null, null, null);
+            return (default, default, default);
 
         Scanner.Position++;
-        var closeSlashToken = Scanner.Token(RegexSyntaxKind.SlashToken, slashStart);
+        var closeSlashToken = Scanner.Token(SyntaxKind.SlashToken, slashStart);
 
-        RegexSyntaxToken? flagsToken = null;
+        ScannedToken flagsToken = default;
         if (Scanner.Position < _literal.FlagsEnd)
         {
             var flagsStart = Scanner.Position;
             Scanner.Position = _literal.FlagsEnd;
-            flagsToken = Scanner.Token(RegexSyntaxKind.FlagsToken, flagsStart);
+            flagsToken = Scanner.Token(SyntaxKind.FlagsToken, flagsStart);
             ReportFlagProblems(flagsToken);
         }
 
@@ -113,14 +117,14 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
     }
 
     /// <summary>Keeps whatever followed the flags, which a well-formed literal has none of.</summary>
-    private RegexSyntaxToken? ReadTrailingContent()
+    private ScannedToken ReadTrailingContent()
     {
         if (Scanner.IsAtEnd)
-            return null;
+            return default;
 
         var start = Scanner.Position;
         Scanner.Position = Text.Length;
-        var token = Scanner.Token(RegexSyntaxKind.BadToken, start);
+        var token = Scanner.Token(SyntaxKind.BadToken, start);
         AddDiagnostic(token.Span, RegexDiagnosticIds.TrailingContent, "Unexpected content after the regular-expression literal.");
 
         return token;
@@ -133,7 +137,7 @@ internal sealed class JavaScriptRegexParser : PerlStyleRegexParser
             : base.IsAtBodyEnd(position);
 
     /// <summary>Reports the three ways a flag list can be wrong: unknown, repeated, or <c>u</c> together with <c>v</c>.</summary>
-    private void ReportFlagProblems(RegexSyntaxToken flagsToken)
+    private void ReportFlagProblems(ScannedToken flagsToken)
     {
         var text = flagsToken.Text;
         var seen = new HashSet<char>();

@@ -16,7 +16,7 @@ public sealed class PosixExpressionTests
         ShellConditionalExpressionSyntax conditional => $"({Shape(conditional.Condition)} ? {Shape(conditional.WhenTrue)} : {Shape(conditional.WhenFalse)})",
         ShellOperandExpressionSyntax operand => operand.Word.ToFullString().Trim(),
         ShellRawExpressionSyntax raw => $"RAW<{raw.Text.Trim()}>",
-        _ => node.Kind.ToString(),
+        _ => node.Kind().ToString(),
     };
 
     private static ShellExpressionSyntax Arithmetic(string text)
@@ -24,7 +24,7 @@ public sealed class PosixExpressionTests
         var source = $"echo $(({text}))";
         var tree = ShellSyntaxAssert.TextIsFaithful(source, ShellDialect.Bash);
 
-        return Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>()).Expression;
+        return Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>()).Expression;
     }
 
     private static ShellExpressionSyntax Conditional(string text)
@@ -32,7 +32,7 @@ public sealed class PosixExpressionTests
         var source = $"[[ {text} ]]";
         var tree = ShellSyntaxAssert.TextIsFaithful(source, ShellDialect.Bash);
 
-        return Assert.Single(tree.Root.DescendantNodes().OfType<PosixDelimitedExpressionStatementSyntax>()).Expression;
+        return Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixDelimitedExpressionStatementSyntax>()).Expression;
     }
 
     [Theory]
@@ -89,7 +89,7 @@ public sealed class PosixExpressionTests
     public void ArithmeticCommand_UsesTheSameGrammar()
     {
         var tree = ShellSyntaxAssert.TextIsFaithful("(( i = (a + b) * 2 ))", ShellDialect.Bash);
-        var statement = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(tree.Root.Statements.Statements[0]);
+        var statement = Assert.IsType<PosixDelimitedExpressionStatementSyntax>(tree.GetRoot().Statements.Statements[0]);
 
         Assert.True(statement.IsArithmetic);
         Assert.Equal("(i = ([(a + b)] * 2))", Shape(statement.Expression));
@@ -148,7 +148,7 @@ public sealed class PosixExpressionTests
     public void Arithmetic_ExponentiationIsBashAndZshOnly(string text, bool expectedInSh)
     {
         var tree = ShellSyntaxAssert.TextIsFaithful($"echo $(({text}))", ShellDialect.Sh);
-        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        var expansion = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
 
         Assert.Equal(expectedInSh, expansion.Expression is not ShellRawExpressionSyntax);
         Assert.IsNotType<ShellRawExpressionSyntax>(Arithmetic(text));
@@ -199,10 +199,10 @@ public sealed class PosixExpressionTests
         var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Bash);
 
         Assert.All(
-            tree.Root.DescendantNodes().OfType<PosixDelimitedExpressionStatementSyntax>(),
+            tree.GetRoot().DescendantNodes().OfType<PosixDelimitedExpressionStatementSyntax>(),
             node => Assert.IsType<ShellRawExpressionSyntax>(node.Expression));
         Assert.All(
-            tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>(),
+            tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>(),
             node => Assert.IsType<ShellRawExpressionSyntax>(node.Expression));
     }
 
@@ -211,15 +211,15 @@ public sealed class PosixExpressionTests
     {
         var tree = ShellSyntaxAssert.TextIsFaithful("echo $(( $((1 + 2)) * 3 ))", ShellDialect.Bash);
 
-        Assert.HasCount(2, tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
-        Assert.Empty(tree.Diagnostics);
+        Assert.HasCount(2, tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
     public void ExpressionsAreVisitedAndRewritable()
     {
         var tree = ShellSyntaxTree.ParseText("echo $((a + b))", ShellDialect.Bash);
-        var operands = tree.Root.DescendantNodes().OfType<ShellOperandExpressionSyntax>().ToArray();
+        var operands = tree.GetRoot().DescendantNodes().OfType<ShellOperandExpressionSyntax>().ToArray();
 
         Assert.HasCount(2, operands);
         Assert.Equal(["a", "b"], operands.Select(operand => operand.Word.Value?.Trim()));
@@ -230,7 +230,7 @@ public sealed class PosixExpressionTests
     {
         var tree = ShellSyntaxAssert.TextIsFaithful("echo $((1 + 2))", ShellDialect.Sh);
 
-        var expansion = Assert.Single(tree.Root.DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
+        var expansion = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PosixArithmeticExpansionSyntax>());
         Assert.Equal("1 + 2", expansion.ExpressionText);
     }
 
@@ -239,7 +239,7 @@ public sealed class PosixExpressionTests
     {
         var tree = ShellSyntaxAssert.TextIsFaithful("((1 + 2))", ShellDialect.Sh);
 
-        Assert.DoesNotContain(tree.Root.DescendantNodes(), node => node.Kind == ShellSyntaxKind.PosixArithmeticCommand);
-        Assert.Contains(ShellSyntaxTree.ParseText("((1 + 2))", ShellDialect.Bash).Root.DescendantNodes(), node => node.Kind == ShellSyntaxKind.PosixArithmeticCommand);
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes(), node => node.Kind() == SyntaxKind.PosixArithmeticCommand);
+        Assert.Contains(ShellSyntaxTree.ParseText("((1 + 2))", ShellDialect.Bash).GetRoot().DescendantNodes(), node => node.Kind() == SyntaxKind.PosixArithmeticCommand);
     }
 }

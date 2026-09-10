@@ -50,7 +50,7 @@ public class AsyncReaderWriterLockTests
         var l = new AsyncReaderWriterLock();
         var reader = await l.ReaderLockAsync();
 
-        var writerTask = l.WriterLockAsync();
+        var writerTask = l.WriterLockAsync().AsTask();
         Assert.False(writerTask.IsCompleted); // blocked by the active reader
 
         reader.Dispose();
@@ -65,8 +65,8 @@ public class AsyncReaderWriterLockTests
         var l = new AsyncReaderWriterLock();
         var reader1 = await l.ReaderLockAsync();
 
-        var writerTask = l.WriterLockAsync(); // queued behind the active reader
-        var reader2Task = l.ReaderLockAsync(); // must wait because a writer is queued (no writer starvation)
+        var writerTask = l.WriterLockAsync().AsTask(); // queued behind the active reader
+        var reader2Task = l.ReaderLockAsync().AsTask(); // must wait because a writer is queued (no writer starvation)
         Assert.False(reader2Task.IsCompleted);
 
         reader1.Dispose();
@@ -86,8 +86,8 @@ public class AsyncReaderWriterLockTests
     {
         var l = new AsyncReaderWriterLock();
         var r1 = await l.ReaderLockAsync();
-        var r2 = await l.ReaderLockAsync().WaitAsync(TimeSpan.FromSeconds(30));
-        var r3 = await l.ReaderLockAsync().WaitAsync(TimeSpan.FromSeconds(30));
+        var r2 = await l.ReaderLockAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+        var r3 = await l.ReaderLockAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
 
         r1.Dispose();
         r2.Dispose();
@@ -105,7 +105,7 @@ public class AsyncReaderWriterLockTests
     {
         var rwLock = new AsyncReaderWriterLock();
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() => rwLock.WriterLockAsync(new CancellationToken(canceled: true)));
+        await Assert.ThrowsAsync<TaskCanceledException>(() => rwLock.WriterLockAsync(new CancellationToken(canceled: true)).AsTask());
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class AsyncReaderWriterLockTests
     {
         var rwLock = new AsyncReaderWriterLock();
 
-        await Assert.ThrowsAsync<TaskCanceledException>(() => rwLock.ReaderLockAsync(new CancellationToken(canceled: true)));
+        await Assert.ThrowsAsync<TaskCanceledException>(() => rwLock.ReaderLockAsync(new CancellationToken(canceled: true)).AsTask());
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class AsyncReaderWriterLockTests
         using var cts = new CancellationTokenSource();
 
         var releaser = await rwLock.WriterLockAsync();
-        var pending = rwLock.WriterLockAsync(cts.Token);
+        var pending = rwLock.WriterLockAsync(cts.Token).AsTask();
 
         await cts.CancelAsync();
         await Assert.ThrowsAsync<TaskCanceledException>(() => pending);
@@ -131,7 +131,7 @@ public class AsyncReaderWriterLockTests
         // The canceled waiter must not be granted ownership when the current writer releases.
         releaser.Dispose();
 
-        var next = rwLock.WriterLockAsync();
+        var next = rwLock.WriterLockAsync().AsTask();
         (await next.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
     }
 
@@ -142,14 +142,14 @@ public class AsyncReaderWriterLockTests
         using var cts = new CancellationTokenSource();
 
         var releaser = await rwLock.WriterLockAsync();
-        var pending = rwLock.ReaderLockAsync(cts.Token);
+        var pending = rwLock.ReaderLockAsync(cts.Token).AsTask();
 
         await cts.CancelAsync();
         await Assert.ThrowsAsync<TaskCanceledException>(() => pending);
 
         releaser.Dispose();
 
-        var next = rwLock.WriterLockAsync();
+        var next = rwLock.WriterLockAsync().AsTask();
         (await next.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
     }
 
@@ -160,8 +160,8 @@ public class AsyncReaderWriterLockTests
         using var cts = new CancellationTokenSource();
 
         var releaser = await rwLock.WriterLockAsync();
-        var canceled = rwLock.WriterLockAsync(cts.Token);
-        var survivor = rwLock.WriterLockAsync();
+        var canceled = rwLock.WriterLockAsync(cts.Token).AsTask();
+        var survivor = rwLock.WriterLockAsync().AsTask();
 
         await cts.CancelAsync();
         await Assert.ThrowsAsync<TaskCanceledException>(() => canceled);
@@ -179,8 +179,8 @@ public class AsyncReaderWriterLockTests
         using var cts = new CancellationTokenSource();
 
         var writer = await rwLock.WriterLockAsync();
-        var queuedWriter = rwLock.WriterLockAsync(cts.Token);
-        var queuedReader = rwLock.ReaderLockAsync();
+        var queuedWriter = rwLock.WriterLockAsync(cts.Token).AsTask();
+        var queuedReader = rwLock.ReaderLockAsync().AsTask();
 
         await cts.CancelAsync();
         await Assert.ThrowsAsync<TaskCanceledException>(() => queuedWriter);
@@ -197,8 +197,8 @@ public class AsyncReaderWriterLockTests
         using var cts = new CancellationTokenSource();
 
         var reader1 = await rwLock.ReaderLockAsync();
-        var queuedWriter = rwLock.WriterLockAsync(cts.Token);
-        var reader2 = rwLock.ReaderLockAsync(); // queued behind the writer
+        var queuedWriter = rwLock.WriterLockAsync(cts.Token).AsTask();
+        var reader2 = rwLock.ReaderLockAsync().AsTask(); // queued behind the writer
 
         await cts.CancelAsync();
         await Assert.ThrowsAsync<TaskCanceledException>(() => queuedWriter);
@@ -210,7 +210,7 @@ public class AsyncReaderWriterLockTests
         releaser2.Dispose();
 
         // Both readers must have been accounted for, otherwise the lock never becomes free again.
-        (await rwLock.WriterLockAsync().WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+        (await rwLock.WriterLockAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class AsyncReaderWriterLockTests
         for (var i = 0; i < sources.Length; i++)
         {
             sources[i] = new CancellationTokenSource();
-            waiters[i] = rwLock.WriterLockAsync(sources[i].Token);
+            waiters[i] = rwLock.WriterLockAsync(sources[i].Token).AsTask();
         }
 
         int[] canceled = [0, 3, 4, 7, 9];
@@ -247,7 +247,7 @@ public class AsyncReaderWriterLockTests
         }
 
         // The queue is empty again, so a writer that arrives now must still be reachable.
-        var late = rwLock.WriterLockAsync();
+        var late = rwLock.WriterLockAsync().AsTask();
         current.Dispose();
         (await late.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
 
@@ -268,7 +268,7 @@ public class AsyncReaderWriterLockTests
         for (var i = 0; i < sources.Length; i++)
         {
             sources[i] = new CancellationTokenSource();
-            waiters[i] = rwLock.ReaderLockAsync(sources[i].Token);
+            waiters[i] = rwLock.ReaderLockAsync(sources[i].Token).AsTask();
         }
 
         int[] canceled = [0, 2, 5];
@@ -289,7 +289,7 @@ public class AsyncReaderWriterLockTests
             releasers.Add(await waiters[index].WaitAsync(TimeSpan.FromSeconds(30)));
         }
 
-        var writer = rwLock.WriterLockAsync();
+        var writer = rwLock.WriterLockAsync().AsTask();
         foreach (var releaser in releasers)
         {
             Assert.False(writer.IsCompleted);
@@ -299,7 +299,7 @@ public class AsyncReaderWriterLockTests
         var writerReleaser = await writer.WaitAsync(TimeSpan.FromSeconds(30));
 
         // The reader queue is empty again, so a reader that arrives now must still be reachable.
-        var late = rwLock.ReaderLockAsync();
+        var late = rwLock.ReaderLockAsync().AsTask();
         writerReleaser.Dispose();
         (await late.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
 
@@ -320,7 +320,7 @@ public class AsyncReaderWriterLockTests
 
         var readerThreadId = 0;
         var readerRan = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var reader = rwLock.ReaderLockAsync();
+        var reader = rwLock.ReaderLockAsync().AsTask();
         _ = reader.ContinueWith(
             t =>
             {
@@ -402,5 +402,58 @@ public class AsyncReaderWriterLockTests
         await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(60));
 
         Assert.Equal(0, failures);
+    }
+
+    [Fact]
+    public async Task ReaderReleaser_DisposedTwice_DoesNotReleaseAnotherReader()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var stale = await rwLock.ReaderLockAsync();
+        stale.Dispose();
+
+        var reader = await rwLock.ReaderLockAsync();
+        stale.Dispose();
+
+        // The remaining reader still holds the lock, so a writer must not be able to acquire it.
+        var writer = rwLock.WriterLockAsync().AsTask();
+        Assert.False(writer.IsCompleted, "The second disposal released a reader lock it no longer owns");
+
+        reader.Dispose();
+        (await writer.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
+    public async Task WriterReleaser_DisposedTwice_DoesNotReleaseAnotherWriter()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var stale = await rwLock.WriterLockAsync();
+        stale.Dispose();
+
+        var writer = await rwLock.WriterLockAsync();
+        stale.Dispose();
+
+        var other = rwLock.WriterLockAsync().AsTask();
+        Assert.False(other.IsCompleted, "The second disposal released a writer lock it no longer owns");
+
+        writer.Dispose();
+        (await other.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
+    public async Task Releaser_DisposedTwice_KeepsTheLockUsable()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var reader = await rwLock.ReaderLockAsync();
+        reader.Dispose();
+        reader.Dispose();
+
+        // A duplicate release must not drive the reader count below zero, which would let a reader and a writer
+        // hold the lock at the same time.
+        using var writer = await rwLock.WriterLockAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+        var blocked = rwLock.ReaderLockAsync().AsTask();
+        Assert.False(blocked.IsCompleted);
+
+        writer.Dispose();
+        (await blocked.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
     }
 }

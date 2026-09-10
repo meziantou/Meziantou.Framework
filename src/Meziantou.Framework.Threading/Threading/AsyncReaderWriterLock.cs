@@ -4,9 +4,11 @@ namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides an asynchronous reader-writer lock that allows multiple readers or a single writer.</summary>
 /// <remarks>
-/// The returned task must be awaited and the resulting <see cref="Releaser"/> disposed, otherwise the lock stays
-/// held forever. To give up on an acquisition, pass a <see cref="CancellationToken"/> rather than abandoning the
-/// task: a waiter that is never awaited is still granted ownership when its turn comes, and nothing will release it.
+/// The returned value task must be awaited and the resulting <see cref="Releaser"/> disposed, otherwise the lock
+/// stays held forever. To give up on an acquisition, pass a <see cref="CancellationToken"/> rather than abandoning
+/// the value task: a waiter that is never awaited is still granted ownership when its turn comes, and nothing will
+/// release it. To start an acquisition and await it later, call
+/// <see cref="ValueTask{TResult}.AsTask"/> rather than storing the value task itself.
 /// </remarks>
 /// <example>
 /// <code><![CDATA[
@@ -33,8 +35,6 @@ namespace Meziantou.Framework.Threading;
 /// </example>
 public sealed class AsyncReaderWriterLock
 {
-    private readonly Task<Releaser> _readerReleaser;
-    private readonly Task<Releaser> _writerReleaser;
     private readonly Action<object?> _onCancellationRequestHandler;
     private readonly Lock _lock = new();
 
@@ -47,25 +47,23 @@ public sealed class AsyncReaderWriterLock
     /// <summary>Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.</summary>
     public AsyncReaderWriterLock()
     {
-        _readerReleaser = Task.FromResult(new Releaser(this, writer: false));
-        _writerReleaser = Task.FromResult(new Releaser(this, writer: true));
         _onCancellationRequestHandler = OnCancellationRequest;
     }
 
     /// <summary>Asynchronously acquires the reader lock. Multiple readers can hold the lock simultaneously.</summary>
-    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the reader lock.</returns>
-    public Task<Releaser> ReaderLockAsync()
+    /// <returns>A value task that returns a disposable releaser. Disposing the releaser releases the reader lock.</returns>
+    public ValueTask<Releaser> ReaderLockAsync()
     {
         return ReaderLockAsync(CancellationToken.None);
     }
 
     /// <summary>Asynchronously acquires the reader lock. Multiple readers can hold the lock simultaneously.</summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the lock.</param>
-    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the reader lock.</returns>
-    public Task<Releaser> ReaderLockAsync(CancellationToken cancellationToken)
+    /// <returns>A value task that returns a disposable releaser. Disposing the releaser releases the reader lock.</returns>
+    public ValueTask<Releaser> ReaderLockAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCanceled<Releaser>(cancellationToken);
+            return ValueTask.FromCanceled<Releaser>(cancellationToken);
 
         Waiter waiter;
         bool canceled;
@@ -75,7 +73,7 @@ public sealed class AsyncReaderWriterLock
             if (_status >= 0 && _waitingWriters.Count == 0)
             {
                 _status += 1;
-                return _readerReleaser;
+                return new ValueTask<Releaser>(new Releaser(new ReleaseToken(this, writer: false)));
             }
 
             waiter = new Waiter(this, writer: false, cancellationToken);
@@ -90,19 +88,19 @@ public sealed class AsyncReaderWriterLock
     }
 
     /// <summary>Asynchronously acquires the writer lock. Only one writer can hold the lock at a time.</summary>
-    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the writer lock.</returns>
-    public Task<Releaser> WriterLockAsync()
+    /// <returns>A value task that returns a disposable releaser. Disposing the releaser releases the writer lock.</returns>
+    public ValueTask<Releaser> WriterLockAsync()
     {
         return WriterLockAsync(CancellationToken.None);
     }
 
     /// <summary>Asynchronously acquires the writer lock. Only one writer can hold the lock at a time.</summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the lock.</param>
-    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the writer lock.</returns>
-    public Task<Releaser> WriterLockAsync(CancellationToken cancellationToken)
+    /// <returns>A value task that returns a disposable releaser. Disposing the releaser releases the writer lock.</returns>
+    public ValueTask<Releaser> WriterLockAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
-            return Task.FromCanceled<Releaser>(cancellationToken);
+            return ValueTask.FromCanceled<Releaser>(cancellationToken);
 
         Waiter waiter;
         bool canceled;
@@ -111,7 +109,7 @@ public sealed class AsyncReaderWriterLock
             if (_status == 0)
             {
                 _status = -1;
-                return _writerReleaser;
+                return new ValueTask<Releaser>(new Releaser(new ReleaseToken(this, writer: true)));
             }
 
             waiter = new Waiter(this, writer: true, cancellationToken);
@@ -125,7 +123,7 @@ public sealed class AsyncReaderWriterLock
         return CompleteIfCanceled(waiter, canceled, cancellationToken);
     }
 
-    private static Task<Releaser> CompleteIfCanceled(Waiter waiter, bool canceled, CancellationToken cancellationToken)
+    private static ValueTask<Releaser> CompleteIfCanceled(Waiter waiter, bool canceled, CancellationToken cancellationToken)
     {
         // The token was canceled between the registration and this check, so the waiter was never queued and must
         // be completed here. This has to happen outside the lock: TrySetCanceled can inline continuations, and
@@ -137,12 +135,12 @@ public sealed class AsyncReaderWriterLock
             waiter.Registration.Dispose();
         }
 
-        return waiter.Task;
+        return new ValueTask<Releaser>(waiter.Task);
     }
 
     private void ReaderRelease()
     {
-        List<Waiter>? toWake;
+        GrantedWaiters toWake;
         lock (_lock)
         {
             _status -= 1;
@@ -154,7 +152,7 @@ public sealed class AsyncReaderWriterLock
 
     private void WriterRelease()
     {
-        List<Waiter>? toWake;
+        GrantedWaiters toWake;
         lock (_lock)
         {
             _status = 0;
@@ -166,67 +164,80 @@ public sealed class AsyncReaderWriterLock
 
     /// <summary>Hands the free lock to the next waiters. Must be called while holding <see cref="_lock"/>; the
     /// returned waiters are completed outside it.</summary>
-    private List<Waiter>? GrantOwnership()
+    private GrantedWaiters GrantOwnership()
     {
         // A writer holds the lock, nothing can be granted until it releases.
         if (_status < 0)
-            return null;
+            return default;
 
         if (_waitingWriters.Count > 0)
         {
             // Writers still have priority over the queued readers, so nothing is granted until the lock is free.
             if (_status > 0)
-                return null;
+                return default;
 
             _status = -1;
-            return [_waitingWriters.Dequeue()!];
+            return new GrantedWaiters(_waitingWriters.Dequeue()!);
         }
 
-        if (_waitingReaders.Count > 0)
+        var readerCount = _waitingReaders.Count;
+        if (readerCount > 0)
         {
             // Every queued reader is admitted at once. Readers only ever queue behind a writer, so once no writer
             // is left they can join the readers already holding the lock instead of waiting for those to release.
             // This also covers the case where the writers that were blocking them have all been canceled, which
             // would otherwise leave the readers queued forever.
-            var readers = new List<Waiter>(_waitingReaders.Count);
+            _status += readerCount;
+            if (readerCount == 1)
+                return new GrantedWaiters(_waitingReaders.Dequeue()!);
+
+            var readers = new List<Waiter>(readerCount);
             while (_waitingReaders.Dequeue() is { } reader)
             {
                 readers.Add(reader);
             }
 
-            _status += readers.Count;
-            return readers;
+            return new GrantedWaiters(readers);
         }
 
-        return null;
+        return default;
     }
 
-    private void CompleteWaiters(List<Waiter>? waiters)
+    private void CompleteWaiters(GrantedWaiters granted)
     {
-        if (waiters is null)
-            return;
-
-        foreach (var waiter in waiters)
+        if (granted.Waiter is { } single)
         {
-            // A waiter that was dequeued here can no longer be canceled: OnCancellationRequest only completes a
-            // waiter it removed from the queue itself, so exactly one of the two paths owns it.
-            waiter.Registration.Dispose();
-            waiter.TrySetResult(new Releaser(this, waiter.IsWriter));
+            CompleteWaiter(single);
         }
+        else if (granted.Waiters is { } waiters)
+        {
+            foreach (var waiter in waiters)
+            {
+                CompleteWaiter(waiter);
+            }
+        }
+    }
+
+    private void CompleteWaiter(Waiter waiter)
+    {
+        // A waiter that was dequeued here can no longer be canceled: OnCancellationRequest only completes a
+        // waiter it removed from the queue itself, so exactly one of the two paths owns it.
+        waiter.Registration.Dispose();
+        waiter.TrySetResult(new Releaser(new ReleaseToken(this, waiter.IsWriter)));
     }
 
     private void OnCancellationRequest(object? state)
     {
         var waiter = (Waiter)state!;
         bool removed;
-        List<Waiter>? toWake;
+        GrantedWaiters toWake;
         lock (_lock)
         {
             removed = (waiter.IsWriter ? _waitingWriters : _waitingReaders).Remove(waiter);
 
             // Removing a waiter can unblock the ones queued behind it: the lock may now be free, or the canceled
             // writer may have been the last one holding back readers that are compatible with the current owners.
-            toWake = removed ? GrantOwnership() : null;
+            toWake = removed ? GrantOwnership() : default;
         }
 
         // Both of these must run outside the lock: Registration.Dispose blocks until a callback running on
@@ -243,33 +254,72 @@ public sealed class AsyncReaderWriterLock
     }
 
     /// <summary>Represents a disposable releaser for an <see cref="AsyncReaderWriterLock"/>. Disposing the releaser releases either the reader or writer lock.</summary>
+    /// <remarks>Only the first disposal of a releaser releases the lock. Disposing the same releaser again, or disposing
+    /// a copy of an already-disposed releaser, does nothing instead of releasing an acquisition made in the meantime.</remarks>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct Releaser : IDisposable
     {
-        private readonly AsyncReaderWriterLock _toRelease;
-        private readonly bool _writer;
+        // Identifies the acquisition this releaser was handed out for, and carries everything needed to release it.
+        // Copies of the releaser share the token, so only the first of them releases the lock: any later disposal is
+        // a no-op instead of releasing an acquisition made in the meantime by somebody else.
+        private readonly ReleaseToken? _token;
 
-        internal Releaser(AsyncReaderWriterLock toRelease, bool writer)
+        internal Releaser(ReleaseToken token)
         {
-            _toRelease = toRelease;
-            _writer = writer;
+            _token = token;
         }
 
         public void Dispose()
         {
-            if (_toRelease is not null)
+            _token?.Release();
+        }
+    }
+
+    /// <summary>Holds the state of a single acquisition. Shared by every copy of the <see cref="Releaser"/> handed out
+    /// for it, so that only one of them can release the lock.</summary>
+    internal sealed class ReleaseToken(AsyncReaderWriterLock owner, bool writer)
+    {
+        private int _released;
+
+        internal void Release()
+        {
+            if (Interlocked.Exchange(ref _released, 1) != 0)
+                return;
+
+            if (writer)
             {
-                if (_writer)
-                {
-                    _toRelease.WriterRelease();
-                }
-                else
-                {
-                    _toRelease.ReaderRelease();
-                }
+                owner.WriterRelease();
+            }
+            else
+            {
+                owner.ReaderRelease();
             }
         }
+    }
+
+    /// <summary>The waiters a grant handed the lock to. A single waiter is held inline, so the writer handoffs and
+    /// the lone-reader grants that make up the common case cost no list allocation.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct GrantedWaiters
+    {
+        public GrantedWaiters(Waiter waiter)
+        {
+            Waiter = waiter;
+            Waiters = null;
+        }
+
+        public GrantedWaiters(List<Waiter> waiters)
+        {
+            Waiter = null;
+            Waiters = waiters;
+        }
+
+        /// <summary>The only granted waiter, or <see langword="null"/> when <see cref="Waiters"/> holds them.</summary>
+        public Waiter? Waiter { get; }
+
+        /// <summary>The granted waiters when there is more than one, otherwise <see langword="null"/>.</summary>
+        public List<Waiter>? Waiters { get; }
     }
 
     private sealed class Waiter : TaskCompletionSource<Releaser>, IWaiterQueueNode<Waiter>

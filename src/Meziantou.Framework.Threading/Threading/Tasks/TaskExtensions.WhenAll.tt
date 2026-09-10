@@ -40,52 +40,141 @@ public static partial class TaskExtensions
     public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
     public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
 <# } #>
-<# for (int i = 1; i <= count; i++) { #>
-    public static async ValueTask<ValueTuple<<#= GetTemplateString(i) #>>> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    /// <summary>
+    /// Records the outcome of a task that did not complete successfully, the way <see cref="Task.WhenAll(Task[])"/> does.
+    /// </summary>
+    /// <remarks>
+    /// The state of the task, and not the type of the thrown exception, decides whether the task was canceled. A task
+    /// faulted with an <see cref="OperationCanceledException"/> is therefore reported as a failure, and a task faulted
+    /// with several exceptions contributes all of them.
+    /// </remarks>
+    private static void Observe(Task task, ref List<Exception>? observedExceptions, ref CancellationToken? observedCancellation)
     {
-        List<Exception>? observedExceptions = null;
-        <# for (int j = 1; j <= i; j++) { #>T<#=j#> result<#=j#>;
-        try
+        if (task.IsCanceled)
         {
-            result<#=j#> = await task<#=j#>.ConfigureAwait(false);
+            observedCancellation ??= new TaskCanceledException(task).CancellationToken;
         }
-        catch (Exception ex)
+        else if (task.Exception is { } exception)
         {
             observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result<#=j#>);
+            observedExceptions.AddRange(exception.InnerExceptions);
         }
-        <# } #>
+    }
+<# for (int i = 1; i <= count; i++) { #>
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<<#= GetTemplateString(i) #>>> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    {
+        if (<#= Join(" && ", i, i => "task" + i + ".IsCompletedSuccessfully") #>)
+        {
+            return new(new ValueTuple<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "task" + i + ".Result") #>));
+        }
+
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<<#= GetTemplateString(i) #>>>();
+        _ = CompleteWhenAll(taskCompletionSource, <#= Join(", ", i, i => "task" + i) #>);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<<#= GetTemplateString(i) #>>(TaskCompletionSource<ValueTuple<<#= GetTemplateString(i) #>>> taskCompletionSource, <#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+<# for (int j = 1; j <= i; j++) { #>
+        T<#=j#> result<#=j#>;
+        if (task<#=j#>.IsCompletedSuccessfully)
+        {
+            result<#=j#> = task<#=j#>.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask<#=j#> = task<#=j#>.AsTask();
+            await ((Task)observedTask<#=j#>).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask<#=j#>.IsCompletedSuccessfully)
+            {
+                result<#=j#> = observedTask<#=j#>.Result;
+            }
+            else
+            {
+                Observe(observedTask<#=j#>, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result<#=j#>);
+            }
+        }
+<# } #>
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
         }
-
-        return new(<#= Join(", ", i, i => "result" + i) #>);
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "result" + i) #>));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<<#= GetTemplateString(i) #>>> GetAwaiter<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
 <# } #>
     private static ValueTask WhenAll(ValueTask task1) => task1;
 <# for (int i = 2; i <= count; i++) { #>
-    private static async ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
+    private static ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
+    {
+        if (<#= Join(" && ", i, i => "task" + i + ".IsCompletedSuccessfully") #>)
+        {
+<# for (int j = 1; j <= i; j++) { #>
+            task<#=j#>.GetAwaiter().GetResult();
+<# } #>
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, <#= Join(", ", i, i => "task" + i) #>);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, <#= Join(", ", i, i => "ValueTask task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
-        <# for (int j = 1; j <= i; j++) { #>try
+        CancellationToken? observedCancellation = null;
+<# for (int j = 1; j <= i; j++) { #>
+        if (task<#=j#>.IsCompletedSuccessfully)
         {
-            await task<#=j#>.ConfigureAwait(false);
+            task<#=j#>.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask<#=j#> = task<#=j#>.AsTask();
+            await observedTask<#=j#>.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask<#=j#>.IsCompletedSuccessfully)
+            {
+                Observe(observedTask<#=j#>, ref observedExceptions, ref observedCancellation);
+            }
         }
-        <# } #>
+<# } #>
 
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
@@ -110,11 +199,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<<#= GetTemplateString(i) #>>(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -156,6 +248,17 @@ public static partial class TaskExtensions
         }
     }
 <# } #>
+
+    /// <summary>Validates that <paramref name="options"/> can be used to await tasks that produce results.</summary>
+    private static ConfigureAwaitOptions ValidateOptions(ConfigureAwaitOptions options)
+    {
+        if ((options & ConfigureAwaitOptions.SuppressThrowing) is not 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options, "ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing when the tasks produce results. To suppress throwing, cast the tasks to their base class Task and await the resulting tuple with SuppressThrowing.");
+        }
+
+        return options;
+    }
 }
 <#+
     static string GetTemplateString(int count)

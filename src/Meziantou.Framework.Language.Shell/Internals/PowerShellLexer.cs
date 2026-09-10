@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>
 /// Character-level scanner for the PowerShell family. As with the POSIX lexer, the parser chooses the mode: the same
@@ -30,13 +35,13 @@ internal sealed class PowerShellLexer
         return index >= 0 && index < Text.Length ? Text[index] : '\0';
     }
 
-    public IReadOnlyList<ShellSyntaxTrivia> ReadInlineTrivia() => ReadTrivia(includeLineBreaks: false);
+    public GreenNode? ReadInlineTrivia() => ReadTrivia(includeLineBreaks: false);
 
-    public IReadOnlyList<ShellSyntaxTrivia> ReadStatementTrivia() => ReadTrivia(includeLineBreaks: true);
+    public GreenNode? ReadStatementTrivia() => ReadTrivia(includeLineBreaks: true);
 
-    private List<ShellSyntaxTrivia> ReadTrivia(bool includeLineBreaks)
+    private GreenNode? ReadTrivia(bool includeLineBreaks)
     {
-        List<ShellSyntaxTrivia>? trivia = null;
+        List<GreenNode?>? trivia = null;
         while (!IsAtEnd)
         {
             var start = Position;
@@ -49,7 +54,7 @@ internal sealed class PowerShellLexer
                     Position++;
                 }
 
-                Add(ref trivia, ShellSyntaxKind.WhitespaceTrivia, start);
+                Add(ref trivia, SyntaxKind.WhitespaceTrivia, start);
                 continue;
             }
 
@@ -57,7 +62,7 @@ internal sealed class PowerShellLexer
             if (current == '`' && Position + 1 < Text.Length && SourceText.GetLineBreakLength(Text, Position + 1) > 0)
             {
                 Position += 1 + SourceText.GetLineBreakLength(Text, Position + 1);
-                Add(ref trivia, ShellSyntaxKind.LineContinuationTrivia, start);
+                Add(ref trivia, SyntaxKind.LineContinuationTrivia, start);
                 continue;
             }
 
@@ -78,7 +83,7 @@ internal sealed class PowerShellLexer
                     Position += 2;
                 }
 
-                Add(ref trivia, ShellSyntaxKind.MultiLineCommentTrivia, start);
+                Add(ref trivia, SyntaxKind.MultiLineCommentTrivia, start);
                 continue;
             }
 
@@ -89,7 +94,7 @@ internal sealed class PowerShellLexer
                     Position++;
                 }
 
-                Add(ref trivia, ShellSyntaxKind.SingleLineCommentTrivia, start);
+                Add(ref trivia, SyntaxKind.SingleLineCommentTrivia, start);
                 continue;
             }
 
@@ -99,7 +104,7 @@ internal sealed class PowerShellLexer
                 if (lineBreakLength > 0)
                 {
                     Position += lineBreakLength;
-                    Add(ref trivia, ShellSyntaxKind.EndOfLineTrivia, start);
+                    Add(ref trivia, SyntaxKind.EndOfLineTrivia, start);
                     continue;
                 }
             }
@@ -107,16 +112,16 @@ internal sealed class PowerShellLexer
             break;
         }
 
-        return trivia ?? [];
+        return trivia is null ? null : GreenFactory.List(CollectionsMarshal.AsSpan(trivia));
     }
 
-    public ShellSyntaxToken CreateToken(ShellSyntaxKind kind, int tokenStart, IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart, string? valueText = null)
+    public ScannedToken CreateToken(SyntaxKind kind, int tokenStart, GreenNode? leadingTrivia, int fullStart, string? valueText = null)
     {
         Position = Math.Clamp(Position, 0, Text.Length);
         tokenStart = Math.Clamp(tokenStart, 0, Position);
         var text = Text[tokenStart..Position];
 
-        return new ShellSyntaxToken(kind, text, valueText ?? text, leadingTrivia: leadingTrivia, fullStart: fullStart);
+        return new ScannedToken(kind, text, valueText ?? text, leadingTrivia: leadingTrivia, fullStart: fullStart);
     }
 
     public void AddDiagnostic(int start, int length, string id, string message)
@@ -124,10 +129,10 @@ internal sealed class PowerShellLexer
         _diagnostics.Add(new Diagnostic(id, message, DiagnosticSeverity.Error, new Location(new TextSpan(start, Math.Max(0, length)), Source)));
     }
 
-    private void Add(ref List<ShellSyntaxTrivia>? trivia, ShellSyntaxKind kind, int start)
+    private void Add(ref List<GreenNode?>? trivia, SyntaxKind kind, int start)
     {
         trivia ??= [];
-        trivia.Add(new ShellSyntaxTrivia(kind, Text[start..Position], start));
+        trivia.Add(GreenFactory.Trivia(kind, Text[start..Position]));
     }
 
     /// <summary>

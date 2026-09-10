@@ -11,9 +11,9 @@ public sealed class ZshExtensionTests
     {
         var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Zsh);
 
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
-        return Assert.Single(tree.Root.Statements.Statements);
+        return Assert.Single(tree.GetRoot().Statements.Statements);
     }
 
     [Theory]
@@ -23,7 +23,7 @@ public sealed class ZshExtensionTests
     [InlineData("{ echo ${x} }\n")]
     public void BraceGroup_ClosesWithoutASeparator(string text)
     {
-        Assert.Equal(ShellSyntaxKind.PosixGroup, SingleStatement(text).Kind);
+        Assert.Equal(SyntaxKind.PosixGroup, SingleStatement(text).Kind());
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class ZshExtensionTests
         // bash requires `{ echo a; }`; without the separator the `}` is just another argument.
         var tree = ShellSyntaxTree.ParseText("{ echo a }\n", ShellDialect.Bash);
 
-        Assert.NotEmpty(tree.Diagnostics);
+        Assert.NotEmpty(tree.GetDiagnostics());
     }
 
     [Theory]
@@ -68,7 +68,7 @@ public sealed class ZshExtensionTests
 
         Assert.Equal(variable, statement.VariableName);
         Assert.HasCount(itemCount, statement.Items);
-        Assert.Equal(hasEnd, statement.EndKeyword is not null);
+        Assert.Equal(hasEnd, statement.EndKeyword.IsPresent());
         Assert.NotEmpty(statement.Body.Statements);
     }
 
@@ -82,8 +82,8 @@ public sealed class ZshExtensionTests
         var statement = Assert.IsType<ZshRepeatStatementSyntax>(SingleStatement(text));
 
         Assert.Equal("3", statement.Count.Value);
-        Assert.Equal(hasDoDone, statement.DoKeyword is not null);
-        Assert.Equal(hasDoDone, statement.DoneKeyword is not null);
+        Assert.Equal(hasDoDone, statement.DoKeyword.IsPresent());
+        Assert.Equal(hasDoDone, statement.DoneKeyword.IsPresent());
         Assert.NotEmpty(statement.Body.Statements);
     }
 
@@ -92,9 +92,9 @@ public sealed class ZshExtensionTests
     {
         var statement = Assert.IsType<ZshAlwaysStatementSyntax>(SingleStatement("{ echo a } always { echo b }\n"));
 
-        Assert.Equal(ShellSyntaxKind.PosixGroup, statement.Body.Kind);
+        Assert.Equal(SyntaxKind.PosixGroup, statement.Body.Kind());
         Assert.Equal("always", statement.AlwaysKeyword.Text);
-        Assert.Equal(ShellSyntaxKind.PosixGroup, statement.AlwaysBody.Kind);
+        Assert.Equal(SyntaxKind.PosixGroup, statement.AlwaysBody.Kind());
     }
 
     [Fact]
@@ -155,8 +155,8 @@ public sealed class ZshExtensionTests
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
         ShellSyntaxAssert.TextIsFaithful(text, tree);
-        Assert.DoesNotContain(tree.Root.DescendantNodes(), node =>
-            node.Kind is ShellSyntaxKind.ZshForeachStatement or ShellSyntaxKind.ZshRepeatStatement or ShellSyntaxKind.ZshAlwaysStatement);
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes(), node =>
+            node.Kind() is SyntaxKind.ZshForeachStatement or SyntaxKind.ZshRepeatStatement or SyntaxKind.ZshAlwaysStatement);
     }
 
     [Fact]

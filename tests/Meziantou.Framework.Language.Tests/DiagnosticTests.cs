@@ -34,4 +34,26 @@ public sealed class DiagnosticTests
         Assert.Equal(2, (int)DiagnosticSeverity.Warning);
         Assert.Equal(3, (int)DiagnosticSeverity.Error);
     }
+
+    [Fact]
+    public void Create_FormatsTheMessageOfTheDescriptor()
+    {
+        var descriptor = new DiagnosticDescriptor("XML0001", "Missing end tag", "Missing end tag for '{0}'.", DiagnosticSeverity.Warning);
+        var location = new Location(new TextSpan(1, 2));
+
+        var diagnostic = Diagnostic.Create(descriptor, location, "root");
+
+        Assert.Equal("XML0001", diagnostic.Id);
+        Assert.Equal("Missing end tag for 'root'.", diagnostic.Message);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal(location, diagnostic.Location);
+    }
+
+    [Fact]
+    public void Create_UsesTheTemplateVerbatimWhenThereIsNoArgument()
+    {
+        var descriptor = new DiagnosticDescriptor("JSON0001", "Unterminated", "Unexpected '{'.", DiagnosticSeverity.Error);
+
+        Assert.Equal("Unexpected '{'.", Diagnostic.Create(descriptor, Location.None).Message);
+    }
 }

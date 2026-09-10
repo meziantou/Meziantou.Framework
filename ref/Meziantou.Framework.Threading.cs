@@ -127,22 +127,14 @@ namespace Meziantou.Framework.Threading
 
     public sealed class AsyncReaderWriterLock
     {
-        public System.Threading.Tasks.Task<Releaser> ReaderLockAsync() => throw null;
-        public System.Threading.Tasks.Task<Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.Task<Releaser> WriterLockAsync() => throw null;
-        public System.Threading.Tasks.Task<Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public readonly struct Releaser : System.IDisposable
         {
             public void Dispose() { }
         }
-    }
-
-    public sealed class DelayedCancellationTokenSource : System.IAsyncDisposable, System.IDisposable
-    {
-        public System.Threading.CancellationToken Token { get => throw null; }
-        public DelayedCancellationTokenSource(System.Threading.CancellationToken cancellationToken, System.TimeSpan delay) { }
-        public void Dispose() { }
-        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     public sealed class KeyedAsyncLock<TKey>
@@ -176,8 +168,8 @@ namespace Meziantou.Framework.Threading
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }
         public System.TimeSpan WaitTimeout { get => throw null; set { } }
-        public System.TimeSpan DequeueTimeout { get => throw null; set { } }
         public int QueueCount { get => throw null; }
+        public System.Exception? WorkerException { get => throw null; }
         public override int MaximumConcurrencyLevel { get => throw null; }
         public MonoThreadedTaskScheduler(string? threadName) { }
         public void Dispose() { }

@@ -11,7 +11,7 @@ public sealed class ShellUnsupportedConstructTests
     {
         var tree = ShellSyntaxAssert.TextIsFaithful(text, dialect);
 
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
 
         return tree;
     }
@@ -80,8 +80,8 @@ public sealed class ShellUnsupportedConstructTests
         var tree = ParsesCleanly(Text, ShellDialect.PowerShellCore);
 
         // Nothing after `--%` is interpreted: no variable, no `&` separator, one statement.
-        Assert.Single(tree.Root.Statements.Statements);
-        Assert.Empty(tree.Root.DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
+        Assert.Single(tree.GetRoot().Statements.Statements);
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
     }
 
     [Fact]
@@ -90,8 +90,8 @@ public sealed class ShellUnsupportedConstructTests
         const string Text = "cmd --% /c $x\nGet-Item $y\n";
         var tree = ParsesCleanly(Text, ShellDialect.PowerShellCore);
 
-        Assert.HasCount(2, tree.Root.Statements.Statements);
-        Assert.Single(tree.Root.DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellVariableExpressionSyntax>());
     }
 
     [Theory]

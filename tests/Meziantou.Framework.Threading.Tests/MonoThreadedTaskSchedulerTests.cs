@@ -166,13 +166,18 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
                 scheduler);
         }
 
+        // Captured here rather than after the await: the worker thread is dead by then, and the CLR recycles the
+        // managed thread id of a dead thread, so the continuation can run on a pool thread reporting the worker's
+        // old id. This thread is alive while the tasks run, so the worker cannot be holding its id.
+        var disposingThreadId = Environment.CurrentManagedThreadId;
+
         scheduler.Dispose();
 
         await Task.WhenAll(queued).WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.HasCount(6, threadIds);
         Assert.Single(threadIds.Distinct());
-        Assert.DoesNotContain(Environment.CurrentManagedThreadId, threadIds);
+        Assert.DoesNotContain(disposingThreadId, threadIds);
     }
 
     [Fact]
@@ -314,6 +319,66 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         });
 
         Assert.IsType<ObjectDisposedException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void WaitTimeout_DefaultsToInfinite()
+    {
+        // Both the queue and the stop signal wake the worker thread, so polling only costs wake-ups.
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void WaitTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        // An invalid value used to reach WaitHandle.WaitAny and kill the worker thread.
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void DisposeThreadJoinTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromSeconds(1), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public void Timeouts_RoundTrip()
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(250);
+        _taskScheduler.DisposeThreadJoinTimeout = Timeout.InfiniteTimeSpan;
+
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.WaitTimeout);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public async Task WaitTimeout_SetOnAnIdleScheduler_StillRunsTasks()
+    {
+        // The worker thread is blocked on an infinite wait when the timeout changes; it must not stay stuck
+        // on the previous wait, and it must keep executing tasks afterwards.
+        using var scheduler = new MonoThreadedTaskScheduler("timeout") { WaitTimeout = TimeSpan.FromMilliseconds(50) };
+
+        var task = Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        Assert.Equal("timeout", await task.WaitAsync(TimeSpan.FromSeconds(30)));
+    }
+
+    [Fact]
+    public void WorkerException_IsNullWhileTheWorkerRuns()
+    {
+        Assert.Null(_taskScheduler.WorkerException);
     }
 
     private Task EnqueueTask()

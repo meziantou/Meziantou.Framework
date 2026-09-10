@@ -229,6 +229,172 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AddRange_HandlerModifyingTheCollectionKeepsTheViewSynchronized(bool supportRangeNotifications)
+    {
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
+        var observable = collection.AsObservable;
+
+        var reentered = false;
+        var notifiedItems = new List<int>();
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            notifiedItems.AddRange(e.NewItems!.Cast<int>());
+            if (reentered)
+                return;
+
+            reentered = true;
+            collection.Add(99);
+        }
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            collection.AddRange(1, 2);
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.True(reentered);
+        Assert.Equal([1, 2, 99], notifiedItems);
+        Assert.Equal([1, 2, 99], collection.ToList());
+        Assert.Equal([1, 2, 99], observable.ToList());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InsertRange_HandlerModifyingTheCollectionKeepsTheViewSynchronized(bool supportRangeNotifications)
+    {
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
+        collection.Add(0);
+        var observable = collection.AsObservable;
+
+        var reentered = false;
+        var notifiedItems = new List<int>();
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            notifiedItems.AddRange(e.NewItems!.Cast<int>());
+            if (reentered)
+                return;
+
+            reentered = true;
+            collection.Add(99);
+        }
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            collection.InsertRange(0, new[] { 1, 2 });
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.True(reentered);
+        Assert.Equal([1, 2, 99], notifiedItems);
+        Assert.Equal([1, 2, 0, 99], collection.ToList());
+        Assert.Equal([1, 2, 0, 99], observable.ToList());
+    }
+
+    [Fact]
+    public void Add_HandlerModifyingTheCollectionRaisesTheNotificationsInOrder()
+    {
+        var collection = CreateCollection<int>();
+        var observable = collection.AsObservable;
+
+        var notifiedItems = new List<int>();
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            var item = e.NewItems!.Cast<int>().Single();
+            notifiedItems.Add(item);
+            if (item is 1)
+            {
+                collection.Add(99);
+            }
+        }
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            collection.Add(1);
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.Equal([1, 99], notifiedItems);
+        Assert.Equal([1, 99], collection.ToList());
+        Assert.Equal([1, 99], observable.ToList());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AddRange_HandlerThrowingOnTheFirstItemStillRaisesTheRemainingNotifications(bool supportRangeNotifications)
+    {
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
+        var observable = collection.AsObservable;
+
+        var raisedCount = 0;
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            raisedCount++;
+            if (raisedCount is 1)
+                throw new InvalidOperationException("Handler failure");
+        }
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            var exception = Assert.Throws<InvalidOperationException>(() => collection.AddRange(1, 2, 3));
+            Assert.Equal("Handler failure", exception.Message);
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.Equal(supportRangeNotifications ? 1 : 3, raisedCount);
+        Assert.Equal([1, 2, 3], observable.ToList());
+
+        collection.Add(4);
+        Assert.Equal([1, 2, 3, 4], collection.ToList());
+        Assert.Equal([1, 2, 3, 4], observable.ToList());
+    }
+
+    [Fact]
+    public void AddRange_HandlerThrowingForEveryItemReportsAllTheExceptions()
+    {
+        var collection = CreateCollection<int>();
+        var observable = collection.AsObservable;
+
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => throw new InvalidOperationException("Handler failure");
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            var exception = Assert.Throws<AggregateException>(() => collection.AddRange(1, 2, 3));
+            Assert.HasCount(3, exception.InnerExceptions);
+            Assert.All(exception.InnerExceptions, item => Assert.IsType<InvalidOperationException>(item));
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.Equal([1, 2, 3], observable.ToList());
+    }
+
     [Fact]
     public void Sort()
     {
@@ -292,6 +458,68 @@ public sealed partial class ObservableCollectionTests : IDisposable
     {
         var collection = CreateCollection(kind);
         Assert.False(((IList)collection).Contains(null));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void Contains_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.False(((IList)collection).Contains("1"));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void IndexOf_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Equal(-1, ((IList)collection).IndexOf("1"));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void IndexOf_Struct_Null(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Equal(-1, ((IList)collection).IndexOf(null));
+    }
+
+    [Fact]
+    public void IndexOf_Null_ReferenceType()
+    {
+        var collection = CreateCollection<string?>();
+        collection.AddRange("a", null);
+
+        Assert.Equal(1, ((IList)collection).IndexOf(null));
+        Assert.Equal(1, ((IList)collection.AsObservable).IndexOf(null));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void SetItem_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Throws<ArgumentException>(() => ((IList)collection)[0] = "1");
+        Assert.Equal([1], collection.ToList());
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void SetItem_Struct_Null(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        collection.Add(1);
+
+        Assert.Throws<ArgumentNullException>(() => ((IList)collection)[0] = null);
+        Assert.Equal([1], collection.ToList());
     }
 
     [Fact]
@@ -516,16 +744,8 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
-    [Theory]
-    [MemberData(nameof(GetCollections))]
-    public void IndexOf_WrongItemType(CollectionKind kind)
-    {
-        var collection = CreateCollection(kind);
-        Assert.Equal(-1, ((IList)collection).IndexOf("dummy"));
-    }
-
     [Fact]
-    public void ObservableCollectionEditsWrongItemType()
+    public void ObservableCollectionAddAndInsertWrongItemType()
     {
         var collection = (IList)CreateCollection<string>().AsObservable;
         collection.Add(null);
@@ -533,7 +753,7 @@ public sealed partial class ObservableCollectionTests : IDisposable
 
         Assert.Throws<ArgumentException>(() => collection.Add(10));
         Assert.Throws<ArgumentException>(() => collection.Insert(0, 10));
-        Assert.Throws<ArgumentException>(() => collection[0] = 10);
+        Assert.Equal([null, ""], collection.Cast<string?>().ToList());
     }
 
     public enum ObservableCollectionEdit

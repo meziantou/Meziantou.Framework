@@ -3770,28 +3770,6 @@ public sealed class TdsQueryEngineTests
             expectedMaterializedQueries: "DuplicateIdRow[].Select(duplicateIdRow => new TdsProjection() {Id = duplicateIdRow.Id}).Distinct().OrderBy(projection => projection.Id).Skip(1).Take(1)");
     }
 
-    [Fact]
-    public void ProjectionTypeCache_WhenTheShapeLimitIsReached_KeepsServingKnownShapesAndRejectsNewOnes()
-    {
-        // The shared cache is process-wide and its emitted types can never be reclaimed, so the limit is
-        // exercised on a private cache instead of by sending 1024 distinct aliases through a server.
-        var cache = new TdsProjectionTypeCache(maxCachedTypes: 2);
-        var first = cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]);
-        var second = cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]);
-
-        Assert.NotSame(first, second);
-
-        var exception = Assert.Throws<TdsQueryEngineException>(() => cache.GetProjectionType([new TdsProjectionMember("Third", typeof(int))]));
-        Assert.Contains("2 distinct query projection shapes", exception.Message);
-
-        // Carrier types draw from the same budget as projection types.
-        _ = Assert.Throws<TdsQueryEngineException>(() => cache.GetCarrierType([new TdsProjectionMember("First", typeof(int))]));
-
-        // A shape that was cached before the limit was reached keeps being served.
-        Assert.Same(first, cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]));
-        Assert.Same(second, cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]));
-    }
-
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

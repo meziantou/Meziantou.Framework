@@ -92,6 +92,31 @@ public sealed class TaskExtensionsTests
 
     [Fact]
     [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_FaultedTaskCarryingAnOperationCanceledExceptionIsAFailure()
+    {
+        var task = Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll(ValueTask.FromResult(0), ValueTask.FromException<string>(new OperationCanceledException("test"))).AsTask();
+
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+        Assert.Equal("test", exception.Message);
+        Assert.Equal(TaskStatus.Faulted, task.Status);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_AllExceptionsOfAFaultedTaskAreReported()
+    {
+        var taskCompletionSource = new TaskCompletionSource<string>();
+        taskCompletionSource.SetException([new InvalidOperationException("first"), new InvalidOperationException("second")]);
+
+        var task = Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll(ValueTask.FromResult(0), new ValueTask<string>(taskCompletionSource.Task)).AsTask();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => task);
+        Assert.NotNull(task.Exception);
+        Assert.Equal(new[] { "first", "second" }, task.Exception.InnerExceptions.Select(ex => ex.Message).ToArray());
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
     public async Task WhenAll_ValueTask_CompletesSynchronouslyWhenAllTasksAreAlreadyCompleted()
     {
         var task = Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll(ValueTask.FromResult(0), ValueTask.FromResult("test"));

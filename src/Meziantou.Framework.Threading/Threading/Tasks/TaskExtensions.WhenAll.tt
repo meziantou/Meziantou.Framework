@@ -40,6 +40,26 @@ public static partial class TaskExtensions
     public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
     public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
 <# } #>
+    /// <summary>
+    /// Records the outcome of a task that did not complete successfully, the way <see cref="Task.WhenAll(Task[])"/> does.
+    /// </summary>
+    /// <remarks>
+    /// The state of the task, and not the type of the thrown exception, decides whether the task was canceled. A task
+    /// faulted with an <see cref="OperationCanceledException"/> is therefore reported as a failure, and a task faulted
+    /// with several exceptions contributes all of them.
+    /// </remarks>
+    private static void Observe(Task task, ref List<Exception>? observedExceptions, ref CancellationToken? observedCancellation)
+    {
+        if (task.IsCanceled)
+        {
+            observedCancellation ??= new TaskCanceledException(task).CancellationToken;
+        }
+        else if (task.Exception is { } exception)
+        {
+            observedExceptions ??= [];
+            observedExceptions.AddRange(exception.InnerExceptions);
+        }
+    }
 <# for (int i = 1; i <= count; i++) { #>
 
     /// <summary>
@@ -69,20 +89,25 @@ public static partial class TaskExtensions
         CancellationToken? observedCancellation = null;
 <# for (int j = 1; j <= i; j++) { #>
         T<#=j#> result<#=j#>;
-        try
+        if (task<#=j#>.IsCompletedSuccessfully)
         {
-            result<#=j#> = await task<#=j#>.ConfigureAwait(false);
+            result<#=j#> = task<#=j#>.Result;
         }
-        catch (OperationCanceledException ex)
+        else
         {
-            observedCancellation ??= ex.CancellationToken;
-            Unsafe.SkipInit(out result<#=j#>);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result<#=j#>);
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask<#=j#> = task<#=j#>.AsTask();
+            await ((Task)observedTask<#=j#>).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask<#=j#>.IsCompletedSuccessfully)
+            {
+                result<#=j#> = observedTask<#=j#>.Result;
+            }
+            else
+            {
+                Observe(observedTask<#=j#>, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result<#=j#>);
+            }
         }
 <# } #>
 
@@ -124,18 +149,18 @@ public static partial class TaskExtensions
         List<Exception>? observedExceptions = null;
         CancellationToken? observedCancellation = null;
 <# for (int j = 1; j <= i; j++) { #>
-        try
+        if (task<#=j#>.IsCompletedSuccessfully)
         {
-            await task<#=j#>.ConfigureAwait(false);
+            task<#=j#>.GetAwaiter().GetResult();
         }
-        catch (OperationCanceledException ex)
+        else
         {
-            observedCancellation ??= ex.CancellationToken;
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask<#=j#> = task<#=j#>.AsTask();
+            await observedTask<#=j#>.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask<#=j#>.IsCompletedSuccessfully)
+            {
+                Observe(observedTask<#=j#>, ref observedExceptions, ref observedCancellation);
+            }
         }
 <# } #>
 

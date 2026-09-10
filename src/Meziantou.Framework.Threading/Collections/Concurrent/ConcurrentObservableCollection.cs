@@ -8,10 +8,18 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// </summary>
 /// <typeparam name="T">The type of elements in the collection.</typeparam>
 /// <remarks>
+/// <para>
 /// The collection itself can be modified from any thread. The collection exposed by <see cref="AsObservable"/> raises
 /// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
-/// That context must run its callbacks one at a time, as the UI ones do: the notifications mutate the state exposed by
-/// <see cref="AsObservable"/>, so a context running two callbacks concurrently would corrupt it.
+/// </para>
+/// <para>
+/// All the notifications of an operation are queued before any of them is raised, and the notifications are never raised
+/// recursively: a handler that modifies the collection gets the notifications of its own modification after the ones
+/// already queued, so <see cref="AsObservable"/> ends up in the same state as this collection. A handler that throws
+/// doesn't prevent the remaining notifications from being raised; the exception is rethrown to the caller of the
+/// modification once the queued notifications have all been raised, as an <see cref="AggregateException"/> when several
+/// handlers threw.
+/// </para>
 /// <para>
 /// When the synchronization context refuses the callback, for instance because the thread it is bound to is gone, the exception is
 /// propagated to the caller that modified the collection. The modification is kept, and its notification stays queued until a later
@@ -58,7 +66,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     }
 
     /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class with the specified synchronization context.</summary>
-    /// <param name="synchronizationContext">The synchronization context used to raise collection change notifications. It must run its callbacks one at a time.</param>
+    /// <param name="synchronizationContext">The synchronization context used to raise collection change notifications.</param>
     public ConcurrentObservableCollection(SynchronizationContext synchronizationContext)
     {
         _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
@@ -85,9 +93,9 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     private static SynchronizationContext GetCurrentSynchronizationContext()
     {
-        // The base SynchronizationContext posts each callback to the thread pool on its own, so the notifications would run
-        // concurrently and none of them would see the context as the current one. The fallback has to serialize them and to
-        // install itself while they run, otherwise the collection cannot be read from its own change notifications.
+        // The base SynchronizationContext posts each callback to the thread pool on its own, so none of them runs with the
+        // context installed and the collection considers every notification to come from a foreign thread. The fallback
+        // installs itself while the callbacks run, so the collection can be read from its own change notifications.
         return SynchronizationContext.Current ?? new SerializedThreadPoolSynchronizationContext();
     }
 
@@ -217,13 +225,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
             }
             else
             {
-                if (_observableCollection is not null)
-                {
-                    foreach (var item in Items.GetRange(count, Items.Count - count))
-                    {
-                        _observableCollection.EnqueueAdd(item);
-                    }
-                }
+                _observableCollection?.EnqueueAddRangeAsSingleItemEvents(Items.GetRange(count, Items.Count - count));
             }
         }
     }
@@ -244,15 +246,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
             }
             else
             {
-                if (_observableCollection is not null)
-                {
-                    var i = index;
-                    foreach (var item in Items.GetRange(index, addedItemsCount))
-                    {
-                        _observableCollection.EnqueueInsert(i, item);
-                        i++;
-                    }
-                }
+                _observableCollection?.EnqueueInsertRangeAsSingleItemEvents(index, Items.GetRange(index, addedItemsCount));
             }
         }
     }

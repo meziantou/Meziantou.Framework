@@ -8,10 +8,10 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// </summary>
 /// <remarks>
 /// The base <see cref="SynchronizationContext"/> posts every callback to the thread pool independently, so its callbacks can
-/// run concurrently and none of them runs with the context installed. Both are required by the collection: the callbacks
-/// mutate a shared <see cref="List{T}"/>, and the collection recognizes its own thread by looking at
-/// <see cref="SynchronizationContext.Current"/>. This context runs the callbacks on the thread pool too, but one at a time
-/// and with itself installed as the current context, so a change notification can read the collection it notifies about.
+/// run concurrently and none of them runs with the context installed. The collection recognizes its own thread by looking at
+/// <see cref="SynchronizationContext.Current"/>, so its notifications all appeared to come from a foreign thread and could
+/// not read the collection they notify about. This context runs the callbacks on the thread pool too, but one at a time and
+/// with itself installed as the current context.
 /// </remarks>
 internal sealed class SerializedThreadPoolSynchronizationContext : SynchronizationContext
 {

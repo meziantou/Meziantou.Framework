@@ -2664,7 +2664,29 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1, AwayFromZero) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointAwayFromZero()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(2.5, 0) AS PositiveMidpoint, ROUND(-2.5, 0) AS NegativeMidpoint, ROUND(0.25, 1) AS PositiveScaledMidpoint, ROUND(-0.25, 1) AS NegativeScaledMidpoint
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            PositiveMidpoint NegativeMidpoint PositiveScaledMidpoint NegativeScaledMidpoint
+            3 -3 0.3 -0.3
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {PositiveMidpoint = Round(Convert(ConvertToTypeCore(Convert(2.5, Object), System.Double), Double), 0, AwayFromZero), NegativeMidpoint = Round(Convert(ConvertToTypeCore(Convert(-2.5, Object), System.Double), Double), 0, AwayFromZero), PositiveScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(0.25, Object), System.Double), Double), 1, AwayFromZero), NegativeScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(-0.25, Object), System.Double), Double), 1, AwayFromZero)})");
     }
 
     [Fact]

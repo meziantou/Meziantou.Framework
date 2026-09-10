@@ -59,711 +59,1475 @@ public static partial class TaskExtensions
     public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
     public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
     public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
-    public static async ValueTask<ValueTuple<T1>> WhenAll<T1>(ValueTask<T1> task1)
+    /// <summary>
+    /// Records the outcome of a task that did not complete successfully, the way <see cref="Task.WhenAll(Task[])"/> does.
+    /// </summary>
+    /// <remarks>
+    /// The state of the task, and not the type of the thrown exception, decides whether the task was canceled. A task
+    /// faulted with an <see cref="OperationCanceledException"/> is therefore reported as a failure, and a task faulted
+    /// with several exceptions contributes all of them.
+    /// </remarks>
+    private static void Observe(Task task, ref List<Exception>? observedExceptions, ref CancellationToken? observedCancellation)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task.IsCanceled)
         {
-            result1 = await task1.ConfigureAwait(false);
+            observedCancellation ??= new TaskCanceledException(task).CancellationToken;
         }
-        catch (Exception ex)
+        else if (task.Exception is { } exception)
         {
             observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
+            observedExceptions.AddRange(exception.InnerExceptions);
         }
-        
-        if (observedExceptions is not null)
+    }
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1>> WhenAll<T1>(ValueTask<T1> task1)
+    {
+        if (task1.IsCompletedSuccessfully)
         {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1>(task1.Result));
         }
 
-        return new(result1);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1>(TaskCompletionSource<ValueTuple<T1>> taskCompletionSource, ValueTask<T1> task1)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1>(result1));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1>> GetAwaiter<T1>(this ValueTuple<ValueTask<T1>> tasks) => WhenAll(tasks.Item1).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2>> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2>> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2>(task1.Result, task2.Result));
         }
 
-        return new(result1, result2);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2>(TaskCompletionSource<ValueTuple<T1, T2>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2>(result1, result2));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this ValueTuple<ValueTask<T1>, ValueTask<T2>> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        T3 result3;
-        try
-        {
-            result3 = await task3.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result3);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2, T3>(task1.Result, task2.Result, task3.Result));
         }
 
-        return new(result1, result2, result3);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3>(TaskCompletionSource<ValueTuple<T1, T2, T3>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+        T3 result3;
+        if (task3.IsCompletedSuccessfully)
+        {
+            result3 = task3.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask3 = task3.AsTask();
+            await ((Task)observedTask3).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask3.IsCompletedSuccessfully)
+            {
+                result3 = observedTask3.Result;
+            }
+            else
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result3);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3>(result1, result2, result3));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        T3 result3;
-        try
-        {
-            result3 = await task3.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result3);
-        }
-        T4 result4;
-        try
-        {
-            result4 = await task4.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result4);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2, T3, T4>(task1.Result, task2.Result, task3.Result, task4.Result));
         }
 
-        return new(result1, result2, result3, result4);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+        T3 result3;
+        if (task3.IsCompletedSuccessfully)
+        {
+            result3 = task3.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask3 = task3.AsTask();
+            await ((Task)observedTask3).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask3.IsCompletedSuccessfully)
+            {
+                result3 = observedTask3.Result;
+            }
+            else
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result3);
+            }
+        }
+        T4 result4;
+        if (task4.IsCompletedSuccessfully)
+        {
+            result4 = task4.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask4 = task4.AsTask();
+            await ((Task)observedTask4).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask4.IsCompletedSuccessfully)
+            {
+                result4 = observedTask4.Result;
+            }
+            else
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result4);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4>(result1, result2, result3, result4));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        T3 result3;
-        try
-        {
-            result3 = await task3.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result3);
-        }
-        T4 result4;
-        try
-        {
-            result4 = await task4.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result4);
-        }
-        T5 result5;
-        try
-        {
-            result5 = await task5.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result5);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2, T3, T4, T5>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result));
         }
 
-        return new(result1, result2, result3, result4, result5);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+        T3 result3;
+        if (task3.IsCompletedSuccessfully)
+        {
+            result3 = task3.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask3 = task3.AsTask();
+            await ((Task)observedTask3).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask3.IsCompletedSuccessfully)
+            {
+                result3 = observedTask3.Result;
+            }
+            else
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result3);
+            }
+        }
+        T4 result4;
+        if (task4.IsCompletedSuccessfully)
+        {
+            result4 = task4.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask4 = task4.AsTask();
+            await ((Task)observedTask4).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask4.IsCompletedSuccessfully)
+            {
+                result4 = observedTask4.Result;
+            }
+            else
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result4);
+            }
+        }
+        T5 result5;
+        if (task5.IsCompletedSuccessfully)
+        {
+            result5 = task5.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask5 = task5.AsTask();
+            await ((Task)observedTask5).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask5.IsCompletedSuccessfully)
+            {
+                result5 = observedTask5.Result;
+            }
+            else
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result5);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5>(result1, result2, result3, result4, result5));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        T3 result3;
-        try
-        {
-            result3 = await task3.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result3);
-        }
-        T4 result4;
-        try
-        {
-            result4 = await task4.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result4);
-        }
-        T5 result5;
-        try
-        {
-            result5 = await task5.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result5);
-        }
-        T6 result6;
-        try
-        {
-            result6 = await task6.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result6);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2, T3, T4, T5, T6>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result));
         }
 
-        return new(result1, result2, result3, result4, result5, result6);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5, T6>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+        T3 result3;
+        if (task3.IsCompletedSuccessfully)
+        {
+            result3 = task3.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask3 = task3.AsTask();
+            await ((Task)observedTask3).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask3.IsCompletedSuccessfully)
+            {
+                result3 = observedTask3.Result;
+            }
+            else
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result3);
+            }
+        }
+        T4 result4;
+        if (task4.IsCompletedSuccessfully)
+        {
+            result4 = task4.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask4 = task4.AsTask();
+            await ((Task)observedTask4).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask4.IsCompletedSuccessfully)
+            {
+                result4 = observedTask4.Result;
+            }
+            else
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result4);
+            }
+        }
+        T5 result5;
+        if (task5.IsCompletedSuccessfully)
+        {
+            result5 = task5.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask5 = task5.AsTask();
+            await ((Task)observedTask5).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask5.IsCompletedSuccessfully)
+            {
+                result5 = observedTask5.Result;
+            }
+            else
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result5);
+            }
+        }
+        T6 result6;
+        if (task6.IsCompletedSuccessfully)
+        {
+            result6 = task6.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask6 = task6.AsTask();
+            await ((Task)observedTask6).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask6.IsCompletedSuccessfully)
+            {
+                result6 = observedTask6.Result;
+            }
+            else
+            {
+                Observe(observedTask6, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result6);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5, T6>(result1, result2, result3, result4, result5, result6));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
+
+    /// <summary>
+    /// Awaits all the specified tasks and returns their results in a tuple.
+    /// </summary>
+    /// <remarks>
+    /// All the tasks are awaited, even when one of them does not complete successfully, and the outcome follows the same
+    /// rules as <see cref="Task.WhenAll(Task[])"/>. If at least one task fails, the returned task fails with all the
+    /// observed failures and awaiting it throws the first one. Otherwise, if at least one task is canceled, the returned
+    /// task is canceled with the <see cref="CancellationToken"/> of the first canceled task.
+    /// </remarks>
+    public static ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
     {
-        List<Exception>? observedExceptions = null;
-        T1 result1;
-        try
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully && task7.IsCompletedSuccessfully)
         {
-            result1 = await task1.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result1);
-        }
-        T2 result2;
-        try
-        {
-            result2 = await task2.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result2);
-        }
-        T3 result3;
-        try
-        {
-            result3 = await task3.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result3);
-        }
-        T4 result4;
-        try
-        {
-            result4 = await task4.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result4);
-        }
-        T5 result5;
-        try
-        {
-            result5 = await task5.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result5);
-        }
-        T6 result6;
-        try
-        {
-            result6 = await task6.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result6);
-        }
-        T7 result7;
-        try
-        {
-            result7 = await task7.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
-            Unsafe.SkipInit(out result7);
-        }
-        
-        if (observedExceptions is not null)
-        {
-            throw new AggregateException(observedExceptions);
+            return new(new ValueTuple<T1, T2, T3, T4, T5, T6, T7>(task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result, task7.Result));
         }
 
-        return new(result1, result2, result3, result4, result5, result6, result7);
+        var taskCompletionSource = new TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6, T7>>();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6, task7);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll<T1, T2, T3, T4, T5, T6, T7>(TaskCompletionSource<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> taskCompletionSource, ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
+    {
+        List<Exception>? observedExceptions = null;
+        CancellationToken? observedCancellation = null;
+        T1 result1;
+        if (task1.IsCompletedSuccessfully)
+        {
+            result1 = task1.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask1 = task1.AsTask();
+            await ((Task)observedTask1).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask1.IsCompletedSuccessfully)
+            {
+                result1 = observedTask1.Result;
+            }
+            else
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result1);
+            }
+        }
+        T2 result2;
+        if (task2.IsCompletedSuccessfully)
+        {
+            result2 = task2.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask2 = task2.AsTask();
+            await ((Task)observedTask2).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask2.IsCompletedSuccessfully)
+            {
+                result2 = observedTask2.Result;
+            }
+            else
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result2);
+            }
+        }
+        T3 result3;
+        if (task3.IsCompletedSuccessfully)
+        {
+            result3 = task3.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask3 = task3.AsTask();
+            await ((Task)observedTask3).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask3.IsCompletedSuccessfully)
+            {
+                result3 = observedTask3.Result;
+            }
+            else
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result3);
+            }
+        }
+        T4 result4;
+        if (task4.IsCompletedSuccessfully)
+        {
+            result4 = task4.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask4 = task4.AsTask();
+            await ((Task)observedTask4).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask4.IsCompletedSuccessfully)
+            {
+                result4 = observedTask4.Result;
+            }
+            else
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result4);
+            }
+        }
+        T5 result5;
+        if (task5.IsCompletedSuccessfully)
+        {
+            result5 = task5.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask5 = task5.AsTask();
+            await ((Task)observedTask5).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask5.IsCompletedSuccessfully)
+            {
+                result5 = observedTask5.Result;
+            }
+            else
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result5);
+            }
+        }
+        T6 result6;
+        if (task6.IsCompletedSuccessfully)
+        {
+            result6 = task6.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask6 = task6.AsTask();
+            await ((Task)observedTask6).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask6.IsCompletedSuccessfully)
+            {
+                result6 = observedTask6.Result;
+            }
+            else
+            {
+                Observe(observedTask6, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result6);
+            }
+        }
+        T7 result7;
+        if (task7.IsCompletedSuccessfully)
+        {
+            result7 = task7.Result;
+        }
+        else
+        {
+            // AsTask() keeps the completion state observable, which the type of the thrown exception cannot express.
+            // It returns the underlying task when there is one, so only a task-less ValueTask pays for it.
+            var observedTask7 = task7.AsTask();
+            await ((Task)observedTask7).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (observedTask7.IsCompletedSuccessfully)
+            {
+                result7 = observedTask7.Result;
+            }
+            else
+            {
+                Observe(observedTask7, ref observedExceptions, ref observedCancellation);
+                Unsafe.SkipInit(out result7);
+            }
+        }
+
+        if (observedExceptions is not null)
+        {
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult(new ValueTuple<T1, T2, T3, T4, T5, T6, T7>(result1, result2, result3, result4, result5, result6, result7));
+        }
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
     private static ValueTask WhenAll(ValueTask task1) => task1;
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task3.IsCompletedSuccessfully)
         {
-            await task3.ConfigureAwait(false);
+            task3.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask3 = task3.AsTask();
+            await observedTask3.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask3.IsCompletedSuccessfully)
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task3.IsCompletedSuccessfully)
         {
-            await task3.ConfigureAwait(false);
+            task3.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask3 = task3.AsTask();
+            await observedTask3.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask3.IsCompletedSuccessfully)
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task4.IsCompletedSuccessfully)
         {
-            await task4.ConfigureAwait(false);
+            task4.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask4 = task4.AsTask();
+            await observedTask4.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask4.IsCompletedSuccessfully)
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task3.IsCompletedSuccessfully)
         {
-            await task3.ConfigureAwait(false);
+            task3.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask3 = task3.AsTask();
+            await observedTask3.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask3.IsCompletedSuccessfully)
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task4.IsCompletedSuccessfully)
         {
-            await task4.ConfigureAwait(false);
+            task4.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask4 = task4.AsTask();
+            await observedTask4.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask4.IsCompletedSuccessfully)
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task5.IsCompletedSuccessfully)
         {
-            await task5.ConfigureAwait(false);
+            task5.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask5 = task5.AsTask();
+            await observedTask5.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask5.IsCompletedSuccessfully)
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            task6.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task3.IsCompletedSuccessfully)
         {
-            await task3.ConfigureAwait(false);
+            task3.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask3 = task3.AsTask();
+            await observedTask3.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask3.IsCompletedSuccessfully)
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task4.IsCompletedSuccessfully)
         {
-            await task4.ConfigureAwait(false);
+            task4.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask4 = task4.AsTask();
+            await observedTask4.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask4.IsCompletedSuccessfully)
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task5.IsCompletedSuccessfully)
         {
-            await task5.ConfigureAwait(false);
+            task5.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask5 = task5.AsTask();
+            await observedTask5.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask5.IsCompletedSuccessfully)
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task6.IsCompletedSuccessfully)
         {
-            await task6.ConfigureAwait(false);
+            task6.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask6 = task6.AsTask();
+            await observedTask6.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask6.IsCompletedSuccessfully)
+            {
+                Observe(observedTask6, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
+    private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
+    {
+        if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully && task7.IsCompletedSuccessfully)
+        {
+            task1.GetAwaiter().GetResult();
+            task2.GetAwaiter().GetResult();
+            task3.GetAwaiter().GetResult();
+            task4.GetAwaiter().GetResult();
+            task5.GetAwaiter().GetResult();
+            task6.GetAwaiter().GetResult();
+            task7.GetAwaiter().GetResult();
+            return ValueTask.CompletedTask;
+        }
+
+        var taskCompletionSource = new TaskCompletionSource();
+        _ = CompleteWhenAll(taskCompletionSource, task1, task2, task3, task4, task5, task6, task7);
+        return new(taskCompletionSource.Task);
+    }
+
+    private static async Task CompleteWhenAll(TaskCompletionSource taskCompletionSource, ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
     {
         List<Exception>? observedExceptions = null;
-        try
+        CancellationToken? observedCancellation = null;
+        if (task1.IsCompletedSuccessfully)
         {
-            await task1.ConfigureAwait(false);
+            task1.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask1 = task1.AsTask();
+            await observedTask1.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask1.IsCompletedSuccessfully)
+            {
+                Observe(observedTask1, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task2.IsCompletedSuccessfully)
         {
-            await task2.ConfigureAwait(false);
+            task2.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask2 = task2.AsTask();
+            await observedTask2.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask2.IsCompletedSuccessfully)
+            {
+                Observe(observedTask2, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task3.IsCompletedSuccessfully)
         {
-            await task3.ConfigureAwait(false);
+            task3.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask3 = task3.AsTask();
+            await observedTask3.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask3.IsCompletedSuccessfully)
+            {
+                Observe(observedTask3, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task4.IsCompletedSuccessfully)
         {
-            await task4.ConfigureAwait(false);
+            task4.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask4 = task4.AsTask();
+            await observedTask4.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask4.IsCompletedSuccessfully)
+            {
+                Observe(observedTask4, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task5.IsCompletedSuccessfully)
         {
-            await task5.ConfigureAwait(false);
+            task5.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask5 = task5.AsTask();
+            await observedTask5.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask5.IsCompletedSuccessfully)
+            {
+                Observe(observedTask5, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task6.IsCompletedSuccessfully)
         {
-            await task6.ConfigureAwait(false);
+            task6.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask6 = task6.AsTask();
+            await observedTask6.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask6.IsCompletedSuccessfully)
+            {
+                Observe(observedTask6, ref observedExceptions, ref observedCancellation);
+            }
         }
-        try
+        if (task7.IsCompletedSuccessfully)
         {
-            await task7.ConfigureAwait(false);
+            task7.GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        else
         {
-            observedExceptions ??= [];
-            observedExceptions.Add(ex);
+            var observedTask7 = task7.AsTask();
+            await observedTask7.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (!observedTask7.IsCompletedSuccessfully)
+            {
+                Observe(observedTask7, ref observedExceptions, ref observedCancellation);
+            }
         }
-        
+
         if (observedExceptions is not null)
         {
-            throw new AggregateException(observedExceptions);
+            taskCompletionSource.SetException(observedExceptions);
+        }
+        else if (observedCancellation is not null)
+        {
+            taskCompletionSource.SetCanceled(observedCancellation.GetValueOrDefault());
+        }
+        else
+        {
+            taskCompletionSource.SetResult();
         }
     }
 

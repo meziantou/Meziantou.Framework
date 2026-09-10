@@ -42,14 +42,23 @@ public static class MixedConsumerProducer
         if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)
             return;
 
+        // ParallelOptions treats a null scheduler as "the current one", so mirror that behavior.
+        var scheduler = options.TaskScheduler ?? TaskScheduler.Current;
+        var isDefaultScheduler = scheduler == TaskScheduler.Default;
+
         var degreeOfParallelism = options.MaxDegreeOfParallelism;
         if (degreeOfParallelism <= 0)
         {
             degreeOfParallelism = Environment.ProcessorCount;
         }
 
-        // ParallelOptions treats a null scheduler as "the current one", so mirror that behavior.
-        var scheduler = options.TaskScheduler ?? TaskScheduler.Current;
+        // Extra consumers cannot buy any parallelism when the scheduler itself caps how many tasks it
+        // runs at a time, so combine both limits the way ParallelOptions does.
+        var maximumConcurrencyLevel = scheduler.MaximumConcurrencyLevel;
+        if (maximumConcurrencyLevel > 0 && maximumConcurrencyLevel < degreeOfParallelism)
+        {
+            degreeOfParallelism = maximumConcurrencyLevel;
+        }
 
         var pendingItems = Channel.CreateUnbounded<T>();
         var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
@@ -117,7 +126,7 @@ public static class MixedConsumerProducer
                 {
                     try
                     {
-                        await action(context, item, cancellationToken).ConfigureAwait(false);
+                        await InvokeAsync(item).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -136,6 +145,21 @@ public static class MixedConsumerProducer
                     }
                 }
             }
+        }
+
+        // The consumer loop awaits with ConfigureAwait(false), so it resumes on the default scheduler as
+        // soon as it actually suspends, be it on an empty channel or on the action itself. Starting every
+        // action explicitly keeps the requested scheduler honored for all the items, and not only for the
+        // ones processed before the first suspension.
+        ValueTask InvokeAsync(T item)
+        {
+            if (isDefaultScheduler)
+                return action(context, item, cancellationToken);
+
+            // The token is deliberately not passed to StartNew: a token canceled between the check made by
+            // the loop and this call would make the task transition to Canceled, and the loop would record
+            // the resulting exception instead of letting the cancellation surface as such.
+            return new ValueTask(Task.Factory.StartNew(() => action(context, item, cancellationToken).AsTask(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap());
         }
     }
 }

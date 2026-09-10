@@ -438,7 +438,20 @@ jobs:
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+        run: |
+          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+
+          # Exit code 8 is 'Zero tests ran'. A group can legitimately run no test at all when every project it
+          # contains skips all of its tests on the current configuration, such as the Windows-only APIs on Linux
+          # or the database servers under invariant globalization. Those projects opt in by setting
+          # 'MinimumExpectedTests' to 0; a project that does expect tests and runs none keeps the default of 1
+          # and fails with exit code 9 instead, so tolerating 8 here does not hide a regression.
+          if ($LASTEXITCODE -eq 8) {
+            Write-Host "Every test of the group was skipped on this configuration"
+            exit 0
+          }
+
+          exit $LASTEXITCODE
 
       - name: Cleanup test results
         if: steps.build-project.outputs.has-project == 'true'

@@ -1,0 +1,5 @@
+[*.cs]
+# MA0182: Internal type is apparently never used.
+# The green layer is shared infrastructure: most of it has no caller inside this assembly and is consumed by the
+# Meziantou.Framework.Language.* parsers through InternalsVisibleTo, which the analyzer cannot see.
+dotnet_diagnostic.MA0182.severity = none

@@ -4,10 +4,14 @@
 
 It is a parser, not an engine: nothing in it matches text. Use `System.Text.RegularExpressions` for that.
 
+It is modelled on Roslyn. If you have used `Microsoft.CodeAnalysis`, everything here will look familiar: a
+`SyntaxTree` over a `SourceText`, nodes and tokens with spans, trivia, `SyntaxKind`, visitors, rewriters, and
+annotations.
+
 - parse a pattern in the dialect you choose, without rewriting anything
 - keep every character, including extended-mode whitespace and comments
 - report syntax issues through diagnostics (parsing never throws, whatever the input)
-- edit nodes/tokens/trivia and serialize back with `ToFullString()`
+- edit nodes, tokens and trivia, rebuilding only what changed, and serialize back with `ToFullString()`
 - walk or rewrite the tree with visitors
 
 The .NET dialect's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See `THIRD-PARTY-NOTICES.TXT`. A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
@@ -72,10 +76,10 @@ const string Pattern = """
 var tree = RegexSyntaxTree.ParseText(Pattern, RegexDialect.Net);
 
 // Nothing is lost: the tree reproduces the input character for character.
-Console.WriteLine(tree.Root.ToFullString() == Pattern);   // True
+Console.WriteLine(tree.GetRoot().ToFullString() == Pattern);   // True
 
 // Invalid input produces diagnostics instead of exceptions.
-foreach (var diagnostic in tree.Diagnostics)
+foreach (var diagnostic in tree.GetDiagnostics())
 {
     Console.WriteLine($"{diagnostic.Id} at {diagnostic.Location}: {diagnostic.Message}");
 }
@@ -85,8 +89,8 @@ A pattern has one root production, so there is no separate entry point for a gro
 through the tree instead:
 
 ```csharp
-var classes = tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>();
-var groups = tree.Root.DescendantNodes().OfType<RegexGroupSyntax>();
+var classes = tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>();
+var groups = tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>();
 ```
 
 To read a JavaScript literal rather than a bare pattern, delimiters and flags included:
@@ -94,9 +98,9 @@ To read a JavaScript literal rather than a bare pattern, delimiters and flags in
 ```csharp
 var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/a+b/giu");
 
-Console.WriteLine(tree.Root.FlagsToken?.Text);   // giu
-Console.WriteLine(tree.PatternOptions);          // IgnoreCase, Unicode, Global
-Console.WriteLine(tree.Root.ToFullString());     // /a+b/giu
+Console.WriteLine(tree.GetRoot().FlagsToken.Text);   // giu
+Console.WriteLine(tree.PatternOptions);             // IgnoreCase, Unicode, Global
+Console.WriteLine(tree.GetRoot().ToFullString());   // /a+b/giu
 ```
 
 ## Options
@@ -127,18 +131,24 @@ deeply nested input cannot overflow the stack. A value below one is rejected whe
 
 ## Inspecting the tree
 
-Every node exposes its `Kind`, its `Span` (excluding trivia) and `FullSpan` (including it), its `Parent`, its `Options`,
-and the usual traversal methods: `ChildNodes`, `ChildNodesAndTokens`, `DescendantNodes`, `DescendantTokens`,
-`DescendantTrivia`, `Ancestors`. Traversal is in source order.
+Every node exposes its `Kind()`, its `Span` (excluding trivia) and `FullSpan` (including it), its `Parent`, its
+`Options`, and the usual traversal methods: `ChildNodes`, `ChildNodesAndTokens`, `DescendantNodes`, `DescendantTokens`,
+`DescendantTrivia`, `Ancestors`, plus `FindToken(position)` and `FindNode(span)`. Traversal is in source order.
 
 A pattern body is always an alternation of sequences, even when it has a single branch and no `|`. Keeping the shape
 uniform means a consumer never has to handle two spellings of the same thing.
 
+**The bars belong to the list, not to the branches around them.** `Branches` is a separated list: the branches and the
+`|` between them share one sequence, so `Count` counts branches and `SeparatorCount` counts bars.
+
 ```csharp
 var tree = RegexSyntaxTree.ParseText("ab|c", RegexDialect.Net);
+var branches = tree.GetRoot().Alternation.Branches;
 
-Console.WriteLine(tree.Root.Alternation.Branches.Count);           // 2
-Console.WriteLine(tree.Root.Alternation.Branches[0].Terms.Count);  // 2
+Console.WriteLine(branches.Count);            // 2
+Console.WriteLine(branches.SeparatorCount);   // 1
+Console.WriteLine(branches[0].Terms.Count);   // 2
+Console.WriteLine(branches.GetSeparator(0));  // |
 ```
 
 A literal is one atom per UTF-16 code unit, and a quantifier binds the atom in front of it. That matches the engine: in
@@ -150,7 +160,7 @@ readable after the fact:
 
 ```csharp
 var tree = RegexSyntaxTree.ParseText("a(?i)b", RegexDialect.Net);
-var literals = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
+var literals = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().ToArray();
 
 Console.WriteLine(literals[0].Options);   // None
 Console.WriteLine(literals[1].Options);   // IgnoreCase
@@ -176,36 +186,43 @@ A pattern has no trivia unless extended mode is in effect, which `(?x)` can swit
 ```csharp
 var tree = RegexSyntaxTree.ParseText("a(?#note)b", RegexDialect.Net);
 
-foreach (var comment in tree.Root.DescendantComments())
+foreach (var comment in tree.GetRoot().DescendantComments())
 {
-    Console.WriteLine($"{comment.Span.Start}: {comment.Text}");   // 1: (?#note)
+    Console.WriteLine($"{comment.Span.Start}: {comment}");   // 1: (?#note)
 }
 ```
 
 Inside a character class, whitespace and `#` stay literal even under `(?x)`.
 
-## Editing
+## Editing without reparsing
 
-Edits splice text and reparse, so untouched formatting is preserved exactly. When the replacement carries no leading
-trivia of its own, the whitespace in front of the original node is kept:
+An edit rebuilds only the path from the changed node up to the root. Everything else is carried over as-is, so the
+rest of the pattern is untouched — and the result is the same type you started with, so no cast is needed.
+
+Nothing is carried over onto the replacement, including the trivia in front of the node being replaced. Ask for it
+with `WithTriviaFrom` when you want it:
 
 ```csharp
 var options = new RegexParseOptions(RegexDialect.Net) { PatternOptions = RegexPatternOptions.IgnorePatternWhitespace };
 var tree = RegexSyntaxTree.ParseText("a   b # keep this\n", options);
-var second = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().Last();
+var second = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().Last();
+var replacement = SyntaxFactory.Literal('z', RegexDialect.Net);
 
-var updated = tree.Root.ReplaceNode(second, SyntaxFactory.Literal('z', RegexDialect.Net));
+Console.WriteLine(tree.GetRoot().ReplaceNode(second, replacement).ToFullString());
+// az # keep this
 
-Console.WriteLine(updated.ToFullString());   // a   z # keep this
+Console.WriteLine(tree.GetRoot().ReplaceNode(second, replacement.WithTriviaFrom(second)).ToFullString());
+// a   z # keep this
 ```
 
-`ReplaceToken` and `ReplaceTrivia` work the same way. For text-based edits, use `WithChanges`:
+`ReplaceToken`, `ReplaceTrivia`, `RemoveNode` and the `WithX` method on every slot of every node work the same way.
+For text-based edits, use `WithChanges`, which reparses:
 
 ```csharp
 var tree = RegexSyntaxTree.ParseText("ab+c", RegexDialect.Net);
 var updated = tree.WithChanges(new TextChange(new TextSpan(2, 1), "*"));
 
-Console.WriteLine(updated.Text);   // ab*c
+Console.WriteLine(updated.GetText().Text);   // ab*c
 ```
 
 An edit to a tree from `ParseJavaScriptLiteral` stays a literal: the delimiters and flags are preserved rather than
@@ -222,6 +239,22 @@ var spaced = RegexSyntaxTree.ParseText("a  b   # note\n", options);
 var tight = RegexSyntaxTree.ParseText("ab", options);
 
 Console.WriteLine(spaced.IsEquivalentTo(tight));   // True
+```
+
+## Finding a node again after an edit
+
+An annotation is a marker you attach to a node and find again in the tree an edit produced, wherever it ended up:
+
+```csharp
+var tree = RegexSyntaxTree.ParseText("a|b", RegexDialect.Net);
+var marker = new SyntaxAnnotation();
+var branch = tree.GetRoot().Alternation.Branches[1];
+
+var marked = tree.GetRoot().ReplaceNode(branch, branch.WithAdditionalAnnotations(marker));
+var edited = marked.ReplaceNode(marked.Alternation.Branches[0], SyntaxFactory.LiteralText("xy", RegexDialect.Net));
+
+var found = edited.GetAnnotatedNodes(marker).Single();
+Console.WriteLine(found.ToFullString());   // b
 ```
 
 ## Building trees
@@ -246,34 +279,52 @@ when nothing changed, and keeps the exact text of everything it did not touch:
 ```csharp
 sealed class RenameGroup(string oldName, string newName) : RegexSyntaxRewriter
 {
-    public override RegexSyntaxNode? VisitNamedGroup(RegexNamedGroupSyntax node)
+    public override SyntaxNode? VisitNamedGroup(RegexNamedGroupSyntax node)
     {
-        if (node.Name != oldName || node.NameToken is null)
+        if (node.Name != oldName)
             return base.VisitNamedGroup(node);
 
-        // WithText keeps the token's own trivia, so nothing around the name is lost.
-        return new RegexNamedGroupSyntax(
-            node.OpenParenToken,
-            node.GroupKindToken,
-            node.NameToken.WithText(newName),
-            node.CloseNameToken,
-            node.Alternation,
-            node.CloseParenToken,
-            node.Number);
+        // WithTriviaFrom keeps whatever stood in front of the old name.
+        var renamed = SyntaxFactory.Token(SyntaxKind.NameToken, newName).WithTriviaFrom(node.NameToken);
+
+        return node.WithNameToken(renamed);
     }
 }
 ```
 
-Replaced nodes are spliced into the source and the pattern is reparsed once. `rewriter.Visit(tree.Root)` returns a new
-`RegexPatternSyntax`; visiting a node further down scopes the rewrite to that subtree.
+`rewriter.Visit(tree.GetRoot())` returns a new `RegexPatternSyntax`; visiting a node further down scopes the rewrite to
+that subtree. `RegexSyntaxWalker` visits a node and everything below it without producing anything, and
+`RegexSyntaxVisitor` dispatches on kind without recursing at all.
+
+## Coming from version 3
+
+Version 4 moved the tree onto the same model Roslyn uses, which changed most of the API.
+
+| Version 3 | Version 4 |
+| --- | --- |
+| `RegexSyntaxKind` | `SyntaxKind` |
+| `node.Kind` | `node.Kind()` |
+| `RegexSyntaxToken`, `RegexSyntaxTrivia`, `RegexSyntaxNodeOrToken` (classes) | `SyntaxToken`, `SyntaxTrivia`, `SyntaxNodeOrToken` from `Meziantou.Framework.Language` (structs) |
+| `tree.Root`, `tree.Text`, `tree.SourceText`, `tree.Diagnostics` | `tree.GetRoot()`, `tree.GetText()`, `tree.GetDiagnostics()` |
+| `alternation.BarTokens` | gone — `Branches` is a `SeparatedSyntaxList`, so `Branches.GetSeparator(i)` |
+| `new RegexLiteralSyntax(token)` and the other constructors | `SyntaxFactory.Literal(token, options)` and friends |
+| `token.WithText(text)` | `SyntaxFactory.Token(kind, text).WithTriviaFrom(token)` |
+| `trivia.Text` | `trivia.ToString()` |
+| `root.ReplaceNode(...)` re-parsing, and keeping the old node's trivia | `root.ReplaceNode(...)` rebuilding only what changed, and keeping nothing — use `WithTriviaFrom` |
+| `RegexSyntaxRewriter` overrides returning `RegexSyntaxNode?` | returning `SyntaxNode?` |
+| `RegexSyntaxVisitor.DefaultVisit` recursing | it does nothing; derive from `RegexSyntaxWalker` to walk a tree |
+
+New in version 4: `WithX` on every slot, `SyntaxAnnotation`, `RemoveNode`/`SyntaxRemoveOptions`, `RegexSyntaxWalker`,
+`FindToken`/`FindNode`, and structural sharing — an edit keeps every node it did not touch.
 
 ## Notes
 
-Every edit reparses the whole pattern. That keeps the model simple and the tree always consistent with its text, and a
-pattern is short enough that it costs nothing worth saving.
+Replacing a node, token or trivium rebuilds only the spine from it to the root; `WithChanges` reparses, because an
+edit expressed as text can change how anything after it reads. A pattern is short enough that either costs nothing
+worth saving.
 
-Every node stores its own text, so a tree costs memory in proportion to the pattern's length times its depth: a
-20,000-character pattern is roughly 16 MB. That is fine for patterns and would not be for documents.
+Nodes are shared between the trees an edit produces, so holding several versions of a pattern costs little more than
+holding one.
 
 The .NET dialect follows the current .NET engine. The engine changes between releases — .NET 10 rejects
 `(?(name)(?n))`, which .NET 11 accepts, and knows fewer Unicode block names — so on an older runtime this parser may

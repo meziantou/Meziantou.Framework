@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.Language;
 using Meziantou.Framework.Language.Xml;
 
 namespace Meziantou.Framework.DependencyScanning;
@@ -118,11 +119,15 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     private XmlDocumentSyntax ReplaceValue(XmlSyntaxTree syntaxTree, string locationXPath, string? oldValue, string newValue)
     {
-        var node = syntaxTree.Root.SelectSingleSyntaxNode(locationXPath) ?? throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+        var root = syntaxTree.GetRoot();
+        var node = root.SelectSingleSyntaxNode(locationXPath) ?? throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
         return node switch
         {
-            XmlAttributeSyntax attribute => ReplaceAttributeValue(syntaxTree.Root, attribute, oldValue, newValue),
-            XmlElementSyntax element => ReplaceElementValue(syntaxTree.Root, element, oldValue, newValue),
+            XmlAttributeSyntax attribute => ReplaceAttributeValue(root, attribute, oldValue, newValue),
+            XmlElementSyntax element => ReplaceElementValue(root, element, oldValue, newValue),
+
+            // A self-closing element has no content to carry a value.
+            XmlEmptyElementSyntax => throw new DependencyScannerException("Cannot update value of a self-closing XML element."),
             _ => throw new DependencyScannerException("Dependency not found. File was probably modified since last scan."),
         };
     }
@@ -135,9 +140,6 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     private XmlDocumentSyntax ReplaceElementValue(XmlDocumentSyntax document, XmlElementSyntax element, string? oldValue, string newValue)
     {
-        if (element.IsSelfClosing)
-            throw new DependencyScannerException("Cannot update value of a self-closing XML element.");
-
         var updatedValue = UpdateTextValue(element.GetInnerText(), oldValue, newValue);
         return document.ReplaceNode(element, element.WithInnerText(updatedValue));
     }

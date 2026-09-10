@@ -4,11 +4,6 @@
 
 namespace Meziantou.Framework.SnapshotTesting
 {
-    public class AssertionExceptionBuilder
-    {
-        public virtual System.Exception CreateException(string message) => throw null;
-    }
-
     public static class HumanReadableSerializerScrubExtensions
     {
         public static void ScrubGuid(this Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options) { }
@@ -227,7 +222,6 @@ namespace Meziantou.Framework.SnapshotTesting
         public bool AutoDetectContinuousEnvironment { get => throw null; set { } }
         public bool ForceUpdateSnapshots { get => throw null; set { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy SnapshotUpdateStrategy { get => throw null; set { } }
-        public Meziantou.Framework.SnapshotTesting.AssertionExceptionBuilder AssertionExceptionCreator { get => throw null; set { } }
         public int MaxSnapshotFileNameLength { get => throw null; set { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotPathStrategy SnapshotPathStrategy { get => throw null; set { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy SnapshotNamingStrategy { get => throw null; set { } }

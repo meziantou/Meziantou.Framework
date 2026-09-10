@@ -94,15 +94,15 @@ public sealed class ShellSyntaxFactoryTests
 
         var text = script.ToFullString();
         Assert.Equal("cd /tmp; ls", text);
-        Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Bash).Root.ToFullString());
+        Assert.Equal(text, ShellSyntaxTree.ParseText(text, ShellDialect.Bash).GetRoot().ToFullString());
     }
 
     [Fact]
     public void Comment_AddsTheDialectMarker()
     {
-        Assert.Equal("# note", SyntaxFactory.Comment("note", ShellDialect.Bash).Text);
-        Assert.Equal("# already", SyntaxFactory.Comment("# already", ShellDialect.Bash).Text);
-        Assert.Equal(":: note", SyntaxFactory.Comment("note", ShellDialect.Cmd).Text);
+        Assert.Equal("# note", SyntaxFactory.Comment("note", ShellDialect.Bash).ToString());
+        Assert.Equal("# already", SyntaxFactory.Comment("# already", ShellDialect.Bash).ToString());
+        Assert.Equal(":: note", SyntaxFactory.Comment("note", ShellDialect.Cmd).ToString());
     }
 
     [Theory]
@@ -158,12 +158,12 @@ public sealed class ShellSyntaxFactoryTests
             nameof(ShellQuotedStringSyntax) => SyntaxFactory.QuotedString("a b", ShellDialect.Bash),
             nameof(ShellVariableReferenceSyntax) => SyntaxFactory.VariableReference("value", ShellDialect.Bash),
             nameof(CmdVariableReferenceSyntax) => (ShellWordPartSyntax)SyntaxFactory.VariableReference("value", ShellDialect.Cmd),
-            nameof(ShellGlobSyntax) => new ShellGlobSyntax(SyntaxFactory.Token(ShellSyntaxKind.BareTextToken, "*")),
-            nameof(ShellEscapeSequenceSyntax) => new ShellEscapeSequenceSyntax(SyntaxFactory.Token(ShellSyntaxKind.EscapeToken, @"\$", "$")),
-            nameof(ShellCommandSubstitutionSyntax) => new ShellCommandSubstitutionSyntax(SyntaxFactory.Token(ShellSyntaxKind.DollarOpenParenToken, "$("), statements, SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, ")")),
-            nameof(PosixProcessSubstitutionSyntax) => new PosixProcessSubstitutionSyntax(SyntaxFactory.Token(ShellSyntaxKind.OpenParenToken, "<("), statements, SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, ")")),
-            nameof(PosixArithmeticExpansionSyntax) => new PosixArithmeticExpansionSyntax(SyntaxFactory.Token(ShellSyntaxKind.DollarOpenParenToken, "$(("), SyntaxFactory.RawExpression("1+2"), SyntaxFactory.Token(ShellSyntaxKind.CloseParenToken, "))")),
-            nameof(ShellEmbeddedExpressionSyntax) => new ShellEmbeddedExpressionSyntax(SyntaxFactory.RawExpression("1+2")),
+            nameof(ShellGlobSyntax) => SyntaxFactory.ShellGlob(SyntaxFactory.Token(SyntaxKind.BareTextToken, "*")),
+            nameof(ShellEscapeSequenceSyntax) => SyntaxFactory.ShellEscapeSequence(SyntaxFactory.Token(SyntaxKind.EscapeToken, @"\$", "$")),
+            nameof(ShellCommandSubstitutionSyntax) => SyntaxFactory.ShellCommandSubstitution(SyntaxFactory.Token(SyntaxKind.DollarOpenParenToken, "$("), statements, SyntaxFactory.Token(SyntaxKind.CloseParenToken, ")")),
+            nameof(PosixProcessSubstitutionSyntax) => SyntaxFactory.PosixProcessSubstitution(SyntaxFactory.Token(SyntaxKind.OpenParenToken, "<("), statements, SyntaxFactory.Token(SyntaxKind.CloseParenToken, ")")),
+            nameof(PosixArithmeticExpansionSyntax) => SyntaxFactory.PosixArithmeticExpansion(SyntaxFactory.Token(SyntaxKind.DollarOpenParenToken, "$(("), SyntaxFactory.RawExpression("1+2"), SyntaxFactory.Token(SyntaxKind.CloseParenToken, "))")),
+            nameof(ShellEmbeddedExpressionSyntax) => SyntaxFactory.ShellEmbeddedExpression(SyntaxFactory.RawExpression("1+2")),
             _ => throw new ArgumentException($"No sample for {typeName}", nameof(typeName)),
         };
     }

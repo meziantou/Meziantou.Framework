@@ -16,8 +16,8 @@ public sealed class ShellGlobTests
     [MemberData(nameof(PosixDialects))]
     public void SimpleGlobs_AreExposed(ShellDialect dialect)
     {
-        Assert.Equal(ShellSyntaxKind.AsteriskToken, Assert.Single(FirstArgument("*", dialect).Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind);
-        Assert.Equal(ShellSyntaxKind.QuestionToken, Assert.Single(FirstArgument("?", dialect).Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind);
+        Assert.Equal(SyntaxKind.AsteriskToken, Assert.Single(FirstArgument("*", dialect).Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind());
+        Assert.Equal(SyntaxKind.QuestionToken, Assert.Single(FirstArgument("?", dialect).Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind());
     }
 
     [Theory]
@@ -27,7 +27,7 @@ public sealed class ShellGlobTests
         var word = FirstArgument("local:*", dialect);
 
         Assert.Equal("local:*", word.Value);
-        Assert.Equal(ShellSyntaxKind.AsteriskToken, Assert.Single(word.Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind);
+        Assert.Equal(SyntaxKind.AsteriskToken, Assert.Single(word.Parts.OfType<ShellGlobSyntax>()).GlobToken.Kind());
         Assert.Equal("local:", Assert.IsType<ShellLiteralWordPartSyntax>(word.Parts[0]).Value);
     }
 
@@ -100,7 +100,7 @@ public sealed class ShellGlobTests
     {
         foreach (var text in new[] { "ls *", "ls local:*", "ls **/*.cs", "ls [abc]?.txt", "ls '*'", "ls a[0-9]b" })
         {
-            Assert.Equal(text, ShellSyntaxTree.ParseText(text, dialect).Root.ToFullString());
+            Assert.Equal(text, ShellSyntaxTree.ParseText(text, dialect).GetRoot().ToFullString());
         }
     }
 }

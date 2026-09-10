@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>Describes where a statement list ends.</summary>
 /// <param name="StopCharacter">A closing character such as <c>)</c>, or <c>\0</c> when there is none.</param>

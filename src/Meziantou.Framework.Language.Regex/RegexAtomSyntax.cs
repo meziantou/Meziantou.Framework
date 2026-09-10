@@ -1,15 +1,12 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Regex;
 
-/// <summary>Base type for a single unquantified unit of a pattern, such as a literal, a class, or a group.</summary>
+/// <summary>The base of a single unquantified unit of a pattern, such as a literal, a class, or a group.</summary>
 public abstract class RegexAtomSyntax : RegexTermSyntax
 {
-    private protected RegexAtomSyntax(RegexSyntaxKind kind, string fullText, int fullStart = 0, IReadOnlyList<RegexSyntaxToken>? tokens = null)
-        : base(kind, fullText, fullStart, tokens)
-    {
-    }
-
-    private protected RegexAtomSyntax(RegexSyntaxKind kind, IReadOnlyList<RegexSyntaxToken?>? tokens, params ReadOnlySpan<RegexSyntaxNodeOrToken> parts)
-        : base(kind, tokens, parts)
+    private protected RegexAtomSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
     }
 }

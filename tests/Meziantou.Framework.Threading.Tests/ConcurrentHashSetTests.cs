@@ -1,4 +1,4 @@
-using Meziantou.Framework.Collections.Concurrent;
+﻿using Meziantou.Framework.Collections.Concurrent;
 
 namespace Meziantou.Framework.Tests.Collections;
 
@@ -154,5 +154,77 @@ public class ConcurrentHashSetTests
         Assert.Equal(0, destination[0]);
         Assert.Equal(0, destination[4]);
         Assert.Equal([1, 2, 3], destination[1..4].Order());
+    }
+
+    [Fact]
+    public void Overlaps_StopsEnumeratingOtherAtTheFirstCommonElement()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+        List<int> enumerated = [];
+
+        Assert.True(set.Overlaps(Record([7, 2, 3], enumerated)));
+        Assert.Equal([7, 2], enumerated);
+    }
+
+    [Fact]
+    public void Overlaps_EmptySet_DoesNotEnumerateOther()
+    {
+        ConcurrentHashSet<int> set = [];
+        List<int> enumerated = [];
+
+        Assert.False(set.Overlaps(Record([1, 2, 3], enumerated)));
+        Assert.Empty(enumerated);
+    }
+
+    [Fact]
+    public void Overlaps_NoCommonElement_ReturnsFalse()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+
+        Assert.False(set.Overlaps([4, 5]));
+        Assert.False(set.Overlaps([]));
+    }
+
+    [Fact]
+    public void IsSupersetOf_StopsEnumeratingOtherAtTheFirstMissingElement()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+        List<int> enumerated = [];
+
+        Assert.False(set.IsSupersetOf(Record([1, 9, 2], enumerated)));
+        Assert.Equal([1, 9], enumerated);
+    }
+
+    [Fact]
+    public void IsSupersetOf_IgnoresDuplicatesInOther()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+
+        Assert.True(set.IsSupersetOf([1, 1, 2]));
+        Assert.True(set.IsSupersetOf([1, 2, 3]));
+        Assert.True(set.IsSupersetOf([]));
+        Assert.False(set.IsSupersetOf([1, 4]));
+    }
+
+    [Fact]
+    public void IsSupersetOf_EmptySet()
+    {
+        ConcurrentHashSet<int> set = [];
+
+        Assert.True(set.IsSupersetOf([]));
+        Assert.False(set.IsSupersetOf([1]));
+    }
+
+    private static IEnumerable<T> Record<T>(IEnumerable<T> source, List<T> enumerated)
+    {
+        foreach (var item in source)
+        {
+            enumerated.Add(item);
+            yield return item;
+        }
     }
 }

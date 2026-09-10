@@ -1,4 +1,8 @@
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>Parses a pattern the way <c>System.Text.RegularExpressions</c> does.</summary>
 /// <remarks>

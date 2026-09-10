@@ -1,31 +1,54 @@
+using Meziantou.Framework.Language.InternalSyntax;
+
 namespace Meziantou.Framework.Language.Xml;
 
-/// <summary>Represents plain text content inside an XML element.</summary>
-/// <example>
-/// <code>
-/// var text = new XmlTextSyntax("hello");
-/// var updated = text.WithText("world");
-/// </code>
-/// </example>
-public sealed class XmlTextSyntax : XmlSyntaxNode
+/// <summary>A run of character data, which in XML includes the whitespace between tags.</summary>
+public sealed class XmlTextSyntax : XmlNodeSyntax
 {
-    public XmlTextSyntax(string text, int fullStart = 0)
-        : base(XmlSyntaxKind.XmlText, text, [new XmlSyntaxToken(XmlSyntaxKind.TextToken, text, fullStart: fullStart)], fullStart)
+    internal XmlTextSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
     {
-        Text = text;
     }
 
-    public string Text { get; }
+    public SyntaxToken TextToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
+    /// <summary>Gets the character data, exactly as it was written.</summary>
+    public string Text => TextToken.Text;
+
+    /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public XmlTextSyntax WithText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        if (string.Equals(text, Text, StringComparison.Ordinal))
-            return this;
 
-        return new XmlTextSyntax(text);
+        return string.Equals(text, Text, StringComparison.Ordinal) ? this : WithTextToken(SyntaxFactory.Token(SyntaxKind.TextToken, text).WithTriviaFrom(TextToken));
     }
 
-    public override void Accept(XmlSyntaxVisitor visitor) => visitor.VisitText(this);
-    public override TResult Accept<TResult>(XmlSyntaxVisitor<TResult> visitor) => visitor.VisitText(this);
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public XmlTextSyntax Update(SyntaxToken textToken)
+    {
+        if (textToken.Node == Green.GetSlot(0))
+            return this;
+
+        return SyntaxFactory.XmlText(textToken).WithAnnotationsFrom(this);
+    }
+
+    public XmlTextSyntax WithTextToken(SyntaxToken textToken) => Update(textToken);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => null;
+    internal override SyntaxNode? GetCachedSlot(int index) => null;
+
+    public override void Accept(XmlSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitText(this);
+    }
+
+    public override TResult? Accept<TResult>(XmlSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitText(this);
+    }
 }

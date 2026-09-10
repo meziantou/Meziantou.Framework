@@ -10,6 +10,11 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// <remarks>
 /// The collection itself can be modified from any thread. The collection exposed by <see cref="AsObservable"/> raises
 /// its change notifications on the thread associated with the <see cref="SynchronizationContext"/> provided to the constructor.
+/// <para>
+/// When the synchronization context refuses the callback, for instance because the thread it is bound to is gone, the exception is
+/// propagated to the caller that modified the collection. The modification is kept, and its notification stays queued until a later
+/// modification succeeds in posting to the context.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

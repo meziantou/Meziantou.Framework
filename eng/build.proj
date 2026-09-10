@@ -19,4 +19,13 @@
     <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </ItemGroup>
+
+  <!-- Every test of these suites drives a real database client, which needs ICU, so all of their
+       test classes are [RunIf(NotInvariant)]. Under InvariantGlobalization the whole assembly is
+       skipped, and a test run where nothing ran fails with "Zero tests ran", so drop the projects
+       instead of running them empty. -->
+  <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND '$(InvariantGlobalization)' == 'true'">
+    <ProjectReference Remove="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
+  </ItemGroup>
 </Project>

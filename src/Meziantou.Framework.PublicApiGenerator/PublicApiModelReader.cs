@@ -408,6 +408,7 @@ internal static class PublicApiModelReader
             }
         }
 
+        var interfaces = new List<string>();
         foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
         {
             var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
@@ -415,13 +416,18 @@ internal static class PublicApiModelReader
             if (isUnionDeclaration && string.Equals(interfaceTypeName, IUnionInterfaceFullName, StringComparison.Ordinal))
                 continue;
 
-            baseTypes.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface, genericContext)));
+            interfaces.Add(FormatDecodedTypeWithoutNullable(DecodeTypeFromEntityHandle(metadataReader, interfaceImplementation.Interface, genericContext)));
         }
+
+        // The interface list is sorted using the formatted names, so the generated API does not depend on the order of the metadata table.
+        // The base type stays first as C# requires it to precede the interfaces.
+        interfaces.Sort(StringComparer.Ordinal);
+        baseTypes.AddRange(interfaces);
 
         if (baseTypes.Count == 0)
             return string.Empty;
 
-        return " : " + string.Join(", ", baseTypes.Distinct(StringComparer.Ordinal).OrderBy(static value => value, StringComparer.Ordinal));
+        return " : " + string.Join(", ", baseTypes.Distinct(StringComparer.Ordinal));
     }
 
     private static List<string> BuildTypeConstraints(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)

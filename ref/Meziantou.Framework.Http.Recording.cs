@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Http.Recording
         public System.DateTimeOffset RecordedAt { get => throw null; set { } }
     }
 
-    public sealed class HttpRecordingHandler : System.IAsyncDisposable, System.Net.Http.DelegatingHandler
+    public sealed class HttpRecordingHandler : System.Net.Http.DelegatingHandler, System.IAsyncDisposable
     {
         public HttpRecordingHandler(Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }
         public HttpRecordingHandler(System.Net.Http.HttpMessageHandler innerHandler, Meziantou.Framework.Http.Recording.IHttpRecordingStore store, Meziantou.Framework.Http.Recording.HttpRecordingOptions? options = null) { }

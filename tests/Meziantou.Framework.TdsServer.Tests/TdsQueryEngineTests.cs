@@ -271,7 +271,31 @@ public sealed class TdsQueryEngineTests
             North
             South
             """,
-            expectedMaterializedQueries: "Order[].Select(order => new TdsProjection() {Region = order.Region}).Distinct().OrderBy(projection => projection.Region)");
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct()");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SelectDistinctWithOffsetFetch_PaginatesDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT DISTINCT Region
+                    FROM orders
+                    ORDER BY Region
+                    OFFSET 1 ROWS
+                    FETCH NEXT 1 ROWS ONLY
+                    """;
+            },
+            """
+            Region
+            South
+            """,
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct().Skip(1).Take(1)");
     }
 
     [Fact]
@@ -1392,7 +1416,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Skip(1).Take(2).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Skip(1).Take(2)");
     }
 
     [Fact]
@@ -3748,29 +3772,6 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
-    public async Task SqlClient_QueryEngine_DistinctWithOffsetFetch_PagesTheDistinctRows()
-    {
-        var queryEngineOptions = CreateQueryEngineOptions();
-
-        await ExecuteQuery(
-            queryEngineOptions,
-            command =>
-            {
-                command.CommandText = """
-                    SELECT DISTINCT Id
-                    FROM duplicate_ids
-                    ORDER BY Id
-                    OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY
-                    """;
-            },
-            """
-            Id
-            2
-            """,
-            expectedMaterializedQueries: "DuplicateIdRow[].Select(duplicateIdRow => new TdsProjection() {Id = duplicateIdRow.Id}).Distinct().OrderBy(projection => projection.Id).Skip(1).Take(1)");
-    }
-
-    [Fact]
     public void ProjectionTypeCache_WhenTheShapeLimitIsReached_KeepsServingKnownShapesAndRejectsNewOnes()
     {
         // The shared cache is process-wide and its emitted types can never be reclaimed, so the limit is
@@ -3800,7 +3801,6 @@ public sealed class TdsQueryEngineTests
         options.AddQueryRoot("nullable_customers", context => GetNullableCustomers().AsQueryable());
         options.AddQueryRoot("json_docs", context => GetJsonDocuments().AsQueryable());
         options.AddQueryRoot("xml_docs", context => GetXmlDocuments().AsQueryable());
-        options.AddQueryRoot("duplicate_ids", context => GetDuplicateIds().AsQueryable());
         return options;
     }
 
@@ -3841,16 +3841,6 @@ public sealed class TdsQueryEngineTests
             new NullableCustomer(1, "Alice"),
             new NullableCustomer(2, "Bob"),
             new NullableCustomer(3, null),
-        ];
-    }
-
-    private static DuplicateIdRow[] GetDuplicateIds()
-    {
-        return
-        [
-            new DuplicateIdRow(1),
-            new DuplicateIdRow(1),
-            new DuplicateIdRow(2),
         ];
     }
 
@@ -4059,6 +4049,4 @@ public sealed class TdsQueryEngineTests
     private sealed record JsonDocumentRow(int Id, string? Payload);
 
     private sealed record XmlDocumentRow(int Id, string Payload);
-
-    private sealed record DuplicateIdRow(int Id);
 }

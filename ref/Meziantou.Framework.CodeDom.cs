@@ -232,7 +232,7 @@ namespace Meziantou.Framework.CodeDom
         public ClassDeclaration(string? name) { }
     }
 
-    public abstract class ClassOrStructDeclaration : Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer, Meziantou.Framework.CodeDom.TypeDeclaration
+    public abstract class ClassOrStructDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer
     {
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Implements { get => throw null; }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
@@ -328,7 +328,7 @@ namespace Meziantou.Framework.CodeDom
         public ConstructorBaseInitializer(System.Collections.Generic.IEnumerable<Meziantou.Framework.CodeDom.Expression> codeExpressions) { }
     }
 
-    public class ConstructorDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class ConstructorDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
     {
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
         public Meziantou.Framework.CodeDom.StatementCollection? Statements { get => throw null; set { } }
@@ -410,7 +410,7 @@ namespace Meziantou.Framework.CodeDom
         public DefaultValueExpression(Meziantou.Framework.CodeDom.TypeReference? type) { }
     }
 
-    public class DelegateDeclaration : Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.TypeDeclaration
+    public class DelegateDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IParametrableType
     {
         public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.CodeObjectCollection<Meziantou.Framework.CodeDom.TypeParameter> Parameters { get => throw null; }
@@ -446,7 +446,7 @@ namespace Meziantou.Framework.CodeDom
         public EnumerationMember(string? name, Meziantou.Framework.CodeDom.Expression value) { }
     }
 
-    public class EventFieldDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class EventFieldDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
     {
         public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.StatementCollection? AddAccessor { get => throw null; set { } }
@@ -553,7 +553,7 @@ namespace Meziantou.Framework.CodeDom
         public static Meziantou.Framework.CodeDom.MemberReferenceExpression Member(this Meziantou.Framework.CodeDom.PropertyDeclaration prop, string name, params string[] names) => throw null;
     }
 
-    public class FieldDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class FieldDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
     {
         public Meziantou.Framework.CodeDom.Expression? InitExpression { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }
@@ -660,7 +660,7 @@ namespace Meziantou.Framework.CodeDom
         public override void WriteLine(uint value) { }
     }
 
-    public class InterfaceDeclaration : Meziantou.Framework.CodeDom.IInheritanceParameters, Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer, Meziantou.Framework.CodeDom.TypeDeclaration
+    public class InterfaceDeclaration : Meziantou.Framework.CodeDom.TypeDeclaration, Meziantou.Framework.CodeDom.IInheritanceParameters, Meziantou.Framework.CodeDom.IMemberContainer, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.ITypeDeclarationContainer
     {
         public Meziantou.Framework.CodeDom.TypeReference? BaseType { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.CodeDom.TypeReference> Implements { get => throw null; }
@@ -748,7 +748,7 @@ namespace Meziantou.Framework.CodeDom
         public MethodArgumentDeclaration(Meziantou.Framework.CodeDom.TypeReference? type, string? name) { }
     }
 
-    public class MethodDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.IParametrableType, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class MethodDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.IParametrableType
     {
         public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeReference? PrivateImplementationType { get => throw null; set { } }
@@ -856,7 +856,7 @@ namespace Meziantou.Framework.CodeDom
         Disable = 2
     }
 
-    public class OperatorDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class OperatorDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
     {
         public Meziantou.Framework.CodeDom.TypeReference? ReturnType { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.MethodArgumentCollection Arguments { get => throw null; }
@@ -875,7 +875,7 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator Meziantou.Framework.CodeDom.PropertyAccessorDeclaration(Meziantou.Framework.CodeDom.Statement statement) => throw null;
     }
 
-    public class PropertyDeclaration : Meziantou.Framework.CodeDom.IModifiers, Meziantou.Framework.CodeDom.MemberDeclaration
+    public class PropertyDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
     {
         public Meziantou.Framework.CodeDom.Modifiers Modifiers { get => throw null; set { } }
         public Meziantou.Framework.CodeDom.TypeReference? Type { get => throw null; set { } }

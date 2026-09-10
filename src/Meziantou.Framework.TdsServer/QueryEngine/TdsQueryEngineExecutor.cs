@@ -253,6 +253,7 @@ internal sealed class TdsQueryEngineExecutor
             if (selectStatement.SelectSpecification.OrderByClause is not null)
             {
                 query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext).Query;
+                query = ApplyOffsetFetch(query, selectStatement.SelectSpecification.OrderByClause, parameters);
             }
         }
 
@@ -403,7 +404,7 @@ internal sealed class TdsQueryEngineExecutor
             if (orderByClause is not null)
             {
                 var orderedGroupedSource = ApplyOrderBy(CreateProjectionSource(groupedProjection), orderByClause, parameters, cteRoots, queryExecutionContext);
-                groupedProjection = orderedGroupedSource.Query;
+                groupedProjection = ApplyOffsetFetch(orderedGroupedSource.Query, orderByClause, parameters);
             }
 
             if (querySpecification.SelectClause.Top is not null)
@@ -419,31 +420,22 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("HAVING requires GROUP BY.");
         }
 
-        if (querySpecification.SelectClause.IsDistinct)
-        {
-            // DISTINCT runs before ORDER BY and its OFFSET/FETCH, so paging a distinct query pages the
-            // deduplicated rows. Ordering the projection also matches the rule that every ORDER BY item of a
-            // distinct query has to appear in the select list.
-            var distinctQuery = ApplyDistinct(ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext));
-            if (orderByClause is not null)
-            {
-                distinctQuery = ApplyOrderBy(CreateProjectionSource(distinctQuery), orderByClause, parameters, cteRoots, queryExecutionContext).Query;
-            }
-
-            if (querySpecification.SelectClause.Top is not null)
-            {
-                distinctQuery = ApplyTop(distinctQuery, querySpecification.SelectClause.Top, parameters);
-            }
-
-            return distinctQuery;
-        }
-
         if (orderByClause is not null)
         {
             source = ApplyOrderBy(source, orderByClause, parameters, cteRoots, queryExecutionContext);
         }
 
         var query = ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext);
+        if (querySpecification.SelectClause.IsDistinct)
+        {
+            query = ApplyDistinct(query);
+        }
+
+        if (orderByClause is not null)
+        {
+            query = ApplyOffsetFetch(query, orderByClause, parameters);
+        }
+
         if (querySpecification.SelectClause.Top is not null)
         {
             query = ApplyTop(query, querySpecification.SelectClause.Top, parameters);
@@ -826,31 +818,42 @@ internal sealed class TdsQueryEngineExecutor
             first = false;
         }
 
-        if (orderByClause.OffsetFetchClause is not null)
-        {
-            var offset = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Offset, parameters, "OFFSET");
-            var skipCall = Expression.Call(
-                typeof(Queryable),
-                nameof(Queryable.Skip),
-                [source.RowType],
-                query.Expression,
-                Expression.Constant(offset));
-            query = query.Provider.CreateQuery(skipCall);
+        return source with { Query = query };
+    }
 
-            if (orderByClause.OffsetFetchClause.Fetch is not null)
-            {
-                var fetch = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Fetch, parameters, "FETCH");
-                var takeCall = Expression.Call(
-                    typeof(Queryable),
-                    nameof(Queryable.Take),
-                    [source.RowType],
-                    query.Expression,
-                    Expression.Constant(fetch));
-                query = query.Provider.CreateQuery(takeCall);
-            }
+    /// <summary>
+    /// Applies the OFFSET/FETCH clause of <paramref name="orderByClause"/> to <paramref name="query"/>.
+    /// The clause paginates the final result, so it must be applied after the projection and DISTINCT.
+    /// </summary>
+    private static IQueryable ApplyOffsetFetch(IQueryable query, SqlOrderByClause orderByClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters)
+    {
+        if (orderByClause.OffsetFetchClause is null)
+        {
+            return query;
         }
 
-        return source with { Query = query };
+        var offset = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Offset, parameters, "OFFSET");
+        var skipCall = Expression.Call(
+            typeof(Queryable),
+            nameof(Queryable.Skip),
+            [query.ElementType],
+            query.Expression,
+            Expression.Constant(offset));
+        query = query.Provider.CreateQuery(skipCall);
+
+        if (orderByClause.OffsetFetchClause.Fetch is not null)
+        {
+            var fetch = ReadNonNegativeInt(orderByClause.OffsetFetchClause.Fetch, parameters, "FETCH");
+            var takeCall = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Take),
+                [query.ElementType],
+                query.Expression,
+                Expression.Constant(fetch));
+            query = query.Provider.CreateQuery(takeCall);
+        }
+
+        return query;
     }
 
     private static QuerySource CreateProjectionSource(IQueryable query)

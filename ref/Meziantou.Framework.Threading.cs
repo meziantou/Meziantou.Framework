@@ -163,7 +163,7 @@ namespace Meziantou.Framework.Threading
         public void Enqueue(T item) { }
     }
 
-    public sealed class MonoThreadedTaskScheduler : System.IDisposable, System.Threading.Tasks.TaskScheduler
+    public sealed class MonoThreadedTaskScheduler : System.Threading.Tasks.TaskScheduler, System.IDisposable
     {
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }

@@ -99,8 +99,8 @@ public sealed class PosixQuotingTests
         {
             var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
-            Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0003");
-            Assert.Equal(text, tree.Root.ToFullString());
+            Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0003");
+            Assert.Equal(text, tree.GetRoot().ToFullString());
         }
     }
 
@@ -153,7 +153,7 @@ public sealed class PosixQuotingTests
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("echo one \\\n  two", ShellDialect.Bash));
 
         Assert.Equal(["one", "two"], command.Arguments.Select(argument => argument.Value));
-        Assert.Contains(command.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.LineContinuationTrivia);
+        Assert.Contains(command.DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.LineContinuationTrivia);
     }
 
     [Fact]
@@ -162,9 +162,9 @@ public sealed class PosixQuotingTests
         const string Text = "echo ${var:-\"}\"}";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(Text, tree.Root.ToFullString());
-        Assert.Equal("var:-\"}\"", Assert.Single(tree.Root.DescendantNodes().OfType<ShellVariableReferenceSyntax>()).Name);
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.Equal("var:-\"}\"", Assert.Single(tree.GetRoot().DescendantNodes().OfType<ShellVariableReferenceSyntax>()).Name);
     }
 
     [Fact]
@@ -173,8 +173,8 @@ public sealed class PosixQuotingTests
         const string Text = "echo $(echo \")\")";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     // The expectations below were produced by running the same inputs through bash and comparing byte for byte.
@@ -203,8 +203,8 @@ public sealed class PosixQuotingTests
     {
         var tree = ShellSyntaxTree.ParseText("a=`one`; b=`two`", ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.HasCount(2, tree.Root.DescendantNodes().OfType<ShellCommandSubstitutionSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.HasCount(2, tree.GetRoot().DescendantNodes().OfType<ShellCommandSubstitutionSyntax>());
     }
 
     [Theory]
@@ -217,8 +217,8 @@ public sealed class PosixQuotingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
     }
 
     [Theory]
@@ -228,8 +228,8 @@ public sealed class PosixQuotingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
     }
 
     [Theory]
@@ -239,8 +239,8 @@ public sealed class PosixQuotingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Bash);
 
-        Assert.Empty(tree.Diagnostics);
-        var statement = Assert.IsType<PosixPrefixedStatementSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Empty(tree.GetDiagnostics());
+        var statement = Assert.IsType<PosixPrefixedStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.IsType<ShellEmptyStatementSyntax>(statement.Statement);
     }
 }

@@ -59,7 +59,7 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -67,10 +67,10 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText("a+", RegexDialect.Net);
 
-        Assert.Equal("a+", tree.Text);
+        Assert.Equal("a+", tree.GetText().Text);
         Assert.Equal(RegexDialect.Net, tree.Dialect);
-        Assert.Equal(RegexSyntaxKind.Pattern, tree.Root.Kind);
-        Assert.Same(tree.Root, tree.GetRoot());
+        Assert.Equal(SyntaxKind.Pattern, tree.GetRoot().Kind());
+        Assert.Same(tree.GetRoot(), tree.GetRoot());
     }
 
     [Fact]
@@ -78,8 +78,8 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText(null!, RegexDialect.Net);
 
-        Assert.Equal("", tree.Text);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal("", tree.GetText().Text);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -87,8 +87,8 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText("ab", RegexDialect.Net);
 
-        var branch = Assert.Single(tree.Root.Alternation.Branches);
-        Assert.False(tree.Root.Alternation.HasAlternatives);
+        var branch = Assert.Single(tree.GetRoot().Alternation.Branches);
+        Assert.False(tree.GetRoot().Alternation.HasAlternatives);
         Assert.Equal(2, branch.Terms.Count);
     }
 
@@ -97,9 +97,9 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText("a|b|c", RegexDialect.Net);
 
-        Assert.Equal(3, tree.Root.Alternation.Branches.Count);
-        Assert.Equal(2, tree.Root.Alternation.BarTokens.Count);
-        Assert.True(tree.Root.Alternation.HasAlternatives);
+        Assert.Equal(3, tree.GetRoot().Alternation.Branches.Count);
+        Assert.Equal(2, tree.GetRoot().Alternation.Branches.SeparatorCount);
+        Assert.True(tree.GetRoot().Alternation.HasAlternatives);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText("a{2,5}?", RegexDialect.Net);
 
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         var quantifier = Assert.IsType<RegexRangeQuantifierSyntax>(quantified.Quantifier);
         Assert.Equal(2, quantifier.MinCount);
         Assert.Equal(5, quantifier.MaxCount);
@@ -124,7 +124,7 @@ public sealed class RegexSyntaxTreeTests
     {
         var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         Assert.Equal(min, quantified.Quantifier.MinCount);
         Assert.Equal(max, quantified.Quantifier.MaxCount);
     }
@@ -157,7 +157,7 @@ public sealed class RegexSyntaxTreeTests
         var change = Assert.Single(after.GetChanges(before));
         Assert.Equal(new TextSpan(2, 1), change.Span);
         Assert.Equal("*", change.NewText);
-        Assert.Equal("ab*c", after.Text);
+        Assert.Equal("ab*c", after.GetText().Text);
     }
 
     [Fact]

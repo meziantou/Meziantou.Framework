@@ -786,11 +786,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2>(ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -848,11 +851,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3>(ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>, Task<T3>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -910,11 +916,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -972,11 +981,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -1034,11 +1046,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -1096,11 +1111,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -1140,5 +1158,16 @@ public static partial class TaskExtensions
             public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
             public void GetResult() => _whenAllAwaiter.GetResult();
         }
+    }
+
+    /// <summary>Validates that <paramref name="options"/> can be used to await tasks that produce results.</summary>
+    private static ConfigureAwaitOptions ValidateOptions(ConfigureAwaitOptions options)
+    {
+        if ((options & ConfigureAwaitOptions.SuppressThrowing) is not 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options, "ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing when the tasks produce results. To suppress throwing, cast the tasks to their base class Task and await the resulting tuple with SuppressThrowing.");
+        }
+
+        return options;
     }
 }

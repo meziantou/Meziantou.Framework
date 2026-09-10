@@ -15,7 +15,7 @@ public sealed class RegexReviewFeedbackTests
     public void MutatingTheListPassedToASequenceDoesNotChangeTheNode()
     {
         var terms = new List<RegexTermSyntax> { SyntaxFactory.Literal('a', RegexDialect.Net) };
-        var sequence = new RegexSequenceSyntax(terms);
+        var sequence = SyntaxFactory.Sequence(terms);
 
         terms.Add(SyntaxFactory.Literal('b', RegexDialect.Net));
 
@@ -24,17 +24,15 @@ public sealed class RegexReviewFeedbackTests
     }
 
     [Fact]
-    public void MutatingTheListsPassedToAnAlternationDoesNotChangeTheNode()
+    public void MutatingTheListPassedToAnAlternationDoesNotChangeTheNode()
     {
         var branches = new List<RegexSequenceSyntax> { SyntaxFactory.LiteralText("a", RegexDialect.Net) };
-        var bars = new List<RegexSyntaxToken>();
-        var alternation = new RegexAlternationSyntax(branches, bars);
+        var alternation = SyntaxFactory.Alternation(branches);
 
         branches.Add(SyntaxFactory.LiteralText("b", RegexDialect.Net));
-        bars.Add(new RegexSyntaxToken(RegexSyntaxKind.BarToken, "|"));
 
         Assert.Single(alternation.Branches);
-        Assert.Empty(alternation.BarTokens);
+        Assert.Equal(0, alternation.Branches.SeparatorCount);
         Assert.Equal("a", alternation.ToFullString());
     }
 
@@ -53,10 +51,10 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void MutatingTheListPassedToSkippedTextDoesNotChangeTheNode()
     {
-        var tokens = new List<RegexSyntaxToken> { new(RegexSyntaxKind.BadToken, "a") };
-        var skipped = new RegexSkippedTextSyntax(tokens);
+        var tokens = new List<SyntaxToken> { SyntaxFactory.Token(SyntaxKind.BadToken, "a") };
+        var skipped = SyntaxFactory.SkippedText(new SyntaxTokenList(tokens), RegexPatternOptions.None);
 
-        tokens.Add(new RegexSyntaxToken(RegexSyntaxKind.BadToken, "b"));
+        tokens.Add(SyntaxFactory.Token(SyntaxKind.BadToken, "b"));
 
         Assert.Single(skipped.Tokens);
         Assert.Equal("a", skipped.ToFullString());
@@ -65,11 +63,11 @@ public sealed class RegexReviewFeedbackTests
     [Fact]
     public void MutatingTheTriviaListPassedToATokenDoesNotChangeItsTextOrSpans()
     {
-        var leading = new List<RegexSyntaxTrivia> { new(RegexSyntaxKind.WhitespaceTrivia, " ") };
-        var token = new RegexSyntaxToken(RegexSyntaxKind.LiteralToken, "a", leadingTrivia: leading);
+        var leading = new List<SyntaxTrivia> { SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, " ") };
+        var token = SyntaxFactory.Token(SyntaxKind.LiteralToken, "a").WithLeadingTrivia(leading);
         var before = token.FullSpan;
 
-        leading.Add(new RegexSyntaxTrivia(RegexSyntaxKind.WhitespaceTrivia, "   "));
+        leading.Add(SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, "   "));
 
         Assert.Equal(" a", token.ToFullString());
         Assert.Equal(before, token.FullSpan);
@@ -86,7 +84,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxTree.ParseText("aaa", RegexDialect.Net);
 
-        var rewritten = new ReplaceFirstLiteral('a', 'z').Visit(tree.Root);
+        var rewritten = new ReplaceFirstLiteral('a', 'z').Visit(tree.GetRoot());
 
         Assert.Equal("zaa", rewritten?.ToFullString());
     }
@@ -136,7 +134,7 @@ public sealed class RegexReviewFeedbackTests
 
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, dialect);
 
-        Assert.NotEmpty(tree.Diagnostics, $"[{pattern}] should not be accepted by {dialectName}");
+        Assert.NotEmpty(tree.GetDiagnostics(), $"[{pattern}] should not be accepted by {dialectName}");
     }
 
     [Theory]
@@ -150,7 +148,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
-        Assert.Contains(tree.Root.DescendantNodes(), expected.IsInstanceOfType, $"[{pattern}] produced no {expected.Name}");
+        Assert.Contains(tree.GetRoot().DescendantNodes(), expected.IsInstanceOfType, $"[{pattern}] produced no {expected.Name}");
     }
 
     [Theory]
@@ -161,7 +159,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PcrePerl);
 
-        var quoted = Assert.Single(tree.Root.DescendantNodes().OfType<RegexQuotedLiteralSyntax>());
+        var quoted = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexQuotedLiteralSyntax>());
         Assert.Equal(value, quoted.Value);
     }
 
@@ -173,8 +171,8 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("[^]", RegexDialect.JavaScript);
 
-        Assert.Empty(tree.Diagnostics);
-        var characterClass = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        var characterClass = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
         Assert.True(characterClass.IsNegated);
         Assert.Empty(characterClass.Members);
     }
@@ -189,7 +187,7 @@ public sealed class RegexReviewFeedbackTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
         RegexSyntaxAssert.TextIsFaithful(literal, tree);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == id, $"[{literal}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == id, $"[{literal}] reported {string.Join(",", tree.GetDiagnostics().Select(d => d.Id))}");
     }
 
     [Theory]
@@ -202,7 +200,7 @@ public sealed class RegexReviewFeedbackTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
         RegexSyntaxAssert.TextIsFaithful(literal, tree);
 
-        Assert.Empty(tree.Diagnostics);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     /// <summary>
@@ -213,12 +211,12 @@ public sealed class RegexReviewFeedbackTests
     public void UnicodeModeMakesASurrogatePairOneAtom()
     {
         var withoutFlag = RegexSyntaxTree.ParseJavaScriptLiteral("/\U0001F600*/");
-        Assert.Equal(2, withoutFlag.Root.Alternation.Branches[0].Terms.Count);
+        Assert.Equal(2, withoutFlag.GetRoot().Alternation.Branches[0].Terms.Count);
 
         var withFlag = RegexSyntaxTree.ParseJavaScriptLiteral("/\U0001F600*/u");
         RegexSyntaxAssert.TextIsFaithful("/\U0001F600*/u", withFlag);
 
-        var term = Assert.Single(withFlag.Root.Alternation.Branches[0].Terms);
+        var term = Assert.Single(withFlag.GetRoot().Alternation.Branches[0].Terms);
         var quantified = Assert.IsType<RegexQuantifiedSyntax>(term);
         var literal = Assert.IsType<RegexLiteralSyntax>(quantified.Term);
         Assert.Equal(0x1F600, literal.CodePoint);
@@ -239,8 +237,8 @@ public sealed class RegexReviewFeedbackTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(literal);
         RegexSyntaxAssert.TextIsFaithful(literal, tree);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0208", $"[{literal}] reported {string.Join(",", tree.Diagnostics.Select(d => d.Id))}");
-        Assert.False(tree.Root.IsJavaScriptLiteral && tree.Root.CloseSlashToken is not null);
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0208", $"[{literal}] reported {string.Join(",", tree.GetDiagnostics().Select(d => d.Id))}");
+        Assert.False(tree.GetRoot().IsJavaScriptLiteral && !tree.GetRoot().CloseSlashToken.IsKind(SyntaxKind.None));
     }
 
     /// <summary>An edit to a literal has to stay a literal, or the delimiters become ordinary slashes.</summary>
@@ -251,23 +249,23 @@ public sealed class RegexReviewFeedbackTests
 
         var updated = tree.WithChanges(new TextChange(new TextSpan(3, 0), "c"));
 
-        Assert.Equal("/abc/gi", updated.Text);
-        Assert.True(updated.Root.IsJavaScriptLiteral);
-        Assert.Equal("gi", updated.Root.FlagsToken?.Text);
-        Assert.Empty(updated.Diagnostics);
+        Assert.Equal("/abc/gi", updated.GetText().Text);
+        Assert.True(updated.GetRoot().IsJavaScriptLiteral);
+        Assert.Equal("gi", updated.GetRoot().FlagsToken.Text);
+        Assert.Empty(updated.GetDiagnostics());
     }
 
     [Fact]
     public void ReplacingANodeInsideALiteralKeepsItALiteral()
     {
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/ab/gi");
-        var first = tree.Root.DescendantNodes().OfType<RegexLiteralSyntax>().First();
+        var first = tree.GetRoot().DescendantNodes().OfType<RegexLiteralSyntax>().First();
 
-        var updated = tree.Root.ReplaceNode(first, SyntaxFactory.Literal('z', RegexDialect.JavaScript));
+        var updated = tree.GetRoot().ReplaceNode(first, SyntaxFactory.Literal('z', RegexDialect.JavaScript));
 
         Assert.Equal("/zb/gi", updated.ToFullString());
         Assert.True(updated.IsJavaScriptLiteral);
-        Assert.Equal("gi", updated.FlagsToken?.Text);
+        Assert.Equal("gi", updated.FlagsToken.Text);
     }
 
     // ---- Unicode property names ----
@@ -286,8 +284,8 @@ public sealed class RegexReviewFeedbackTests
 
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Script=Greek}", options);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal("Script=Greek", Assert.Single(tree.Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>()).Name);
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal("Script=Greek", Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexUnicodeCategorySyntax>()).Name);
     }
 
     /// <summary>
@@ -299,7 +297,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Script=Greek}", RegexDialect.Net);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0032");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0032");
     }
 
     [Fact]
@@ -307,7 +305,7 @@ public sealed class RegexReviewFeedbackTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\p{Bogus}", RegexDialect.Net);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0034");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0034");
     }
 
     /// <summary>A category escape is not one where the dialect does not have it.</summary>
@@ -322,7 +320,7 @@ public sealed class RegexReviewFeedbackTests
         {
             var tree = RegexSyntaxAssert.TextIsFaithful(pattern, dialect);
 
-            Assert.Empty(tree.Root.DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
+            Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexUnicodeCategorySyntax>());
         }
     }
 
@@ -330,14 +328,14 @@ public sealed class RegexReviewFeedbackTests
     {
         private bool _done;
 
-        public override RegexSyntaxNode? VisitLiteral(RegexLiteralSyntax node)
+        public override SyntaxNode? VisitLiteral(RegexLiteralSyntax node)
         {
             if (_done || node.Value != from)
                 return base.VisitLiteral(node);
 
             _done = true;
 
-            return new RegexLiteralSyntax(node.LiteralToken.WithText(to.ToString()));
+            return node.WithLiteralToken(SyntaxFactory.Token(SyntaxKind.LiteralToken, to.ToString()).WithTriviaFrom(node.LiteralToken));
         }
     }
 }

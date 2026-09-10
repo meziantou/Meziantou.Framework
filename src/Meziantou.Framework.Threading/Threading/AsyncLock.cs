@@ -92,7 +92,9 @@ public sealed class AsyncLock
     /// <returns><see langword="true"/> if the lock was acquired; otherwise, <see langword="false"/>.</returns>
     public bool TryLock(out AsyncLockLease lockObject)
     {
-        if (_signaled)
+        // Acquire read: _signaled is written under _lock, so an unsynchronized read could otherwise
+        // observe a stale value indefinitely and make a caller spinning on TryLock never see a release.
+        if (Volatile.Read(ref _signaled))
         {
             lock (_lock)
             {

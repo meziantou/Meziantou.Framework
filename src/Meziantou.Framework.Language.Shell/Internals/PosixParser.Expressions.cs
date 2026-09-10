@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>
 /// The two expression grammars the POSIX family has: arithmetic, used by <c>$(( ))</c> and <c>(( ))</c>, and the
@@ -122,7 +127,7 @@ internal sealed partial class PosixParser
 
     /// <summary>A zero-width placeholder for an abandoned subtree; the whole parse is discarded anyway.</summary>
     private ShellRawExpressionSyntax AbandonedExpression() =>
-        new ShellRawExpressionSyntax(new ShellSyntaxToken(ShellSyntaxKind.BareTextToken, string.Empty, string.Empty, fullStart: _lexer.Position));
+        new ShellRawExpressionSyntax(new ScannedToken(SyntaxKind.BareTextToken, string.Empty, string.Empty, fullStart: _lexer.Position));
 
     private ShellExpressionSyntax ParseArithmetic(int minimumPrecedence)
     {
@@ -196,7 +201,7 @@ internal sealed partial class PosixParser
 
             if (_lexer.Current == '?' && TernaryPrecedence >= minimumPrecedence)
             {
-                var questionToken = ReadOperatorToken(ShellSyntaxKind.QuestionToken, length: 1);
+                var questionToken = ReadOperatorToken(SyntaxKind.QuestionToken, length: 1);
                 var whenTrue = ParseArithmetic(0);
                 AccumulateStatementTrivia();
                 if (_lexer.Current != ':')
@@ -206,7 +211,7 @@ internal sealed partial class PosixParser
                     return left;
                 }
 
-                var colonToken = ReadOperatorToken(ShellSyntaxKind.ColonToken, length: 1);
+                var colonToken = ReadOperatorToken(SyntaxKind.ColonToken, length: 1);
                 left = new ShellConditionalExpressionSyntax(left, questionToken, whenTrue, colonToken, ParseArithmetic(TernaryPrecedence));
                 continue;
             }
@@ -215,7 +220,7 @@ internal sealed partial class PosixParser
             if (op is null || op.Value.Precedence < minimumPrecedence)
                 break;
 
-            var operatorToken = ReadOperatorToken(ShellSyntaxKind.OperatorToken, op.Value.Text.Length);
+            var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, op.Value.Text.Length);
             var next = op.Value.RightAssociative ? op.Value.Precedence : op.Value.Precedence + 1;
             left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseArithmetic(next));
         }
@@ -249,17 +254,17 @@ internal sealed partial class PosixParser
         {
             if (MatchesAt(_lexer.Position, prefix))
             {
-                var token = ReadOperatorToken(ShellSyntaxKind.OperatorToken, prefix.Length);
+                var token = ReadOperatorToken(SyntaxKind.OperatorToken, prefix.Length);
 
-                return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
+                return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
             }
         }
 
         if (_lexer.Current is '!' or '~' or '+' or '-')
         {
-            var token = ReadOperatorToken(ShellSyntaxKind.OperatorToken, length: 1);
+            var token = ReadOperatorToken(SyntaxKind.OperatorToken, length: 1);
 
-            return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseArithmeticUnary(), postfixOperatorToken: null);
         }
 
         return ParseArithmeticPostfix();
@@ -274,9 +279,9 @@ internal sealed partial class PosixParser
         {
             if (MatchesAt(_lexer.Position, postfix))
             {
-                var token = ReadOperatorToken(ShellSyntaxKind.OperatorToken, postfix.Length);
+                var token = ReadOperatorToken(SyntaxKind.OperatorToken, postfix.Length);
 
-                return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PostfixUnaryExpression, prefixOperatorToken: null, operand, token);
+                return new ShellUnaryExpressionSyntax(SyntaxKind.PostfixUnaryExpression, prefixOperatorToken: null, operand, token);
             }
         }
 
@@ -289,7 +294,7 @@ internal sealed partial class PosixParser
 
         if (_lexer.Current == '(')
         {
-            var openParenToken = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
+            var openParenToken = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
             var inner = ParseArithmetic(0);
             AccumulateStatementTrivia();
             if (_lexer.Current != ')')
@@ -299,13 +304,13 @@ internal sealed partial class PosixParser
                 return inner;
             }
 
-            var closeParenToken = ReadOperatorToken(ShellSyntaxKind.CloseParenToken, length: 1);
+            var closeParenToken = ReadOperatorToken(SyntaxKind.CloseParenToken, length: 1);
 
             return new ShellGroupedExpressionSyntax(openParenToken, inner, closeParenToken);
         }
 
         var operand = ParseArithmeticOperand();
-        if (operand.Parts.Count == 0)
+        if (operand.PartCount() == 0)
         {
             // An operator with nothing to operate on: the text is not arithmetic.
             _expressionFailed = true;
@@ -325,7 +330,7 @@ internal sealed partial class PosixParser
 
         while (!_lexer.IsAtEnd && !IsArithmeticOperandBoundary(_lexer.Current))
         {
-            var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _lexer.Position);
+            var (trivia, fullStart) = isFirst ? TakeTrivia() : (null, _lexer.Position);
             isFirst = false;
 
             var positionBefore = _lexer.Position;
@@ -344,10 +349,10 @@ internal sealed partial class PosixParser
             }
         }
 
-        return new ShellWordSyntax(parts);
+        return new ShellWordSyntax(ParserHelpers.List(parts));
     }
 
-    private ShellLiteralWordPartSyntax ParseArithmeticLiteralRun(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellLiteralWordPartSyntax ParseArithmeticLiteralRun(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _lexer.Position;
         while (!_lexer.IsAtEnd && !IsArithmeticOperandBoundary(_lexer.Current) && _lexer.Current is not '$' and not '\'' and not '"' and not '`')
@@ -360,7 +365,7 @@ internal sealed partial class PosixParser
             _lexer.Position++;
         }
 
-        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
+        return new ShellLiteralWordPartSyntax(_lexer.CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart));
     }
 
     private static bool IsArithmeticOperandBoundary(char value) =>
@@ -380,7 +385,7 @@ internal sealed partial class PosixParser
             if (!MatchesAt(_lexer.Position, "||"))
                 break;
 
-            var operatorToken = ReadOperatorToken(ShellSyntaxKind.PipePipeToken, length: 2);
+            var operatorToken = ReadOperatorToken(SyntaxKind.PipePipeToken, length: 2);
             left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseConditionalAnd());
         }
 
@@ -397,7 +402,7 @@ internal sealed partial class PosixParser
             if (!MatchesAt(_lexer.Position, "&&"))
                 break;
 
-            var operatorToken = ReadOperatorToken(ShellSyntaxKind.AmpersandAmpersandToken, length: 2);
+            var operatorToken = ReadOperatorToken(SyntaxKind.AmpersandAmpersandToken, length: 2);
             left = new ShellBinaryExpressionSyntax(left, operatorToken, ParseConditionalUnary());
         }
 
@@ -410,14 +415,14 @@ internal sealed partial class PosixParser
 
         if (_lexer.Current == '!')
         {
-            var token = ReadOperatorToken(ShellSyntaxKind.ExclamationToken, length: 1);
+            var token = ReadOperatorToken(SyntaxKind.ExclamationToken, length: 1);
 
-            return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, token, ParseConditionalUnary(), postfixOperatorToken: null);
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseConditionalUnary(), postfixOperatorToken: null);
         }
 
         if (_lexer.Current == '(')
         {
-            var openParenToken = ReadOperatorToken(ShellSyntaxKind.OpenParenToken, length: 1);
+            var openParenToken = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
             var inner = ParseConditionalOr();
             AccumulateStatementTrivia();
             if (_lexer.Current != ')')
@@ -427,16 +432,16 @@ internal sealed partial class PosixParser
                 return inner;
             }
 
-            var closeParenToken = ReadOperatorToken(ShellSyntaxKind.CloseParenToken, length: 1);
+            var closeParenToken = ReadOperatorToken(SyntaxKind.CloseParenToken, length: 1);
 
             return new ShellGroupedExpressionSyntax(openParenToken, inner, closeParenToken);
         }
 
         if (PeekConditionalWord() is { } unary && Array.IndexOf(ConditionalUnaryOperators, unary) >= 0)
         {
-            var token = ReadOperatorToken(ShellSyntaxKind.OperatorToken, unary.Length);
+            var token = ReadOperatorToken(SyntaxKind.OperatorToken, unary.Length);
 
-            return new ShellUnaryExpressionSyntax(ShellSyntaxKind.PrefixUnaryExpression, token, ParseConditionalOperand(), postfixOperatorToken: null);
+            return new ShellUnaryExpressionSyntax(SyntaxKind.PrefixUnaryExpression, token, ParseConditionalOperand(), postfixOperatorToken: null);
         }
 
         var left = ParseConditionalOperand();
@@ -451,7 +456,7 @@ internal sealed partial class PosixParser
             if (candidate[0] == '-' && !IsConditionalWordEnd(_lexer.Position + candidate.Length))
                 continue;
 
-            var operatorToken = ReadOperatorToken(ShellSyntaxKind.OperatorToken, candidate.Length);
+            var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, candidate.Length);
             var right = candidate is "=~" ? ParseConditionalRegexOperand() : ParseConditionalOperand();
 
             return new ShellBinaryExpressionSyntax(left, operatorToken, right);
@@ -465,10 +470,10 @@ internal sealed partial class PosixParser
         AccumulateInlineTrivia();
 
         var word = _lexer.IsAtEnd || PosixLexer.IsWordBoundary(_lexer.Current)
-            ? new ShellWordSyntax([])
+            ? new ShellWordSyntax(null)
             : ParseWord();
 
-        if (word.Parts.Count == 0)
+        if (word.PartCount() == 0)
         {
             _expressionFailed = true;
         }
@@ -490,10 +495,10 @@ internal sealed partial class PosixParser
         try
         {
             var word = _lexer.IsAtEnd || IsWordTerminator(_lexer.Current)
-                ? new ShellWordSyntax([])
+                ? new ShellWordSyntax(null)
                 : ParseWord();
 
-            if (word.Parts.Count == 0 || _regexParenDepth != 0)
+            if (word.PartCount() == 0 || _regexParenDepth != 0)
             {
                 _expressionFailed = true;
             }

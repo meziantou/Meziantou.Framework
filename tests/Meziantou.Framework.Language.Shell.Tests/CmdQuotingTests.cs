@@ -90,7 +90,7 @@ public sealed class CmdQuotingTests
         var reference = Assert.Single(word.Parts.OfType<CmdVariableReferenceSyntax>());
 
         Assert.Null(word.Value);
-        Assert.Null(reference.CloseToken);
+        Assert.False(reference.CloseToken.IsPresent());
     }
 
     [Fact]
@@ -113,8 +113,8 @@ public sealed class CmdQuotingTests
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.Cmd);
 
-        Assert.Equal(expectedStatements, tree.Root.Statements.Statements.Count);
-        Assert.Equal(text, tree.Root.ToFullString());
+        Assert.Equal(expectedStatements, tree.GetRoot().Statements.Statements.Count);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -131,9 +131,9 @@ public sealed class CmdQuotingTests
         const string Text = "echo x ^\r\ny\r\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
 
-        Assert.Equal(Text, tree.Root.ToFullString());
-        Assert.Single(tree.Root.Statements.Statements);
-        Assert.Contains(tree.Root.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.LineContinuationTrivia);
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.Single(tree.GetRoot().Statements.Statements);
+        Assert.Contains(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.LineContinuationTrivia);
     }
 
     [Theory]
@@ -184,8 +184,8 @@ public sealed class CmdQuotingTests
         const string Text = "echo a^\r\nb\r\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
 
-        Assert.Equal(Text, tree.Root.ToFullString());
-        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.Root.Statements.Statements));
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal("ab", Assert.Single(command.Arguments).Value);
     }
 
@@ -247,8 +247,8 @@ public sealed class CmdQuotingTests
         const string Text = "echo \"unterminated";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
 
-        Assert.Contains(tree.Diagnostics, diagnostic => diagnostic.Id == "SHELL0003");
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0003");
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]
@@ -257,20 +257,20 @@ public sealed class CmdQuotingTests
         const string Text = "echo \"unterminated\r\necho next\r\n";
         var tree = ShellSyntaxTree.ParseText(Text, ShellDialect.Cmd);
 
-        Assert.Equal(2, tree.Root.Statements.Statements.Count);
-        Assert.Equal(Text, tree.Root.ToFullString());
+        Assert.Equal(2, tree.GetRoot().Statements.Statements.Count);
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
     }
 
     [Fact]
     public void RemAndDoubleColonComments_AreCaseInsensitiveAndLineScoped()
     {
         var tree = ShellSyntaxTree.ParseText("REM upper\r\nrem lower\r\n:: colon\r\necho hi\r\n", ShellDialect.Cmd);
-        var comments = tree.Root.DescendantTrivia()
-            .Where(trivia => trivia.Kind is ShellSyntaxKind.CmdRemCommentTrivia or ShellSyntaxKind.CmdDoubleColonCommentTrivia)
+        var comments = tree.GetRoot().DescendantTrivia()
+            .Where(trivia => trivia.Kind() is SyntaxKind.CmdRemCommentTrivia or SyntaxKind.CmdDoubleColonCommentTrivia)
             .ToArray();
 
         Assert.HasCount(3, comments);
-        Assert.Single(tree.Root.Statements.Statements);
+        Assert.Single(tree.GetRoot().Statements.Statements);
     }
 
     [Fact]
@@ -279,7 +279,7 @@ public sealed class CmdQuotingTests
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("remove file.txt", ShellDialect.Cmd));
 
         Assert.Equal("remove", command.NameValue);
-        Assert.DoesNotContain(command.DescendantTrivia(), trivia => trivia.Kind == ShellSyntaxKind.CmdRemCommentTrivia);
+        Assert.DoesNotContain(command.DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.CmdRemCommentTrivia);
     }
 
     [Fact]
@@ -288,8 +288,8 @@ public sealed class CmdQuotingTests
         // `set "NAME=value"` is the safe form; the quote is part of the text that reaches the variable name.
         var tree = ShellSyntaxTree.ParseText("set \"NAME=value with spaces\"", ShellDialect.Cmd);
 
-        Assert.Equal("set \"NAME=value with spaces\"", tree.Root.ToFullString());
-        Assert.IsType<CmdSetStatementSyntax>(tree.Root.Statements.Statements[0]);
+        Assert.Equal("set \"NAME=value with spaces\"", tree.GetRoot().ToFullString());
+        Assert.IsType<CmdSetStatementSyntax>(tree.GetRoot().Statements.Statements[0]);
     }
 
     [Fact]

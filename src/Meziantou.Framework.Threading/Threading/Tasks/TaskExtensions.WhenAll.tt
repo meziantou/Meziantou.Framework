@@ -110,11 +110,14 @@ public static partial class TaskExtensions
 
     public readonly struct TupleConfiguredTaskAwaitable<<#= GetTemplateString(i) #>>(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options)
     {
-        public Awaiter GetAwaiter() => new(tasks, options);
+        private readonly ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = ValidateOptions(options);
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
 
         public readonly struct Awaiter(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
         {
-            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(options).GetAwaiter();
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(ValidateOptions(options)).GetAwaiter();
 
             public bool IsCompleted => _whenAllAwaiter.IsCompleted;
             public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
@@ -156,6 +159,17 @@ public static partial class TaskExtensions
         }
     }
 <# } #>
+
+    /// <summary>Validates that <paramref name="options"/> can be used to await tasks that produce results.</summary>
+    private static ConfigureAwaitOptions ValidateOptions(ConfigureAwaitOptions options)
+    {
+        if ((options & ConfigureAwaitOptions.SuppressThrowing) is not 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), options, "ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing when the tasks produce results. To suppress throwing, cast the tasks to their base class Task and await the resulting tuple with SuppressThrowing.");
+        }
+
+        return options;
+    }
 }
 <#+
     static string GetTemplateString(int count)

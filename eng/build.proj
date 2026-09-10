@@ -20,10 +20,10 @@
     <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </ItemGroup>
 
-  <!-- Every test of these suites drives a real database client, which needs ICU, so all of their
-       test classes are [RunIf(NotInvariant)]. Under InvariantGlobalization the whole assembly is
-       skipped, and a test run where nothing ran fails with "Zero tests ran", so drop the projects
-       instead of running them empty. -->
+  <!-- The database server tests drive a real client (Microsoft.Data.SqlClient, Npgsql), which
+       needs globalization data, so every test class in these projects is skipped in invariant
+       globalization mode. A traversal left with only these projects runs zero tests, which the
+       test runner reports as a failure, so the traversals that run tests drop them. -->
   <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND '$(InvariantGlobalization)' == 'true'">
     <ProjectReference Remove="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />

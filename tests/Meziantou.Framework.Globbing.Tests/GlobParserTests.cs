@@ -184,6 +184,8 @@ public class GlobParserTests
     [InlineData("{a,b}.cs")]
     [InlineData("[a-z].cs")]
     [InlineData("p?th/a")]
+    [InlineData("*[abc]d")]
+    [InlineData("*{a,ab}c")]
     public void ToStringRoundTripsToAnEquivalentPattern(string pattern)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);

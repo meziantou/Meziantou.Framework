@@ -466,6 +466,36 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(["1.00000", "2.50000", "-3.12345"], rows);
     }
 
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_LargeMagnitudeRescaledToTheColumnScale()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([decimal.MaxValue]);
+        resultSet.Rows.Add([decimal.MinValue]);
+        resultSet.Rows.Add([0.1m]);
+
+        // Lifting decimal.MaxValue to the column's scale needs a magnitude wider than the 96 bits of a decimal,
+        // so the values are read as SqlDecimal, which carries the full 38 digits the column advertises.
+        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString());
+
+        Assert.Equal(["79228162514264337593543950335.0", "-79228162514264337593543950335.0", "0.1"], rows);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_ScaledValueExceedingThePrecision_ReturnsError()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([10000000000000000000000000000m]);
+        resultSet.Rows.Add([0.0000000000000000000000000001m]);
+
+        // A common scale of 28 would need 57 digits, which does not fit the precision the column advertises.
+        var exception = await Assert.ThrowsAsync<SqlException>(() => ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString()));
+
+        Assert.Equal(50005, exception.Number);
+    }
+
     private static async Task<object[]> ReadRowAsync(TdsResultSet resultSet)
     {
         var rows = await ReadResultSetAsync(resultSet, (reader, _) =>
@@ -1879,21 +1909,6 @@ public sealed class TdsServerProtocolTests
         var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.Equal(Value, GetParameterValue(capturedContext, "@value", TdsColumnType.NVarChar));
-    }
-
-    [Fact]
-    public async Task SqlClient_ResultSet_DecimalColumn_WithALargeMagnitudeAndAScaledValue_KeepsBothValues()
-    {
-        // The column carries a single scale, so the largest magnitude has to be lifted to the largest scale
-        // present. The lifted value no longer fits a System.Decimal even though it fits the wire format.
-        var resultSet = new TdsResultSet();
-        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
-        resultSet.Rows.Add([decimal.MaxValue]);
-        resultSet.Rows.Add([0.1m]);
-
-        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString());
-
-        Assert.Equal(["79228162514264337593543950335.0", "0.1"], rows);
     }
 
     [Fact]

@@ -995,14 +995,16 @@ public class GlobTests
 
     [Theory]
     // The candidate must be tested against the range as written: lowering the bounds of '[@-B]' would drop both
-    // '@' and 'A', which the range does contain.
+    // '@' and 'A', which the range does contain. '[@-B]' with 'a' covers a range that is not entirely uppercase
+    // matching through the uppercase form of the candidate. A range that runs from an uppercase letter to a
+    // lowercase one cannot be used here: it spans U+005C, which is a path separator on Windows, and the parser
+    // rejects such a range.
     [InlineData("[@-B]", "A")]
     [InlineData("[@-B]", "a")]
     [InlineData("[@-B]", "@")]
     [InlineData("[@-B]", "B")]
     [InlineData("[A-Z]", "a")]
     [InlineData("[a-z]", "A")]
-    [InlineData("[Z-a]", "z")]
     public void IgnoreCaseRangeKeepsTheCharactersOfTheOriginalRange(string pattern, string path)
     {
         Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot).IsMatch(path));

@@ -330,7 +330,7 @@ internal static class TdsQueryRequestParser
                 return null;
             }
 
-            return CreateParameter(name, Encoding.UTF8.GetString(plpPayload), TdsColumnType.NVarChar);
+            return CreateParameter(name, TdsCollation.GetString(plpPayload), TdsColumnType.NVarChar);
         }
 
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
@@ -346,7 +346,7 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var value = Encoding.UTF8.GetString(payload.Slice(position, valueLength));
+        var value = TdsCollation.GetString(payload.Slice(position, valueLength));
         position += valueLength;
         return CreateParameter(name, value, TdsColumnType.NVarChar);
     }

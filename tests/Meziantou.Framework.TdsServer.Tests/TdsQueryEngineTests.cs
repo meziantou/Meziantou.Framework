@@ -271,7 +271,7 @@ public sealed class TdsQueryEngineTests
             North
             South
             """,
-            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct()");
+            expectedMaterializedQueries: "Order[].Select(order => new TdsProjection() {Region = order.Region}).Distinct().OrderBy(projection => projection.Region)");
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public sealed class TdsQueryEngineTests
             UpperName NameLength
             ALICE 5
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = customer2.Name.ToUpperInvariant(), NameLength = customer2.Name.Length})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = ToUpperCore(customer2.Name), NameLength = LengthCore(customer2.Name)})");
     }
 
     [Fact]
@@ -833,7 +833,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Name.Length == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (LengthCore(customer.Name) == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1864,7 +1864,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((\"  Alice\".TrimStart() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((TrimStartCore(\"  Alice\") == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1886,7 +1886,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((\"Alice  \".TrimEnd() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((TrimEndCore(\"Alice  \") == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1908,7 +1908,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((\"  Alice  \".Trim() == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((TrimCore(\"  Alice  \") == \"Alice\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1996,7 +1996,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name.Replace(\"li\", \"xx\") == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((ReplaceCore(customer.Name, \"li\", \"xx\") == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -2664,7 +2664,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1, AwayFromZero) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -3700,6 +3700,98 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(Enumerable.Range(0, 24).Select(index => $"Alias{index % 8}"), results);
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_StringFunctions_OnANullValue_ReturnNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, UPPER(Name) AS Upper, LOWER(Name) AS Lower, LEN(Name) AS Length,
+                           LTRIM(Name) AS LeftTrimmed, RTRIM(Name) AS RightTrimmed, TRIM(Name) AS Trimmed,
+                           REPLACE(Name, 'o', '0') AS Replaced
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id Upper Lower Length LeftTrimmed RightTrimmed Trimmed Replaced
+            1 ALICE alice 5 Alice Alice Alice Alice
+            2 BOB bob 3 Bob Bob Bob B0b
+            3 NULL NULL NULL NULL NULL NULL NULL
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointsAwayFromZero()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(2.5, 0) AS Positive, ROUND(-2.5, 0) AS Negative
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            Positive Negative
+            3 -3
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DistinctWithOffsetFetch_PagesTheDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT DISTINCT Id
+                    FROM duplicate_ids
+                    ORDER BY Id
+                    OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY
+                    """;
+            },
+            """
+            Id
+            2
+            """,
+            expectedMaterializedQueries: "DuplicateIdRow[].Select(duplicateIdRow => new TdsProjection() {Id = duplicateIdRow.Id}).Distinct().OrderBy(projection => projection.Id).Skip(1).Take(1)");
+    }
+
+    [Fact]
+    public void ProjectionTypeCache_WhenTheShapeLimitIsReached_KeepsServingKnownShapesAndRejectsNewOnes()
+    {
+        // The shared cache is process-wide and its emitted types can never be reclaimed, so the limit is
+        // exercised on a private cache instead of by sending 1024 distinct aliases through a server.
+        var cache = new TdsProjectionTypeCache(maxCachedTypes: 2);
+        var first = cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]);
+        var second = cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]);
+
+        Assert.NotSame(first, second);
+
+        var exception = Assert.Throws<TdsQueryEngineException>(() => cache.GetProjectionType([new TdsProjectionMember("Third", typeof(int))]));
+        Assert.Contains("2 distinct query projection shapes", exception.Message);
+
+        // Carrier types draw from the same budget as projection types.
+        _ = Assert.Throws<TdsQueryEngineException>(() => cache.GetCarrierType([new TdsProjectionMember("First", typeof(int))]));
+
+        // A shape that was cached before the limit was reached keeps being served.
+        Assert.Same(first, cache.GetProjectionType([new TdsProjectionMember("First", typeof(int))]));
+        Assert.Same(second, cache.GetProjectionType([new TdsProjectionMember("Second", typeof(int))]));
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();
@@ -3708,6 +3800,7 @@ public sealed class TdsQueryEngineTests
         options.AddQueryRoot("nullable_customers", context => GetNullableCustomers().AsQueryable());
         options.AddQueryRoot("json_docs", context => GetJsonDocuments().AsQueryable());
         options.AddQueryRoot("xml_docs", context => GetXmlDocuments().AsQueryable());
+        options.AddQueryRoot("duplicate_ids", context => GetDuplicateIds().AsQueryable());
         return options;
     }
 
@@ -3748,6 +3841,16 @@ public sealed class TdsQueryEngineTests
             new NullableCustomer(1, "Alice"),
             new NullableCustomer(2, "Bob"),
             new NullableCustomer(3, null),
+        ];
+    }
+
+    private static DuplicateIdRow[] GetDuplicateIds()
+    {
+        return
+        [
+            new DuplicateIdRow(1),
+            new DuplicateIdRow(1),
+            new DuplicateIdRow(2),
         ];
     }
 
@@ -3956,4 +4059,6 @@ public sealed class TdsQueryEngineTests
     private sealed record JsonDocumentRow(int Id, string? Payload);
 
     private sealed record XmlDocumentRow(int Id, string Payload);
+
+    private sealed record DuplicateIdRow(int Id);
 }

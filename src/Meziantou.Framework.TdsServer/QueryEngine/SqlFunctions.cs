@@ -62,19 +62,25 @@ internal static class SqlFunctions
     private static Expression BuildUpperInvariantFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "UPPER");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.ToUpperInvariant), Type.EmptyTypes)!);
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(ToUpperCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildLowerInvariantFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LOWER");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.ToLowerInvariant), Type.EmptyTypes)!);
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(ToLowerCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildLenFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LEN");
-        return Expression.Property(EnsureString(arguments[0]), nameof(string.Length));
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(LengthCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildConcatFunction(IReadOnlyList<Expression> arguments)
@@ -96,19 +102,25 @@ internal static class SqlFunctions
     private static Expression BuildLTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "LTRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.TrimStart), Type.EmptyTypes)!);
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(TrimStartCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildRTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "RTRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.TrimEnd), Type.EmptyTypes)!);
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(TrimEndCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildTrimFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 1, "TRIM");
-        return Expression.Call(EnsureString(arguments[0]), typeof(string).GetMethod(nameof(string.Trim), Type.EmptyTypes)!);
+        return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(TrimCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
+            EnsureString(arguments[0]));
     }
 
     private static Expression BuildLeftFunction(IReadOnlyList<Expression> arguments)
@@ -150,8 +162,8 @@ internal static class SqlFunctions
     {
         ValidateArgCount(arguments, expectedCount: 3, "REPLACE");
         return Expression.Call(
+            typeof(SqlFunctions).GetMethod(nameof(ReplaceCore), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!,
             EnsureString(arguments[0]),
-            typeof(string).GetMethod(nameof(string.Replace), [typeof(string), typeof(string)])!,
             EnsureString(arguments[1]),
             EnsureString(arguments[2]));
     }
@@ -302,10 +314,13 @@ internal static class SqlFunctions
     private static Expression BuildRoundFunction(IReadOnlyList<Expression> arguments)
     {
         ValidateArgCount(arguments, expectedCount: 2, "ROUND");
+
+        // T-SQL rounds a halfway value away from zero, while Math.Round(double, int) rounds it to even.
         return Expression.Call(
-            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int)])!,
+            typeof(Math).GetMethod(nameof(Math.Round), [typeof(double), typeof(int), typeof(MidpointRounding)])!,
             EnsureDouble(arguments[0]),
-            EnsureInt(arguments[1]));
+            EnsureInt(arguments[1]),
+            Expression.Constant(MidpointRounding.AwayFromZero));
     }
 
     private static Expression BuildCeilingFunction(IReadOnlyList<Expression> arguments)
@@ -574,6 +589,46 @@ internal static class SqlFunctions
         }
 
         return length >= value.Length ? value : value[(value.Length - length)..];
+    }
+
+    private static string? ToUpperCore(string? value)
+    {
+        return value?.ToUpperInvariant();
+    }
+
+    private static string? ToLowerCore(string? value)
+    {
+        return value?.ToLowerInvariant();
+    }
+
+    private static int? LengthCore(string? value)
+    {
+        return value?.Length;
+    }
+
+    private static string? TrimStartCore(string? value)
+    {
+        return value?.TrimStart();
+    }
+
+    private static string? TrimEndCore(string? value)
+    {
+        return value?.TrimEnd();
+    }
+
+    private static string? TrimCore(string? value)
+    {
+        return value?.Trim();
+    }
+
+    private static string? ReplaceCore(string? value, string? oldValue, string? newValue)
+    {
+        if (value is null || oldValue is null || newValue is null)
+        {
+            return null;
+        }
+
+        return value.Replace(oldValue, newValue, StringComparison.Ordinal);
     }
 
     private static string? SubstringCore(string? value, int start, int length)

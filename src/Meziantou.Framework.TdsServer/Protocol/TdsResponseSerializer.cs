@@ -18,7 +18,6 @@ internal static class TdsResponseSerializer
     private const int MaxTokenMessageLength = 32000;
 
     private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
-    private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
     public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
     {
@@ -33,7 +32,7 @@ internal static class TdsResponseSerializer
             WriteEnvironmentChangeToken(writer, environmentType: 1, authenticationResult.Database, oldValue: string.Empty);
         }
 
-        WriteCollationEnvironmentChangeToken(writer, DefaultCollation);
+        WriteCollationEnvironmentChangeToken(writer, TdsCollation.Default);
         WriteDoneToken(writer, status: 0x0000, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
@@ -165,11 +164,14 @@ internal static class TdsResponseSerializer
 
     /// <summary>
     /// A decimal column carries a single scale for every row, so use the largest scale present. .NET decimals
-    /// track their own scale, and values are rescaled to the column's when written.
+    /// track their own scale, and values are rescaled to the column's when written. The column also carries a
+    /// single precision, so the scale has to leave room for the largest magnitude in the column: a value that
+    /// needs more integer digits than that would not fit <see cref="DecimalPrecision"/> once it is scaled.
     /// </summary>
     private static byte GetDecimalScale(TdsResultSet resultSet, int columnIndex)
     {
         byte scale = 0;
+        byte integerDigits = 0;
         foreach (var row in resultSet.Rows)
         {
             if (columnIndex >= row.Count || row[columnIndex] is null)
@@ -183,9 +185,29 @@ internal static class TdsResponseSerializer
             {
                 scale = valueScale;
             }
+
+            var valueIntegerDigits = GetIntegerDigitCount(value);
+            if (valueIntegerDigits > integerDigits)
+            {
+                integerDigits = valueIntegerDigits;
+            }
         }
 
-        return scale;
+        // A System.Decimal never has more than 29 integer digits, so the headroom is always positive.
+        return Math.Min(scale, (byte)(DecimalPrecision - integerDigits));
+    }
+
+    private static byte GetIntegerDigitCount(decimal value)
+    {
+        var integerPart = decimal.Truncate(Math.Abs(value));
+        byte count = 0;
+        while (integerPart >= 1m)
+        {
+            integerPart = decimal.Truncate(integerPart / 10m);
+            count++;
+        }
+
+        return count;
     }
 
     /// <summary>Gets a value indicating whether the column has no dedicated TDS type and is sent as text.</summary>
@@ -446,7 +468,7 @@ internal static class TdsResponseSerializer
                 default:
                     writer.Write((byte)0xE7); // NVARCHAR
                     writer.Write(declaredLength);
-                    writer.Write(DefaultCollation);
+                    writer.Write(TdsCollation.Default);
                     break;
             }
 
@@ -827,23 +849,32 @@ internal static class TdsResponseSerializer
     private static void WriteDecimalValue(BinaryWriter writer, decimal value, byte scale)
     {
         var isNegative = value < 0;
-        var valueBits = decimal.GetBits(Math.Abs(value));
-        var valueScale = (byte)((valueBits[3] >> 16) & 0xFF);
 
-        // The wire format carries an unscaled integer, so take the mantissa and lift it to the column's scale.
-        var mantissa = new decimal(valueBits[0], valueBits[1], valueBits[2], isNegative: false, scale: 0);
-        for (var i = valueScale; i < scale; i++)
+        // The column scale can be smaller than the value's when another row needs the precision for its
+        // integer digits, and SQL Server rounds rather than truncates when it narrows a decimal.
+        var rounded = Math.Abs(value);
+        if (((decimal.GetBits(rounded)[3] >> 16) & 0xFF) > scale)
         {
-            mantissa *= 10m;
+            rounded = Math.Round(rounded, scale, MidpointRounding.AwayFromZero);
         }
 
-        var bits = decimal.GetBits(mantissa);
+        var valueBits = decimal.GetBits(rounded);
+        var valueScale = (byte)((valueBits[3] >> 16) & 0xFF);
+
+        // The wire format carries the unscaled integer in 16 bytes, which holds more than a System.Decimal
+        // does, so lift the mantissa to the column's scale with 128-bit arithmetic.
+        var mantissa = ((UInt128)(uint)valueBits[2] << 64) | ((UInt128)(uint)valueBits[1] << 32) | (uint)valueBits[0];
+        for (var i = valueScale; i < scale; i++)
+        {
+            mantissa *= 10;
+        }
+
         writer.Write(DecimalMaxLength);
         writer.Write(isNegative ? (byte)0 : (byte)1);
-        writer.Write(bits[0]);
-        writer.Write(bits[1]);
-        writer.Write(bits[2]);
-        writer.Write(0); // the magnitude is at most 96 bits, so the top 4 bytes are always zero
+        writer.Write((uint)mantissa);
+        writer.Write((uint)(mantissa >> 32));
+        writer.Write((uint)(mantissa >> 64));
+        writer.Write((uint)(mantissa >> 96));
     }
 
     private static void WriteDateTime2Value(BinaryWriter writer, DateTime value)

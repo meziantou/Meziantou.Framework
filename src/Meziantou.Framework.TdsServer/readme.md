@@ -149,6 +149,10 @@ The initial SQL text support is intentionally small: one `SELECT` statement with
 
 Built-in scalar function mappings can be customized through `TdsQueryEngineOptions.ScalarFunctions` (or `AddScalarFunction`). By default `UPPER` maps to `string.ToUpperInvariant` and `LOWER` maps to `string.ToLowerInvariant`, but you can replace them (for example with provider-specific `ToUpper` / `ToLower` mappings).
 
+The built-in scalar functions propagate `NULL` the way SQL Server does: `UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM` and `REPLACE` return `NULL` for a `NULL` argument rather than failing. `ROUND` rounds a halfway value away from zero, so `ROUND(2.5, 0)` is `3` and `ROUND(-2.5, 0)` is `-3`.
+
+`SELECT DISTINCT` deduplicates before `ORDER BY` and its `OFFSET`/`FETCH`, so paging a distinct query pages the deduplicated rows. As in SQL Server, every `ORDER BY` item of a distinct query must appear in the select list.
+
 Comparisons follow SQL's three-valued logic: a comparison with `NULL` is never true, `<>` and `NOT` do not match `NULL` rows, and `NOT IN` over a list containing `NULL` matches nothing. `NOT` is pushed down into the predicate instead of negating an already-evaluated result, so `WHERE NOT (Name = 'a')` excludes rows where `Name` is `NULL`, as SQL Server does. `JOIN ... ON` is an exception: it currently matches `NULL` keys to each other.
 
 The XML methods (`.query()`, `.value()`, `.exist()`, `.nodes()`) take **XPath 1.0**, not XQuery. Common path

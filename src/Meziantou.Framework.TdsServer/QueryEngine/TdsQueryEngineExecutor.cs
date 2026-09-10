@@ -419,17 +419,31 @@ internal sealed class TdsQueryEngineExecutor
             throw new TdsQueryEngineException("HAVING requires GROUP BY.");
         }
 
+        if (querySpecification.SelectClause.IsDistinct)
+        {
+            // DISTINCT runs before ORDER BY and its OFFSET/FETCH, so paging a distinct query pages the
+            // deduplicated rows. Ordering the projection also matches the rule that every ORDER BY item of a
+            // distinct query has to appear in the select list.
+            var distinctQuery = ApplyDistinct(ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext));
+            if (orderByClause is not null)
+            {
+                distinctQuery = ApplyOrderBy(CreateProjectionSource(distinctQuery), orderByClause, parameters, cteRoots, queryExecutionContext).Query;
+            }
+
+            if (querySpecification.SelectClause.Top is not null)
+            {
+                distinctQuery = ApplyTop(distinctQuery, querySpecification.SelectClause.Top, parameters);
+            }
+
+            return distinctQuery;
+        }
+
         if (orderByClause is not null)
         {
             source = ApplyOrderBy(source, orderByClause, parameters, cteRoots, queryExecutionContext);
         }
 
         var query = ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext);
-        if (querySpecification.SelectClause.IsDistinct)
-        {
-            query = ApplyDistinct(query);
-        }
-
         if (querySpecification.SelectClause.Top is not null)
         {
             query = ApplyTop(query, querySpecification.SelectClause.Top, parameters);

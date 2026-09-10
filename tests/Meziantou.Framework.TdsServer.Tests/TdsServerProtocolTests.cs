@@ -123,7 +123,7 @@ public sealed class TdsServerProtocolTests
 
         var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(UserName, capturedContext.UserName);
-        Assert.NotNull(capturedContext.Password);
+        Assert.Equal(Password, capturedContext.Password);
         Assert.Equal("master", capturedContext.Database);
     }
 
@@ -1837,6 +1837,103 @@ public sealed class TdsServerProtocolTests
         // are CRLF on Windows and LF elsewhere.
         var reportedMessage = exception.Message.ReplaceLineEndings("\n").Split('\n')[0];
         Assert.Equal(new string('e', 32_000), reportedMessage);
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(-1)]
+    public async Task SqlClient_RpcParameter_VarChar_IsDecodedUsingTheAdvertisedCodePage(int size)
+    {
+        // The server advertises SQL_Latin1_General_CP1_CI_AS, so SqlClient encodes VARCHAR parameters with
+        // code page 1252 rather than UTF-8. A size of -1 selects VARCHAR(MAX), which travels as a PLP payload.
+        const string Value = "Café";
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @value";
+        _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.VarChar, size) { Value = Value });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(Value, GetParameterValue(capturedContext, "@value", TdsColumnType.NVarChar));
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_WithALargeMagnitudeAndAScaledValue_KeepsBothValues()
+    {
+        // The column carries a single scale, so the largest magnitude has to be lifted to the largest scale
+        // present. The lifted value no longer fits a System.Decimal even though it fits the wire format.
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([decimal.MaxValue]);
+        resultSet.Rows.Add([0.1m]);
+
+        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString());
+
+        Assert.Equal(["79228162514264337593543950335.0", "0.1"], rows);
+    }
+
+    [Fact]
+    public async Task Server_Dispose_CancelsTheTokenOfAnInFlightQuery()
+    {
+        var handlerTokenTask = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            async (context, cancellationToken) =>
+            {
+                handlerTokenTask.TrySetResult(cancellationToken);
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return new TdsQueryResult();
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        var queryTask = command.ExecuteScalarAsync();
+
+        var handlerToken = await handlerTokenTask.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.False(handlerToken.IsCancellationRequested);
+
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var registration = handlerToken.Register(canceled.SetResult);
+
+        server.Dispose();
+
+        await canceled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        _ = await Assert.ThrowsAnyAsync<Exception>(() => queryTask);
     }
 
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)

@@ -275,6 +275,30 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_SelectDistinctWithOffsetFetch_PaginatesDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT DISTINCT Region
+                    FROM orders
+                    ORDER BY Region
+                    OFFSET 1 ROWS
+                    FETCH NEXT 1 ROWS ONLY
+                    """;
+            },
+            """
+            Region
+            South
+            """,
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct().Skip(1).Take(1)");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Union_ReturnsDistinctRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -1392,7 +1416,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Skip(1).Take(2).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Skip(1).Take(2)");
     }
 
     [Fact]

@@ -176,8 +176,6 @@ namespace Meziantou.Framework.Threading
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }
         public System.TimeSpan WaitTimeout { get => throw null; set { } }
-        [System.Obsolete("This property is not used by the scheduler and will be removed in a future version.")]
-        public System.TimeSpan DequeueTimeout { get => throw null; set { } }
         public int QueueCount { get => throw null; }
         public System.Exception? WorkerException { get => throw null; }
         public override int MaximumConcurrencyLevel { get => throw null; }

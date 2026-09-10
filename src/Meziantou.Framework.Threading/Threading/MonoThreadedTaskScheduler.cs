@@ -98,10 +98,6 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
         }
     }
 
-    /// <summary>Gets or sets the timeout for dequeueing tasks.</summary>
-    [Obsolete("This property is not used by the scheduler and will be removed in a future version.")]
-    public TimeSpan DequeueTimeout { get; set; }
-
     /// <summary>Gets the number of tasks currently queued to the scheduler.</summary>
     public int QueueCount => _tasks.Count;
 

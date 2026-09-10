@@ -438,7 +438,20 @@ jobs:
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+        run: |
+          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ matrix.additionalArguments }}
+
+          # Exit code 8 is 'zero tests ran'. A delta build can legitimately select only projects that
+          # skip every test on this leg, such as the TDS tests, which need ICU and are therefore all
+          # skipped by the invariant globalization jobs. Those projects already declare that running
+          # no test is expected by setting 'MinimumExpectedTests' to 0, but that only silences the
+          # per-project check, not the run-level one.
+          if ($LASTEXITCODE -eq 8) {
+            Write-Host "No test ran: every project selected for this shard skipped all of its tests."
+            exit 0
+          }
+
+          exit $LASTEXITCODE
 
       - name: Cleanup test results
         if: steps.build-project.outputs.has-project == 'true'

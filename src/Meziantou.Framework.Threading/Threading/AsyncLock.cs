@@ -27,6 +27,11 @@ public sealed class AsyncLock
     private readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled = true;
 
+    // Number of times the lock has been released. Every lease carries the value this counter had while its
+    // acquisition was current, and releasing advances it. A lease (or any copy of it) can therefore only
+    // release the acquisition it was created for: once that acquisition is over, its value is stale forever.
+    private long _releaseCount;
+
     /// <summary>Initializes a new instance of the <see cref="AsyncLock"/> class.</summary>
     public AsyncLock()
         : this(allowInliningAwaiters: false)
@@ -63,7 +68,7 @@ public sealed class AsyncLock
             if (_signaled)
             {
                 _signaled = false;
-                return new ValueTask<AsyncLockLease>(new AsyncLockLease(this));
+                return new ValueTask<AsyncLockLease>(CreateLease());
             }
 
             waiter = new WaiterCompletionSource(this, _allowInliningAwaiters, cancellationToken);
@@ -99,7 +104,7 @@ public sealed class AsyncLock
                 if (_signaled)
                 {
                     _signaled = false;
-                    lockObject = new AsyncLockLease(this);
+                    lockObject = CreateLease();
                     return true;
                 }
             }
@@ -109,8 +114,22 @@ public sealed class AsyncLock
         return false;
     }
 
-    internal void Release()
+    /// <summary>Creates the lease for the acquisition that is now current. Must be called once the acquisition is
+    /// granted, so the lease carries the release count that is only valid while that acquisition lasts.</summary>
+    private AsyncLockLease CreateLease()
     {
+        return new AsyncLockLease(this, Interlocked.Read(ref _releaseCount));
+    }
+
+    /// <summary>Releases the acquisition identified by <paramref name="releaseCount"/>, if it is still the current one.</summary>
+    /// <returns><see langword="true"/> if this call released the lock; <see langword="false"/> if the acquisition was already released.</returns>
+    internal bool TryRelease(long releaseCount)
+    {
+        // Only the first release of a given acquisition wins the exchange, so disposing a lease twice, or disposing
+        // a copy of an already-disposed lease, cannot release a lock that somebody else acquired in the meantime.
+        if (Interlocked.CompareExchange(ref _releaseCount, releaseCount + 1, releaseCount) != releaseCount)
+            return false;
+
         WaiterCompletionSource? toRelease;
         lock (_lock)
         {
@@ -124,8 +143,13 @@ public sealed class AsyncLock
         if (toRelease is not null)
         {
             toRelease.Registration.Dispose();
-            toRelease.TrySetResult(new AsyncLockLease(this));
+
+            // The exchange above is the only one that can have advanced the counter, since the lease handed out here
+            // is the only one able to advance it next, so the next acquisition is identified by releaseCount + 1.
+            toRelease.TrySetResult(new AsyncLockLease(this, releaseCount + 1));
         }
+
+        return true;
     }
 
     private void OnCancellationRequest(object state)
@@ -150,20 +174,31 @@ public sealed class AsyncLock
     }
 
     /// <summary>Represents a disposable lease for an <see cref="AsyncLock"/>. Disposing the lease releases the lock.</summary>
+    /// <remarks>Only the first disposal of a lease releases the lock. Disposing the same lease again, or disposing a
+    /// copy of an already-disposed lease, does nothing instead of releasing an acquisition made in the meantime.</remarks>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
     public readonly struct AsyncLockLease : IDisposable
     {
         private readonly AsyncLock? _parent;
+        private readonly long _releaseCount;
 
-        internal AsyncLockLease(AsyncLock? parent)
+        internal AsyncLockLease(AsyncLock? parent, long releaseCount)
         {
             _parent = parent;
+            _releaseCount = releaseCount;
         }
 
         public void Dispose()
         {
-            _parent?.Release();
+            TryRelease();
+        }
+
+        /// <summary>Releases the lock unless this lease, or a copy of it, was already disposed.</summary>
+        /// <returns><see langword="true"/> if this call released the lock; otherwise, <see langword="false"/>.</returns>
+        internal bool TryRelease()
+        {
+            return _parent?.TryRelease(_releaseCount) is true;
         }
     }
 

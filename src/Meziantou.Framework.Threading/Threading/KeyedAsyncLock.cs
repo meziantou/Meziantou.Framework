@@ -86,8 +86,12 @@ public sealed class KeyedAsyncLock<TKey> where TKey : notnull
 
     private void Release(TKey key, Entry entry, AsyncLock.AsyncLockLease lease)
     {
-        lease.Dispose();
-        ReleaseReference(key, entry);
+        // The per-key lock only lets the first release of an acquisition through, so a lease disposed twice
+        // cannot drop the entry's reference count twice and evict an entry somebody else is still using.
+        if (lease.TryRelease())
+        {
+            ReleaseReference(key, entry);
+        }
     }
 
     internal sealed class Entry
@@ -97,6 +101,8 @@ public sealed class KeyedAsyncLock<TKey> where TKey : notnull
     }
 
     /// <summary>Represents a disposable lease for a <see cref="KeyedAsyncLock{TKey}"/>. Disposing the lease releases the lock for the key.</summary>
+    /// <remarks>Only the first disposal of a lease releases the key. Disposing the same lease again, or disposing a
+    /// copy of an already-disposed lease, does nothing instead of releasing an acquisition made in the meantime.</remarks>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
     public readonly struct KeyedAsyncLockLease : IDisposable

@@ -127,10 +127,10 @@ namespace Meziantou.Framework.Threading
 
     public sealed class AsyncReaderWriterLock
     {
-        public System.Threading.Tasks.Task<Releaser> ReaderLockAsync() => throw null;
-        public System.Threading.Tasks.Task<Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
-        public System.Threading.Tasks.Task<Releaser> WriterLockAsync() => throw null;
-        public System.Threading.Tasks.Task<Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> ReaderLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync() => throw null;
+        public System.Threading.Tasks.ValueTask<Releaser> WriterLockAsync(System.Threading.CancellationToken cancellationToken) => throw null;
         public readonly struct Releaser : System.IDisposable
         {
             public void Dispose() { }

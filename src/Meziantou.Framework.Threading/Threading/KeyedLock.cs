@@ -24,11 +24,9 @@ namespace Meziantou.Framework.Threading;
 /// </example>
 public sealed class KeyedLock<TKey> where TKey : notnull
 {
-    // Entries are reference-counted and removed once no one holds or waits for a key's lock, so the
-    // dictionary doesn't grow without bound when used with high-cardinality keys. The dictionary
-    // bookkeeping (add/remove + ref count) is guarded by locking on the dictionary itself; the
-    // per-key Lock provides the actual mutual exclusion.
-    private readonly Dictionary<TKey, Entry> _locks;
+    // The table reference-counts and evicts entries so it doesn't grow without bound when used with
+    // high-cardinality keys; the per-key Lock provides the actual mutual exclusion.
+    private readonly KeyedEntryTable<TKey, Entry> _locks;
 
     /// <summary>Initializes a new instance of the <see cref="KeyedLock{TKey}"/> class.</summary>
     public KeyedLock()
@@ -40,8 +38,11 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <param name="comparer">The equality comparer to use when comparing keys.</param>
     public KeyedLock(IEqualityComparer<TKey>? comparer)
     {
-        _locks = new Dictionary<TKey, Entry>(comparer);
+        _locks = new KeyedEntryTable<TKey, Entry>(comparer, () => new Entry());
     }
+
+    /// <summary>Gets the number of keys currently tracked. Used by tests to assert that released keys are evicted.</summary>
+    internal int EntryCount => _locks.Count;
 
     /// <summary>Acquires the lock for the specified key.</summary>
     /// <param name="key">The key to lock on.</param>
@@ -52,20 +53,7 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// </remarks>
     public IDisposable Lock(TKey key)
     {
-        Entry entry;
-        lock (_locks)
-        {
-            if (!_locks.TryGetValue(key, out entry!))
-            {
-                entry = new Entry();
-                _locks.Add(key, entry);
-            }
-
-            // Reserve the entry before releasing the bookkeeping lock so a concurrent release
-            // cannot remove it from under us while we wait to enter the per-key lock.
-            entry.ReferenceCount++;
-        }
-
+        var entry = _locks.Reserve(key);
         entry.Lock.Enter();
         return new LockLease(this, key, entry);
     }
@@ -80,21 +68,14 @@ public sealed class KeyedLock<TKey> where TKey : notnull
         {
             // The reference count must be released even when Exit throws, which happens when the lease is
             // disposed on a thread that does not own the lock. Skipping it would leave the entry in the
-            // dictionary forever and permanently deadlock every later acquisition of the same key.
-            lock (_locks)
-            {
-                if (--entry.ReferenceCount == 0)
-                {
-                    _locks.Remove(key);
-                }
-            }
+            // table forever and permanently deadlock every later acquisition of the same key.
+            _locks.Release(key, entry);
         }
     }
 
-    private sealed class Entry
+    private sealed class Entry : KeyedEntry
     {
         public Lock Lock { get; } = new();
-        public int ReferenceCount { get; set; }
     }
 
     private sealed class LockLease : IDisposable

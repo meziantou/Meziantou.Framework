@@ -855,6 +855,174 @@ public sealed partial class ObservableCollectionTests : IDisposable
         return exception;
     }
 
+    [Fact]
+    public void ObservableCollectionCanBeReadWhileAnotherThreadAppliesPendingChanges()
+    {
+        // A SynchronizationContext may run its callbacks on several threads and install itself as Current on each of
+        // them, so the items can be read while the pending events are applied
+        var context = new MultiThreadedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<int>(context);
+            var observable = collection.AsObservable;
+
+            var writer = new Thread(() =>
+            {
+                for (var i = 0; i < 20_000; i++)
+                {
+                    collection.Add(i);
+                }
+            });
+
+            writer.IsBackground = true;
+            writer.Start();
+
+            while (writer.IsAlive)
+            {
+                foreach (var item in observable)
+                {
+                    _ = item;
+                }
+
+                _ = observable.Count;
+            }
+
+            writer.Join();
+            context.WaitForPendingCallbacks();
+            Assert.Equal(20_000, observable.Count);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
+    public void IndexBasedEditsAreRejectedWhileAnotherThreadAppliesPendingChanges()
+    {
+        var context = new MultiThreadedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<string>(context);
+            var observable = collection.AsObservable;
+            collection.AddRange("A", "B");
+            context.WaitForPendingCallbacks();
+
+            using var handlerReached = new ManualResetEventSlim();
+            using var releaseHandler = new ManualResetEventSlim();
+            ((INotifyCollectionChanged)observable).CollectionChanged += (sender, e) =>
+            {
+                handlerReached.Set();
+                releaseHandler.Wait();
+            };
+
+            // Three changes are queued at once, so the drain is still holding events when the handler of the first blocks
+            RunOnAnotherThread(() =>
+            {
+                collection.Insert(0, "X");
+                collection.Insert(0, "Y");
+                collection.Insert(0, "Z");
+            });
+
+            Assert.True(handlerReached.Wait(TimeSpan.FromSeconds(30)));
+
+            // The drain is in flight on another thread, so an index taken from this collection is not usable
+            Assert.Throws<InvalidOperationException>(() => ((IList<string>)observable).RemoveAt(0));
+            Assert.Equal(["Z", "Y", "X", "A", "B"], collection.ToList());
+
+            releaseHandler.Set();
+            context.WaitForPendingCallbacks();
+            Assert.Equal(["Z", "Y", "X", "A", "B"], observable.ToList());
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
+    public void AnEditFromACollectionChangedHandlerIsNotRejected()
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<string>(context);
+            var observable = collection.AsObservable;
+            collection.AddRange("A", "B");
+
+            // The handler runs once this collection already reflects the event being notified, so the index it uses is valid
+            var edited = false;
+            ((INotifyCollectionChanged)observable).CollectionChanged += (sender, e) =>
+            {
+                if (!edited)
+                {
+                    edited = true;
+                    ((IList<string>)observable).RemoveAt(0);
+                }
+            };
+
+            collection.Add("C");
+
+            Assert.True(edited);
+            Assert.Equal(["B", "C"], collection.ToList());
+            Assert.Equal(["B", "C"], observable.ToList());
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    /// <summary>A synchronization context that runs its callbacks on several threads and is Current on each of them.</summary>
+    private sealed class MultiThreadedSynchronizationContext : SynchronizationContext
+    {
+        private readonly List<Thread> _threads = [];
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            var thread = new Thread(() =>
+            {
+                SynchronizationContext.SetSynchronizationContext(this);
+                d(state);
+            });
+
+            thread.IsBackground = true;
+            lock (_threads)
+            {
+                _threads.Add(thread);
+            }
+
+            thread.Start();
+        }
+
+        public void WaitForPendingCallbacks()
+        {
+            while (true)
+            {
+                Thread[] threads;
+                lock (_threads)
+                {
+                    threads = [.. _threads];
+                    _threads.Clear();
+                }
+
+                if (threads.Length is 0)
+                    return;
+
+                foreach (var thread in threads)
+                {
+                    thread.Join();
+                }
+            }
+        }
+    }
+
     private sealed class QueuedSynchronizationContext : SynchronizationContext
     {
         private readonly System.Collections.Concurrent.ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();

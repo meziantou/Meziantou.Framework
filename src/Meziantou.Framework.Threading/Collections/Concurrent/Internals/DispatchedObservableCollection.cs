@@ -17,6 +17,13 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private readonly SynchronizationContext _synchronizationContext;
 
     private volatile bool _isProcessingPending;
+
+    // HasPendingEvents cannot be answered by looking at the queue: an event that has been dequeued but not applied yet
+    // leaves it empty while the items are still behind the source collection. Counting instead makes the answer exact.
+    // _enqueuedEventCount is only written under the source collection's lock, _processedEventCount only by the drain,
+    // and drains never overlap.
+    private long _enqueuedEventCount;
+    private long _processedEventCount;
     private int _isDraining;
 
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
@@ -51,7 +58,10 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            return Items.Count;
+            lock (ItemsLock)
+            {
+                return Items.Count;
+            }
         }
     }
 
@@ -141,7 +151,13 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     public IEnumerator<T> GetEnumerator()
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.GetEnumerator();
+
+        // The enumerator outlives the lock, and the pending events can be applied on another thread while the caller
+        // walks it, so it walks a snapshot instead of the live list.
+        lock (ItemsLock)
+        {
+            return Items.ToList().GetEnumerator();
+        }
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -149,19 +165,28 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     public void CopyTo(T[] array, int arrayIndex)
     {
         AssertIsOnSynchronizationContextThread();
-        Items.CopyTo(array, arrayIndex);
+        lock (ItemsLock)
+        {
+            Items.CopyTo(array, arrayIndex);
+        }
     }
 
     public int IndexOf(T item)
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.IndexOf(item);
+        lock (ItemsLock)
+        {
+            return Items.IndexOf(item);
+        }
     }
 
     public bool Contains(T item)
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.Contains(item);
+        lock (ItemsLock)
+        {
+            return Items.Contains(item);
+        }
     }
 
     public T this[int index]
@@ -169,7 +194,10 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnSynchronizationContextThread();
-            return Items[index];
+            lock (ItemsLock)
+            {
+                return Items[index];
+            }
         }
     }
 
@@ -177,7 +205,17 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     /// Gets a value indicating whether changes made to the source collection are still waiting to be applied to this collection.
     /// </summary>
     /// <remarks>Read by the source collection while holding its lock to detect that the indices of this collection are stale.</remarks>
-    internal bool HasPendingEvents => !_pendingEvents.IsEmpty;
+    internal bool HasPendingEvents => Volatile.Read(ref _processedEventCount) != Volatile.Read(ref _enqueuedEventCount);
+
+    /// <summary>Counts an event as processed as soon as the items are updated, before its handlers are notified.</summary>
+    /// <remarks>
+    /// A handler is free to modify the source collection, and at that point this collection already reflects the event
+    /// being notified, so the edit must be allowed to go through instead of being rejected as stale.
+    /// </remarks>
+    private protected override void OnItemsMutated()
+    {
+        Volatile.Write(ref _processedEventCount, _processedEventCount + 1);
+    }
 
     internal void EnqueueReplace(int index, T value)
     {
@@ -233,6 +271,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
         // The whole range is queued before anything is dispatched. A handler invoked while dispatching can modify the
         // source collection, and the events it enqueues must come after the ones of the range that is already committed.
+        CountEnqueuedEvents(items.Count);
         foreach (var item in items)
         {
             _pendingEvents.Enqueue(PendingEvent.Add(item));
@@ -247,6 +286,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         if (items.IsEmpty)
             return;
 
+        CountEnqueuedEvents(items.Count);
         foreach (var item in items)
         {
             _pendingEvents.Enqueue(PendingEvent.Insert(index, item));
@@ -258,8 +298,19 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     private void EnqueueEvent(PendingEvent<T> @event)
     {
+        CountEnqueuedEvents(1);
         _pendingEvents.Enqueue(@event);
         ProcessPendingEventsOrPost();
+    }
+
+    /// <summary>Counts events that are about to be enqueued, so <see cref="HasPendingEvents"/> knows about them.</summary>
+    /// <remarks>
+    /// Every caller runs while the source collection holds its lock, which is also where the count is read, so the count
+    /// and the content of the source collection stay consistent with each other.
+    /// </remarks>
+    private void CountEnqueuedEvents(int count)
+    {
+        Volatile.Write(ref _enqueuedEventCount, _enqueuedEventCount + count);
     }
 
     private void ProcessPendingEventsOrPost()
@@ -296,7 +347,13 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         // the events already queued and leave the view ordered differently from the source. The running loop picks
         // them up instead.
         if (Interlocked.Exchange(ref _isDraining, 1) is 1)
+        {
+            // Another thread owns the drain and picks up whatever is queued when it loops. The post that led here is
+            // over, so the flag has to be cleared: it is only reset when a drain starts, and leaving it set when this
+            // callback does nothing would stop every later modification from posting, wedging the dispatch for good.
+            _isProcessingPending = false;
             return;
+        }
 
         List<Exception>? exceptions = null;
         do
@@ -306,6 +363,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
                 _isProcessingPending = false;
                 while (_pendingEvents.TryDequeue(out var pendingEvent))
                 {
+                    var processedCount = Volatile.Read(ref _processedEventCount) + 1;
                     try
                     {
                         ApplyPendingEvent(pendingEvent);
@@ -317,6 +375,15 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
                         // source collection, and the failures are reported once the queue is drained.
                         exceptions ??= [];
                         exceptions.Add(ex);
+                    }
+                    finally
+                    {
+                        // OnItemsMutated already counted the event unless it could not be applied at all. Counting it
+                        // here as well keeps the queue from looking permanently behind in that case.
+                        if (Volatile.Read(ref _processedEventCount) < processedCount)
+                        {
+                            Volatile.Write(ref _processedEventCount, processedCount);
+                        }
                     }
                 }
             }
@@ -419,7 +486,10 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     void ICollection.CopyTo(Array array, int index)
     {
         AssertIsOnSynchronizationContextThread();
-        ((ICollection)Items).CopyTo(array, index);
+        lock (ItemsLock)
+        {
+            ((ICollection)Items).CopyTo(array, index);
+        }
     }
 
     int IList.Add(object? value)

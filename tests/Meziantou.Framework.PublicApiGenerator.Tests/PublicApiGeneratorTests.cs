@@ -245,6 +245,57 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Inheritance_BaseTypeIsFirstAndInterfacesAreSorted()
+    {
+        await Validate("""
+            public interface IZeta { }
+            public interface IAlpha { }
+            public interface IMiddle { }
+
+            public abstract class TypeDeclaration { }
+
+            public class Sample : TypeDeclaration, IZeta, IMiddle, IAlpha
+            {
+            }
+
+            public interface IDerived : IZeta, IMiddle, IAlpha
+            {
+            }
+            """, """
+            #nullable enable
+
+            public interface IAlpha
+            {
+            }
+
+
+            public interface IDerived : IAlpha, IMiddle, IZeta
+            {
+            }
+
+
+            public interface IMiddle
+            {
+            }
+
+
+            public interface IZeta
+            {
+            }
+
+
+            public class Sample : TypeDeclaration, IAlpha, IMiddle, IZeta
+            {
+            }
+
+
+            public abstract class TypeDeclaration
+            {
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Struct_Empty()
     {
         await Validate("""

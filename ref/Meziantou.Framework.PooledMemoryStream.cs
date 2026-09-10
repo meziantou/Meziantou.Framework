@@ -4,7 +4,7 @@
 
 namespace Meziantou.Framework
 {
-    public sealed class PooledMemoryStream : System.Buffers.IBufferWriter<byte>, System.IO.MemoryStream
+    public sealed class PooledMemoryStream : System.IO.MemoryStream, System.Buffers.IBufferWriter<byte>
     {
         public override bool CanRead { get => throw null; }
         public override bool CanSeek { get => throw null; }

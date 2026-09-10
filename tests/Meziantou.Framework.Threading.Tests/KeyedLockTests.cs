@@ -97,10 +97,11 @@ public sealed class KeyedLockTests
     }
 
     [Fact]
-    public void Lock_DisposedOnAnotherThread_ThrowsButStillEvictsTheEntry()
+    public async Task Lock_DisposedOnAnotherThread_ThrowsAndKeepsTheLockHeld()
     {
-        // System.Threading.Lock is thread-affine, so Exit throws here. The reference count must still be
-        // released, otherwise the entry stays in the table and every later Lock(1) deadlocks.
+        // System.Threading.Lock is thread-affine, so Exit throws here and the lock remains held by the
+        // acquiring thread. The entry must therefore stay in the table: evicting it would let another
+        // thread lock a fresh entry for the same key while this critical section is still running.
         var locks = new KeyedLock<int>();
         var lease = locks.Lock(1);
 
@@ -123,12 +124,25 @@ public sealed class KeyedLockTests
         Assert.True(thread.Join(TimeSpan.FromSeconds(30)));
 
         Assert.IsType<SynchronizationLockException>(captured);
-        Assert.Equal(0, locks.EntryCount);
+        Assert.Equal(1, locks.EntryCount);
 
-        // A fresh entry is created, so the key is usable again rather than permanently wedged.
-        using (locks.Lock(1))
+        using var acquired = new ManualResetEventSlim(initialState: false);
+        var blocked = Task.Run(() =>
         {
-        }
+            using (locks.Lock(1))
+            {
+                acquired.Set();
+            }
+        });
+
+        Assert.False(acquired.Wait(200)); // still blocked by the lock this thread owns
+
+        // The failed disposal did not consume the lease, so the owning thread can still release the lock.
+        lease.Dispose();
+
+        await blocked.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.True(acquired.IsSet);
+        Assert.Equal(0, locks.EntryCount);
     }
 
     [Fact]

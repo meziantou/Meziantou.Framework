@@ -1,6 +1,10 @@
 using System.Globalization;
 
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>The grammar every dialect shares: alternation, sequence, and quantifier.</summary>
 /// <remarks>
@@ -96,19 +100,47 @@ internal abstract class RegexParser
         var (closeSlashToken, flagsToken, trailingToken) = ReadLiteralSuffix();
 
         var trivia = TakeTrivia();
-        var endOfPatternToken = Scanner.MissingToken(RegexSyntaxKind.EndOfPatternToken, trivia);
+        var endOfPatternToken = Scanner.MissingToken(SyntaxKind.EndOfPatternToken, trivia);
 
-        return new RegexPatternSyntax(alternation, endOfPatternToken, openSlashToken, closeSlashToken, flagsToken, trailingToken, Text)
+        return new RegexPatternSyntax(openSlashToken, alternation, closeSlashToken, flagsToken, trailingToken, endOfPatternToken, ParseOptions.PatternOptions);
+    }
+
+    /// <summary>
+    /// The range a node just read from the pattern covers, worked out from where the scanner now stands.
+    /// </summary>
+    /// <remarks>
+    /// Only correct immediately after the node was parsed and before anything else is read, because it measures back
+    /// from the reading position rather than remembering where the node began.
+    /// </remarks>
+    protected TextSpan JustParsedSpan(GreenNode node) => TextSpan.FromBounds(Math.Max(0, Scanner.Position - node.Width), Scanner.Position);
+
+    /// <summary>Weaves nodes and the separators that follow them into the one sequence a separated list holds.</summary>
+    protected static GreenNode? Interleave<TNode>(List<TNode> nodes, List<ScannedToken> separators)
+        where TNode : RegexSyntaxNode
+    {
+        var items = new List<GreenNode?>((nodes.Count * 2) - 1);
+        for (var index = 0; index < nodes.Count; index++)
         {
-            Options = ParseOptions.PatternOptions,
-        };
+            items.Add(nodes[index]);
+            if (index < separators.Count)
+            {
+                items.Add(separators[index]);
+            }
+        }
+
+        for (var index = nodes.Count; index < separators.Count; index++)
+        {
+            items.Add(separators[index]);
+        }
+
+        return SyntaxFactory.ListNode([.. items]);
     }
 
     /// <summary>Reads the opening delimiter of a JavaScript literal. Every other dialect has none.</summary>
-    protected virtual RegexSyntaxToken? ReadLiteralPrefix() => null;
+    protected virtual ScannedToken ReadLiteralPrefix() => default;
 
     /// <summary>Reads the closing delimiter, flags, and any trailing content of a JavaScript literal.</summary>
-    protected virtual (RegexSyntaxToken? CloseSlash, RegexSyntaxToken? Flags, RegexSyntaxToken? Trailing) ReadLiteralSuffix() => (null, null, null);
+    protected virtual (ScannedToken CloseSlash, ScannedToken Flags, ScannedToken Trailing) ReadLiteralSuffix() => (default, default, default);
 
     /// <summary>
     /// Returns whether the pattern body ends at <paramref name="position"/>. A JavaScript literal ends at its closing
@@ -117,7 +149,7 @@ internal abstract class RegexParser
     protected virtual bool IsAtBodyEnd(int position) => position >= Text.Length;
 
     /// <summary>Parses one atom. Must always consume at least one character, so the parser cannot loop forever.</summary>
-    protected abstract RegexAtomSyntax ParseAtom(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia);
+    protected abstract RegexAtomSyntax ParseAtom(GreenNode? leadingTrivia);
 
     // The delimiters below are virtual because a POSIX basic expression spells them with a backslash: "\(" opens a
     // group and a bare "(" is a character, which is the reverse of every other dialect. Everything that reads a
@@ -160,9 +192,8 @@ internal abstract class RegexParser
     /// <summary>Parses the branches of an alternation, in order.</summary>
     protected RegexAlternationSyntax ParseAlternation(bool insideGroup)
     {
-        var start = Scanner.Position;
         var branches = new List<RegexSequenceSyntax>();
-        var barTokens = new List<RegexSyntaxToken>();
+        var barTokens = new List<ScannedToken>();
         var supportsAlternation = Dialect.HasFeature(RegexDialectFeatures.Alternation);
 
         while (true)
@@ -180,10 +211,10 @@ internal abstract class RegexParser
             var trivia = TakeTrivia();
             var barStart = Scanner.Position;
             Scanner.Position += separatorLength;
-            barTokens.Add(Scanner.Token(RegexSyntaxKind.BarToken, barStart, trivia));
+            barTokens.Add(Scanner.Token(SyntaxKind.BarToken, barStart, trivia));
         }
 
-        return WithOptions(new RegexAlternationSyntax(branches, barTokens, start));
+        return new RegexAlternationSyntax(Interleave(branches, barTokens), Options);
     }
 
     /// <summary>Parses one branch: the terms that must match one after another.</summary>
@@ -193,7 +224,6 @@ internal abstract class RegexParser
     /// </remarks>
     protected RegexSequenceSyntax ParseSequence(bool insideGroup)
     {
-        var start = Scanner.Position;
         var terms = new List<RegexTermSyntax>();
         var supportsAlternation = Dialect.HasFeature(RegexDialectFeatures.Alternation);
 
@@ -225,7 +255,7 @@ internal abstract class RegexParser
             }
         }
 
-        return WithOptions(new RegexSequenceSyntax(terms, start));
+        return new RegexSequenceSyntax(SyntaxFactory.ListNode([.. terms]), Options);
     }
 
     /// <summary>
@@ -253,19 +283,19 @@ internal abstract class RegexParser
             if (term is RegexQuantifiedSyntax)
             {
                 Scanner.AddDiagnostic(
-                    quantifier.Span,
+                    JustParsedSpan(quantifier),
                     RegexDiagnosticIds.NestedQuantifiersNotParenthesized,
                     $"Nested quantifier '{quantifier.ToString().Trim()}' is not enclosed in parentheses.");
             }
             else if (!IsQuantifiable(term))
             {
                 Scanner.AddDiagnostic(
-                    quantifier.Span,
+                    JustParsedSpan(quantifier),
                     RegexDiagnosticIds.QuantifierAfterNothing,
                     $"Quantifier '{quantifier.ToString().Trim()}' has nothing to repeat.");
             }
 
-            term = WithOptions(new RegexQuantifiedSyntax(term, quantifier));
+            term = new RegexQuantifiedSyntax(term, quantifier, Options);
         }
     }
 
@@ -318,7 +348,7 @@ internal abstract class RegexParser
         return BoundCloseLength(index) > 0;
     }
 
-    private RegexQuantifierSyntax? ParseQuantifier(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexQuantifierSyntax? ParseQuantifier(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
 
@@ -327,17 +357,17 @@ internal abstract class RegexParser
             Scanner.Position += length;
             var operatorToken = Scanner.Token(QuantifierTokenKind(operatorCharacter), start, leadingTrivia);
 
-            return new RegexSimpleQuantifierSyntax(operatorToken, ReadQuantifierModifier());
+            return new RegexSimpleQuantifierSyntax(operatorToken, ReadQuantifierModifier(), Options);
         }
 
         return ParseRangeQuantifier(leadingTrivia);
     }
 
-    private static RegexSyntaxKind QuantifierTokenKind(char ch) => ch switch
+    private static SyntaxKind QuantifierTokenKind(char ch) => ch switch
     {
-        '*' => RegexSyntaxKind.AsteriskToken,
-        '+' => RegexSyntaxKind.PlusToken,
-        _ => RegexSyntaxKind.QuestionToken,
+        '*' => SyntaxKind.AsteriskToken,
+        '+' => SyntaxKind.PlusToken,
+        _ => SyntaxKind.QuestionToken,
     };
 
     /// <summary>Reads a <c>{n}</c>, <c>{n,}</c>, or <c>{n,m}</c> bound.</summary>
@@ -346,20 +376,20 @@ internal abstract class RegexParser
     /// present. A bound that does not fit in an <see cref="int"/> is still consumed in full, so the span stays exact,
     /// and the clamped value is carried on the token so a consumer does not have to reparse the digits.
     /// </remarks>
-    private RegexRangeQuantifierSyntax ParseRangeQuantifier(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexRangeQuantifierSyntax ParseRangeQuantifier(GreenNode? leadingTrivia)
     {
         var braceStart = Scanner.Position;
         Scanner.Position += BoundOpenLength(braceStart);
-        var openBraceToken = Scanner.Token(RegexSyntaxKind.OpenBraceToken, braceStart, leadingTrivia);
+        var openBraceToken = Scanner.Token(SyntaxKind.OpenBraceToken, braceStart, leadingTrivia);
 
         var minToken = ReadBound();
-        RegexSyntaxToken? commaToken = null;
-        RegexSyntaxToken? maxToken = null;
+        ScannedToken commaToken = default;
+        ScannedToken maxToken = default;
         if (Scanner.Current == ',')
         {
             var commaStart = Scanner.Position;
             Scanner.Position++;
-            commaToken = Scanner.Token(RegexSyntaxKind.CommaToken, commaStart);
+            commaToken = Scanner.Token(SyntaxKind.CommaToken, commaStart);
             if (BoundCloseLength(Scanner.Position) == 0)
             {
                 maxToken = ReadBound();
@@ -368,22 +398,22 @@ internal abstract class RegexParser
 
         var closeStart = Scanner.Position;
         var closeLength = BoundCloseLength(closeStart);
-        RegexSyntaxToken closeBraceToken;
+        ScannedToken closeBraceToken;
         if (closeLength > 0)
         {
             Scanner.Position += closeLength;
-            closeBraceToken = Scanner.Token(RegexSyntaxKind.CloseBraceToken, closeStart);
+            closeBraceToken = Scanner.Token(SyntaxKind.CloseBraceToken, closeStart);
         }
         else
         {
-            closeBraceToken = Scanner.MissingToken(RegexSyntaxKind.CloseBraceToken);
+            closeBraceToken = Scanner.MissingToken(SyntaxKind.CloseBraceToken);
         }
 
-        var quantifier = new RegexRangeQuantifierSyntax(openBraceToken, minToken, commaToken, maxToken, closeBraceToken, ReadQuantifierModifier());
+        var quantifier = new RegexRangeQuantifierSyntax(openBraceToken, minToken, commaToken, maxToken, closeBraceToken, ReadQuantifierModifier(), Options);
         if (quantifier.MaxCount is { } max && quantifier.MinCount > max)
         {
             Scanner.AddDiagnostic(
-                quantifier.Span,
+                TextSpan.FromBounds(openBraceToken.Span.Start, closeBraceToken.End),
                 RegexDiagnosticIds.ReversedQuantifierRange,
                 FormattableString.Invariant($"Quantifier range {quantifier.MinCount},{max} is reversed."));
         }
@@ -391,7 +421,7 @@ internal abstract class RegexParser
         return quantifier;
     }
 
-    private RegexSyntaxToken ReadBound()
+    private ScannedToken ReadBound()
     {
         var start = Scanner.Position;
         var overflowed = false;
@@ -419,7 +449,7 @@ internal abstract class RegexParser
             value = int.MaxValue;
         }
 
-        return Scanner.Token(RegexSyntaxKind.NumberToken, start, leadingTrivia: null, value.ToString(CultureInfo.InvariantCulture));
+        return Scanner.Token(SyntaxKind.NumberToken, start, leadingTrivia: null, value.ToString(CultureInfo.InvariantCulture));
     }
 
     /// <summary>Reads the <c>?</c> or <c>+</c> that makes a quantifier lazy or possessive.</summary>
@@ -427,20 +457,20 @@ internal abstract class RegexParser
     /// The engine scans trivia between the operator and the <c>?</c>, so <c>a{2,3} ?</c> is lazy in extended mode. The
     /// trivia becomes the modifier's leading trivia, which is where it round-trips from.
     /// </remarks>
-    private RegexSyntaxToken? ReadQuantifierModifier()
+    private ScannedToken ReadQuantifierModifier()
     {
         var triviaEnd = PeekTriviaEnd();
         var next = Scanner.CharAt(triviaEnd);
 
         var kind = next switch
         {
-            '?' when Dialect.HasFeature(RegexDialectFeatures.LazyQuantifiers) => RegexSyntaxKind.QuestionToken,
-            '+' when Dialect.HasFeature(RegexDialectFeatures.PossessiveQuantifiers) => RegexSyntaxKind.PlusToken,
-            _ => RegexSyntaxKind.None,
+            '?' when Dialect.HasFeature(RegexDialectFeatures.LazyQuantifiers) => SyntaxKind.QuestionToken,
+            '+' when Dialect.HasFeature(RegexDialectFeatures.PossessiveQuantifiers) => SyntaxKind.PlusToken,
+            _ => SyntaxKind.None,
         };
 
-        if (kind == RegexSyntaxKind.None)
-            return null;
+        if (kind == SyntaxKind.None)
+            return default;
 
         var trivia = TakeTrivia();
         var start = Scanner.Position;
@@ -482,16 +512,7 @@ internal abstract class RegexParser
 
     protected int PeekTriviaEnd() => Scanner.PeekTriviaEnd(Options, Dialect);
 
-    protected IReadOnlyList<RegexSyntaxTrivia> TakeTrivia() => Scanner.TakeTrivia(Options, Dialect);
-
-    /// <summary>Stamps the options in effect onto a node as it is built.</summary>
-    protected TNode WithOptions<TNode>(TNode node)
-        where TNode : RegexSyntaxNode
-    {
-        node.Options = Options;
-
-        return node;
-    }
+    protected GreenNode? TakeTrivia() => Scanner.TakeTrivia(Options, Dialect);
 
     protected void AddDiagnostic(TextSpan span, string id, string message) => Scanner.AddDiagnostic(span, id, message);
 
@@ -537,22 +558,22 @@ internal abstract class RegexParser
     protected void ExitRecursion() => _depth--;
 
     /// <summary>Folds everything that is left into one skipped-text atom so the pattern still round-trips.</summary>
-    protected RegexSkippedTextSyntax ConsumeRestAsText(int start, IReadOnlyList<RegexSyntaxTrivia>? leadingTrivia = null)
+    protected RegexSkippedTextSyntax ConsumeRestAsText(int start, GreenNode? leadingTrivia = null)
     {
         Scanner.Position = Text.Length;
 
-        return WithOptions(new RegexSkippedTextSyntax([Scanner.Token(RegexSyntaxKind.BadToken, start, leadingTrivia)], start));
+        return new RegexSkippedTextSyntax(Scanner.Token(SyntaxKind.BadToken, start, leadingTrivia), Options);
     }
 
     /// <summary>Builds a one-character skipped-text atom for input the grammar has no place for.</summary>
-    protected RegexSkippedTextSyntax SkipOneCharacter(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, string id, string message)
+    protected RegexSkippedTextSyntax SkipOneCharacter(GreenNode? leadingTrivia, string id, string message)
     {
         var start = Scanner.Position;
         Scanner.Position++;
-        var token = Scanner.Token(RegexSyntaxKind.BadToken, start, leadingTrivia);
+        var token = Scanner.Token(SyntaxKind.BadToken, start, leadingTrivia);
         AddDiagnostic(TextSpan.FromBounds(start, Scanner.Position), id, message);
 
-        return WithOptions(new RegexSkippedTextSyntax([token], token.FullSpan.Start));
+        return new RegexSkippedTextSyntax(token, Options);
     }
 
     private List<RegexCaptureInfo> BuildCaptures()

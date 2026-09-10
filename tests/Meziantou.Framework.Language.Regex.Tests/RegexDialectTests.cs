@@ -40,8 +40,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\(ab\)c", RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCapturingGroupSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        var group = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCapturingGroupSyntax>());
         Assert.Equal(@"\(ab\)", group.ToFullString());
         Assert.Equal(1, group.Number);
     }
@@ -51,8 +51,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(ab)c", RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
     }
 
     [Theory]
@@ -63,8 +63,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+        Assert.Empty(tree.GetDiagnostics());
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         Assert.Equal(min, quantified.Quantifier.MinCount);
         Assert.Equal(max, quantified.Quantifier.MaxCount);
     }
@@ -73,14 +73,14 @@ public sealed class RegexDialectTests
     public void PosixBasicSupportsTheGnuAlternationAndQuantifiers()
     {
         var alternation = RegexSyntaxAssert.TextIsFaithful(@"a\|b", RegexDialect.PosixBasic);
-        Assert.Empty(alternation.Diagnostics);
-        Assert.Equal(2, alternation.Root.Alternation.Branches.Count);
+        Assert.Empty(alternation.GetDiagnostics());
+        Assert.Equal(2, alternation.GetRoot().Alternation.Branches.Count);
 
         foreach (var pattern in new[] { @"a\+", @"a\?" })
         {
             var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PosixBasic);
-            Assert.Empty(tree.Diagnostics);
-            Assert.IsType<RegexQuantifiedSyntax>(tree.Root.Alternation.Branches[0].Terms[0]);
+            Assert.Empty(tree.GetDiagnostics());
+            Assert.IsType<RegexQuantifiedSyntax>(tree.GetRoot().Alternation.Branches[0].Terms[0]);
         }
     }
 
@@ -97,9 +97,9 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.HasCount(anchors, tree.Root.DescendantNodes().OfType<RegexAnchorSyntax>().ToArray());
-        Assert.HasCount(terms, tree.Root.Alternation.Branches[0].Terms);
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.HasCount(anchors, tree.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>().ToArray());
+        Assert.HasCount(terms, tree.GetRoot().Alternation.Branches[0].Terms);
     }
 
     [Fact]
@@ -107,8 +107,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\(a\)\1", RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Equal(1, Assert.Single(tree.Root.DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(1, Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexBackreferenceSyntax>()).Number);
     }
 
     [Fact]
@@ -116,9 +116,9 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(ab)c", RegexDialect.PosixBasic);
 
-        Assert.Empty(tree.Diagnostics);
-        Assert.Empty(tree.Root.DescendantNodes().OfType<RegexGroupSyntax>());
-        Assert.Equal(5, tree.Root.Alternation.Branches[0].Terms.Count);
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<RegexGroupSyntax>());
+        Assert.Equal(5, tree.GetRoot().Alternation.Branches[0].Terms.Count);
     }
 
     [Fact]
@@ -126,8 +126,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("a|b", RegexDialect.PosixBasic);
 
-        Assert.Single(tree.Root.Alternation.Branches);
-        Assert.Empty(tree.Root.Alternation.BarTokens);
+        Assert.Single(tree.GetRoot().Alternation.Branches);
+        Assert.Empty(tree.GetRoot().Alternation.BarTokens);
     }
 
     [Fact]
@@ -135,8 +135,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("(a|b)+", RegexDialect.PosixExtended);
 
-        Assert.Empty(tree.Diagnostics);
-        var group = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCapturingGroupSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        var group = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCapturingGroupSyntax>());
         Assert.Equal(2, group.Alternation.Branches.Count);
     }
 
@@ -146,11 +146,11 @@ public sealed class RegexDialectTests
     public void PosixBracketExpressionsAreRecognizedWhereTheDialectHasThem(string pattern, bool recognized)
     {
         var posix = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.PosixExtended);
-        Assert.Equal(recognized, posix.Root.DescendantNodes().OfType<RegexPosixCharacterClassSyntax>().Any());
+        Assert.Equal(recognized, posix.GetRoot().DescendantNodes().OfType<RegexPosixCharacterClassSyntax>().Any());
 
         // .NET has no bracket expressions, so the same text is an ordinary class of the characters it contains.
         var net = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
-        Assert.Empty(net.Root.DescendantNodes().OfType<RegexPosixCharacterClassSyntax>());
+        Assert.Empty(net.GetRoot().DescendantNodes().OfType<RegexPosixCharacterClassSyntax>());
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("[[:^alpha:]]", RegexDialect.PosixExtended);
 
-        var bracket = Assert.Single(tree.Root.DescendantNodes().OfType<RegexPosixCharacterClassSyntax>());
+        var bracket = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexPosixCharacterClassSyntax>());
         Assert.Equal("alpha", bracket.Name);
         Assert.True(bracket.IsNegated);
     }
@@ -167,34 +167,34 @@ public sealed class RegexDialectTests
     public void CharacterClassSubtractionIsRecognizedOnlyByNet()
     {
         var net = RegexSyntaxAssert.TextIsFaithful("[a-z-[aeiou]]", RegexDialect.Net);
-        Assert.Single(net.Root.DescendantNodes().OfType<RegexClassSubtractionSyntax>());
+        Assert.Single(net.GetRoot().DescendantNodes().OfType<RegexClassSubtractionSyntax>());
 
         // PCRE reads the same text as the class "[a-z-[aeiou]" followed by the literal "]".
         var pcre = RegexSyntaxAssert.TextIsFaithful("[a-z-[aeiou]]", RegexDialect.PcrePerl);
-        Assert.Empty(pcre.Root.DescendantNodes().OfType<RegexClassSubtractionSyntax>());
+        Assert.Empty(pcre.GetRoot().DescendantNodes().OfType<RegexClassSubtractionSyntax>());
     }
 
     [Fact]
     public void PossessiveQuantifiersAreRecognizedOnlyByPcre()
     {
         var pcre = RegexSyntaxAssert.TextIsFaithful("a*+", RegexDialect.PcrePerl);
-        var quantified = Assert.IsType<RegexQuantifiedSyntax>(pcre.Root.Alternation.Branches[0].Terms[0]);
+        var quantified = Assert.IsType<RegexQuantifiedSyntax>(pcre.GetRoot().Alternation.Branches[0].Terms[0]);
         Assert.Equal(RegexQuantifierMode.Possessive, quantified.Mode);
-        Assert.Empty(pcre.Diagnostics);
+        Assert.Empty(pcre.GetDiagnostics());
 
         // .NET has no possessive quantifiers, so the same text is a quantifier applied to a quantifier.
         var net = RegexSyntaxTree.ParseText("a*+", RegexDialect.Net);
-        Assert.Single(net.Diagnostics, diagnostic => diagnostic.Id == "REGEX0006");
+        Assert.Single(net.GetDiagnostics(), diagnostic => diagnostic.Id == "REGEX0006");
     }
 
     [Fact]
     public void JavaScriptHasNoStartOfInputAnchor()
     {
         var net = RegexSyntaxAssert.TextIsFaithful(@"\A", RegexDialect.Net);
-        Assert.Single(net.Root.DescendantNodes().OfType<RegexAnchorSyntax>());
+        Assert.Single(net.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
 
         var javaScript = RegexSyntaxAssert.TextIsFaithful(@"\A", RegexDialect.JavaScript);
-        Assert.Empty(javaScript.Root.DescendantNodes().OfType<RegexAnchorSyntax>());
+        Assert.Empty(javaScript.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
     }
 
     /// <summary>
@@ -210,8 +210,8 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.JavaScript);
 
-        Assert.Empty(tree.Diagnostics);
-        var characterClass = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        var characterClass = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
         Assert.Equal(negated, characterClass.IsNegated);
         Assert.Empty(characterClass.Members);
     }
@@ -221,7 +221,7 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful("[]", RegexDialect.Net);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0003");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0003");
     }
 
     /// <summary>
@@ -237,8 +237,8 @@ public sealed class RegexDialectTests
         var options = new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = RegexPatternOptions.Unicode };
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
-        Assert.Empty(tree.Diagnostics);
-        var escape = Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
+        Assert.Empty(tree.GetDiagnostics());
+        var escape = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>());
         Assert.Equal(value, escape.Value);
     }
 
@@ -252,7 +252,7 @@ public sealed class RegexDialectTests
         var options = new RegexParseOptions(RegexDialect.JavaScript) { PatternOptions = RegexPatternOptions.Unicode };
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
-        Assert.Contains(tree.Diagnostics, d => d.Id == "REGEX0012");
+        Assert.Contains(tree.GetDiagnostics(), d => d.Id == "REGEX0012");
     }
 
     /// <summary>Without Unicode mode the braces are a bound, not part of the escape, which is what the engines do.</summary>
@@ -261,7 +261,7 @@ public sealed class RegexDialectTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(@"\u{41}", RegexDialect.JavaScript);
 
-        Assert.DoesNotContain(tree.Root.DescendantNodes().OfType<RegexCharacterEscapeSyntax>(), e => e.Value == "A");
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes().OfType<RegexCharacterEscapeSyntax>(), e => e.Value == "A");
     }
 
     [Fact]
@@ -271,13 +271,13 @@ public sealed class RegexDialectTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(Literal);
         RegexSyntaxAssert.TextIsFaithful(Literal, tree);
 
-        Assert.True(tree.Root.IsJavaScriptLiteral);
-        Assert.Equal("/", tree.Root.OpenSlashToken?.Text);
-        Assert.Equal("/", tree.Root.CloseSlashToken?.Text);
-        Assert.Equal("giu", tree.Root.FlagsToken?.Text);
+        Assert.True(tree.GetRoot().IsJavaScriptLiteral);
+        Assert.Equal("/", tree.GetRoot().OpenSlashToken.Text);
+        Assert.Equal("/", tree.GetRoot().CloseSlashToken.Text);
+        Assert.Equal("giu", tree.GetRoot().FlagsToken.Text);
         Assert.Equal(RegexPatternOptions.Global | RegexPatternOptions.IgnoreCase | RegexPatternOptions.Unicode, tree.PatternOptions);
-        Assert.Equal(2, tree.Root.Alternation.Branches[0].Terms.Count);
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(2, tree.GetRoot().Alternation.Branches[0].Terms.Count);
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -287,8 +287,8 @@ public sealed class RegexDialectTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(Literal);
         RegexSyntaxAssert.TextIsFaithful(Literal, tree);
 
-        Assert.Equal("g", tree.Root.FlagsToken?.Text);
-        Assert.Single(tree.Root.DescendantNodes().OfType<RegexCharacterClassSyntax>());
+        Assert.Equal("g", tree.GetRoot().FlagsToken.Text);
+        Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexCharacterClassSyntax>());
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public sealed class RegexDialectTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral("/a/gq");
         RegexSyntaxAssert.TextIsFaithful("/a/gq", tree);
 
-        Assert.Single(tree.Diagnostics, diagnostic => diagnostic.Id == "REGEX0205");
+        Assert.Single(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "REGEX0205");
     }
 
     [Fact]
@@ -307,8 +307,8 @@ public sealed class RegexDialectTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral(Literal);
         RegexSyntaxAssert.TextIsFaithful(Literal, tree);
 
-        Assert.Equal(";", tree.Root.TrailingToken?.Text);
-        Assert.Single(tree.Diagnostics, diagnostic => diagnostic.Id == "REGEX0204");
+        Assert.Equal(";", tree.GetRoot().TrailingToken.Text);
+        Assert.Single(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "REGEX0204");
     }
 
     [Fact]
@@ -317,7 +317,7 @@ public sealed class RegexDialectTests
         var tree = RegexSyntaxTree.ParseJavaScriptLiteral("a+");
         RegexSyntaxAssert.TextIsFaithful("a+", tree);
 
-        Assert.False(tree.Root.IsJavaScriptLiteral);
-        Assert.Empty(tree.Diagnostics);
+        Assert.False(tree.GetRoot().IsJavaScriptLiteral);
+        Assert.Empty(tree.GetDiagnostics());
     }
 }

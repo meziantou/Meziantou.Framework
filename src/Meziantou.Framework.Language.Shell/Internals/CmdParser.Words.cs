@@ -1,4 +1,9 @@
-namespace Meziantou.Framework.Language.Shell.Internals;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Language.InternalSyntax;
+using GreenFactory = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax.SyntaxFactory;
+using Red = Meziantou.Framework.Language.Shell;
+
+namespace Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 /// <summary>Cmd words, variable references, trivia, and the shared token helpers.</summary>
 internal sealed partial class CmdParser
@@ -12,7 +17,7 @@ internal sealed partial class CmdParser
 
         while (!IsAtEnd && !IsWordBoundary(Current) && !IsAtEqualityOperator())
         {
-            var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _position);
+            var (trivia, fullStart) = isFirst ? TakeTrivia() : (null, _position);
             isFirst = false;
 
             var positionBefore = _position;
@@ -23,7 +28,7 @@ internal sealed partial class CmdParser
             }
         }
 
-        return new ShellWordSyntax(parts);
+        return new ShellWordSyntax(ParserHelpers.List(parts));
     }
 
     /// <summary>
@@ -42,7 +47,7 @@ internal sealed partial class CmdParser
             if (!inQuotes && (Current is '&' or '|' || (Current == ')' && _stopAtCloseParen)))
                 break;
 
-            var (trivia, fullStart) = isFirst ? TakeTrivia() : ([], _position);
+            var (trivia, fullStart) = isFirst ? TakeTrivia() : (null, _position);
             isFirst = false;
 
             var positionBefore = _position;
@@ -50,7 +55,7 @@ internal sealed partial class CmdParser
             {
                 inQuotes = !inQuotes;
                 _position++;
-                parts.Add(new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.DoubleQuoteToken, positionBefore, trivia, fullStart)));
+                parts.Add(new ShellLiteralWordPartSyntax(CreateToken(SyntaxKind.DoubleQuoteToken, positionBefore, trivia, fullStart)));
                 continue;
             }
 
@@ -68,10 +73,10 @@ internal sealed partial class CmdParser
             }
         }
 
-        return new ShellWordSyntax(parts);
+        return new ShellWordSyntax(ParserHelpers.List(parts));
     }
 
-    private ShellLiteralWordPartSyntax ParseSetValueLiteralRun(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart, bool inQuotes)
+    private ShellLiteralWordPartSyntax ParseSetValueLiteralRun(GreenNode? leadingTrivia, int fullStart, bool inQuotes)
     {
         var start = _position;
         while (!IsAtEnd
@@ -87,10 +92,10 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.GenericToken, start, leadingTrivia, fullStart));
+        return new ShellLiteralWordPartSyntax(CreateToken(SyntaxKind.GenericToken, start, leadingTrivia, fullStart));
     }
 
-    private ShellWordPartSyntax ParseWordPart(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseWordPart(GreenNode? leadingTrivia, int fullStart)
     {
         return Current switch
         {
@@ -114,7 +119,7 @@ internal sealed partial class CmdParser
         return scan < _text.Length && _text[scan] == '!' && scan > _position + 1;
     }
 
-    private ShellLiteralWordPartSyntax ParseLiteralRun(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellLiteralWordPartSyntax ParseLiteralRun(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _position;
         while (!IsAtEnd && !IsWordBoundary(Current) && !IsAtEqualityOperator() && Current is not '"' and not '^' and not '%' and not '!' and not '*' and not '?')
@@ -127,19 +132,19 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.GenericToken, start, leadingTrivia, fullStart));
+        return new ShellLiteralWordPartSyntax(CreateToken(SyntaxKind.GenericToken, start, leadingTrivia, fullStart));
     }
 
-    private ShellGlobSyntax ParseGlob(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellGlobSyntax ParseGlob(GreenNode? leadingTrivia, int fullStart)
     {
-        var kind = Current == '*' ? ShellSyntaxKind.AsteriskToken : ShellSyntaxKind.QuestionToken;
+        var kind = Current == '*' ? SyntaxKind.AsteriskToken : SyntaxKind.QuestionToken;
         var start = _position;
         _position++;
 
         return new ShellGlobSyntax(CreateToken(kind, start, leadingTrivia, fullStart));
     }
 
-    private ShellEscapeSequenceSyntax ParseEscapeSequence(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellEscapeSequenceSyntax ParseEscapeSequence(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _position;
         _position++;
@@ -160,14 +165,14 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new ShellEscapeSequenceSyntax(CreateToken(ShellSyntaxKind.EscapeToken, start, leadingTrivia, fullStart, value));
+        return new ShellEscapeSequenceSyntax(CreateToken(SyntaxKind.EscapeToken, start, leadingTrivia, fullStart, value));
     }
 
-    private ShellQuotedStringSyntax ParseQuotedString(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellQuotedStringSyntax ParseQuotedString(GreenNode? leadingTrivia, int fullStart)
     {
         var quoteStart = _position;
         _position++;
-        var openToken = CreateToken(ShellSyntaxKind.DoubleQuoteToken, quoteStart, leadingTrivia, fullStart);
+        var openToken = CreateToken(SyntaxKind.DoubleQuoteToken, quoteStart, leadingTrivia, fullStart);
 
         var parts = new List<ShellWordPartSyntax>();
         while (!IsAtEnd && Current != '"' && GetLineBreakLength(_position) == 0)
@@ -175,8 +180,8 @@ internal sealed partial class CmdParser
             var positionBefore = _position;
             parts.Add(Current switch
             {
-                '%' => ParsePercentReference([], _position),
-                '!' when _options.Dialect.HasFeature(ShellDialectFeatures.DelayedExpansion) && IsDelayedExpansion() => ParseDelayedReference([], _position),
+                '%' => ParsePercentReference(null, _position),
+                '!' when _options.Dialect.HasFeature(ShellDialectFeatures.DelayedExpansion) && IsDelayedExpansion() => ParseDelayedReference(null, _position),
                 _ => ParseQuotedLiteralRun(),
             });
 
@@ -186,20 +191,20 @@ internal sealed partial class CmdParser
             }
         }
 
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (IsAtEnd || Current != '"')
         {
             AddDiagnostic(openToken.Span, "SHELL0003", "Unterminated quoted string.");
-            closeToken = MissingToken(ShellSyntaxKind.DoubleQuoteToken, _position);
+            closeToken = MissingToken(SyntaxKind.DoubleQuoteToken, _position);
         }
         else
         {
             var closeStart = _position;
             _position++;
-            closeToken = CreateToken(ShellSyntaxKind.DoubleQuoteToken, closeStart, [], closeStart);
+            closeToken = CreateToken(SyntaxKind.DoubleQuoteToken, closeStart, null, closeStart);
         }
 
-        return new ShellQuotedStringSyntax(openToken, parts, closeToken);
+        return new ShellQuotedStringSyntax(openToken, ParserHelpers.List(parts), closeToken);
     }
 
     private ShellLiteralWordPartSyntax ParseQuotedLiteralRun()
@@ -217,14 +222,14 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.BareTextToken, start, [], start));
+        return new ShellLiteralWordPartSyntax(CreateToken(SyntaxKind.BareTextToken, start, null, start));
     }
 
     /// <summary>
     /// Reads <c>%VAR%</c>, a positional argument such as <c>%1</c> or <c>%~dp0</c>, or a loop variable <c>%%i</c>.
     /// A lone <c>%</c> that closes nothing stays literal text.
     /// </summary>
-    private ShellWordPartSyntax ParsePercentReference(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParsePercentReference(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _position;
 
@@ -233,17 +238,17 @@ internal sealed partial class CmdParser
         {
             _position += 2;
 
-            return new ShellEscapeSequenceSyntax(CreateToken(ShellSyntaxKind.EscapeToken, start, leadingTrivia, fullStart, "%"));
+            return new ShellEscapeSequenceSyntax(CreateToken(SyntaxKind.EscapeToken, start, leadingTrivia, fullStart, "%"));
         }
 
         // `%%i` is a for-loop variable inside a batch file.
         if (Peek(1) == '%')
         {
             _position += 2;
-            var openToken = CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
+            var openToken = CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
             var loopNameStart = _position;
             SkipArgumentSelector();
-            var loopNameToken = CreateToken(ShellSyntaxKind.VariableNameToken, loopNameStart, [], loopNameStart);
+            var loopNameToken = CreateToken(SyntaxKind.VariableNameToken, loopNameStart, null, loopNameStart);
 
             return new CmdVariableReferenceSyntax(openToken, loopNameToken, closeToken: null);
         }
@@ -252,10 +257,10 @@ internal sealed partial class CmdParser
         if (char.IsAsciiDigit(Peek(1)) || Peek(1) == '*' || Peek(1) == '~')
         {
             _position++;
-            var openToken = CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
+            var openToken = CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
             var argumentStart = _position;
             SkipArgumentSelector();
-            var argumentToken = CreateToken(ShellSyntaxKind.VariableNameToken, argumentStart, [], argumentStart);
+            var argumentToken = CreateToken(SyntaxKind.VariableNameToken, argumentStart, null, argumentStart);
 
             return new CmdVariableReferenceSyntax(openToken, argumentToken, closeToken: null);
         }
@@ -265,25 +270,25 @@ internal sealed partial class CmdParser
         {
             _position++;
 
-            return new ShellLiteralWordPartSyntax(CreateToken(ShellSyntaxKind.GenericToken, start, leadingTrivia, fullStart));
+            return new ShellLiteralWordPartSyntax(CreateToken(SyntaxKind.GenericToken, start, leadingTrivia, fullStart));
         }
 
         _position++;
-        var percentOpenToken = CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
+        var percentOpenToken = CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
         var nameStart = _position;
         _position = closingIndex;
-        var nameToken = CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, [], nameStart);
+        var nameToken = CreateToken(SyntaxKind.VariableNameToken, nameStart, null, nameStart);
         var closeStart = _position;
         _position++;
 
-        return new CmdVariableReferenceSyntax(percentOpenToken, nameToken, CreateToken(ShellSyntaxKind.BareTextToken, closeStart, [], closeStart));
+        return new CmdVariableReferenceSyntax(percentOpenToken, nameToken, CreateToken(SyntaxKind.BareTextToken, closeStart, null, closeStart));
     }
 
-    private CmdVariableReferenceSyntax ParseDelayedReference(IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart)
+    private CmdVariableReferenceSyntax ParseDelayedReference(GreenNode? leadingTrivia, int fullStart)
     {
         var start = _position;
         _position++;
-        var openToken = CreateToken(ShellSyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
+        var openToken = CreateToken(SyntaxKind.BareTextToken, start, leadingTrivia, fullStart);
 
         var nameStart = _position;
         while (!IsAtEnd && Current != '!' && GetLineBreakLength(_position) == 0)
@@ -291,18 +296,18 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        var nameToken = CreateToken(ShellSyntaxKind.VariableNameToken, nameStart, [], nameStart);
+        var nameToken = CreateToken(SyntaxKind.VariableNameToken, nameStart, null, nameStart);
 
-        ShellSyntaxToken closeToken;
+        ScannedToken closeToken;
         if (IsAtEnd || Current != '!')
         {
-            closeToken = MissingToken(ShellSyntaxKind.BareTextToken, _position);
+            closeToken = MissingToken(SyntaxKind.BareTextToken, _position);
         }
         else
         {
             var closeStart = _position;
             _position++;
-            closeToken = CreateToken(ShellSyntaxKind.BareTextToken, closeStart, [], closeStart);
+            closeToken = CreateToken(SyntaxKind.BareTextToken, closeStart, null, closeStart);
         }
 
         return new CmdVariableReferenceSyntax(openToken, nameToken, closeToken);
@@ -368,7 +373,7 @@ internal sealed partial class CmdParser
                     _position++;
                 }
 
-                _pendingTrivia.Add(new ShellSyntaxTrivia(ShellSyntaxKind.WhitespaceTrivia, _text[start.._position], start));
+                _pendingTrivia.Add(GreenFactory.Trivia(SyntaxKind.WhitespaceTrivia, _text[start.._position]));
                 continue;
             }
 
@@ -376,21 +381,21 @@ internal sealed partial class CmdParser
             if (Current == '^' && GetLineBreakLength(_position + 1) > 0)
             {
                 _position += 1 + GetLineBreakLength(_position + 1);
-                _pendingTrivia.Add(new ShellSyntaxTrivia(ShellSyntaxKind.LineContinuationTrivia, _text[start.._position], start));
+                _pendingTrivia.Add(GreenFactory.Trivia(SyntaxKind.LineContinuationTrivia, _text[start.._position]));
                 continue;
             }
 
             if (Current == ':' && Peek(1) == ':' && IsAtStatementStart(start))
             {
                 SkipToEndOfLine();
-                _pendingTrivia.Add(new ShellSyntaxTrivia(ShellSyntaxKind.CmdDoubleColonCommentTrivia, _text[start.._position], start));
+                _pendingTrivia.Add(GreenFactory.Trivia(SyntaxKind.CmdDoubleColonCommentTrivia, _text[start.._position]));
                 continue;
             }
 
             if (IsRemComment())
             {
                 SkipToEndOfLine();
-                _pendingTrivia.Add(new ShellSyntaxTrivia(ShellSyntaxKind.CmdRemCommentTrivia, _text[start.._position], start));
+                _pendingTrivia.Add(GreenFactory.Trivia(SyntaxKind.CmdRemCommentTrivia, _text[start.._position]));
                 continue;
             }
 
@@ -400,7 +405,7 @@ internal sealed partial class CmdParser
                 if (lineBreakLength > 0)
                 {
                     _position += lineBreakLength;
-                    _pendingTrivia.Add(new ShellSyntaxTrivia(ShellSyntaxKind.EndOfLineTrivia, _text[start.._position], start));
+                    _pendingTrivia.Add(GreenFactory.Trivia(SyntaxKind.EndOfLineTrivia, _text[start.._position]));
                     continue;
                 }
             }
@@ -465,28 +470,28 @@ internal sealed partial class CmdParser
     /// </summary>
     private int PendingFullStart => _pendingTrivia.Count == 0 ? _position : _pendingTriviaStart;
 
-    private (IReadOnlyList<ShellSyntaxTrivia> Trivia, int FullStart) TakeTrivia()
+    private (GreenNode? Trivia, int FullStart) TakeTrivia()
     {
         if (_pendingTrivia.Count == 0)
-            return ([], _position);
+            return (null, _position);
 
-        var trivia = _pendingTrivia.ToArray();
+        var trivia = GreenFactory.List(CollectionsMarshal.AsSpan(_pendingTrivia));
         var start = _pendingTriviaStart;
         _pendingTrivia.Clear();
 
         return (trivia, start);
     }
 
-    private ShellSyntaxToken CreateToken(ShellSyntaxKind kind, int tokenStart, IReadOnlyList<ShellSyntaxTrivia> leadingTrivia, int fullStart, string? valueText = null)
+    private ScannedToken CreateToken(SyntaxKind kind, int tokenStart, GreenNode? leadingTrivia, int fullStart, string? valueText = null)
     {
         _position = Math.Clamp(_position, 0, _text.Length);
         tokenStart = Math.Clamp(tokenStart, 0, _position);
         var text = _text[tokenStart.._position];
 
-        return new ShellSyntaxToken(kind, text, valueText ?? text, leadingTrivia: leadingTrivia, fullStart: fullStart);
+        return new ScannedToken(kind, text, valueText ?? text, leadingTrivia: leadingTrivia, fullStart: fullStart);
     }
 
-    private ShellSyntaxToken ReadToken(ShellSyntaxKind kind, int length)
+    private ScannedToken ReadToken(SyntaxKind kind, int length)
     {
         var (trivia, fullStart) = TakeTrivia();
         var start = _position;
@@ -517,27 +522,27 @@ internal sealed partial class CmdParser
         return PeekKeyword();
     }
 
-    private ShellSyntaxToken ReadKeyword()
+    private ScannedToken ReadKeyword()
     {
         AccumulateStatementTrivia();
         var keyword = PeekKeyword() ?? string.Empty;
 
-        return ReadToken(ShellSyntaxKind.KeywordToken, keyword.Length);
+        return ReadToken(SyntaxKind.KeywordToken, keyword.Length);
     }
 
-    private ShellSyntaxToken ExpectKeyword(string keyword)
+    private ScannedToken ExpectKeyword(string keyword)
     {
         AccumulateStatementTrivia();
         if (string.Equals(PeekKeyword(), keyword, StringComparison.Ordinal))
-            return ReadToken(ShellSyntaxKind.KeywordToken, keyword.Length);
+            return ReadToken(SyntaxKind.KeywordToken, keyword.Length);
 
         AddDiagnostic(new TextSpan(_position, 0), "SHELL0012", $"Expected '{keyword}'.");
         var (trivia, fullStart) = TakeTrivia();
 
-        return MissingToken(ShellSyntaxKind.KeywordToken, fullStart, trivia);
+        return MissingToken(SyntaxKind.KeywordToken, fullStart, trivia);
     }
 
-    private ShellSyntaxToken ExpectCharacter(char expected, ShellSyntaxKind kind)
+    private ScannedToken ExpectCharacter(char expected, SyntaxKind kind)
     {
         AccumulateStatementTrivia();
         if (Current == expected)
@@ -569,9 +574,7 @@ internal sealed partial class CmdParser
         _position = _text.Length;
         var text = _text[start..];
 
-        return new ShellSkippedTextSyntax(
-            [new ShellSyntaxToken(ShellSyntaxKind.BadToken, text, text, leadingTrivia: trivia, fullStart: fullStart)],
-            fullStart);
+        return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([new ScannedToken(SyntaxKind.BadToken, text, text, leadingTrivia: trivia, fullStart: fullStart)]));
     }
 
     private ShellSkippedTextSyntax ConsumeUnexpectedCharacter()
@@ -579,15 +582,15 @@ internal sealed partial class CmdParser
         var (trivia, fullStart) = TakeTrivia();
         var start = _position;
         _position = Math.Min(_position + 1, _text.Length);
-        var token = CreateToken(ShellSyntaxKind.BadToken, start, trivia, fullStart);
+        var token = CreateToken(SyntaxKind.BadToken, start, trivia, fullStart);
         AddDiagnostic(token.Span, "SHELL0002", $"Unexpected '{token.Text}'.");
 
-        return new ShellSkippedTextSyntax([token], fullStart);
+        return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([token]));
     }
 
-    private static ShellSyntaxToken MissingToken(ShellSyntaxKind kind, int position, IReadOnlyList<ShellSyntaxTrivia>? leadingTrivia = null)
+    private static ScannedToken MissingToken(SyntaxKind kind, int position, GreenNode? leadingTrivia = null)
     {
-        return new ShellSyntaxToken(kind, string.Empty, string.Empty, isMissing: true, leadingTrivia: leadingTrivia, fullStart: position);
+        return new ScannedToken(kind, string.Empty, string.Empty, isMissing: true, leadingTrivia: leadingTrivia, fullStart: position);
     }
 
     private void AddDiagnostic(TextSpan span, string id, string message)

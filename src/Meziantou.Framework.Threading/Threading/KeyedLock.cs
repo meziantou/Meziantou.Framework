@@ -49,7 +49,8 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     /// <returns>A disposable object. Disposing the object releases the lock.</returns>
     /// <remarks>
     /// The returned object must be disposed on the thread that called this method. Disposing it on another thread
-    /// throws <see cref="SynchronizationLockException"/> and leaves the underlying lock held.
+    /// throws <see cref="SynchronizationLockException"/> and leaves the underlying lock held; the object is not
+    /// consumed by such a failed disposal, so the owning thread can still dispose it to release the lock.
     /// </remarks>
     public IDisposable Lock(TKey key)
     {
@@ -60,17 +61,13 @@ public sealed class KeyedLock<TKey> where TKey : notnull
 
     private void Release(TKey key, Entry entry)
     {
-        try
-        {
-            entry.Lock.Exit();
-        }
-        finally
-        {
-            // The reference count must be released even when Exit throws, which happens when the lease is
-            // disposed on a thread that does not own the lock. Skipping it would leave the entry in the
-            // table forever and permanently deadlock every later acquisition of the same key.
-            _locks.Release(key, entry);
-        }
+        // Exit throws when the lease is disposed on a thread that does not own the lock. The lock is then
+        // still held by the owning thread, so the reservation must stay: releasing it could evict the entry
+        // and let another thread acquire a brand new lock for the same key while the critical section is
+        // still running. The lease stays undisposed so the owning thread can release the lock afterwards.
+        entry.Lock.Exit();
+
+        _locks.Release(key, entry);
     }
 
     private sealed class Entry : KeyedEntry
@@ -96,8 +93,10 @@ public sealed class KeyedLock<TKey> where TKey : notnull
         {
             if (!_disposed)
             {
-                _disposed = true;
+                // Only mark the lease as disposed once the lock is actually released, so a failed release
+                // (disposal on the wrong thread) can still be retried from the thread that owns the lock.
                 _owner.Release(_key, _entry);
+                _disposed = true;
             }
         }
     }

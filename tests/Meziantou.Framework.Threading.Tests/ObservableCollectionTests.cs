@@ -326,6 +326,35 @@ public sealed partial class ObservableCollectionTests : IDisposable
     }
 
     [Fact]
+    public void ChangesAreNotifiedAfterTheSynchronizationContextRejectedAPost()
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<int>(context);
+            var observable = collection.AsObservable;
+            using var eventAssert = new EventAssert(observable);
+
+            context.RejectPost = true;
+            Assert.IsType<InvalidOperationException>(RunOnAnotherThread(() => collection.Add(1)));
+
+            context.RejectPost = false;
+            Assert.Null(RunOnAnotherThread(() => collection.Add(2)));
+
+            // The notification of the first item was queued and is raised by the post of the second one
+            Assert.Equal(1, context.Run());
+            Assert.Equal([1, 2], observable.ToList());
+            Assert.HasCount(2, eventAssert.CollectionChangedArgs);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
     public void ObservableCollectionCannotBeAccessedFromAnotherThread()
     {
         var observable = CreateCollection<int>().AsObservable;
@@ -388,11 +417,41 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
+    /// <summary>Runs <paramref name="action"/> on a thread with no synchronization context and returns the exception it threw, if any.</summary>
+    private static Exception? RunOnAnotherThread(Action action)
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        });
+
+        thread.Start();
+        thread.Join();
+        return exception;
+    }
+
     private sealed class QueuedSynchronizationContext : SynchronizationContext
     {
         private readonly System.Collections.Concurrent.ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();
 
-        public override void Post(SendOrPostCallback d, object? state) => _callbacks.Enqueue((d, state));
+        /// <summary>When set to <see langword="true"/>, <see cref="Post"/> throws instead of queuing the callback.</summary>
+        public bool RejectPost { get; set; }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            if (RejectPost)
+                throw new InvalidOperationException("The synchronization context cannot accept the callback");
+
+            _callbacks.Enqueue((d, state));
+        }
 
         /// <summary>Runs the pending callbacks and returns how many were executed.</summary>
         public int Run()

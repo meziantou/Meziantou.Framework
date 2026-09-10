@@ -885,4 +885,75 @@ public sealed class YamlWriterTests
 
         public List<string>? Tags { get; set; }
     }
+
+    [Fact]
+    public void RootScalar_QuotesDocumentMarkers()
+    {
+        var cases = new (string Value, string ExpectedYaml)[]
+        {
+            ("---", "\"---\""),
+            ("--- hello", "\"--- hello\""),
+            ("---\thello", "\"---\\thello\""),
+            ("...", "\"...\""),
+            ("... hello", "\"... hello\""),
+            // A marker ends at the end of the line or at a separation character, so these are plain scalars.
+            ("---hello", "---hello"),
+            ("...hello", "...hello"),
+            ("a --- b", "a --- b"),
+        };
+
+        foreach (var (value, expectedYaml) in cases)
+        {
+            Assert.Equal(expectedYaml + "\n", YamlSerializer.Serialize(value), value);
+            Assert.Equal(value, YamlSerializer.Deserialize<string>(YamlSerializer.Serialize(value)), value);
+        }
+    }
+
+    [Fact]
+    public void RootScalar_QuotesDocumentMarkersWhenPlainStyleIsPreferred()
+    {
+        var options = new YamlSerializerOptions
+        {
+            ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Plain },
+        };
+
+        foreach (var value in new[] { "---", "--- hello", "...", "... hello" })
+        {
+            var yaml = YamlSerializer.Serialize(value, options);
+            Assert.Equal("\"" + value + "\"\n", yaml, value);
+            Assert.Equal(value, YamlSerializer.Deserialize<string>(yaml, options), value);
+        }
+    }
+
+    [Fact]
+    public void MappingKey_QuotesDocumentMarkers()
+    {
+        var value = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["--- x"] = "v",
+        };
+
+        var yaml = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteIndented = true });
+
+        Assert.Equal("\"--- x\": v\n", yaml);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
+        Assert.NotNull(roundTrip);
+        Assert.Equal("v", roundTrip["--- x"]);
+    }
+
+    [Fact]
+    public void MappingKey_QuotesTheMergeKey()
+    {
+        var value = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["<<"] = "hello",
+        };
+
+        var yaml = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteIndented = true });
+
+        Assert.Equal("\"<<\": hello\n", yaml);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
+        Assert.NotNull(roundTrip);
+        Assert.Equal("hello", roundTrip["<<"]);
+    }
 }

@@ -43,7 +43,8 @@ public sealed class YamlMergeKeyTests
         var result = YamlSerializer.Deserialize<Dictionary<string, int>>(yaml);
 
         Assert.NotNull(result);
-        Assert.Equal(2, result["a"]);
+        // The merge extension gives mappings earlier in the sequence precedence over later ones.
+        Assert.Equal(1, result["a"]);
         Assert.Equal(3, result["b"]);
         Assert.Equal(4, result["c"]);
     }
@@ -242,6 +243,104 @@ public sealed class YamlMergeKeyTests
         public Dictionary<string, int>? Defaults { get; set; }
 
         public Section? Prod { get; set; }
+    }
+
+    [Fact]
+    public void Deserialize_Object_ShouldApplyMergeSequenceInOrder()
+    {
+        var yaml =
+            "<<:\n" +
+            "  - { A: 1 }\n" +
+            "  - { A: 2, B: 3 }\n";
+
+        var result = YamlSerializer.Deserialize<MergePayload>(yaml);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.A);
+        Assert.Equal(3, result.B);
+    }
+
+    [Fact]
+    public void Deserialize_UntypedObject_ShouldApplyMergeSequenceInOrder()
+    {
+        var yaml =
+            "<<:\n" +
+            "  - { a: 1 }\n" +
+            "  - { a: 2, b: 3 }\n";
+
+        var result = YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml);
+
+        Assert.NotNull(result);
+        Assert.Equal(1L, result["a"]);
+        Assert.Equal(3L, result["b"]);
+    }
+
+    [Fact]
+    public void Deserialize_Dictionary_ShouldApplyMergeAliasSequenceInOrder()
+    {
+        var yaml =
+            "first: &f { a: 1 }\n" +
+            "second: &s { a: 2, b: 3 }\n" +
+            "merged:\n" +
+            "  <<: [*f, *s]\n";
+
+        var result = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result["merged"]["a"]);
+        Assert.Equal(3, result["merged"]["b"]);
+    }
+
+    [Fact]
+    public void Deserialize_Dictionary_ExplicitKeyWinsOverMergeWhateverItsPosition()
+    {
+        var before = YamlSerializer.Deserialize<Dictionary<string, int>>("a: 5\n<<: { a: 1 }\n");
+        var after = YamlSerializer.Deserialize<Dictionary<string, int>>("<<: { a: 1 }\na: 5\n");
+
+        Assert.NotNull(before);
+        Assert.NotNull(after);
+        Assert.Equal(5, before["a"]);
+        Assert.Equal(5, after["a"]);
+    }
+
+    [Theory]
+    [InlineData("'<<': hello\n")]
+    [InlineData("\"<<\": hello\n")]
+    [InlineData("!!str << : hello\n")]
+    public void Deserialize_Dictionary_QuotedOrTaggedMergeKeyIsAnOrdinaryKey(string yaml)
+    {
+        var result = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
+
+        Assert.NotNull(result);
+        Assert.Equal("hello", result["<<"]);
+    }
+
+    [Theory]
+    [InlineData("'<<': hello\n")]
+    [InlineData("\"<<\": hello\n")]
+    public void Deserialize_UntypedObject_QuotedMergeKeyIsAnOrdinaryKey(string yaml)
+    {
+        var result = YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml);
+
+        Assert.NotNull(result);
+        Assert.Equal("hello", result["<<"]);
+    }
+
+    [Fact]
+    public void Serialize_Dictionary_WithMergeKeyName_RoundTrips()
+    {
+        var value = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["<<"] = "hello",
+            ["other"] = "world",
+        };
+
+        var yaml = YamlSerializer.Serialize(value);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal("hello", roundTrip["<<"]);
+        Assert.Equal("world", roundTrip["other"]);
     }
 }
 

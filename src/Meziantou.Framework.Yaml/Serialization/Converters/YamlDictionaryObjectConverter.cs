@@ -46,7 +46,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
         var options = reader.Options;
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var dict = new Dictionary<string, object?>(comparer);
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
         if (reader.ReferenceReader is not null && anchor is not null)
@@ -61,10 +61,11 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMerge(reader, dict, explicitKeys);
                 continue;
@@ -169,11 +170,15 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
 
+    /// <remarks>
+    /// A key an earlier mapping of the merge already provided keeps its value, so the merged key is recorded
+    /// alongside the explicitly declared ones.
+    /// </remarks>
     private static void ApplyMergeDictionary(Dictionary<string, object?> target, Dictionary<string, object?> merged, HashSet<string>? explicitKeys)
     {
         foreach (var pair in merged)
         {
-            if (explicitKeys is not null && explicitKeys.Contains(pair.Key))
+            if (explicitKeys is not null && !explicitKeys.Add(pair.Key))
             {
                 continue;
             }
@@ -207,7 +212,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
 
         var options = reader.Options;
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
@@ -223,10 +228,11 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMerge(reader, dictionary, explicitKeys);
                 continue;

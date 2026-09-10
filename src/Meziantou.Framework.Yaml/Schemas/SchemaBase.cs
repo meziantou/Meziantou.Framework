@@ -140,8 +140,8 @@ public abstract class SchemaBase : IYamlSchema
         defaultTag = null;
         value = null;
 
-        // DoubleQuoted and SingleQuoted string are always decoded
-        if (scalar.Style == ScalarStyle.DoubleQuoted || scalar.Style == ScalarStyle.SingleQuoted)
+        // Implicit tag resolution only applies to plain scalars: an untagged quoted, literal, or folded scalar is a string.
+        if (!IsPlainStyle(scalar.Style))
         {
             defaultTag = StrShortTag;
             if (decodeValue)
@@ -188,9 +188,14 @@ public abstract class SchemaBase : IYamlSchema
 
         value = null;
 
-        // DoubleQuoted and SingleQuoted string are always decoded
-        if (type == typeof(string) && (scalar.Style == ScalarStyle.DoubleQuoted || scalar.Style == ScalarStyle.SingleQuoted))
+        // Implicit tag resolution only applies to plain scalars: an untagged quoted, literal, or folded scalar is a string.
+        if (!IsPlainStyle(scalar.Style))
         {
+            if (type != typeof(string))
+            {
+                return false;
+            }
+
             value = scalar.Value;
             return true;
         }
@@ -232,6 +237,8 @@ public abstract class SchemaBase : IYamlSchema
     protected virtual void PrepareScalarRules()
     {
     }
+
+    private static bool IsPlainStyle(ScalarStyle style) => style is ScalarStyle.Any or ScalarStyle.Plain;
 
     /// <summary>
     /// Add a tag resolution rule that is invoked when <paramref name="regex" /> matches

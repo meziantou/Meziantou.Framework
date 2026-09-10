@@ -108,20 +108,13 @@ public class JsonSchema : FailsafeSchema
     }
 
     /// <summary>Decodes a matched integer scalar into an <see cref="int"/>, <see cref="long"/>, or <see cref="ulong"/>.</summary>
+    /// <remarks>
+    /// A scalar too large for any of those types is decoded as a <see cref="double"/>: tag resolution classifies a
+    /// scalar by its spelling, so an unrepresentable value must not fail the surrounding <c>TryParse</c> call.
+    /// </remarks>
     protected static object DecodeInteger(Match m)
     {
-        var valueStr = m.Value.Replace("_", "", StringComparison.Ordinal);
-        // Try plain native int first
-        if (int.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
-        {
-            return value;
-        }
-        // Else long
-        if (long.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long result))
-        {
-            return result;
-        }
-        // Else ulong
-        return ulong.Parse(valueStr, CultureInfo.InvariantCulture);
+        ArgumentNullException.ThrowIfNull(m);
+        return SchemaScalarDecoder.DecodeInteger(m.Value);
     }
 }

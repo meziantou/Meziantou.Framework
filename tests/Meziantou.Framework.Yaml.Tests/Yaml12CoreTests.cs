@@ -166,9 +166,19 @@ public sealed class Yaml12CoreTests
     }
 
     [Fact]
-    public void CoreSchema_IntegersWithUnderscores()
+    public void CoreSchema_IntegersWithUnderscoresAreStrings()
     {
+        // Underscore separators are a YAML 1.1 spelling that the core schema does not resolve as an integer.
         var schema = new CoreSchema();
+        Assert.True(schema.TryParse(new Scalar("1_000"), true, out var tag, out var val));
+        Assert.Equal(SchemaBase.StrShortTag, tag);
+        Assert.Equal("1_000", val);
+    }
+
+    [Fact]
+    public void ExtendedSchema_IntegersWithUnderscores()
+    {
+        var schema = new ExtendedSchema();
         Assert.True(schema.TryParse(new Scalar("1_000"), true, out var tag, out var val));
         Assert.Equal(JsonSchema.IntShortTag, tag);
         Assert.Equal(1000, val);
@@ -1224,5 +1234,82 @@ public sealed class Yaml12CoreTests
     {
         var scalar = events.OfType<Scalar>().FirstOrDefault(s => s.Value == expectedValue);
         Assert.NotNull(scalar, $"Expected scalar '{expectedValue}' not found");
+    }
+
+    [Theory]
+    // 10.3.2 Tag Resolution: base 10 integers accept a sign and leading zeros.
+    [InlineData("0", JsonSchema.IntShortTag, 0)]
+    [InlineData("12", JsonSchema.IntShortTag, 12)]
+    [InlineData("012", JsonSchema.IntShortTag, 12)]
+    [InlineData("00", JsonSchema.IntShortTag, 0)]
+    [InlineData("-012", JsonSchema.IntShortTag, -12)]
+    [InlineData("+012", JsonSchema.IntShortTag, 12)]
+    // Base 8 and base 16 accept neither a sign nor leading zeros before the prefix.
+    [InlineData("0o10", JsonSchema.IntShortTag, 8)]
+    [InlineData("0x10", JsonSchema.IntShortTag, 16)]
+    [InlineData("0xFF", JsonSchema.IntShortTag, 255)]
+    // Spellings the core schema does not resolve as integers.
+    [InlineData("-0x10", SchemaBase.StrShortTag, "-0x10")]
+    [InlineData("-0o10", SchemaBase.StrShortTag, "-0o10")]
+    [InlineData("0b101", SchemaBase.StrShortTag, "0b101")]
+    [InlineData("1_000", SchemaBase.StrShortTag, "1_000")]
+    [InlineData("0x_10", SchemaBase.StrShortTag, "0x_10")]
+    public void CoreSchema_IntegerSpellings(string text, string expectedTag, object expectedValue)
+    {
+        var schema = new CoreSchema();
+
+        Assert.True(schema.TryParse(new Scalar(text), true, out var tag, out var value), text);
+        Assert.Equal(expectedTag, tag, text);
+        Assert.Equal(expectedValue, value, text);
+    }
+
+    [Fact]
+    public void CoreSchema_IntegerBeyondUInt64IsResolvedWithoutThrowing()
+    {
+        var schema = new CoreSchema();
+
+        Assert.True(schema.TryParse(new Scalar("79228162514264337593543950335"), true, out var tag, out var value));
+        Assert.Equal(JsonSchema.IntShortTag, tag);
+        Assert.Equal(79228162514264337593543950335d, value);
+    }
+
+    [Theory]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    public void CoreSchema_NonPlainScalarsAreStrings(ScalarStyle style)
+    {
+        var schema = new CoreSchema();
+
+        foreach (var text in new[] { "true", "null", "~", "123", "1.5", ".inf" })
+        {
+            var scalar = new Scalar(null, null, text, style, isPlainImplicit: false, isQuotedImplicit: true);
+            Assert.True(schema.TryParse(scalar, true, out var tag, out var value), text);
+            Assert.Equal(SchemaBase.StrShortTag, tag, text);
+            Assert.Equal(text, value, text);
+        }
+    }
+
+    [Fact]
+    public void ExtendedSchema_IntegersBeyondInt32()
+    {
+        var schema = new ExtendedSchema();
+
+        Assert.True(schema.TryParse(new Scalar("0xFFFFFFFF"), true, out _, out var hex));
+        Assert.Equal(4294967295L, hex);
+
+        Assert.True(schema.TryParse(new Scalar("0xFFFFFFFFFFFFFFFFFF"), true, out var tag, out _));
+        Assert.Equal(JsonSchema.IntShortTag, tag);
+    }
+
+    [Fact]
+    public void ExtendedSchema_BareLeadingZeroIntegersAreOctal()
+    {
+        var schema = new ExtendedSchema();
+
+        Assert.True(schema.TryParse(new Scalar("010"), true, out var tag, out var value));
+        Assert.Equal(JsonSchema.IntShortTag, tag);
+        Assert.Equal(8, value);
     }
 }

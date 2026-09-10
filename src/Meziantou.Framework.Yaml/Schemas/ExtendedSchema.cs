@@ -44,22 +44,10 @@ public class ExtendedSchema : CoreSchema
     protected override void PrepareScalarRules()
     {
         AddScalarRule<object>("!!null", @"null|Null|NULL|\~|", m => null, null);
-        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?(0|[1-9][0-9_]*))", JsonSchema.DecodeInteger, null);
-        AddScalarRule("!!int", @"([-+]?)0b([01_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 2);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
-        AddScalarRule("!!int", @"([-+]?)0o?([0-7_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 8);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
-        AddScalarRule("!!int", @"([-+]?)0x([0-9a-fA-F_]+)", m =>
-        {
-            var v = Convert.ToInt32(m.Groups[2].Value.Replace("_", "", StringComparison.Ordinal), 16);
-            return m.Groups[1].Value == "-" ? -v : v;
-        }, null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?(0|[1-9][0-9_]*))", m => SchemaScalarDecoder.DecodeInteger(m.Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0b([01_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0b", m.Groups[2].Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0o?([0-7_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0o", m.Groups[2].Value), null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"([-+]?)0x([0-9a-fA-F_]+)", m => SchemaScalarDecoder.DecodeInteger(m.Groups[1].Value, "0x", m.Groups[2].Value), null);
         // http://yaml.org/type/float.html is wrong  => [0-9.] should be [0-9_]
         AddScalarRule("!!float", @"[-+]?(0|[1-9][0-9_]*)\.[0-9_]*([eE][-+]?[0-9]+)?",
             m => Convert.ToDouble(m.Value.Replace("_", "", StringComparison.Ordinal), CultureInfo.InvariantCulture), null);

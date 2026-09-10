@@ -85,4 +85,58 @@ public class YamlSyntaxTreeTests
         Assert.True(ex.Start.Index >= 0);
         Assert.True(ex.End.Index >= ex.Start.Index);
     }
+
+    [Fact]
+    public void ParseDoesNotTreatAHashInsideAQuotedScalarAsAComment()
+    {
+        const string Yaml = "value: \"a#b\" # real\n";
+        var tree = YamlSyntaxTree.Parse(Yaml);
+
+        var comment = Assert.Single(tree.Tokens, token => token.Kind is YamlSyntaxKind.CommentTrivia);
+        Assert.Equal("# real", comment.Text);
+        Assert.Equal(13, comment.Span.Start.Index);
+        Assert.Equal(19, comment.Span.End.Index);
+
+        var scalars = tree.Tokens.Where(token => token.Kind is YamlSyntaxKind.Scalar).ToArray();
+        Assert.Equal("\"a#b\"", scalars[1].Text);
+        Assert.Equal(7, scalars[1].Span.Start.Index);
+        Assert.Equal(12, scalars[1].Span.End.Index);
+    }
+
+    [Fact]
+    public void ParseDoesNotTreatAHashInsideAPlainScalarAsAComment()
+    {
+        const string Yaml = "value: a#b\n";
+        var tree = YamlSyntaxTree.Parse(Yaml);
+
+        Assert.DoesNotContain(tree.Tokens, token => token.Kind is YamlSyntaxKind.CommentTrivia);
+    }
+
+    [Fact]
+    public void ParseDoesNotTreatABlockScalarBodyAsTrivia()
+    {
+        const string Yaml = "a: |\n  x#y\n  z\nb: 1 # c\n";
+        var tree = YamlSyntaxTree.Parse(Yaml);
+
+        var comment = Assert.Single(tree.Tokens, token => token.Kind is YamlSyntaxKind.CommentTrivia);
+        Assert.Equal("# c", comment.Text);
+
+        // The block scalar body is covered by its scalar token, so its indentation is not whitespace trivia either.
+        Assert.DoesNotContain(tree.Tokens, token =>
+            token.Kind is YamlSyntaxKind.WhitespaceTrivia &&
+            token.Span.Start.Index >= 4 &&
+            token.Span.Start.Index < 15);
+    }
+
+    [Fact]
+    public void ParseKeepsTriviaSpansOutsideOfScannerTokens()
+    {
+        const string Yaml = "key: value # c\n";
+        var tree = YamlSyntaxTree.Parse(Yaml);
+
+        foreach (var trivia in tree.Tokens.Where(token => token.Kind is YamlSyntaxKind.WhitespaceTrivia or YamlSyntaxKind.NewLineTrivia or YamlSyntaxKind.CommentTrivia))
+        {
+            Assert.Equal(Yaml[trivia.Span.Start.Index..trivia.Span.End.Index], trivia.Text);
+        }
+    }
 }

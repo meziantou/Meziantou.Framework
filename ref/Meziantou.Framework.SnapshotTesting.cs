@@ -266,6 +266,8 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public string? TestName { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata { get => throw null; init { } }
+        public string? ClassName { get => throw null; init { } }
+        public string? MethodName { get => throw null; init { } }
         public SnapshotTestContext(string? TestName = null, System.Collections.Generic.IReadOnlyDictionary<string, string?>? Metadata = null) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotTestContext? left, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? right) => throw null;

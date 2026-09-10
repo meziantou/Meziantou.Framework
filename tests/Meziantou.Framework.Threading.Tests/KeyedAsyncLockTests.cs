@@ -118,4 +118,29 @@ public sealed class KeyedAsyncLockTests
         // The key is never reserved, so there is nothing to evict.
         Assert.Equal(0, locks.EntryCount);
     }
+
+    [Fact]
+    public async Task Dispose_LeaseTwice_DoesNotReleaseTheNextAcquisition()
+    {
+        var locks = new KeyedAsyncLock<string>(StringComparer.Ordinal);
+        var stale = await locks.LockAsync("key");
+
+        // Queue a second acquisition so the entry stays alive across the release, which makes the stale disposal
+        // target the very entry that is still in use.
+        var pending = locks.LockAsync("key").AsTask();
+        stale.Dispose();
+        var held = await pending.WaitAsync(TimeSpan.FromSeconds(30));
+
+        stale.Dispose();
+
+        // The stale disposal must neither release the key nor drop the reference count of the live entry, which
+        // would evict it and let another caller acquire a brand new lock for the same key.
+        Assert.Equal(1, locks.EntryCount);
+        var blocked = locks.LockAsync("key").AsTask();
+        Assert.False(blocked.IsCompleted, "The second disposal released a lock it no longer owns");
+
+        held.Dispose();
+        (await blocked.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+        Assert.Equal(0, locks.EntryCount);
+    }
 }

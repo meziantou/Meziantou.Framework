@@ -240,4 +240,46 @@ public class AsyncLockTests
     {
         default(AsyncLock.AsyncLockLease).Dispose();
     }
+
+    [Fact]
+    public async Task Dispose_LeaseTwice_DoesNotReleaseTheNextAcquisition()
+    {
+        var asyncLock = new AsyncLock();
+        var lease = await asyncLock.LockAsync();
+        lease.Dispose();
+
+        using var held = await asyncLock.LockAsync();
+        lease.Dispose();
+
+        Assert.False(asyncLock.TryLock(out _), "The second disposal released a lock it no longer owns");
+    }
+
+    [Fact]
+    public void Dispose_CopyOfAnAlreadyDisposedLease_DoesNotReleaseTheNextAcquisition()
+    {
+        var asyncLock = new AsyncLock();
+        Assert.True(asyncLock.TryLock(out var lease));
+        var copy = lease;
+        lease.Dispose();
+
+        Assert.True(asyncLock.TryLock(out _));
+        copy.Dispose();
+
+        Assert.False(asyncLock.TryLock(out _), "Disposing a stale copy released a lock it no longer owns");
+    }
+
+    [Fact]
+    public async Task Dispose_LeaseTwice_GrantsTheLockToASingleWaiter()
+    {
+        var asyncLock = new AsyncLock();
+        var lease = await asyncLock.LockAsync();
+        var first = asyncLock.LockAsync().AsTask();
+        var second = asyncLock.LockAsync().AsTask();
+
+        lease.Dispose();
+        lease.Dispose();
+
+        using var granted = await first.WaitAsync(Timeout);
+        Assert.False(second.IsCompleted, "The second disposal granted the lock to a second waiter");
+    }
 }

@@ -166,13 +166,18 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
                 scheduler);
         }
 
+        // Captured here rather than after the await: the worker thread is dead by then, and the CLR recycles the
+        // managed thread id of a dead thread, so the continuation can run on a pool thread reporting the worker's
+        // old id. This thread is alive while the tasks run, so the worker cannot be holding its id.
+        var disposingThreadId = Environment.CurrentManagedThreadId;
+
         scheduler.Dispose();
 
         await Task.WhenAll(queued).WaitAsync(TimeSpan.FromSeconds(30));
 
         Assert.HasCount(6, threadIds);
         Assert.Single(threadIds.Distinct());
-        Assert.DoesNotContain(Environment.CurrentManagedThreadId, threadIds);
+        Assert.DoesNotContain(disposingThreadId, threadIds);
     }
 
     [Fact]

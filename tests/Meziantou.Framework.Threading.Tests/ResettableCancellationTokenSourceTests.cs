@@ -63,6 +63,57 @@ public sealed class ResettableCancellationTokenSourceTests
     }
 
     [Fact]
+    public void Dispose_DisposesTheUnderlyingSource_WhenACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+
+        // The underlying source must be disposed even though the callback threw, otherwise the resources it holds
+        // (such as an allocated wait handle) stay alive until the finalizer runs.
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        Assert.Throws<ObjectDisposedException>(cts.Reset);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Dispose_IsIdempotent_AfterACancellationCallbackThrows()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+        cts.Token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Dispose);
+        cts.Dispose();
+    }
+
+    [Fact]
+    public void Reset_ProducesAFreshToken_WhenACancellationCallbackThrows()
+    {
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        var token = cts.Token;
+        token.Register(() => throw new InvalidOperationException("callback"));
+
+        Assert.Throws<AggregateException>(cts.Reset);
+
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+        Assert.False(cts.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Reset_IsAbandoned_WhenACancellationCallbackDisposesTheInstance()
+    {
+        var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset);
+        cts.Token.Register(cts.Dispose);
+
+        cts.Reset();
+
+        Assert.Throws<ObjectDisposedException>(() => cts.Token);
+        cts.Dispose();
+    }
+
+    [Fact]
     public void Reset_AfterDispose_Throws()
     {
         var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.None);

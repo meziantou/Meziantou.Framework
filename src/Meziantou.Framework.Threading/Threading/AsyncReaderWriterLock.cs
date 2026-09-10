@@ -141,31 +141,36 @@ public sealed class AsyncReaderWriterLock
     private void ReaderRelease()
     {
         List<Waiter>? toWake;
+        Waiter? single;
         lock (_lock)
         {
             _status -= 1;
-            toWake = GrantOwnership();
+            toWake = GrantOwnership(out single);
         }
 
-        CompleteWaiters(toWake);
+        CompleteWaiters(toWake, single);
     }
 
     private void WriterRelease()
     {
         List<Waiter>? toWake;
+        Waiter? single;
         lock (_lock)
         {
             _status = 0;
-            toWake = GrantOwnership();
+            toWake = GrantOwnership(out single);
         }
 
-        CompleteWaiters(toWake);
+        CompleteWaiters(toWake, single);
     }
 
     /// <summary>Hands the free lock to the next waiters. Must be called while holding <see cref="_lock"/>; the
-    /// returned waiters are completed outside it.</summary>
-    private List<Waiter>? GrantOwnership()
+    /// returned waiters are completed outside it. Granting to a single writer is the common case, so it is
+    /// reported through <paramref name="single"/> instead of allocating a list for one element.</summary>
+    private List<Waiter>? GrantOwnership(out Waiter? single)
     {
+        single = null;
+
         // A writer holds the lock, nothing can be granted until it releases.
         if (_status < 0)
             return null;
@@ -177,7 +182,8 @@ public sealed class AsyncReaderWriterLock
                 return null;
 
             _status = -1;
-            return [_waitingWriters.Dequeue()!];
+            single = _waitingWriters.Dequeue();
+            return null;
         }
 
         if (_waitingReaders.Count > 0)
@@ -199,37 +205,51 @@ public sealed class AsyncReaderWriterLock
         return null;
     }
 
-    private void CompleteWaiters(List<Waiter>? waiters)
+    private void CompleteWaiters(List<Waiter>? waiters, Waiter? single)
     {
+        if (single is not null)
+        {
+            CompleteWaiter(single);
+        }
+
         if (waiters is null)
             return;
 
         foreach (var waiter in waiters)
         {
-            // A waiter that was dequeued here can no longer be canceled: OnCancellationRequest only completes a
-            // waiter it removed from the queue itself, so exactly one of the two paths owns it.
-            waiter.Registration.Dispose();
-            waiter.TrySetResult(new Releaser(new ReleaseToken(this, waiter.IsWriter)));
+            CompleteWaiter(waiter);
         }
+    }
+
+    private void CompleteWaiter(Waiter waiter)
+    {
+        // A waiter that was dequeued here can no longer be canceled: OnCancellationRequest only completes a
+        // waiter it removed from the queue itself, so exactly one of the two paths owns it.
+        waiter.Registration.Dispose();
+        waiter.TrySetResult(new Releaser(new ReleaseToken(this, waiter.IsWriter)));
     }
 
     private void OnCancellationRequest(object? state)
     {
         var waiter = (Waiter)state!;
         bool removed;
-        List<Waiter>? toWake;
+        List<Waiter>? toWake = null;
+        Waiter? single = null;
         lock (_lock)
         {
             removed = (waiter.IsWriter ? _waitingWriters : _waitingReaders).Remove(waiter);
 
             // Removing a waiter can unblock the ones queued behind it: the lock may now be free, or the canceled
             // writer may have been the last one holding back readers that are compatible with the current owners.
-            toWake = removed ? GrantOwnership() : null;
+            if (removed)
+            {
+                toWake = GrantOwnership(out single);
+            }
         }
 
         // Both of these must run outside the lock: Registration.Dispose blocks until a callback running on
         // another thread completes, and that callback is this method, which takes the same lock.
-        CompleteWaiters(toWake);
+        CompleteWaiters(toWake, single);
 
         // We only cancel the task if we removed it from the queue. If it wasn't in the queue, either it has
         // already been granted the lock or it hasn't even been added to the queue yet.

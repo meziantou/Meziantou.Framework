@@ -66,9 +66,9 @@ internal static class TdsLoginParser
         var decoded = new byte[byteLength];
         for (var i = 0; i < encoded.Length; i++)
         {
-            var value = encoded[i];
-            var swapped = (byte)(((value & 0x0F) << 4) | ((value & 0xF0) >> 4));
-            decoded[i] = (byte)(swapped ^ 0xA5);
+            // The client XORs each byte with 0xA5 and then swaps its nibbles, so decoding must undo both in reverse order.
+            var value = (byte)(encoded[i] ^ 0xA5);
+            decoded[i] = (byte)(((value & 0x0F) << 4) | ((value & 0xF0) >> 4));
         }
 
         return Encoding.Unicode.GetString(decoded);

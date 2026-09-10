@@ -123,8 +123,64 @@ public sealed class TdsServerProtocolTests
 
         var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(UserName, capturedContext.UserName);
-        Assert.NotNull(capturedContext.Password);
+        Assert.Equal(Password, capturedContext.Password);
         Assert.Equal("master", capturedContext.Database);
+    }
+
+    [Fact]
+    public async Task SqlClient_AuthenticationCallback_WithMatchingPassword_Succeeds()
+    {
+        const string UserName = "sa";
+        const string Password = "P@ssw0rd!<>&\u00e9\u4e2d";
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(
+                context.UserName == UserName && context.Password == Password
+                    ? TdsAuthenticationResult.Success("master")
+                    : TdsAuthenticationResult.Fail("Login failed.")),
+            (context, cancellationToken) => ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1)));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, UserName, Password));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        var result = await command.ExecuteScalarAsync();
+
+        Assert.Equal(1, Convert.ToInt32(result, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task SqlClient_AuthenticationCallback_WithWrongPassword_Fails()
+    {
+        const string UserName = "sa";
+        const string ExpectedPassword = "P@ssw0rd!<>&\u00e9\u4e2d";
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(
+                context.UserName == UserName && context.Password == ExpectedPassword
+                    ? TdsAuthenticationResult.Success("master")
+                    : TdsAuthenticationResult.Fail("Login failed.")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, UserName, ExpectedPassword + "x"));
+        var exception = await Assert.ThrowsAsync<SqlException>(() => connection.OpenAsync());
+
+        Assert.Contains("Login failed.", exception.Message);
     }
 
     [Fact]

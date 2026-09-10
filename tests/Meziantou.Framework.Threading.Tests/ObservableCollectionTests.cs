@@ -388,6 +388,210 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(ObservableCollectionEdit.IndexerSet)]
+    [InlineData(ObservableCollectionEdit.Insert)]
+    [InlineData(ObservableCollectionEdit.RemoveAt)]
+    [InlineData(ObservableCollectionEdit.NonGenericIndexerSet)]
+    [InlineData(ObservableCollectionEdit.NonGenericInsert)]
+    [InlineData(ObservableCollectionEdit.NonGenericRemoveAt)]
+    [InlineData(ObservableCollectionEdit.NonGenericAdd)]
+    public void IndexBasedEditsAreRejectedWhileTheObservableCollectionIsOutOfDate(ObservableCollectionEdit edit)
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<string>(context);
+            var observable = collection.AsObservable;
+            collection.AddRange("A", "B");
+
+            RunOnAnotherThread(() => collection.Insert(0, "X"));
+
+            // The observable collection still exposes the previous state, so its indices designate other items in the source collection
+            Assert.Equal(["A", "B"], observable.ToList());
+            Assert.Throws<InvalidOperationException>(() => Edit(observable, edit));
+
+            Assert.Equal(["X", "A", "B"], collection.ToList());
+
+            Assert.Equal(1, context.Run());
+            Assert.Equal(["X", "A", "B"], observable.ToList());
+
+            // Once the pending change is dispatched, the same edit designates the item the observable collection exposes
+            Edit(observable, edit);
+            Assert.Equal(GetExpectedItemsAfterEdit(edit), collection.ToList());
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Theory]
+    [InlineData(ObservableCollectionEdit.Add)]
+    [InlineData(ObservableCollectionEdit.Remove)]
+    [InlineData(ObservableCollectionEdit.Clear)]
+    public void ValueBasedEditsAreAllowedWhileTheObservableCollectionIsOutOfDate(ObservableCollectionEdit edit)
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<string>(context);
+            var observable = collection.AsObservable;
+            collection.AddRange("A", "B");
+
+            RunOnAnotherThread(() => collection.Insert(0, "X"));
+
+            // These edits designate their target by value, so they don't depend on the observable collection being up to date
+            Edit(observable, edit);
+            Assert.Equal(GetExpectedItemsAfterEdit(edit), collection.ToList());
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
+    public void ObservableCollectionQueriesReadTheDispatchedItems()
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<string>(context);
+            var observable = collection.AsObservable;
+            var list = (IList)observable;
+            collection.AddRange("A", "B");
+
+            RunOnAnotherThread(() => collection.Add("X"));
+
+            // Contains must agree with the items the observable collection exposes, not with the source collection
+            Assert.Equal(["A", "B"], observable.ToList());
+            Assert.False(list.Contains("X"));
+            Assert.Equal(-1, list.IndexOf("X"));
+
+            Assert.Equal(1, context.Run());
+
+            Assert.Equal(["A", "B", "X"], observable.ToList());
+            Assert.True(list.Contains("X"));
+            Assert.Equal(2, list.IndexOf("X"));
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void IndexOf_WrongItemType(CollectionKind kind)
+    {
+        var collection = CreateCollection(kind);
+        Assert.Equal(-1, ((IList)collection).IndexOf("dummy"));
+    }
+
+    [Fact]
+    public void ObservableCollectionEditsWrongItemType()
+    {
+        var collection = (IList)CreateCollection<string>().AsObservable;
+        collection.Add(null);
+        collection.Add("");
+
+        Assert.Throws<ArgumentException>(() => collection.Add(10));
+        Assert.Throws<ArgumentException>(() => collection.Insert(0, 10));
+        Assert.Throws<ArgumentException>(() => collection[0] = 10);
+    }
+
+    public enum ObservableCollectionEdit
+    {
+        IndexerSet,
+        Insert,
+        RemoveAt,
+        NonGenericIndexerSet,
+        NonGenericInsert,
+        NonGenericRemoveAt,
+        NonGenericAdd,
+        Add,
+        Remove,
+        Clear,
+    }
+
+    private static void Edit(IReadOnlyObservableCollection<string> observable, ObservableCollectionEdit edit)
+    {
+        switch (edit)
+        {
+            case ObservableCollectionEdit.IndexerSet:
+                ((IList<string>)observable)[0] = "Z";
+                break;
+
+            case ObservableCollectionEdit.Insert:
+                ((IList<string>)observable).Insert(0, "Z");
+                break;
+
+            case ObservableCollectionEdit.RemoveAt:
+                ((IList<string>)observable).RemoveAt(0);
+                break;
+
+            case ObservableCollectionEdit.NonGenericIndexerSet:
+                ((IList)observable)[0] = "Z";
+                break;
+
+            case ObservableCollectionEdit.NonGenericInsert:
+                ((IList)observable).Insert(0, "Z");
+                break;
+
+            case ObservableCollectionEdit.NonGenericRemoveAt:
+                ((IList)observable).RemoveAt(0);
+                break;
+
+            case ObservableCollectionEdit.NonGenericAdd:
+                ((IList)observable).Add("Z");
+                break;
+
+            case ObservableCollectionEdit.Add:
+                ((ICollection<string>)observable).Add("Z");
+                break;
+
+            case ObservableCollectionEdit.Remove:
+                ((ICollection<string>)observable).Remove("A");
+                break;
+
+            case ObservableCollectionEdit.Clear:
+                ((ICollection<string>)observable).Clear();
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(edit));
+        }
+    }
+
+    /// <summary>Gets the expected content of the source collection after <see cref="Edit"/> is applied to <c>["X", "A", "B"]</c>.</summary>
+    private static string[] GetExpectedItemsAfterEdit(ObservableCollectionEdit edit)
+    {
+        return edit switch
+        {
+            ObservableCollectionEdit.IndexerSet or ObservableCollectionEdit.NonGenericIndexerSet => ["Z", "A", "B"],
+            ObservableCollectionEdit.Insert or ObservableCollectionEdit.NonGenericInsert => ["Z", "X", "A", "B"],
+            ObservableCollectionEdit.RemoveAt or ObservableCollectionEdit.NonGenericRemoveAt => ["A", "B"],
+            ObservableCollectionEdit.NonGenericAdd or ObservableCollectionEdit.Add => ["X", "A", "B", "Z"],
+            ObservableCollectionEdit.Remove => ["X", "B"],
+            ObservableCollectionEdit.Clear => [],
+            _ => throw new ArgumentOutOfRangeException(nameof(edit)),
+        };
+    }
+
+    private static void RunOnAnotherThread(Action action)
+    {
+        var thread = new Thread(() => action());
+        thread.Start();
+        thread.Join();
+    }
+
     private sealed class QueuedSynchronizationContext : SynchronizationContext
     {
         private readonly System.Collections.Concurrent.ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _callbacks = new();

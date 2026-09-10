@@ -102,6 +102,13 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     public bool SupportRangeNotifications { get; set; }
 
     /// <summary>Gets an observable collection that can be bound to UI controls.</summary>
+    /// <remarks>
+    /// The returned collection exposes its items on the synchronization context thread only, and holds the state of this
+    /// collection as of the last change dispatched to that thread. It also implements <see cref="IList{T}"/> and
+    /// <see cref="IList"/> so UI controls can edit it. The members designating an item by index, and
+    /// <see cref="IList.Add(object)"/> which returns one, throw an <see cref="InvalidOperationException"/> while changes
+    /// are still waiting to be dispatched: the index would designate another item in this collection.
+    /// </remarks>
     public IReadOnlyObservableCollection<T> AsObservable
     {
         get
@@ -367,6 +374,64 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         }
     }
 
+    // The collection returned by AsObservable exposes a replica of this collection that lags behind it while the
+    // pending changes wait to be dispatched to the synchronization context, so an index coming from that replica
+    // doesn't necessarily designate the same item here. The methods below apply a change expressed with such an
+    // index only while the replica is up to date, and reject it otherwise rather than editing another item.
+    internal void SetItemFromObservableCollection(int index, T value)
+    {
+        lock (_lock)
+        {
+            ThrowIfObservableCollectionIsOutOfDate();
+            Items = Items.SetItem(index, value);
+            _observableCollection?.EnqueueReplace(index, value);
+        }
+    }
+
+    internal void InsertFromObservableCollection(int index, T item)
+    {
+        lock (_lock)
+        {
+            ThrowIfObservableCollectionIsOutOfDate();
+            Items = Items.Insert(index, item);
+            _observableCollection?.EnqueueInsert(index, item);
+        }
+    }
+
+    internal void RemoveAtFromObservableCollection(int index)
+    {
+        lock (_lock)
+        {
+            ThrowIfObservableCollectionIsOutOfDate();
+            Items = Items.RemoveAt(index);
+            _observableCollection?.EnqueueRemoveAt(index);
+        }
+    }
+
+    /// <summary>Adds an item on behalf of the observable collection and returns the index the item was added at.</summary>
+    internal int AddFromObservableCollection(T item)
+    {
+        lock (_lock)
+        {
+            // The index returned to the caller must designate the item in the observable collection, so it is only
+            // meaningful while that collection is up to date.
+            ThrowIfObservableCollectionIsOutOfDate();
+            var index = Items.Count;
+            Items = Items.Add(item);
+            _observableCollection?.EnqueueAdd(item);
+            return index;
+        }
+    }
+
+    private void ThrowIfObservableCollectionIsOutOfDate()
+    {
+        // Must be called while holding _lock: every change to this collection enqueues an event for the observable
+        // collection under that lock, so an empty queue means the observable collection has applied all of them and
+        // both collections hold the same items in the same order.
+        if (_observableCollection?.HasPendingEvents is true)
+            throw new InvalidOperationException("The collection returned by " + nameof(AsObservable) + " has changes that are not dispatched yet, so its indices don't designate the same items as this collection. The pending changes must be dispatched to the synchronization context before the collection can be modified through it.");
+    }
+
     int IList.Add(object? value)
     {
         ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, nameof(value));
@@ -446,7 +511,7 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         ((ICollection)Items).CopyTo(array, index);
     }
 
-    private static bool IsCompatibleObject(object? value)
+    internal static bool IsCompatibleObject(object? value)
     {
         // Non-null values are fine. Only accept nulls if T is a class or Nullable<U>.
         // Note that default(T) is not equal to null for value types except when T is Nullable<U>.

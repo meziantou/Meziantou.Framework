@@ -3,6 +3,12 @@ using System.Collections.Concurrent;
 
 namespace Meziantou.Framework.Collections.Concurrent;
 
+// The items of this collection are a replica of the source collection that is only updated on the synchronization
+// context thread, so it lags behind the source while pending events wait to be dispatched. Every query reads that
+// replica, and the mutations exposed by IList<T> and IList are applied to the source collection: those whose meaning
+// depends on the replica (the ones taking an index, and IList.Add which returns one) are rejected while the replica
+// is out of date, as the index would designate another item in the source collection. The others (Add, Remove and
+// Clear) designate their target by value, so they are always forwarded.
 internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>, IList<T>, IList
 {
     private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new();
@@ -25,6 +31,17 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             var currentThreadId = Environment.CurrentManagedThreadId;
             throw new InvalidOperationException("The collection must be accessed from the synchronization context thread only. Current thread ID: " + currentThreadId.ToString(CultureInfo.InvariantCulture));
         }
+    }
+
+    private static T ConvertItem(object? value)
+    {
+        ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, nameof(value));
+        if (!ConcurrentObservableCollection<T>.IsCompatibleObject(value))
+        {
+            ThrowHelper.ThrowInvalidTypeException<T>(value);
+        }
+
+        return (T)value!;
     }
 
     public int Count
@@ -100,9 +117,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
         set
         {
-            // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            _collection[index] = (T)value!;
+            _collection.SetItemFromObservableCollection(index, ConvertItem(value));
         }
     }
 
@@ -115,9 +131,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
         set
         {
-            // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            _collection[index] = value;
+            _collection.SetItemFromObservableCollection(index, value);
         }
     }
 
@@ -155,6 +170,12 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             return Items[index];
         }
     }
+
+    /// <summary>
+    /// Gets a value indicating whether changes made to the source collection are still waiting to be applied to this collection.
+    /// </summary>
+    /// <remarks>Read by the source collection while holding its lock to detect that the indices of this collection are stale.</remarks>
+    internal bool HasPendingEvents => !_pendingEvents.IsEmpty;
 
     internal void EnqueueReplace(int index, T value)
     {
@@ -272,16 +293,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     void IList<T>.Insert(int index, T item)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        _collection.Insert(index, item);
+        _collection.InsertFromObservableCollection(index, item);
     }
 
     void IList<T>.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        _collection.RemoveAt(index);
+        _collection.RemoveAtFromObservableCollection(index);
     }
 
     void ICollection<T>.Add(T item)
@@ -313,16 +332,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     int IList.Add(object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        return ((IList)_collection).Add(value);
+        return _collection.AddFromObservableCollection(ConvertItem(value));
     }
 
     bool IList.Contains(object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        return ((IList)_collection).Contains(value);
+        return ConcurrentObservableCollection<T>.IsCompatibleObject(value) && Contains((T)value!);
     }
 
     void IList.Clear()
@@ -335,14 +352,13 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     int IList.IndexOf(object? value)
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.IndexOf((T)value!);
+        return ConcurrentObservableCollection<T>.IsCompatibleObject(value) ? IndexOf((T)value!) : -1;
     }
 
     void IList.Insert(int index, object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        ((IList)_collection).Insert(index, value);
+        _collection.InsertFromObservableCollection(index, ConvertItem(value));
     }
 
     void IList.Remove(object? value)
@@ -354,8 +370,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     void IList.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        ((IList)_collection).RemoveAt(index);
+        _collection.RemoveAtFromObservableCollection(index);
     }
 }

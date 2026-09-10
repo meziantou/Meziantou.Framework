@@ -1281,12 +1281,13 @@ internal static class PublicApiModelBuilder
             baseTypes.Add(FormatType(type.BaseType));
         }
 
+        // The interface list is sorted using the formatted names, so the generated API does not depend on the order reported by the runtime.
+        // The base type stays first as C# requires it to precede the interfaces.
         var interfaces = type.GetInterfaces()
             .Where(@interface => IsExternallyVisible(@interface) || @interface.IsPublic)
             .Where(@interface => !isUnionDeclaration || @interface.FullName != IUnionInterfaceFullName)
-            .OrderBy(static @interface => @interface.FullName, StringComparer.Ordinal)
             .Select(static @interface => FormatType(@interface))
-            .ToList();
+            .OrderBy(static value => value, StringComparer.Ordinal);
         baseTypes.AddRange(interfaces);
 
         if (baseTypes.Count == 0)

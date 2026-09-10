@@ -104,7 +104,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         {
             // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            _collection[index] = (T)value!;
+            ((IList)_collection)[index] = value;
         }
     }
 
@@ -412,9 +412,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     bool IList.Contains(object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
+        // The lookup targets the replica, which can still be behind the source collection
         AssertIsOnSynchronizationContextThread();
-        return ((IList)_collection).Contains(value);
+        if (ConcurrentObservableCollection<T>.IsCompatibleObject(value))
+        {
+            return Contains((T)value!);
+        }
+
+        return false;
     }
 
     void IList.Clear()
@@ -427,7 +432,12 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     int IList.IndexOf(object? value)
     {
         AssertIsOnSynchronizationContextThread();
-        return Items.IndexOf((T)value!);
+        if (ConcurrentObservableCollection<T>.IsCompatibleObject(value))
+        {
+            return IndexOf((T)value!);
+        }
+
+        return -1;
     }
 
     void IList.Insert(int index, object? value)

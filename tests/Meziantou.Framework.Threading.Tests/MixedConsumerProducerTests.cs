@@ -190,6 +190,71 @@ public sealed class MixedConsumerProducerTests
     }
 
     [Fact]
+    public async Task Process_UsesTaskSchedulerFromOptions_AfterActionSuspends()
+    {
+        using var scheduler = new MonoThreadedTaskScheduler(nameof(Process_UsesTaskSchedulerFromOptions_AfterActionSuspends));
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 1, TaskScheduler = scheduler };
+        var observedSchedulers = new ConcurrentBag<TaskScheduler>();
+
+        await MixedConsumerProducer.Process([1, 2, 3], options, async (context, item, cancellationToken) =>
+        {
+            observedSchedulers.Add(TaskScheduler.Current);
+            await Task.Delay(TimeSpan.FromMilliseconds(1), cancellationToken);
+        });
+
+        Assert.HasCount(3, observedSchedulers);
+        Assert.All(observedSchedulers, current => Assert.Same(scheduler, current));
+    }
+
+    [Fact]
+    public async Task Process_UsesTaskSchedulerFromOptions_AfterEmptyChannelSuspends()
+    {
+        var scheduler = new CountingTaskScheduler();
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 2, TaskScheduler = scheduler };
+        var observedSchedulers = new ConcurrentDictionary<int, TaskScheduler>();
+        var secondItemProcessed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await MixedConsumerProducer.Process([0], options, async (context, item, cancellationToken) =>
+        {
+            observedSchedulers[item] = TaskScheduler.Current;
+            if (item is 0)
+            {
+                // The second consumer has nothing to read, so it is parked on the empty channel. Keep this
+                // consumer busy until the item it enqueues has been processed, so the item can only be
+                // picked up by the consumer resuming from that suspension.
+                context.Enqueue(1);
+                await secondItemProcessed.Task;
+            }
+            else
+            {
+                secondItemProcessed.SetResult();
+            }
+        });
+
+        Assert.Same(scheduler, observedSchedulers[0]);
+        Assert.Same(scheduler, observedSchedulers[1]);
+    }
+
+    [Fact]
+    public async Task Process_LimitsConsumersToSchedulerMaximumConcurrencyLevel()
+    {
+        using var scheduler = new MonoThreadedTaskScheduler(nameof(Process_LimitsConsumersToSchedulerMaximumConcurrencyLevel));
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 4, TaskScheduler = scheduler };
+        var current = 0;
+        var observedConcurrency = new ConcurrentBag<int>();
+
+        await MixedConsumerProducer.Process(Enumerable.Range(0, 8), options, async (context, item, cancellationToken) =>
+        {
+            observedConcurrency.Add(Interlocked.Increment(ref current));
+            await Task.Yield();
+            Interlocked.Decrement(ref current);
+        });
+
+        Assert.HasCount(8, observedConcurrency);
+        Assert.Equal(1, observedConcurrency.Max());
+    }
+
+    [Fact]
     public async Task Process_NullArguments()
     {
         var options = new ParallelOptions();

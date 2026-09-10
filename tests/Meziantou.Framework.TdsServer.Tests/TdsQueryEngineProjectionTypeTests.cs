@@ -12,7 +12,12 @@ public sealed class TdsQueryEngineProjectionTypeTests
     // Aliases come from client SQL and each distinct shape emits a type, so the factory retains only a bounded
     // number of them. Push well past that bound: emitted types used to be capped and never reclaimed, which let
     // a client shut every unseen shape out of the process for the rest of its life.
-    private const int ProjectionShapeChurnCount = 1_100;
+    //
+    // "Well past" is what the reclamation test needs. Types are packed into collectible assemblies, and an
+    // assembly is reclaimed only once every type in it is unreachable, so the tracked type's assembly also holds
+    // the shapes emitted right after it. Exceeding the retention window by a single assembly's worth would leave
+    // a handful of queries of slack; this leaves hundreds.
+    private const int ProjectionShapeChurnCount = 1_600;
 
     [Fact]
     public async Task MoreProjectionShapesThanTheCacheRetains_KeepBeingServed()
@@ -63,11 +68,17 @@ public sealed class TdsQueryEngineProjectionTypeTests
         }
 
         // Unloading is not synchronous: it completes on a later collection, once the runtime has finished
-        // walking everything that referenced the assembly.
-        for (var index = 0; index < 20 && projectionAssembly.IsAlive; index++)
+        // walking everything that referenced the assembly. Tests also run in parallel, and a query running in
+        // another one can still hold a type emitted into the same assembly, so wait between the sweeps instead
+        // of failing on the first one.
+        for (var index = 0; index < 60 && projectionAssembly.IsAlive; index++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            if (projectionAssembly.IsAlive)
+            {
+                await Task.Delay(100);
+            }
         }
 
         Assert.False(projectionAssembly.IsAlive, "The projection types dropped from the cache were not reclaimed");

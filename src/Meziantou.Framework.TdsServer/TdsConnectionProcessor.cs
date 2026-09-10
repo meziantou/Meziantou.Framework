@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Buffers;
 using Meziantou.Framework.Tds.Handler;
@@ -43,8 +44,9 @@ internal sealed class TdsConnectionProcessor
         var transportOutput = output;
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
+        Task<TdsPacket?>? pendingRead = null;
         var usingTls = false;
-        TdsPreLoginNegotiationResult? negotiationResult = null;
+        TdsPreLoginNegotiationResult? negotiationResult;
         try
         {
             var preLoginPacket = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
@@ -142,9 +144,26 @@ internal sealed class TdsConnectionProcessor
 
             await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateLoginSuccess(authenticationResult), cancellationToken).ConfigureAwait(false);
 
+            TdsPacket? bufferedPacket = null;
             while (!cancellationToken.IsCancellationRequested)
             {
-                var packet = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
+                TdsPacket? packet;
+                if (bufferedPacket is not null)
+                {
+                    packet = bufferedPacket;
+                    bufferedPacket = null;
+                }
+                else if (pendingRead is not null)
+                {
+                    var completedRead = pendingRead;
+                    pendingRead = null;
+                    packet = await completedRead.ConfigureAwait(false);
+                }
+                else
+                {
+                    packet = await TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).ConfigureAwait(false);
+                }
+
                 if (packet is null)
                 {
                     return;
@@ -162,46 +181,76 @@ internal sealed class TdsConnectionProcessor
                     continue;
                 }
 
-                byte[] responsePayload;
+                // The request runs while the connection keeps reading, so an ATTENTION packet sent by the client
+                // in the middle of a long query is seen instead of waiting behind it. AbandonRequest takes over
+                // the ownership of the cancellation token source, hence the null assignments.
+                var requestCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 try
                 {
-                    var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, authenticationResult.UserContext);
-                    TdsQueryResult queryResult;
-                    try
+                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
+                    var attentionReceived = false;
+                    while (!executionTask.IsCompleted && !attentionReceived && bufferedPacket is null)
                     {
-                        queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Unhandled exception in query handler");
-                        queryResult = TdsQueryResult.FromError(new TdsQueryError
+                        pendingRead ??= TdsPacketReader.ReadAsync(input, _options.MaxMessageSize, cancellationToken).AsTask();
+                        if (await Task.WhenAny(executionTask, pendingRead).ConfigureAwait(false) != pendingRead)
                         {
-                            Number = 50002,
-                            State = 1,
-                            Class = 16,
-                            Message = "Unhandled query handler exception",
-                        });
+                            break;
+                        }
+
+                        var concurrentRead = pendingRead;
+                        pendingRead = null;
+
+                        TdsPacket? incomingPacket;
+                        try
+                        {
+                            incomingPacket = await concurrentRead.ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            AbandonRequest(requestCancellationTokenSource, executionTask);
+                            requestCancellationTokenSource = null;
+                            throw;
+                        }
+
+                        if (incomingPacket is null)
+                        {
+                            // The client is gone, so there is nobody left to send the response to.
+                            AbandonRequest(requestCancellationTokenSource, executionTask);
+                            requestCancellationTokenSource = null;
+                            return;
+                        }
+
+                        if (incomingPacket.Type == TdsPacketType.Attention)
+                        {
+                            attentionReceived = true;
+                        }
+                        else
+                        {
+                            // A client is not supposed to send another request before the current one completes,
+                            // but keep the packet so it is served after the response instead of being dropped.
+                            bufferedPacket = incomingPacket;
+                        }
                     }
 
-                    responsePayload = TdsResponseSerializer.CreateQueryResponse(queryResult, writer.PayloadSizePerPacket);
+                    if (attentionReceived)
+                    {
+                        // MS-TDS requires the attention to be acknowledged with a DONE token carrying DONE_ATTN.
+                        // The handler is signalled and then abandoned: a handler that ignores its cancellation
+                        // token must not keep the connection from acknowledging the attention and from serving
+                        // the next request.
+                        AbandonRequest(requestCancellationTokenSource, executionTask);
+                        requestCancellationTokenSource = null;
+                        await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateAttentionResponse(), cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    var responsePayload = await executionTask.ConfigureAwait(false);
+                    await writer.WriteAsync(TdsPacketType.TabularResult, responsePayload, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                finally
                 {
-                    // Request parsing and response serialization run on caller-supplied data, so a bad request
-                    // or a value that does not match its declared column type must not drop the connection.
-                    _logger.LogError(ex, "Failed to build the TDS response");
-                    responsePayload = TdsResponseSerializer.CreateQueryResponse(
-                        TdsQueryResult.FromError(new TdsQueryError
-                        {
-                            Number = 50005,
-                            State = 1,
-                            Class = 16,
-                            Message = "Failed to build the query response",
-                        }),
-                        writer.PayloadSizePerPacket);
+                    requestCancellationTokenSource?.Dispose();
                 }
-
-                await writer.WriteAsync(TdsPacketType.TabularResult, responsePayload, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (AuthenticationException ex)
@@ -210,11 +259,84 @@ internal sealed class TdsConnectionProcessor
         }
         finally
         {
+            ObserveExceptions(pendingRead);
             if (sslStream is not null)
             {
                 await sslStream.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, int payloadSizePerPacket, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext);
+            TdsQueryResult queryResult;
+            try
+            {
+                queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled exception in query handler");
+                queryResult = TdsQueryResult.FromError(new TdsQueryError
+                {
+                    Number = 50002,
+                    State = 1,
+                    Class = 16,
+                    Message = "Unhandled query handler exception",
+                });
+            }
+
+            return TdsResponseSerializer.CreateQueryResponse(queryResult, payloadSizePerPacket);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Request parsing and response serialization run on caller-supplied data, so a bad request
+            // or a value that does not match its declared column type must not drop the connection.
+            _logger.LogError(ex, "Failed to build the TDS response");
+            return TdsResponseSerializer.CreateQueryResponse(
+                TdsQueryResult.FromError(new TdsQueryError
+                {
+                    Number = 50005,
+                    State = 1,
+                    Class = 16,
+                    Message = "Failed to build the query response",
+                }),
+                payloadSizePerPacket);
+        }
+    }
+
+    /// <summary>
+    /// Signals the running request and stops waiting for it. The cancellation token source is disposed once the
+    /// request actually completes so a handler still holding the token cannot observe a disposed source.
+    /// </summary>
+    private static void AbandonRequest(CancellationTokenSource requestCancellationTokenSource, Task task)
+    {
+        requestCancellationTokenSource.Cancel();
+        _ = task.ContinueWith(
+            static (completedTask, state) =>
+            {
+                _ = completedTask.Exception;
+                ((CancellationTokenSource)state!).Dispose();
+            },
+            requestCancellationTokenSource,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private static void ObserveExceptions(Task? task)
+    {
+        if (task is null)
+            return;
+
+        _ = task.ContinueWith(static completedTask => _ = completedTask.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
     [SuppressMessage("Security", "CA5398:Do not hardcode SslProtocols", Justification = "SqlClient interoperability with TDS-over-TLS requires TLS 1.2 during PRELOGIN encryption upgrade.")]

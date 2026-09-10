@@ -1869,6 +1869,67 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(new string('e', 32_000), reportedMessage);
     }
 
+    [Fact]
+    public async Task SqlClient_Cancel_CancelsTheRunningQueryHandlerAndKeepsTheConnectionUsable()
+    {
+        const string BlockingMarker = "CancellationBlockingMarker";
+        var handlerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseHandler = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            async (context, cancellationToken) =>
+            {
+                if (context.CommandText?.Contains(BlockingMarker, StringComparison.Ordinal) == true)
+                {
+                    await using var registration = cancellationToken.Register(() => handlerCancelled.TrySetResult());
+                    handlerStarted.TrySetResult();
+                    await releaseHandler.Task.ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var result = new TdsQueryResult();
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([42]);
+                result.ResultSets.Add(resultSet);
+                return result;
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var blockedCommand = connection.CreateCommand();
+        blockedCommand.CommandText = $"SELECT 1 /* {BlockingMarker} */";
+        var blockedExecution = blockedCommand.ExecuteScalarAsync();
+
+        await handlerStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        blockedCommand.Cancel();
+
+        // The ATTENTION packet must reach the handler even though its query is still running, and the client
+        // must complete without waiting for that handler to return.
+        await handlerCancelled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        _ = await Assert.ThrowsAsync<SqlException>(() => blockedExecution);
+
+        // The connection is back in a usable state right away: the abandoned handler is still blocked here.
+        Assert.False(releaseHandler.Task.IsCompleted);
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT 42";
+            Assert.Equal(42, await command.ExecuteScalarAsync());
+        }
+
+        releaseHandler.SetResult();
+    }
+
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";

@@ -20,20 +20,20 @@ internal static class ShellSyntaxAssert
 
     public static void TextIsFaithful(string text, ShellSyntaxTree tree)
     {
-        Assert.Equal(text, tree.Root.ToFullString());
-        Assert.Equal(text, tree.Root.Statements.ToFullString() + tree.Root.EndOfFileToken.ToFullString());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(text, tree.GetRoot().Statements.ToFullString() + tree.GetRoot().EndOfFileToken.ToFullString());
 
-        foreach (var node in tree.Root.DescendantNodes())
+        foreach (var node in tree.GetRoot().DescendantNodes())
         {
             var span = node.FullSpan;
-            Assert.True(span.Start >= 0 && span.End <= text.Length, $"{node.Kind} has span {span} outside a source of length {text.Length}.");
+            Assert.True(span.Start >= 0 && span.End <= text.Length, $"{node.Kind()} has span {span} outside a source of length {text.Length}.");
             Assert.Equal(text[span.Start..span.End], node.ToFullString());
         }
 
-        foreach (var token in tree.Root.DescendantTokens())
+        foreach (var token in tree.GetRoot().DescendantTokens())
         {
             var span = token.FullSpan;
-            Assert.True(span.Start >= 0 && span.End <= text.Length, $"{token.Kind} has span {span} outside a source of length {text.Length}.");
+            Assert.True(span.Start >= 0 && span.End <= text.Length, $"{token.Kind()} has span {span} outside a source of length {text.Length}.");
             Assert.Equal(text[span.Start..span.End], token.ToFullString());
         }
     }

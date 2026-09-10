@@ -1,4 +1,5 @@
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.Language;
 using Meziantou.Framework.Language.Json;
 using JsonPathExpression = Meziantou.Framework.Json.JsonPath;
 
@@ -125,12 +126,12 @@ internal sealed class JsonLocation : Location
 
         var updatedValue = UpdateTextValue(stringNode.Value, oldValue, newValue);
         if (string.Equals(updatedValue, stringNode.Value, StringComparison.Ordinal))
-            return syntaxTree.Root;
+            return syntaxTree.GetRoot();
 
-        var updatedToken = SyntaxFactory.StringToken(updatedValue)
-            .WithLeadingTrivia(stringNode.StringToken.LeadingTrivia)
-            .WithTrailingTrivia(stringNode.StringToken.TrailingTrivia);
+        // Replacing the token rebuilds the nodes above it and leaves the rest of the document as it was, so the file
+        // comes back byte for byte the same apart from this one value.
+        var updatedToken = SyntaxFactory.Literal(updatedValue).WithTriviaFrom(stringNode.StringToken);
 
-        return syntaxTree.Root.ReplaceNode(stringNode, new JsonStringSyntax(updatedToken));
+        return syntaxTree.GetRoot().ReplaceToken(stringNode.StringToken, updatedToken);
     }
 }

@@ -1,4 +1,8 @@
-namespace Meziantou.Framework.Language.Regex.Internals;
+using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Language.Regex.Internals;
+using ScannedToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+
+namespace Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
 /// <summary>Parses a pattern the way PCRE and Perl do.</summary>
 /// <remarks>
@@ -43,7 +47,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
 
     protected override bool AllowsBracelessProperty => true;
 
-    protected override RegexAtomSyntax? TryParseDialectGroupHeader(RegexSyntaxToken openParenToken, int questionStart)
+    protected override RegexAtomSyntax? TryParseDialectGroupHeader(ScannedToken openParenToken, int questionStart)
     {
         // A subroutine call runs another group's pattern at this point. "(?&name)" is the Perl spelling and
         // "(?P>name)" the Python one; both are recursion by name rather than by number.
@@ -60,7 +64,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         return null;
     }
 
-    protected override RegexAtomSyntax? TryParseDialectEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    protected override RegexAtomSyntax? TryParseDialectEscape(GreenNode? leadingTrivia)
     {
         return Scanner.Peek() switch
         {
@@ -76,11 +80,11 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
     /// Parses the <c>\g</c> family: <c>\g1</c>, <c>\g{1}</c>, <c>\g{-1}</c>, and <c>\g{name}</c> are backreferences,
     /// while <c>\g&lt;name&gt;</c> and <c>\g'name'</c> are subroutine calls.
     /// </summary>
-    private RegexAtomSyntax ParseGReference(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia)
+    private RegexAtomSyntax ParseGReference(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
         Scanner.Position += 2;
-        var startToken = Scanner.Token(RegexSyntaxKind.NamedBackreferenceStartToken, start, leadingTrivia);
+        var startToken = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, start, leadingTrivia);
 
         // The angled and quoted spellings call a group rather than referring back to what it matched.
         if (Scanner.Current is '<' or '\'')
@@ -88,26 +92,29 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
             var close = Scanner.Current == '\'' ? '\'' : '>';
             var openStart = Scanner.Position;
             Scanner.Position++;
-            var openToken = Scanner.Token(RegexSyntaxKind.OpenNameToken, openStart);
-            var target = ReadUntil(close, RegexSyntaxKind.RecursionToken);
+            var openToken = Scanner.Token(SyntaxKind.OpenNameToken, openStart);
+            var target = ReadUntil(close, SyntaxKind.RecursionToken);
             ReportUnknownRecursionTarget(target);
-            var closeToken = ReadExpected(close, RegexSyntaxKind.CloseNameToken, startToken)
-                ?? Scanner.MissingToken(RegexSyntaxKind.CloseNameToken);
+            var closeToken = ReadExpected(close, SyntaxKind.CloseNameToken, startToken);
+            if (!closeToken.IsPresent)
+            {
+                closeToken = Scanner.MissingToken(SyntaxKind.CloseNameToken);
+            }
 
-            return WithOptions(new RegexRecursionSyntax(startToken, openToken, target, closeToken));
+            return new RegexRecursionSyntax(startToken, openToken, target, closeToken, Options);
         }
 
         if (Scanner.Current == '{')
         {
             var openStart = Scanner.Position;
             Scanner.Position++;
-            var openToken = Scanner.Token(RegexSyntaxKind.OpenNameToken, openStart);
+            var openToken = Scanner.Token(SyntaxKind.OpenNameToken, openStart);
             var nameStart = Scanner.Position;
-            var name = ReadUntil('}', RegexSyntaxKind.NameToken);
-            var closeToken = ReadExpected('}', RegexSyntaxKind.CloseNameToken, startToken);
+            var name = ReadUntil('}', SyntaxKind.NameToken);
+            var closeToken = ReadExpected('}', SyntaxKind.CloseNameToken, startToken);
             ReportUnknownReference(name, nameStart);
 
-            return WithOptions(new RegexNamedBackreferenceSyntax(startToken, openToken, name, closeToken));
+            return new RegexNamedBackreferenceSyntax(startToken, openToken, name, closeToken, Options);
         }
 
         // "\g1" and "\g-1": a bare number, possibly relative.
@@ -126,59 +133,59 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
         {
             AddDiagnostic(startToken.Span, RegexDiagnosticIds.MalformedNamedReference, "Malformed '\\g' reference.");
 
-            return WithOptions(new RegexNamedBackreferenceSyntax(startToken, null, null, null));
+            return new RegexNamedBackreferenceSyntax(startToken, null, null, null, Options);
         }
 
-        var numberToken = Scanner.Token(RegexSyntaxKind.NameToken, numberStart);
+        var numberToken = Scanner.Token(SyntaxKind.NameToken, numberStart);
         ReportUnknownReference(numberToken, numberStart);
 
-        return WithOptions(new RegexNamedBackreferenceSyntax(startToken, null, numberToken, null));
+        return new RegexNamedBackreferenceSyntax(startToken, null, numberToken, null, Options);
     }
 
     /// <summary>Parses <c>(?&amp;name)</c> and <c>(?P&gt;name)</c>.</summary>
-    private RegexRecursionSyntax ParseNamedRecursion(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexRecursionSyntax ParseNamedRecursion(ScannedToken openParenToken, int questionStart)
     {
         Scanner.Position += Scanner.Current == '&' ? 1 : 2;
-        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var questionToken = Scanner.Token(SyntaxKind.QuestionToken, questionStart);
 
-        var target = ReadUntil(')', RegexSyntaxKind.RecursionToken);
+        var target = ReadUntil(')', SyntaxKind.RecursionToken);
         ReportUnknownRecursionTarget(target);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
-        return WithOptions(new RegexRecursionSyntax(openParenToken, questionToken, target, closeParenToken));
+        return new RegexRecursionSyntax(openParenToken, questionToken, target, closeParenToken, Options);
     }
 
     /// <summary>Parses <c>(?P=name)</c>.</summary>
-    private RegexNamedBackreferenceSyntax ParsePythonNamedBackreference(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexNamedBackreferenceSyntax ParsePythonNamedBackreference(ScannedToken openParenToken, int questionStart)
     {
         Scanner.Position += 2;
-        var markerToken = Scanner.Token(RegexSyntaxKind.NamedBackreferenceStartToken, questionStart);
+        var markerToken = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, questionStart);
 
         var nameStart = Scanner.Position;
-        var name = ReadUntil(')', RegexSyntaxKind.NameToken);
+        var name = ReadUntil(')', SyntaxKind.NameToken);
         var closeToken = ReadCloseParen(openParenToken);
         RestoreOptions();
         ReportUnknownReference(name, nameStart);
 
-        return WithOptions(new RegexNamedBackreferenceSyntax(openParenToken, markerToken, name, closeToken));
+        return new RegexNamedBackreferenceSyntax(openParenToken, markerToken, name, closeToken, Options);
     }
 
     /// <summary>Parses <c>(?C)</c>, <c>(?C1)</c>, and <c>(?C"text")</c>.</summary>
-    private RegexCalloutSyntax ParseCallout(RegexSyntaxToken openParenToken, int questionStart)
+    private RegexCalloutSyntax ParseCallout(ScannedToken openParenToken, int questionStart)
     {
         Scanner.Position++;
-        var questionToken = Scanner.Token(RegexSyntaxKind.QuestionToken, questionStart);
+        var questionToken = Scanner.Token(SyntaxKind.QuestionToken, questionStart);
 
-        var body = Scanner.Current == ')' ? null : ReadUntil(')', RegexSyntaxKind.CalloutToken);
+        var body = Scanner.Current == ')' ? default : ReadUntil(')', SyntaxKind.CalloutToken);
         var closeParenToken = ReadCloseParen(openParenToken);
         RestoreOptions();
 
-        return WithOptions(new RegexCalloutSyntax(openParenToken, questionToken, body, closeParenToken));
+        return new RegexCalloutSyntax(openParenToken, questionToken, body, closeParenToken, Options);
     }
 
     /// <summary>Parses <c>\o{101}</c> and <c>\N{U+0041}</c>, both of which name a code point in braces.</summary>
-    private RegexCharacterEscapeSyntax ParseBracedNumericEscape(IReadOnlyList<RegexSyntaxTrivia> leadingTrivia, bool octal, bool hexOnly = false)
+    private RegexCharacterEscapeSyntax ParseBracedNumericEscape(GreenNode? leadingTrivia, bool octal, bool hexOnly = false)
     {
         var start = Scanner.Position;
         Scanner.Position += 3;
@@ -208,7 +215,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
                 octal ? "The '\\o{...}' escape is not a well-formed octal value." : "The '\\N{U+...}' escape is not a well-formed code point.");
         }
 
-        return WithOptions(new RegexCharacterEscapeSyntax(Scanner.Token(RegexSyntaxKind.EscapeToken, start, leadingTrivia, value)));
+        return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, start, leadingTrivia, value), Options);
     }
 
     private static bool TryReadCodePoint(string digits, bool octal, out int codePoint)
@@ -247,7 +254,7 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
     }
 
     /// <summary>Reads everything up to <paramref name="terminator"/>, without consuming it.</summary>
-    private RegexSyntaxToken? ReadUntil(char terminator, RegexSyntaxKind kind)
+    private ScannedToken ReadUntil(char terminator, SyntaxKind kind)
     {
         var start = Scanner.Position;
         while (!Scanner.IsAtEnd && Scanner.Current != terminator)
@@ -255,16 +262,16 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
             Scanner.Position++;
         }
 
-        return Scanner.Position > start ? Scanner.Token(kind, start) : null;
+        return Scanner.Position > start ? Scanner.Token(kind, start) : default;
     }
 
-    private RegexSyntaxToken? ReadExpected(char expected, RegexSyntaxKind kind, RegexSyntaxToken owner)
+    private ScannedToken ReadExpected(char expected, SyntaxKind kind, ScannedToken owner)
     {
         if (Scanner.Current != expected)
         {
             AddDiagnostic(owner.Span, RegexDiagnosticIds.MalformedNamedReference, $"Expected '{expected}' to close the reference.");
 
-            return null;
+            return default;
         }
 
         var start = Scanner.Position;
@@ -275,9 +282,9 @@ internal sealed class PcreRegexParser : PerlStyleRegexParser
 
     /// <summary>Reports a reference that names neither an existing group number nor an existing group name.</summary>
     /// <remarks>A relative reference such as <c>\g{-1}</c> is always in range here, so only absolute ones are checked.</remarks>
-    private void ReportUnknownReference(RegexSyntaxToken? nameToken, int nameStart)
+    private void ReportUnknownReference(ScannedToken nameToken, int nameStart)
     {
-        if (nameToken is null)
+        if (!nameToken.IsPresent)
             return;
 
         var name = nameToken.Text;

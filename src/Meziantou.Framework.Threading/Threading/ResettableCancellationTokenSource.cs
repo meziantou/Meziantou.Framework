@@ -90,27 +90,52 @@ public sealed class ResettableCancellationTokenSource : IDisposable
     }
 
     /// <summary>Resets the cancellation token source to its initial state.</summary>
+    /// <remarks>
+    /// The instance is reset even when a cancellation callback throws: the exception raised by
+    /// <see cref="CancellationTokenSource.Cancel()"/> propagates to the caller only after a fresh
+    /// <see cref="Token"/> is available. A callback that disposes this instance wins, and the reset is abandoned.
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">The instance is disposed.</exception>
+    /// <exception cref="AggregateException">A callback registered on the current <see cref="Token"/> threw.</exception>
     public void Reset()
     {
         lock (_lock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnReset))
+            try
             {
-                _cts.Cancel();
+                if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnReset))
+                {
+                    _cts.Cancel();
+                }
             }
-
-            // Replacing the source is only safe while the lock is held: every other member reads _cts under the same
-            // lock, so no caller can be using the instance that is about to be disposed.
-            if (!_cts.TryReset())
+            finally
             {
-                _cts.Dispose();
-                _cts = new CancellationTokenSource();
+                // A callback may have disposed this instance reentrantly, in which case the source is already gone.
+                if (!_disposed)
+                {
+                    // Replacing the source is only safe while the lock is held: every other member reads _cts under the
+                    // same lock, so no caller can be using the instance that is about to be disposed. _cts is read here
+                    // rather than before the cancellation because a callback may have replaced it reentrantly.
+                    var cts = _cts;
+                    if (!cts.TryReset())
+                    {
+                        cts.Dispose();
+                        _cts = new CancellationTokenSource();
+                    }
+                }
             }
         }
     }
 
+    /// <summary>Releases the resources used by this <see cref="ResettableCancellationTokenSource"/>.</summary>
+    /// <remarks>
+    /// The underlying <see cref="CancellationTokenSource"/> is disposed even when a cancellation callback throws: the
+    /// exception raised by <see cref="CancellationTokenSource.Cancel()"/> propagates to the caller only after the
+    /// resources are released. Subsequent calls do nothing.
+    /// </remarks>
+    /// <exception cref="AggregateException">A callback registered on the current <see cref="Token"/> threw.</exception>
     public void Dispose()
     {
         lock (_lock)
@@ -120,12 +145,17 @@ public sealed class ResettableCancellationTokenSource : IDisposable
 
             _disposed = true;
 
-            if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnDispose))
+            try
             {
-                _cts.Cancel();
+                if (_options.HasFlag(ResettableCancellationTokenSourceOptions.CancelOnDispose))
+                {
+                    _cts.Cancel();
+                }
             }
-
-            _cts.Dispose();
+            finally
+            {
+                _cts.Dispose();
+            }
         }
     }
 }

@@ -34,9 +34,9 @@ public sealed class RegexSyntaxVisitorTests
         var tree = RegexSyntaxTree.ParseText(@"(?<n>a|[b-d])\k<n>{2,3}?", RegexDialect.Net);
         var counter = new NodeCounter();
 
-        counter.Visit(tree.Root);
+        counter.Visit(tree.GetRoot());
 
-        Assert.Equal(tree.Root.DescendantNodesAndSelf().Count(), counter.Count);
+        Assert.Equal(tree.GetRoot().DescendantNodesAndSelf().Count(), counter.Count);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class RegexSyntaxVisitorTests
     {
         var tree = RegexSyntaxTree.ParseText("a|b", RegexDialect.Net);
 
-        Assert.Equal(RegexSyntaxKind.Pattern, new KindReader().Visit(tree.Root));
+        Assert.Equal(SyntaxKind.Pattern, new KindReader().Visit(tree.GetRoot()));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class RegexSyntaxVisitorTests
     {
         var tree = RegexSyntaxTree.ParseText("(ab)|c", RegexDialect.Net);
 
-        var starts = tree.Root.DescendantNodes().Select(node => node.FullSpan.Start).ToArray();
+        var starts = tree.GetRoot().DescendantNodes().Select(node => node.FullSpan.Start).ToArray();
 
         Assert.Equal(starts.OrderBy(start => start), starts);
     }
@@ -63,22 +63,22 @@ public sealed class RegexSyntaxVisitorTests
         const string Pattern = @"(?<n>a|[b-d])\k<n>{2,3}?";
         var tree = RegexSyntaxTree.ParseText(Pattern, RegexDialect.Net);
 
-        Assert.Equal(Pattern, string.Concat(tree.Root.DescendantTokens().Select(token => token.ToFullString())));
+        Assert.Equal(Pattern, string.Concat(tree.GetRoot().DescendantTokens().Select(token => token.ToFullString())));
     }
 
-    private sealed class NodeCounter : RegexSyntaxVisitor
+    private sealed class NodeCounter : RegexSyntaxWalker
     {
         public int Count { get; private set; }
 
-        protected override void DefaultVisit(RegexSyntaxNode node)
+        public override void DefaultVisit(RegexSyntaxNode node)
         {
             Count++;
             base.DefaultVisit(node);
         }
     }
 
-    private sealed class KindReader : RegexSyntaxVisitor<RegexSyntaxKind>
+    private sealed class KindReader : RegexSyntaxVisitor<SyntaxKind>
     {
-        protected override RegexSyntaxKind DefaultVisit(RegexSyntaxNode node) => node.Kind;
+        public override SyntaxKind DefaultVisit(RegexSyntaxNode node) => node.Kind();
     }
 }

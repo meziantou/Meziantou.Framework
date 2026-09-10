@@ -36,7 +36,7 @@ public sealed class RegexDiagnosticTests
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, RegexDialect.Net);
 
-        var diagnostic = Assert.Single(tree.Diagnostics, candidate => candidate.Id == id, $"[{pattern}] reported {string.Join(", ", tree.Diagnostics.Select(d => d.Id))}");
+        var diagnostic = Assert.Single(tree.GetDiagnostics(), candidate => candidate.Id == id, $"[{pattern}] reported {string.Join(", ", tree.GetDiagnostics().Select(d => d.Id))}");
         Assert.Equal(spanStart, diagnostic.Location.SourceSpan.Start);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
     }
@@ -49,7 +49,7 @@ public sealed class RegexDiagnosticTests
 
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
-        Assert.Single(tree.Diagnostics, diagnostic => diagnostic.Id == "REGEX0200");
+        Assert.Single(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "REGEX0200");
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class RegexDiagnosticTests
 
         var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-        Assert.Equal(pattern, tree.Root.ToFullString());
-        Assert.NotEmpty(tree.Diagnostics);
+        Assert.Equal(pattern, tree.GetRoot().ToFullString());
+        Assert.NotEmpty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -70,17 +70,17 @@ public sealed class RegexDiagnosticTests
 
         var tree = RegexSyntaxTree.ParseText(pattern, RegexDialect.Net);
 
-        Assert.Equal(pattern, tree.Root.ToFullString());
-        Assert.Empty(tree.Diagnostics);
+        Assert.Equal(pattern, tree.GetRoot().ToFullString());
+        Assert.Empty(tree.GetDiagnostics());
     }
 
     [Fact]
     public void Diagnostics_AreLocatedInTheTreesOwnSourceText()
     {
         var tree = RegexSyntaxTree.ParseText("a(b", RegexDialect.Net);
-        var diagnostic = tree.Diagnostics[0];
+        var diagnostic = tree.GetDiagnostics()[0];
 
-        Assert.Same(tree.SourceText, diagnostic.Location.SourceText);
+        Assert.Same(tree.GetText(), diagnostic.Location.SourceText);
         Assert.Equal(0, diagnostic.Location.GetLineSpan().Start.Line);
     }
 }

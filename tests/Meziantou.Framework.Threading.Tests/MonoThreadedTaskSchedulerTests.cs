@@ -176,6 +176,129 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Fact]
+    public void DequeueOnDispose_False_DoesNotRunQueuedTasks()
+    {
+        // The worker is inside Dequeue when the shutdown is requested. Whether a drain happened to be in progress
+        // must not decide the fate of the queued tasks: DequeueOnDispose does.
+        using var started = new ManualResetEventSlim(initialState: false);
+        using var release = new ManualResetEventSlim(initialState: false);
+        using var executed = new ManualResetEventSlim(initialState: false);
+
+        var scheduler = new MonoThreadedTaskScheduler("no-dequeue")
+        {
+            DequeueOnDispose = false,
+            DisposeThreadJoinTimeout = TimeSpan.Zero,
+        };
+
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                release.Wait();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        _ = Task.Factory.StartNew(
+            executed.Set,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        scheduler.Dispose();
+        release.Set();
+
+        Assert.False(executed.Wait(TimeSpan.FromSeconds(2)));
+        Assert.Equal(1, scheduler.QueueCount);
+    }
+
+    [Fact]
+    public async Task Dispose_FromSchedulerThread_DoesNotJoinItself()
+    {
+        // An infinite join would never complete if the worker waited for itself, and any finite one would stall
+        // for nothing.
+        // The task below disposes the scheduler; the using is only there to cover the paths that do not reach it.
+        using var scheduler = new MonoThreadedTaskScheduler("self-dispose")
+        {
+            DequeueOnDispose = true,
+            DisposeThreadJoinTimeout = Timeout.InfiniteTimeSpan,
+        };
+
+        var executed = 0;
+        Task? queued = null;
+
+        var disposing = Task.Factory.StartNew(
+            () =>
+            {
+                // Accepted before the shutdown is requested, so the final drain must still run it.
+                queued = Task.Factory.StartNew(
+                    () => Interlocked.Increment(ref executed),
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    scheduler);
+
+                scheduler.Dispose();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        await disposing.WaitAsync(TimeSpan.FromSeconds(30));
+        await queued!.WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(1, executed);
+    }
+
+    [Fact]
+    public async Task QueueTask_RacingWithDispose_NeverOrphansAnAcceptedTask()
+    {
+        // A task the scheduler accepted must always reach completion: it can never slip past the disposed check
+        // and end up queued behind a worker that has already drained for the last time.
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var scheduler = new MonoThreadedTaskScheduler("race") { DequeueOnDispose = true };
+            using var producing = new ManualResetEventSlim(initialState: false);
+            var accepted = new List<Task>();
+
+            var producer = new Thread(() =>
+            {
+                producing.Set();
+                for (var i = 0; i < 200; i++)
+                {
+                    try
+                    {
+                        accepted.Add(Task.Factory.StartNew(
+                            () => { },
+                            CancellationToken.None,
+                            TaskCreationOptions.None,
+                            scheduler));
+                    }
+                    catch (TaskSchedulerException exception) when (exception.InnerException is ObjectDisposedException)
+                    {
+                        return;
+                    }
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "race-producer",
+            };
+
+            producer.Start();
+            producing.Wait();
+            scheduler.Dispose();
+
+            // The join publishes the list built by the producer thread.
+            producer.Join();
+
+            await Task.WhenAll(accepted).WaitAsync(TimeSpan.FromSeconds(30));
+        }
+    }
+
+    [Fact]
     public void QueueTask_AfterDispose_Throws()
     {
         var scheduler = new MonoThreadedTaskScheduler("disposed");

@@ -104,6 +104,114 @@ public sealed class MixedConsumerProducerTests
     }
 
     [Fact]
+    public async Task Process_PreCanceledToken_DoesNotEnumerateInitialItems()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var enumerated = false;
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 2, CancellationToken = cts.Token };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => MixedConsumerProducer.Process(GetItems(), options, (context, item, cancellationToken) => ValueTask.CompletedTask));
+
+        Assert.False(enumerated);
+
+        IEnumerable<int> GetItems()
+        {
+            enumerated = true;
+            yield return 1;
+        }
+    }
+
+    [Fact]
+    public async Task Process_StreamsInitialItemsWhileConsumersRun()
+    {
+        var firstItemProcessed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var processed = new ConcurrentBag<int>();
+
+        await MixedConsumerProducer.Process(GetItems(), new ParallelOptions() { MaxDegreeOfParallelism = 2 }, (context, item, cancellationToken) =>
+        {
+            processed.Add(item);
+            if (item == 0)
+            {
+                firstItemProcessed.TrySetResult();
+            }
+
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.HasCount(2, processed);
+        Assert.Contains(0, processed);
+        Assert.Contains(1, processed);
+
+        IEnumerable<int> GetItems()
+        {
+            yield return 0;
+
+            // The consumers must already be draining the channel while the initial items are being
+            // enumerated, otherwise the first item is never processed and this never completes.
+            Assert.True(firstItemProcessed.Task.Wait(TimeSpan.FromSeconds(60)), "The first item was not processed while the initial items were still being enumerated");
+            yield return 1;
+        }
+    }
+
+    [Fact]
+    public async Task Process_CancellationDuringEnumeration_StopsEnumeratingInitialItems()
+    {
+        const int TotalItems = 100_000;
+
+        using var cts = new CancellationTokenSource();
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var enumerated = 0;
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 2, CancellationToken = cts.Token };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => MixedConsumerProducer.Process(GetItems(), options, async (context, item, cancellationToken) =>
+        {
+            await cts.CancelAsync();
+            canceled.TrySetResult();
+        }));
+
+        Assert.True(enumerated < TotalItems, $"The whole sequence was enumerated ({enumerated} items) instead of stopping once the token was canceled");
+
+        IEnumerable<int> GetItems()
+        {
+            for (var i = 0; i < TotalItems; i++)
+            {
+                enumerated++;
+                yield return i;
+
+                if (i == 0)
+                {
+                    // The first item must reach a consumer while the sequence is still being
+                    // enumerated, otherwise the cancellation never happens during the enumeration.
+                    canceled.Task.Wait(TimeSpan.FromSeconds(60));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Process_InitialItemsEnumerationThrows_ProcessesEnqueuedItemsAndPropagates()
+    {
+        var processed = new ConcurrentBag<int>();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => MixedConsumerProducer.Process(GetItems(), new ParallelOptions() { MaxDegreeOfParallelism = 2 }, (context, item, cancellationToken) =>
+        {
+            processed.Add(item);
+            return ValueTask.CompletedTask;
+        }));
+
+        Assert.Equal("boom", exception.Message);
+        Assert.Contains(1, processed);
+
+        static IEnumerable<int> GetItems()
+        {
+            yield return 1;
+            throw new InvalidOperationException("boom");
+        }
+    }
+
+    [Fact]
     public async Task Process_SingleItemWithoutEnqueue()
     {
         var processed = 0;

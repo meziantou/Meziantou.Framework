@@ -19,4 +19,12 @@
     <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
   </ItemGroup>
+
+  <!-- Every test of these projects is gated on non-invariant globalization, which is why they set
+       'MinimumExpectedTests' to 0. A traversal that only contains them runs no test at all, and the
+       test runner reports that as an error, so the invariant traversals drop them. -->
+  <ItemGroup Condition="'$(SkipUnsupportedPlatforms)' == 'true' AND '$(InvariantGlobalization)' == 'true'">
+    <ProjectReference Remove="../tests/Meziantou.Framework.TdsServer.Tests/Meziantou.Framework.TdsServer.Tests.csproj" />
+    <ProjectReference Remove="../tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
+  </ItemGroup>
 </Project>

@@ -394,6 +394,9 @@ jobs:
           base-commit: ${{ needs.compute_test_matrix.outputs.base-commit }}
           run-generate: "true"
           test-projects-only: "true"
+          # The traversal project drops the test projects that cannot run in the globalization mode
+          # of this job, so the evaluation needs to know which mode the job runs in.
+          properties: InvariantGlobalization=${{ case(matrix.additionalArguments == '', 'false', 'true') }}
           # The projects of the group are the only candidates, so the generated project contains
           # exactly the projects computed by the compute_test_matrix job.
           include: ${{ matrix.test-group.projects }}

@@ -193,6 +193,66 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         Assert.IsType<ObjectDisposedException>(exception.InnerException);
     }
 
+    [Fact]
+    public void WaitTimeout_DefaultsToInfinite()
+    {
+        // Both the queue and the stop signal wake the worker thread, so polling only costs wake-ups.
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void WaitTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        // An invalid value used to reach WaitHandle.WaitAny and kill the worker thread.
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [InlineData(-2)]
+    [InlineData((double)int.MaxValue + 1)]
+    public void DisposeThreadJoinTimeout_InvalidValue_Throws(double milliseconds)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(milliseconds));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromSeconds(1), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public void Timeouts_RoundTrip()
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(250);
+        _taskScheduler.DisposeThreadJoinTimeout = Timeout.InfiniteTimeSpan;
+
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.WaitTimeout);
+        Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Fact]
+    public async Task WaitTimeout_SetOnAnIdleScheduler_StillRunsTasks()
+    {
+        // The worker thread is blocked on an infinite wait when the timeout changes; it must not stay stuck
+        // on the previous wait, and it must keep executing tasks afterwards.
+        using var scheduler = new MonoThreadedTaskScheduler("timeout") { WaitTimeout = TimeSpan.FromMilliseconds(50) };
+
+        var task = Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        Assert.Equal("timeout", await task.WaitAsync(TimeSpan.FromSeconds(30)));
+    }
+
+    [Fact]
+    public void WorkerException_IsNullWhileTheWorkerRuns()
+    {
+        Assert.Null(_taskScheduler.WorkerException);
+    }
+
     private Task EnqueueTask()
     {
         return Task.Factory.StartNew(() =>

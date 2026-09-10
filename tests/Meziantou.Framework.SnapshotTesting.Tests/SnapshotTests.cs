@@ -341,6 +341,7 @@ public sealed partial class SnapshotTests
         Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
         Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.MethodName);
         Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.TestContext?.TestName);
+        Assert.Equal(nameof(ValidateThroughHelper), capturedContext.MemberName);
         Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
 
         var files = Directory.GetFiles(directory.FullPath);
@@ -374,6 +375,63 @@ public sealed partial class SnapshotTests
         var files = Directory.GetFiles(directory.FullPath);
         Assert.Single(files);
         Assert.Equal("SnapshotTests_Validate_ResolvesTestMethod_WhenCalledFromAsyncHelperMethodInAnotherClass.verified.txt", Path.GetFileName(files[0]));
+    }
+
+    [Fact]
+    public void Validate_DoesNotWalkTheStack_WhenTheStrategyDoesNotReadTheTestNames()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / "snapshot.verified.txt";
+            },
+        };
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.NotNull(capturedContext);
+        Assert.False(capturedContext.StackWalkPerformed);
+        Assert.Equal(nameof(Validate_DoesNotWalkTheStack_WhenTheStrategyDoesNotReadTheTestNames), capturedContext.MemberName);
+
+        // The frames of the assertion are gone by now, so the names are read from the test framework instead
+        // of describing an unrelated call stack.
+        Assert.Equal(nameof(Validate_DoesNotWalkTheStack_WhenTheStrategyDoesNotReadTheTestNames), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+        Assert.False(capturedContext.StackWalkPerformed);
+    }
+
+    [Fact]
+    public void Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.MethodName + ".verified.txt");
+            },
+        };
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.NotNull(capturedContext);
+        Assert.True(capturedContext.StackWalkPerformed);
+        Assert.Equal(nameof(Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal(nameof(Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames) + ".verified.txt", Path.GetFileName(files[0]));
     }
 
     private static class SnapshotHelpers

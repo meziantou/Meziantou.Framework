@@ -13,15 +13,24 @@ internal static class SnapshotEngine
         ArgumentNullException.ThrowIfNull(settings);
 
         type ??= SnapshotType.Default;
-        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName);
+        testContext ??= SnapshotTestContext.Get();
+        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
         var serialized = Serialize(settings, type, value);
 
         if (serialized is null || serialized.Count == 0)
             throw new SnapshotException("Serializer returned no snapshot data.");
 
-        testContext ??= SnapshotTestContext.Get();
+        List<SnapshotFile> actualFiles;
+        try
+        {
+            actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext);
+        }
+        finally
+        {
+            // The strategies are the only consumers of the call stack, and they have all run by now.
+            callerContext.Freeze();
+        }
 
-        var actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext);
         var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles);
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
@@ -256,28 +265,13 @@ internal static class SnapshotEngine
         IReadOnlyList<SnapshotData> serialized,
         SnapshotTestContext? testContext)
     {
-        // The call stack only contains the test method as long as the assertion runs synchronously below it.
-        // A helper method that awaited before asserting runs on a continuation where the test method is gone,
-        // and the innermost frames then describe the helper. The test framework still knows which test is
-        // running, so its own view wins whenever the stack could not produce one.
-        var className = callerContext.ContainingTypeName;
-        var methodName = callerContext.MethodName;
-        if (!callerContext.TestMethodResolved)
-        {
-            className = testContext?.ClassName ?? className;
-            methodName = testContext?.MethodName ?? methodName;
-        }
-
         var result = new List<SnapshotFile>(serialized.Count);
         for (var index = 0; index < serialized.Count; index++)
         {
             var snapshotData = serialized[index];
             var extension = ResolveSnapshotExtension(type, snapshotData);
             var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
-                callerContext.SourceFilePath,
-                className,
-                methodName,
-                callerContext.LineNumber,
+                callerContext,
                 type,
                 index,
                 extension,

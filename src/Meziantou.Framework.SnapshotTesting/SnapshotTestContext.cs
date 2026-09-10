@@ -4,37 +4,80 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDictionary<string, string?>? Metadata = null)
 {
-    private static Func<string?>? s_xunitV3GetDisplayName;
-    private static Func<string?>? s_tunitGetDisplayName;
-    private static Func<string?>? s_nunitGetDisplayName;
+    private static Func<SnapshotTestContext?>? s_xunitV3GetContext;
+    private static Func<SnapshotTestContext?>? s_tunitGetContext;
+    private static Func<SnapshotTestContext?>? s_nunitGetContext;
+
+    /// <summary>
+    /// Simple name of the class declaring the running test, when the test framework exposes it. It is used
+    /// when the call stack does not contain the test method, which happens when the assertion runs in a
+    /// helper method that awaited before calling <see cref="Snapshot.Validate(object?, SnapshotType?, SnapshotSettings?, string?, int, string?)" />.
+    /// </summary>
+    public string? ClassName { get; init; }
+
+    /// <summary>
+    /// Name of the running test method, when the test framework exposes it. Unlike <see cref="TestName" />,
+    /// it never contains the test arguments.
+    /// </summary>
+    public string? MethodName { get; init; }
 
     internal static SnapshotTestContext Get()
     {
-        var displayName = GetDisplayName(ref s_xunitV3GetDisplayName, TryCreateXunitV3GetDisplayName)?.Invoke() ??
-                          GetDisplayName(ref s_tunitGetDisplayName, TryCreateTUnitGetDisplayName)?.Invoke() ??
-                          GetDisplayName(ref s_nunitGetDisplayName, TryCreateNUnitGetDisplayName)?.Invoke();
-        if (displayName is not null)
-            return new SnapshotTestContext(TestName: displayName);
-
-        return new();
+        return GetContext(ref s_xunitV3GetContext, TryCreateXunitV3GetContext)?.Invoke() ??
+               GetContext(ref s_tunitGetContext, TryCreateTUnitGetContext)?.Invoke() ??
+               GetContext(ref s_nunitGetContext, TryCreateNUnitGetContext)?.Invoke() ??
+               new SnapshotTestContext();
     }
 
-    private static Func<string?>? GetDisplayName(ref Func<string?>? cachedFactory, Func<Func<string?>?> factory)
+    private static Func<SnapshotTestContext?>? GetContext(ref Func<SnapshotTestContext?>? cachedFactory, Func<Func<SnapshotTestContext?>?> factory)
     {
-        var getDisplayName = cachedFactory;
-        if (getDisplayName is not null)
-            return getDisplayName;
+        var getContext = cachedFactory;
+        if (getContext is not null)
+            return getContext;
 
-        getDisplayName = factory();
-        if (getDisplayName is not null)
+        getContext = factory();
+        if (getContext is not null)
         {
-            Interlocked.CompareExchange(ref cachedFactory, getDisplayName, comparand: null);
+            Interlocked.CompareExchange(ref cachedFactory, getContext, comparand: null);
         }
 
-        return getDisplayName;
+        return getContext;
     }
 
-    private static Func<string?>? TryCreateXunitV3GetDisplayName()
+    private static SnapshotTestContext? Create(string? testName, string? className, string? methodName)
+    {
+        className = NormalizeClassName(className);
+        if (testName is null && className is null && methodName is null)
+            return null;
+
+        return new SnapshotTestContext(TestName: testName) { ClassName = className, MethodName = methodName };
+    }
+
+    /// <summary>
+    /// Reduces a type name to the simple name produced by the call stack analysis, so both sources agree:
+    /// no namespace, no declaring types and no generic arity suffix.
+    /// </summary>
+    private static string? NormalizeClassName(string? className)
+    {
+        if (string.IsNullOrWhiteSpace(className))
+            return null;
+
+        var separatorIndex = className.LastIndexOfAny(['.', '+']);
+        if (separatorIndex >= 0)
+        {
+            className = className[(separatorIndex + 1)..];
+        }
+
+        var genericSeparatorIndex = className.IndexOf('`', StringComparison.Ordinal);
+        if (genericSeparatorIndex >= 0)
+        {
+            className = className[..genericSeparatorIndex];
+        }
+
+        return string.IsNullOrWhiteSpace(className) ? null : className;
+    }
+
+    private static Func<SnapshotTestContext?>? TryCreateXunitV3GetContext()
     {
         // Xunit v3: Xunit.TestContext.Current?.Test?.TestDisplayName
         // We use reflection so we don't take a hard dependency on xunit.
@@ -67,14 +110,20 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     var displayName = GetStringPropertyValue(test, "TestDisplayName") ??
                                       GetStringPropertyValue(test, "DisplayName");
                     var methodName = GetStringPropertyValue(test, "MethodName") ?? GetMethodName(displayName);
+
+                    // The class and the undecorated method name are only exposed by the test case.
+                    var testCase = GetPropertyValue(test, "TestCase");
+                    var className = testCase is null ? null : GetStringPropertyValue(testCase, "TestClassSimpleName") ?? GetStringPropertyValue(testCase, "TestClassName");
+                    var testMethodName = testCase is null ? methodName : GetStringPropertyValue(testCase, "TestMethodName") ?? methodName;
+
                     if (methodName is null)
-                        return displayName;
+                        return Create(displayName, className, testMethodName);
 
                     var arguments = GetObjectArrayPropertyValue(test, "TestMethodArguments");
                     if (arguments is null || arguments.Length == 0)
-                        return methodName;
+                        return Create(methodName, className, testMethodName);
 
-                    return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));
+                    return Create(methodName + "_" + string.Join('_', arguments.Select(FormatArgument)), className, testMethodName);
                 }
                 catch
                 {
@@ -88,7 +137,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         }
     }
 
-    private static Func<string?>? TryCreateTUnitGetDisplayName()
+    private static Func<SnapshotTestContext?>? TryCreateTUnitGetContext()
     {
         // TUnit: TUnit.Core.TestContext.Current?.Metadata?.DisplayName
         // We use reflection so we don't take a hard dependency on TUnit.
@@ -109,6 +158,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
             var metadataType = metadataProperty.PropertyType;
             var displayNameProperty = metadataType.GetProperty("DisplayName", BindingFlags.Public | BindingFlags.Instance);
             var testNameProperty = metadataType.GetProperty("TestName", BindingFlags.Public | BindingFlags.Instance);
+            var testDetailsProperty = metadataType.GetProperty("TestDetails", BindingFlags.Public | BindingFlags.Instance);
 
             return () =>
             {
@@ -122,8 +172,15 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     if (metadata is null)
                         return null;
 
-                    return displayNameProperty?.GetValue(metadata) as string ??
-                           testNameProperty?.GetValue(metadata) as string;
+                    var displayName = displayNameProperty?.GetValue(metadata) as string ??
+                                      testNameProperty?.GetValue(metadata) as string;
+
+                    // The class and the undecorated method name are only exposed by the test details.
+                    var testDetails = testDetailsProperty?.GetValue(metadata);
+                    var className = testDetails is null ? null : (GetPropertyValue(testDetails, "ClassType") as Type)?.Name;
+                    var methodName = testDetails is null ? null : GetStringPropertyValue(testDetails, "MethodName");
+
+                    return Create(displayName, className, methodName);
                 }
                 catch
                 {
@@ -137,7 +194,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         }
     }
 
-    private static Func<string?>? TryCreateNUnitGetDisplayName()
+    private static Func<SnapshotTestContext?>? TryCreateNUnitGetContext()
     {
         // NUnit: NUnit.Framework.TestContext.CurrentContext?.Test
         // We use reflection so we don't take a hard dependency on NUnit.
@@ -173,18 +230,21 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                                       GetStringPropertyValue(test, "FullName");
 
                     var methodName = GetMethodName(displayName);
+                    var className = (GetPropertyValue(test, "Type") as Type)?.Name ?? GetStringPropertyValue(test, "ClassName");
+                    var testMethodName = GetStringPropertyValue(test, "MethodName") ?? methodName;
+
                     if (methodName is null)
-                        return displayName;
+                        return Create(displayName, className, testMethodName);
 
                     var arguments = GetObjectArrayPropertyValue(test, "Arguments");
                     if (arguments is null || arguments.Length == 0)
-                        return displayName ?? methodName;
+                        return Create(displayName ?? methodName, className, testMethodName);
 
                     var displayNameHasParameters = displayName?.IndexOf('(', StringComparison.Ordinal) >= 0;
                     if (ShouldPreferDisplayName(displayName, methodName) || !displayNameHasParameters)
-                        return GetMethodName(displayName) ?? displayName;
+                        return Create(GetMethodName(displayName) ?? displayName, className, testMethodName);
 
-                    return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));
+                    return Create(methodName + "_" + string.Join('_', arguments.Select(FormatArgument)), className, testMethodName);
                 }
                 catch
                 {
@@ -198,16 +258,22 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         }
     }
 
-    private static string? GetStringPropertyValue(object instance, string propertyName)
+    // The parameter is deliberately not named propertyName: these are properties of the test framework
+    // types read through reflection, not members of this type, so nameof does not apply to them.
+    private static object? GetPropertyValue(object instance, string name)
     {
-        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        return property?.GetValue(instance) as string;
+        var property = instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+        return property?.GetValue(instance);
     }
 
-    private static object?[]? GetObjectArrayPropertyValue(object instance, string propertyName)
+    private static string? GetStringPropertyValue(object instance, string name)
     {
-        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        return property?.GetValue(instance) as object?[];
+        return GetPropertyValue(instance, name) as string;
+    }
+
+    private static object?[]? GetObjectArrayPropertyValue(object instance, string name)
+    {
+        return GetPropertyValue(instance, name) as object?[];
     }
 
     private static string? GetMethodName(string? displayName)

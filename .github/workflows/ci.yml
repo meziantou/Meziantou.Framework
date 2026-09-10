@@ -391,6 +391,9 @@ jobs:
         with:
           input-project: eng/build.proj
           output-project: eng/delta.proj
+          # The suites that cannot run under InvariantGlobalization are dropped by eng/build.proj,
+          # so the leg has to be evaluated with the same property it runs the tests with.
+          properties: ${{ case(matrix.additionalArguments == '', '', 'InvariantGlobalization=true') }}
           base-commit: ${{ needs.compute_test_matrix.outputs.base-commit }}
           run-generate: "true"
           test-projects-only: "true"

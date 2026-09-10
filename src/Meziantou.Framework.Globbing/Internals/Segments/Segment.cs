@@ -11,4 +11,10 @@ internal abstract class Segment
     public abstract bool IsMatch(ref PathReader pathReader);
 
     public virtual bool IsRecursiveMatchAll => false;
+
+    /// <summary>
+    ///     Whether the segment can still match once the whole path has been consumed. The matcher stops as soon as
+    ///     the path is exhausted, so only a segment that says otherwise is given a chance to match nothing.
+    /// </summary>
+    public virtual bool CanMatchEmptyPath => false;
 }

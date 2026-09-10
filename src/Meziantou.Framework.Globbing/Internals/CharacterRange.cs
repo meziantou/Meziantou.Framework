@@ -25,8 +25,16 @@ internal readonly struct CharacterRange
 
     public bool IsInRange(char c) => c >= Min && c <= Max;
 
+    /// <summary>
+    ///     Tests the character and both of its case variants against the range instead of normalizing the range,
+    ///     which would change the characters it contains: '[@-B]' contains 'A', and lowering its bounds would drop
+    ///     both '@' and 'A'.
+    /// </summary>
+    public bool IsInRangeIgnoreCase(char c) => IsInRange(c) || IsInRange(char.ToLowerInvariant(c)) || IsInRange(char.ToUpperInvariant(c));
+
     public char[] EnumerateCharacters()
     {
+        // The index is an int on purpose: a 'char' counter wraps around when the range ends at char.MaxValue.
         var array = new char[Length];
         for (var i = 0; i < array.Length; i++)
         {

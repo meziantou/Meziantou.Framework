@@ -28,20 +28,25 @@ internal ref struct PathReader
 
         if (itemType is null)
         {
-            if (!_filename.IsEmpty)
+            // A pattern that is not path-separator aware matches a plain string: a trailing '/' belongs to it and
+            // says nothing about the kind of item, so it must not be trimmed.
+            if (_pathSeparatorAware)
             {
-                if (IsPathSeparator(_filename[^1]))
+                if (!_filename.IsEmpty)
                 {
-                    _filename = _filename[..^1];
-                    IsDirectory = true;
+                    if (IsPathSeparator(_filename[^1]))
+                    {
+                        _filename = _filename[..^1];
+                        IsDirectory = true;
+                    }
                 }
-            }
-            else
-            {
-                if (!CurrentText.IsEmpty && IsPathSeparator(CurrentText[^1]))
+                else
                 {
-                    CurrentText = CurrentText[..^1];
-                    IsDirectory = true;
+                    if (!CurrentText.IsEmpty && IsPathSeparator(CurrentText[^1]))
+                    {
+                        CurrentText = CurrentText[..^1];
+                        IsDirectory = true;
+                    }
                 }
             }
         }

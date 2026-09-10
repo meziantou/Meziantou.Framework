@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
@@ -316,6 +317,79 @@ public sealed partial class SnapshotTests
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
         Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
+    }
+
+    [Fact]
+    public void Validate_ResolvesTestMethod_WhenCalledFromHelperMethod()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (SnapshotSettings.Default.SnapshotPathStrategy(context).Name);
+            },
+        };
+
+        ValidateThroughHelper("sample", settings);
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+        Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.MethodName);
+        Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.TestContext?.TestName);
+        Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal("SnapshotTests_Validate_ResolvesTestMethod_WhenCalledFromHelperMethod.verified.txt", Path.GetFileName(files[0]));
+    }
+
+    [Fact]
+    public async Task Validate_ResolvesTestMethod_WhenCalledFromAsyncHelperMethodInAnotherClass()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (SnapshotSettings.Default.SnapshotPathStrategy(context).Name);
+            },
+        };
+
+        await SnapshotHelpers.ValidateThroughAsyncHelper("sample", settings);
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+        Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromAsyncHelperMethodInAnotherClass), capturedContext.MethodName);
+        Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal("SnapshotTests_Validate_ResolvesTestMethod_WhenCalledFromAsyncHelperMethodInAnotherClass.verified.txt", Path.GetFileName(files[0]));
+    }
+
+    private static class SnapshotHelpers
+    {
+        public static async Task ValidateThroughAsyncHelper(object? value, SnapshotSettings settings, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+        {
+            // Yielding drops the test method from the call stack, so only the test framework still knows
+            // which test is running.
+            await Task.Yield();
+            Snapshot.Validate(value, type: null, settings, filePath, lineNumber);
+        }
+    }
+
+    private static void ValidateThroughHelper(object? value, SnapshotSettings settings, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    {
+        Snapshot.Validate(value, type: null, settings, filePath, lineNumber);
     }
 
     [Fact]

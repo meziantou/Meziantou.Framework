@@ -80,6 +80,49 @@ You can choose how snapshot names are generated using `SnapshotSettings.Snapshot
 - `SnapshotNamingStrategies.ClassName_TestName` (default)
 - `SnapshotNamingStrategies.FullName`
 
+## Calling `Snapshot.Validate` from a helper method
+
+Wrapping `Snapshot.Validate` in a helper method is supported. The test method is resolved by walking the
+stack until a method carrying a test attribute (`[Fact]`, `[Theory]`, `[Test]`, `[TestMethod]`) is found, so
+the helper frames are skipped and the snapshot is still named after the test, not after the helper.
+
+The snapshot directory, however, comes from `[CallerFilePath]`, which points at the file declaring the
+helper. Forward the caller information so the snapshots are created next to the test file:
+
+```csharp
+public static class ApiSnapshot
+{
+    public static void ValidateOpenApiSpec(
+        string spec,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = -1)
+    {
+        var settings = SnapshotSettings.Default with { /* shared configuration */ };
+        Snapshot.Validate(spec, "yaml", settings, filePath, lineNumber);
+    }
+}
+
+public sealed class OpenApiTests
+{
+    [Fact]
+    public void ValidateSpec()
+    {
+        ApiSnapshot.ValidateOpenApiSpec(GetSpec());
+        // => __snapshots__/OpenApiTests_ValidateSpec.verified.yaml
+    }
+}
+```
+
+No custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` is needed for this scenario.
+
+This also works when the helper is `async` and awaits before asserting. The test method is then no longer on
+the call stack, so the test name and class name are read from the test framework context instead (Xunit v3,
+TUnit, and NUnit). Under a test framework that exposes no context (Xunit v2, MSTest), await inside the helper
+*after* the call to `Snapshot.Validate` rather than before it, so the test method is still on the stack.
+
+If the same test calls the helper several times, set `Snapshot.TestContext` to give each call a distinct name
+(see [Test context](#test-context)).
+
 ## Snapshots stored as source files
 
 Some snapshots are source files (for example the output of a source generator, see [`Meziantou.Framework.SnapshotTesting.Roslyn`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Roslyn)).
@@ -114,6 +157,9 @@ Snapshot naming uses test context when available:
 
 - `Snapshot.TestContext` (`AsyncLocal<SnapshotTestContext?>`) can be set explicitly.
 - Xunit v3, TUnit, and NUnit display names are auto-detected to improve generated file names.
+- The test class and method names are auto-detected from the same frameworks. They are used when the call
+  stack does not contain the test method, which happens when the assertion runs in a helper method that
+  awaited before asserting.
 
 ## Customization
 

@@ -38,4 +38,11 @@ internal sealed class ConsumeSegmentUntilSegment : Segment
 
         return true;
     }
+
+    public override string ToString()
+    {
+        // The segment is a pure prefilter that scans ahead to the next character the following subsegment could
+        // match, so it doesn't contribute anything to the textual pattern.
+        return "";
+    }
 }

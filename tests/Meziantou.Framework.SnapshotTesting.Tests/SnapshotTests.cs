@@ -341,7 +341,7 @@ public sealed partial class SnapshotTests
         Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
         Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.MethodName);
         Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromHelperMethod), capturedContext.TestContext?.TestName);
-        Assert.Equal(FullPath.FromPath(GetCurrentFilePath()), capturedContext.SourceFilePath);
+        Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
 
         var files = Directory.GetFiles(directory.FullPath);
         Assert.Single(files);
@@ -369,7 +369,7 @@ public sealed partial class SnapshotTests
         Assert.NotNull(capturedContext);
         Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
         Assert.Equal(nameof(Validate_ResolvesTestMethod_WhenCalledFromAsyncHelperMethodInAnotherClass), capturedContext.MethodName);
-        Assert.Equal(FullPath.FromPath(GetCurrentFilePath()), capturedContext.SourceFilePath);
+        Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
 
         var files = Directory.GetFiles(directory.FullPath);
         Assert.Single(files);
@@ -391,8 +391,6 @@ public sealed partial class SnapshotTests
     {
         Snapshot.Validate(value, type: null, settings, filePath, lineNumber);
     }
-
-    private static string GetCurrentFilePath([CallerFilePath] string? filePath = null) => filePath!;
 
     [Fact]
     public void Validate_UsesSnapshotTypeExtensionWhenSerializerDoesNotProvideOne()

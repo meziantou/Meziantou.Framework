@@ -93,7 +93,8 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
                     ContainingTypeDeclarations: GetContainingTypeDeclarations(targetTypeSymbol),
                     Length: length,
                     ImplementsIFixedStringGeneric: fixedStringInterface is not null,
-                    ImplementsIFixedStringNonGeneric: fixedStringNonGenericInterface is not null);
+                    ImplementsIFixedStringNonGeneric: fixedStringNonGenericInterface is not null,
+                    UsesUpdatedMemorySafetyRules: declaration.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules"));
             }
         }
 
@@ -471,8 +472,13 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         // Unlike AsSpan, this one has to launder the ref: the explicit IFixedString.GetUnsafeFullSpan
         // implementation returns it, and an interface member cannot be [UnscopedRef]. That is the escape hatch
-        // IFixedString.GetUnsafeFullSpan is documented to be.
-        AppendLine("private Span<char> AsUnsafeFullSpan() => MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength);");
+        // IFixedString.GetUnsafeFullSpan is documented to be. Under the updated memory safety rules, the Unsafe and
+        // MemoryMarshal methods doing so require an unsafe context. The unsafe expression does not exist in older
+        // language versions, so it is only emitted when the compilation opted into the rules.
+        const string FullSpanExpression = "MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength)";
+        AppendLine(target.UsesUpdatedMemorySafetyRules
+            ? $"private Span<char> AsUnsafeFullSpan() => unsafe({FullSpanExpression});"
+            : $"private Span<char> AsUnsafeFullSpan() => {FullSpanExpression};");
         AppendLine();
         AppendLine("private Span<char> AsRemainingSpan() => AsUnsafeFullSpan().Slice(_length);");
         AppendLine();
@@ -625,5 +631,6 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
         string ContainingTypeDeclarations,
         int Length,
         bool ImplementsIFixedStringGeneric,
-        bool ImplementsIFixedStringNonGeneric);
+        bool ImplementsIFixedStringNonGeneric,
+        bool UsesUpdatedMemorySafetyRules);
 }

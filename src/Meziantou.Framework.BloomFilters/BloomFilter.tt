@@ -77,7 +77,7 @@ partial class BloomFilter<#= algorithm.Name #> : IBloomFilter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Hash<#= algorithm.HashSize #> Hash<T>(in T value) where T : unmanaged
     {
-        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
@@ -85,7 +85,7 @@ partial class BloomFilter<#= algorithm.Name #> : IBloomFilter
     private static Hash<#= algorithm.HashSize #> Hash(string value)
     {
         var chars = value.AsSpan();
-        var bytes = MemoryMarshal.AsBytes(chars);
+        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
         return Hash(bytes);
     }
 
@@ -110,7 +110,7 @@ partial class CountingBloomFilter<#= algorithm.Name #> : ICountingBloomFilter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Hash<#= algorithm.HashSize #> Hash<T>(in T value) where T : unmanaged
     {
-        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1));
+        var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
@@ -118,7 +118,7 @@ partial class CountingBloomFilter<#= algorithm.Name #> : ICountingBloomFilter
     private static Hash<#= algorithm.HashSize #> Hash(string value)
     {
         var chars = value.AsSpan();
-        var bytes = MemoryMarshal.AsBytes(chars);
+        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
         return Hash(bytes);
     }
 

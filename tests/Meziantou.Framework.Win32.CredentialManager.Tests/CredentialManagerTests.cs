@@ -209,18 +209,21 @@ public sealed class CredentialManagerTests
     [InlineData("john", "")]
     [InlineData("CONTOSO\\john", "Pa$$w0rd")]
     [SupportedOSPlatform("windows6.0.6000")]
-    public unsafe void CredentialManager_AuthenticationBuffer_RoundTrips(string user, string password)
+    public void CredentialManager_AuthenticationBuffer_RoundTrips(string user, string password)
     {
-        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
-        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+        unsafe
+        {
+            CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+            Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
 
-        // GetCredentialsFromOutputBuffer zeroes and frees the buffer it is given.
-        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out var actualDomain));
+            // GetCredentialsFromOutputBuffer zeroes and frees the buffer it is given.
+            Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out var actualDomain));
 
-        var (expectedDomain, expectedUser) = user.Split('\\') is [var d, var u] ? (d, u) : ("", user);
-        Assert.Equal(expectedUser, actualUser);
-        Assert.Equal(expectedDomain, actualDomain);
-        Assert.Equal(password, actualPassword);
+            var (expectedDomain, expectedUser) = user.Split('\\') is [var d, var u] ? (d, u) : ("", user);
+            Assert.Equal(expectedUser, actualUser);
+            Assert.Equal(expectedDomain, actualDomain);
+            Assert.Equal(password, actualPassword);
+        }
     }
 
     // 1024 bytes, the size this used to hard-code, is not enough for a long user name plus a password.
@@ -228,31 +231,37 @@ public sealed class CredentialManagerTests
     [InlineData(400, 200)]
     [InlineData(513, 256)]
     [SupportedOSPlatform("windows6.0.6000")]
-    public unsafe void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
+    public void CredentialManager_AuthenticationBuffer_RoundTripsLongCredentials(int userLength, int passwordLength)
     {
-        var user = new string('u', userLength);
-        var password = new string('p', passwordLength);
+        unsafe
+        {
+            var user = new string('u', userLength);
+            var password = new string('p', passwordLength);
 
-        CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
-        Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
-        Assert.True(size > 1024, $"expected the packed buffer to exceed 1024 bytes, was {size}");
+            CredentialManager.GetInputBuffer(user, password, out var buffer, out var size);
+            Assert.NotEqual(IntPtr.Zero, (IntPtr)buffer);
+            Assert.True(size > 1024, $"expected the packed buffer to exceed 1024 bytes, was {size}");
 
-        Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out _));
-        Assert.Equal(user, actualUser);
-        Assert.Equal(password, actualPassword);
+            Assert.True(CredentialManager.GetCredentialsFromOutputBuffer(buffer, size, out var actualUser, out var actualPassword, out _));
+            Assert.Equal(user, actualUser);
+            Assert.Equal(password, actualPassword);
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
     [SupportedOSPlatform("windows6.0.6000")]
-    public unsafe void CredentialManager_GetInputBuffer_NoUserName_PacksNothing()
+    public void CredentialManager_GetInputBuffer_NoUserName_PacksNothing()
     {
-        CredentialManager.GetInputBuffer(user: null, password: "Pa$$w0rd", out var buffer, out var size);
-        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
-        Assert.Equal(0u, size);
+        unsafe
+        {
+            CredentialManager.GetInputBuffer(user: null, password: "Pa$$w0rd", out var buffer, out var size);
+            Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+            Assert.Equal(0u, size);
 
-        CredentialManager.GetInputBuffer(user: "", password: "Pa$$w0rd", out buffer, out size);
-        Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
-        Assert.Equal(0u, size);
+            CredentialManager.GetInputBuffer(user: "", password: "Pa$$w0rd", out buffer, out size);
+            Assert.Equal(IntPtr.Zero, (IntPtr)buffer);
+            Assert.Equal(0u, size);
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -405,24 +414,27 @@ public sealed class CredentialManagerTests
     }
 
     /// <summary>Stores a credential whose blob is arbitrary bytes, the way another application could.</summary>
-    private static unsafe void WriteRawCredential(string targetName, string userName, byte[] blob)
+    private static void WriteRawCredential(string targetName, string userName, byte[] blob)
     {
-        fixed (byte* blobPtr = blob)
-        fixed (char* targetNamePtr = targetName)
-        fixed (char* userNamePtr = userName)
+        unsafe
         {
-            var credential = new CREDENTIALW
+            fixed (byte* blobPtr = blob)
+            fixed (char* targetNamePtr = targetName)
+            fixed (char* userNamePtr = userName)
             {
-                Type = CRED_TYPE.CRED_TYPE_GENERIC,
-                Persist = CRED_PERSIST.CRED_PERSIST_SESSION,
-                TargetName = targetNamePtr,
-                UserName = userNamePtr,
-                CredentialBlob = blobPtr,
-                CredentialBlobSize = (uint)blob.Length,
-            };
+                var credential = new CREDENTIALW
+                {
+                    Type = CRED_TYPE.CRED_TYPE_GENERIC,
+                    Persist = CRED_PERSIST.CRED_PERSIST_SESSION,
+                    TargetName = targetNamePtr,
+                    UserName = userNamePtr,
+                    CredentialBlob = blobPtr,
+                    CredentialBlobSize = (uint)blob.Length,
+                };
 
-            if (!PInvoke.CredWrite(in credential, Flags: 0))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                if (!PInvoke.CredWrite(in credential, Flags: 0))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
         }
     }
 

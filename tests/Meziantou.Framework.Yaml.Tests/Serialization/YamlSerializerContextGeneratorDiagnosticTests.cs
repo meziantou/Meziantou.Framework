@@ -1216,6 +1216,63 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Contains("\"Cat\"", result.GeneratedSource);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GeneratedUnsafeAccessorsCompileWithAndWithoutUpdatedMemorySafetyRules(bool updatedMemorySafetyRules)
+    {
+        // The generated code relies on the implicit usings of the SDK
+        const string Source = """
+            global using System;
+            global using System.Collections.Generic;
+            global using System.IO;
+            global using System.Linq;
+            global using System.Threading;
+            global using System.Threading.Tasks;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class RestrictedConfig
+            {
+                [YamlConstructor]
+                private RestrictedConfig(int retries) => Retries = retries;
+
+                [YamlInclude]
+                private string _name = string.Empty;
+
+                public int Retries { get; }
+
+                public string GetName() => _name;
+            }
+
+            public sealed class GenericConfig<T>
+                where T : notnull
+            {
+                [YamlInclude]
+                private string _name = string.Empty;
+
+                public string GetName() => _name;
+            }
+
+            [YamlSerializable(typeof(RestrictedConfig))]
+            [YamlSerializable(typeof(GenericConfig<int>))]
+            internal partial class RestrictedContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+        if (updatedMemorySafetyRules)
+        {
+            parseOptions = parseOptions.WithFeatures([new("updated-memory-safety-rules", "true")]);
+        }
+
+        var result = RunGenerator(Source, parseOptions);
+
+        Assert.DoesNotContain(result.Diagnostics, static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("private static" + (updatedMemorySafetyRules ? " safe" : "") + " extern ", result.GeneratedSource);
+        Assert.Contains("public static" + (updatedMemorySafetyRules ? " safe" : "") + " extern ", result.GeneratedSource);
+    }
+
     private static Diagnostic[] RunAnalyzer([StringSyntax("c#-test")] string source)
     {
         var compilation = CreateCompilation(source);
@@ -1234,9 +1291,11 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     }
 
     private static (Compilation OutputCompilation, Diagnostic[] GeneratorDiagnostics, Diagnostic[] Diagnostics, string GeneratedSource) RunGenerator([StringSyntax("c#-test")]string source, params MetadataReference[] additionalReferences)
+        => RunGenerator(source, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview), additionalReferences);
+
+    private static (Compilation OutputCompilation, Diagnostic[] GeneratorDiagnostics, Diagnostic[] Diagnostics, string GeneratedSource) RunGenerator([StringSyntax("c#-test")] string source, CSharpParseOptions parseOptions, params MetadataReference[] additionalReferences)
     {
-        var compilation = CreateCompilation(source, additionalReferences);
-        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+        var compilation = CreateCompilation(source, additionalReferences, parseOptions);
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
             generators: new[] { new YamlSerializerContextGenerator().AsSourceGenerator() },
@@ -1253,9 +1312,9 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         return (outputCompilation, generatorDiagnostics.ToArray(), generatorDiagnostics.Concat(outputCompilation.GetDiagnostics()).ToArray(), generatedSource);
     }
 
-    private static CSharpCompilation CreateCompilation([StringSyntax("c#-test")] string source, MetadataReference[]? additionalReferences = null)
+    private static CSharpCompilation CreateCompilation([StringSyntax("c#-test")] string source, MetadataReference[]? additionalReferences = null, CSharpParseOptions? parseOptions = null)
     {
-        var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+        parseOptions ??= CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
 
         return CSharpCompilation.Create(

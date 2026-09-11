@@ -106,7 +106,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask<#=j#>, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result<#=j#>);
+                result<#=j#> = default!;
             }
         }
 <# } #>

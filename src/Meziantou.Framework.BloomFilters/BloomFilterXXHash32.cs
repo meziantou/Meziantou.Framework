@@ -14,7 +14,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
 
     private void AddRangeCore(ReadOnlySpan<int> values)
     {
-        AddRangeCore(MemoryMarshal.Cast<int, uint>(values));
+        AddRangeCore(unsafe(MemoryMarshal.Cast<int, uint>(values)));
     }
 
     private void AddRangeCore(ReadOnlySpan<uint> values)
@@ -29,7 +29,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
             return;
         }
 
-        ref var valuesReference = ref MemoryMarshal.GetReference(values);
+        ref var valuesReference = ref unsafe(MemoryMarshal.GetReference(values));
         var index = 0;
         var hash = new Vector<uint>(Prime5 + sizeof(uint));
         var prime2 = new Vector<uint>(Prime2);
@@ -37,7 +37,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
         var prime4 = new Vector<uint>(Prime4);
         while (index <= values.Length - Vector<uint>.Count)
         {
-            var current = Vector.LoadUnsafe(ref valuesReference, (nuint)index);
+            var current = unsafe(Vector.LoadUnsafe(ref valuesReference, (nuint)index));
             var hashes = hash + (current * prime3);
             hashes = RotateLeft(hashes, 17) * prime4;
             hashes ^= hashes >> 15;

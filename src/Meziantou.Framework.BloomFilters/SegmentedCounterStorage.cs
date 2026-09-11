@@ -72,8 +72,8 @@ internal sealed class SegmentedCounterStorage
         ValidateCounterIndex(counterIndex);
 
         var segment = _segments[(int)(counterIndex >> SegmentShift)];
-        ref var baseRef = ref MemoryMarshal.GetArrayDataReference(segment);
-        return ref Unsafe.Add(ref baseRef, (nint)(counterIndex & SegmentMask));
+        ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment));
+        return ref unsafe(Unsafe.Add(ref baseRef, (nint)(counterIndex & SegmentMask)));
     }
 
     [Conditional("DEBUG")]

@@ -87,7 +87,7 @@ public partial class Assert
         var sameType = typeof(TExpected) == typeof(TActual);
         if (sameType)
         {
-            if (EqualityComparer<TExpected>.Default.Equals(expected, Unsafe.As<TActual, TExpected>(ref actual)))
+            if (EqualityComparer<TExpected>.Default.Equals(expected, unsafe(Unsafe.As<TActual, TExpected>(ref actual))))
                 return true;
 
             if (typeof(TExpected).IsValueType)

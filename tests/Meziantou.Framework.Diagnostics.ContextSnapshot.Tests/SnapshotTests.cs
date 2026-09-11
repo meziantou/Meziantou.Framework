@@ -20,6 +20,8 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
 
         testOutputHelper.WriteLine(JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
         {
+            RespectNullableAnnotations = true,
+            RespectRequiredConstructorParameters = true,
             WriteIndented = true,
             Converters =
             {
@@ -153,7 +155,7 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-    public unsafe void CountProcessorsWalksVariableSizedEntries()
+    public void CountProcessorsWalksVariableSizedEntries()
     {
         var buffer = new List<byte>();
         AddProcessorEntry(buffer, LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorPackage, groupMask: 0b1111);
@@ -165,12 +167,15 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         AddProcessorEntry(buffer, LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore, groupMask: 0b1100);
 
         var bytes = buffer.ToArray();
-        fixed (byte* ptr = bytes)
+        unsafe
         {
-            WindowsCpuInfoProvider.CountProcessors(ptr, (uint)bytes.Length, out var physicalProcessorCount, out var physicalCoreCount, out var logicalCoreCount);
-            Assert.Equal(1, physicalProcessorCount);
-            Assert.Equal(2, physicalCoreCount);
-            Assert.Equal(4, logicalCoreCount);
+            fixed (byte* ptr = bytes)
+            {
+                WindowsCpuInfoProvider.CountProcessors(ptr, (uint)bytes.Length, out var physicalProcessorCount, out var physicalCoreCount, out var logicalCoreCount);
+                Assert.Equal(1, physicalProcessorCount);
+                Assert.Equal(2, physicalCoreCount);
+                Assert.Equal(4, logicalCoreCount);
+            }
         }
 
         static void AddProcessorEntry(List<byte> buffer, LOGICAL_PROCESSOR_RELATIONSHIP relationship, nuint groupMask)
@@ -180,7 +185,7 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
             entry.Size = (uint)sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
             entry.Anonymous.Processor.GroupCount = 1;
             entry.Anonymous.Processor.GroupMask[0].Mask = groupMask;
-            buffer.AddRange(MemoryMarshal.AsBytes(new ReadOnlySpan<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(in entry)));
+            buffer.AddRange(unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(in entry))));
         }
 
         static void AddOpaqueEntry(List<byte> buffer, LOGICAL_PROCESSOR_RELATIONSHIP relationship, uint size)

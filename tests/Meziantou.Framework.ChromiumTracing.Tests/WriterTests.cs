@@ -489,7 +489,12 @@ public sealed partial class WriterTests
             .ToList();
     }
 
-    private sealed record CustomPayload(int Value);
+    // Not a positional record: the System.Text.Json source generator reaches an init accessor through an extern
+    // [UnsafeAccessor] method, which does not compile under the updated memory safety rules (dotnet/runtime#133592).
+    private sealed record CustomPayload(int Value)
+    {
+        public int Value { get; } = Value;
+    }
 
     private sealed class UnserializableArgument;
 

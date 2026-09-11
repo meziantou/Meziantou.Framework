@@ -21,6 +21,7 @@ internal static class TiffImageLoader
     private const ushort TagStripByteCounts = 279;
     private const ushort TagPlanarConfiguration = 284;
     private const ushort TagPredictor = 317;
+    private const ushort TagExtraSamples = 338;
 
     private const ushort CompressionNone = 1;
     private const ushort CompressionLzw = 5;
@@ -34,6 +35,9 @@ internal static class TiffImageLoader
     private const ushort PlanarConfigurationChunky = 1;
     private const ushort PredictorNone = 1;
     private const ushort PredictorHorizontalDifferencing = 2;
+
+    private const uint ExtraSampleAssociatedAlpha = 1;
+    private const uint ExtraSampleUnassociatedAlpha = 2;
 
     internal static bool IsTiff(ReadOnlySpan<byte> data)
     {
@@ -93,6 +97,7 @@ internal static class TiffImageLoader
         if (predictor is not PredictorNone and not PredictorHorizontalDifferencing)
             throw new NotSupportedException("Unsupported TIFF predictor.");
 
+        var alphaMode = ReadAlphaMode(entries, data, isLittleEndian);
         var bitsPerSampleValues = ReadBitsPerSample(entries, data, isLittleEndian, samplesPerPixel);
         foreach (var bitsPerSample in bitsPerSampleValues)
         {
@@ -125,7 +130,8 @@ internal static class TiffImageLoader
                 rowsInStrip,
                 width,
                 samplesPerPixel,
-                photometric);
+                photometric,
+                alphaMode);
 
             rowIndex += rowsInStrip;
         }
@@ -311,14 +317,17 @@ internal static class TiffImageLoader
             byte firstValue;
             if (code == nextCode)
             {
-                if (previousCode < 0 || !TryExpandCode(previousCode, prefixes, suffixes, stack, ref stackLength, out firstValue))
+                // The code is not in the table yet: it stands for the previous string followed by that
+                // string's own first character. The stack holds the string in reverse, so the character that
+                // comes last goes in at the bottom, below the expansion of the previous code.
+                if (previousCode < 0)
                     throw new InvalidDataException("Invalid TIFF LZW data.");
 
-                if (stackLength >= stack.Length)
+                stackLength = 1;
+                if (!TryExpandCode(previousCode, prefixes, suffixes, stack, ref stackLength, out firstValue))
                     throw new InvalidDataException("Invalid TIFF LZW data.");
 
-                stack[stackLength] = firstValue;
-                stackLength++;
+                stack[0] = firstValue;
             }
             else if (!TryExpandCode(code, prefixes, suffixes, stack, ref stackLength, out firstValue))
             {
@@ -340,7 +349,9 @@ internal static class TiffImageLoader
                 suffixes[nextCode] = firstValue;
                 nextCode++;
 
-                if (nextCode == (1 << codeBitCount) && codeBitCount < 12)
+                // TIFF LZW switches to a longer code one entry earlier than textbook LZW: a writer emits
+                // 10-bit codes as soon as 511 is in the table, 11-bit ones from 1023, 12-bit ones from 2047.
+                if (nextCode == (1 << codeBitCount) - 1 && codeBitCount < 12)
                     codeBitCount++;
             }
 
@@ -402,6 +413,41 @@ internal static class TiffImageLoader
         return true;
     }
 
+    /// <summary>
+    /// Reads how the sample that follows the colour samples must be interpreted.
+    /// </summary>
+    /// <remarks>
+    /// A fourth sample is only an alpha channel when ExtraSamples says so. Its default, and its value 0, mean
+    /// "unspecified data": reading that as alpha turns an opaque image into a fully transparent one.
+    /// </remarks>
+    private static TiffAlphaMode ReadAlphaMode(
+        Dictionary<ushort, (ushort Type, uint Count, uint ValueOffset)> entries,
+        ReadOnlySpan<byte> data,
+        bool isLittleEndian)
+    {
+        if (!entries.TryGetValue(TagExtraSamples, out var entry))
+            return TiffAlphaMode.None;
+
+        var values = ReadEntryValues(entry, data, isLittleEndian);
+        return values[0] switch
+        {
+            ExtraSampleAssociatedAlpha => TiffAlphaMode.Associated,
+            ExtraSampleUnassociatedAlpha => TiffAlphaMode.Unassociated,
+            _ => TiffAlphaMode.None,
+        };
+    }
+
+    private static byte Unpremultiply(byte value, byte alpha)
+    {
+        if (alpha == 0)
+            return 0;
+
+        if (value >= alpha)
+            return byte.MaxValue;
+
+        return (byte)(((value * 255) + (alpha / 2)) / alpha);
+    }
+
     private static void ApplyHorizontalPredictor(Span<byte> data, int bytesPerRow, int samplesPerPixel)
     {
         for (var row = 0; row < data.Length; row += bytesPerRow)
@@ -421,8 +467,11 @@ internal static class TiffImageLoader
         int rowCount,
         int width,
         int samplesPerPixel,
-        ushort photometricInterpretation)
+        ushort photometricInterpretation,
+        TiffAlphaMode alphaMode)
     {
+        var hasAlphaSample = samplesPerPixel == 4 && alphaMode is not TiffAlphaMode.None;
+        var isPremultiplied = hasAlphaSample && alphaMode is TiffAlphaMode.Associated;
         var sourceOffset = 0;
         for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
         {
@@ -438,7 +487,16 @@ internal static class TiffImageLoader
                         var r = stripBytes[sourceOffset];
                         var g = stripBytes[sourceOffset + 1];
                         var b = stripBytes[sourceOffset + 2];
-                        var a = samplesPerPixel == 4 ? stripBytes[sourceOffset + 3] : (byte)0xFF;
+                        var a = hasAlphaSample ? stripBytes[sourceOffset + 3] : (byte)0xFF;
+                        if (isPremultiplied)
+                        {
+                            // Associated alpha stores the samples premultiplied; every other format this
+                            // library reads keeps them straight, so undo the multiplication here.
+                            r = Unpremultiply(r, a);
+                            g = Unpremultiply(g, a);
+                            b = Unpremultiply(b, a);
+                        }
+
                         pixels[destinationOffset + x] = new Argb(a, r, g, b);
                         sourceOffset += samplesPerPixel;
                     }
@@ -600,6 +658,13 @@ internal static class TiffImageLoader
         return isLittleEndian
             ? BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4))
             : BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset, 4));
+    }
+
+    private enum TiffAlphaMode
+    {
+        None,
+        Unassociated,
+        Associated,
     }
 
     private ref struct TiffLzwBitReader(ReadOnlySpan<byte> data)

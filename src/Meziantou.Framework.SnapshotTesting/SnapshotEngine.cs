@@ -53,7 +53,13 @@ internal static class SnapshotEngine
 
         if (settings.ForceUpdateSnapshots)
         {
-            filesToUpdate = BuildSnapshotFilesToUpdate(actualFiles, [.. actualFiles.Select(item => item.FilePath)]);
+            // WriteActualSnapshots only wrote the files that differ. A forced update consumes every actual
+            // file, so the ones whose snapshot already matched must be written too: otherwise the update
+            // either fails on a missing file or promotes whatever an earlier failed run left there.
+            var writtenPaths = new HashSet<FullPath>(filesToUpdate.Select(item => item.VerifiedPath));
+            var remainingFiles = BuildSnapshotFilesToUpdate(actualFiles, [.. actualFiles.Select(item => item.FilePath).Where(path => !writtenPaths.Contains(path))]);
+            WriteActualSnapshots(remainingFiles);
+            filesToUpdate.AddRange(remainingFiles);
         }
 
         ApplySnapshotUpdates(settings, filesToUpdate, comparison.ExtraPaths);
@@ -101,16 +107,22 @@ internal static class SnapshotEngine
 
     private static SnapshotComparisonResult Compare(SnapshotSettings settings, SnapshotType type, List<SnapshotFile> actualFiles, Dictionary<FullPath, SnapshotData> expectedFiles)
     {
-        // A single snapshot that matches its verified file is what every passing test does, and the
-        // bookkeeping below - two dictionaries, three sets and a couple of LINQ passes - is only needed to
-        // describe a difference.
+        // A single snapshot compared with its verified file is what every test does, and the bookkeeping
+        // below - two dictionaries, three sets and a couple of LINQ passes - is only needed to describe a
+        // difference between two sets of files. Both outcomes are decided here so that a mismatch does not
+        // run the comparer a second time on the same pair.
         if (actualFiles.Count == 1 && expectedFiles.Count == 1)
         {
             var actualFile = actualFiles[0];
-            if (expectedFiles.TryGetValue(actualFile.FilePath, out var expectedData) &&
-                GetComparer(settings, type, actualFile.Data).Equals(expectedData, actualFile.Data))
+            if (expectedFiles.TryGetValue(actualFile.FilePath, out var expectedData))
             {
-                return SnapshotComparisonResult.NoDifference;
+                if (GetComparer(settings, type, actualFile.Data).Equals(expectedData, actualFile.Data))
+                    return SnapshotComparisonResult.NoDifference;
+
+                // The two sets hold the same single path, so its content is the only thing that can differ.
+                FullPath[] changedPath = [actualFile.FilePath];
+                var summary = FormatSummary(changedPath);
+                return new SnapshotComparisonResult(HasDifferences: true, BuildMessage([], [], changedPath), summary, summary, changedPath, [], [], changedPath);
             }
         }
 
@@ -136,9 +148,10 @@ internal static class SnapshotEngine
             return SnapshotComparisonResult.NoDifference;
         }
 
-        var message = BuildMessage(missingPaths, extraPaths, changedPaths);
+        FullPath[] changedPathArray = [.. changedPaths];
+        var message = BuildMessage(missingPaths, extraPaths, changedPathArray);
         var pathsToUpdate = missingPaths.Concat(changedPaths).Distinct().ToArray();
-        return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), [.. changedPaths], missingPaths, extraPaths, pathsToUpdate);
+        return new SnapshotComparisonResult(HasDifferences: true, message, FormatSummary(expectedPaths), FormatSummary(actualPaths), changedPathArray, missingPaths, extraPaths, pathsToUpdate);
     }
 
     /// <summary>
@@ -163,7 +176,7 @@ internal static class SnapshotEngine
     private static string BuildMessage(
         FullPath[] missingPaths,
         FullPath[] extraPaths,
-        List<FullPath> changedPaths)
+        FullPath[] changedPaths)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Snapshots do not match.");
@@ -202,7 +215,7 @@ internal static class SnapshotEngine
             }
         }
 
-        if (changedPaths.Count > 0)
+        if (changedPaths.Length > 0)
         {
             sb.AppendLine();
             sb.AppendLine("Changed snapshot files:");
@@ -311,30 +324,71 @@ internal static class SnapshotEngine
         if (firstName is null)
             return actualPaths.Where(path => File.Exists(path.Value)).ToArray();
 
-        var indexedPrefix = GetIndexedPrefix(firstName, actualFiles.Count);
+        var snapshotName = GetSnapshotName(firstName, actualFiles.Count);
+        var indexedPrefix = snapshotName + "_";
 
-        var expected = new HashSet<FullPath>();
+        var expected = new HashSet<FullPath>(actualPaths);
+        Dictionary<int, string>? indexedCandidates = null;
         foreach (var candidate in GetVerifiedSnapshotFiles(directory, directoryInfo.LastWriteTimeUtc))
         {
-            if (!string.Equals(candidate.BaseName, firstName, StringComparison.Ordinal))
+            if (string.Equals(candidate.BaseName, snapshotName, StringComparison.Ordinal))
             {
-                if (!candidate.BaseName.StartsWith(indexedPrefix, StringComparison.Ordinal))
-                    continue;
-
-                var suffix = candidate.BaseName.AsSpan(indexedPrefix.Length);
-                if (!int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
-                    continue;
+                // The file without an index is this assertion's own snapshot when it produces a single one,
+                // and the file it left behind when it used to produce a single one and now produces several.
+                expected.Add(directory / candidate.FileName);
             }
-
-            expected.Add(directory / candidate.FileName);
+            else if (TryGetSnapshotIndex(candidate.BaseName, indexedPrefix, out var index))
+            {
+                (indexedCandidates ??= [])[index] = candidate.FileName;
+            }
         }
 
-        foreach (var path in actualPaths)
+        if (indexedCandidates is not null)
         {
-            expected.Add(path);
+            AddIndexedFilesOfThisAssertion(actualFiles, directory, indexedPrefix, indexedCandidates, expected);
         }
 
         return expected;
+    }
+
+    /// <summary>
+    /// Adds the indexed files that this assertion wrote in an earlier run, when it produced more snapshots
+    /// than it does now.
+    /// </summary>
+    /// <remarks>
+    /// An assertion numbers its files from zero without a gap, so an index only identifies it when every
+    /// index below belongs to it too. A lone <c>Name_1.verified.txt</c> sitting next to
+    /// <c>Name.verified.txt</c> with no <c>Name_0.verified.txt</c> is the snapshot of a test called
+    /// <c>Name_1</c>: reporting it here would fail this assertion for a file it does not own, and deleting it
+    /// would take out the other test's baseline.
+    /// </remarks>
+    private static void AddIndexedFilesOfThisAssertion(
+        List<SnapshotFile> actualFiles,
+        FullPath directory,
+        string indexedPrefix,
+        Dictionary<int, string> indexedCandidates,
+        HashSet<FullPath> expected)
+    {
+        var actualIndexes = new HashSet<int>();
+        foreach (var actualFile in actualFiles)
+        {
+            var baseName = GetVerifiedBaseName(actualFile.FilePath);
+            if (baseName is not null && TryGetSnapshotIndex(baseName, indexedPrefix, out var actualIndex))
+            {
+                actualIndexes.Add(actualIndex);
+            }
+        }
+
+        for (var index = 0; ; index++)
+        {
+            if (actualIndexes.Contains(index))
+                continue;
+
+            if (!indexedCandidates.TryGetValue(index, out var fileName))
+                break;
+
+            expected.Add(directory / fileName);
+        }
     }
 
     /// <summary>
@@ -382,20 +436,41 @@ internal static class SnapshotEngine
         return snapshotName[..^".verified".Length].ToString();
     }
 
-    private static string GetIndexedPrefix(string snapshotName, int actualFileCount)
+    /// <summary>
+    /// Recovers the name an assertion stores its snapshots under from the name of its first file. Several
+    /// snapshots are stored as <c>Name_0</c>, <c>Name_1</c>, ... while a single one keeps the bare
+    /// <c>Name</c>, and finding the files written when the assertion produced a different number of
+    /// snapshots starts from that common name.
+    /// </summary>
+    private static string GetSnapshotName(string firstFileName, int actualFileCount)
     {
         if (actualFileCount > 1)
         {
-            var separatorIndex = snapshotName.LastIndexOf('_', StringComparison.Ordinal);
+            var separatorIndex = firstFileName.LastIndexOf('_', StringComparison.Ordinal);
             if (separatorIndex >= 0)
             {
-                var suffix = snapshotName[(separatorIndex + 1)..];
+                var suffix = firstFileName[(separatorIndex + 1)..];
                 if (int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out _))
-                    return snapshotName[..(separatorIndex + 1)];
+                    return firstFileName[..separatorIndex];
             }
         }
 
-        return snapshotName + "_";
+        return firstFileName;
+    }
+
+    private static bool TryGetSnapshotIndex(string baseName, string indexedPrefix, out int index)
+    {
+        index = 0;
+        if (!baseName.StartsWith(indexedPrefix, StringComparison.Ordinal))
+            return false;
+
+        var suffix = baseName.AsSpan(indexedPrefix.Length);
+
+        // '_01' is not how an index is written, and mapping it onto 1 would let two files claim one index.
+        if (suffix.Length > 1 && suffix[0] == '0')
+            return false;
+
+        return int.TryParse(suffix, NumberStyles.None, CultureInfo.InvariantCulture, out index);
     }
 
     private static List<SnapshotFileToUpdate> BuildSnapshotFilesToUpdate(IReadOnlyList<SnapshotFile> actualFiles, IReadOnlyCollection<FullPath> pathsToUpdate)

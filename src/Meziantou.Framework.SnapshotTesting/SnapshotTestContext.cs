@@ -180,7 +180,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     var className = testDetails is null ? null : (GetPropertyValue(testDetails, "ClassType") as Type)?.Name;
                     var methodName = testDetails is null ? null : GetStringPropertyValue(testDetails, "MethodName");
 
-                    return Create(displayName, className, methodName);
+                    return Create(GetTUnitTestName(testDetails, displayName, methodName), className, methodName);
                 }
                 catch
                 {
@@ -192,6 +192,28 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Builds the TUnit test name from the method name and the arguments, as the xunit and NUnit contexts
+    /// do. The display name of a parameterized test spells the arguments out between parentheses, which a
+    /// file name cannot keep: sanitizing them away would let two cases of one theory claim the same
+    /// snapshot. A name the user chose is returned unchanged.
+    /// </summary>
+    private static string? GetTUnitTestName(object? testDetails, string? displayName, string? methodName)
+    {
+        if (testDetails is null)
+            return displayName;
+
+        methodName ??= GetMethodName(displayName);
+        if (methodName is null || ShouldPreferDisplayName(displayName, methodName))
+            return displayName;
+
+        var arguments = GetObjectArrayPropertyValue(testDetails, "TestMethodArguments");
+        if (arguments is null || arguments.Length == 0)
+            return methodName;
+
+        return methodName + "_" + string.Join('_', arguments.Select(FormatArgument));
     }
 
     private static Func<SnapshotTestContext?>? TryCreateNUnitGetContext()

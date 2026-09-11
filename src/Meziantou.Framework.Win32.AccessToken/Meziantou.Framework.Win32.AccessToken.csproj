@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>3.0.4</Version>
+    <Version>3.0.5</Version>
     <Description>Allow to manipulate Windows Access Tokens</Description>
     <PackageTags>windows, win32, access-token, privileges, security</PackageTags>
 

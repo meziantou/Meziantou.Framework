@@ -123,7 +123,7 @@ public sealed class TdsServerProtocolTests
 
         var capturedContext = await authenticationContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(UserName, capturedContext.UserName);
-        Assert.NotNull(capturedContext.Password);
+        Assert.Equal(Password, capturedContext.Password);
         Assert.Equal("master", capturedContext.Database);
     }
 
@@ -1917,6 +1917,46 @@ public sealed class TdsServerProtocolTests
         }
 
         releaseHandler.SetResult();
+    }
+
+    [Fact]
+    public async Task Server_Dispose_CancelsTheTokenOfAnInFlightQuery()
+    {
+        var handlerTokenTask = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            async (context, cancellationToken) =>
+            {
+                handlerTokenTask.TrySetResult(cancellationToken);
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                return new TdsQueryResult();
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        var queryTask = command.ExecuteScalarAsync();
+
+        var handlerToken = await handlerTokenTask.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.False(handlerToken.IsCancellationRequested);
+
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var registration = handlerToken.Register(canceled.SetResult);
+
+        server.Dispose();
+
+        await canceled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        _ = await Assert.ThrowsAnyAsync<Exception>(() => queryTask);
     }
 
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)

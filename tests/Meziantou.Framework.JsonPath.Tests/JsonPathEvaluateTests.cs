@@ -515,6 +515,184 @@ public sealed class JsonPathEvaluateTests
         Assert.Empty(path.Evaluate(doc, JsonPathEvaluationMode.Strict));
     }
 
+    [Theory]
+    // RFC 9535 §2.4.6 has match() match the whole string. '$' would also match just before a final line feed,
+    // so the anchors have to be \A and \z.
+    [InlineData("a\n")]
+    [InlineData("a\r\n")]
+    [InlineData("a\r")]
+    public void Evaluate_Function_Match_DoesNotAcceptAnUnmatchedTrailingNewLine(string value)
+    {
+        var doc = new JsonArray { value };
+
+        Assert.Empty(JsonPath.Parse("$[?match(@, 'a')]").Evaluate(doc));
+    }
+
+    [Theory]
+    // A supplementary character is one Unicode scalar value, not the two UTF-16 code units .NET stores it as.
+    [InlineData(".", true)]
+    [InlineData("..", false)]
+    [InlineData("[\U0001F600]", true)]
+    [InlineData("[\U0001F5FF-\U0001F601]", true)]
+    [InlineData("[\U0001F601-\U0001F602]", false)]
+    [InlineData("[^a]", true)]
+    [InlineData("[^\U0001F600]", false)]
+    [InlineData(@"\\p{So}", true)]
+    [InlineData(@"\\P{So}", false)]
+    [InlineData(@"\\p{Lu}", false)]
+    public void Evaluate_Function_Match_TreatsASupplementaryCharacterAsOneScalarValue(string pattern, bool matches)
+    {
+        var doc = new JsonArray { "\U0001F600" };
+
+        var result = JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc);
+
+        Assert.Equal(matches ? 1 : 0, result.Count);
+    }
+
+    [Theory]
+    // RFC 9485 §3 lists '^', '$' and the other characters .NET reads as metacharacters among the NormalChars,
+    // and §4 gives an I-Regexp the semantics of an XSD regexp, where they stand for themselves.
+    [InlineData("^a$", "^a$", true)]
+    [InlineData("^a$", "a", false)]
+    [InlineData("a$", "a$", true)]
+    [InlineData("a$", "a", false)]
+    public void Evaluate_Function_Match_TreatsCaretAndDollarAsLiterals(string pattern, string value, bool matches)
+    {
+        var doc = new JsonArray { value };
+
+        var result = JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc);
+
+        Assert.Equal(matches ? 1 : 0, result.Count);
+    }
+
+    [Theory]
+    // Constructs .NET understands but that are no part of I-Regexp (RFC 9485 §3). Accepting them would let a
+    // pattern mean one thing here and another in every other RFC 9535 implementation.
+    [InlineData("(?i)a", "A")]
+    [InlineData("(?:a)", "a")]
+    [InlineData(@"\\d", "1")]
+    [InlineData(@"\\w", "a")]
+    [InlineData(@"\\s", " ")]
+    [InlineData(@"\\p{IsBasicLatin}", "a")]
+    [InlineData(@"\\x41", "A")]
+    [InlineData("a**", "aa")]
+    [InlineData("*a", "a")]
+    [InlineData("[a", "a")]
+    [InlineData("a]", "a]")]
+    [InlineData("a)", "a")]
+    [InlineData("[]", "")]
+    [InlineData("[b-a]", "a")]
+    [InlineData("a{2,1}", "aa")]
+    public void Evaluate_Function_PatternOutsideIRegexp_YieldsNoMatch(string pattern, string value)
+    {
+        var doc = new JsonArray { value };
+
+        Assert.Empty(JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc));
+        Assert.Empty(JsonPath.Parse($"$[?search(@, '{pattern}')]").Evaluate(doc));
+    }
+
+    [Theory]
+    // Valid I-Regexps that .NET cannot build an automaton for. RFC 9535 turns a pattern that cannot be
+    // evaluated into LogicalFalse, so none of these may escape Evaluate as an exception.
+    [InlineData("a{1000000}")]
+    [InlineData("(a{100000}){100000}")]
+    public void Evaluate_Function_PatternBeyondTheEngineLimits_YieldsNoMatch(string pattern)
+    {
+        var doc = new JsonArray { "aa" };
+
+        Assert.Empty(JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc, JsonPathEvaluationMode.Lax));
+        Assert.Empty(JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Theory]
+    // The translation recurses once per group, so the depth has to be capped rather than left to the stack.
+    [InlineData(8, 1)]
+    [InlineData(64, 1)]
+    [InlineData(65, 0)]
+    [InlineData(100_000, 0)]
+    public void Evaluate_Function_Match_DeeplyNestedGroups_AreCappedInsteadOfOverflowingTheStack(int depth, int expected)
+    {
+        var pattern = new string('(', depth) + "a" + new string(')', depth);
+        var doc = new JsonArray { "a" };
+
+        var result = JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc);
+
+        Assert.Equal(expected, result.Count);
+    }
+
+    [Theory]
+    // The rest of the grammar still has to work as it did.
+    [InlineData("a|b", "b", true)]
+    [InlineData("a|", "", true)]
+    [InlineData("(ab)+", "abab", true)]
+    [InlineData("a{2,3}", "aa", true)]
+    [InlineData("a{2,3}", "a", false)]
+    [InlineData("a{2,}", "aaaa", true)]
+    [InlineData("a{2}", "aa", true)]
+    [InlineData("[-a]", "-", true)]
+    [InlineData("[a-]", "-", true)]
+    [InlineData("[^a]", "b", true)]
+    [InlineData(@"\\n", "\n", true)]
+    [InlineData(".", "\n", false)]
+    [InlineData(".", "\r", false)]
+    [InlineData(@"a\\.c", "a.c", true)]
+    [InlineData(@"a\\.c", "abc", false)]
+    public void Evaluate_Function_Match_SupportsTheIRegexpGrammar(string pattern, string value, bool matches)
+    {
+        var doc = new JsonArray { value };
+
+        var result = JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc);
+
+        Assert.Equal(matches ? 1 : 0, result.Count);
+    }
+
+    [Theory]
+    [InlineData("||")]
+    [InlineData("&&")]
+    public void Evaluate_LongBooleanChain_DoesNotOverflowTheStack(string op)
+    {
+        // A flat chain does not count towards the parser's nesting limit, so the evaluator cannot afford a frame
+        // per operand: it used to walk a pairwise tree and take the whole process down with it.
+        var expression = "$[?" + string.Join($" {op} ", Enumerable.Repeat("@", 100_000)) + "]";
+        var path = JsonPath.Parse(expression);
+
+        Assert.Single(path.Evaluate(JsonNode.Parse("[1]")));
+    }
+
+    [Fact]
+    public void Evaluate_StringComparison_OrdersByUnicodeScalarValue()
+    {
+        // RFC 9535 §2.3.5.2.2 orders strings by their scalar values. U+1F600 is above U+FFFF, even though the
+        // surrogate pair UTF-16 writes it as sorts below it.
+        var doc = new JsonArray { "\uFFFF", "\U0001F600" };
+
+        var below = JsonPath.Parse("$[?@ < '\U0001F600']").Evaluate(doc);
+        Assert.Single(below);
+        Assert.Equal("\uFFFF", below[0].Value!.GetValue<string>());
+
+        var above = JsonPath.Parse("$[?@ > '\\uFFFF']").Evaluate(doc);
+        Assert.Single(above);
+        Assert.Equal("\U0001F600", above[0].Value!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Comparison_ReadsEveryNumericRepresentationAJsonValueCanHold()
+    {
+        // JsonValue can wrap any CLR numeric type. One the navigator does not know has to compare as no match,
+        // not as a stand-in 0 that silently makes the value equal to 0.
+        var doc = new JsonArray
+        {
+            JsonValue.Create((Half)42),
+            JsonValue.Create((Int128)42),
+            JsonValue.Create((UInt128)42),
+        };
+
+        Assert.Empty(JsonPath.Parse("$[?@ == 0]").Evaluate(doc));
+        Assert.Equal(3, JsonPath.Parse("$[?@ == 42]").Evaluate(doc).Count);
+        Assert.Equal(3, JsonPath.Parse("$[?@ > 41]").Evaluate(doc).Count);
+        Assert.Equal(3, JsonPath.Parse("$[?@ < 43]").Evaluate(doc).Count);
+    }
+
     [Fact]
     public void Evaluate_Path_IsCorrectForNodesSelectedByAFilter()
     {

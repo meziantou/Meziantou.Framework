@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit.Sdk;
@@ -7,6 +8,19 @@ namespace Meziantou.Framework.JsonPathTests;
 
 public sealed class ComplianceTests
 {
+    /// <summary>
+    /// Cases of the vendored suite this implementation deliberately does not satisfy, and why. A case listed here
+    /// has to keep failing: the test fails when it starts passing, so the list cannot quietly go stale.
+    /// </summary>
+    private static readonly FrozenDictionary<string, string> ExpectedFailures = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        // RFC 9485 §3 lists "^" and "$" among the NormalChars, and §4 - the normative one - gives an I-Regexp the
+        // semantics of an XSD regexp, where neither character is an anchor. The suite follows the mapping sketched
+        // in the non-normative §5.3 instead, which hands both straight to a dialect that does read them as anchors.
+        ["functions, match, explicit caret"] = "'^ab.*' matches a literal '^', not the start of the string",
+        ["functions, match, explicit dollar"] = "'.*bc$' matches a literal '$', not the end of the string",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
+
     private static readonly Lazy<ComplianceTestSuite> TestSuite = new(LoadTestSuite);
 
     private static ComplianceTestSuite LoadTestSuite()
@@ -34,6 +48,32 @@ public sealed class ComplianceTests
     [Theory]
     [MemberData(nameof(GetComplianceTestCases))]
     public void ComplianceTest(ComplianceTestCase testCase)
+    {
+        if (ExpectedFailures.TryGetValue(testCase.Name, out var reason))
+        {
+            RunExpectedFailure(testCase, reason);
+            return;
+        }
+
+        Run(testCase);
+    }
+
+    /// <summary>Runs a case that is known not to pass, and fails when it turns out to pass after all.</summary>
+    private static void RunExpectedFailure(ComplianceTestCase testCase, string reason)
+    {
+        try
+        {
+            Run(testCase);
+        }
+        catch (Exception)
+        {
+            return;
+        }
+
+        Assert.Fail($"Case '{testCase.Name}' ({reason}) is listed as an expected failure but it passes now. Remove it from {nameof(ExpectedFailures)}.");
+    }
+
+    private static void Run(ComplianceTestCase testCase)
     {
         if (testCase.InvalidSelector)
         {

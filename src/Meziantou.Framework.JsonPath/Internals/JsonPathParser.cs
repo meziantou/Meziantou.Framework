@@ -281,29 +281,40 @@ internal ref struct JsonPathParser
     // logical-or-expr
     private LogicalExpression ParseLogicalOrExpression()
     {
-        var left = ParseLogicalAndExpression();
+        var first = ParseLogicalAndExpression();
+        if (_current.Kind is not JsonPathTokenKind.Or)
+        {
+            return first;
+        }
+
+        // A chain is kept flat so that the evaluator does not need a frame per operand.
+        var operands = new List<LogicalExpression> { first };
         while (_current.Kind is JsonPathTokenKind.Or)
         {
             Advance();
-            var right = ParseLogicalAndExpression();
-            left = new OrExpression(left, right);
+            operands.Add(ParseLogicalAndExpression());
         }
 
-        return left;
+        return new OrExpression([.. operands]);
     }
 
     // logical-and-expr
     private LogicalExpression ParseLogicalAndExpression()
     {
-        var left = ParseBasicExpression();
+        var first = ParseBasicExpression();
+        if (_current.Kind is not JsonPathTokenKind.And)
+        {
+            return first;
+        }
+
+        var operands = new List<LogicalExpression> { first };
         while (_current.Kind is JsonPathTokenKind.And)
         {
             Advance();
-            var right = ParseBasicExpression();
-            left = new AndExpression(left, right);
+            operands.Add(ParseBasicExpression());
         }
 
-        return left;
+        return new AndExpression([.. operands]);
     }
 
     // basic-expr = paren-expr / comparison-expr / test-expr

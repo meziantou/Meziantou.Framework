@@ -87,8 +87,7 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     {
         if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Number)
         {
-            result = GetDoubleValue(jsonValue);
-            return true;
+            return TryGetDoubleValue(jsonValue, out result);
         }
 
         result = 0;
@@ -114,69 +113,109 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
         return false;
     }
 
-    private static double GetDoubleValue(JsonValue value)
+    /// <summary>
+    /// Reads the numeric value out of a <see cref="JsonValue"/>, whatever CLR type it happens to wrap.
+    /// A representation that is not covered reports failure rather than standing in a value of its own: RFC 9535
+    /// turns a comparison it cannot carry out into no match, whereas a stand-in of 0 would silently make the
+    /// value compare equal to 0.
+    /// </summary>
+    /// <param name="value">A value whose kind is <see cref="JsonValueKind.Number"/>.</param>
+    /// <param name="result">The value as a <see cref="double"/>.</param>
+    /// <returns><see langword="true"/> when the representation is known; otherwise, <see langword="false"/>.</returns>
+    private static bool TryGetDoubleValue(JsonValue value, out double result)
     {
         if (value.TryGetValue<JsonElement>(out var element))
         {
-            return element.GetDouble();
+            result = element.GetDouble();
+            return true;
         }
 
         if (value.TryGetValue<double>(out var d))
         {
-            return d;
+            result = d;
+            return true;
         }
 
         if (value.TryGetValue<float>(out var f))
         {
-            return f;
+            result = f;
+            return true;
+        }
+
+        if (value.TryGetValue<Half>(out var h))
+        {
+            result = (double)h;
+            return true;
         }
 
         if (value.TryGetValue<decimal>(out var dec))
         {
-            return (double)dec;
+            result = (double)dec;
+            return true;
         }
 
         if (value.TryGetValue<long>(out var l))
         {
-            return l;
+            result = l;
+            return true;
         }
 
         if (value.TryGetValue<ulong>(out var ul))
         {
-            return ul;
+            result = ul;
+            return true;
+        }
+
+        if (value.TryGetValue<Int128>(out var i128))
+        {
+            result = (double)i128;
+            return true;
+        }
+
+        if (value.TryGetValue<UInt128>(out var ui128))
+        {
+            result = (double)ui128;
+            return true;
         }
 
         if (value.TryGetValue<int>(out var i))
         {
-            return i;
+            result = i;
+            return true;
         }
 
         if (value.TryGetValue<uint>(out var ui))
         {
-            return ui;
+            result = ui;
+            return true;
         }
 
-        if (value.TryGetValue<short>(out var s))
+        if (value.TryGetValue<short>(out var sh))
         {
-            return s;
+            result = sh;
+            return true;
         }
 
         if (value.TryGetValue<ushort>(out var us))
         {
-            return us;
+            result = us;
+            return true;
         }
 
         if (value.TryGetValue<byte>(out var b))
         {
-            return b;
+            result = b;
+            return true;
         }
 
         if (value.TryGetValue<sbyte>(out var sb))
         {
-            return sb;
+            result = sb;
+            return true;
         }
 
-        return 0;
+        result = 0;
+        return false;
     }
 
     private static string? GetStringValue(JsonValue value)

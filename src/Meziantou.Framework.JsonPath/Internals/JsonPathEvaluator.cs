@@ -452,16 +452,50 @@ internal static class JsonPathEvaluator
     {
         return expr switch
         {
-            OrExpression or => EvaluateLogicalExpression(or.Left, currentNode, root, navigator)
-                               || EvaluateLogicalExpression(or.Right, currentNode, root, navigator),
-            AndExpression and => EvaluateLogicalExpression(and.Left, currentNode, root, navigator)
-                                && EvaluateLogicalExpression(and.Right, currentNode, root, navigator),
+            // The operands of a chain are held in a list rather than nested pairwise, so a chain of any length
+            // costs a single evaluation frame. Both operators still short-circuit.
+            OrExpression or => EvaluateAnyOperand(or.Operands, currentNode, root, navigator),
+            AndExpression and => EvaluateEveryOperand(and.Operands, currentNode, root, navigator),
             NotExpression not => !EvaluateLogicalExpression(not.Operand, currentNode, root, navigator),
             ComparisonExpression comp => EvaluateComparison(comp, currentNode, root, navigator),
             ExistenceTestExpression existence => EvaluateExistenceTest(existence, currentNode, root, navigator),
             FunctionCallExpression func => EvaluateFunctionAsLogical(func, currentNode, root, navigator),
             _ => false,
         };
+    }
+
+    private static bool EvaluateAnyOperand<TValue>(
+        LogicalExpression[] operands,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+    {
+        foreach (var operand in operands)
+        {
+            if (EvaluateLogicalExpression(operand, currentNode, root, navigator))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool EvaluateEveryOperand<TValue>(
+        LogicalExpression[] operands,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+    {
+        foreach (var operand in operands)
+        {
+            if (!EvaluateLogicalExpression(operand, currentNode, root, navigator))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool EvaluateExistenceTest<TValue>(
@@ -648,11 +682,45 @@ internal static class JsonPathEvaluator
 
         if (TryGetString(left, navigator, out var leftString) && TryGetString(right, navigator, out var rightString))
         {
-            return string.Compare(leftString, rightString, StringComparison.Ordinal) < 0;
+            return CompareByScalarValue(leftString, rightString) < 0;
         }
 
         return false;
     }
+
+    /// <summary>
+    /// Orders two strings the way RFC 9535 §2.3.5.2.2 does, by their Unicode scalar values. An ordinal comparison
+    /// would order them by UTF-16 code unit instead, which puts every supplementary character before U+E000 to
+    /// U+FFFF because it is written as a surrogate pair.
+    /// </summary>
+    /// <param name="left">The first string.</param>
+    /// <param name="right">The second string.</param>
+    /// <returns>A negative number, zero or a positive number, as <see cref="string.CompareTo(string)"/> does.</returns>
+    private static int CompareByScalarValue(string? left, string? right)
+    {
+        if (left is null || right is null)
+        {
+            return (left is null ? 0 : 1) - (right is null ? 0 : 1);
+        }
+
+        var shared = Math.Min(left.Length, right.Length);
+        for (var i = 0; i < shared; i++)
+        {
+            if (left[i] != right[i])
+            {
+                return ScalarOrderOf(left[i]) - ScalarOrderOf(right[i]);
+            }
+        }
+
+        return left.Length - right.Length;
+    }
+
+    /// <summary>
+    /// Ranks a code unit so that comparing units one by one yields the scalar value order: a surrogate stands for
+    /// a scalar value above the BMP, so it has to rank above every character that is not one. Sorting the halves
+    /// of a pair among themselves keeps their order, since both halves grow with the scalar value they encode.
+    /// </summary>
+    private static int ScalarOrderOf(char value) => char.IsSurrogate(value) ? value + 0x10000 : value;
 
     private static bool ScalarValuesEqual(ScalarValue left, ScalarValue right)
     {
@@ -1098,24 +1166,25 @@ internal static class JsonPathEvaluator
     {
         try
         {
-            var pattern = ConvertIRegexpToRegex(iRegexp);
-            if (anchored)
-            {
-                pattern = $"^(?:{pattern})$";
-            }
-
+            var pattern = IRegexpTranslator.Translate(iRegexp, anchored);
             return new FunctionCallExpression.RegexCacheEntry(
                 new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.NonBacktracking, RegexTimeout));
         }
+        catch (FormatException)
+        {
+            // Not a valid I-Regexp.
+            return FunctionCallExpression.RegexCacheEntry.Unusable;
+        }
         catch (ArgumentException)
         {
-            // Not a valid .NET pattern.
+            // A backstop: the translation is meant to only ever emit patterns .NET accepts, and a bug in it must
+            // still leave match()/search() with a Boolean result rather than throw out of Evaluate.
             return FunctionCallExpression.RegexCacheEntry.Unusable;
         }
         catch (NotSupportedException)
         {
-            // A construct NonBacktracking rejects (backreference, lookaround, atomic group). None of these
-            // are part of I-Regexp, so such a pattern is not a valid argument to match()/search() anyway.
+            // NonBacktracking gave up. It rejects no construct the translation emits, but it does cap how large
+            // an automaton it will build, and a quantifier such as 'a{1000000}' goes past that cap.
             return FunctionCallExpression.RegexCacheEntry.Unusable;
         }
     }
@@ -1240,48 +1309,5 @@ internal static class JsonPathEvaluator
         }
 
         return count;
-    }
-
-    private static string ConvertIRegexpToRegex(string iregexp)
-    {
-        var sb = new StringBuilder(iregexp.Length * 2);
-        var inCharClass = false;
-
-        for (var i = 0; i < iregexp.Length; i++)
-        {
-            var ch = iregexp[i];
-
-            if (ch == '\\' && i + 1 < iregexp.Length)
-            {
-                sb.Append(ch);
-                sb.Append(iregexp[i + 1]);
-                i++;
-                continue;
-            }
-
-            if (ch == '[' && !inCharClass)
-            {
-                inCharClass = true;
-                sb.Append(ch);
-                continue;
-            }
-
-            if (ch == ']' && inCharClass)
-            {
-                inCharClass = false;
-                sb.Append(ch);
-                continue;
-            }
-
-            if (ch == '.' && !inCharClass)
-            {
-                sb.Append(@"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\n\r])");
-                continue;
-            }
-
-            sb.Append(ch);
-        }
-
-        return sb.ToString();
     }
 }

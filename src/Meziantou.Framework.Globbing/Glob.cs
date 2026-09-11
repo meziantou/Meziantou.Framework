@@ -30,15 +30,19 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>[a-z]</term>
-///             <description>matches one character from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character from the range given in the brackets. With <c>GlobOptions.IgnoreCase</c>, a character matches when it, its lowercase form or its uppercase form is in the range.</description>
 ///         </item>
 ///         <item>
 ///             <term>[!a-z]</term>
-///             <description>matches one character that is not from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character that is not from the range given in the brackets, using the same rule as <c>[a-z]</c> for <c>GlobOptions.IgnoreCase</c>.</description>
+///         </item>
+///         <item>
+///             <term>[[:alpha:]]</term>
+///             <description>matches one character of a POSIX character class. Only supported by <see cref="GlobDialect.Posix"/> and <see cref="GlobDialect.PosixPath"/>. The supported classes are <c>alnum</c>, <c>alpha</c>, <c>blank</c>, <c>cntrl</c>, <c>digit</c>, <c>graph</c>, <c>lower</c>, <c>print</c>, <c>punct</c>, <c>space</c>, <c>upper</c> and <c>xdigit</c>.</description>
 ///         </item>
 ///         <item>
 ///             <term>{abc,123}</term>
-///             <description>comma-delimited set of literals, matches 'abc' or '123'</description>
+///             <description>comma-delimited set of literals, matches 'abc' or '123'. Only supported by <see cref="GlobDialect.Standard"/>; the other dialects read the braces as ordinary characters.</description>
 ///         </item>
 ///         <item>
 ///             <term>**</term>
@@ -53,7 +57,11 @@ namespace Meziantou.Framework.Globbing;
 ///             <description>escapes the following character. For instance, '\*' matches the literal character '*' instead of being a wildcard.</description>
 ///         </item>
 ///     </list>
-///     <para>If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.</para>
+///     <para>
+///         If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.
+///         A <see cref="GlobDialect.Git"/> pattern matches both a file and a directory, and one ending with a
+///         <c>/</c> matches the directory itself as well as everything below it.
+///     </para>
 ///     <para>
 ///         Matching backtracks, so the cost of a single <see cref="IsMatch(ReadOnlySpan{char}, ReadOnlySpan{char}, PathItemType?)"/>
 ///         call grows exponentially with the number of <c>*</c> wildcards in one path segment. Ordinary patterns and
@@ -171,6 +179,19 @@ public sealed class Glob : IGlobEvaluatable
         return GlobParser.TryParse(pattern, dialect, options, out result, out errorMessage);
     }
 
+    /// <summary>
+    ///     Parses one line of gitignore content on behalf of <see cref="GlobCollection"/>, which excludes the whole
+    ///     content of an excluded directory itself. An entry ending with a '/' therefore only has to match the
+    ///     directory here, unlike the same pattern parsed on its own.
+    /// </summary>
+    internal static Glob ParseGitIgnoreEntry(ReadOnlySpan<char> pattern)
+    {
+        if (GlobParser.TryParse(pattern, GlobDialect.Git, GlobOptions.None, matchGitDirectoryContent: false, out var result, out var errorMessage))
+            return result;
+
+        throw new ArgumentException($"The pattern '{pattern.ToString()}' is invalid: {errorMessage}", nameof(pattern));
+    }
+
     /// <summary>Determines whether the specified path matches this glob pattern.</summary>
     /// <param name="directory">The directory part of the path to match.</param>
     /// <param name="filename">The filename part of the path to match.</param>
@@ -201,6 +222,21 @@ public sealed class Glob : IGlobEvaluatable
 
             if (_matchType is GlobMatchType.Directory && !pathReader.IsDirectory)
                 return false;
+        }
+
+        if (!_pathSeparatorAware)
+        {
+            // A pattern that is not path-separator aware matches a plain string, which may be empty, and it always
+            // holds a single segment as no character separates segments. The path-oriented matcher below rejects an
+            // empty path before reaching the segment, so match the segments directly. That dialect always allows
+            // leading dots, so there is no per-segment check to run.
+            foreach (var segment in _segments)
+            {
+                if (!segment.IsMatch(ref pathReader))
+                    return false;
+            }
+
+            return pathReader.IsEndOfPath;
         }
 
         return IsMatchCore(pathReader, _segments, _segmentAnchors, _matchLeadingDot);
@@ -262,10 +298,12 @@ public sealed class Glob : IGlobEvaluatable
                     pathReader.ConsumeSegment();
                 }
 
-                return false;
+                // The path is exhausted. Only a segment that can match an empty path is still worth trying: a
+                // gitignore entry ending with a '/' matches the directory the path stops at.
+                return IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors, remainingMatchLeadingDot);
             }
 
-            if (pathReader.IsEndOfPath)
+            if (pathReader.IsEndOfPath && !patternSegment.CanMatchEmptyPath)
                 return false;
 
             if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))
@@ -323,10 +361,16 @@ public sealed class Glob : IGlobEvaluatable
             if (!patternSegment.IsMatch(ref pathReader))
                 return false;
 
-            pathReader.ConsumeSegment();
+            // The segment must match the folder name as a whole: 'src' does not match the folder 'src2'.
+            if (!pathReader.IsEndOfCurrentSegment)
+                return false;
+
+            pathReader.ConsumeEndOfSegment();
         }
 
-        return true;
+        // The folder consumed every pattern segment, including the one that matches the file name, so no file below
+        // it can match.
+        return false;
     }
 
     private static bool CanMatchLeadingDot(PathReader pathReader, bool matchLeadingDot)
@@ -341,70 +385,34 @@ public sealed class Glob : IGlobEvaluatable
 
     private static bool TryGetSegmentAnchor(Segment segment, out SegmentAnchor anchor)
     {
-        switch (segment)
+        var characters = GetAnchorCharacters(segment);
+        if (characters is not null)
         {
-            case LiteralSegment literal when literal.Value.Length > 0:
-                anchor = new SegmentAnchor(CreateCharacterSet([literal.Value[0]], literal.IgnoreCase));
-                return true;
-
-            case StartsWithSegment startsWith when startsWith.Value.Length > 0:
-                anchor = new SegmentAnchor(CreateCharacterSet([startsWith.Value[0]], startsWith.IgnoreCase));
-                return true;
-
-            case CharacterSetSegment set:
-                anchor = new SegmentAnchor(CreateCharacterSet(set.Set.AsSpan(), set.IgnoreCase));
-                return true;
-
-            case CharacterRangeSegment range when range.Range.Length <= 8:
-            {
-                var characters = new char[range.Range.Length];
-                var index = 0;
-                for (var c = range.Range.Min; c <= range.Range.Max; c++)
-                {
-                    characters[index] = c;
-                    index++;
-                }
-
-                anchor = new SegmentAnchor(SearchValues.Create(characters));
-                return true;
-            }
-
-            case LiteralSetSegment literalSet:
-            {
-                var characters = new List<char>(literalSet.Values.Length);
-                foreach (var value in literalSet.Values)
-                {
-                    if (value.Length > 0)
-                    {
-                        characters.Add(value[0]);
-                    }
-                }
-
-                if (characters.Count == 0)
-                    break;
-
-                anchor = new SegmentAnchor(CreateCharacterSet([.. characters], literalSet.IgnoreCase));
-                return true;
-            }
+            anchor = new SegmentAnchor(SearchValues.Create(characters));
+            return true;
         }
 
         anchor = default;
         return false;
 
-        static SearchValues<char> CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
+        // The anchor rejects a path segment before it is matched, so it must list every character the segment can
+        // start with. Anything that cannot be enumerated exactly returns null and runs without an anchor.
+        static char[]? GetAnchorCharacters(Segment segment)
         {
-            if (!ignoreCase)
-                return SearchValues.Create(characters);
-
-            var result = new HashSet<char>();
-            foreach (var character in characters)
+            return segment switch
             {
-                result.Add(character);
-                result.Add(char.ToLowerInvariant(character));
-                result.Add(char.ToUpperInvariant(character));
-            }
+                LiteralSegment literal when literal.Value.Length > 0 => CreateCharacterSet([literal.Value[0]], literal.IgnoreCase),
+                StartsWithSegment startsWith when startsWith.Value.Length > 0 => CreateCharacterSet([startsWith.Value[0]], startsWith.IgnoreCase),
+                CharacterSetSegment set => CreateCharacterSet(set.Set.AsSpan(), set.IgnoreCase),
+                CharacterRangeSegment range when range.Range.Length <= 8 => range.Range.EnumerateCharacters(),
+                RaggedSegment ragged => ragged.FirstRequiredCharacters,
+                _ => null,
+            };
+        }
 
-            return SearchValues.Create([.. result]);
+        static char[]? CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
+        {
+            return IgnoreCaseExpansion.TryExpand(characters, ignoreCase, out var result) ? result : null;
         }
     }
 

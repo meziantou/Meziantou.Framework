@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
 
@@ -9,6 +10,17 @@ internal static class GlobParser
     private static readonly char[] DirectorySeparator = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+    {
+        return TryParse(pattern, dialect, options, matchGitDirectoryContent: true, out result, out errorMessage);
+    }
+
+    /// <param name="matchGitDirectoryContent">
+    ///     Whether a gitignore entry ending with a '/' also matches the paths below the directory. A standalone glob
+    ///     has to, as it is the only rule the caller evaluates, but a <see cref="GlobCollection"/> built from
+    ///     gitignore content resolves an excluded ancestor directory on its own and passes <see langword="false"/> so
+    ///     that the same path is not excluded twice, which would let a directory entry outrank a later negation.
+    /// </param>
+    public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, bool matchGitDirectoryContent, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
         result = null;
         if (pattern.IsEmpty)
@@ -25,6 +37,7 @@ internal static class GlobParser
         List<Segment>? subSegments = null;
         List<string>? setSubsegment = null;
         List<CharacterRange>? rangeSubsegment = null;
+        List<NamedCharacterClass>? classSubsegment = null;
         char? rangeStart = null;
         var rangeInverse = false;
         var currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
@@ -167,6 +180,7 @@ internal static class GlobParser
                     else if (c == '[' && dialect is not GlobDialect.MSBuild) // Range
                     {
                         Debug.Assert(rangeSubsegment is null);
+                        Debug.Assert(classSubsegment is null);
                         AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
                         parserContext = GlobParserContext.Range;
                         rangeSubsegment = [];
@@ -208,6 +222,17 @@ internal static class GlobParser
                 else if (parserContext == GlobParserContext.Range)
                 {
                     Debug.Assert(rangeSubsegment is not null);
+
+                    // POSIX character class, for instance [[:digit:]]. A class cannot be a range bound, so an
+                    // opened range keeps reading '[' as an ordinary character.
+                    if (c == '[' && !rangeStart.HasValue && settings.SupportsNamedCharacterClass && TryReadNamedCharacterClass(pattern[i..], out var namedCharacterClass, out var namedCharacterClassLength))
+                    {
+                        classSubsegment ??= [];
+                        classSubsegment.Add(namedCharacterClass);
+                        i += namedCharacterClassLength - 1;
+                        continue;
+                    }
+
                     if (c == ']') // end of literal set, except if empty []] or [!]]
                     {
                         // [a-] => '-' is considered as a character
@@ -218,7 +243,7 @@ internal static class GlobParser
                             rangeStart = null;
                         }
 
-                        if (rangeSubsegment.Count > 0)
+                        if (rangeSubsegment.Count > 0 || classSubsegment is not null)
                         {
                             if (settings.PathSeparatorAware && rangeSubsegment.Exists(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
                             {
@@ -226,8 +251,9 @@ internal static class GlobParser
                                 return false;
                             }
 
-                            AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, settings.IgnoreCase));
+                            AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, CreateRangeSubsegment(rangeSubsegment, classSubsegment, rangeInverse, settings.IgnoreCase));
                             rangeSubsegment = null;
+                            classSubsegment = null;
                             parserContext = GlobParserContext.Segment;
                             continue;
                         }
@@ -301,16 +327,16 @@ internal static class GlobParser
             {
                 if (pattern[^1] == '/')
                 {
-                    segments.Add(RecursiveMatchAllSegment.Instance);
-                    matchLeadingDot.Add(settings.MatchLeadingDot);
-                    segments.Add(MatchAllSegment.Instance);
+                    // A gitignore entry ending with a '/' matches the directory itself. Excluding a directory also
+                    // excludes its content, but re-including one does not re-include its content, so a negated
+                    // entry never matches the paths below the directory.
+                    segments.Add(matchGitDirectoryContent && !exclude ? DirectoryContentSegment.IncludingContent : DirectoryContentSegment.DirectoryOnly);
                     matchLeadingDot.Add(settings.MatchLeadingDot);
                 }
-                else
-                {
-                    // A gitignore entry without a trailing '/' matches a file or a directory with that name.
-                    matchType = GlobMatchType.Any;
-                }
+
+                // A gitignore entry matches a file or a directory with that name. Whether the item must be a
+                // directory is decided by DirectoryContentSegment, which knows where the path ends.
+                matchType = GlobMatchType.Any;
             }
             else
             {
@@ -438,7 +464,7 @@ internal static class GlobParser
                 segments.Add(lastSegment);
                 matchLeadingDot.Add(true);
             }
-            else if (segments[^2] is RecursiveMatchAllSegment) // **/segment
+            else if (segments[^2] is RecursiveMatchAllSegment && !segments[^1].IsRecursiveMatchAll) // **/segment
             {
                 var lastSegment = new LastSegment(segments[^1]);
                 segments.RemoveRange(segments.Count - 2, 2);
@@ -509,7 +535,42 @@ internal static class GlobParser
         }
     }
 
-    private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
+    private static bool TryReadNamedCharacterClass(ReadOnlySpan<char> pattern, out NamedCharacterClass result, out int length)
+    {
+        result = default;
+        length = 0;
+
+        // The shortest class is "[::]", and the caller already knows the first character is '['.
+        if (pattern.Length < 4 || pattern[1] != ':')
+            return false;
+
+        var nameLength = pattern[2..].IndexOf(":]".AsSpan(), StringComparison.Ordinal);
+        if (nameLength < 0)
+            return false;
+
+        var name = pattern.Slice(2, nameLength);
+        switch (name)
+        {
+            case "alnum": result = NamedCharacterClass.Alnum; break;
+            case "alpha": result = NamedCharacterClass.Alpha; break;
+            case "blank": result = NamedCharacterClass.Blank; break;
+            case "cntrl": result = NamedCharacterClass.Cntrl; break;
+            case "digit": result = NamedCharacterClass.Digit; break;
+            case "graph": result = NamedCharacterClass.Graph; break;
+            case "lower": result = NamedCharacterClass.Lower; break;
+            case "print": result = NamedCharacterClass.Print; break;
+            case "punct": result = NamedCharacterClass.Punct; break;
+            case "space": result = NamedCharacterClass.Space; break;
+            case "upper": result = NamedCharacterClass.Upper; break;
+            case "xdigit": result = NamedCharacterClass.XDigit; break;
+            default: return false;
+        }
+
+        length = nameLength + 4;
+        return true;
+    }
+
+    private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, List<NamedCharacterClass>? classes, bool inverse, bool ignoreCase)
     {
         List<char>? singleCharRanges = null;
         List<CharacterRange>? rangeCharRanges = null;
@@ -527,19 +588,26 @@ internal static class GlobParser
             }
         }
 
-        if (singleCharRanges is not null)
+        if (classes is null)
         {
-            if (rangeCharRanges is null)
-                return CreateCharacterSet([.. singleCharRanges], inverse, ignoreCase);
+            if (singleCharRanges is not null)
+            {
+                if (rangeCharRanges is null)
+                    return CreateCharacterSet([.. singleCharRanges], inverse, ignoreCase);
+            }
+            else if (rangeCharRanges is not null && rangeCharRanges.Count == 1)
+            {
+                return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
+            }
         }
-        else if (rangeCharRanges is not null && rangeCharRanges.Count == 1)
+        else if (!inverse && singleCharRanges is null && rangeCharRanges is null && classes.Count == 1)
         {
-            return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
+            return new CharacterClassSegment(classes[0], ignoreCase);
         }
 
         // Inverse flags is set on the combination
         var segments = new List<Segment>(
-            (rangeCharRanges?.Count ?? 0) + (singleCharRanges is null ? 0 : 1));
+            (rangeCharRanges?.Count ?? 0) + (singleCharRanges is null ? 0 : 1) + (classes?.Count ?? 0));
         if (singleCharRanges is not null)
         {
             segments.Add(CreateCharacterSet([.. singleCharRanges], inverse: false, ignoreCase));
@@ -550,6 +618,14 @@ internal static class GlobParser
             foreach (var range in rangeCharRanges)
             {
                 segments.Add(CreateCharacterRange(range, ignoreCase, inverse: false));
+            }
+        }
+
+        if (classes is not null)
+        {
+            foreach (var characterClass in classes)
+            {
+                segments.Add(new CharacterClassSegment(characterClass, ignoreCase));
             }
         }
 
@@ -650,39 +726,42 @@ internal static class GlobParser
                             break;
 
                         case CharacterRangeSegment characterRange when characterRange.Range.Length < 3:
-                            nextCharacters = [];
-                            for (var c = characterRange.Range.Min; c <= characterRange.Range.Max; c++)
-                            {
-                                nextCharacters.Add(c);
-                            }
-
+                            nextCharacters = [.. characterRange.Range.EnumerateCharacters()];
                             break;
 
                         case LiteralSetSegment literalSet:
                             nextCharacters = [];
                             foreach (var value in literalSet.Values)
                             {
-                                if (value.Length > 0)
+                                // An empty alternative consumes nothing, so the next character is the one the rest
+                                // of the pattern requires and no character can be required here.
+                                if (value.Length == 0)
                                 {
-                                    nextCharacters.Add(value[0]);
+                                    nextCharacters = null;
+                                    break;
                                 }
+
+                                nextCharacters.Add(value[0]);
                             }
 
                             break;
                     }
 
-                    if (nextCharacters is not null)
+                    // The segment skips ahead to the next character the following subsegment could match, so it is
+                    // only sound when every one of those characters is known.
+                    if (nextCharacters is not null && IgnoreCaseExpansion.TryExpand(CollectionsMarshal.AsSpan(nextCharacters), ignoreCase, out var expandedCharacters))
                     {
+                        var stopCharacters = new List<char>(expandedCharacters);
                         if (pathSeparatorAware)
                         {
-                            nextCharacters.Add(Path.DirectorySeparatorChar);
+                            stopCharacters.Add(Path.DirectorySeparatorChar);
                             if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
                             {
-                                nextCharacters.Add(Path.AltDirectorySeparatorChar);
+                                stopCharacters.Add(Path.AltDirectorySeparatorChar);
                             }
                         }
 
-                        parts.Insert(i, new ConsumeSegmentUntilSegment([.. nextCharacters], ignoreCase));
+                        parts.Insert(i, new ConsumeSegmentUntilSegment([.. stopCharacters]));
                         i++;
                     }
                 }
@@ -694,7 +773,9 @@ internal static class GlobParser
             parts[^1] = MatchAllEndOfSegment.Instance;
         }
 
-        if (parts.Count == 1)
+        // A literal set is a branch point that only the backtracking matcher in RaggedSegment can resolve, so it
+        // never becomes a standalone segment.
+        if (parts.Count == 1 && parts[0] is not LiteralSetSegment)
             return parts[0];
 
         return new RaggedSegment(parts.ToArray());
@@ -716,7 +797,10 @@ internal static class GlobParser
         public bool NormalizeDotSegments => _dialect is not (GlobDialect.Posix or GlobDialect.PosixPath);
         public bool PathSeparatorAware => _dialect is not GlobDialect.Posix;
         public bool SupportsLeadingExclude => _dialect is GlobDialect.Standard or GlobDialect.Git;
-        public bool SupportsLiteralSet => _dialect is GlobDialect.Standard or GlobDialect.Git;
+
+        // git treats '{' and '}' as ordinary characters.
+        public bool SupportsLiteralSet => _dialect is GlobDialect.Standard;
+        public bool SupportsNamedCharacterClass => _dialect is GlobDialect.Posix or GlobDialect.PosixPath;
         public bool SupportsRecursiveWildcard => _dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
         public Segment AnyCharacterSegment => _dialect is GlobDialect.Posix ? MatchAnyTextCharacterSegment.Instance : MatchAnyCharacterSegment.Instance;
 

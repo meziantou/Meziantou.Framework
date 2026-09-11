@@ -37,8 +37,9 @@ dotnet add package Meziantou.Framework.Yaml
 
 ## Overview
 
-The package targets **YAML 1.2**. The parser accepts documents declaring `%YAML 1.1` or `%YAML 1.2`; any other version
-directive is rejected with a `SemanticErrorException`. Multi-document streams, `%TAG` directives, block and flow
+The package targets **YAML 1.2**. The parser accepts documents declaring `%YAML 1.1`, `%YAML 1.2`, or a higher minor
+version, using YAML 1.2 rules. Other major versions and YAML 1.0 are rejected with a `SemanticErrorException`.
+Multi-document streams, `%TAG` directives, block and flow
 collections, all five scalar styles (plain, single-quoted, double-quoted, literal, folded), anchors, aliases, merge
 keys, tags, and comments are all parsed.
 
@@ -771,7 +772,8 @@ an ordinary key. A merge key whose value is an alias additionally requires `Refe
 | `Extended` | Adds `y`/`yes`/`on` booleans, `!!timestamp`, `!!merge`, and `_` digit separators. |
 
 Scalar resolution goes through the selected schema only when `UseSchema = true`. Otherwise built-in converters use a
-faster span-based YAML 1.2 path, which still honors quoted scalars as strings.
+faster, permissive span-based path, which also accepts binary integers and digit separators while honoring quoted
+scalars as strings. Set `UseSchema = true` to apply the selected schema’s scalar spelling rules.
 
 ```csharp
 var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };

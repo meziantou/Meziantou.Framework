@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>.NET wrapper for Windows Recent Documents</Description>
     <PackageTags>windows, win32, recent-documents, shell, jumplist</PackageTags>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

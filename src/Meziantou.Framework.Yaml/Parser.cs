@@ -271,17 +271,15 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
     {
         // Parse extra document end indicators.
 
-        if (!isImplicit)
+        while (GetCurrentToken() is DocumentEnd)
         {
-            while (GetCurrentToken() is DocumentEnd)
-            {
-                Skip();
-            }
+            Skip();
+            isImplicit = true;
         }
 
         // Parse an isImplicit document.
 
-        if (isImplicit && !(GetCurrentToken() is VersionDirective || GetCurrentToken() is TagDirective || GetCurrentToken() is DocumentStart || GetCurrentToken() is StreamEnd))
+        if (isImplicit && !(GetCurrentToken() is ReservedDirective || GetCurrentToken() is VersionDirective || GetCurrentToken() is TagDirective || GetCurrentToken() is DocumentStart || GetCurrentToken() is StreamEnd))
         {
             var directives = new TagDirectiveCollection();
             ProcessDirectives(directives);
@@ -365,7 +363,7 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                     tags.Add(tag);
                 }
             }
-            else
+            else if (GetCurrentToken() is not ReservedDirective)
             {
                 break;
             }
@@ -600,10 +598,15 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
             Skip();
             isImplicit = false;
         }
+        else if (GetCurrentToken() is VersionDirective or TagDirective or ReservedDirective)
+        {
+            var current = GetCurrentToken();
+            throw new SemanticErrorException(current.Start, current.End, "Directives must be preceded by an explicit document end marker.");
+        }
 
         _tagDirectives.Clear();
 
-        _state = ParserState.YAML_PARSE_DOCUMENT_START_STATE;
+        _state = isImplicit ? ParserState.YAML_PARSE_DOCUMENT_START_STATE : ParserState.YAML_PARSE_IMPLICIT_DOCUMENT_START_STATE;
         return new Events.DocumentEnd(isImplicit, start, end);
     }
 
@@ -717,6 +720,12 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
             }
         }
 
+        else if (GetCurrentToken() is Value)
+        {
+            _state = ParserState.YAML_PARSE_BLOCK_MAPPING_VALUE_STATE;
+            return ProcessEmptyScalar(GetCurrentToken().Start);
+        }
+
         else if (GetCurrentToken() is BlockEnd)
         {
             _state = _states.Pop();
@@ -806,11 +815,14 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                 }
             }
 
-            if (GetCurrentToken() is Key)
+            if (GetCurrentToken() is Key or Value)
             {
                 _state = ParserState.YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE;
                 evt = new Events.MappingStart(null, null, true, YamlStyle.Flow);
-                Skip();
+                if (GetCurrentToken() is Key)
+                {
+                    Skip();
+                }
                 return evt;
             }
             else if (GetCurrentToken() is not FlowSequenceEnd)
@@ -840,10 +852,8 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
         }
         else
         {
-            var mark = GetCurrentToken().End;
-            Skip();
             _state = ParserState.YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE;
-            return ProcessEmptyScalar(mark);
+            return ProcessEmptyScalar(GetCurrentToken().Start);
         }
     }
 
@@ -929,9 +939,14 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
                     return ProcessEmptyScalar(GetCurrentToken().Start);
                 }
             }
+            else if (GetCurrentToken() is Value)
+            {
+                _state = ParserState.YAML_PARSE_FLOW_MAPPING_VALUE_STATE;
+                return ProcessEmptyScalar(GetCurrentToken().Start);
+            }
             else if (GetCurrentToken() is not FlowMappingEnd)
             {
-                _states.Push(ParserState.YAML_PARSE_FLOW_MAPPING_EMPTY_VALUE_STATE);
+                _states.Push(ParserState.YAML_PARSE_FLOW_MAPPING_VALUE_STATE);
                 return ParseNode(false, false);
             }
         }

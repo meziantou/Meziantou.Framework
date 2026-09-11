@@ -22,24 +22,6 @@ internal sealed class YamlSingleConverter : YamlConverter<float>
 
     public override void Write(YamlWriter writer, float value)
     {
-        if (float.IsPositiveInfinity(value))
-        {
-            writer.WriteScalar(".inf");
-            return;
-        }
-
-        if (float.IsNegativeInfinity(value))
-        {
-            writer.WriteScalar("-.inf");
-            return;
-        }
-
-        if (float.IsNaN(value))
-        {
-            writer.WriteScalar(".nan");
-            return;
-        }
-
-        writer.WriteScalar(value.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+        writer.WriteScalar(value);
     }
 }

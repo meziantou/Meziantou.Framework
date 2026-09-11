@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <None Remove="files\**\*.yaml" />
+    <EmbeddedResource Include="files/yaml-test-suite/cases.json" LogicalName="Meziantou.Framework.Yaml.Tests.files.yaml-test-suite.cases.json" />
     <EmbeddedResource Include="files\**\*.yaml" />
     <Compile Include="..\..\common\NuGetPackageFixture.cs" />
     <Compile Include="..\..\common\OutputPathHelper.cs" />

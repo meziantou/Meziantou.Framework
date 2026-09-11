@@ -128,6 +128,32 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_AuthenticationCallback_WithWrongPassword_Fails()
+    {
+        const string UserName = "sa";
+        const string ExpectedPassword = "P@ssw0rd!<>&\u00e9\u4e2d";
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(
+                context.UserName == UserName && context.Password == ExpectedPassword
+                    ? TdsAuthenticationResult.Success("master")
+                    : TdsAuthenticationResult.Fail("Login failed.")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, UserName, ExpectedPassword + "x"));
+        var exception = await Assert.ThrowsAsync<SqlException>(() => connection.OpenAsync());
+
+        Assert.Contains("Login failed.", exception.Message);
+    }
+
+    [Fact]
     public async Task SqlClient_TextQuery_WithoutParameters_UsesSqlBatch()
     {
         const string Marker = "TextQueryWithoutParametersMarker";

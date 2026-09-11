@@ -263,14 +263,14 @@ internal static class TdsQueryRequestParser
 
     private static TdsQueryParameter? ParseNVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
     {
-        if (position + 9 > payload.Length)
+        if (position + 4 + TdsCollation.Size > payload.Length)
         {
             return null;
         }
 
         var maxLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
-        position += 5; // collation
+        position += TdsCollation.Size; // Unicode data ignores the code page of its collation
 
         if (maxLength == 0xFFFF)
         {
@@ -308,14 +308,23 @@ internal static class TdsQueryRequestParser
 
     private static TdsQueryParameter? ParseVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
     {
-        if (position + 9 > payload.Length)
+        if (position + 4 + TdsCollation.Size > payload.Length)
         {
             return null;
         }
 
         var maxLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
         position += 2;
-        position += 5; // collation
+
+        // Unlike nvarchar, the value is not Unicode: the collation carries the code page it is encoded with.
+        var encoding = TdsCollation.TryGetEncoding(payload.Slice(position, TdsCollation.Size));
+        position += TdsCollation.Size;
+        if (encoding is null)
+        {
+            // Decoding with the wrong code page silently replaces every character the encoding cannot map, so an
+            // unsupported collation takes the same "cannot decode" path as an unsupported type.
+            return null;
+        }
 
         if (maxLength == 0xFFFF)
         {
@@ -330,7 +339,7 @@ internal static class TdsQueryRequestParser
                 return null;
             }
 
-            return CreateParameter(name, Encoding.UTF8.GetString(plpPayload), TdsColumnType.NVarChar);
+            return CreateParameter(name, encoding.GetString(plpPayload), TdsColumnType.NVarChar);
         }
 
         var valueLength = BinaryPrimitives.ReadUInt16LittleEndian(payload.Slice(position, 2));
@@ -346,7 +355,7 @@ internal static class TdsQueryRequestParser
             return null;
         }
 
-        var value = Encoding.UTF8.GetString(payload.Slice(position, valueLength));
+        var value = encoding.GetString(payload.Slice(position, valueLength));
         position += valueLength;
         return CreateParameter(name, value, TdsColumnType.NVarChar);
     }

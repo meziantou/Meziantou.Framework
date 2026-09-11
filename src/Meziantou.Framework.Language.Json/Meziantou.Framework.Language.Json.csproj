@@ -5,7 +5,7 @@
     <RootNamespace>Meziantou.Framework.Language.Json</RootNamespace>
     <Description>A Roslyn-style immutable JSON syntax tree: green and red nodes, trivia, diagnostics, annotations, and editing that keeps the text you did not touch.</Description>
     <PackageTags>json, syntax-tree, cst, parser, diagnostics</PackageTags>
-    <Version>4.0.0</Version>
+    <Version>4.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

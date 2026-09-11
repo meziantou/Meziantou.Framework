@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>3.0.1</Version>
+    <Version>3.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>An NTP server that responds to NTP time queries (supports NTPv3 and NTPv4)</Description>
     <PackageTags>ntp, sntp, time, server, networking</PackageTags>

@@ -6,7 +6,7 @@
 
     <Description>Microsoft.Extension.Logging.ILogger implementation that writes to a file. Supports rolling files, retention, gzip compression, scopes, and JSON output.</Description>
     <PackageTags>logging, logger, file, rolling-file, ilogger, microsoft-extensions-logging</PackageTags>
-    <Version>3.0.4</Version>
+    <Version>3.0.5</Version>
     <RootNamespace>Meziantou.Extensions.Logging</RootNamespace>
   </PropertyGroup>
 

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
-    <Version>3.0.6</Version>
+    <Version>3.0.7</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>
     <PackageTags>aspnetcore, blazor, components, razor, ui</PackageTags>

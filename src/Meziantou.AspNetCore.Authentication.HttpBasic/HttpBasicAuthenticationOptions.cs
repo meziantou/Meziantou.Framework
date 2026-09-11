@@ -47,6 +47,16 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     } = DefaultMaxCredentialLength;
 
     /// <summary>
+    /// Gets or sets a value indicating whether the ASP.NET Core Identity integration authenticates accounts that require two-factor authentication with their password alone.
+    /// The default is <see langword="false"/>: HTTP Basic cannot provide a second factor, so these accounts are rejected.
+    /// </summary>
+    /// <remarks>
+    /// Enabling this lets anyone who knows the password of such an account skip its second factor.
+    /// It is only used by <c>AddHttpBasicIdentity</c>, and has no effect on a custom <see cref="ValidateCredentials"/> delegate.
+    /// </remarks>
+    public bool AllowTwoFactorEnabledAccounts { get; set; }
+
+    /// <summary>
     /// Gets or sets the delegate used to validate credentials and create the <see cref="ClaimsPrincipal"/>.
     /// Returning <see langword="null"/> fails authentication.
     /// </summary>

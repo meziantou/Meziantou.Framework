@@ -73,6 +73,8 @@ builder.Services
     });
 ```
 
+### Authentication type
+
 The principal is built by `SignInManager<TUser>.CreateUserPrincipalAsync`, so `User.Identity.AuthenticationType` is Identity's own `"Identity.Application"`, not the Basic scheme name:
 
 ```csharp
@@ -81,6 +83,27 @@ app.MapGet("/", (ClaimsPrincipal user) => user.Identity?.AuthenticationType);
 ```
 
 Authorization policies are keyed on the authentication *scheme*, so `RequireAuthorization` and `AddAuthenticationSchemes(...)` behave as expected. Only code that branches on `AuthenticationType` is affected — audit logging, "how did this user sign in" checks, or an application that mixes cookie and Basic authentication would attribute these requests to the cookie scheme. Use the scheme name from the authentication ticket if you need to tell them apart.
+
+### Two-factor authentication
+
+Accounts that require two-factor authentication are rejected, even when the password is correct. A Basic `Authorization` header carries only a username and a password, so it cannot satisfy a second factor. Accepting the password alone would let anyone who knows it skip the second factor that Identity's interactive sign-in enforces.
+
+An account requires two-factor authentication when `SignInManager<TUser>.IsTwoFactorEnabledAsync` returns `true`. This is the same check `PasswordSignInAsync` uses: the user store implements `IUserTwoFactorStore<TUser>`, two-factor authentication is enabled for the user, and at least one two-factor provider can produce a token for them. A remembered two-factor client (the `Identity.TwoFactorRememberMe` cookie) does not exempt the account.
+
+The rejection is reported to the client as an ordinary `401 Unauthorized`, the same as a wrong password, so the response does not reveal that the password was correct. It does not count as a failed attempt for lockout. Clients such as scripts or services that act for these accounts need credentials meant for them, for example scoped and revocable API keys or tokens, validated by `AddHttpBasic` with your own `ValidateCredentials` delegate or by another authentication scheme.
+
+If you accept the risk, set `AllowTwoFactorEnabledAccounts` to authenticate these accounts with their password alone:
+
+```csharp
+builder.Services
+    .AddAuthentication(HttpBasicAuthenticationDefaults.AuthenticationScheme)
+    .AddHttpBasicIdentity<IdentityUser>(options => options.AllowTwoFactorEnabledAccounts = true);
+```
+
+> [!WARNING]
+> With `AllowTwoFactorEnabledAccounts` enabled, anyone who knows the password of a two-factor account can use this endpoint without the second factor. Only enable it when the resources behind the Basic scheme do not need the protection the second factor gives, or when an authorization policy independently requires evidence of multi-factor authentication.
+
+Identity's other sign-in checks still apply: locked-out accounts and accounts that fail `IdentityOptions.SignIn` confirmation requirements (`RequireConfirmedAccount`, `RequireConfirmedEmail`, `RequireConfirmedPhoneNumber`) are rejected.
 
 ## Security options
 

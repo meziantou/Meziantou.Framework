@@ -62,13 +62,14 @@ internal static class TdsLoginParser
             return null;
         }
 
+        // LOGIN7 obfuscates the password by swapping the nibbles of every byte and then XOR-ing with 0xA5, so
+        // decoding has to undo those steps in the opposite order.
         var encoded = payload.Slice(offset, byteLength);
         var decoded = new byte[byteLength];
         for (var i = 0; i < encoded.Length; i++)
         {
-            var value = encoded[i];
-            var swapped = (byte)(((value & 0x0F) << 4) | ((value & 0xF0) >> 4));
-            decoded[i] = (byte)(swapped ^ 0xA5);
+            var value = (byte)(encoded[i] ^ 0xA5);
+            decoded[i] = (byte)(((value & 0x0F) << 4) | ((value & 0xF0) >> 4));
         }
 
         return Encoding.Unicode.GetString(decoded);

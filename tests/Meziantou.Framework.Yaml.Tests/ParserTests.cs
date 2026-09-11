@@ -153,7 +153,7 @@ public class ParserTests : ParserTestHelper
         var events = new List<string>();
         while (parser.MoveNext())
         {
-            var current = parser.Current!;
+            var current = parser.Current;
             var properties = current is NodeEvent node
                 ? (node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " <" + node.Tag + ">")
                 : "";

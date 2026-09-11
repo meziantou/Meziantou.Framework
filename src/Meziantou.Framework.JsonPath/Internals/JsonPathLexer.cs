@@ -284,6 +284,17 @@ internal ref struct JsonPathLexer
             {
                 throw new FormatException($"Unescaped control character U+{(int)ch:X4} at position {_position}.");
             }
+            else if (char.IsSurrogate(ch))
+            {
+                // 'unescaped' skips the surrogate code points: only a whole pair stands for a scalar value.
+                if (!char.IsHighSurrogate(ch) || _position + 1 >= _input.Length || !char.IsLowSurrogate(_input[_position + 1]))
+                {
+                    throw new FormatException($"Unpaired surrogate U+{(int)ch:X4} at position {_position}.");
+                }
+
+                sb.Append(ch).Append(_input[_position + 1]);
+                _position += 2;
+            }
             else
             {
                 sb.Append(ch);

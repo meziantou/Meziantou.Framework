@@ -21,6 +21,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
     private static readonly AuthenticateResult InvalidBase64CredentialsResult = AuthenticateResult.Fail("Invalid Base64 credentials");
     private static readonly AuthenticateResult InvalidCredentialsEncodingResult = AuthenticateResult.Fail("Credentials are not valid UTF-8");
     private static readonly AuthenticateResult InvalidCredentialsFormatResult = AuthenticateResult.Fail("Invalid credentials format");
+    private static readonly AuthenticateResult ControlCharacterInCredentialsResult = AuthenticateResult.Fail("Credentials contain a control character");
     private static readonly AuthenticateResult InvalidUsernameOrPasswordResult = AuthenticateResult.Fail("Invalid username or password");
 
     public HttpBasicAuthenticationHandler(
@@ -54,6 +55,12 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
             return decodeResult is CredentialsDecodeResult.InvalidBase64 ? InvalidBase64CredentialsResult : InvalidCredentialsEncodingResult;
         }
 
+        // RFC 7617 forbids control characters (CTL in RFC 5234: U+0000-U+001F and U+007F) in both the user-id and the password.
+        // They are valid UTF-8, so strict transcoding lets them through. The separator is not a control character,
+        // so checking the whole payload covers both components.
+        if (ContainsControlCharacter(credentials))
+            return ControlCharacterInCredentialsResult;
+
         // RFC 7617 defines userid as *<TEXT excluding ":">, so an empty user-id is well-formed.
         // Whether it is acceptable is the credential validator's decision, not the parser's.
         var separatorIndex = credentials.IndexOf(':', StringComparison.Ordinal);
@@ -86,6 +93,11 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
     private static string EscapeHeaderValue(string value)
     {
         return value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
+    }
+
+    private static bool ContainsControlCharacter(ReadOnlySpan<char> value)
+    {
+        return value.ContainsAnyInRange('\u0000', '\u001F') || value.Contains('\u007F');
     }
 
     // The buffers hold the plaintext credentials, so they are zeroed on every path before being released.

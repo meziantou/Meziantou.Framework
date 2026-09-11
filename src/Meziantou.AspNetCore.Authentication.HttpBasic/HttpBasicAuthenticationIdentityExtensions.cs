@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace Meziantou.AspNetCore.Authentication.HttpBasic;
@@ -68,7 +69,7 @@ public static class HttpBasicAuthenticationIdentityExtensions
         ArgumentException.ThrowIfNullOrEmpty(authenticationScheme);
         ArgumentNullException.ThrowIfNull(configureOptions);
 
-        HttpBasicCredentialValidator identityValidator = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure);
+        HttpBasicCredentialValidator identityValidator = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, authenticationScheme, lockoutOnFailure);
 
         // Identity owns credential validation for this scheme. Any other validator, whether set by configureOptions
         // or by a later Configure/PostConfigure call, would either be ignored or bypass the password check,
@@ -84,7 +85,7 @@ public static class HttpBasicAuthenticationIdentityExtensions
         });
     }
 
-    private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure)
+    private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, string authenticationScheme, bool lockoutOnFailure)
         where TUser : class
     {
         var signInManager = context.RequestServices.GetRequiredService<SignInManager<TUser>>();
@@ -94,6 +95,15 @@ public static class HttpBasicAuthenticationIdentityExtensions
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure).ConfigureAwait(false);
         if (!result.Succeeded)
+            return null;
+
+        // CheckPasswordSignInAsync only checks the password: Identity enforces the second factor later, in the interactive
+        // sign-in flow, which a per-request Basic header cannot complete. Reject the account instead of letting the password
+        // alone authenticate it, unless the application explicitly opted out. A remembered two-factor client is deliberately
+        // not honored, so the result does not depend on an ambient browser cookie.
+        // The option is read on each request so a value set by a Configure call registered after AddHttpBasicIdentity is honored.
+        var allowTwoFactorEnabledAccounts = context.RequestServices.GetRequiredService<IOptionsMonitor<HttpBasicAuthenticationOptions>>().Get(authenticationScheme).AllowTwoFactorEnabledAccounts;
+        if (!allowTwoFactorEnabledAccounts && await signInManager.IsTwoFactorEnabledAsync(user).ConfigureAwait(false))
             return null;
 
         return await signInManager.CreateUserPrincipalAsync(user).ConfigureAwait(false);

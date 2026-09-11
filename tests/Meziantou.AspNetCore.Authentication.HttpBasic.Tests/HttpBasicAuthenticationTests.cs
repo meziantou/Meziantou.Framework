@@ -232,6 +232,59 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Theory]
+    [InlineData("user\u0000", "pass")]
+    [InlineData("user\t", "pass")]
+    [InlineData("user\r", "pass")]
+    [InlineData("user\n", "pass")]
+    [InlineData("user\u001F", "pass")]
+    [InlineData("user\u007F", "pass")]
+    [InlineData("\u0001", "")]
+    [InlineData("user", "pass\u0000")]
+    [InlineData("user", "pass\t")]
+    [InlineData("user", "pass\r")]
+    [InlineData("user", "pass\n")]
+    [InlineData("user", "pass\u001F")]
+    [InlineData("user", "pass\u007F")]
+    [InlineData("user", "pa:ss\r\n")]
+    public async Task ControlCharactersInCredentials_AreRejectedBeforeTheCredentialValidator(string username, string password)
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, _, _) => throw new InvalidOperationException("The validator must not run for credentials containing control characters");
+        });
+
+        await application.SendAndAssert("/", username, password, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Theory]
+    [InlineData(" user ", "~pass~")]
+    [InlineData("user\u0080", "pass\u009F")]
+    [InlineData("user\u0085", "pass\u2028")]
+    [InlineData("\u00DCn\u00EFc\u00F8de", "\uD83D\uDD11")]
+    public async Task NonControlCharactersInCredentials_ArePassedToTheCredentialValidator(string username, string password)
+    {
+        await using var application = await TestApplication.CreateAsync(username, password);
+        await application.SendAndAssert("/", username, password, response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task PasswordContainingColons_IsPassedToTheCredentialValidator()
+    {
+        await using var application = await TestApplication.CreateAsync("myName", ":pa:ss:");
+        await application.SendAndAssert("/", "myName", ":pa:ss:", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("myName", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
     [Fact]
     public async Task LargeCredentials_UseThePooledBuffer()
     {
@@ -392,6 +445,13 @@ public sealed class HttpBasicAuthenticationTests
     }
 
     [Fact]
+    public void AllowTwoFactorEnabledAccounts_IsDisabledByDefault()
+    {
+        var options = new HttpBasicAuthenticationOptions();
+        Assert.False(options.AllowTwoFactorEnabledAccounts);
+    }
+
+    [Fact]
     public async Task AspNetCoreIdentity_LockoutOnFailure_RecordsFailedAttempts()
     {
         var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
@@ -490,6 +550,124 @@ public sealed class HttpBasicAuthenticationTests
         var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<HttpBasicAuthenticationOptions>>();
         Assert.Equal("Identity", optionsMonitor.Get("IdentityScheme").Realm);
         Assert.Same(customValidator, optionsMonitor.Get("CustomScheme").ValidateCredentials);
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabled_PasswordAloneIsRejected()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { });
+
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabled_PasswordAloneIsRejected_WithLockoutOnFailure()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        user.LockoutEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { }, lockoutOnFailure: true);
+
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+
+        // The password was right, so the rejection must not count towards locking the account out.
+        Assert.Equal(0, user.AccessFailedCount);
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabled_IsAcceptedWhenAllowed()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], options => options.AllowTwoFactorEnabledAccounts = true);
+
+        await application.SendAndAssert("/", "myName", "myPassword", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("myName|user-id", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabled_IsAcceptedWhenAllowedByALaterConfigureCall()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync(
+            [user],
+            _ => { },
+            configureServices: services => services.Configure<HttpBasicAuthenticationOptions>(HttpBasicAuthenticationDefaults.AuthenticationScheme, options => options.AllowTwoFactorEnabledAccounts = true));
+
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabled_WrongPasswordIsRejectedWhenAllowed()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], options => options.AllowTwoFactorEnabledAccounts = true);
+
+        await application.SendAndAssert("/", "myName", "invalid", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_TwoFactorEnabledWithoutAvailableProvider_IsAccepted()
+    {
+        // Identity's own sign-in does not ask for a second factor when no provider can produce one, so neither does Basic.
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.TwoFactorEnabled = true;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { }, twoFactorProviderAvailable: false);
+
+        await application.SendAndAssert("/", "myName", "myPassword", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("myName|user-id", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_LockedOutAccount_IsRejected()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.LockoutEnabled = true;
+        user.LockoutEnd = DateTimeOffset.UtcNow.AddHours(1);
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { });
+
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Theory]
+    [InlineData(false, HttpStatusCode.Unauthorized)]
+    [InlineData(true, HttpStatusCode.OK)]
+    public async Task AspNetCoreIdentity_RequireConfirmedAccount_IsEnforced(bool emailConfirmed, HttpStatusCode expectedStatusCode)
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+        user.Email = "user@example.com";
+        user.EmailConfirmed = emailConfirmed;
+        await using var application = await TestApplication.CreateWithIdentityAsync([user], _ => { }, configureIdentity: options => options.SignIn.RequireConfirmedAccount = true);
+
+        await application.SendAndAssert("/", "myName", "myPassword", response =>
+        {
+            Assert.Equal(expectedStatusCode, response.StatusCode);
+        });
     }
 
     [Fact]
@@ -667,7 +845,7 @@ public sealed class HttpBasicAuthenticationTests
             return new TestApplication(app, client);
         }
 
-        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure = false, string? authenticationScheme = null, Action<IServiceCollection>? configureServices = null)
+        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure = false, string? authenticationScheme = null, Action<IdentityOptions>? configureIdentity = null, bool twoFactorProviderAvailable = true, Action<IServiceCollection>? configureServices = null)
         {
             ArgumentNullException.ThrowIfNull(users);
             ArgumentNullException.ThrowIfNull(configureOptions);
@@ -676,8 +854,12 @@ public sealed class HttpBasicAuthenticationTests
             builder.WebHost.UseTestServer();
             builder.Services.AddSingleton(sp => new InMemoryIdentityUserStore(users));
             builder.Services.AddSingleton<IUserStore<IdentityUser>>(sp => sp.GetRequiredService<InMemoryIdentityUserStore>());
-            builder.Services.AddIdentityCore<IdentityUser>()
-                            .AddSignInManager();
+            var identityBuilder = builder.Services.AddIdentityCore<IdentityUser>(configureIdentity ?? (_ => { }))
+                                                  .AddSignInManager();
+            if (twoFactorProviderAvailable)
+            {
+                identityBuilder.AddTokenProvider<UnusableTwoFactorTokenProvider>("Test");
+            }
 
             var authenticationBuilder = builder.Services.AddAuthentication(authenticationScheme ?? HttpBasicAuthenticationDefaults.AuthenticationScheme);
             if (authenticationScheme is null)
@@ -693,8 +875,8 @@ public sealed class HttpBasicAuthenticationTests
                 authenticationBuilder.AddHttpBasicIdentity<IdentityUser>(authenticationScheme, configureOptions);
             }
 
-            builder.Services.AddAuthorization();
             configureServices?.Invoke(builder.Services);
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
             app.UseAuthentication();
@@ -806,8 +988,27 @@ public sealed class HttpBasicAuthenticationTests
         }
     }
 
+    // Reports itself available for every user so Identity considers the second factor required, but never accepts a token.
+    private sealed class UnusableTwoFactorTokenProvider : IUserTwoFactorTokenProvider<IdentityUser>
+    {
+        public Task<bool> CanGenerateTwoFactorTokenAsync(UserManager<IdentityUser> manager, IdentityUser user)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task<string> GenerateAsync(string purpose, UserManager<IdentityUser> manager, IdentityUser user)
+        {
+            throw new InvalidOperationException("No two-factor token is ever issued in these tests");
+        }
+
+        public Task<bool> ValidateAsync(string purpose, string token, UserManager<IdentityUser> manager, IdentityUser user)
+        {
+            return Task.FromResult(false);
+        }
+    }
+
 #nullable enable
-    private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>, IUserLockoutStore<IdentityUser>
+    private sealed class InMemoryIdentityUserStore : IUserPasswordStore<IdentityUser>, IUserLockoutStore<IdentityUser>, IUserTwoFactorStore<IdentityUser>, IUserEmailStore<IdentityUser>
     {
         private readonly List<IdentityUser> _users;
 
@@ -948,6 +1149,65 @@ public sealed class HttpBasicAuthenticationTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(IdentityResult.Success);
+        }
+
+        public Task<bool> GetTwoFactorEnabledAsync(IdentityUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(user.TwoFactorEnabled);
+        }
+
+        public Task SetTwoFactorEnabledAsync(IdentityUser user, bool enabled, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            user.TwoFactorEnabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        public Task<IdentityUser?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var user = _users.FirstOrDefault(x => string.Equals(x.NormalizedEmail, normalizedEmail, StringComparison.Ordinal));
+            return Task.FromResult(user);
+        }
+
+        public Task<string?> GetEmailAsync(IdentityUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(user.Email);
+        }
+
+        public Task<bool> GetEmailConfirmedAsync(IdentityUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(user.EmailConfirmed);
+        }
+
+        public Task<string?> GetNormalizedEmailAsync(IdentityUser user, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(user.NormalizedEmail);
+        }
+
+        public Task SetEmailAsync(IdentityUser user, string? email, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            user.Email = email;
+            return Task.CompletedTask;
+        }
+
+        public Task SetEmailConfirmedAsync(IdentityUser user, bool confirmed, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            user.EmailConfirmed = confirmed;
+            return Task.CompletedTask;
+        }
+
+        public Task SetNormalizedEmailAsync(IdentityUser user, string? normalizedEmail, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            user.NormalizedEmail = normalizedEmail;
+            return Task.CompletedTask;
         }
     }
 }

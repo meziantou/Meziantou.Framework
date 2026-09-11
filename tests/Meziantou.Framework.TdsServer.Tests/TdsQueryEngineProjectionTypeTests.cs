@@ -41,7 +41,10 @@ public sealed class TdsQueryEngineProjectionTypeTests
         Assert.Equal(freshAlias, await GetColumnNameAsync(laterHandler, $"SELECT Id AS {freshAlias} FROM customers"));
     }
 
-    [Fact]
+    // The type cache and its collectible assemblies are process-wide, so the tracked assembly also holds types
+    // that tests running beside this one emit, and a query of theirs can keep such a type - and the assembly -
+    // alive for as long as those tests run. On a loaded CI runner that outlasted the wait, so this test runs alone.
+    [Fact(DisableParallelization = true)]
     public async Task ProjectionTypesLeavingTheCache_AreReclaimed()
     {
         var aliasPrefix = "Reclaim" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
@@ -68,10 +71,10 @@ public sealed class TdsQueryEngineProjectionTypeTests
         }
 
         // Unloading is not synchronous: it completes on a later collection, once the runtime has finished
-        // walking everything that referenced the assembly. Tests also run in parallel, and a query running in
-        // another one can still hold a type emitted into the same assembly, so wait between the sweeps instead
-        // of failing on the first one.
-        for (var index = 0; index < 60 && projectionAssembly.IsAlive; index++)
+        // walking everything that referenced the assembly, so wait between the sweeps instead of failing on the
+        // first one. The loop stops as soon as the assembly is gone; its budget only turns "never reclaimed" into
+        // a failure, and other test processes can slow the sweeps down on a busy runner.
+        for (var index = 0; index < 600 && projectionAssembly.IsAlive; index++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();

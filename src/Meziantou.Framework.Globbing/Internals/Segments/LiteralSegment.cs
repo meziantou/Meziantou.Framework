@@ -17,7 +17,9 @@ internal sealed class LiteralSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        if (pathReader.CurrentText.StartsWith(Value.AsSpan(), _stringComparison))
+        // The literal must fit in the current path segment: a '\' escaped in the pattern is an ordinary character,
+        // but a path separator on Windows.
+        if (pathReader.CurrentSegment.StartsWith(Value.AsSpan(), _stringComparison))
         {
             pathReader.ConsumeInSegment(Value.Length);
             return true;

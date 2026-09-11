@@ -1141,11 +1141,9 @@ internal static class JsonPathEvaluator
     /// <returns><see langword="true"/> when the pattern matches; otherwise, <see langword="false"/>.</returns>
     private static bool IsRegexMatch(FunctionCallExpression func, string input, string iRegexp, bool anchored)
     {
-        // The pattern is a literal in almost every real query, so translate and compile it once per AST node
-        // rather than once per node visited. A computed pattern falls back to the per-call path.
-        var regex = func.Arguments[1].Kind is FunctionArgumentKind.Literal && func.Arguments[1].Value is string
-            ? func.GetOrCreateRegex(p => CreateRegex(p, anchored)).Regex
-            : CreateRegex(iRegexp, anchored).Regex;
+        // Translating and compiling a NonBacktracking regex costs far more than matching one, so reuse the
+        // last pattern this call compiled rather than rebuilding it for every node the filter visits.
+        var regex = func.GetOrCreateRegex(iRegexp, anchored, CreateRegex).Regex;
 
         if (regex is null)
         {

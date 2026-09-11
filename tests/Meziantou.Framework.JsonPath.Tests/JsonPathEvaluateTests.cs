@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
+using Meziantou.Framework.Json.Internals;
 
 namespace Meziantou.Framework.JsonPathTests;
 
@@ -461,9 +462,10 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
-    public void Evaluate_Function_Match_NonLiteralPattern_IsNotCached()
+    public void Evaluate_Function_Match_NonLiteralPattern_IsEvaluatedPerNode()
     {
-        // The pattern comes from the document, so it differs per node and must bypass the per-AST cache.
+        // The pattern comes from the document and differs per node, so the cached regex of one node must not be
+        // used for the next.
         var doc = JsonNode.Parse("""[{"s": "foo", "p": "f.o"}, {"s": "bar", "p": "z.z"}, {"s": "baz", "p": "b.z"}]""");
         var path = JsonPath.Parse("$[?match(@.s, @.p)]");
 
@@ -472,6 +474,82 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(2, result.Count);
         Assert.Equal("foo", result[0].Value!.AsObject()["s"]!.GetValue<string>());
         Assert.Equal("baz", result[1].Value!.AsObject()["s"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_NonLiteralPattern_AlternatingAcrossNodes()
+    {
+        // The cache keeps one pattern, so the nodes below alternate between hits and replacements, including
+        // replacing a valid pattern with an invalid one and back.
+        var doc = JsonNode.Parse("""
+            [
+              {"id": 0, "s": "foo", "p": "f.o"},
+              {"id": 1, "s": "foo", "p": "f.o"},
+              {"id": 2, "s": "bar", "p": "f.o"},
+              {"id": 3, "s": "bar", "p": "b.r"},
+              {"id": 4, "s": "foo", "p": "("},
+              {"id": 5, "s": "foo", "p": "f.o"},
+              {"id": 6, "s": "foo", "p": "b.r"},
+              {"id": 7, "s": "bar", "p": "b.r"},
+              {"id": 8, "s": "(", "p": "("}
+            ]
+            """);
+        var path = JsonPath.Parse("$[?match(@.s, @.p)]");
+        int[] expected = [0, 1, 3, 5, 7];
+
+        var ids = path.Evaluate(doc).Select(match => match.Value!["id"]!.GetValue<int>()).ToArray();
+
+        Assert.Equal(expected, ids);
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_DocumentPattern_IsStableAcrossDocumentsAndThreads()
+    {
+        // The pattern is shared by every node of a document but differs between documents, so an entry cached
+        // while evaluating one document must not answer for the other, even when both are evaluated at once.
+        var items = string.Join(", ", Enumerable.Range(0, 50).Select(i => i % 2 is 0 ? "\"abc\"" : "\"xyz\""));
+        var abc = JsonNode.Parse($$"""{"pattern": "a.c", "items": [{{items}}]}""");
+        var xyz = JsonNode.Parse($$"""{"pattern": "x.z", "items": [{{items}}]}""");
+        var path = JsonPath.Parse("$.items[?match(@, $.pattern)]");
+
+        var results = new JsonPathResult[64];
+        results[0] = path.Evaluate(abc);
+        results[1] = path.Evaluate(xyz);
+        Parallel.For(2, results.Length, i => results[i] = path.Evaluate(i % 2 is 0 ? abc : xyz));
+
+        for (var i = 0; i < results.Length; i++)
+        {
+            var expected = i % 2 is 0 ? "abc" : "xyz";
+            Assert.Equal(25, results[i].Count);
+            Assert.All(results[i], match => Assert.Equal(expected, match.Value!.GetValue<string>()));
+        }
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_RegexCache_ReusesTheEntryForAnEqualPattern()
+    {
+        // A pattern read from the document is usually a new string instance for every node, so the cache must
+        // compare patterns by value to ever hit.
+        var func = new FunctionCallExpression("match", [], FunctionExpressionType.LogicalType);
+        var pattern = "a.c";
+        var equalPattern = new string(pattern.AsSpan());
+        var built = new List<string>();
+        string[] expectedBuilt = ["a.c", "x.z"];
+
+        var first = func.GetOrCreateRegex(pattern, anchored: true, Factory);
+        var second = func.GetOrCreateRegex(equalPattern, anchored: true, Factory);
+        var other = func.GetOrCreateRegex("x.z", anchored: true, Factory);
+
+        Assert.NotSame(pattern, equalPattern);
+        Assert.Same(first, second);
+        Assert.NotSame(first, other);
+        Assert.Equal(expectedBuilt, built);
+
+        FunctionCallExpression.RegexCacheEntry Factory(string p, bool _)
+        {
+            built.Add(p);
+            return new FunctionCallExpression.RegexCacheEntry(regex: null);
+        }
     }
 
     [Fact]
@@ -583,6 +661,31 @@ public sealed class JsonPathEvaluateTests
     [InlineData("[]", "")]
     [InlineData("[b-a]", "a")]
     [InlineData("a{2,1}", "aa")]
+    [InlineData("[!--]", "-")]             // CCchar leaves out "-": unescaped, it cannot end a range
+    [InlineData("[!--]", "!")]
+    [InlineData("[---]", "-")]
+    [InlineData("[a-z-[aeiou]]", "b")]     // character class subtraction
+    [InlineData(@"[a-\\p{L}]", "a")]       // a category escape cannot end a range...
+    [InlineData(@"[\\p{L}-a]", "a")]       // ...or start one
+    [InlineData("[^]", "^")]               // ruled out by RFC 9485 §3 even though the grammar reads it as "[\^]"
+    [InlineData(@"\\p{Cs}", "a")]          // not an IsCategory
+    [InlineData(@"\\p{Lx}", "a")]
+    [InlineData(@"\\p{IsGreek}", "\u03B1")]     // Unicode blocks
+    [InlineData(@"\\p{L", "a")]
+    [InlineData(@"\\pL", "a")]
+    [InlineData(@"\\u0041", "A")]          // no code point escapes
+    [InlineData(@"\\$", "$")]              // "$" is a NormalChar, so escaping it is not allowed
+    [InlineData(@"\\i", "a")]              // XSD multi-character escapes
+    [InlineData(@"[\\d]", "1")]
+    [InlineData("a{,2}", "a")]             // the minimum of a range quantifier is mandatory
+    [InlineData("a*?", "a")]               // no lazy quantifiers
+    [InlineData("a{2}{3}", "aaaaaa")]
+    [InlineData("a|*", "a")]
+    [InlineData("{", "{")]
+    [InlineData("}", "}")]
+    [InlineData("a{1", "a")]
+    [InlineData(@"\\", @"\")]
+    [InlineData(@"[\\]", @"\")]
     public void Evaluate_Function_PatternOutsideIRegexp_YieldsNoMatch(string pattern, string value)
     {
         var doc = new JsonArray { value };
@@ -637,11 +740,69 @@ public sealed class JsonPathEvaluateTests
     [InlineData(".", "\r", false)]
     [InlineData(@"a\\.c", "a.c", true)]
     [InlineData(@"a\\.c", "abc", false)]
+    [InlineData("[--]", "-", true)]                     // "-" first, then "-" last
+    [InlineData(@"[#-\\-]", "$", true)]                 // an escaped "-" can end a range
+    [InlineData(@"[#-\\-]", "-", true)]
+    [InlineData(@"[#-\\-]", ".", false)]
+    [InlineData(@"[\\--/]", ".", true)]                 // and start one
+    [InlineData(@"[\\p{Lu}-]", "-", true)]
+    [InlineData(@"[\\p{Lu}-]", "A", true)]
+    [InlineData("[^-a]", "-", false)]
+    [InlineData("[^-a]", "b", true)]
+    [InlineData("[^^]", "^", false)]
+    [InlineData("[a^]", "^", true)]
+    [InlineData("[.]", ".", true)]                      // metacharacters stand for themselves in a class
+    [InlineData("[.]", "a", false)]
+    [InlineData("[$(*+?{|}]", "|", true)]
+    [InlineData("a{0}", "", true)]
+    [InlineData("a{0,0}b", "b", true)]
+    [InlineData("a{01}", "a", true)]
+    [InlineData("(a|b)*c", "abbac", true)]
+    [InlineData("a||b", "", true)]                      // an empty branch
+    [InlineData("()", "", true)]
+    [InlineData(@"\\^\\{\\}\\|\\-\\[\\]\\(\\)\\*\\+\\?", "^{}|-[]()*+?", true)]
+    [InlineData(@"\\t\\r", "\t\r", true)]
+    [InlineData(".", "\u2028", true)]                   // "." leaves out LF and CR only
+    [InlineData(".", "\u0085", true)]
+    [InlineData("[^a]", "\n", true)]                    // and a negated class leaves out neither
+    [InlineData(@"\\p{Nd}", "\u0663", true)]            // ARABIC-INDIC DIGIT THREE
+    [InlineData(@"\\p{Nd}", "\U0001D7CE", true)]        // MATHEMATICAL BOLD DIGIT ZERO
+    [InlineData(@"\\p{Lu}", "\U0001D400", true)]        // MATHEMATICAL BOLD CAPITAL A
+    [InlineData(@"\\p{Zs}", "\u00A0", true)]            // NO-BREAK SPACE
+    [InlineData(@"\\p{L}\\p{M}", "e\u0301", true)]      // COMBINING ACUTE ACCENT
+    [InlineData(@"\\p{Co}", "\U0010FFFD", true)]
+    [InlineData(@"[^\\p{L}]", "1", true)]
+    [InlineData(@"[^\\p{L}]", "a", false)]
+    [InlineData(@"[\\P{L}a]", "a", true)]
+    [InlineData(@"[^\\P{L}]", "a", true)]
+    [InlineData("\U0001F600+", "\U0001F600\U0001F600", true)] // a quantifier repeats the whole scalar value
     public void Evaluate_Function_Match_SupportsTheIRegexpGrammar(string pattern, string value, bool matches)
     {
         var doc = new JsonArray { value };
 
         var result = JsonPath.Parse($"$[?match(@, '{pattern}')]").Evaluate(doc);
+
+        Assert.Equal(matches ? 1 : 0, result.Count);
+    }
+
+    [Theory]
+    // search() looks for the I-Regexp anywhere in the string (RFC 9535 §2.4.7).
+    [InlineData("b", "abc", true)]
+    [InlineData("^b", "abc", false)]                    // "^" and "$" are literals, not anchors
+    [InlineData("^b", "a^bc", true)]
+    [InlineData("c$", "abc", false)]
+    [InlineData("c$", "abc$d", true)]
+    [InlineData("", "abc", true)]
+    [InlineData("x*", "abc", true)]
+    [InlineData("[^a]", "a", false)]
+    [InlineData(".", "\r\n", false)]
+    [InlineData("a.b", "xa\U0001F600by", true)]
+    [InlineData("a..b", "xa\U0001F600by", false)]
+    public void Evaluate_Function_Search_FindsTheIRegexpAnywhereInTheString(string pattern, string value, bool matches)
+    {
+        var doc = new JsonArray { value };
+
+        var result = JsonPath.Parse($"$[?search(@, '{pattern}')]").Evaluate(doc);
 
         Assert.Equal(matches ? 1 : 0, result.Count);
     }
@@ -745,6 +906,106 @@ public sealed class JsonPathEvaluateTests
         Assert.Contains(result, m => m.Path == @"$['a\'b']");
         Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d']");
         Assert.Contains(result, m => m.Path == @"$['a\'b']['c\\d'][0]");
+    }
+
+    [Fact]
+    public void Evaluate_Path_EscapesMemberNamesAsTheNormalizedPathGrammarRequires()
+    {
+        // RFC 9535 §2.7: BS, HT, LF, FF and CR have a short escape and every other control character a lower case
+        // \u00XX one. "'" and "\" are escaped too; anything else, DEL and supplementary characters included, is not.
+        var doc = new JsonObject();
+        for (var c = 0; c < 0x20; c++)
+        {
+            doc[((char)c).ToString()] = c;
+        }
+
+        doc["'"] = 0x27;
+        doc["\\"] = 0x5C;
+        doc["\""] = 0x22;
+        doc["\u007F"] = 0x7F;
+        doc["\u00E9"] = 0xE9;
+        doc["\U0001F600"] = 0x1F600;
+
+        var paths = JsonPath.Parse("$.*").Evaluate(doc).ToDictionary(match => match.Value!.GetValue<int>(), match => match.Path);
+
+        for (var c = 0; c < 0x20; c++)
+        {
+            var escaped = c switch
+            {
+                0x08 => @"\b",
+                0x09 => @"\t",
+                0x0A => @"\n",
+                0x0C => @"\f",
+                0x0D => @"\r",
+                _ => $@"\u{c:x4}",
+            };
+
+            Assert.Equal($"$['{escaped}']", paths[c]);
+        }
+
+        Assert.Equal(@"$['\'']", paths[0x27]);
+        Assert.Equal(@"$['\\']", paths[0x5C]);
+        Assert.Equal("$['\"']", paths[0x22]);
+        Assert.Equal("$['\u007F']", paths[0x7F]);
+        Assert.Equal("$['\u00E9']", paths[0xE9]);
+        Assert.Equal("$['\U0001F600']", paths[0x1F600]);
+    }
+
+    [Fact]
+    public void Evaluate_Path_IsAQuerySelectingTheNodeItNames()
+    {
+        // A normalized path is itself a JSONPath query, one that selects exactly the node it identifies.
+        var doc = JsonNode.Parse("""
+            {"a": [1, {"b\u0000'\\\"": [true, null, {}]}], "": {"\ud83d\ude00": "x", "c d": [[]]}, "\u007f\n": -0}
+            """);
+
+        var matches = JsonPath.Parse("$..*").Evaluate(doc);
+
+        Assert.HasCount(12, matches);
+        foreach (var match in matches)
+        {
+            var selected = JsonPath.Parse(match.Path).Evaluate(doc);
+
+            Assert.Single(selected);
+            Assert.Equal(match.Path, selected[0].Path);
+            Assert.Same(match.Value, selected[0].Value);
+        }
+    }
+
+    [Theory]
+    // RFC 9535 §2.3.5.2.2. An empty nodelist is only equal to another one, values of different types are never
+    // equal, arrays and objects compare deeply, only numbers and strings are ordered, and "<=" and ">=" are
+    // "< or ==" and "> or ==": two empty nodelists satisfy both without either being less than the other.
+    [InlineData("$[?@.x == @.y]", "$[0]", "$[2]", "$[5]", "$[6]", "$[7]", "$[9]")]
+    [InlineData("$[?@.x != @.y]", "$[1]", "$[3]", "$[4]", "$[8]")]
+    [InlineData("$[?@.x < @.y]", "$[3]")]
+    [InlineData("$[?@.x <= @.y]", "$[0]", "$[2]", "$[3]", "$[5]", "$[6]", "$[7]", "$[9]")]
+    [InlineData("$[?@.x > @.y]")]
+    [InlineData("$[?@.x >= @.y]", "$[0]", "$[2]", "$[5]", "$[6]", "$[7]", "$[9]")]
+    [InlineData("$[?@.x < 'b']", "$[4]")]
+    [InlineData("$[?@.x <= null]", "$[5]")]
+    [InlineData("$[?@.x < true]")]
+    [InlineData("$[?@.x == 1]", "$[1]", "$[2]", "$[3]", "$[9]")]
+    public void Evaluate_Comparison_FollowsTheRfc9535Semantics(string query, params string[] expectedPaths)
+    {
+        var doc = JsonNode.Parse("""
+            [
+              {},
+              {"x": 1},
+              {"x": 1, "y": 1.0},
+              {"x": 1, "y": 2},
+              {"x": "a", "y": 1},
+              {"x": null, "y": null},
+              {"x": [1, {"a": null}], "y": [1, {"a": null}]},
+              {"x": {"a": [1], "b": {}}, "y": {"b": {}, "a": [1]}},
+              {"x": [1, 2], "y": [2, 1]},
+              {"x": 1e0, "y": 10e-1}
+            ]
+            """);
+
+        var result = JsonPath.Parse(query).Evaluate(doc);
+
+        Assert.Equal(expectedPaths, result.Select(match => match.Path));
     }
 
     [Fact]

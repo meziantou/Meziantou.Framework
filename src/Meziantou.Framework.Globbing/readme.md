@@ -11,6 +11,19 @@
 - `{abc,123}` matches one of the literals
 - `**` matches zero or more directories
 
+## Dialects
+
+| Dialect | Follows | Notes |
+| --- | --- | --- |
+| `Standard` | the syntax above | Wildcards skip names starting with a dot unless `GlobOptions.MatchLeadingDot` is set |
+| `Git` | gitignore(5) and git's wildmatch | `[^a]`, `[[:alpha:]]`, `\` escapes in brackets; `{}` are literal; use `GlobCollection.ParseGitIgnore` for a whole `.gitignore` file |
+| `MSBuild` | MSBuild item specs | `/` and `\` are separators, `%XX` escapes, `*.*` matches every file, a leading `..` is kept |
+| `Posix` | `fnmatch(3)` without flags | Matches a plain string: `*` and `?` match `/`; `[[:alpha:]]`, `[[=a=]]`, `[[.-.]]`, `[^a]` |
+| `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` | Same syntax as `Posix`, but a `/` is only matched by a `/` |
+
+The `Git`, `MSBuild`, `Posix` and `PosixPath` dialects are tested against corpora produced by git, MSBuild and
+fnmatch. Characters are compared as UTF-16 code units, whereas git compares the bytes of their UTF-8 encoding.
+
 ## Usage
 
 Install the NuGet package `Meziantou.Framework.Globbing` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.Globbing/))

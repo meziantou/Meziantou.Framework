@@ -83,44 +83,59 @@ public sealed class ComplianceTests
         }
 
         var path = JsonPath.Parse(testCase.Selector);
-        var document = testCase.Document;
-        var result = path.Evaluate(document);
 
+        // Each built-in navigator runs every case, so neither can drift from the suite unnoticed.
+        var nodeMatches = path.Evaluate(testCase.Document).Select(match => new ActualMatch(match.Value, match.Path)).ToArray();
+        AssertExpectedResult(testCase, nodeMatches, nameof(JsonNode));
+
+        using var document = JsonDocument.Parse(testCase.Document?.ToJsonString() ?? "null");
+        var elementMatches = path.Evaluate(document).Select(match => new ActualMatch(JsonNode.Parse(match.Value.GetRawText()), match.Path)).ToArray();
+        AssertExpectedResult(testCase, elementMatches, nameof(JsonElement));
+    }
+
+    private static void AssertExpectedResult(ComplianceTestCase testCase, ActualMatch[] actual, string navigator)
+    {
         if (testCase.Result is not null)
         {
             // Deterministic result - expect exact match
-            AssertResultMatch(result, testCase.Result);
+            AssertResultMatch(actual, testCase.Result, testCase.ResultPaths, navigator);
         }
         else if (testCase.Results is not null)
         {
-            // Non-deterministic result - expect match against any valid ordering
+            // Non-deterministic result - expect match against any valid ordering. The values and the normalized
+            // paths of an ordering go together, so both have to come from the same one.
             var matched = false;
-            foreach (var validResult in testCase.Results)
+            for (var i = 0; i < testCase.Results.Count; i++)
             {
                 try
                 {
-                    AssertResultMatch(result, validResult!.AsArray());
+                    AssertResultMatch(actual, testCase.Results[i]!.AsArray(), testCase.ResultsPaths?[i]!.AsArray(), navigator);
                     matched = true;
                     break;
                 }
-                catch (global::Xunit.Sdk.XunitException)
+                catch (AssertionException)
                 {
                     // Try next valid result
                 }
             }
 
-            Assert.True(matched, $"Result did not match any valid ordering for: {testCase.Selector}\nActual: {FormatResult(result)}");
+            Assert.True(matched, $"{navigator}: result did not match any valid ordering for: {testCase.Selector}\nActual: {FormatResult(actual)}");
         }
     }
 
-    private static void AssertResultMatch(JsonPathResult actual, JsonArray expected)
+    private static void AssertResultMatch(ActualMatch[] actual, JsonArray expected, JsonArray? expectedPaths, string navigator)
     {
-        Assert.Equal(expected.Count, actual.Count);
+        Assert.HasCount(expected.Count, actual);
         for (var i = 0; i < expected.Count; i++)
         {
             var expectedNode = expected[i];
             var actualNode = actual[i].Value;
-            AssertJsonNodesEqual(expectedNode, actualNode, $"Mismatch at index {i}");
+            AssertJsonNodesEqual(expectedNode, actualNode, $"{navigator}: mismatch at index {i}");
+
+            if (expectedPaths is not null)
+            {
+                Assert.Equal(expectedPaths[i]!.GetValue<string>(), actual[i].Path, message: $"{navigator}: normalized path mismatch at index {i}");
+            }
         }
     }
 
@@ -191,10 +206,9 @@ public sealed class ComplianceTests
         }
     }
 
-    private static string FormatResult(JsonPathResult result)
+    private static string FormatResult(ActualMatch[] result)
     {
-        var array = result.ToJsonArray();
-        return array.ToJsonString();
+        return string.Join(", ", result.Select(match => $"{match.Path}: {FormatNode(match.Value)}"));
     }
 
     private static string FormatNode(JsonNode? node)
@@ -207,7 +221,7 @@ public sealed class ComplianceTests
         return node.ToJsonString();
     }
 
-
+    private readonly record struct ActualMatch(JsonNode? Value, string Path);
 }
 
 #pragma warning disable MA0048 // File name must match type name
@@ -234,6 +248,12 @@ public sealed class ComplianceTestCase : IXunitSerializable
     [System.Text.Json.Serialization.JsonPropertyName("results")]
     public JsonArray? Results { get; set; }
 
+    [System.Text.Json.Serialization.JsonPropertyName("result_paths")]
+    public JsonArray? ResultPaths { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("results_paths")]
+    public JsonArray? ResultsPaths { get; set; }
+
     [System.Text.Json.Serialization.JsonPropertyName("invalid_selector")]
     public bool InvalidSelector { get; set; }
 
@@ -253,6 +273,12 @@ public sealed class ComplianceTestCase : IXunitSerializable
 
         var resultsJson = info.GetValue<string?>(nameof(Results));
         Results = resultsJson is not null ? JsonNode.Parse(resultsJson)?.AsArray() : null;
+
+        var resultPathsJson = info.GetValue<string?>(nameof(ResultPaths));
+        ResultPaths = resultPathsJson is not null ? JsonNode.Parse(resultPathsJson)?.AsArray() : null;
+
+        var resultsPathsJson = info.GetValue<string?>(nameof(ResultsPaths));
+        ResultsPaths = resultsPathsJson is not null ? JsonNode.Parse(resultsPathsJson)?.AsArray() : null;
     }
 
     public void Serialize(IXunitSerializationInfo info)
@@ -263,5 +289,7 @@ public sealed class ComplianceTestCase : IXunitSerializable
         info.AddValue(nameof(Document), Document?.ToJsonString());
         info.AddValue(nameof(Result), Result?.ToJsonString());
         info.AddValue(nameof(Results), Results?.ToJsonString());
+        info.AddValue(nameof(ResultPaths), ResultPaths?.ToJsonString());
+        info.AddValue(nameof(ResultsPaths), ResultsPaths?.ToJsonString());
     }
 }

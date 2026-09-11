@@ -135,6 +135,21 @@ internal ref struct PathReader
             Debug.Assert(IsPathSeparator());
             CurrentText = CurrentText[1..];
             _currentSegmentLength = int.MinValue;
+            MoveToFileNameAfterTrailingSeparator();
+        }
+    }
+
+    /// <summary>
+    ///     A directory given with a trailing separator, such as "src/" or the root "/", is exhausted once that
+    ///     separator is consumed, and the file name is the next segment.
+    /// </summary>
+    private void MoveToFileNameAfterTrailingSeparator()
+    {
+        if (CurrentText.IsEmpty && !_filename.IsEmpty)
+        {
+            CurrentText = _filename;
+            _filename = [];
+            _currentSegmentLength = CurrentText.Length;
         }
     }
 
@@ -178,6 +193,7 @@ internal ref struct PathReader
         }
 
         _currentSegmentLength = int.MinValue;
+        MoveToFileNameAfterTrailingSeparator();
     }
 
     public void ConsumeToEnd()
@@ -191,6 +207,12 @@ internal ref struct PathReader
     {
         ReadOnlySpan<char> currentText = CurrentText;
         ReadOnlySpan<char> filename = _filename;
+
+        // The trailing separator of the directory only separates it from the file name
+        if (!filename.IsEmpty && !currentText.IsEmpty && IsPathSeparator(currentText[^1]))
+        {
+            currentText = currentText[..^1];
+        }
 
         for (var i = segments.Length - 1; i >= 0; i--)
         {

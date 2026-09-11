@@ -17,6 +17,8 @@ internal ref struct JsonPathParser
     /// </summary>
     private const int MaxNestingDepth = 64;
 
+    private const string SingularQueryHint = "A singular query only has name and index segments, with no blank space inside their brackets.";
+
     private JsonPathLexer _lexer;
     private JsonPathToken _current;
     private int _depth;
@@ -336,6 +338,7 @@ internal ref struct JsonPathParser
         // paren-expr = [logical-not-op S] "(" S logical-expr S ")"
         // test-expr = [logical-not-op S] (filter-query / function-expr)
         var negated = false;
+        var notPosition = _current.Position;
         if (_current.Kind is JsonPathTokenKind.ExclamationMark)
         {
             negated = true;
@@ -344,7 +347,8 @@ internal ref struct JsonPathParser
 
         LogicalExpression expr;
 
-        if (_current.Kind is JsonPathTokenKind.OpenParen)
+        var isParenthesized = _current.Kind is JsonPathTokenKind.OpenParen;
+        if (isParenthesized)
         {
             // paren-expr
             Advance();
@@ -398,6 +402,13 @@ internal ref struct JsonPathParser
 
         if (negated)
         {
+            // logical-not-op only prefixes a paren-expr or a test-expr. '!@.a == 1' does not mean '!(@.a == 1)':
+            // it is not well-formed at all.
+            if (!isParenthesized && expr is ComparisonExpression)
+            {
+                throw new FormatException($"'!' at position {notPosition} cannot negate a comparison. Enclose the comparison in parentheses.");
+            }
+
             expr = new NotExpression(expr);
         }
 
@@ -439,7 +450,7 @@ internal ref struct JsonPathParser
         // Check if followed by a comparison operator — this would be an error for non-singular queries
         if (IsComparisonOperator())
         {
-            throw new FormatException($"Non-singular query cannot be used in a comparison at position {_current.Position}.");
+            throw new FormatException($"Non-singular query cannot be used in a comparison at position {_current.Position}. {SingularQueryHint}");
         }
 
         return new ExistenceTestExpression(query);
@@ -541,9 +552,13 @@ internal ref struct JsonPathParser
     // singular-query-segments = *(S (name-segment / index-segment))
     private SingularQuery ParseSingularQuery()
     {
-        if (!TryParseSingularQuery(out var query))
+        // A query that goes on past its last singular segment (with a wildcard, a slice, a descendant segment or
+        // blank space inside the brackets) is still a query, just not a singular one. Nothing that may follow a
+        // singular query starts with '[' or '..', so stopping at one of them means the query is not singular.
+        var position = _current.Position;
+        if (!TryParseSingularQuery(out var query) || _current.Kind is JsonPathTokenKind.OpenBracket or JsonPathTokenKind.DoubleDot)
         {
-            throw new FormatException($"Expected singular query at position {_current.Position}.");
+            throw new FormatException($"Expected a singular query at position {position}. {SingularQueryHint}");
         }
 
         return query;
@@ -577,23 +592,23 @@ internal ref struct JsonPathParser
                 var savedToken = _current;
                 Advance();
 
-                if (_current.Kind is JsonPathTokenKind.StringLiteral)
+                // name-segment = "[" name-selector "]" and index-segment = "[" index-selector "]" leave no room for
+                // blank space, unlike a bracketed selection: "@[ 'a' ]" is a well-formed query, but not a singular one.
+                if (_current.Position == savedToken.Position + 1 && _lexer.PeekChar() is ']')
                 {
-                    var name = _current.StringValue!;
-                    Advance();
-                    if (_current.Kind is JsonPathTokenKind.CloseBracket)
+                    if (_current.Kind is JsonPathTokenKind.StringLiteral)
                     {
+                        var name = _current.StringValue!;
+                        Advance();
                         Advance();
                         segments.Add(new SingularQuerySegment(name));
                         continue;
                     }
-                }
-                else if (_current.Kind is JsonPathTokenKind.NumberLiteral)
-                {
-                    var index = GetLongValue(_current);
-                    Advance();
-                    if (_current.Kind is JsonPathTokenKind.CloseBracket)
+
+                    if (_current.Kind is JsonPathTokenKind.NumberLiteral)
                     {
+                        var index = GetLongValue(_current);
+                        Advance();
                         Advance();
                         segments.Add(new SingularQuerySegment(index));
                         continue;
@@ -607,7 +622,14 @@ internal ref struct JsonPathParser
             }
             else if (_current.Kind is JsonPathTokenKind.Dot)
             {
+                // RFC 9535: no whitespace allowed between "." and what follows, in any segment
+                var dotPos = _current.Position;
                 Advance();
+                if (_current.Position != dotPos + 1)
+                {
+                    throw new FormatException($"Unexpected whitespace after '.' at position {dotPos}.");
+                }
+
                 if (_current.Kind is JsonPathTokenKind.Identifier or JsonPathTokenKind.True or JsonPathTokenKind.False or JsonPathTokenKind.Null)
                 {
                     var name = _current.Kind switch

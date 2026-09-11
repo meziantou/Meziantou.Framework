@@ -667,6 +667,13 @@ internal static class IRegexpTranslator
                 throw Invalid("'[' has to be escaped inside a character class");
             }
 
+            // CCchar leaves "-" out: unescaped, it only stands for itself as the first or the last item of a
+            // class, never as the end of a range.
+            if (ch is '-')
+            {
+                throw Invalid("'-' has to be escaped to end a range");
+            }
+
             return ReadScalarValue();
         }
 

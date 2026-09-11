@@ -14,7 +14,7 @@ public sealed class YamlVersionDirectiveTests
     [Fact]
     public void Parse_WithUnsupportedYamlDirective_ShouldThrow()
     {
-        var yaml = "%YAML 1.3\n---\na: 1\n";
+        var yaml = "%YAML 2.0\n---\na: 1\n";
 
         var ex = Assert.Throws<SemanticErrorException>(() => YamlSyntaxTree.Parse(yaml));
         Assert.Contains("incompatible", ex.Message);

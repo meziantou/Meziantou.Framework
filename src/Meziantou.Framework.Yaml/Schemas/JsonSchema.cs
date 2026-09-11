@@ -92,13 +92,10 @@ public class JsonSchema : FailsafeSchema
         AddScalarRule("!!bool", @"false", m => false, null);
 
         // 10.2.1.3. Integer
-        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"((0|-?[1-9][0-9_]*))", JsonSchema.DecodeInteger, null);
+        AddScalarRule(new Type[] { typeof(ulong), typeof(long), typeof(int) }, "!!int", @"-?(0|[1-9][0-9]*)", JsonSchema.DecodeInteger, null);
 
         // 10.2.1.4. Floating Point
-        AddScalarRule("!!float", @"-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][-+]?[0-9]+)?", m => Convert.ToDouble(m.Value.Replace("_", "", StringComparison.Ordinal), CultureInfo.InvariantCulture), null);
-        AddScalarRule("!!float", @"\.inf", m => double.PositiveInfinity, null);
-        AddScalarRule("!!float", @"-\.inf", m => double.NegativeInfinity, null);
-        AddScalarRule("!!float", @"\.nan", m => double.NaN, null);
+        AddScalarRule("!!float", @"-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][-+]?[0-9]+)?", m => Convert.ToDouble(m.Value, CultureInfo.InvariantCulture), null);
 
         // Json doesn't allow failsafe string, so we are disabling it here.
         AllowFailsafeString = false;

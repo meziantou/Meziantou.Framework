@@ -331,7 +331,7 @@ public abstract class SchemaBase : IYamlSchema
         {
             _algorithms.Add(
                 entry.Key,
-                new Regex("^(" + entry.Value + ")$", RegexOptions.None, Timeout.InfiniteTimeSpan)
+                new Regex(@"\A(" + entry.Value + @")\z", RegexOptions.None, Timeout.InfiniteTimeSpan)
             );
         }
 
@@ -366,7 +366,7 @@ public abstract class SchemaBase : IYamlSchema
         {
             Tag = shortTag;
             PatternSource = regex;
-            Pattern = new Regex("^(?:" + regex + ")$", RegexOptions.None, Timeout.InfiniteTimeSpan);
+            Pattern = new Regex(@"\A(?:" + regex + @")\z", RegexOptions.None, Timeout.InfiniteTimeSpan);
             this._types = types;
             _decoder = decoder;
             _encoder = encoder;

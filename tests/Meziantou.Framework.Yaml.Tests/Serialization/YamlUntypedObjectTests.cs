@@ -47,7 +47,7 @@ public sealed class YamlUntypedObjectTests
     [Fact]
     public void UnsafeTagActivation_HandlesMscorlibTypeNames()
     {
-        var yaml = "!System.Int32,mscorlib 42\n";
+        var yaml = "!System.Int32%2Cmscorlib 42\n";
         var value = YamlSerializer.Deserialize<object>(
             yaml,
             new YamlSerializerOptions { UnsafeAllowDeserializeFromTagTypeName = true });

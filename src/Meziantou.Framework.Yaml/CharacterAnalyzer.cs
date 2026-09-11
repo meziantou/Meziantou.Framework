@@ -20,12 +20,12 @@ internal static class CharacterAnalyzer
         }
 
         // ns-char excludes whitespace, line breaks, and every non-printable character.
-        if (character <= ' ' || (character >= '\x7F' && character <= '\x9F'))
+        if (character <= ' ' || (character >= '\x7F' && character <= '\x9F' && character is not '\x85'))
         {
             return false;
         }
 
-        return Emitter.IsPrintable(character);
+        return char.IsSurrogate(character) || Emitter.IsPrintable(character);
     }
 
     public static bool IsAnchorChar(this ILookAheadBuffer buffer)

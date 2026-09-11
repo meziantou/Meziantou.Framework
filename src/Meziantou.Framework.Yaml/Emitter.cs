@@ -356,7 +356,7 @@ public partial class Emitter : IEmitter
         {
             if (isFirst)
             {
-                if (_buffer.Check(@"#,[]{}&*!|>\""%@`"))
+                if (_buffer.Check(@"#,[]{}&*!|>\'""%@`"))
                 {
                     flow_indicators = true;
                     block_indicators = true;
@@ -400,7 +400,9 @@ public partial class Emitter : IEmitter
                 }
             }
 
-            if (!special_characters && !_buffer.IsPrintable())
+            // Line feeds are represented by block scalar line breaks. Other non-printable characters,
+            // carriage returns (which would be normalized), and content BOMs require a quoted escape.
+            if (!special_characters && ((!_buffer.IsPrintable() && !_buffer.Check('\n')) || _buffer.Check('\uFEFF')))
             {
                 special_characters = true;
             }
@@ -500,13 +502,7 @@ public partial class Emitter : IEmitter
             _scalarData.IsFlowPlainAllowed = false;
             _scalarData.IsBlockPlainAllowed = false;
             _scalarData.IsSingleQuotedAllowed = false;
-            // Don't disable block scalars for line breaks - they're the point of folded/literal scalars
-            // However, disable block scalars for single-character strings containing only special characters
-            // as they're better represented with quoted styles
-            if (!line_breaks || (line_breaks && value.Length == 1))
-            {
-                _scalarData.IsBlockAllowed = false;
-            }
+            _scalarData.IsBlockAllowed = false;
         }
 
         if (line_breaks)
@@ -530,6 +526,19 @@ public partial class Emitter : IEmitter
     private void AnalyzeTag(string tag)
     {
         _tagData.Handle = tag;
+        if (tag.StartsWith("!", StringComparison.Ordinal))
+        {
+            foreach (var directive in _tagDirectives)
+            {
+                if (directive.Handle.Length > 1 && tag.StartsWith(directive.Handle, StringComparison.Ordinal))
+                {
+                    _tagData.Handle = directive.Handle;
+                    _tagData.Suffix = tag.Substring(directive.Handle.Length);
+                    return;
+                }
+            }
+        }
+
         foreach (var tagDirective in _tagDirectives)
         {
             if (tag.StartsWith(tagDirective.Prefix, StringComparison.Ordinal))
@@ -683,7 +692,7 @@ public partial class Emitter : IEmitter
                 {
                     WriteIndicator("%TAG", true, false, false);
                     WriteTagHandle(tagDirective.Handle);
-                    WriteTagContent(tagDirective.Prefix, true);
+                    WriteTagContent(tagDirective.Prefix, true, allowFlowIndicators: true);
                     WriteIndent();
                 }
             }
@@ -754,30 +763,31 @@ public partial class Emitter : IEmitter
         _isIndentation = false;
     }
 
-    [GeneratedRegex(@"[^0-9A-Za-z_\-;?@=$~\\\)\]/:&+,\.\*\(\[!]", RegexOptions.Singleline, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"[^0-9A-Za-z_\-;?@=$~)/:&+.*(']+", RegexOptions.Singleline, matchTimeoutMilliseconds: -1)]
     private static partial Regex UriReplacer { get; }
 
     private static string UrlEncode(string text)
     {
-        return UriReplacer.Replace(text, delegate (Match match)
-        {
-            var buffer = new StringBuilder();
-            foreach (var toEncode in Encoding.UTF8.GetBytes(match.Value))
-            {
-                buffer.AppendFormat("%{0:X02}", toEncode);
-            }
-            return buffer.ToString();
-        });
+        return UriReplacer.Replace(text, match => Uri.EscapeDataString(match.Value));
     }
 
-    private void WriteTagContent(string value, bool needsWhitespace)
+    private void WriteTagContent(string value, bool needsWhitespace, bool allowFlowIndicators = false)
     {
         if (needsWhitespace && !_isWhitespace)
         {
             Write(' ');
         }
 
-        Write(UrlEncode(value));
+        var encoded = UrlEncode(value);
+        if (allowFlowIndicators)
+        {
+            encoded = encoded.Replace("%2C", ",", StringComparison.Ordinal)
+                .Replace("%21", "!", StringComparison.Ordinal)
+                .Replace("%5B", "[", StringComparison.Ordinal)
+                .Replace("%5D", "]", StringComparison.Ordinal);
+        }
+
+        Write(encoded);
 
         _isWhitespace = false;
         _isIndentation = false;
@@ -1136,7 +1146,7 @@ public partial class Emitter : IEmitter
             char character = value[index];
 
 
-            if (!IsPrintable(character) || IsBreak(character) || character == '"' || character == '\\')
+            if (!IsPrintable(character) || IsBreak(character) || character is '"' or '\\' or '\uFEFF')
             {
                 Write('\\');
 
@@ -1225,6 +1235,11 @@ public partial class Emitter : IEmitter
                         }
                         else
                         {
+                            if (CharHelper.IsLowSurrogate(character))
+                            {
+                                throw new YamlException("A scalar contains an unpaired UTF-16 surrogate.");
+                            }
+
                             Write('u');
                             Write(code.ToString("X04", CultureInfo.InvariantCulture));
                         }
@@ -1767,7 +1782,7 @@ public partial class Emitter : IEmitter
         {
             chomp_hint = "-";
         }
-        else if (value.Length >= 2 && analyzer.IsBreak(value.Length - 2))
+        else if (value.Length == 1 || analyzer.IsBreak(value.Length - 2))
         {
             chomp_hint = "+";
             _isOpenEnded = true;

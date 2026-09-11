@@ -7,6 +7,7 @@ internal sealed class RaggedSegment : Segment
     private readonly char[]? _firstRequiredCharacters;
     private readonly int _matchAllSubSegmentCount;
     private readonly int _firstMatchAllSubSegmentIndex;
+    private readonly bool _hasLiteralSet;
 
     public RaggedSegment(Segment[] segments)
     {
@@ -27,6 +28,10 @@ internal sealed class RaggedSegment : Segment
 
                 _matchAllSubSegmentCount++;
             }
+            else if (segment is LiteralSetSegment)
+            {
+                _hasLiteralSet = true;
+            }
         }
 
         if (_segments.Length > 0)
@@ -34,6 +39,9 @@ internal sealed class RaggedSegment : Segment
             _firstRequiredCharacters = GetLeadingCharacters(_segments[0]);
         }
     }
+
+    /// <summary>The characters the first character of the path segment must be one of, or <see langword="null"/> when the segment does not require any.</summary>
+    internal char[]? FirstRequiredCharacters => _firstRequiredCharacters;
 
     public override bool IsMatch(ref PathReader pathReader)
     {
@@ -50,11 +58,17 @@ internal sealed class RaggedSegment : Segment
         }
 
         ReadOnlySpan<Segment> patternSegments = _segments;
-        if (_matchAllSubSegmentCount == 0)
-            return MatchCompleteNoStar(ref pathReader, patternSegments);
 
-        if (_matchAllSubSegmentCount == 1)
-            return MatchSingleStar(ref pathReader, patternSegments, _firstMatchAllSubSegmentIndex);
+        // A literal set can be consumed in several ways, and the choice only pays off once the rest of the pattern
+        // is matched, so it needs the backtracking matcher even when the segment holds no '*'.
+        if (!_hasLiteralSet)
+        {
+            if (_matchAllSubSegmentCount == 0)
+                return MatchCompleteNoStar(ref pathReader, patternSegments);
+
+            if (_matchAllSubSegmentCount == 1)
+                return MatchSingleStar(ref pathReader, patternSegments, _firstMatchAllSubSegmentIndex);
+        }
 
         return Match(ref pathReader, patternSegments);
 
@@ -91,6 +105,24 @@ internal sealed class RaggedSegment : Segment
 
                     return false;
                 }
+                else if (patternSegment is LiteralSetSegment literalSet)
+                {
+                    var remainingPatternSegments = patternSegments[(i + 1)..];
+                    foreach (var value in literalSet.Values)
+                    {
+                        var copyReader = pathReader;
+                        if (!TryConsumeLiteral(ref copyReader, value, literalSet.Comparison))
+                            continue;
+
+                        if (Match(ref copyReader, remainingPatternSegments))
+                        {
+                            pathReader = copyReader;
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
                 else
                 {
                     if (!patternSegment.IsMatch(ref pathReader))
@@ -99,6 +131,19 @@ internal sealed class RaggedSegment : Segment
             }
 
             return pathReader.IsEndOfPath || pathReader.IsPathSeparator();
+        }
+
+        static bool TryConsumeLiteral(ref PathReader pathReader, string value, StringComparison comparison)
+        {
+            // '{,a}' has an empty alternative, which consumes nothing.
+            if (value.Length == 0)
+                return true;
+
+            if (!pathReader.CurrentText.StartsWith(value.AsSpan(), comparison))
+                return false;
+
+            pathReader.ConsumeInSegment(value.Length);
+            return true;
         }
 
         static bool MatchSegmentsNoStar(ref PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
@@ -170,6 +215,7 @@ internal sealed class RaggedSegment : Segment
             CharacterRangeInverseSegment => 1,
             CharacterRangeIgnoreCaseSegment => 1,
             CharacterRangeIgnoreCaseInverseSegment => 1,
+            CharacterClassSegment => 1,
             OrSegment => 1,
 
             _ => 0,
@@ -204,27 +250,18 @@ internal sealed class RaggedSegment : Segment
                 return CreateCharacterSet(set.Set.AsSpan(), set.IgnoreCase);
 
             case CharacterRangeSegment range when range.Range.Length <= 8:
-            {
-                var result = new char[range.Range.Length];
-                var index = 0;
-                for (var c = range.Range.Min; c <= range.Range.Max; c++)
-                {
-                    result[index] = c;
-                    index++;
-                }
-
-                return result;
-            }
+                return range.Range.EnumerateCharacters();
 
             case LiteralSetSegment literalSet:
             {
                 var result = new List<char>(literalSet.Values.Length);
                 foreach (var value in literalSet.Values)
                 {
-                    if (value.Length > 0)
-                    {
-                        result.Add(value[0]);
-                    }
+                    // An empty alternative consumes nothing, so the segment does not require any first character.
+                    if (value.Length == 0)
+                        return null;
+
+                    result.Add(value[0]);
                 }
 
                 if (result.Count == 0)
@@ -236,20 +273,9 @@ internal sealed class RaggedSegment : Segment
 
         return null;
 
-        static char[] CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
+        static char[]? CreateCharacterSet(ReadOnlySpan<char> characters, bool ignoreCase)
         {
-            if (!ignoreCase)
-                return characters.ToArray();
-
-            var result = new HashSet<char>();
-            foreach (var character in characters)
-            {
-                result.Add(character);
-                result.Add(char.ToLowerInvariant(character));
-                result.Add(char.ToUpperInvariant(character));
-            }
-
-            return [.. result];
+            return IgnoreCaseExpansion.TryExpand(characters, ignoreCase, out var result) ? result : null;
         }
     }
 

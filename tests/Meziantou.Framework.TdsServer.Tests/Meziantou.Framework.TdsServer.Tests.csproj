@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- All the tests are skipped when globalization is invariant -->
-    <MinimumExpectedTests>0</MinimumExpectedTests>
   </PropertyGroup>
 
   <ItemGroup>

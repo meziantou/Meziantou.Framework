@@ -11,7 +11,7 @@ internal static class YamlBuiltInTypeInfoResolver
         ArgumentNullException.ThrowIfNull(options);
 
         var converter = GetConverter(type);
-        return converter is null ? null : new BuiltInYamlTypeInfo(type, options, converter);
+        return converter is null ? null : new BuiltInYamlTypeInfo(type, options);
     }
 
     private static YamlConverter? GetConverter(Type type)
@@ -234,24 +234,23 @@ internal static class YamlBuiltInTypeInfoResolver
 
     private sealed class BuiltInYamlTypeInfo : YamlTypeInfo
     {
-        private readonly YamlConverter _converter;
-
-        public BuiltInYamlTypeInfo(Type type, YamlSerializerOptions options, YamlConverter converter)
+        public BuiltInYamlTypeInfo(Type type, YamlSerializerOptions options)
             : base(type, options)
         {
-            _converter = converter ?? throw new ArgumentNullException(nameof(converter));
         }
 
+        // The converter is resolved from the reader or the writer rather than captured, so a converter registered
+        // through YamlSerializerOptions.Converters or a YamlConverterAttribute applies to the root value too.
         public override void Write(YamlWriter writer, object? value)
         {
             ArgumentNullException.ThrowIfNull(writer);
-            _converter.Write(writer, value);
+            writer.GetConverter(Type).Write(writer, value);
         }
 
         public override object? ReadAsObject(YamlReader reader)
         {
             ArgumentNullException.ThrowIfNull(reader);
-            return _converter.Read(reader, Type);
+            return reader.GetConverter(Type).Read(reader, Type);
         }
     }
 }

@@ -150,4 +150,119 @@ public class YamlReferenceHandlingTests
         Assert.NotNull(roundTrip);
         Assert.Same(roundTrip, roundTrip.Next);
     }
+
+    [Fact]
+    public void DeserializeResolvesStringScalarAliases()
+    {
+        var result = YamlSerializer.Deserialize<List<string>>("[&a hello, *a]", PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(["hello", "hello"], result);
+    }
+
+    [Fact]
+    public void DeserializeResolvesNumericScalarAliases()
+    {
+        var result = YamlSerializer.Deserialize<List<int>>("[&a 42, *a]", PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal([42, 42], result);
+    }
+
+    [Fact]
+    public void DeserializeResolvesNullScalarAliases()
+    {
+        var result = YamlSerializer.Deserialize<List<string?>>("[&a null, *a]", PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal([null, null], result);
+    }
+
+    [Fact]
+    public void DeserializeResolvesScalarAliasesIntoObject()
+    {
+        var result = YamlSerializer.Deserialize<List<object?>>("[&a hello, *a, &b 42, *b]", PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(["hello", "hello", 42L, 42L], result);
+    }
+
+    [Fact]
+    public void DeserializeResolvesScalarAliasesInMappingValues()
+    {
+        var yaml =
+            "a: &v hello\n" +
+            "b: *v\n";
+
+        var result = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal("hello", result["a"]);
+        Assert.Equal("hello", result["b"]);
+    }
+
+    [Fact]
+    public void DeserializeKeepsTheScalarStyleOfAnAliasedScalar()
+    {
+        // The anchored scalar is quoted, so the alias must not be resolved as a boolean either.
+        var result = YamlSerializer.Deserialize<List<object?>>("[&a \"true\", *a]", PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(["true", "true"], result);
+    }
+
+    [Fact]
+    public void DeserializeUsesTheLastDefinitionOfAReusedAnchorName()
+    {
+        var yaml =
+            "- &a hello\n" +
+            "- *a\n" +
+            "- &a world\n" +
+            "- *a\n";
+
+        var result = YamlSerializer.Deserialize<List<string>>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal(["hello", "hello", "world", "world"], result);
+    }
+
+    [Fact]
+    public void DeserializeUsesTheLastDefinitionWhenAnAnchorNameChangesFromScalarToMapping()
+    {
+        var yaml =
+            "first: &a hello\n" +
+            "second: *a\n" +
+            "third: &a { Name: n }\n" +
+            "fourth: *a\n";
+
+        var result = YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml, PreserveOptions);
+
+        Assert.NotNull(result);
+        Assert.Equal("hello", result["first"]);
+        Assert.Equal("hello", result["second"]);
+        Assert.IsType<Dictionary<string, object?>>(result["third"]);
+        Assert.Same(result["third"], result["fourth"]);
+    }
+
+    [Fact]
+    public void DeserializeSupportsAnchorNamesBeyondAsciiLettersAndDigits()
+    {
+        foreach (var anchor in new[] { "a.b", "a/b", "a:b", "héllo", "a+b" })
+        {
+            var yaml = $"[&{anchor} hello, *{anchor}]";
+            var result = YamlSerializer.Deserialize<List<string>>(yaml, PreserveOptions);
+
+            Assert.NotNull(result);
+            Assert.Equal(["hello", "hello"], result, anchor);
+        }
+    }
+
+    [Fact]
+    public void DeserializeRejectsAnchorNamesContainingAFlowIndicator()
+    {
+        _ = Assert.Throws<SyntaxErrorException>(() => YamlSerializer.Deserialize<List<string>>("[& hello]", PreserveOptions));
+        _ = Assert.Throws<SyntaxErrorException>(() => YamlSerializer.Deserialize<List<string>>("[&, hello]", PreserveOptions));
+    }
+
+    private static YamlSerializerOptions PreserveOptions { get; } = new() { ReferenceHandling = YamlReferenceHandling.Preserve };
 }

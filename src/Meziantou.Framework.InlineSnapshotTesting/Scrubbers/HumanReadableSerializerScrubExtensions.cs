@@ -59,6 +59,10 @@ public static class HumanReadableSerializerScrubExtensions
     }
 
     /// <summary>Scrubs XML nodes matching the specified XPath expression.</summary>
+    /// <remarks>
+    /// Returning the matched node replaces nothing, so a scrubber can mutate the node in place. Returning
+    /// <see langword="null"/> removes the node; removing the document element leaves an empty document.
+    /// </remarks>
     public static void ScrubXmlNode(this HumanReadableSerializerOptions options, string xpath, Func<XNode, XNode?> scrubber)
     {
         ScrubXmlNode(options, xpath, nsResolver: null, scrubber);
@@ -75,6 +79,10 @@ public static class HumanReadableSerializerScrubExtensions
     }
 
     /// <summary>Scrubs XML nodes matching the specified XPath expression with namespace resolution.</summary>
+    /// <remarks>
+    /// Returning the matched node replaces nothing, so a scrubber can mutate the node in place. Returning
+    /// <see langword="null"/> removes the node; removing the document element leaves an empty document.
+    /// </remarks>
     public static void ScrubXmlNode(this HumanReadableSerializerOptions options, string xpath, IXmlNamespaceResolver? nsResolver, Func<XNode, XNode?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.XmlMediaTypeName);
@@ -82,6 +90,11 @@ public static class HumanReadableSerializerScrubExtensions
     }
 
     /// <summary>Scrubs JSON values matching the specified JSONPath expression, returning a string value.</summary>
+    /// <remarks>
+    /// A match whose value is JSON <c language="json">null</c> is left unchanged, as there is no <see cref="JsonNode"/>
+    /// to hand to the scrubber. When the expression matches the document root, the returned value becomes the whole
+    /// document, and returning <see langword="null"/> reduces the document to JSON <c language="json">null</c>.
+    /// </remarks>
     public static void ScrubJsonValue(this HumanReadableSerializerOptions options, string jsonPath, Func<JsonNode, string?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.JsonMediaTypeName);
@@ -89,6 +102,11 @@ public static class HumanReadableSerializerScrubExtensions
     }
 
     /// <summary>Scrubs JSON values matching the specified JSONPath expression, returning a JSON node.</summary>
+    /// <remarks>
+    /// A match whose value is JSON <c language="json">null</c> is left unchanged, as there is no <see cref="JsonNode"/>
+    /// to hand to the scrubber. When the expression matches the document root, the returned node becomes the whole
+    /// document, and returning <see langword="null"/> reduces the document to JSON <c language="json">null</c>.
+    /// </remarks>
     public static void ScrubJsonValue(this HumanReadableSerializerOptions options, string jsonPath, Func<JsonNode, JsonNode?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.JsonMediaTypeName);
@@ -202,17 +220,33 @@ public static class HumanReadableSerializerScrubExtensions
             var result = _path.Evaluate(node);
             foreach (var match in result)
             {
-                Debug.Assert(match.Value is not null);
+                // A JSON null has no JsonNode representation, so there is no value to hand to the scrubber. Leave it as-is.
+                if (match.Value is null)
+                    continue;
+
                 var scrubValue = _scrubber(match.Value);
-                ReplaceWith(match.Value, scrubValue);
+                if (ReferenceEquals(match.Value, node))
+                {
+                    // The root has no parent, so replacing it means replacing the document itself.
+                    // Removing it leaves a document whose value is JSON null.
+                    node = scrubValue;
+                }
+                else
+                {
+                    ReplaceWith(match.Value, scrubValue);
+                }
             }
 
-            var json = node.ToJsonString();
+            var json = node is null ? "null" : node.ToJsonString();
             _innerFormatter.Format(writer, json, options);
         }
 
         private static void ReplaceWith(JsonNode oldNode, JsonNode? newNode)
         {
+            // Assigning a node to the slot it already occupies throws for arrays, and is a no-op for objects.
+            if (ReferenceEquals(oldNode, newNode))
+                return;
+
             switch (oldNode.Parent)
             {
                 case JsonObject jsonObject:
@@ -322,20 +356,29 @@ public static class HumanReadableSerializerScrubExtensions
 
             var document = XDocument.Parse(value);
             var result = document.XPathEvaluate(_xpath, _nsResolver);
-            var navigator = (IEnumerable<object>)result;
+
+            // XPathEvaluate is lazy, and replacing a node detaches the subtree the navigator walks.
+            var navigator = ((IEnumerable<object>)result).ToArray();
             foreach (var item in navigator)
             {
                 if (item is XNode node)
                 {
                     var newValue = _scrubber(node);
+                    if (ReferenceEquals(node, newValue))
+                    {
+                        // The scrubber mutated the node in place (or returned it untouched): there is nothing to replace.
+                        continue;
+                    }
+
                     if (newValue is null)
                     {
                         node.Remove();
                     }
                     else
                     {
-                        node.AddBeforeSelf(newValue);
-                        node.Remove();
+                        // Inserting the new node before removing the old one is invalid for the document
+                        // element, as it would momentarily give the document two root elements.
+                        node.ReplaceWith(newValue);
                     }
                 }
             }

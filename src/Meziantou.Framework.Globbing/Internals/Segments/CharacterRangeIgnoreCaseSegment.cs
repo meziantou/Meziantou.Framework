@@ -6,14 +6,7 @@ internal sealed class CharacterRangeIgnoreCaseSegment : Segment
 
     public CharacterRangeIgnoreCaseSegment(CharacterRange range)
     {
-        if (CharacterRangeSegment.IsAsciiUpper(range.Min) && CharacterRangeSegment.IsAsciiUpper(range.Max))
-        {
-            _range = new CharacterRange(char.ToLowerInvariant(range.Min), char.ToLowerInvariant(range.Max));
-        }
-        else
-        {
-            _range = range;
-        }
+        _range = range;
     }
 
     public override bool IsMatch(ref PathReader pathReader)
@@ -21,13 +14,7 @@ internal sealed class CharacterRangeIgnoreCaseSegment : Segment
         if (pathReader.IsEndOfCurrentSegment)
             return false;
 
-        var c = pathReader.CurrentText[0];
-        if (CharacterRangeSegment.IsAsciiUpper(c))
-        {
-            c = char.ToLowerInvariant(c);
-        }
-
-        var result = _range.IsInRange(c);
+        var result = _range.IsInRangeIgnoreCase(pathReader.CurrentText[0]);
         if (result)
         {
             pathReader.ConsumeInSegment(1);

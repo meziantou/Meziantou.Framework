@@ -1,3 +1,5 @@
+using Meziantou.Framework.Yaml.Serialization.Converters;
+
 namespace Meziantou.Framework.Yaml.Serialization;
 
 /// <summary>
@@ -176,12 +178,13 @@ public sealed class YamlUnionTypeStructuralClassifier : YamlTypeClassifierFactor
                     continue;
                 }
 
+                // A merge key carries the keys of another mapping rather than a member of the case.
+                var isMergeKey = YamlMergeKey.IsMergeKey(reader);
                 var key = reader.ScalarValue ?? string.Empty;
                 reader.Read();
                 reader.Skip();
 
-                // A merge key carries the keys of another mapping rather than a member of the case.
-                if (!string.Equals(key, "<<", StringComparison.Ordinal))
+                if (!isMergeKey)
                 {
                     keys.Add(key);
                 }

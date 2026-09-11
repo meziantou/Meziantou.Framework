@@ -149,7 +149,7 @@ The initial SQL text support is intentionally small: one `SELECT` statement with
 
 Built-in scalar function mappings can be customized through `TdsQueryEngineOptions.ScalarFunctions` (or `AddScalarFunction`). By default `UPPER` maps to `string.ToUpperInvariant` and `LOWER` maps to `string.ToLowerInvariant`, but you can replace them (for example with provider-specific `ToUpper` / `ToLower` mappings).
 
-The built-in scalar functions propagate `NULL` the way SQL Server does: `UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM` and `REPLACE` return `NULL` for a `NULL` argument rather than failing. `ROUND` rounds a halfway value away from zero, so `ROUND(2.5, 0)` is `3` and `ROUND(-2.5, 0)` is `-3`.
+The built-in string functions propagate `NULL` the way SQL Server does: `UPPER`, `LOWER`, `LEN`, `LTRIM`, `RTRIM`, `TRIM`, `LEFT`, `RIGHT` and `REPLACE` return `NULL` for a `NULL` argument rather than failing. `ROUND` rounds a halfway value away from zero, so `ROUND(2.5, 0)` is `3` and `ROUND(-2.5, 0)` is `-3`.
 
 Comparisons follow SQL's three-valued logic: a comparison with `NULL` is never true, `<>` and `NOT` do not match `NULL` rows, and `NOT IN` over a list containing `NULL` matches nothing. `NOT` is pushed down into the predicate instead of negating an already-evaluated result, so `WHERE NOT (Name = 'a')` excludes rows where `Name` is `NULL`, as SQL Server does. `JOIN ... ON` is an exception: it currently matches `NULL` keys to each other.
 

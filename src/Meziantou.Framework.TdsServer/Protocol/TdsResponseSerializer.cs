@@ -19,6 +19,7 @@ internal static class TdsResponseSerializer
 
     private static readonly UInt128 MaxDecimalMagnitude = ComputeMaxDecimalMagnitude();
     private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
+    private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
     public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
     {
@@ -33,7 +34,7 @@ internal static class TdsResponseSerializer
             WriteEnvironmentChangeToken(writer, environmentType: 1, authenticationResult.Database, oldValue: string.Empty);
         }
 
-        WriteCollationEnvironmentChangeToken(writer, TdsCollation.Default);
+        WriteCollationEnvironmentChangeToken(writer, DefaultCollation);
         WriteDoneToken(writer, status: 0x0000, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
@@ -446,7 +447,7 @@ internal static class TdsResponseSerializer
                 default:
                     writer.Write((byte)0xE7); // NVARCHAR
                     writer.Write(declaredLength);
-                    writer.Write(TdsCollation.Default);
+                    writer.Write(DefaultCollation);
                     break;
             }
 

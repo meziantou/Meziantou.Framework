@@ -103,12 +103,10 @@ internal record struct CallerContext(FullPath FilePath, int LineNumber, int Colu
         if (methodName is null)
             throw new InlineSnapshotException("Cannot find the method to update from the call stack. The code may be optimized (Release configuration).");
 
-        string? assemblyLocation = null;
-        if (settings.AllowedStringFormats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
-        {
-            // Read the language version from the PDB
-            assemblyLocation = callerFrame.GetMethod()?.DeclaringType?.Assembly?.Location;
-        }
+        // The PDB backs both the language-version filtering and the preprocessor symbols used to parse the file,
+        // so the location must be captured whatever the allowed string formats are. FilterFormats is the only
+        // consumer gated on CSharpStringFormats.DetermineFeatureFromPdb.
+        var assemblyLocation = callerFrame.GetMethod()?.DeclaringType?.Assembly?.Location;
 
         return new CallerContext(resolvedFilePath.Value, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);
     }

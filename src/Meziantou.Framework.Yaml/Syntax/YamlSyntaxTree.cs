@@ -43,12 +43,14 @@ public sealed class YamlSyntaxTree
         ValidateYaml(yaml);
 
         var tokens = new List<YamlSyntaxToken>();
+        AddScannerTokens(yaml, tokens);
         if (options.IncludeTrivia)
         {
-            AddTriviaTokens(yaml, tokens);
+            // Trivia is read from the text the scanner did not claim: a '#' inside a quoted or block scalar is
+            // content, not the start of a comment.
+            AddTriviaTokens(yaml, tokens, GetUncoveredRanges(yaml, tokens));
         }
 
-        AddScannerTokens(yaml, tokens);
         tokens.Sort(static (left, right) =>
         {
             var position = left.Span.Start.Index.CompareTo(right.Span.Start.Index);
@@ -143,13 +145,61 @@ public sealed class YamlSyntaxTree
         return value;
     }
 
-    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target)
+    /// <summary>Gets the ranges of <paramref name="yaml"/> that no scanner token covers, in source order.</summary>
+    private static List<(int Start, int End)> GetUncoveredRanges(string yaml, List<YamlSyntaxToken> tokens)
     {
-        var index = 0;
-        var line = 0;
-        var column = 0;
+        var covered = new List<(int Start, int End)>(tokens.Count);
+        foreach (var token in tokens)
+        {
+            var start = Clamp(token.Span.Start.Index, 0, yaml.Length);
+            var end = Clamp(token.Span.End.Index, start, yaml.Length);
+            if (end > start)
+            {
+                covered.Add((start, end));
+            }
+        }
 
-        while (index < yaml.Length)
+        covered.Sort(static (left, right) => left.Start.CompareTo(right.Start));
+
+        var result = new List<(int Start, int End)>();
+        var cursor = 0;
+        foreach (var (start, end) in covered)
+        {
+            if (start > cursor)
+            {
+                result.Add((cursor, start));
+            }
+
+            if (end > cursor)
+            {
+                cursor = end;
+            }
+        }
+
+        if (cursor < yaml.Length)
+        {
+            result.Add((cursor, yaml.Length));
+        }
+
+        return result;
+    }
+
+    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, List<(int Start, int End)> ranges)
+    {
+        foreach (var range in ranges)
+        {
+            AddTriviaTokens(yaml, target, range.Start, range.End);
+        }
+    }
+
+    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, int rangeStart, int rangeEnd)
+    {
+        var index = rangeStart;
+        var startMark = CreateMark(yaml, rangeStart);
+        var line = startMark.Line;
+        var column = startMark.Column;
+
+        while (index < rangeEnd)
         {
             var start = new Mark(index, line, column);
             var current = yaml[index];
@@ -158,7 +208,7 @@ public sealed class YamlSyntaxTree
                 var cursor = index + 1;
                 var endLine = line;
                 var endColumn = column + 1;
-                while (cursor < yaml.Length && yaml[cursor] != '\r' && yaml[cursor] != '\n')
+                while (cursor < rangeEnd && yaml[cursor] != '\r' && yaml[cursor] != '\n')
                 {
                     cursor++;
                     endColumn++;
@@ -179,7 +229,7 @@ public sealed class YamlSyntaxTree
             if (current == '\r' || current == '\n')
             {
                 var cursor = index;
-                if (current == '\r' && cursor + 1 < yaml.Length && yaml[cursor + 1] == '\n')
+                if (current == '\r' && cursor + 1 < rangeEnd && yaml[cursor + 1] == '\n')
                 {
                     cursor += 2;
                 }
@@ -204,7 +254,7 @@ public sealed class YamlSyntaxTree
             {
                 var cursor = index + 1;
                 var endColumn = column + 1;
-                while (cursor < yaml.Length && (yaml[cursor] == ' ' || yaml[cursor] == '\t'))
+                while (cursor < rangeEnd && (yaml[cursor] == ' ' || yaml[cursor] == '\t'))
                 {
                     cursor++;
                     endColumn++;

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -188,6 +189,30 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             expected: """
             #if SampleDirective
             InlineSnapshot.Validate(new object(), /*start*/expected: /* middle */ "{}" /* after */);
+            #endif
+            """);
+    }
+
+    [Theory]
+    [InlineData(nameof(CSharpStringFormats.Quoted), "\"{}\"")]
+    [InlineData(nameof(CSharpStringFormats.Verbatim), "@\"{}\"")]
+    [InlineData(nameof(CSharpStringFormats.Raw), "\"\"\"\n    {}\n    \"\"\"")]
+    [InlineData(nameof(CSharpStringFormats.LeftAlignedRaw), "\"\"\"\n{}\n\"\"\"")]
+    public async Task UpdateSnapshotSupportIfDirective_WithExplicitStringFormat(string format, string expectedLiteral)
+    {
+        // The compilation symbols come from the PDB. They must be read whatever the allowed string formats are,
+        // otherwise the assertion sits in a disabled region of the syntax tree and cannot be found.
+        await AssertSnapshot(preprocessorSymbols: ["SampleDirective"],
+            source: $$"""
+            #if SampleDirective
+            var settings = InlineSnapshotSettings.Default with { AllowedStringFormats = CSharpStringFormats.{{format}} };
+            InlineSnapshot.Validate(new object(), settings, "");
+            #endif
+            """,
+            expected: $$"""
+            #if SampleDirective
+            var settings = InlineSnapshotSettings.Default with { AllowedStringFormats = CSharpStringFormats.{{format}} };
+            InlineSnapshot.Validate(new object(), settings, {{expectedLiteral}});
             #endif
             """);
     }
@@ -1045,6 +1070,174 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void Scrub_Json_DocumentRoot_Replace()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => "[redacted]");
+            })
+            .Validate(new JsonObject() { ["secret"] = "sensitive-value" }, """
+                "[redacted]"
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_DocumentRoot_ReplaceWithNode()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => (JsonNode)new JsonObject() { ["scrubbed"] = true });
+            })
+            .Validate(new JsonObject() { ["secret"] = "sensitive-value" }, """
+                {
+                  "scrubbed": true
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_DocumentRoot_Remove()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => (JsonNode?)null);
+            })
+            .Validate(new JsonObject() { ["secret"] = "sensitive-value" }, "null");
+    }
+
+    [Fact]
+    public void Scrub_Json_DocumentRoot_ReturnSameInstance()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => node);
+            })
+            .Validate(new JsonObject() { ["secret"] = "value" }, """
+                {
+                  "secret": "value"
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_ArrayDocumentRoot_Replace()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => "[redacted]");
+            })
+            .Validate(new JsonArray("sensitive-value"), """
+                "[redacted]"
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_ArrayDocumentRoot_Remove()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => (JsonNode?)null);
+            })
+            .Validate(new JsonArray("sensitive-value"), "null");
+    }
+
+    [Fact]
+    public void Scrub_Json_ScalarDocumentRoot_Replace()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => "[redacted]");
+            })
+            .Validate(JsonValue.Create("sensitive-value"), """
+                "[redacted]"
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_ScalarDocumentRoot_Remove()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => (JsonNode?)null);
+            })
+            .Validate(JsonValue.Create("sensitive-value"), "null");
+    }
+
+    [Fact]
+    public void Scrub_Json_NullProperty_IsNotScrubbed()
+    {
+        // A JSON null has no JsonNode to hand to the scrubber, so the match is left as-is.
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$.secret", node => "[redacted]");
+            })
+            .Validate(new JsonObject() { ["secret"] = null, ["other"] = "dummy" }, """
+                {
+                  "secret": null,
+                  "other": "dummy"
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_NullArrayElement_IsNotScrubbed()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$.values[*]", node => "[redacted]");
+            })
+            .Validate(new JsonObject() { ["values"] = new JsonArray("a", null, "b") }, """
+                {
+                  "values": [
+                    "[redacted]",
+                    null,
+                    "[redacted]"
+                  ]
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_NullDocumentRoot_IsNotScrubbed()
+    {
+        using var document = JsonDocument.Parse("null");
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$", node => "[redacted]");
+            })
+            .Validate(document, "null");
+    }
+
+    [Fact]
+    public void Scrub_Json_ArrayElement_ReturnSameInstance()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$.values[0]", node => node);
+            })
+            .Validate(new JsonObject() { ["values"] = new JsonArray("a", "b") }, """
+                {
+                  "values": [
+                    "a",
+                    "b"
+                  ]
+                }
+                """);
+    }
+
+    [Fact]
     public void ScrubXmlAttribute_Remove()
     {
         InlineSnapshot
@@ -1169,6 +1362,71 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
                   <item a="2">dummy</item>
                 </root>
                 """);
+    }
+
+    [Fact]
+    public void ScrubXmlNode_DocumentElement_ReturnSameInstance()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("/root", node => node);
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item>test1</item>
+                </root>
+                """), """
+                <root>
+                  <item>test1</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlNode_DocumentElement_SetValue()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("/root", node => ((XElement)node).SetValue("dummy"));
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item>sensitive-value</item>
+                </root>
+                """), "<root>dummy</root>");
+    }
+
+    [Fact]
+    public void ScrubXmlNode_DocumentElement_Replace()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("/root", node => new XElement("redacted"));
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item>sensitive-value</item>
+                </root>
+                """), "<redacted />");
+    }
+
+    [Fact]
+    public void ScrubXmlNode_DocumentElement_Remove()
+    {
+        // Removing the document element leaves an empty document.
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("/root", node => null);
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item>sensitive-value</item>
+                </root>
+                """), "");
     }
 
     [Theory]

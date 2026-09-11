@@ -4,5 +4,4 @@ internal enum GlobParserContext
 {
     Segment,
     LiteralSet,
-    Range,
 }

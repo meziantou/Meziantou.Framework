@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>[!abc]</term>
-///             <description>matches any character not in the brackets</description>
+///             <description>matches any character not in the brackets. <see cref="GlobDialect.Git"/>, <see cref="GlobDialect.Posix"/> and <see cref="GlobDialect.PosixPath"/> also accept <c>[^abc]</c>.</description>
 ///         </item>
 ///         <item>
 ///             <term>[a-z]</term>
@@ -38,7 +38,11 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>[[:alpha:]]</term>
-///             <description>matches one character of a POSIX character class. Only supported by <see cref="GlobDialect.Posix"/> and <see cref="GlobDialect.PosixPath"/>. The supported classes are <c>alnum</c>, <c>alpha</c>, <c>blank</c>, <c>cntrl</c>, <c>digit</c>, <c>graph</c>, <c>lower</c>, <c>print</c>, <c>punct</c>, <c>space</c>, <c>upper</c> and <c>xdigit</c>.</description>
+///             <description>matches one character of a POSIX character class. Only supported by <see cref="GlobDialect.Git"/>, <see cref="GlobDialect.Posix"/> and <see cref="GlobDialect.PosixPath"/>. The supported classes are <c>alnum</c>, <c>alpha</c>, <c>blank</c>, <c>cntrl</c>, <c>digit</c>, <c>graph</c>, <c>lower</c>, <c>print</c>, <c>punct</c>, <c>space</c>, <c>upper</c> and <c>xdigit</c>. With <c>GlobOptions.IgnoreCase</c>, <c>upper</c> and <c>lower</c> match a letter of either case.</description>
+///         </item>
+///         <item>
+///             <term>[[=a=]] [[.a.]]</term>
+///             <description>an equivalence class and a collating symbol, which both stand for the character they hold. Only supported by <see cref="GlobDialect.Posix"/> and <see cref="GlobDialect.PosixPath"/>. A collating symbol can be a range bound: <c>[[.-.]-0]</c>.</description>
 ///         </item>
 ///         <item>
 ///             <term>{abc,123}</term>
@@ -46,21 +50,30 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>**</term>
-///             <description>matches zero or more directories</description>
+///             <description>matches zero or more directories when it makes a whole path segment. A trailing <c>**</c> matches at least one segment. The POSIX dialects read it as a <c>*</c>.</description>
 ///         </item>
 ///         <item>
 ///             <term>!pattern</term>
-///             <description>leading '!' negates the pattern</description>
+///             <description>leading '!' negates the pattern. Only supported by <see cref="GlobDialect.Standard"/> and <see cref="GlobDialect.Git"/>.</description>
 ///         </item>
 ///         <item>
 ///             <term>\x</term>
-///             <description>escapes the following character. For instance, '\*' matches the literal character '*' instead of being a wildcard.</description>
+///             <description>escapes the following character. For instance, '\*' matches the literal character '*' instead of being a wildcard. <see cref="GlobDialect.Git"/> and the POSIX dialects also read an escape in a bracket expression. <see cref="GlobDialect.MSBuild"/> reads '\' as a path separator and escapes a character with <c>%XX</c> instead.</description>
 ///         </item>
 ///     </list>
 ///     <para>
 ///         If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.
 ///         A <see cref="GlobDialect.Git"/> pattern matches both a file and a directory, and one ending with a
-///         <c>/</c> matches the directory itself as well as everything below it.
+///         <c>/</c> matches the directory itself as well as everything below it. A <see cref="GlobDialect.Posix"/>
+///         pattern matches a plain string, whatever the kind of item.
+///     </para>
+///     <para>
+///         <see cref="GlobDialect.Git"/>, <see cref="GlobDialect.MSBuild"/>, <see cref="GlobDialect.Posix"/> and
+///         <see cref="GlobDialect.PosixPath"/> follow the behavior of git, MSBuild and fnmatch(3), which the tests
+///         check against corpora produced by those implementations. The exceptions are deliberate: characters are
+///         compared as UTF-16 code units (git compares the bytes of their UTF-8 encoding), a path ending with a
+///         <c>/</c> is a directory (fnmatch compares strings), and a pattern that can never match anything, such as
+///         one holding an unknown character class, is rejected.
 ///     </para>
 ///     <para>
 ///         Matching backtracks, so the cost of a single <see cref="IsMatch(ReadOnlySpan{char}, ReadOnlySpan{char}, PathItemType?)"/>
@@ -184,12 +197,9 @@ public sealed class Glob : IGlobEvaluatable
     ///     content of an excluded directory itself. An entry ending with a '/' therefore only has to match the
     ///     directory here, unlike the same pattern parsed on its own.
     /// </summary>
-    internal static Glob ParseGitIgnoreEntry(ReadOnlySpan<char> pattern)
+    internal static bool TryParseGitIgnoreEntry(ReadOnlySpan<char> pattern, [NotNullWhen(true)] out Glob? result)
     {
-        if (GlobParser.TryParse(pattern, GlobDialect.Git, GlobOptions.None, matchGitDirectoryContent: false, out var result, out var errorMessage))
-            return result;
-
-        throw new ArgumentException($"The pattern '{pattern.ToString()}' is invalid: {errorMessage}", nameof(pattern));
+        return GlobParser.TryParse(pattern, GlobDialect.Git, GlobOptions.None, matchGitDirectoryContent: false, out result, out _);
     }
 
     /// <summary>Determines whether the specified path matches this glob pattern.</summary>
@@ -208,7 +218,7 @@ public sealed class Glob : IGlobEvaluatable
         {
             var path = directory.IsEmpty
                 ? filename.ToString()
-                : directory.ToString() + '/' + filename.ToString();
+                : PathReader.IsPathSeparator(directory[^1]) ? directory.ToString() + filename.ToString() : directory.ToString() + '/' + filename.ToString();
             directory = path.AsSpan();
             filename = [];
         }
@@ -270,8 +280,18 @@ public sealed class Glob : IGlobEvaluatable
 
                 var remainingAnchors = anchors[(i + 1)..];
                 var remainingMatchLeadingDot = matchLeadingDot[(i + 1)..];
-                if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors, remainingMatchLeadingDot))
+
+                // A gitignore entry such as 'abc/**/' ends with a '**' once its trailing '/' is set aside, and a
+                // trailing '**' consumes at least one segment: the entry matches the directories inside 'abc'.
+                if (remainingPatternSegments is [DirectoryContentSegment])
+                {
+                    if (pathReader.IsEndOfPath)
+                        return false;
+                }
+                else if (IsMatchCore(pathReader, remainingPatternSegments, remainingAnchors, remainingMatchLeadingDot))
+                {
                     return true;
+                }
 
                 var segmentAnchor = remainingAnchors[0];
                 if (!CanMatchLeadingDot(pathReader, matchLeadingDot[i]))

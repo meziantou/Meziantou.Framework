@@ -5064,6 +5064,24 @@
       ]
     },
     {
+      "name": "index selector, null element",
+      "selector": "$[1]",
+      "document": [
+        "first",
+        null,
+        "third"
+      ],
+      "result": [
+        null
+      ],
+      "result_paths": [
+        "$[1]"
+      ],
+      "tags": [
+        "index"
+      ]
+    },
+    {
       "name": "name selector, double quotes",
       "selector": "$[\"a\"]",
       "document": {
@@ -8020,7 +8038,8 @@
       ],
       "tags": [
         "function",
-        "length"
+        "length",
+        "value"
       ]
     },
     {
@@ -8047,7 +8066,8 @@
       ],
       "tags": [
         "function",
-        "length"
+        "length",
+        "value"
       ]
     },
     {
@@ -8383,7 +8403,8 @@
       ],
       "tags": [
         "function",
-        "match"
+        "match",
+        "value"
       ]
     },
     {
@@ -8903,7 +8924,8 @@
       ],
       "tags": [
         "function",
-        "search"
+        "search",
+        "value"
       ]
     },
     {
@@ -9857,8 +9879,8 @@
         "$[1]"
       ],
       "tags": [
+        "count",
         "function",
-        "search",
         "whitespace"
       ]
     },

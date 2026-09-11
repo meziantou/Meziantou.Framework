@@ -139,7 +139,7 @@ internal sealed class RaggedSegment : Segment
             if (value.Length == 0)
                 return true;
 
-            if (!pathReader.CurrentText.StartsWith(value.AsSpan(), comparison))
+            if (!pathReader.CurrentSegment.StartsWith(value.AsSpan(), comparison))
                 return false;
 
             pathReader.ConsumeInSegment(value.Length);

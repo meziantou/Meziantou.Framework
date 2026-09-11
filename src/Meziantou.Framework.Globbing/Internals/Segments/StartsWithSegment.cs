@@ -17,7 +17,7 @@ internal sealed class StartsWithSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        if (pathReader.CurrentText.StartsWith(Value.AsSpan(), _stringComparison))
+        if (pathReader.CurrentSegment.StartsWith(Value.AsSpan(), _stringComparison))
         {
             pathReader.ConsumeInSegment(pathReader.CurrentSegmentLength);
             return true;

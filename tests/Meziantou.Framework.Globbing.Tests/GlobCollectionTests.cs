@@ -238,5 +238,103 @@ important.log
 
         Assert.Equal(loaded.Count, parsed.Count);
         Assert.Equal(2, parsed.Count);
+        Assert.True(parsed.IsMatch("a.log"));
+        Assert.False(parsed.IsMatch("important.log"));
+    }
+
+    [Fact]
+    public async Task GitIgnoreLoneCarriageReturnBelongsToTheEntry()
+    {
+        // git only breaks lines on LF, so a CR that is not followed by a LF is part of the entry
+        var content = "y\rz\n";
+
+        var parsed = GlobCollection.ParseGitIgnore(content.AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader(content));
+
+        foreach (var globs in new[] { parsed, loaded })
+        {
+            Assert.Equal(1, globs.Count);
+            Assert.True(globs.IsMatch("y\rz"));
+            Assert.False(globs.IsMatch("y"));
+            Assert.False(globs.IsMatch("z"));
+        }
+    }
+
+    [Fact]
+    public async Task GitIgnoreSkipsTheByteOrderMark()
+    {
+        var parsed = GlobCollection.ParseGitIgnore("\uFEFFy\n".AsSpan());
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(new StringReader("\uFEFFy\n"));
+        using var stream = new MemoryStream([0xEF, 0xBB, 0xBF, (byte)'y', (byte)'\n']);
+        var loadedFromStream = await GlobCollection.LoadGitIgnoreAsync(stream);
+
+        Assert.True(parsed.IsMatch("y"));
+        Assert.True(loaded.IsMatch("y"));
+        Assert.True(loadedFromStream.IsMatch("y"));
+    }
+
+    [Fact]
+    public void GitIgnoreSkipsTheEntriesThatNeverMatch()
+    {
+        // git accepts any entry. One that is not a valid pattern never matches, so it has no effect instead of making
+        // the whole file invalid.
+        var globs = GlobCollection.ParseGitIgnore("""
+[a
+*.log
+y\
+[[:foo:]]
+//x
+a//b
+!
+/
+!/
+""".AsSpan());
+
+        Assert.Equal(1, globs.Count);
+        Assert.True(globs.IsMatch("x.log"));
+        Assert.False(globs.IsMatch("[a"));
+        Assert.False(globs.IsMatch("y"));
+        Assert.False(globs.IsMatch("x"));
+    }
+
+    [Fact]
+    public void GitIgnoreNegationWithoutAPatternHasNoEffect()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*.log
+!
+y
+/
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("a.log"));
+        Assert.True(globs.IsMatch("y"));
+        Assert.False(globs.IsMatch("z"));
+        Assert.False(globs.IsMatch("", "z", PathItemType.Directory));
+    }
+
+    [Fact]
+    public void GitIgnoreDirectoryEntryEndingWithARecursiveWildcard()
+    {
+        // '*/**/' matches the directories inside a top-level directory, but not the top-level directory itself
+        var globs = GlobCollection.ParseGitIgnore("*/**/\n".AsSpan());
+
+        Assert.False(globs.IsMatch("", "a", PathItemType.Directory));
+        Assert.True(globs.IsMatch("a", "b", PathItemType.Directory));
+        Assert.False(globs.IsMatch("a", "d", PathItemType.File));
+        Assert.True(globs.IsMatch("a/b", "x", PathItemType.File)); // below an excluded directory
+    }
+
+    [Fact]
+    public void GitIgnoreCharacterClassesAndCaretNegation()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+*[[:digit:]]
+![^0]
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("a0"));
+        Assert.False(globs.IsMatch("5"));
+        Assert.False(globs.IsMatch("a"));
     }
 }

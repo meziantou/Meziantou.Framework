@@ -66,6 +66,21 @@ Full RFC 9535 compliance:
 - **Built-in functions**: `length()`, `count()`, `match()`, `search()`, `value()`
 - **Normalized paths**: canonical path output per RFC 9535 §2.7
 
+`Parse` rejects every query that is not well-formed and valid, as RFC 9535 §2.1 requires, including queries that
+only look valid: `!@.a == 1` (negate the comparison with `!(@.a == 1)`) or `@[ 'a' ] == 1` (blank space inside the
+brackets makes a query non-singular, so it cannot be compared). The library is tested against the
+[JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite).
+
+### Regular expressions
+
+`match()` and `search()` take an [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) pattern. The
+implementation is a checking one (RFC 9485 §3.1): a pattern that is not an I-Regexp, such as one using `\d`, `(?:...)`,
+a lazy quantifier or a backreference, makes the function return `false` instead of being handed to .NET's own regular
+expression engine. Patterns follow the XSD semantics RFC 9485 §4 prescribes: `^` and `$` are ordinary characters, `.`
+matches any character except line feed and carriage return, and a character outside the Basic Multilingual Plane
+counts as one character. Two cases of the compliance test suite expect `^` and `$` to be anchors, following the
+non-normative mapping of RFC 9485 §5.3; this library follows §4 instead.
+
 ## Limits
 
 ### Parsing

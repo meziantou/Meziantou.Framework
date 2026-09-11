@@ -1,6 +1,8 @@
+using System.Buffers;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -485,6 +487,53 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public void DecodeCredentials_ClearsPooledBuffers_WhenDecodingSucceeds()
+    {
+        var plaintext = new string('u', 300) + ":synthetic-pool-secret";
+        var encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(plaintext));
+        var bytePool = new RecordingArrayPool<byte>();
+        var charPool = new RecordingArrayPool<char>();
+
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+
+        Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.Success, result);
+        Assert.Equal(plaintext, credentials);
+        bytePool.AssertAllArraysReturnedCleared();
+        charPool.AssertAllArraysReturnedCleared();
+    }
+
+    [Fact]
+    public void DecodeCredentials_ClearsPooledBuffers_WhenBase64IsMalformedAfterADecodedPrefix()
+    {
+        var encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(new string('u', 300) + ":synthetic-pool-secret")) + "*AAA";
+        var bytePool = new RecordingArrayPool<byte>();
+        var charPool = new RecordingArrayPool<char>();
+
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+
+        Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.InvalidBase64, result);
+        Assert.Equal("", credentials);
+        bytePool.AssertAllArraysReturnedCleared();
+        Assert.Empty(charPool.Rented);
+    }
+
+    [Fact]
+    public void DecodeCredentials_ClearsPooledBuffers_WhenUtf8IsInvalid()
+    {
+        byte[] plaintext = [.. Encoding.UTF8.GetBytes(new string('u', 300) + ":synthetic-pool-secret"), 0xFF];
+        var encodedCredentials = Convert.ToBase64String(plaintext);
+        var bytePool = new RecordingArrayPool<byte>();
+        var charPool = new RecordingArrayPool<char>();
+
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+
+        Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.InvalidEncoding, result);
+        Assert.Equal("", credentials);
+        bytePool.AssertAllArraysReturnedCleared();
+        charPool.AssertAllArraysReturnedCleared();
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -517,6 +566,42 @@ public sealed class HttpBasicAuthenticationTests
 
         var identity = new ClaimsIdentity(claims, authenticationType: HttpBasicAuthenticationDefaults.AuthenticationScheme);
         return new ClaimsPrincipal(identity);
+    }
+
+    // Hands out fresh zeroed arrays, so anything non-default left in a returned array was written by the caller.
+    private sealed class RecordingArrayPool<T> : ArrayPool<T>
+    {
+        public List<T[]> Rented { get; } = [];
+
+        public List<T[]> Returned { get; } = [];
+
+        public override T[] Rent(int minimumLength)
+        {
+            var array = new T[minimumLength];
+            Rented.Add(array);
+            return array;
+        }
+
+        public override void Return(T[] array, bool clearArray = false)
+        {
+            if (clearArray)
+            {
+                Array.Clear(array);
+            }
+
+            Returned.Add(array);
+        }
+
+        public void AssertAllArraysReturnedCleared()
+        {
+            Assert.NotEmpty(Rented);
+            Assert.HasCount(Rented.Count, Returned);
+            Assert.All(Returned, (array, index) =>
+            {
+                Assert.Same(Rented[index], array);
+                Assert.All(array, item => Assert.Equal(default, item));
+            });
+        }
     }
 
     private sealed class FakeBearerAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>

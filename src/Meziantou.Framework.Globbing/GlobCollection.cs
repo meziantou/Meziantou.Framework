@@ -41,14 +41,32 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
 
     /// <summary>Loads gitignore content and creates a <see cref="GlobCollection"/> from it.</summary>
     /// <param name="gitIgnoreContent">The gitignore content.</param>
+    /// <remarks>
+    ///     As git does, an entry that no path can match, such as one holding an unterminated bracket expression or
+    ///     ending with an escape character, is ignored instead of making the whole content invalid.
+    /// </remarks>
     public static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent)
     {
-        var globs = new List<IGlobEvaluatable>();
-        // Split on CR/LF/CRLF only, like git and like TextReader.ReadLine in the LoadGitIgnoreAsync overloads. The
-        // default Unicode mode also breaks on U+0085, U+2028 and U+2029, which are legal characters in a file name.
-        foreach (var entry in new StringExtensions.LineSplitEnumerator(gitIgnoreContent, LineBreakMode.Standard))
+        // git skips a UTF-8 byte order mark at the start of the file
+        if (!gitIgnoreContent.IsEmpty && gitIgnoreContent[0] == '\uFEFF')
         {
-            AddGitIgnoreLine(entry.Line, globs);
+            gitIgnoreContent = gitIgnoreContent[1..];
+        }
+
+        // git only breaks lines on LF and removes the CR of a CRLF. A lone CR, U+0085, U+2028 and U+2029 are legal
+        // characters in a file name, so they belong to the entry.
+        var globs = new List<IGlobEvaluatable>();
+        while (!gitIgnoreContent.IsEmpty)
+        {
+            var index = gitIgnoreContent.IndexOf('\n');
+            var line = index < 0 ? gitIgnoreContent : gitIgnoreContent[..index];
+            if (index >= 0 && !line.IsEmpty && line[^1] == '\r')
+            {
+                line = line[..^1];
+            }
+
+            AddGitIgnoreLine(line, globs);
+            gitIgnoreContent = index < 0 ? [] : gitIgnoreContent[(index + 1)..];
         }
 
         return new GlobCollection([.. globs], lastMatchWins: true);
@@ -84,20 +102,9 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        var globs = new List<IGlobEvaluatable>();
-
-        while (true)
-        {
-
-            string? line;
-            line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-            if (line is null)
-                break;
-
-            AddGitIgnoreLine(line.AsSpan(), globs);
-        }
-
-        return new GlobCollection([.. globs], lastMatchWins: true);
+        // TextReader.ReadLine also breaks on a lone CR, which git reads as part of the entry
+        var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        return ParseGitIgnore(content.AsSpan());
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -115,7 +122,12 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         if (line[0] == '#')
             return;
 
-        globs.Add(Glob.ParseGitIgnoreEntry(line));
+        // git accepts any entry, and one that is not a valid pattern simply never matches. Such an entry has no
+        // effect on the last-match-wins resolution, so dropping it is equivalent.
+        if (Glob.TryParseGitIgnoreEntry(line, out var glob))
+        {
+            globs.Add(glob);
+        }
     }
 
     private static ReadOnlySpan<char> TrimGitIgnoreLineEnd(ReadOnlySpan<char> line)

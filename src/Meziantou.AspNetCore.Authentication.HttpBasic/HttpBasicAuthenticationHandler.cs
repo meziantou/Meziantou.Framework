@@ -1,5 +1,7 @@
 using System.Buffers;
 using System.Net.Http.Headers;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Authentication;
@@ -47,7 +49,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         if (headerValue.Parameter.Length > Options.MaxCredentialLength)
             return CredentialsTooLongResult;
 
-        var decodeResult = DecodeCredentials(headerValue.Parameter, out var credentials);
+        var decodeResult = DecodeCredentials(headerValue.Parameter, ArrayPool<byte>.Shared, ArrayPool<char>.Shared, out var credentials);
         if (decodeResult is not CredentialsDecodeResult.Success)
         {
             return decodeResult is CredentialsDecodeResult.InvalidBase64 ? InvalidBase64CredentialsResult : InvalidCredentialsEncodingResult;
@@ -98,41 +100,44 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         return value.ContainsAnyInRange('\u0000', '\u001F') || value.Contains('\u007F');
     }
 
-    private static CredentialsDecodeResult DecodeCredentials(string encodedCredentials, out string credentials)
+    // The buffers hold the plaintext credentials, so they are zeroed on every path before being released.
+    // The whole span is cleared rather than the written prefix because a failed decode does not report
+    // how much it wrote. The pools are parameters so tests can observe what is returned to them.
+    internal static CredentialsDecodeResult DecodeCredentials(string encodedCredentials, ArrayPool<byte> bytePool, ArrayPool<char> charPool, out string credentials)
     {
         byte[]? rentedBuffer = null;
+        var maxDecodedLength = GetMaximumDecodedLength(encodedCredentials.Length);
+        var credentialBytes = maxDecodedLength <= StackallocThreshold ? stackalloc byte[maxDecodedLength] : (rentedBuffer = bytePool.Rent(maxDecodedLength)).AsSpan(0, maxDecodedLength);
 
         try
         {
-            var maxDecodedLength = GetMaximumDecodedLength(encodedCredentials.Length);
-            var credentialBytes = maxDecodedLength <= StackallocThreshold ? stackalloc byte[maxDecodedLength] : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxDecodedLength));
-
             if (!Convert.TryFromBase64String(encodedCredentials, credentialBytes, out var bytesWritten))
             {
                 credentials = "";
                 return CredentialsDecodeResult.InvalidBase64;
             }
 
-            return TranscodeUtf8(credentialBytes[..bytesWritten], out credentials);
+            return TranscodeUtf8(credentialBytes[..bytesWritten], charPool, out credentials);
         }
         finally
         {
+            CryptographicOperations.ZeroMemory(credentialBytes);
             if (rentedBuffer is not null)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                bytePool.Return(rentedBuffer);
             }
         }
     }
 
-    private static CredentialsDecodeResult TranscodeUtf8(ReadOnlySpan<byte> credentialBytes, out string credentials)
+    private static CredentialsDecodeResult TranscodeUtf8(ReadOnlySpan<byte> credentialBytes, ArrayPool<char> charPool, out string credentials)
     {
         char[]? rentedBuffer = null;
 
+        // A UTF-8 sequence never produces more UTF-16 code units than it has bytes.
+        var credentialChars = credentialBytes.Length <= StackallocThreshold ? stackalloc char[credentialBytes.Length] : (rentedBuffer = charPool.Rent(credentialBytes.Length)).AsSpan(0, credentialBytes.Length);
+
         try
         {
-            // A UTF-8 sequence never produces more UTF-16 code units than it has bytes.
-            var credentialChars = credentialBytes.Length <= StackallocThreshold ? stackalloc char[credentialBytes.Length] : (rentedBuffer = ArrayPool<char>.Shared.Rent(credentialBytes.Length));
-
             // replaceInvalidSequences: false keeps malformed input from silently collapsing onto U+FFFD,
             // which would make unrelated byte sequences decode to the same credentials.
             if (Utf8.ToUtf16(credentialBytes, credentialChars, out _, out var charsWritten, replaceInvalidSequences: false) is not OperationStatus.Done)
@@ -146,9 +151,10 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         }
         finally
         {
+            CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(credentialChars));
             if (rentedBuffer is not null)
             {
-                ArrayPool<char>.Shared.Return(rentedBuffer);
+                charPool.Return(rentedBuffer);
             }
         }
     }
@@ -158,7 +164,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         return (int)((encodedLength + 3L) / 4L * 3L);
     }
 
-    private enum CredentialsDecodeResult
+    internal enum CredentialsDecodeResult
     {
         Success,
         InvalidBase64,

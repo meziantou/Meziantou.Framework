@@ -32,29 +32,64 @@ internal static class GlobParser
         var settings = new GlobParserSettings(dialect, options);
 
         var exclude = false;
+        if (settings.SupportsLeadingExclude && pattern[0] == '!')
+        {
+            exclude = true;
+            pattern = pattern[1..];
+        }
+
         var segments = new List<Segment>();
         var matchLeadingDot = new List<bool>();
-        List<Segment>? subSegments = null;
-        List<string>? setSubsegment = null;
-        List<CharacterRange>? rangeSubsegment = null;
-        List<NamedCharacterClass>? classSubsegment = null;
-        char? rangeStart = null;
-        var rangeInverse = false;
-        var currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
+        var matchType = settings.PathSeparatorAware ? GlobMatchType.File : GlobMatchType.Any;
+        var gitMustBeDirectory = false;
 
         if (dialect is GlobDialect.Git)
         {
-            // Check if there is a separator at start or middle of the string
-            if (pattern[0..^1].IndexOf('/') < 0)
+            // gitignore(5) reads an entry in this order: a trailing '/' restricts it to directories, an entry without
+            // any other '/' matches a name at any depth, and a leading '/' only anchors the entry to the root.
+            if (!pattern.IsEmpty && pattern[^1] == '/')
+            {
+                gitMustBeDirectory = true;
+                pattern = pattern[..^1];
+
+                // What is left must match a whole name, and no name ends with a '/'
+                if (!pattern.IsEmpty && pattern[^1] == '/')
+                {
+                    errorMessage = "the pattern contains an empty path segment, which no path can match";
+                    return false;
+                }
+            }
+
+            if (pattern.IndexOf('/') < 0)
             {
                 segments.Add(RecursiveMatchAllSegment.Instance);
                 matchLeadingDot.Add(settings.MatchLeadingDot);
             }
+            else if (pattern[0] == '/')
+            {
+                pattern = pattern[1..];
+            }
+
+            // A gitignore entry matches a file or a directory with that name. Whether the item must be a directory
+            // is decided by DirectoryContentSegment, which knows where the path ends.
+            matchType = GlobMatchType.Any;
+        }
+        else if (settings.PathSeparatorAware && !pattern.IsEmpty && settings.IsPatternSeparator(pattern[^1]))
+        {
+            matchType = GlobMatchType.Directory;
         }
 
-        var escape = false;
+        if (pattern.IsEmpty)
+        {
+            errorMessage = "the pattern does not contain any segment";
+            return false;
+        }
+
+        List<Segment>? subSegments = null;
+        List<string>? setSubsegment = null;
+        var currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
         var parserContext = GlobParserContext.Segment;
-        var matchType = GlobMatchType.File;
+        var isAtPatternStart = true;
 
         Span<char> sbSpan = stackalloc char[128];
         var currentLiteral = new ValueStringBuilder(sbSpan);
@@ -63,144 +98,24 @@ internal static class GlobParser
             for (var i = 0; i < pattern.Length; i++)
             {
                 var c = pattern[i];
-                if (escape)
+                if (parserContext == GlobParserContext.LiteralSet)
                 {
-                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, c, settings.MatchLeadingDot);
-                    escape = false;
-                    continue;
-                }
-
-                if (c == '!' && i == 0 && settings.SupportsLeadingExclude)
-                {
-                    exclude = true;
-                    continue;
-                }
-
-                if (dialect is GlobDialect.MSBuild && TryDecodeMsBuildEscape(pattern, i, out var escapedCharacter))
-                {
-                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, escapedCharacter, settings.MatchLeadingDot);
-                    i += 2;
-                    continue;
-                }
-
-                if (parserContext == GlobParserContext.Segment)
-                {
-                    if (settings.IsPatternSeparator(c))
+                    Debug.Assert(setSubsegment is not null);
+                    if (c == '\\')
                     {
-                        FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
-                        currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
-                        continue;
-                    }
-                    else if (c == '.')
-                    {
-                        if (settings.NormalizeDotSegments && subSegments is null && currentLiteral.Length == 0)
+                        if (i + 1 >= pattern.Length)
                         {
-                            if (EndOfSegmentEqual(pattern[i..], "..", settings))
-                            {
-                                if (segments.Count == 0)
-                                {
-                                    errorMessage = "the pattern cannot start with '..'";
-                                    return false;
-                                }
-
-                                if (segments[^1] is RecursiveMatchAllSegment)
-                                {
-                                    errorMessage = "the pattern cannot contain '..' after a '**'";
-                                    return false;
-                                }
-
-                                segments.RemoveAt(segments.Count - 1);
-                                matchLeadingDot.RemoveAt(matchLeadingDot.Count - 1);
-                                i += 2;
-                                continue;
-                            }
-
-                            if (EndOfSegmentEqual(pattern[i..], ".", settings))
-                            {
-                                i += 1;
-                                continue;
-                            }
-                        }
-                    }
-                    else if (c == '?')
-                    {
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, settings.AnyCharacterSegment);
-                        continue;
-                    }
-                    else if (c == '*')
-                    {
-                        if (dialect is GlobDialect.MSBuild && i + 1 < pattern.Length && pattern[i + 1] == '*' &&
-                            (subSegments is not null || currentLiteral.Length > 0 || !EndOfSegmentEqual(pattern[i..], "**", settings)))
-                        {
-                            errorMessage = "the recursive wildcard '**' must be its own path segment";
+                            errorMessage = "Expecting a character after '\\'";
                             return false;
                         }
 
-                        if (subSegments is null && currentLiteral.Length == 0)
-                        {
-                            if (settings.SupportsRecursiveWildcard && EndOfSegmentEqual(pattern[i..], "**", settings))
-                            {
-                                // Merge two consecutive '**' (**/**)
-                                if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
-                                {
-                                    segments.Add(RecursiveMatchAllSegment.Instance);
-                                    matchLeadingDot.Add(settings.MatchLeadingDot);
-                                }
-
-                                i += 2;
-                                currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
-                                continue;
-                            }
-
-                            if (EndOfSegmentEqual(pattern[i..], "*", settings))
-                            {
-                                segments.Add(MatchAllSegment.Instance);
-                                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
-                                i += 1;
-                                currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
-                                continue;
-                            }
-                        }
-
-                        // Merge 2 consecutive '*'
-                        if (currentLiteral.Length == 0 && subSegments is not null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
-                            continue;
-
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, MatchAllSubSegment.Instance);
-                        continue;
+                        i++;
+                        currentLiteral.Append(pattern[i]);
                     }
-                    else if (c == '{' && settings.SupportsLiteralSet) // Start LiteralSet
-                    {
-                        Debug.Assert(setSubsegment is null);
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
-                        parserContext = GlobParserContext.LiteralSet;
-                        setSubsegment = [];
-                        continue;
-                    }
-                    else if (c == '[' && dialect is not GlobDialect.MSBuild) // Range
-                    {
-                        Debug.Assert(rangeSubsegment is null);
-                        Debug.Assert(classSubsegment is null);
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
-                        parserContext = GlobParserContext.Range;
-                        rangeSubsegment = [];
-                        rangeInverse = i + 1 < pattern.Length && pattern[i + 1] == '!';
-                        if (rangeInverse)
-                        {
-                            i++;
-                        }
-
-                        continue;
-                    }
-                }
-                else if (parserContext == GlobParserContext.LiteralSet)
-                {
-                    Debug.Assert(setSubsegment is not null);
-                    if (c == ',') // end of current value
+                    else if (c == ',') // end of current value
                     {
                         setSubsegment.Add(currentLiteral.AsSpan().ToString());
                         currentLiteral.Clear();
-                        continue;
                     }
                     else if (c == '}') // end of literal set
                     {
@@ -216,88 +131,153 @@ internal static class GlobParser
                         AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, new LiteralSetSegment(setSubsegment.ToArray(), settings.IgnoreCase));
                         setSubsegment = null;
                         parserContext = GlobParserContext.Segment;
-                        continue;
-                    }
-                }
-                else if (parserContext == GlobParserContext.Range)
-                {
-                    Debug.Assert(rangeSubsegment is not null);
-
-                    // POSIX character class, for instance [[:digit:]]. A class cannot be a range bound, so an
-                    // opened range keeps reading '[' as an ordinary character.
-                    if (c == '[' && !rangeStart.HasValue && settings.SupportsNamedCharacterClass && TryReadNamedCharacterClass(pattern[i..], out var namedCharacterClass, out var namedCharacterClassLength))
-                    {
-                        classSubsegment ??= [];
-                        classSubsegment.Add(namedCharacterClass);
-                        i += namedCharacterClassLength - 1;
-                        continue;
-                    }
-
-                    if (c == ']') // end of literal set, except if empty []] or [!]]
-                    {
-                        // [a-] => '-' is considered as a character
-                        if (rangeStart.HasValue)
-                        {
-                            rangeSubsegment.Add(new CharacterRange(rangeStart.GetValueOrDefault()));
-                            rangeSubsegment.Add(new CharacterRange('-'));
-                            rangeStart = null;
-                        }
-
-                        if (rangeSubsegment.Count > 0 || classSubsegment is not null)
-                        {
-                            if (settings.PathSeparatorAware && rangeSubsegment.Exists(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
-                            {
-                                errorMessage = "range contains a path separator";
-                                return false;
-                            }
-
-                            AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, CreateRangeSubsegment(rangeSubsegment, classSubsegment, rangeInverse, settings.IgnoreCase));
-                            rangeSubsegment = null;
-                            classSubsegment = null;
-                            parserContext = GlobParserContext.Segment;
-                            continue;
-                        }
-                    }
-
-                    if (rangeStart.HasValue)
-                    {
-                        var rangeStartValue = rangeStart.GetValueOrDefault();
-                        if (rangeStartValue > c)
-                        {
-                            errorMessage = $"Invalid range '{rangeStartValue}' > '{c}'";
-                            return false;
-                        }
-
-                        rangeSubsegment.Add(new CharacterRange(rangeStartValue, c));
-                        rangeStart = null;
                     }
                     else
                     {
-                        if (i + 1 < pattern.Length && pattern[i + 1] == '-')
-                        {
-                            rangeStart = c;
-                            i++;
-                        }
-                        else
-                        {
-                            rangeSubsegment.Add(new CharacterRange(c));
-                        }
+                        currentLiteral.Append(c);
                     }
 
                     continue;
                 }
 
+                // An escaped separator ('\/', or '%2F' for MSBuild) still separates two segments: escaping an
+                // ordinary character yields the character itself.
+                var separatorLength = GetSeparatorLength(pattern, i, settings);
+                if (separatorLength > 0)
+                {
+                    if (!TryFinishSegmentAtSeparator(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings, currentSegmentMatchLeadingDot, isAtPatternStart, out errorMessage))
+                        return false;
+
+                    currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
+                    i += separatorLength - 1;
+                    continue;
+                }
+
+                isAtPatternStart = false;
+                if (dialect is GlobDialect.MSBuild && TryDecodeMsBuildEscape(pattern, i, out var escapedCharacter))
+                {
+                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, escapedCharacter, settings.MatchLeadingDot);
+                    i += 2;
+                    continue;
+                }
+
+                if (c == '\\' && settings.SupportsEscape)
+                {
+                    if (i + 1 >= pattern.Length)
+                    {
+                        errorMessage = "Expecting a character after '\\'";
+                        return false;
+                    }
+
+                    i++;
+                    AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, pattern[i], settings.MatchLeadingDot);
+                    continue;
+                }
+
+                var isAtSegmentStart = subSegments is null && currentLiteral.Length == 0;
+                if (c == '.' && isAtSegmentStart && settings.NormalizeDotSegments)
+                {
+                    if (i + 1 < pattern.Length && pattern[i + 1] == '.' && IsEndOfSegment(pattern, i + 2, settings))
+                    {
+                        if (!TryApplyParentSegment(segments, matchLeadingDot, settings, out errorMessage))
+                            return false;
+
+                        // Skip the second '.' and the separator that follows it
+                        i += 1 + GetSeparatorLength(pattern, i + 2, settings);
+                        continue;
+                    }
+
+                    if (IsEndOfSegment(pattern, i + 1, settings))
+                    {
+                        // Skip the separator that follows the '.'
+                        i += GetSeparatorLength(pattern, i + 1, settings);
+                        continue;
+                    }
+                }
+
                 switch (c)
                 {
-                    case '\\': // Escape next character
-                        if (dialect is GlobDialect.MSBuild)
+                    case '?':
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, settings.AnyCharacterSegment);
+                        break;
+
+                    case '*':
+                        var starCount = 1;
+                        while (i + starCount < pattern.Length && pattern[i + starCount] == '*')
                         {
-                            FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
-                            currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
+                            starCount++;
                         }
-                        else
+
+                        var isWholeSegment = isAtSegmentStart && IsEndOfSegment(pattern, i + starCount, settings);
+                        if (dialect is GlobDialect.MSBuild && starCount > 1 && !(isWholeSegment && starCount == 2))
                         {
-                            escape = true;
+                            errorMessage = "the recursive wildcard '**' must be its own path segment";
+                            return false;
+                        }
+
+                        if (isWholeSegment)
+                        {
+                            if (starCount > 1 && settings.SupportsRecursiveWildcard && (starCount == 2 || settings.ReadsStarRunAsRecursiveWildcard))
+                            {
+                                // Merge two consecutive '**' (**/**)
+                                if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
+                                {
+                                    segments.Add(RecursiveMatchAllSegment.Instance);
+                                    matchLeadingDot.Add(settings.MatchLeadingDot);
+                                }
+                            }
+                            else
+                            {
+                                segments.Add(MatchAllSegment.Instance);
+                                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
+                            }
+
+                            // Skip the other stars and the separator that follows them
+                            i += starCount - 1 + GetSeparatorLength(pattern, i + starCount, settings);
+                            currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
+                            break;
+                        }
+
+                        // MSBuild reads a file name made of "*.*" as every file, including the ones without an extension
+                        if (dialect is GlobDialect.MSBuild && isAtSegmentStart && pattern[i..].SequenceEqual("*.*"))
+                        {
+                            segments.Add(MatchAllSegment.Instance);
+                            matchLeadingDot.Add(currentSegmentMatchLeadingDot);
+                            i += 2;
+                            break;
+                        }
+
+                        i += starCount - 1;
+
+                        // Merge consecutive '*'
+                        if (currentLiteral.Length == 0 && subSegments is not null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
+                            break;
+
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, MatchAllSubSegment.Instance);
+                        break;
+
+                    case '{' when settings.SupportsLiteralSet:
+                        Debug.Assert(setSubsegment is null);
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
+                        parserContext = GlobParserContext.LiteralSet;
+                        setSubsegment = [];
+                        break;
+
+                    case '[' when settings.SupportsBracketExpression:
+                        switch (ParseBracketExpression(pattern, i, settings, out var bracketExpression, out var bracketExpressionEnd, out errorMessage))
+                        {
+                            case BracketExpressionParseResult.Parsed:
+                                AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, bracketExpression);
+                                i = bracketExpressionEnd - 1;
+                                break;
+
+                            case BracketExpressionParseResult.NotABracketExpression:
+                                AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, c, settings.MatchLeadingDot);
+                                break;
+
+                            default:
+                                Debug.Assert(errorMessage is not null);
+                                return false;
                         }
 
                         break;
@@ -314,44 +294,24 @@ internal static class GlobParser
                 return false;
             }
 
-            // If the last character is a '\'
-            if (escape)
-            {
-                errorMessage = "Expecting a character after '\\'";
-                return false;
-            }
-
             FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
 
-            if (dialect is GlobDialect.Git)
-            {
-                if (pattern[^1] == '/')
-                {
-                    // A gitignore entry ending with a '/' matches the directory itself. Excluding a directory also
-                    // excludes its content, but re-including one does not re-include its content, so a negated
-                    // entry never matches the paths below the directory.
-                    segments.Add(matchGitDirectoryContent && !exclude ? DirectoryContentSegment.IncludingContent : DirectoryContentSegment.DirectoryOnly);
-                    matchLeadingDot.Add(settings.MatchLeadingDot);
-                }
-
-                // A gitignore entry matches a file or a directory with that name. Whether the item must be a
-                // directory is decided by DirectoryContentSegment, which knows where the path ends.
-                matchType = GlobMatchType.Any;
-            }
-            else
-            {
-                if (settings.PathSeparatorAware && settings.IsPatternSeparator(pattern[^1]))
-                {
-                    matchType = GlobMatchType.Directory;
-                }
-            }
-
             // '.' and '..' normalization can remove every segment (".", "./", "a/.."). Such a pattern cannot match
-            // anything, and a Glob without any segment is not usable, so reject it instead of returning it.
-            if (segments.Count == 0)
+            // anything, and a Glob without any segment is not usable, so reject it instead of returning it. A pattern
+            // that is only made of separators is rejected as well.
+            if (segments.TrueForAll(segment => segment is EmptySegment))
             {
                 errorMessage = "the pattern does not contain any segment";
                 return false;
+            }
+
+            if (gitMustBeDirectory)
+            {
+                // A gitignore entry ending with a '/' matches the directory itself. Excluding a directory also
+                // excludes its content, but re-including one does not re-include its content, so a negated entry
+                // never matches the paths below the directory.
+                segments.Add(matchGitDirectoryContent && !exclude ? DirectoryContentSegment.IncludingContent : DirectoryContentSegment.DirectoryOnly);
+                matchLeadingDot.Add(settings.MatchLeadingDot);
             }
 
             errorMessage = null;
@@ -362,43 +322,143 @@ internal static class GlobParser
         {
             currentLiteral.Dispose();
         }
+    }
 
-        static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
+    private static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
+    {
+        subSegments ??= [];
+        if (currentLiteral.Length > 0)
         {
-            subSegments ??= [];
+            subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+            currentLiteral.Clear();
+        }
+
+        if (subSegment is not null)
+        {
+            subSegments.Add(subSegment);
+        }
+    }
+
+    private static void FinishSegment(List<Segment> segments, List<bool> matchLeadingDot, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, bool currentSegmentMatchLeadingDot, bool pathSeparatorAware)
+    {
+        if (subSegments is not null)
+        {
             if (currentLiteral.Length > 0)
             {
                 subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
                 currentLiteral.Clear();
             }
 
-            if (subSegment is not null)
-            {
-                subSegments.Add(subSegment);
-            }
+            segments.Add(CreateSegment(subSegments, ignoreCase, pathSeparatorAware));
+            matchLeadingDot.Add(currentSegmentMatchLeadingDot);
+            subSegments = null;
         }
-
-        static void FinishSegment(List<Segment> segments, List<bool> matchLeadingDot, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, bool currentSegmentMatchLeadingDot, bool pathSeparatorAware)
+        else if (currentLiteral.Length > 0)
         {
-            if (subSegments is not null)
-            {
-                if (currentLiteral.Length > 0)
-                {
-                    subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
-                    currentLiteral.Clear();
-                }
+            segments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+            matchLeadingDot.Add(currentSegmentMatchLeadingDot);
+            currentLiteral.Clear();
+        }
+    }
 
-                segments.Add(CreateSegment(subSegments, ignoreCase, pathSeparatorAware));
-                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
-                subSegments = null;
-            }
-            else if (currentLiteral.Length > 0)
+    /// <param name="isAtPatternStart">Whether only separators precede the separator, which makes the pattern an absolute path.</param>
+    private static bool TryFinishSegmentAtSeparator(List<Segment> segments, List<bool> matchLeadingDot, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, GlobParserSettings settings, bool currentSegmentMatchLeadingDot, bool isAtPatternStart, [NotNullWhen(false)] out string? errorMessage)
+    {
+        errorMessage = null;
+        if (subSegments is not null || currentLiteral.Length > 0)
+        {
+            FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
+            return true;
+        }
+
+        // The segment before the separator is empty: the pattern starts with a separator, or holds two consecutive ones
+        switch (settings.EmptySegmentHandling)
+        {
+            case EmptySegmentHandling.Match:
+                segments.Add(EmptySegment.Instance);
+                matchLeadingDot.Add(true);
+                break;
+
+            case EmptySegmentHandling.MatchLeading when isAtPatternStart:
+                segments.Add(EmptySegment.Instance);
+                matchLeadingDot.Add(true);
+                break;
+
+            case EmptySegmentHandling.Reject:
+                errorMessage = "the pattern contains an empty path segment, which no path can match";
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryApplyParentSegment(List<Segment> segments, List<bool> matchLeadingDot, GlobParserSettings settings, [NotNullWhen(false)] out string? errorMessage)
+    {
+        errorMessage = null;
+        if (settings.Dialect is GlobDialect.MSBuild)
+        {
+            // MSBuild does not accept a '..' after the first wildcard of a file spec
+            if (segments.Exists(segment => segment is not (LiteralSegment or EmptySegment)))
             {
-                segments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
-                matchLeadingDot.Add(currentSegmentMatchLeadingDot);
-                currentLiteral.Clear();
+                errorMessage = "the pattern cannot contain '..' after a wildcard";
+                return false;
+            }
+
+            // MSBuild resolves a leading '..' against the project directory: it cannot be normalized away, so it stays
+            // a literal segment that matches a relative path starting with '..'.
+            if (segments.Count == 0 || segments[^1] is EmptySegment or LiteralSegment { Value: ".." })
+            {
+                segments.Add(new LiteralSegment("..", settings.IgnoreCase));
+                matchLeadingDot.Add(true);
+                return true;
             }
         }
+        else
+        {
+            if (segments.Count == 0)
+            {
+                errorMessage = "the pattern cannot start with '..'";
+                return false;
+            }
+
+            if (segments[^1] is RecursiveMatchAllSegment)
+            {
+                errorMessage = "the pattern cannot contain '..' after a '**'";
+                return false;
+            }
+        }
+
+        segments.RemoveAt(segments.Count - 1);
+        matchLeadingDot.RemoveAt(matchLeadingDot.Count - 1);
+        return true;
+    }
+
+    /// <summary>
+    ///     Returns the number of characters of the path separator at <paramref name="index"/>, or 0 when there is none.
+    ///     An escaped separator ('\/', or '%2F' for MSBuild) is a separator too, as escaping an ordinary character
+    ///     yields the character itself.
+    /// </summary>
+    private static int GetSeparatorLength(ReadOnlySpan<char> pattern, int index, GlobParserSettings settings)
+    {
+        if (index >= pattern.Length)
+            return 0;
+
+        var c = pattern[index];
+        if (settings.IsPatternSeparator(c))
+            return 1;
+
+        if (c == '\\' && settings.SupportsEscape && index + 1 < pattern.Length && settings.IsPatternSeparator(pattern[index + 1]))
+            return 2;
+
+        if (settings.Dialect is GlobDialect.MSBuild && TryDecodeMsBuildEscape(pattern, index, out var decoded) && settings.IsPatternSeparator(decoded))
+            return 3;
+
+        return 0;
+    }
+
+    private static bool IsEndOfSegment(ReadOnlySpan<char> pattern, int index, GlobParserSettings settings)
+    {
+        return index >= pattern.Length || GetSeparatorLength(pattern, index, settings) > 0;
     }
 
     // canSkipLeadingDotChecks is settings.MatchLeadingDot. The rewrites below collapse a '**' and the segments that
@@ -477,18 +537,6 @@ internal static class GlobParser
         return new Glob([.. segments], [.. matchLeadingDot], pathSeparatorAware, exclude ? GlobMode.Exclude : GlobMode.Include, matchType);
     }
 
-    private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected, GlobParserSettings settings)
-    {
-        // Could be "{rest}/" or "{rest}"$
-        if (rest.Length == expected.Length)
-            return rest.SequenceEqual(expected.AsSpan());
-
-        if (rest.Length > expected.Length)
-            return rest.StartsWith(expected.AsSpan(), StringComparison.Ordinal) && settings.IsPatternSeparator(rest[expected.Length]);
-
-        return false;
-    }
-
     private static void AppendLiteral(ref ValueStringBuilder currentLiteral, ref bool currentSegmentMatchLeadingDot, List<Segment>? subSegments, char c, bool defaultMatchLeadingDot)
     {
         if (!defaultMatchLeadingDot && c == '.' && subSegments is null && currentLiteral.Length == 0)
@@ -535,21 +583,211 @@ internal static class GlobParser
         }
     }
 
-    private static bool TryReadNamedCharacterClass(ReadOnlySpan<char> pattern, out NamedCharacterClass result, out int length)
+    /// <summary>Parses the bracket expression whose '[' is at <paramref name="start"/>.</summary>
+    /// <param name="end">The index of the character that follows the closing ']'.</param>
+    private static BracketExpressionParseResult ParseBracketExpression(ReadOnlySpan<char> pattern, int start, GlobParserSettings settings, out Segment? segment, out int end, out string? errorMessage)
+    {
+        segment = null;
+        end = start;
+        errorMessage = null;
+
+        var ranges = new List<CharacterRange>();
+        List<NamedCharacterClass>? classes = null;
+
+        var i = start + 1;
+        var inverse = i < pattern.Length && (pattern[i] == '!' || (pattern[i] == '^' && settings.SupportsCaretNegation));
+        if (inverse)
+        {
+            i++;
+        }
+
+        // A ']' that comes first is an ordinary character: '[]a]' matches ']' or 'a'
+        var isFirst = true;
+        while (true)
+        {
+            if (i >= pattern.Length)
+            {
+                // POSIX reads a '[' that does not open a complete bracket expression as an ordinary character
+                if (settings.ReadsUnterminatedBracketAsLiteral)
+                    return BracketExpressionParseResult.NotABracketExpression;
+
+                errorMessage = "The bracket expression is not complete";
+                return BracketExpressionParseResult.Invalid;
+            }
+
+            var c = pattern[i];
+            if (c == ']' && !isFirst)
+            {
+                i++;
+                break;
+            }
+
+            isFirst = false;
+
+            if (c == '[' && i + 1 < pattern.Length)
+            {
+                if (pattern[i + 1] == ':' && settings.SupportsNamedCharacterClass)
+                {
+                    var classResult = TryReadNamedCharacterClass(pattern, i, settings.Dialect, out var namedCharacterClass, out var length);
+                    if (classResult is BracketExpressionParseResult.Parsed)
+                    {
+                        // A class cannot start a range, so a '-' that follows it is an ordinary character
+                        classes ??= [];
+                        classes.Add(namedCharacterClass);
+                        i += length;
+                        continue;
+                    }
+
+                    if (classResult is BracketExpressionParseResult.Invalid)
+                    {
+                        errorMessage = "The bracket expression contains an unknown character class";
+                        return BracketExpressionParseResult.Invalid;
+                    }
+                }
+                else if (pattern[i + 1] == '=' && settings.SupportsEquivalenceClass)
+                {
+                    // An equivalence class holds a single character in the POSIX locale. As for a class, it cannot
+                    // start a range. Anything but "[=c=]" leaves the '[' as an ordinary character.
+                    if (i + 4 < pattern.Length && pattern[i + 3] == '=' && pattern[i + 4] == ']')
+                    {
+                        ranges.Add(new CharacterRange(pattern[i + 2]));
+                        i += 5;
+                        continue;
+                    }
+                }
+            }
+
+            if (!TryReadBracketCharacter(pattern, ref i, settings, out var rangeStart, out errorMessage))
+                return BracketExpressionParseResult.Invalid;
+
+            // A '-' that comes last is an ordinary character: '[a-]' matches 'a' or '-'
+            if (i + 1 < pattern.Length && pattern[i] == '-' && pattern[i + 1] != ']')
+            {
+                i++;
+                if (!TryReadBracketCharacter(pattern, ref i, settings, out var rangeEnd, out errorMessage))
+                    return BracketExpressionParseResult.Invalid;
+
+                if (rangeStart > rangeEnd)
+                {
+                    switch (settings.ReversedRangeHandling)
+                    {
+                        case ReversedRangeHandling.Reject:
+                            errorMessage = $"Invalid range '{rangeStart}' > '{rangeEnd}'";
+                            return BracketExpressionParseResult.Invalid;
+
+                        case ReversedRangeHandling.MatchStart:
+                            // wildmatch compares the character before it sees the '-', so it still matches the start
+                            ranges.Add(new CharacterRange(rangeStart));
+                            break;
+                    }
+
+                    // glibc and the BSD libc read a reversed range as a range that contains no character
+                    continue;
+                }
+
+                ranges.Add(new CharacterRange(rangeStart, rangeEnd));
+            }
+            else
+            {
+                ranges.Add(new CharacterRange(rangeStart));
+            }
+        }
+
+        // The dialects that follow a specification accept a separator in a bracket expression, which simply never
+        // matches as a path segment does not contain any separator.
+        if (settings.RejectsSeparatorInBracketExpression && ranges.Exists(range => range.IsInRange(Path.DirectorySeparatorChar) || range.IsInRange(Path.AltDirectorySeparatorChar)))
+        {
+            errorMessage = "range contains a path separator";
+            return BracketExpressionParseResult.Invalid;
+        }
+
+        segment = CreateRangeSubsegment(ranges, classes, inverse, settings.IgnoreCase);
+        end = i;
+        return BracketExpressionParseResult.Parsed;
+    }
+
+    /// <summary>Reads a character of a bracket expression that can be a range bound: an ordinary character, an escaped character or a collating symbol.</summary>
+    private static bool TryReadBracketCharacter(ReadOnlySpan<char> pattern, ref int index, GlobParserSettings settings, out char value, [NotNullWhen(false)] out string? errorMessage)
+    {
+        errorMessage = null;
+        var c = pattern[index];
+        if (c == '\\' && settings.SupportsEscapeInBracketExpression)
+        {
+            if (index + 1 >= pattern.Length)
+            {
+                value = default;
+                errorMessage = "Expecting a character after '\\'";
+                return false;
+            }
+
+            value = pattern[index + 1];
+            index += 2;
+            return true;
+        }
+
+        if (c == '[' && settings.SupportsCollatingSymbol && index + 1 < pattern.Length && pattern[index + 1] == '.')
+        {
+            // A collating symbol, such as "[.-.]". Its content is read as is, without any escape sequence.
+            var length = pattern[(index + 2)..].IndexOf(".]", StringComparison.Ordinal);
+            if (length != 1)
+            {
+                value = default;
+                errorMessage = length < 0 ? "The collating symbol is not complete" : "Only collating symbols made of a single character are supported";
+                return false;
+            }
+
+            value = pattern[index + 2];
+            index += 5;
+            return true;
+        }
+
+        value = c;
+        index++;
+        return true;
+    }
+
+    /// <summary>Reads the character class, such as "[:alpha:]", whose '[' is at <paramref name="index"/> and followed by a ':'.</summary>
+    /// <returns>
+    ///     <see cref="BracketExpressionParseResult.NotABracketExpression"/> when the text is not a class, in which case
+    ///     the '[' is an ordinary character, and <see cref="BracketExpressionParseResult.Invalid"/> when it names an
+    ///     unknown class, which makes the pattern unable to match anything.
+    /// </returns>
+    private static BracketExpressionParseResult TryReadNamedCharacterClass(ReadOnlySpan<char> pattern, int index, GlobDialect dialect, out NamedCharacterClass result, out int length)
     {
         result = default;
         length = 0;
 
-        // The shortest class is "[::]", and the caller already knows the first character is '['.
-        if (pattern.Length < 4 || pattern[1] != ':')
-            return false;
+        var nameStart = index + 2;
+        int nameEnd;
+        if (dialect is GlobDialect.Git)
+        {
+            // wildmatch reads up to the next ']', and only sees a class when that ']' follows a ':'
+            var closingBracket = pattern[nameStart..].IndexOf(']');
+            if (closingBracket < 1 || pattern[nameStart + closingBracket - 1] != ':')
+                return BracketExpressionParseResult.NotABracketExpression;
 
-        var nameLength = pattern[2..].IndexOf(":]".AsSpan(), StringComparison.Ordinal);
-        if (nameLength < 0)
-            return false;
+            nameEnd = nameStart + closingBracket - 1;
+        }
+        else
+        {
+            // glibc only reads lowercase letters as a class name
+            nameEnd = nameStart;
+            while (true)
+            {
+                if (nameEnd + 1 >= pattern.Length)
+                    return BracketExpressionParseResult.NotABracketExpression;
 
-        var name = pattern.Slice(2, nameLength);
-        switch (name)
+                if (pattern[nameEnd] == ':' && pattern[nameEnd + 1] == ']')
+                    break;
+
+                if (pattern[nameEnd] is < 'a' or > 'z')
+                    return BracketExpressionParseResult.NotABracketExpression;
+
+                nameEnd++;
+            }
+        }
+
+        switch (pattern[nameStart..nameEnd])
         {
             case "alnum": result = NamedCharacterClass.Alnum; break;
             case "alpha": result = NamedCharacterClass.Alpha; break;
@@ -563,11 +801,11 @@ internal static class GlobParser
             case "space": result = NamedCharacterClass.Space; break;
             case "upper": result = NamedCharacterClass.Upper; break;
             case "xdigit": result = NamedCharacterClass.XDigit; break;
-            default: return false;
+            default: return BracketExpressionParseResult.Invalid;
         }
 
-        length = nameLength + 4;
-        return true;
+        length = nameEnd + 2 - index;
+        return BracketExpressionParseResult.Parsed;
     }
 
     private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, List<NamedCharacterClass>? classes, bool inverse, bool ignoreCase)
@@ -655,8 +893,8 @@ internal static class GlobParser
         // Concat Literal and single character sets (abc[d])
         for (var i = parts.Count - 2; i >= 0; i--)
         {
-            var s1 = GetString(parts[i]);
-            var s2 = GetString(parts[i + 1]);
+            var s1 = GetString(parts[i], pathSeparatorAware);
+            var s2 = GetString(parts[i + 1], pathSeparatorAware);
 
             if (s1 is null || s2 is null)
                 continue;
@@ -666,12 +904,14 @@ internal static class GlobParser
             parts[i] = literal;
             parts.RemoveAt(i + 1);
 
-            static string? GetString(Segment segment)
+            // A path segment never contains a separator, so '[/]' never matches, whereas a literal holding a
+            // separator would read past the end of the segment.
+            static string? GetString(Segment segment, bool pathSeparatorAware)
             {
                 return segment switch
                 {
                     LiteralSegment literal => literal.Value,
-                    CharacterSetSegment set when set.Set.Length == 1 => set.Set,
+                    CharacterSetSegment set when set.Set.Length == 1 && !(pathSeparatorAware && PathReader.IsPathSeparator(set.Set[0])) => set.Set,
                     _ => null,
                 };
             }
@@ -781,32 +1021,104 @@ internal static class GlobParser
         return new RaggedSegment(parts.ToArray());
     }
 
+    private enum BracketExpressionParseResult
+    {
+        Parsed,
+        NotABracketExpression,
+        Invalid,
+    }
+
+    /// <summary>How a bracket expression reads a range whose start comes after its end, such as "[z-a]".</summary>
+    private enum ReversedRangeHandling
+    {
+        /// <summary>The pattern is invalid.</summary>
+        Reject,
+
+        /// <summary>The range contains no character.</summary>
+        Empty,
+
+        /// <summary>The range only contains its start.</summary>
+        MatchStart,
+    }
+
+    /// <summary>How a pattern reads an empty path segment, which comes before a leading separator or between two consecutive ones.</summary>
+    private enum EmptySegmentHandling
+    {
+        /// <summary>The separators are collapsed.</summary>
+        Ignore,
+
+        /// <summary>The segment only matches an empty path segment.</summary>
+        Match,
+
+        /// <summary>A leading separator makes the pattern absolute, and the other separators are collapsed.</summary>
+        MatchLeading,
+
+        /// <summary>No path can match the pattern.</summary>
+        Reject,
+    }
+
     private readonly struct GlobParserSettings
     {
-        private readonly GlobDialect _dialect;
-
         public GlobParserSettings(GlobDialect dialect, GlobOptions options)
         {
-            _dialect = dialect;
+            Dialect = dialect;
             IgnoreCase = options.HasFlag(GlobOptions.IgnoreCase);
-            MatchLeadingDot = dialect is GlobDialect.Git or GlobDialect.Posix or GlobDialect.PosixPath || options.HasFlag(GlobOptions.MatchLeadingDot);
+
+            // Only the Standard dialect hides the entries whose name starts with a dot: fnmatch without FNM_PERIOD,
+            // gitignore and MSBuild all match them with a wildcard.
+            MatchLeadingDot = dialect is not GlobDialect.Standard || options.HasFlag(GlobOptions.MatchLeadingDot);
         }
 
+        public GlobDialect Dialect { get; }
         public bool IgnoreCase { get; }
         public bool MatchLeadingDot { get; }
-        public bool NormalizeDotSegments => _dialect is not (GlobDialect.Posix or GlobDialect.PosixPath);
-        public bool PathSeparatorAware => _dialect is not GlobDialect.Posix;
-        public bool SupportsLeadingExclude => _dialect is GlobDialect.Standard or GlobDialect.Git;
+
+        private bool IsPosix => Dialect is GlobDialect.Posix or GlobDialect.PosixPath;
+
+        // fnmatch and gitignore read '.' and '..' as ordinary names
+        public bool NormalizeDotSegments => Dialect is GlobDialect.Standard or GlobDialect.MSBuild;
+        public bool PathSeparatorAware => Dialect is not GlobDialect.Posix;
+        public bool SupportsLeadingExclude => Dialect is GlobDialect.Standard or GlobDialect.Git;
+
+        // MSBuild escapes a character with '%XX', and '\' is a path separator
+        public bool SupportsEscape => Dialect is not GlobDialect.MSBuild;
 
         // git treats '{' and '}' as ordinary characters.
-        public bool SupportsLiteralSet => _dialect is GlobDialect.Standard;
-        public bool SupportsNamedCharacterClass => _dialect is GlobDialect.Posix or GlobDialect.PosixPath;
-        public bool SupportsRecursiveWildcard => _dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
-        public Segment AnyCharacterSegment => _dialect is GlobDialect.Posix ? MatchAnyTextCharacterSegment.Instance : MatchAnyCharacterSegment.Instance;
+        public bool SupportsLiteralSet => Dialect is GlobDialect.Standard;
+        public bool SupportsRecursiveWildcard => Dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
+
+        // gitignore reads any run of '*' that makes a whole path segment as '**'
+        public bool ReadsStarRunAsRecursiveWildcard => Dialect is GlobDialect.Git;
+
+        public EmptySegmentHandling EmptySegmentHandling => Dialect switch
+        {
+            GlobDialect.PosixPath => EmptySegmentHandling.Match,
+            GlobDialect.MSBuild => EmptySegmentHandling.MatchLeading,
+            GlobDialect.Git => EmptySegmentHandling.Reject,
+            _ => EmptySegmentHandling.Ignore,
+        };
+
+        public bool SupportsBracketExpression => Dialect is not GlobDialect.MSBuild;
+        public bool SupportsCaretNegation => Dialect is not GlobDialect.Standard;
+        public bool SupportsEscapeInBracketExpression => Dialect is not GlobDialect.Standard;
+        public bool SupportsNamedCharacterClass => Dialect is not GlobDialect.Standard;
+        public bool SupportsEquivalenceClass => IsPosix;
+        public bool SupportsCollatingSymbol => IsPosix;
+        public bool ReadsUnterminatedBracketAsLiteral => IsPosix;
+        public ReversedRangeHandling ReversedRangeHandling => Dialect switch
+        {
+            GlobDialect.Standard => ReversedRangeHandling.Reject,
+            GlobDialect.Git => ReversedRangeHandling.MatchStart,
+            _ => ReversedRangeHandling.Empty,
+        };
+
+        public bool RejectsSeparatorInBracketExpression => Dialect is GlobDialect.Standard;
+
+        public Segment AnyCharacterSegment => Dialect is GlobDialect.Posix ? MatchAnyTextCharacterSegment.Instance : MatchAnyCharacterSegment.Instance;
 
         public bool IsPatternSeparator(char c)
         {
-            return _dialect switch
+            return Dialect switch
             {
                 GlobDialect.Posix => false,
                 GlobDialect.MSBuild => c is '/' or '\\',

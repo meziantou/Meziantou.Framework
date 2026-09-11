@@ -167,6 +167,12 @@ Use `SnapshotSettings` to customize behavior:
 - `SnapshotUpdateStrategy` (`Disallow`, `Overwrite`, `OverwriteWithoutFailure`, `MergeTool`, `MergeToolSync`)
 - `SnapshotPathStrategy` for full path generation
 
+A custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` receives a `SnapshotPathContext`. Its `ClassName`
+and `MethodName` are read from the call stack, which is the most expensive part of an assertion, so they are
+only resolved when a strategy reads them: a strategy that uses neither never pays for that walk. Use
+`MemberName` when the name of the method that called the assertion - captured by the compiler, always
+available - is enough.
+
 You can also set the default strategy using the `SNAPSHOTTESTING_STRATEGY` environment variable.
 The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).
 

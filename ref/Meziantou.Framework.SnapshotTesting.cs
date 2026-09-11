@@ -176,6 +176,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public Meziantou.Framework.FullPath SourceFilePath { get => throw null; init { } }
         public string? ClassName { get => throw null; init { } }
         public string MethodName { get => throw null; init { } }
+        public string? MemberName { get => throw null; init { } }
         public int LineNumber { get => throw null; init { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotType Type { get => throw null; init { } }
         public int Index { get => throw null; init { } }
@@ -183,14 +184,13 @@ namespace Meziantou.Framework.SnapshotTesting
         public Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext { get => throw null; init { } }
         public Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings { get => throw null; init { } }
         public int SnapshotCount { get => throw null; init { } }
-        public SnapshotPathContext(Meziantou.Framework.FullPath SourceFilePath, string? ClassName, string MethodName, int LineNumber, Meziantou.Framework.SnapshotTesting.SnapshotType Type, int Index, string? Extension, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext, Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings, int SnapshotCount = 1) { }
+        public SnapshotPathContext(Meziantou.Framework.FullPath SourceFilePath, string? ClassName, string MethodName, int LineNumber, Meziantou.Framework.SnapshotTesting.SnapshotType Type, int Index, string? Extension, Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext, Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings, int SnapshotCount = 1, string? MemberName = null) { }
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
         public static bool operator ==(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? left, Meziantou.Framework.SnapshotTesting.SnapshotPathContext? right) => throw null;
         public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotPathContext? other) => throw null;
-        public void Deconstruct(out Meziantou.Framework.FullPath SourceFilePath, out string? ClassName, out string MethodName, out int LineNumber, out Meziantou.Framework.SnapshotTesting.SnapshotType Type, out int Index, out string? Extension, out Meziantou.Framework.SnapshotTesting.SnapshotTestContext? TestContext, out Meziantou.Framework.SnapshotTesting.SnapshotSettings Settings, out int SnapshotCount) => throw null;
     }
 
     public delegate Meziantou.Framework.FullPath SnapshotPathStrategy(Meziantou.Framework.SnapshotTesting.SnapshotPathContext context);

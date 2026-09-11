@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
+using Meziantou.Framework.Json.Internals;
 
 namespace Meziantou.Framework.JsonPathTests;
 
@@ -461,9 +462,10 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
-    public void Evaluate_Function_Match_NonLiteralPattern_IsNotCached()
+    public void Evaluate_Function_Match_NonLiteralPattern_IsEvaluatedPerNode()
     {
-        // The pattern comes from the document, so it differs per node and must bypass the per-AST cache.
+        // The pattern comes from the document and differs per node, so the cached regex of one node must not be
+        // used for the next.
         var doc = JsonNode.Parse("""[{"s": "foo", "p": "f.o"}, {"s": "bar", "p": "z.z"}, {"s": "baz", "p": "b.z"}]""");
         var path = JsonPath.Parse("$[?match(@.s, @.p)]");
 
@@ -472,6 +474,82 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(2, result.Count);
         Assert.Equal("foo", result[0].Value!.AsObject()["s"]!.GetValue<string>());
         Assert.Equal("baz", result[1].Value!.AsObject()["s"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_NonLiteralPattern_AlternatingAcrossNodes()
+    {
+        // The cache keeps one pattern, so the nodes below alternate between hits and replacements, including
+        // replacing a valid pattern with an invalid one and back.
+        var doc = JsonNode.Parse("""
+            [
+              {"id": 0, "s": "foo", "p": "f.o"},
+              {"id": 1, "s": "foo", "p": "f.o"},
+              {"id": 2, "s": "bar", "p": "f.o"},
+              {"id": 3, "s": "bar", "p": "b.r"},
+              {"id": 4, "s": "foo", "p": "("},
+              {"id": 5, "s": "foo", "p": "f.o"},
+              {"id": 6, "s": "foo", "p": "b.r"},
+              {"id": 7, "s": "bar", "p": "b.r"},
+              {"id": 8, "s": "(", "p": "("}
+            ]
+            """);
+        var path = JsonPath.Parse("$[?match(@.s, @.p)]");
+        int[] expected = [0, 1, 3, 5, 7];
+
+        var ids = path.Evaluate(doc).Select(match => match.Value!["id"]!.GetValue<int>()).ToArray();
+
+        Assert.Equal(expected, ids);
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_DocumentPattern_IsStableAcrossDocumentsAndThreads()
+    {
+        // The pattern is shared by every node of a document but differs between documents, so an entry cached
+        // while evaluating one document must not answer for the other, even when both are evaluated at once.
+        var items = string.Join(", ", Enumerable.Range(0, 50).Select(i => i % 2 is 0 ? "\"abc\"" : "\"xyz\""));
+        var abc = JsonNode.Parse($$"""{"pattern": "a.c", "items": [{{items}}]}""");
+        var xyz = JsonNode.Parse($$"""{"pattern": "x.z", "items": [{{items}}]}""");
+        var path = JsonPath.Parse("$.items[?match(@, $.pattern)]");
+
+        var results = new JsonPathResult[64];
+        results[0] = path.Evaluate(abc);
+        results[1] = path.Evaluate(xyz);
+        Parallel.For(2, results.Length, i => results[i] = path.Evaluate(i % 2 is 0 ? abc : xyz));
+
+        for (var i = 0; i < results.Length; i++)
+        {
+            var expected = i % 2 is 0 ? "abc" : "xyz";
+            Assert.Equal(25, results[i].Count);
+            Assert.All(results[i], match => Assert.Equal(expected, match.Value!.GetValue<string>()));
+        }
+    }
+
+    [Fact]
+    public void Evaluate_Function_Match_RegexCache_ReusesTheEntryForAnEqualPattern()
+    {
+        // A pattern read from the document is usually a new string instance for every node, so the cache must
+        // compare patterns by value to ever hit.
+        var func = new FunctionCallExpression("match", [], FunctionExpressionType.LogicalType);
+        var pattern = "a.c";
+        var equalPattern = new string(pattern.AsSpan());
+        var built = new List<string>();
+        string[] expectedBuilt = ["a.c", "x.z"];
+
+        var first = func.GetOrCreateRegex(pattern, anchored: true, Factory);
+        var second = func.GetOrCreateRegex(equalPattern, anchored: true, Factory);
+        var other = func.GetOrCreateRegex("x.z", anchored: true, Factory);
+
+        Assert.NotSame(pattern, equalPattern);
+        Assert.Same(first, second);
+        Assert.NotSame(first, other);
+        Assert.Equal(expectedBuilt, built);
+
+        FunctionCallExpression.RegexCacheEntry Factory(string p, bool _)
+        {
+            built.Add(p);
+            return new FunctionCallExpression.RegexCacheEntry(regex: null);
+        }
     }
 
     [Fact]

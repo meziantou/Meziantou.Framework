@@ -5,16 +5,25 @@ namespace Meziantou.Framework.Json.Internals;
 internal sealed class FunctionCallExpression : LogicalExpression
 {
     /// <summary>
-    /// Cached <see cref="Regex"/> for a <c>match()</c>/<c>search()</c> call whose pattern is a literal, which is
-    /// the overwhelmingly common case. A miss stores <see cref="RegexCacheEntry.Unusable"/> so an invalid pattern
-    /// is not re-translated per node either.
+    /// The last pattern a <c>match()</c>/<c>search()</c> call compiled, with its result. A literal pattern never
+    /// changes, and a pattern read from the document is usually one value shared by every node the filter
+    /// visits (<c>$.pattern</c>), so a single entry avoids recompiling per node in both cases. An invalid pattern
+    /// is cached as <see cref="RegexCacheEntry.Unusable"/> so it is not re-translated per node either.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// A pattern read from the document may be attacker-controlled, which is why this is one entry rather than
+    /// a growing map. Nodes whose patterns alternate replace the entry each time, which costs what an uncached
+    /// compilation costs.
+    /// </para>
+    /// <para>
     /// A parsed <see cref="JsonPath"/> is documented as thread-safe and reusable. Publishing this field races
-    /// benignly: <see cref="RegexCacheEntry"/> is immutable, reference assignment is atomic, and the worst case
-    /// is that two threads each build an equivalent entry and one wins.
+    /// benignly: <see cref="RegexCacheSlot"/> is immutable, so a reader never pairs one pattern with another's
+    /// regex, reference assignment is atomic, and the worst case is that concurrent evaluations using different
+    /// patterns keep replacing each other's entry.
+    /// </para>
     /// </remarks>
-    private RegexCacheEntry? _regexCache;
+    private RegexCacheSlot? _regexCache;
 
     public FunctionCallExpression(string name, FunctionArgument[] arguments, FunctionExpressionType resultType)
     {
@@ -31,21 +40,25 @@ internal sealed class FunctionCallExpression : LogicalExpression
 
     public FunctionExpressionType ResultType { get; }
 
-    /// <summary>Gets the cached regex for this call, building it with <paramref name="factory"/> on first use.</summary>
-    /// <param name="factory">Builds the entry from the literal pattern.</param>
-    /// <returns>The cached entry.</returns>
-    public RegexCacheEntry GetOrCreateRegex(Func<string, RegexCacheEntry> factory)
+    /// <summary>Gets the compiled regex for <paramref name="pattern"/>, building it with <paramref name="factory"/> unless it is the cached one.</summary>
+    /// <param name="pattern">The I-Regexp pattern, which is the cache key.</param>
+    /// <param name="anchored">
+    /// Passed to <paramref name="factory"/>. It is not part of the key: it depends only on whether this call is
+    /// <c>match()</c> or <c>search()</c>, so it never varies for a given call.
+    /// </param>
+    /// <param name="factory">Builds the entry from the pattern.</param>
+    /// <returns>The entry for <paramref name="pattern"/>.</returns>
+    public RegexCacheEntry GetOrCreateRegex(string pattern, bool anchored, Func<string, bool, RegexCacheEntry> factory)
     {
         var cached = _regexCache;
-        if (cached is not null)
+        if (cached is not null && string.Equals(cached.Pattern, pattern, StringComparison.Ordinal))
         {
-            return cached;
+            return cached.Entry;
         }
 
-        var pattern = (string)Arguments[1].Value!;
-        cached = factory(pattern);
-        _regexCache = cached;
-        return cached;
+        var entry = factory(pattern, anchored);
+        _regexCache = new RegexCacheSlot(pattern, entry);
+        return entry;
     }
 
     /// <summary>An immutable compiled-pattern result: either a usable <see cref="Regex"/> or a known failure.</summary>
@@ -57,5 +70,13 @@ internal sealed class FunctionCallExpression : LogicalExpression
         public RegexCacheEntry(Regex? regex) => Regex = regex;
 
         public Regex? Regex { get; }
+    }
+
+    /// <summary>A pattern paired with its entry, published as one reference so the two can never be torn apart.</summary>
+    private sealed class RegexCacheSlot(string pattern, RegexCacheEntry entry)
+    {
+        public string Pattern { get; } = pattern;
+
+        public RegexCacheEntry Entry { get; } = entry;
     }
 }

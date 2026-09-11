@@ -60,5 +60,9 @@ public sealed class HttpBasicAuthenticationOptions : AuthenticationSchemeOptions
     /// Gets or sets the delegate used to validate credentials and create the <see cref="ClaimsPrincipal"/>.
     /// Returning <see langword="null"/> fails authentication.
     /// </summary>
+    /// <remarks>
+    /// Schemes registered with <c>AddHttpBasicIdentity</c> set this property to an ASP.NET Core Identity validator.
+    /// Changing it for such a scheme fails options validation instead of replacing or being replaced by the Identity validator.
+    /// </remarks>
     public HttpBasicCredentialValidator ValidateCredentials { get; set; } = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
 }

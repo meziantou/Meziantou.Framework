@@ -32,6 +32,7 @@ namespace Meziantou.AspNetCore.Authentication.HttpBasic
         public const int DefaultMaxCredentialLength = 4096;
         public string? Realm { get => throw null; set { } }
         public int MaxCredentialLength { get => throw null; set { } }
+        public bool AllowTwoFactorEnabledAccounts { get => throw null; set { } }
         public Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator ValidateCredentials { get => throw null; set { } }
     }
 

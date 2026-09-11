@@ -230,6 +230,59 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Theory]
+    [InlineData("user\u0000", "pass")]
+    [InlineData("user\t", "pass")]
+    [InlineData("user\r", "pass")]
+    [InlineData("user\n", "pass")]
+    [InlineData("user\u001F", "pass")]
+    [InlineData("user\u007F", "pass")]
+    [InlineData("\u0001", "")]
+    [InlineData("user", "pass\u0000")]
+    [InlineData("user", "pass\t")]
+    [InlineData("user", "pass\r")]
+    [InlineData("user", "pass\n")]
+    [InlineData("user", "pass\u001F")]
+    [InlineData("user", "pass\u007F")]
+    [InlineData("user", "pa:ss\r\n")]
+    public async Task ControlCharactersInCredentials_AreRejectedBeforeTheCredentialValidator(string username, string password)
+    {
+        await using var application = await TestApplication.CreateAsync(options =>
+        {
+            options.ValidateCredentials = (_, _, _) => throw new InvalidOperationException("The validator must not run for credentials containing control characters");
+        });
+
+        await application.SendAndAssert("/", username, password, response =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        });
+    }
+
+    [Theory]
+    [InlineData(" user ", "~pass~")]
+    [InlineData("user\u0080", "pass\u009F")]
+    [InlineData("user\u0085", "pass\u2028")]
+    [InlineData("\u00DCn\u00EFc\u00F8de", "\uD83D\uDD11")]
+    public async Task NonControlCharactersInCredentials_ArePassedToTheCredentialValidator(string username, string password)
+    {
+        await using var application = await TestApplication.CreateAsync(username, password);
+        await application.SendAndAssert("/", username, password, response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        });
+    }
+
+    [Fact]
+    public async Task PasswordContainingColons_IsPassedToTheCredentialValidator()
+    {
+        await using var application = await TestApplication.CreateAsync("myName", ":pa:ss:");
+        await application.SendAndAssert("/", "myName", ":pa:ss:", async response =>
+        {
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("myName", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+        });
+    }
+
     [Fact]
     public async Task LargeCredentials_UseThePooledBuffer()
     {

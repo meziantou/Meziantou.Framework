@@ -85,6 +85,7 @@ Authorization policies are keyed on the authentication *scheme*, so `RequireAuth
 ## Security options
 
 - `MaxCredentialLength` limits the size (in characters) of the Base64 credential payload in the `Authorization` header. The limit is applied before the payload is decoded.
+- Credentials containing a control character (U+0000 to U+001F, or U+007F) in the username or the password fail authentication before `ValidateCredentials` is called, as required by RFC 7617. Any other Unicode character is passed through unchanged, including C1 controls (U+0080 to U+009F) and line or paragraph separators (U+2028, U+2029). The username is untrusted input: escape it before writing it to a log.
 - `Realm` accepts printable ASCII only (U+0020 to U+007E). Other characters cannot be written to a `WWW-Authenticate` header, so they are rejected when the option is set rather than failing later on every challenge.
 
 ### Use HTTPS

@@ -78,10 +78,11 @@ public static class HttpBasicAuthenticationIdentityExtensions
     private static void ConfigureIdentityIntegration<TUser>(HttpBasicAuthenticationOptions options, bool lockoutOnFailure)
         where TUser : class
     {
-        options.ValidateCredentials = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure);
+        // Read the option on each request so a value set by a Configure call registered after this one is honored.
+        options.ValidateCredentials = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure, options.AllowTwoFactorEnabledAccounts);
     }
 
-    private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure)
+    private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure, bool allowTwoFactorEnabledAccounts)
         where TUser : class
     {
         var signInManager = context.RequestServices.GetRequiredService<SignInManager<TUser>>();
@@ -91,6 +92,13 @@ public static class HttpBasicAuthenticationIdentityExtensions
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure).ConfigureAwait(false);
         if (!result.Succeeded)
+            return null;
+
+        // CheckPasswordSignInAsync only checks the password: Identity enforces the second factor later, in the interactive
+        // sign-in flow, which a per-request Basic header cannot complete. Reject the account instead of letting the password
+        // alone authenticate it, unless the application explicitly opted out. A remembered two-factor client is deliberately
+        // not honored, so the result does not depend on an ambient browser cookie.
+        if (!allowTwoFactorEnabledAccounts && await signInManager.IsTwoFactorEnabledAsync(user).ConfigureAwait(false))
             return null;
 
         return await signInManager.CreateUserPrincipalAsync(user).ConfigureAwait(false);

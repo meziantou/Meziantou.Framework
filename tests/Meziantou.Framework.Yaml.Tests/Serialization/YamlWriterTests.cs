@@ -787,6 +787,150 @@ public sealed class YamlWriterTests
         }
     }
 
+    [Theory]
+    [InlineData(ScalarStyle.Any)]
+    [InlineData(ScalarStyle.Plain)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    public void StringStyles_PreserveWhitespaceAcrossRootSequenceAndMappingPositions(ScalarStyle style)
+    {
+        string[] values = ["", " ", "\t", "\n", "\n\n", "text", "text\n", "text\n\n", "text\n\n\n", "\ntext", "\n\ntext\n", " leading\ntext", "text\n indented\nlast", "text\n\nlast", "text \nlast", "text\n \nlast", "text\t\nlast", "\ttext\nlast", "text\n\tlast", "first\rsecond", "first\r\nsecond", "first\nsecond\r\n"];
+
+        foreach (var writeIndented in new[] { true, false })
+        {
+            var options = StringStyleOptions(style) with { WriteIndented = writeIndented };
+            foreach (var value in values)
+            {
+                Assert.Equal(value, YamlSerializer.Deserialize<string>(YamlSerializer.Serialize(value, options), options));
+
+                var sequence = new[] { value, "sentinel", value };
+                Assert.Equal(sequence, YamlSerializer.Deserialize<string[]>(YamlSerializer.Serialize(sequence, options), options));
+
+                var mapping = new Dictionary<string, string>(StringComparer.Ordinal) { [value] = value, ["sentinel"] = "last" };
+                var result = YamlSerializer.Deserialize<Dictionary<string, string>>(YamlSerializer.Serialize(mapping, options), options);
+                Assert.NotNull(result);
+                Assert.HasCount(2, result);
+                Assert.Equal(value, result[value]);
+                Assert.Equal("last", result["sentinel"]);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(ScalarStyle.Any)]
+    [InlineData(ScalarStyle.Plain)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    public void StringStyles_EscapeNonPrintableCharactersAndByteOrderMarks(ScalarStyle style)
+    {
+        string[] values = ["\0", "\u0001", "\u001F", "\u007F", "\u009F", "\uFFFE", "\uFFFF", "\uFEFF"];
+        foreach (var value in values)
+        {
+            var options = StringStyleOptions(style);
+            foreach (var text in new[] { value, "before" + value + "after\nlast" })
+            {
+                var yaml = YamlSerializer.Serialize(text, options);
+                Assert.DoesNotContain(value, yaml);
+                Assert.Equal(text, YamlSerializer.Deserialize<string>(yaml, options));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void MappingKeysAndValues_EscapeNonPrintableCharactersAndByteOrderMarks(bool writeIndented)
+    {
+        var options = new YamlSerializerOptions { WriteIndented = writeIndented };
+        foreach (var value in new[] { "\uFEFF", "\uFFFE", "\uFFFF", "\u007F", "\u009F" })
+        {
+            var mapping = new Dictionary<string, string>(StringComparer.Ordinal) { [value] = "before" + value + "after" };
+            var yaml = YamlSerializer.Serialize(mapping, options);
+            Assert.DoesNotContain(value, yaml);
+            var result = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml, options);
+            Assert.NotNull(result);
+            Assert.Equal(new KeyValuePair<string, string>(value, "before" + value + "after"), Assert.Single(result));
+        }
+    }
+
+    [Theory]
+    [InlineData(0xD800)]
+    [InlineData(0xDBFF)]
+    [InlineData(0xDC00)]
+    [InlineData(0xDFFF)]
+    public void StringStyles_UnpairedSurrogates_RejectInvalidUnicode(int codePoint)
+    {
+        var character = ((char)codePoint).ToString();
+        foreach (var value in new[] { character, "before" + character + "after", character + "\n" })
+        {
+            foreach (var style in new[] { ScalarStyle.Any, ScalarStyle.Plain, ScalarStyle.SingleQuoted, ScalarStyle.DoubleQuoted, ScalarStyle.Literal, ScalarStyle.Folded })
+            {
+                Assert.Throws<YamlException>(() => YamlSerializer.Serialize(value, StringStyleOptions(style)));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(ScalarStyle.Any)]
+    [InlineData(ScalarStyle.Plain)]
+    [InlineData(ScalarStyle.SingleQuoted)]
+    [InlineData(ScalarStyle.DoubleQuoted)]
+    [InlineData(ScalarStyle.Literal)]
+    [InlineData(ScalarStyle.Folded)]
+    public void StringStyles_SupplementaryUnicode_PreservesSurrogatePairs(ScalarStyle style)
+    {
+        foreach (var value in new[] { "\U00010000", "\U0010FFFF", "\U0001F600", "before\U0001F600after\nlast", "\U00010000\U0010FFFF" })
+        {
+            var options = StringStyleOptions(style);
+            Assert.Equal(value, YamlSerializer.Deserialize<string>(YamlSerializer.Serialize(value, options), options));
+        }
+    }
+
+    [Theory]
+    [InlineData(1023, false)]
+    [InlineData(1024, false)]
+    [InlineData(1025, false)]
+    [InlineData(1023, true)]
+    [InlineData(1024, true)]
+    [InlineData(1025, true)]
+    public void MappingKeys_UseExplicitKeysBeyondTheImplicitKeyLengthLimit(int representationLength, bool escaped)
+    {
+        var key = escaped ? new string('a', representationLength - 4) + "\t" : new string('a', representationLength);
+        var value = new Dictionary<string, string>(StringComparer.Ordinal) { [key] = "value", ["next"] = "sentinel" };
+
+        foreach (var writeIndented in new[] { true, false })
+        {
+            var options = new YamlSerializerOptions { WriteIndented = writeIndented };
+            var yaml = YamlSerializer.Serialize(value, options);
+            if (representationLength > 1024)
+            {
+                Assert.Contains("? ", yaml);
+            }
+            else
+            {
+                Assert.DoesNotContain("? ", yaml);
+            }
+
+            var result = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml, options);
+            Assert.NotNull(result);
+            Assert.HasCount(2, result);
+            Assert.Equal("value", result[key]);
+            Assert.Equal("sentinel", result["next"]);
+
+            var sequenceYaml = YamlSerializer.Serialize(new[] { value }, options);
+            var sequence = YamlSerializer.Deserialize<Dictionary<string, string>[]>(sequenceYaml, options);
+            Assert.NotNull(sequence);
+            var item = Assert.Single(sequence);
+            Assert.HasCount(2, item);
+            Assert.Equal("value", item[key]);
+            Assert.Equal("sentinel", item["next"]);
+        }
+    }
+
     private static YamlSerializerOptions StringStyleOptions(ScalarStyle style)
         => new() { ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = style } };
 

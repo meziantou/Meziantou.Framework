@@ -24,6 +24,8 @@ internal class SimpleKey
     /// <value>The mark.</value>
     public Mark Mark { get; }
 
+    public int CharacterIndex { get; }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SimpleKey"/> class.
     /// </summary>
@@ -34,11 +36,12 @@ internal class SimpleKey
     /// <summary>
     /// Initializes a new instance of the <see cref="SimpleKey"/> class.
     /// </summary>
-    public SimpleKey(bool isPossible, bool isRequired, int tokenNumber, Mark mark)
+    public SimpleKey(bool isPossible, bool isRequired, int tokenNumber, Mark mark, int characterIndex)
     {
         IsPossible = isPossible;
         IsRequired = isRequired;
         TokenNumber = tokenNumber;
         Mark = mark;
+        CharacterIndex = characterIndex;
     }
 }

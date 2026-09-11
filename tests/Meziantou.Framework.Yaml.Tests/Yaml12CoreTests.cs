@@ -82,15 +82,9 @@ public sealed class Yaml12CoreTests
     public void JsonSchema_FloatEdgeCases()
     {
         var schema = new JsonSchema();
-        // .inf / -.inf / .nan
-        Assert.True(schema.TryParse(new Scalar(".inf"), true, out _, out var posInf));
-        Assert.Equal(double.PositiveInfinity, posInf);
-
-        Assert.True(schema.TryParse(new Scalar("-.inf"), true, out _, out var negInf));
-        Assert.Equal(double.NegativeInfinity, negInf);
-
-        Assert.True(schema.TryParse(new Scalar(".nan"), true, out _, out var nan));
-        Assert.True(double.IsNaN((double)nan!));
+        Assert.False(schema.TryParse(new Scalar(".inf"), true, out _, out _));
+        Assert.False(schema.TryParse(new Scalar("-.inf"), true, out _, out _));
+        Assert.False(schema.TryParse(new Scalar(".nan"), true, out _, out _));
 
         // Scientific notation
         Assert.True(schema.TryParse(new Scalar("1e10"), true, out var tag, out var sci));
@@ -515,7 +509,7 @@ public sealed class Yaml12CoreTests
     [Fact]
     public void Parser_DocumentEndMarker()
     {
-        // After "...", a new document requires "---"
+        // An explicit document may follow the document end marker.
         var events = ParseAll("foo\n...\n---\nbar\n");
         var scalars = events.OfType<Scalar>().ToList();
         Assert.HasCount(2, scalars);
@@ -524,10 +518,11 @@ public sealed class Yaml12CoreTests
     }
 
     [Fact]
-    public void Parser_DocumentEndMarkerWithoutNewDocStart_ThrowsException()
+    public void Parser_DocumentEndMarkerAllowsBareDocument()
     {
-        // Bare content after "..." without "---" is an error
-        Assert.ThrowsAny<YamlException>(() => ParseAll("foo\n...\nbar\n"));
+        var events = ParseAll("foo\n...\nbar\n");
+        Assert.Equal(["foo", "bar"], events.OfType<Scalar>().Select(scalar => scalar.Value));
+        Assert.HasCount(2, events.OfType<DocumentStart>());
     }
 
     [Fact]

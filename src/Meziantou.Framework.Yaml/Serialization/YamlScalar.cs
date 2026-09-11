@@ -743,6 +743,29 @@ public static class YamlScalar
             return true;
         }
 
+        if (string.Equals(shortTag, JsonSchema.FloatShortTag, StringComparison.Ordinal) && schema is JsonSchema)
+        {
+            // An explicit float tag also accepts integer spellings; implicit resolution tries integer rules first.
+            if (schema.TryParse(plainScalar, typeof(double), out value) ||
+                (schema is ExtendedSchema && CoreSchema.Instance.TryParse(plainScalar, typeof(double), out value)))
+            {
+                return true;
+            }
+
+            // The JSON schema defines these canonical float values, but does not resolve them implicitly.
+            value = scalar.Value switch
+            {
+                ".inf" => double.PositiveInfinity,
+                "-.inf" => double.NegativeInfinity,
+                ".nan" => double.NaN,
+                _ => null,
+            };
+            if (value is not null)
+            {
+                return true;
+            }
+        }
+
         if (string.Equals(shortTag, JsonSchema.NullShortTag, StringComparison.Ordinal) && IsNull(scalar.Value.AsSpan()))
         {
             value = null;

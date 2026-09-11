@@ -266,6 +266,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 Write(", ");
             }
 
+            if (RequiresExplicitKey(name))
+            {
+                Write("? ");
+            }
+
             WriteScalarCore(name, isKey: true);
             Write(':');
 
@@ -285,7 +290,20 @@ public sealed class YamlWriter : YamlReaderWriterBase
         {
             WriteIndent(frame.Indent);
         }
+
+        var explicitKey = RequiresExplicitKey(name);
+        if (explicitKey)
+        {
+            Write("? ");
+        }
+
         WriteScalarCore(name, isKey: true);
+        if (explicitKey)
+        {
+            WriteNewLine();
+            WriteIndent(frame.Indent);
+        }
+
         Write(':');
 
         frame.HasContent = true;
@@ -436,19 +454,19 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         if (double.IsPositiveInfinity(value))
         {
-            WritePlainScalar(".inf");
+            WriteNonFiniteScalar(".inf");
             return;
         }
 
         if (double.IsNegativeInfinity(value))
         {
-            WritePlainScalar("-.inf");
+            WriteNonFiniteScalar("-.inf");
             return;
         }
 
         if (double.IsNaN(value))
         {
-            WritePlainScalar(".nan");
+            WriteNonFiniteScalar(".nan");
             return;
         }
 
@@ -461,23 +479,33 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         if (float.IsPositiveInfinity(value))
         {
-            WritePlainScalar(".inf");
+            WriteNonFiniteScalar(".inf");
             return;
         }
 
         if (float.IsNegativeInfinity(value))
         {
-            WritePlainScalar("-.inf");
+            WriteNonFiniteScalar("-.inf");
             return;
         }
 
         if (float.IsNaN(value))
         {
-            WritePlainScalar(".nan");
+            WriteNonFiniteScalar(".nan");
             return;
         }
 
         WriteFormattableScalar(value, format: "R", plainSafe: true);
+    }
+
+    private void WriteNonFiniteScalar(string value)
+    {
+        if (Options.Schema is YamlSchemaKind.Json && _pendingTag is null)
+        {
+            WriteTag("!!float");
+        }
+
+        WritePlainScalar(value);
     }
 
     /// <summary>Writes a date and time scalar value using the round-trip format.</summary>
@@ -532,6 +560,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(Half value)
     {
+        if (!Half.IsFinite(value))
+        {
+            WriteScalar((double)value);
+            return;
+        }
+
         WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
     }
 
@@ -585,19 +619,19 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         if (T.IsPositiveInfinity(value))
         {
-            WritePlainScalar(".inf");
+            WriteNonFiniteScalar(".inf");
             return;
         }
 
         if (T.IsNegativeInfinity(value))
         {
-            WritePlainScalar("-.inf");
+            WriteNonFiniteScalar("-.inf");
             return;
         }
 
         if (T.IsNaN(value))
         {
-            WritePlainScalar(".nan");
+            WriteNonFiniteScalar(".nan");
             return;
         }
 
@@ -1171,7 +1205,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
         {
             // A line break inside a single-quoted scalar is folded when it is read back, and a control character
             // can only be represented by a double-quoted escape.
-            if (IsLineBreak(c) || (c != '\t' && !Emitter.IsPrintable(c)))
+            if (IsLineBreak(c) || c == '\uFEFF' || (c != '\t' && !Emitter.IsPrintable(c)))
             {
                 return false;
             }
@@ -1280,7 +1314,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
             // Any other line break is normalized to a line feed when the block scalar is read back, and a
             // control character can only be represented by a double-quoted escape.
-            if (IsLineBreak(c) || (c != '\t' && !Emitter.IsPrintable(c)))
+            if (IsLineBreak(c) || c == '\uFEFF' || (c != '\t' && !Emitter.IsPrintable(c)))
             {
                 return false;
             }
@@ -1374,6 +1408,33 @@ public sealed class YamlWriter : YamlReaderWriterBase
                YamlScalar.TryParseDouble(value, out _);
     }
 
+    private bool RequiresExplicitKey(ReadOnlySpan<char> value)
+    {
+        // An implicit key may span at most 1024 characters of YAML, including quotes and escapes.
+        if (IsPlainSafe(value, isKey: true))
+        {
+            return value.Length > 1024;
+        }
+
+        var length = 2;
+        foreach (var c in value)
+        {
+            length += c switch
+            {
+                '\\' or '"' or '\n' or '\r' or '\t' => 2,
+                _ when (!Emitter.IsPrintable(c) && !char.IsSurrogate(c)) || IsLineBreak(c) || c == '\uFEFF' => 6,
+                _ => 1,
+            };
+
+            if (length > 1024)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
         // Keep it conservative: if in doubt, quote.
@@ -1404,8 +1465,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 return false;
             }
 
-            // Control characters (including NUL) must be quoted and escaped.
-            if (char.IsControl(c))
+            // Non-printable characters and content byte order marks must be quoted and escaped.
+            if (!Emitter.IsPrintable(c) || c == '\uFEFF')
             {
                 return false;
             }
@@ -1493,6 +1554,18 @@ public sealed class YamlWriter : YamlReaderWriterBase
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
+            if (char.IsSurrogate(c))
+            {
+                if (!char.IsHighSurrogate(c) || i + 1 >= value.Length || !char.IsLowSurrogate(value[i + 1]))
+                {
+                    throw new YamlException("A scalar contains an unpaired UTF-16 surrogate.");
+                }
+
+                Write(value.Slice(i, 2));
+                i++;
+                continue;
+            }
+
             switch (c)
             {
                 case '\\':
@@ -1511,7 +1584,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                     Write("\\t");
                     break;
                 default:
-                    if (char.IsControl(c) || IsLineBreak(c))
+                    if (!Emitter.IsPrintable(c) || IsLineBreak(c) || c == '\uFEFF')
                     {
                         Write("\\u");
                         Write(((int)c).ToString("X4", CultureInfo.InvariantCulture));

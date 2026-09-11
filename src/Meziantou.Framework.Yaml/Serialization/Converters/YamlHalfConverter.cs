@@ -11,14 +11,13 @@ internal sealed class YamlHalfConverter : YamlConverter<Half>
             throw YamlThrowHelper.ThrowExpectedScalar(reader);
         }
 
-        var text = reader.ScalarValue;
-        if (!Half.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var result))
+        if (!YamlScalar.TryParseDouble(reader, out var result))
         {
             throw YamlThrowHelper.ThrowInvalidHalfScalar(reader);
         }
 
         reader.Read();
-        return result;
+        return (Half)result;
     }
 
     public override void Write(YamlWriter writer, Half value)

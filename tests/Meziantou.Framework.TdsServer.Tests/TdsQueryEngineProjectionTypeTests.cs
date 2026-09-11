@@ -41,7 +41,11 @@ public sealed class TdsQueryEngineProjectionTypeTests
         Assert.Equal(freshAlias, await GetColumnNameAsync(laterHandler, $"SELECT Id AS {freshAlias} FROM customers"));
     }
 
-    [Fact]
+    // The type cache is process-wide, so any query running beside this test can pick up a type emitted into the
+    // tracked assembly while it is still alive. Combining it with a newly emitted type -- a join carrier whose
+    // member is a derived table's projection, for instance -- makes the newer assembly reference the tracked one,
+    // and that lasts as long as the newer type is retained, which outlives any wait.
+    [Fact(DisableParallelization = true)]
     public async Task ProjectionTypesLeavingTheCache_AreReclaimed()
     {
         var aliasPrefix = "Reclaim" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
@@ -68,9 +72,8 @@ public sealed class TdsQueryEngineProjectionTypeTests
         }
 
         // Unloading is not synchronous: it completes on a later collection, once the runtime has finished
-        // walking everything that referenced the assembly. Tests also run in parallel, and a query running in
-        // another one can still hold a type emitted into the same assembly, so wait between the sweeps instead
-        // of failing on the first one.
+        // walking everything that referenced the assembly, so wait between the sweeps instead of failing on the
+        // first one.
         for (var index = 0; index < 60 && projectionAssembly.IsAlive; index++)
         {
             GC.Collect();

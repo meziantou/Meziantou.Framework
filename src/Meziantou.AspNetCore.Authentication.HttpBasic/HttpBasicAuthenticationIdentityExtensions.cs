@@ -68,17 +68,20 @@ public static class HttpBasicAuthenticationIdentityExtensions
         ArgumentException.ThrowIfNullOrEmpty(authenticationScheme);
         ArgumentNullException.ThrowIfNull(configureOptions);
 
+        HttpBasicCredentialValidator identityValidator = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure);
+
+        // Identity owns credential validation for this scheme. Any other validator, whether set by configureOptions
+        // or by a later Configure/PostConfigure call, would either be ignored or bypass the password check,
+        // so the configuration is rejected instead of letting one of them win silently.
+        builder.Services.AddOptions<HttpBasicAuthenticationOptions>(authenticationScheme)
+            .Validate(options => ReferenceEquals(options.ValidateCredentials, identityValidator), $"The '{authenticationScheme}' scheme is registered with {nameof(AddHttpBasicIdentity)}, so ASP.NET Core Identity validates the credentials and {nameof(HttpBasicAuthenticationOptions)}.{nameof(HttpBasicAuthenticationOptions.ValidateCredentials)} must not be changed. Use {nameof(HttpBasicAuthenticationExtensions.AddHttpBasic)} to provide a custom validator, or use authorization policies to restrict which authenticated users can access a resource.")
+            .ValidateOnStart();
+
         return builder.AddHttpBasic(authenticationScheme, displayName, options =>
         {
+            options.ValidateCredentials = identityValidator;
             configureOptions(options);
-            ConfigureIdentityIntegration<TUser>(options, lockoutOnFailure);
         });
-    }
-
-    private static void ConfigureIdentityIntegration<TUser>(HttpBasicAuthenticationOptions options, bool lockoutOnFailure)
-        where TUser : class
-    {
-        options.ValidateCredentials = (context, username, password) => ValidateCredentialsAsync<TUser>(context, username, password, lockoutOnFailure);
     }
 
     private static async ValueTask<ClaimsPrincipal?> ValidateCredentialsAsync<TUser>(HttpContext context, string username, string password, bool lockoutOnFailure)

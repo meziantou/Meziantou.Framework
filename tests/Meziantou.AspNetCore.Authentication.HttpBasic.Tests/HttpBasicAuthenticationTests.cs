@@ -432,6 +432,64 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Fact]
+    public async Task AspNetCoreIdentity_CredentialValidatorSetInCallback_FailsAtStartup()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+
+        var exception = await Assert.ThrowsAsync<OptionsValidationException>(() => TestApplication.CreateWithIdentityAsync([user], options =>
+        {
+            options.ValidateCredentials = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
+        }));
+
+        Assert.Equal(HttpBasicAuthenticationDefaults.AuthenticationScheme, exception.OptionsName);
+        Assert.Contains(nameof(HttpBasicAuthenticationOptions.ValidateCredentials), exception.Message);
+    }
+
+    [Fact]
+    public async Task AspNetCoreIdentity_CredentialValidatorReplacedByLaterConfiguration_FailsAtStartup()
+    {
+        var user = CreateIdentityUser(id: "user-id", username: "myName", password: "myPassword");
+
+        var exception = await Assert.ThrowsAsync<OptionsValidationException>(() => TestApplication.CreateWithIdentityAsync([user], _ => { }, configureServices: services =>
+        {
+            services.PostConfigure<HttpBasicAuthenticationOptions>(HttpBasicAuthenticationDefaults.AuthenticationScheme, options =>
+            {
+                options.ValidateCredentials = (_, username, _) => ValueTask.FromResult<ClaimsPrincipal?>(CreatePrincipal(username));
+            });
+        }));
+
+        Assert.Equal(HttpBasicAuthenticationDefaults.AuthenticationScheme, exception.OptionsName);
+    }
+
+    [Fact]
+    public void AspNetCoreIdentity_CredentialValidatorSetInCallback_FailsWhenOptionsAreResolvedWithoutHost()
+    {
+        var services = new ServiceCollection();
+        services.AddAuthentication()
+                .AddHttpBasicIdentity<IdentityUser>("IdentityScheme", options => options.ValidateCredentials = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null));
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<HttpBasicAuthenticationOptions>>();
+        var exception = Assert.Throws<OptionsValidationException>(() => optionsMonitor.Get("IdentityScheme"));
+        Assert.Equal("IdentityScheme", exception.OptionsName);
+    }
+
+    [Fact]
+    public void AspNetCoreIdentity_ValidationDoesNotApplyToOtherSchemes()
+    {
+        HttpBasicCredentialValidator customValidator = (_, _, _) => ValueTask.FromResult<ClaimsPrincipal?>(null);
+        var services = new ServiceCollection();
+        services.AddAuthentication()
+                .AddHttpBasicIdentity<IdentityUser>("IdentityScheme", options => options.Realm = "Identity")
+                .AddHttpBasic("CustomScheme", options => options.ValidateCredentials = customValidator);
+        using var serviceProvider = services.BuildServiceProvider();
+
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<HttpBasicAuthenticationOptions>>();
+        Assert.Equal("Identity", optionsMonitor.Get("IdentityScheme").Realm);
+        Assert.Same(customValidator, optionsMonitor.Get("CustomScheme").ValidateCredentials);
+    }
+
     private static IdentityUser CreateIdentityUser(string id, string username, string password)
     {
         var user = new IdentityUser
@@ -524,7 +582,7 @@ public sealed class HttpBasicAuthenticationTests
             return new TestApplication(app, client);
         }
 
-        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure = false, string? authenticationScheme = null)
+        public static async Task<TestApplication> CreateWithIdentityAsync(IReadOnlyCollection<IdentityUser> users, Action<HttpBasicAuthenticationOptions> configureOptions, bool lockoutOnFailure = false, string? authenticationScheme = null, Action<IServiceCollection>? configureServices = null)
         {
             ArgumentNullException.ThrowIfNull(users);
             ArgumentNullException.ThrowIfNull(configureOptions);
@@ -551,13 +609,23 @@ public sealed class HttpBasicAuthenticationTests
             }
 
             builder.Services.AddAuthorization();
+            configureServices?.Invoke(builder.Services);
 
             var app = builder.Build();
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapGet("/", (ClaimsPrincipal user) => $"{user.Identity?.Name}|{user.FindFirstValue(ClaimTypes.NameIdentifier)}")
                 .RequireAuthorization();
-            await app.StartAsync(XunitCancellationToken);
+
+            try
+            {
+                await app.StartAsync(XunitCancellationToken);
+            }
+            catch
+            {
+                await app.DisposeAsync();
+                throw;
+            }
 
             var client = app.GetTestClient();
             return new TestApplication(app, client);

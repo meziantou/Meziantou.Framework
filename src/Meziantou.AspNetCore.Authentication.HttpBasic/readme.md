@@ -73,6 +73,8 @@ builder.Services
     });
 ```
 
+ASP.NET Core Identity validates the credentials, so `options.ValidateCredentials` must not be set for this scheme. Setting it, in the callback or through a later `Configure`/`PostConfigure` call, throws an `OptionsValidationException` at startup rather than being ignored or replacing the password check. To restrict which accounts, tenants, or networks can access a resource, use [authorization policies](https://learn.microsoft.com/aspnet/core/security/authorization/policies) (a fallback policy applies to every endpoint). To validate credentials yourself, use `AddHttpBasic` instead.
+
 The principal is built by `SignInManager<TUser>.CreateUserPrincipalAsync`, so `User.Identity.AuthenticationType` is Identity's own `"Identity.Application"`, not the Basic scheme name:
 
 ```csharp

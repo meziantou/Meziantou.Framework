@@ -17,6 +17,7 @@ internal static class TdsResponseSerializer
     // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
     private const int MaxTokenMessageLength = 32000;
 
+    private static readonly UInt128 MaxDecimalMagnitude = ComputeMaxDecimalMagnitude();
     private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
     private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
@@ -826,24 +827,50 @@ internal static class TdsResponseSerializer
 
     private static void WriteDecimalValue(BinaryWriter writer, decimal value, byte scale)
     {
-        var isNegative = value < 0;
-        var valueBits = decimal.GetBits(Math.Abs(value));
+        var magnitude = GetWireMagnitude(value, scale);
+
+        writer.Write(DecimalMaxLength);
+        writer.Write(value < 0 ? (byte)0 : (byte)1);
+        writer.Write((ulong)magnitude);
+        writer.Write((ulong)(magnitude >> 64));
+    }
+
+    /// <summary>
+    /// Lifts the mantissa of <paramref name="value"/> to <paramref name="scale"/> to get the unscaled integer the
+    /// wire format carries. The mantissa fits in 96 bits, but the rescaled magnitude does not, so the scaling runs
+    /// on the same 128 bits the wire uses.
+    /// </summary>
+    private static UInt128 GetWireMagnitude(decimal value, byte scale)
+    {
+        var valueBits = decimal.GetBits(value);
         var valueScale = (byte)((valueBits[3] >> 16) & 0xFF);
 
-        // The wire format carries an unscaled integer, so take the mantissa and lift it to the column's scale.
-        var mantissa = new decimal(valueBits[0], valueBits[1], valueBits[2], isNegative: false, scale: 0);
+        var magnitude = new UInt128((uint)valueBits[2], ((ulong)(uint)valueBits[1] << 32) | (uint)valueBits[0]);
+        var factor = UInt128.One;
         for (var i = valueScale; i < scale; i++)
         {
-            mantissa *= 10m;
+            factor *= 10;
         }
 
-        var bits = decimal.GetBits(mantissa);
-        writer.Write(DecimalMaxLength);
-        writer.Write(isNegative ? (byte)0 : (byte)1);
-        writer.Write(bits[0]);
-        writer.Write(bits[1]);
-        writer.Write(bits[2]);
-        writer.Write(0); // the magnitude is at most 96 bits, so the top 4 bytes are always zero
+        // The magnitude has to stay within the precision advertised in the column metadata.
+        if (magnitude > MaxDecimalMagnitude / factor)
+        {
+            throw new OverflowException($"The value '{value.ToString(CultureInfo.InvariantCulture)}' does not fit in decimal({DecimalPrecision}, {scale})");
+        }
+
+        return magnitude * factor;
+    }
+
+    /// <summary>Gets the largest magnitude a <c>decimal(<see cref="DecimalPrecision" />, s)</c> column can carry.</summary>
+    private static UInt128 ComputeMaxDecimalMagnitude()
+    {
+        var result = UInt128.One;
+        for (var i = 0; i < DecimalPrecision; i++)
+        {
+            result *= 10;
+        }
+
+        return result - 1;
     }
 
     private static void WriteDateTime2Value(BinaryWriter writer, DateTime value)

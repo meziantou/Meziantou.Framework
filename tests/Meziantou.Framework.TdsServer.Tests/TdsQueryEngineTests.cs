@@ -275,6 +275,30 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_SelectDistinctWithOffsetFetch_PaginatesDistinctRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT DISTINCT Region
+                    FROM orders
+                    ORDER BY Region
+                    OFFSET 1 ROWS
+                    FETCH NEXT 1 ROWS ONLY
+                    """;
+            },
+            """
+            Region
+            South
+            """,
+            expectedMaterializedQueries: "Order[].OrderBy(order => order.Region).Select(order2 => new TdsProjection() {Region = order2.Region}).Distinct().Skip(1).Take(1)");
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_Union_ReturnsDistinctRows()
     {
         var queryEngineOptions = CreateQueryEngineOptions();
@@ -377,7 +401,7 @@ public sealed class TdsQueryEngineTests
             UpperName NameLength
             ALICE 5
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = customer2.Name.ToUpperInvariant(), NameLength = customer2.Name.Length})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {UpperName = IIF((customer2.Name == null), null, customer2.Name.ToUpperInvariant()), NameLength = IIF((customer2.Name == null), null, Convert(customer2.Name.Length, Nullable`1))})");
     }
 
     [Fact]
@@ -833,7 +857,7 @@ public sealed class TdsQueryEngineTests
             Id
             2
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Name.Length == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => (IIF((customer.Name == null), null, Convert(customer.Name.Length, Nullable`1)) == 3)).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1392,7 +1416,7 @@ public sealed class TdsQueryEngineTests
             2
             4
             """,
-            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Skip(1).Take(2).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].OrderBy(customer => customer.Id).Select(customer2 => new TdsProjection() {Id = customer2.Id}).Skip(1).Take(2)");
     }
 
     [Fact]
@@ -1930,7 +1954,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, 0, 2) == \"Al\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((LeftCore(customer.Name, 2) == \"Al\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1952,7 +1976,7 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((SubstringCore(customer.Name, (customer.Name.Length - 2), 2) == \"ce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((RightCore(customer.Name, 2) == \"ce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
     }
 
     [Fact]
@@ -1996,7 +2020,122 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((customer.Name.Replace(\"li\", \"xx\") == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((IIF((customer.Name == null), null, customer.Name.Replace(\"li\", \"xx\")) == \"Axxce\") AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_CaseAndLengthFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, UPPER(Name) AS UpperName, LOWER(Name) AS LowerName, LEN(Name) AS NameLength
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id UpperName LowerName NameLength
+            1 ALICE alice 5
+            2 BOB bob 3
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, UpperName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToUpperInvariant()), LowerName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToLowerInvariant()), NameLength = IIF((nullableCustomer.Name == null), null, Convert(nullableCustomer.Name.Length, Nullable`1))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_TrimFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LTRIM(Name) AS TrimmedStart, RTRIM(Name) AS TrimmedEnd, TRIM(Name) AS Trimmed
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id TrimmedStart TrimmedEnd Trimmed
+            1 Alice Alice Alice
+            2 Bob Bob Bob
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, TrimmedStart = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.TrimStart()), TrimmedEnd = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.TrimEnd()), Trimmed = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.Trim())})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_SubstringFunctions_ReturnNullForNullColumn()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LEFT(Name, 2) AS LeftName, RIGHT(Name, 2) AS RightName, REPLACE(Name, 'li', 'xx') AS ReplacedName
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id LeftName RightName ReplacedName
+            1 Al ce Axxce
+            2 Bo ob Bob
+            3 NULL NULL NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, LeftName = LeftCore(nullableCustomer.Name, 2), RightName = RightCore(nullableCustomer.Name, 2), ReplacedName = IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.Replace(\"li\", \"xx\"))})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_WhereStringFunctionOnNullColumn_ExcludesNullRows()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id
+                    FROM nullable_customers
+                    WHERE UPPER(Name) = 'BOB' OR LEN(Name) = 5
+                    """;
+            },
+            """
+            Id
+            1
+            2
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Where(nullableCustomer => ((IIF((nullableCustomer.Name == null), null, nullableCustomer.Name.ToUpperInvariant()) == \"BOB\") OrElse (IIF((nullableCustomer.Name == null), null, Convert(nullableCustomer.Name.Length, Nullable`1)) == 5))).Select(nullableCustomer2 => new TdsProjection() {Id = nullableCustomer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_StringFunctionOnNullableNonStringColumn_ReturnsNull()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT Id, LEN(Score) AS ScoreLength
+                    FROM nullable_customers
+                    """;
+            },
+            """
+            Id ScoreLength
+            1 3
+            2 1
+            3 NULL
+            """,
+            expectedMaterializedQueries: "NullableCustomer[].Select(nullableCustomer => new TdsProjection() {Id = nullableCustomer.Id, ScoreLength = IIF((ToStringCore(Convert(nullableCustomer.Score, Object)) == null), null, Convert(ToStringCore(Convert(nullableCustomer.Score, Object)).Length, Nullable`1))})");
     }
 
     [Fact]
@@ -2664,7 +2803,29 @@ public sealed class TdsQueryEngineTests
             Id
             1
             """,
-            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+            expectedMaterializedQueries: "Customer[].Where(customer => ((Round(Convert(ConvertToTypeCore(Convert(1.26, Object), System.Double), Double), 1, AwayFromZero) == 1.3) AndAlso (customer.Id == 1))).Select(customer2 => new TdsProjection() {Id = customer2.Id})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RoundFunction_RoundsMidpointAwayFromZero()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandText = """
+                    SELECT ROUND(2.5, 0) AS PositiveMidpoint, ROUND(-2.5, 0) AS NegativeMidpoint, ROUND(0.25, 1) AS PositiveScaledMidpoint, ROUND(-0.25, 1) AS NegativeScaledMidpoint
+                    FROM customers
+                    WHERE Id = 1
+                    """;
+            },
+            """
+            PositiveMidpoint NegativeMidpoint PositiveScaledMidpoint NegativeScaledMidpoint
+            3 -3 0.3 -0.3
+            """,
+            expectedMaterializedQueries: "Customer[].Where(customer => (customer.Id == 1)).Select(customer2 => new TdsProjection() {PositiveMidpoint = Round(Convert(ConvertToTypeCore(Convert(2.5, Object), System.Double), Double), 0, AwayFromZero), NegativeMidpoint = Round(Convert(ConvertToTypeCore(Convert(-2.5, Object), System.Double), Double), 0, AwayFromZero), PositiveScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(0.25, Object), System.Double), Double), 1, AwayFromZero), NegativeScaledMidpoint = Round(Convert(ConvertToTypeCore(Convert(-0.25, Object), System.Double), Double), 1, AwayFromZero)})");
     }
 
     [Fact]
@@ -3745,9 +3906,9 @@ public sealed class TdsQueryEngineTests
     {
         return
         [
-            new NullableCustomer(1, "Alice"),
-            new NullableCustomer(2, "Bob"),
-            new NullableCustomer(3, null),
+            new NullableCustomer(1, "Alice", 100),
+            new NullableCustomer(2, "Bob", 5),
+            new NullableCustomer(3, null, null),
         ];
     }
 
@@ -3951,7 +4112,7 @@ public sealed class TdsQueryEngineTests
 
     private sealed record Order(int Id, string Region, int Amount);
 
-    private sealed record NullableCustomer(int Id, string? Name);
+    private sealed record NullableCustomer(int Id, string? Name, int? Score);
 
     private sealed record JsonDocumentRow(int Id, string? Payload);
 

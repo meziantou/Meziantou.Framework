@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Yaml.Events;
 /// <summary>Contains the behavior that is common between node events.</summary>
 public abstract partial class NodeEvent : ParsingEvent
 {
-    [GeneratedRegex(@"^[0-9a-zA-Z_\-]+$", RegexOptions.None, matchTimeoutMilliseconds: -1)]
+    /// <summary>Matches <c>ns-anchor-name</c>: one or more printable characters other than whitespace and flow indicators.</summary>
+    [GeneratedRegex(@"^[^\x00-\x20\x7F-\x9F,\[\]{}\uFEFF]+$", RegexOptions.None, matchTimeoutMilliseconds: -1)]
     internal static partial Regex AnchorValidator { get; }
 
     /// <summary>Gets the anchor.</summary>
@@ -39,7 +40,7 @@ public abstract partial class NodeEvent : ParsingEvent
 
             if (!AnchorValidator.IsMatch(anchor))
             {
-                throw new ArgumentException("Anchor value must contain alphanumerical characters only.", nameof(anchor));
+                throw new ArgumentException("Anchor value must not contain whitespace or a flow indicator.", nameof(anchor));
             }
         }
 

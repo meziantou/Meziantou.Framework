@@ -56,6 +56,114 @@ bin/
     }
 
     [Fact]
+    public void GitIgnoreEntryWithTrailingSlashMatchesTheDirectoryItself()
+    {
+        var globs = GlobCollection.ParseGitIgnore("bin/\n".AsSpan());
+
+        Assert.True(globs.IsMatch("", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("src", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("src/a", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("bin", "test.txt", PathItemType.File));
+        Assert.True(globs.IsMatch("bin/nested", "test.txt", PathItemType.File));
+
+        Assert.False(globs.IsMatch("", "bin", PathItemType.File));
+        Assert.False(globs.IsMatch("", "binary", PathItemType.Directory));
+        Assert.True(((IGlobEvaluatable)globs).CanMatchDirectories);
+    }
+
+    [Fact]
+    public void GitIgnoreExcludesTheContentOfAnExcludedDirectory()
+    {
+        // 'node_modules' matches the directory, and everything below an excluded directory is excluded too.
+        var globs = GlobCollection.ParseGitIgnore("node_modules\n".AsSpan());
+
+        Assert.True(globs.IsMatch("", "node_modules", PathItemType.Directory));
+        Assert.True(globs.IsMatch("node_modules", "package.json", PathItemType.File));
+        Assert.True(globs.IsMatch("node_modules/a/b", "package.json", PathItemType.File));
+        Assert.True(globs.IsMatch("node_modules/package.json"));
+        Assert.False(globs.IsMatch("src", "package.json", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreCannotReIncludeAPathUnderAnExcludedDirectory()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+bin/
+!bin/keep.txt
+""".AsSpan());
+
+        Assert.True(globs.IsMatch("bin", "keep.txt", PathItemType.File));
+        Assert.True(globs.IsMatch("bin", "other.txt", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreAppliesTheChildRulesWhenTheParentIsReIncluded()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+bin/
+!bin/
+""".AsSpan());
+
+        Assert.False(globs.IsMatch("", "bin", PathItemType.Directory));
+        Assert.False(globs.IsMatch("bin", "keep.txt", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreResolvesEachAncestorAgainstTheLastMatchingPattern()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+/*
+!/bin/
+bin/keep.txt
+""".AsSpan());
+
+        Assert.False(globs.IsMatch("", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("bin", "keep.txt", PathItemType.File));
+        Assert.False(globs.IsMatch("bin", "other.txt", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreNegatedDirectoryEntryDoesNotReIncludeTheDirectoryContent()
+    {
+        // git re-includes the directory so that it is walked into, but not the files it holds.
+        var globs = GlobCollection.ParseGitIgnore("""
+*
+!*/
+""".AsSpan());
+
+        Assert.False(globs.IsMatch("", "bin", PathItemType.Directory));
+        Assert.False(globs.IsMatch("src", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("bin", "keep.txt", PathItemType.File));
+        Assert.True(globs.IsMatch("src/bin", "f.txt", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreDirectoryEntryMatchingEveryDirectory()
+    {
+        // The recursive wildcard has to consume the whole path before the directory entry matches what is left.
+        var globs = GlobCollection.ParseGitIgnore("**/\n".AsSpan());
+
+        Assert.True(globs.IsMatch("", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("src/a", "bin", PathItemType.Directory));
+        Assert.True(globs.IsMatch("src/a", "b.txt", PathItemType.File)); // below an excluded directory
+        Assert.False(globs.IsMatch("", "b.txt", PathItemType.File));
+    }
+
+    [Fact]
+    public void GitIgnoreTrimsTrailingSpacesButNotTrailingTabs()
+    {
+        Assert.True(GlobCollection.ParseGitIgnore("foo\t".AsSpan()).IsMatch("foo\t"));
+        Assert.False(GlobCollection.ParseGitIgnore("foo\t".AsSpan()).IsMatch("foo"));
+
+        Assert.True(GlobCollection.ParseGitIgnore("foo  ".AsSpan()).IsMatch("foo"));
+        Assert.False(GlobCollection.ParseGitIgnore("foo  ".AsSpan()).IsMatch("foo  "));
+
+        // An escaped space is kept, and so is a tab that precedes trimmed spaces.
+        Assert.True(GlobCollection.ParseGitIgnore("foo\\ ".AsSpan()).IsMatch("foo "));
+        Assert.True(GlobCollection.ParseGitIgnore("foo\t  ".AsSpan()).IsMatch("foo\t"));
+    }
+
+    [Fact]
     public void GitIgnoreResolvesAPathAgainstTheLastMatchingPattern()
     {
         var globs = GlobCollection.ParseGitIgnore("""

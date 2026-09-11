@@ -31,6 +31,46 @@ internal static partial class Symlink
         }
     }
 
+    /// <summary>Resolves a relative symbolic link target against the directory that contains the link.</summary>
+    private static string ResolveRelativeTarget(string linkDirectory, string linkTarget)
+    {
+        var combined = Path.Combine(linkDirectory, linkTarget);
+
+        // Without a ".." segment the combined path opens the same file as the link does, whatever the directory is made
+        // of, so the extra work is only needed for the targets that can walk out of it
+        if (!ContainsParentDirectorySegment(linkTarget))
+            return combined;
+
+        // Normalizing "dir/../name" lexically cancels "dir" even when it is a symbolic link, which makes the result name
+        // a different file than the one the link opens. Canonicalizing the directory of the combined path resolves those
+        // links first, and covers a link the target itself walks through before the ".." segment.
+        var directory = Path.GetDirectoryName(combined);
+        if (!string.IsNullOrEmpty(directory) && CanonicalPath.TryGetCanonicalPath(directory, out var canonicalDirectory))
+            return Path.Combine(canonicalDirectory, Path.GetFileName(combined));
+
+        // A dangling or unreadable component cannot be canonicalized, so the lexical result is the best answer available
+        return combined;
+    }
+
+    private static bool ContainsParentDirectorySegment(string path)
+    {
+        var remaining = path.AsSpan();
+        while (!remaining.IsEmpty)
+        {
+            var separatorIndex = remaining.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var segment = separatorIndex < 0 ? remaining : remaining[..separatorIndex];
+            if (segment is "..")
+                return true;
+
+            if (separatorIndex < 0)
+                break;
+
+            remaining = remaining[(separatorIndex + 1)..];
+        }
+
+        return false;
+    }
+
     private static partial class UnixSymlink
     {
         internal static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
@@ -38,14 +78,7 @@ internal static partial class Symlink
             if (TryReadLink(path, out var linkTarget))
             {
                 var root = Path.GetDirectoryName(path);
-                if (root is null)
-                {
-                    target = linkTarget;
-                }
-                else
-                {
-                    target = Path.Combine(root, linkTarget);
-                }
+                target = root is null ? linkTarget : ResolveRelativeTarget(root, linkTarget);
 
                 return true;
             }
@@ -190,30 +223,19 @@ internal static partial class Symlink
                         var target = Encoding.Unicode.GetString(validBuffer.Slice(sizeHeader + header.SubstituteNameOffset, header.SubstituteNameLength));
                         if ((header.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
                         {
-                            if (PathInternal.IsExtended(path))
-                            {
-                                var rootPath = Path.GetDirectoryName(path[4..]);
-                                if (rootPath is not null)
-                                {
-                                    target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(Path.Combine(rootPath, target)));
-                                }
-                                else
-                                {
-                                    target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(target));
-                                }
-                            }
-                            else
-                            {
-                                var rootPath = Path.GetDirectoryName(path);
-                                if (rootPath is not null)
-                                {
-                                    target = Path.GetFullPath(Path.Combine(rootPath, target));
-                                }
-                                else
-                                {
-                                    target = Path.GetFullPath(target);
-                                }
-                            }
+                            // The device prefix is taken off first, so the relative target is combined with an ordinary path
+                            var isExtended = PathInternal.IsExtended(path);
+                            var linkPath = isExtended ? path[PathInternal.DevicePrefixLength..] : path;
+                            var rootPath = Path.GetDirectoryName(linkPath);
+                            var resolved = rootPath is null
+                                ? Path.GetFullPath(target)
+                                : Path.GetFullPath(ResolveRelativeTarget(rootPath, target));
+
+                            // Canonicalizing can turn a mapped drive into a UNC path, which the extended prefix cannot be
+                            // put back in front of, so it is only restored for a path that still accepts it
+                            target = isExtended && !PathInternal.IsDevice(resolved) && !resolved.StartsWith(PathInternal.UncPathPrefix, StringComparison.Ordinal)
+                                ? string.Concat(path.AsSpan(0, PathInternal.DevicePrefixLength), resolved)
+                                : resolved;
                         }
 
                         return target;

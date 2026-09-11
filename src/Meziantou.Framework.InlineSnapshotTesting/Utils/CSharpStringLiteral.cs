@@ -79,6 +79,20 @@ internal static class CSharpStringLiteral
                     sb.Append(@"\\");
                     break;
 
+                // NEL, LS and PS are C# newline characters (ECMA-334, 6.3.2): a regular string literal
+                // cannot contain them literally, so they must be escaped to keep the source valid.
+                case '\u0085':
+                    sb.Append(@"\u0085");
+                    break;
+
+                case '\u2028':
+                    sb.Append(@"\u2028");
+                    break;
+
+                case '\u2029':
+                    sb.Append(@"\u2029");
+                    break;
+
                 default:
                     sb.Append(c);
                     break;

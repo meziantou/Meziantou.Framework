@@ -42,6 +42,6 @@ public class SnapshotCallerContextBenchmark
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     private string CreateCallerContext()
     {
-        return SnapshotCallerContext.Create(_sourceFilePath, lineNumber: 1, memberName: nameof(CreateCallerContext)).MethodName;
+        return SnapshotCallerContext.Create(_sourceFilePath, lineNumber: 1, memberName: nameof(CreateCallerContext), testContext: null).MethodName;
     }
 }

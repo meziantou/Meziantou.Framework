@@ -163,7 +163,7 @@ namespace Meziantou.Framework.Threading
         public void Enqueue(T item) { }
     }
 
-    public sealed class MonoThreadedTaskScheduler : System.IDisposable, System.Threading.Tasks.TaskScheduler
+    public sealed class MonoThreadedTaskScheduler : System.Threading.Tasks.TaskScheduler, System.IDisposable
     {
         public bool DequeueOnDispose { get => throw null; set { } }
         public System.TimeSpan DisposeThreadJoinTimeout { get => throw null; set { } }
@@ -178,7 +178,7 @@ namespace Meziantou.Framework.Threading
         protected override bool TryExecuteTaskInline(System.Threading.Tasks.Task task, bool taskWasPreviouslyQueued) => throw null;
     }
 
-    public sealed class ResettableCancellationTokenSource : System.IDisposable
+    public sealed class ResettableCancellationTokenSource : System.IAsyncDisposable, System.IDisposable
     {
         public System.Threading.CancellationToken Token { get => throw null; }
         public bool IsCancellationRequested { get => throw null; }
@@ -188,6 +188,7 @@ namespace Meziantou.Framework.Threading
         public void CancelAfter(System.TimeSpan delay) { }
         public void Reset() { }
         public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
     }
 
     [System.Flags]

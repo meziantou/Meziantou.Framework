@@ -582,10 +582,22 @@ public static class YamlScalar
         {
             if (TryResolveSchemaScalar(reader, out var defaultTag, out var value) &&
                 (string.Equals(defaultTag, JsonSchema.FloatShortTag, StringComparison.Ordinal) ||
-                 string.Equals(defaultTag, JsonSchema.IntShortTag, StringComparison.Ordinal)) &&
-                TryConvertToDecimal(value, out result))
+                 string.Equals(defaultTag, JsonSchema.IntShortTag, StringComparison.Ordinal)))
             {
-                return true;
+                // An integer the schema decoded into an integral type converts exactly, and it is the only form
+                // that carries the base the scalar was written in. Any other value went through a floating-point
+                // type, which drops digits a decimal can hold, so the original text is parsed instead.
+                if (IsIntegral(value))
+                {
+                    return TryConvertToDecimal(value, out result);
+                }
+
+                if (TryParseDecimal(reader.ScalarValue.AsSpan(), out result))
+                {
+                    return true;
+                }
+
+                return TryConvertToDecimal(value, out result);
             }
 
             result = default;
@@ -760,6 +772,8 @@ public static class YamlScalar
             YamlSchemaKind.Extended => ExtendedSchema,
             _ => CoreSchema.Instance,
         };
+
+    private static bool IsIntegral(object? value) => value is int or long or ulong;
 
     private static bool TryConvertToInt64(object? value, out long result)
     {
@@ -951,10 +965,16 @@ public static class YamlScalar
                 return false;
             }
 
-            checked
+            // The value can exceed ulong.MaxValue, and this method must report that as a failed parse
+            // instead of throwing, so the overflow is detected before the multiplication happens.
+            var radix = (ulong)numberBase;
+            if (accumulator > (ulong.MaxValue - (ulong)digit) / radix)
             {
-                accumulator = (accumulator * (ulong)numberBase) + (ulong)digit;
+                result = default;
+                return false;
             }
+
+            accumulator = (accumulator * radix) + (ulong)digit;
         }
 
         result = accumulator;

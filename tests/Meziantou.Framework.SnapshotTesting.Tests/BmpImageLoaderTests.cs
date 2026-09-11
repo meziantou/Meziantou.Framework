@@ -79,6 +79,45 @@ public sealed class BmpImageLoaderTests
     }
 
     [Fact]
+    public void Image_Load_IgnoresTheFourthByteOfAPixelWhenTheHeaderDeclaresNoAlphaMask()
+    {
+        // A BITMAPINFOHEADER leaves that byte unused and writers commonly leave it at zero.
+        var imageData = ImageTestData.CreateBmp32(width: 1, height: 1, pixels: [0x00112233u]);
+
+        var image = Image.Load(imageData);
+
+        Assert.Equal([new Argb(0xFF112233u)], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void Image_Load_IgnoresTheFourthByteOfAPixelWhenTheAlphaMaskIsEmpty()
+    {
+        var imageData = ImageTestData.CreateBmp32(width: 1, height: 1, pixels: [0x00112233u], dibHeaderSize: 108, alphaMask: 0);
+
+        var image = Image.Load(imageData);
+
+        Assert.Equal([new Argb(0xFF112233u)], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void Image_Load_UsesTheFourthByteOfAPixelWhenTheHeaderDeclaresAnAlphaMask()
+    {
+        var imageData = ImageTestData.CreateBmp32(width: 1, height: 1, pixels: [0x80112233u], dibHeaderSize: 108, alphaMask: 0xFF000000);
+
+        var image = Image.Load(imageData);
+
+        Assert.Equal([new Argb(0x80112233u)], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void Image_Load_ReportsAnUnsupportedAlphaMask()
+    {
+        var imageData = ImageTestData.CreateBmp32(width: 1, height: 1, pixels: [0xFF112233u], dibHeaderSize: 108, alphaMask: 0x0000FF00);
+
+        Assert.Throws<NotSupportedException>(() => Image.Load(imageData));
+    }
+
+    [Fact]
     public void ImageComparer_ReportsADifferenceForCorruptImageData()
     {
         var expected = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF112233u], pixelsPerMeter: 2835);

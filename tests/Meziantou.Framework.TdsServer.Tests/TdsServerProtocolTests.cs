@@ -522,6 +522,36 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(["1.00000", "2.50000", "-3.12345"], rows);
     }
 
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_LargeMagnitudeRescaledToTheColumnScale()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([decimal.MaxValue]);
+        resultSet.Rows.Add([decimal.MinValue]);
+        resultSet.Rows.Add([0.1m]);
+
+        // Lifting decimal.MaxValue to the column's scale needs a magnitude wider than the 96 bits of a decimal,
+        // so the values are read as SqlDecimal, which carries the full 38 digits the column advertises.
+        var rows = await ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString());
+
+        Assert.Equal(["79228162514264337593543950335.0", "-79228162514264337593543950335.0", "0.1"], rows);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_DecimalColumn_ScaledValueExceedingThePrecision_ReturnsError()
+    {
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Decimal));
+        resultSet.Rows.Add([10000000000000000000000000000m]);
+        resultSet.Rows.Add([0.0000000000000000000000000001m]);
+
+        // A common scale of 28 would need 57 digits, which does not fit the precision the column advertises.
+        var exception = await Assert.ThrowsAsync<SqlException>(() => ReadResultSetAsync(resultSet, (reader, ordinal) => reader.GetSqlDecimal(ordinal).ToString()));
+
+        Assert.Equal(50005, exception.Number);
+    }
+
     private static async Task<object[]> ReadRowAsync(TdsResultSet resultSet)
     {
         var rows = await ReadResultSetAsync(resultSet, (reader, _) =>
@@ -656,6 +686,51 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(payload, parameter.AsBinary());
     }
 
+    [Theory]
+    [InlineData(50)]
+    [InlineData(-1)]
+    public async Task SqlClient_RpcParameter_VarChar_WithNonAsciiCharacters_PreservesValue(int size)
+    {
+        // varchar values are not Unicode: the client encodes them with the code page of the collation the server
+        // advertised at login (CP1252 here), so 'é' travels as the single byte 0xE9.
+        const string Expected = "café €";
+
+        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.RequestType == TdsQueryRequestType.Rpc)
+                {
+                    queryContextTask.TrySetResult(context);
+                }
+
+                return ValueTask.FromResult(CreateScalarResultSet(TdsColumnType.Int32, 1));
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT @value";
+        _ = command.Parameters.Add(new SqlParameter("@value", SqlDbType.VarChar, size) { Value = Expected });
+
+        _ = await command.ExecuteScalarAsync();
+        var capturedContext = await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(capturedContext.HasCompleteParameters);
+        var parameter = Assert.Single(capturedContext.Parameters, candidate => candidate.Name == "@value");
+        Assert.Equal(Expected, parameter.AsString());
+    }
+
     [Fact]
     public async Task SqlClient_RpcParameters_CommonSqlTypes_AreAllDecoded()
     {
@@ -762,7 +837,7 @@ public sealed class TdsServerProtocolTests
         // The whole RPC payload is undecodable, so there is no parameter list at all. Reporting it as complete
         // would tell a handler the client sent no parameters, which is exactly the case the flag exists to warn
         // about.
-        var context = await SendRawRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
+        var context = await RawTdsClient.SendRpcRequestAsync([0xAA, 0xBB, 0xCC, 0xDD]);
 
         Assert.False(context.HasCompleteParameters);
         Assert.Empty(context.Parameters);
@@ -783,66 +858,10 @@ public sealed class TdsServerProtocolTests
         payload.Add(0x03); // value length
         payload.AddRange([0xFF, 0xFF, 0xFF]); // day count far beyond DateOnly.MaxValue
 
-        var context = await SendRawRpcRequestAsync([.. payload]);
+        var context = await RawTdsClient.SendRpcRequestAsync([.. payload]);
 
         Assert.False(context.HasCompleteParameters);
         Assert.Empty(context.Parameters);
-    }
-
-    private static async Task<TdsQueryContext> SendRawRpcRequestAsync(byte[] rpcPayload)
-    {
-        var queryContextTask = new TaskCompletionSource<TdsQueryContext>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var options = new TdsServerOptions();
-        options.AddTcpListener(0, IPAddress.Loopback);
-
-        using var server = new TdsServer(
-            options,
-            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
-            (context, cancellationToken) =>
-            {
-                queryContextTask.TrySetResult(context);
-                return ValueTask.FromResult(new TdsQueryResult());
-            });
-
-        await server.StartAsync();
-        var port = Assert.Single(server.Ports);
-
-        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        using var client = new TcpClient();
-        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
-        using var stream = client.GetStream();
-
-        // PRELOGIN advertising NOT_SUPPORTED so the session stays in clear text.
-        await stream.WriteAsync(CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x02]), cancellationTokenSource.Token);
-        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
-
-        // LOGIN7 with every variable-length field empty: the authentication callback above accepts anything.
-        await stream.WriteAsync(CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
-        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
-
-        await stream.WriteAsync(CreateTdsMessage(0x03, rpcPayload), cancellationTokenSource.Token);
-
-        return await queryContextTask.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellationTokenSource.Token);
-    }
-
-    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
-    {
-        var message = new byte[8 + payload.Length];
-        message[0] = packetType;
-        message[1] = 0x01; // end of message
-        BinaryPrimitives.WriteUInt16BigEndian(message.AsSpan(2, 2), (ushort)message.Length);
-        message[6] = 1; // packet id
-        payload.CopyTo(message.AsSpan(8));
-        return message;
-    }
-
-    private static async Task ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
-    {
-        var header = new byte[8];
-        await stream.ReadExactlyAsync(header, cancellationToken);
-        var length = BinaryPrimitives.ReadUInt16BigEndian(header.AsSpan(2, 2));
-        await stream.ReadExactlyAsync(new byte[length - 8], cancellationToken);
     }
 
     private static object? GetParameterValue(TdsQueryContext context, string name, TdsColumnType expectedType)
@@ -1893,6 +1912,67 @@ public sealed class TdsServerProtocolTests
         // are CRLF on Windows and LF elsewhere.
         var reportedMessage = exception.Message.ReplaceLineEndings("\n").Split('\n')[0];
         Assert.Equal(new string('e', 32_000), reportedMessage);
+    }
+
+    [Fact]
+    public async Task SqlClient_Cancel_CancelsTheRunningQueryHandlerAndKeepsTheConnectionUsable()
+    {
+        const string BlockingMarker = "CancellationBlockingMarker";
+        var handlerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handlerCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseHandler = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            async (context, cancellationToken) =>
+            {
+                if (context.CommandText?.Contains(BlockingMarker, StringComparison.Ordinal) == true)
+                {
+                    await using var registration = cancellationToken.Register(() => handlerCancelled.TrySetResult());
+                    handlerStarted.TrySetResult();
+                    await releaseHandler.Task.ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var result = new TdsQueryResult();
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([42]);
+                result.ResultSets.Add(resultSet);
+                return result;
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        await using var blockedCommand = connection.CreateCommand();
+        blockedCommand.CommandText = $"SELECT 1 /* {BlockingMarker} */";
+        var blockedExecution = blockedCommand.ExecuteScalarAsync();
+
+        await handlerStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        blockedCommand.Cancel();
+
+        // The ATTENTION packet must reach the handler even though its query is still running, and the client
+        // must complete without waiting for that handler to return.
+        await handlerCancelled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        _ = await Assert.ThrowsAsync<SqlException>(() => blockedExecution);
+
+        // The connection is back in a usable state right away: the abandoned handler is still blocked here.
+        Assert.False(releaseHandler.Task.IsCompleted);
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT 42";
+            Assert.Equal(42, await command.ExecuteScalarAsync());
+        }
+
+        releaseHandler.SetResult();
     }
 
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)

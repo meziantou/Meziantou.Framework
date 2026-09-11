@@ -391,6 +391,190 @@ internal static class ImageTestData
     /// Encodes the pixels without ever growing the LZW dictionary: every pixel is preceded by a clear code, so
     /// all codes keep the same size. The output is larger than a real encoder would produce but is valid.
     /// </summary>
+    public static byte[] CreateBmp32(int width, int height, IReadOnlyList<uint> pixels, int dibHeaderSize = 40, uint alphaMask = 0)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentNullException.ThrowIfNull(pixels);
+        ArgumentOutOfRangeException.ThrowIfLessThan(dibHeaderSize, 40);
+
+        if (pixels.Count != checked(width * height))
+            throw new ArgumentOutOfRangeException(nameof(pixels));
+
+        const int FileHeaderSize = 14;
+        const int BmpV4HeaderSize = 108;
+
+        // A 32-bit row is always a multiple of four bytes, so there is no padding to add.
+        var rowStride = checked(width * 4);
+        var pixelDataSize = checked(rowStride * height);
+        var data = new byte[FileHeaderSize + dibHeaderSize + pixelDataSize];
+
+        data[0] = (byte)'B';
+        data[1] = (byte)'M';
+        WriteUInt32LittleEndian(data, 2, (uint)data.Length);
+        WriteUInt32LittleEndian(data, 10, (uint)(FileHeaderSize + dibHeaderSize));
+        WriteUInt32LittleEndian(data, 14, (uint)dibHeaderSize);
+        WriteInt32LittleEndian(data, 18, width);
+        WriteInt32LittleEndian(data, 22, height);
+        WriteUInt16LittleEndian(data, 26, 1);
+        WriteUInt16LittleEndian(data, 28, 32);
+        WriteUInt32LittleEndian(data, 30, 0);
+        WriteUInt32LittleEndian(data, 34, (uint)pixelDataSize);
+        if (dibHeaderSize >= BmpV4HeaderSize)
+        {
+            WriteUInt32LittleEndian(data, FileHeaderSize + 40, 0x00FF0000);
+            WriteUInt32LittleEndian(data, FileHeaderSize + 44, 0x0000FF00);
+            WriteUInt32LittleEndian(data, FileHeaderSize + 48, 0x000000FF);
+            WriteUInt32LittleEndian(data, FileHeaderSize + 52, alphaMask);
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            var sourceOffset = (height - y - 1) * width;
+            var destinationOffset = FileHeaderSize + dibHeaderSize + (y * rowStride);
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[sourceOffset + x];
+                data[destinationOffset + (x * 4)] = (byte)pixel;
+                data[destinationOffset + (x * 4) + 1] = (byte)(pixel >> 8);
+                data[destinationOffset + (x * 4) + 2] = (byte)(pixel >> 16);
+                data[destinationOffset + (x * 4) + 3] = (byte)(pixel >> 24);
+            }
+        }
+
+        return data;
+    }
+
+    public static byte[] CreateTiff(
+        int width,
+        int height,
+        int samplesPerPixel,
+        ushort photometricInterpretation,
+        ushort compression,
+        byte[] stripData,
+        ushort? extraSample = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(samplesPerPixel);
+        ArgumentNullException.ThrowIfNull(stripData);
+
+        const int HeaderSize = 8;
+        const ushort TypeShort = 3;
+        const ushort TypeLong = 4;
+
+        var entryCount = extraSample.HasValue ? 10 : 9;
+        var directorySize = 2 + (entryCount * 12) + 4;
+        var bitsPerSampleSize = checked(samplesPerPixel * 2);
+        var hasExternalBitsPerSample = bitsPerSampleSize > 4;
+        var bitsPerSampleOffset = HeaderSize + directorySize;
+        var stripOffset = bitsPerSampleOffset + (hasExternalBitsPerSample ? bitsPerSampleSize : 0);
+        var data = new byte[stripOffset + stripData.Length];
+
+        data[0] = (byte)'I';
+        data[1] = (byte)'I';
+        WriteUInt16LittleEndian(data, 2, 42);
+        WriteUInt32LittleEndian(data, 4, HeaderSize);
+        WriteUInt16LittleEndian(data, HeaderSize, (ushort)entryCount);
+
+        var entryOffset = HeaderSize + 2;
+        void WriteEntry(ushort tag, ushort type, uint count, uint value)
+        {
+            WriteUInt16LittleEndian(data, entryOffset, tag);
+            WriteUInt16LittleEndian(data, entryOffset + 2, type);
+            WriteUInt32LittleEndian(data, entryOffset + 4, count);
+            WriteUInt32LittleEndian(data, entryOffset + 8, value);
+            entryOffset += 12;
+        }
+
+        // Every sample is 8 bits; two of them still fit in the entry itself.
+        var inlineBitsPerSample = samplesPerPixel == 1 ? 8u : 0x0008_0008u;
+
+        WriteEntry(256, TypeLong, 1, (uint)width);
+        WriteEntry(257, TypeLong, 1, (uint)height);
+        WriteEntry(258, TypeShort, (uint)samplesPerPixel, hasExternalBitsPerSample ? (uint)bitsPerSampleOffset : inlineBitsPerSample);
+        WriteEntry(259, TypeShort, 1, compression);
+        WriteEntry(262, TypeShort, 1, photometricInterpretation);
+        WriteEntry(273, TypeLong, 1, (uint)stripOffset);
+        WriteEntry(277, TypeShort, 1, (uint)samplesPerPixel);
+        WriteEntry(278, TypeLong, 1, (uint)height);
+        WriteEntry(279, TypeLong, 1, (uint)stripData.Length);
+        if (extraSample.HasValue)
+        {
+            WriteEntry(338, TypeShort, 1, extraSample.Value);
+        }
+
+        if (hasExternalBitsPerSample)
+        {
+            for (var i = 0; i < samplesPerPixel; i++)
+            {
+                WriteUInt16LittleEndian(data, bitsPerSampleOffset + (i * 2), 8);
+            }
+        }
+
+        stripData.CopyTo(data, stripOffset);
+        return data;
+    }
+
+    /// <summary>
+    /// Packs LZW codes the way a TIFF writer does: most significant bit first, and widening the code one
+    /// entry before the table would need the extra bit.
+    /// </summary>
+    public static byte[] EncodeTiffLzwCodes(IReadOnlyList<int> codes)
+    {
+        ArgumentNullException.ThrowIfNull(codes);
+
+        const int ClearCode = 256;
+        const int EndOfInformationCode = 257;
+
+        var output = new List<byte>();
+        var buffer = 0;
+        var bufferBitCount = 0;
+        var codeBitCount = 9;
+        var nextCode = 258;
+        var hasPreviousCode = false;
+
+        foreach (var code in codes)
+        {
+            buffer = (buffer << codeBitCount) | code;
+            bufferBitCount += codeBitCount;
+            while (bufferBitCount >= 8)
+            {
+                bufferBitCount -= 8;
+                output.Add((byte)(buffer >> bufferBitCount));
+            }
+
+            buffer &= (1 << bufferBitCount) - 1;
+
+            if (code == ClearCode)
+            {
+                codeBitCount = 9;
+                nextCode = 258;
+                hasPreviousCode = false;
+            }
+            else if (code != EndOfInformationCode)
+            {
+                if (hasPreviousCode && nextCode < 4096)
+                {
+                    nextCode++;
+                    if (nextCode == (1 << codeBitCount) - 1 && codeBitCount < 12)
+                    {
+                        codeBitCount++;
+                    }
+                }
+
+                hasPreviousCode = true;
+            }
+        }
+
+        if (bufferBitCount > 0)
+        {
+            output.Add((byte)(buffer << (8 - bufferBitCount)));
+        }
+
+        return [.. output];
+    }
+
     private static byte[] EncodeGifPixels(IReadOnlyList<byte> pixelIndexes, int minimumCodeSize)
     {
         var clearCode = 1 << minimumCodeSize;

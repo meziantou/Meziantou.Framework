@@ -78,13 +78,15 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
     private char ReadLine()
     {
-        if (_analyzer.Check("\r\n\x85")) // CR LF -> LF  --- CR|LF|NEL -> LF
+        if (_analyzer.IsBreak())
         {
+            // CR LF -> LF --- CR|LF -> LF
             SkipLine();
             return '\n';
         }
 
-        char nextChar = _analyzer.Peek(0); // LS|PS -> LS|PS
+        // Only reached at the end of the input, where the character is NUL and there is no line to skip.
+        char nextChar = _analyzer.Peek(0);
         SkipLine();
         return nextChar;
     }
@@ -1067,7 +1069,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // Consume the value.
 
         var value = new StringBuilder();
-        while (_analyzer.IsAlpha())
+        while (_analyzer.IsAnchorChar())
         {
             value.Append(ReadCurrentCharacter());
         }
@@ -1076,10 +1078,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // Check if length of the anchor is greater than 0 and it is followed by
         // a whitespace character or one of the indicators:
 
-        //      '?', ':', ',', ']', '}', '%', '@', '`'.
+        //      '?', ':', ',', '[', ']', '{', '}', '%', '@', '`'.
 
 
-        if (value.Length == 0 || !(_analyzer.IsBlankOrBreakOrZero() || _analyzer.Check("?:,]}%@`")))
+        if (value.Length == 0 || !(_analyzer.IsBlankOrBreakOrZero() || _analyzer.Check("?:,[]{}%@`")))
         {
             throw new SyntaxErrorException(start, CurrentPosition, "While scanning an anchor or alias, did not find expected alphabetic or numeric character.");
         }

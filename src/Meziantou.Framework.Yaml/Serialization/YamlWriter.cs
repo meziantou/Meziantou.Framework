@@ -64,6 +64,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     internal bool EndsWithNewLine => _hasWrittenChar && _lastWrittenChar == '\n';
 
+    /// <summary>Gets a value indicating whether the next character is written at the first column of a line.</summary>
+    /// <remarks>A document marker (<c>---</c> or <c>...</c>) only ends the current document there.</remarks>
+    private bool IsAtLineStart => !_hasWrittenChar || _lastWrittenChar == '\n';
+
     /// <summary>
     /// Gets a value indicating whether collections are written using the flow style, which keeps the document on a single line.
     /// </summary>
@@ -1372,10 +1376,14 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
-        _ = isKey; // Currently unused, but may be used in future for stricter key rules.
-
         // Keep it conservative: if in doubt, quote.
         if (value.Length == 0)
+        {
+            return false;
+        }
+
+        // A plain "<<" key is the merge key of the YAML merge extension, so an ordinary key with that name is quoted.
+        if (isKey && value.Equals("<<", StringComparison.Ordinal))
         {
             return false;
         }
@@ -1442,13 +1450,41 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return false;
         }
 
+        // At the first column of a line, "---" and "..." end the current document, so a value starting with one
+        // of them has to be quoted. Elsewhere they are ordinary characters.
+        if (IsAtLineStart && StartsWithDocumentMarker(value))
+        {
+            return false;
+        }
+
         return true;
     }
 
-    /// <summary>Gets a value indicating whether a YAML reader breaks a line on <paramref name="c"/>.</summary>
+    /// <summary>Gets a value indicating whether <paramref name="value"/> starts with a YAML document marker.</summary>
     /// <remarks>
-    /// U+0085, U+2028, and U+2029 are line breaks to a YAML reader but are not control characters, and
-    /// <see cref="Emitter.IsPrintable"/> accepts them. A style that writes text verbatim has to reject them.
+    /// A marker ends at the end of the line or at a separation character, so text such as <c>---hello</c> is an
+    /// ordinary plain scalar.
+    /// </remarks>
+    private static bool StartsWithDocumentMarker(ReadOnlySpan<char> value)
+    {
+        if (value.Length < 3)
+        {
+            return false;
+        }
+
+        if (!value.StartsWith("---", StringComparison.Ordinal) && !value.StartsWith("...", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return value.Length == 3 || value[3] is ' ' or '\t';
+    }
+
+    /// <summary>Gets a value indicating whether <paramref name="c"/> is written as an escape rather than verbatim.</summary>
+    /// <remarks>
+    /// U+0085, U+2028, and U+2029 are ordinary content in YAML 1.2, but they were line breaks in YAML 1.1 and are
+    /// not control characters, so <see cref="Emitter.IsPrintable"/> accepts them. They are escaped rather than
+    /// written verbatim so a reader cannot fold them, which also keeps the output free of invisible line breaks.
     /// </remarks>
     private static bool IsLineBreak(char c) => c is '\n' or '\r' or '\u0085' or '\u2028' or '\u2029';
 

@@ -141,19 +141,42 @@ public sealed partial class SnapshotEndToEndTests
     [Fact]
     public async Task Validate_EndToEnd_Fails_WhenExpectedHasMoreFilesThanActual()
     {
+        // The assertion used to produce two snapshots and now produces one, so the indexed files it left
+        // behind are reported as unexpected and the file it produces now is reported as missing.
         var snapshotFiles = await AssertSnapshot(
             CreateFixedCountSerializerSource(count: 1),
             expectFailure: true,
             existingFiles:
             [
-                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"u8.ToArray()),
                 new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"u8.ToArray()),
             ]);
 
         AssertSnapshotContent(snapshotFiles,
         [
-            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.actual.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_0.verified.txt", "value_0"),
             ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "value_1"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Succeeds_WhenAnotherTestOwnsAFileWithAnIndexSuffix()
+    {
+        // 'SampleTest_1' is the snapshot of a test called SampleTest_1, not a file this assertion left
+        // behind: there is no 'SampleTest_0' to make it the tail of an index sequence.
+        var snapshotFiles = await AssertSnapshot(
+            CreateFixedCountSerializerSource(count: 1),
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"u8.ToArray()),
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "unrelated"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "value_0"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest_1.verified.txt", "unrelated"),
         ]);
     }
 
@@ -681,6 +704,20 @@ public sealed partial class SnapshotEndToEndTests
         ]);
     }
 
+    [Theory]
+    [InlineData(SnapshotTestFramework.XunitV3)]
+    [InlineData(SnapshotTestFramework.NUnit)]
+    [InlineData(SnapshotTestFramework.TUnit)]
+    public async Task Validate_EndToEnd_UsesTestClassName_WhenCalledFromAsyncHelperInAnotherClass(SnapshotTestFramework testFramework)
+    {
+        var snapshotFiles = await AssertSnapshot(GetAsyncHelperSource(testFramework), testFramework: testFramework);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTest.verified.txt", "sample"),
+        ]);
+    }
+
     [Fact]
     public async Task Validate_EndToEnd_Works_WhenUsingArtifactsOutput()
     {
@@ -916,6 +953,65 @@ public sealed partial class SnapshotEndToEndTests
         File.WriteAllText(snapshotPath, "-- not valid Visual Basic --");
 
         await ExecuteDotNetWithRetry(directory.FullPath, dotnetPath, ["build", "--disable-build-servers"], expectedExitCode: 0);
+    }
+
+    private static string GetAsyncHelperSource(SnapshotTestFramework framework)
+    {
+        // The helper awaits before asserting, so the test method is no longer on the call stack and only the
+        // test framework context can tell which test is running.
+        const string Helper = """
+            using System.Runtime.CompilerServices;
+            using System.Threading.Tasks;
+
+            public static class SnapshotHelpers
+            {
+                public static async Task ValidateAsync(object value, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                {
+                    await Task.Yield();
+                    Snapshot.Validate(value, null, SnapshotTestUtilities.CreateSuccessSettings(), filePath, lineNumber);
+                }
+            }
+
+            """;
+
+        return Helper + framework switch
+        {
+            SnapshotTestFramework.XunitV3 =>
+                """
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Fact]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            SnapshotTestFramework.NUnit =>
+                """
+                [TestFixture]
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            SnapshotTestFramework.TUnit =>
+                """
+                public sealed class GeneratedSnapshotTests
+                {
+                    [Test]
+                    public async Task SampleTest()
+                    {
+                        await SnapshotHelpers.ValidateAsync("sample");
+                    }
+                }
+                """,
+            _ => throw new ArgumentOutOfRangeException(nameof(framework), framework, null),
+        };
     }
 
     private static string GetFrameworkSmokeSource(SnapshotTestFramework framework)

@@ -253,7 +253,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
 
         var options = reader.Options;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
         HashSet<Member>? seenMembers = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<Member>();
         var mappingStart = reader.Start;
@@ -269,10 +269,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToInstance(reader, instance!, contract, explicitKeys!, requiredSeen);
                 continue;
@@ -391,7 +392,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
 
         var options = reader.Options;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
         HashSet<Member>? seenMembers = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<Member>();
         var mappingStart = reader.Start;
@@ -407,10 +408,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToPopulatedInstance(reader, instance, contract, explicitKeys!, requiredSeen);
                 continue;
@@ -512,7 +514,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var mappingStart = reader.Start;
         var mappingAnchor = reader.Anchor;
         var options = reader.Options;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
 
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins
@@ -537,10 +539,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys!, requiredSeen);
                 continue;
@@ -771,9 +774,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         return instance;
     }
 
-    private static bool IsMergeKeyEnabled(YamlSerializerOptions options)
-        => options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
-
     private static void SkipOrThrowUnmappedMember(YamlReader reader, Contract contract, string key)
     {
         if (contract.UnmappedMemberHandling == YamlUnmappedMemberHandling.Disallow)
@@ -786,7 +786,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
     private void ReadAndApplyMergeToInstance(YamlReader reader, object instance, Contract contract, HashSet<string> explicitKeys, bool[]? requiredSeen)
     {
-        if (!IsMergeKeyEnabled(reader.Options))
+        if (!YamlMergeKey.IsEnabled(reader.Options))
         {
             reader.Skip();
             return;
@@ -853,16 +853,19 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (IsMergeKeyEnabled(reader.Options) && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToInstance(reader, instance, contract, explicitKeys, requiredSeen);
                 continue;
             }
 
-            if (explicitKeys.Contains(key))
+            // The key is provided by the merge. An explicitly declared key, and a key an earlier mapping of the
+            // merge already provided, both take precedence over it.
+            if (!explicitKeys.Add(key))
             {
                 reader.Skip();
                 continue;
@@ -899,7 +902,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
     private static void ReadAndApplyMergeToPopulatedInstance(YamlReader reader, object instance, Contract contract, HashSet<string> explicitKeys, bool[]? requiredSeen)
     {
-        if (!IsMergeKeyEnabled(reader.Options))
+        if (!YamlMergeKey.IsEnabled(reader.Options))
         {
             reader.Skip();
             return;
@@ -966,16 +969,19 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (IsMergeKeyEnabled(reader.Options) && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToPopulatedInstance(reader, instance, contract, explicitKeys, requiredSeen);
                 continue;
             }
 
-            if (explicitKeys.Contains(key))
+            // The key is provided by the merge. An explicitly declared key, and a key an earlier mapping of the
+            // merge already provided, both take precedence over it.
+            if (!explicitKeys.Add(key))
             {
                 reader.Skip();
                 continue;
@@ -1176,7 +1182,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         HashSet<string> explicitKeys,
         bool[]? requiredSeen)
     {
-        if (!IsMergeKeyEnabled(reader.Options))
+        if (!YamlMergeKey.IsEnabled(reader.Options))
         {
             reader.Skip();
             return;
@@ -1252,16 +1258,19 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             var keyStart = reader.Start;
             var keyEnd = reader.End;
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (IsMergeKeyEnabled(reader.Options) && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMergeToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys, requiredSeen);
                 continue;
             }
 
-            if (explicitKeys.Contains(key))
+            // The key is provided by the merge. An explicitly declared key, and a key an earlier mapping of the
+            // merge already provided, both take precedence over it.
+            if (!explicitKeys.Add(key))
             {
                 reader.Skip();
                 continue;

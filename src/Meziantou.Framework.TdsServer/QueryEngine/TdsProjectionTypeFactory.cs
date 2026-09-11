@@ -7,17 +7,36 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 internal static class TdsProjectionTypeFactory
 {
     /// <summary>
-    /// Emitted types live in a non-collectible dynamic assembly, so they can never be reclaimed, and column
-    /// aliases come from client SQL -- which makes the number of distinct shapes client-controlled. Cap it so a
-    /// client cannot grow the process without bound by varying aliases across queries.
+    /// Column aliases come from client SQL, so the number of distinct projection shapes is client-controlled.
+    /// Emitted types are held alive only while they are among the most recently emitted ones, which bounds what
+    /// a client can pin in the process; anything older is reclaimed once no query references it anymore.
     /// </summary>
-    private const int MaxCachedTypes = 1024;
+    private const int MaxRetainedTypes = 1024;
 
-    private static readonly AssemblyBuilder AssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Meziantou.Framework.Tds.QueryEngine.Projections"), AssemblyBuilderAccess.Run);
-    private static readonly ModuleBuilder ModuleBuilder = AssemblyBuilder.DefineDynamicModule("Projections");
+    /// <summary>
+    /// A collectible assembly is reclaimed only once every type it holds became unreachable, so types are packed
+    /// into assemblies of a bounded size: one assembly per type would multiply the loader overhead, and a single
+    /// assembly for all of them could never be reclaimed.
+    /// </summary>
+    private const int TypesPerAssembly = 64;
+
     private static readonly Lock CreateLock = new();
-    private static readonly ConcurrentDictionary<string, Type> Types = new(StringComparer.Ordinal);
-    private static int s_createdTypeCount;
+
+    /// <summary>
+    /// The references are weak so that dropping a type from <see cref="RetainedTypes"/> makes it collectable,
+    /// while a shape that is still in use anywhere keeps resolving to the same type. Translation compares
+    /// element types by identity -- UNION requires both sides to project the same type -- so a live shape must
+    /// never be emitted twice.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, WeakReference<Type>> Types = new(StringComparer.Ordinal);
+
+    /// <summary>Keeps the most recently emitted types alive so that repeated queries do not re-emit them.</summary>
+    private static readonly Queue<Type> RetainedTypes = new();
+
+    private static ModuleBuilder? s_moduleBuilder;
+    private static int s_moduleTypeCount;
+    private static int s_nextTypeId;
+    private static int s_sweepThreshold = MaxRetainedTypes * 2;
 
     public static Type GetProjectionType(IReadOnlyList<TdsProjectionMember> members)
     {
@@ -36,34 +55,70 @@ internal static class TdsProjectionTypeFactory
     private static Type GetOrCreateType(string key, string prefix, IReadOnlyList<TdsProjectionMember> members)
     {
         // Cache hits take no lock, so concurrent queries over known shapes do not serialize on type creation.
-        if (Types.TryGetValue(key, out var type))
+        if (TryGetLiveType(key, out var type))
         {
             return type;
         }
 
         lock (CreateLock)
         {
-            if (Types.TryGetValue(key, out type))
+            if (TryGetLiveType(key, out type))
             {
                 return type;
             }
 
-            if (s_createdTypeCount >= MaxCachedTypes)
+            type = CreateType(prefix, members);
+            Types[key] = new WeakReference<Type>(type);
+
+            RetainedTypes.Enqueue(type);
+            if (RetainedTypes.Count > MaxRetainedTypes)
             {
-                throw new TdsQueryEngineException($"The server reached its limit of {MaxCachedTypes} distinct query projection shapes.");
+                _ = RetainedTypes.Dequeue();
             }
 
-            type = CreateType(prefix, s_createdTypeCount, members);
-            s_createdTypeCount++;
-            Types[key] = type;
+            // A reclaimed type leaves its key behind, and keys embed client-provided aliases, so sweep them once
+            // the map grew well past what is retained. The next sweep only runs after the map doubled again, so
+            // sweeping stays amortized when the collector has not run yet and there is nothing to remove.
+            if (Types.Count >= s_sweepThreshold)
+            {
+                RemoveReclaimedTypes();
+                s_sweepThreshold = Math.Max(MaxRetainedTypes * 2, Types.Count * 2);
+            }
+
             return type;
         }
     }
 
-    private static Type CreateType(string prefix, int index, IReadOnlyList<TdsProjectionMember> members)
+    private static bool TryGetLiveType(string key, [NotNullWhen(true)] out Type? type)
     {
-        var typeBuilder = ModuleBuilder.DefineType(
-            prefix + index.ToString(CultureInfo.InvariantCulture),
+        if (Types.TryGetValue(key, out var reference) && reference.TryGetTarget(out type))
+        {
+            return true;
+        }
+
+        type = null;
+        return false;
+    }
+
+    private static void RemoveReclaimedTypes()
+    {
+        foreach (var (key, reference) in Types)
+        {
+            if (!reference.TryGetTarget(out _))
+            {
+                // Compare the reference too: the entry may have been replaced by a freshly emitted type.
+                _ = Types.TryRemove(new KeyValuePair<string, WeakReference<Type>>(key, reference));
+            }
+        }
+    }
+
+    private static Type CreateType(string prefix, IReadOnlyList<TdsProjectionMember> members)
+    {
+        var typeName = prefix + s_nextTypeId.ToString(CultureInfo.InvariantCulture);
+        s_nextTypeId++;
+
+        var typeBuilder = GetModuleBuilder().DefineType(
+            typeName,
             TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
 
         _ = typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
@@ -77,6 +132,21 @@ internal static class TdsProjectionTypeFactory
         DefineGetHashCodeMethod(typeBuilder, fields);
 
         return typeBuilder.CreateType();
+    }
+
+    private static ModuleBuilder GetModuleBuilder()
+    {
+        if (s_moduleBuilder is null || s_moduleTypeCount >= TypesPerAssembly)
+        {
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName("Meziantou.Framework.Tds.QueryEngine.Projections"),
+                AssemblyBuilderAccess.RunAndCollect);
+            s_moduleBuilder = assemblyBuilder.DefineDynamicModule("Projections");
+            s_moduleTypeCount = 0;
+        }
+
+        s_moduleTypeCount++;
+        return s_moduleBuilder;
     }
 
     private static FieldBuilder DefineProperty(TypeBuilder typeBuilder, string name, Type type)

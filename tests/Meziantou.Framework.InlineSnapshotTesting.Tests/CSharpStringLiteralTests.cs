@@ -1,4 +1,6 @@
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class CSharpStringLiteralTests
@@ -18,6 +20,24 @@ public sealed class CSharpStringLiteralTests
     {
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Quoted, "    ", 0, "\n");
         Assert.Equal("\"line1\\nline2\"", result);
+    }
+
+    [Theory]
+    [InlineData("a\rb")]
+    [InlineData("a\nb")]
+    [InlineData("a\r\nb")]
+    [InlineData("a\u0085b")]
+    [InlineData("a\u2028b")]
+    [InlineData("a\u2029b")]
+    public void CreateQuotedString_EscapesNewLineCharacters(string value)
+    {
+        var result = CSharpStringLiteral.Create(value, CSharpStringFormats.Quoted, "    ", 0, "\n");
+
+        var tree = CSharpSyntaxTree.ParseText("_ = " + result + ";");
+        Assert.Empty(tree.GetDiagnostics());
+
+        var literal = Assert.IsType<LiteralExpressionSyntax>(tree.GetRoot().DescendantNodes().Single(node => node is LiteralExpressionSyntax));
+        Assert.Equal(value, literal.Token.ValueText);
     }
 
     [Fact]

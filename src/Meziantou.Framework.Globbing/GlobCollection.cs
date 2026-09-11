@@ -21,6 +21,8 @@ namespace Meziantou.Framework.Globbing;
 [System.Runtime.CompilerServices.CollectionBuilder(typeof(GlobCollection), nameof(Create))]
 public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvaluatable
 {
+    private static readonly char[] DirectorySeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+
     private readonly IGlobEvaluatable[] _globs;
 
     // gitignore resolves a path against the last pattern that matches it, whereas a hand-built collection uses
@@ -113,16 +115,17 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         if (line[0] == '#')
             return;
 
-        globs.Add(Glob.Parse(line, GlobDialect.Git));
+        globs.Add(Glob.ParseGitIgnoreEntry(line));
     }
 
     private static ReadOnlySpan<char> TrimGitIgnoreLineEnd(ReadOnlySpan<char> line)
     {
+        // git only drops trailing spaces. A trailing tab is part of the pattern.
         var end = line.Length;
         while (end > 0)
         {
             var c = line[end - 1];
-            if (c is not (' ' or '\t'))
+            if (c is not ' ')
                 break;
 
             var backslashCount = 0;
@@ -162,7 +165,8 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     /// <returns>
     ///     <see langword="true"/> if the path matches any include pattern and no exclude pattern; otherwise,
     ///     <see langword="false"/>. A collection created from gitignore content resolves the path against the last
-    ///     pattern that matches it instead, as git does.
+    ///     pattern that matches it instead, as git does, and reports a path as matched when one of its ancestor
+    ///     directories is: git cannot re-include a path whose parent directory is excluded.
     /// </returns>
     public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
@@ -189,12 +193,54 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
 
     private bool IsLastMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
+        // git cannot re-include a path whose parent directory is excluded, so an excluded ancestor decides on its
+        // own and the patterns written for the path itself are not even looked at.
+        if (HasExcludedAncestor(directory, filename))
+            return true;
+
+        return IsLastMatchCore(directory, filename, itemType);
+    }
+
+    private bool IsLastMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
+    {
         // The last pattern that matches decides, so walk backwards and stop at the first hit.
         for (var i = _globs.Length - 1; i >= 0; i--)
         {
             var glob = _globs[i];
             if (glob.IsMatch(directory, filename, itemType))
                 return glob.Mode is GlobMode.Include;
+        }
+
+        return false;
+    }
+
+    private bool HasExcludedAncestor(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+    {
+        directory = directory.TrimEnd(DirectorySeparators.AsSpan());
+
+        var length = directory.Length;
+        if (filename.IsEmpty)
+        {
+            // The whole path is in 'directory', so its last segment is the item itself, not one of its ancestors.
+            length = directory.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (length < 0)
+                return false;
+        }
+
+        // Walk the ancestors from the root: the first excluded one decides, so the ones below it are never reached
+        // and their own patterns cannot re-include anything.
+        var index = 0;
+        while (index < length)
+        {
+            var separatorIndex = directory[index..length].IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var end = separatorIndex < 0 ? length : index + separatorIndex;
+            if (IsLastMatchCore(directory[..end], [], PathItemType.Directory))
+                return true;
+
+            if (separatorIndex < 0)
+                break;
+
+            index = end + 1;
         }
 
         return false;

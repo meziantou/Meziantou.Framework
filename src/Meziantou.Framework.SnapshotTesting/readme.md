@@ -51,7 +51,10 @@ Notes:
 - By default, snapshot names include class name and test name to avoid collisions across test classes.
 - `.actual` files are always written when a snapshot does not match.
 - If a single assertion serializes multiple files, an index suffix (`_0`, `_1`, ...) is appended.
-- If names are too long (or already end with `.verified` / `.actual`), a stable hash is added.
+- If names are too long, already end with `.verified` / `.actual`, or contain characters that are not
+  valid in a file name, a stable hash is added. Removing those characters would let two test names -
+  `Case_a/b` and `Case_a?b`, say - claim the same snapshot file, and the hash keeps them apart. The hash
+  does not depend on where the repository is checked out.
 
 ## Storing snapshots in git
 
@@ -76,6 +79,49 @@ You can choose how snapshot names are generated using `SnapshotSettings.Snapshot
 - `SnapshotNamingStrategies.TestName`
 - `SnapshotNamingStrategies.ClassName_TestName` (default)
 - `SnapshotNamingStrategies.FullName`
+
+## Calling `Snapshot.Validate` from a helper method
+
+Wrapping `Snapshot.Validate` in a helper method is supported. The test method is resolved by walking the
+stack until a method carrying a test attribute (`[Fact]`, `[Theory]`, `[Test]`, `[TestMethod]`) is found, so
+the helper frames are skipped and the snapshot is still named after the test, not after the helper.
+
+The snapshot directory, however, comes from `[CallerFilePath]`, which points at the file declaring the
+helper. Forward the caller information so the snapshots are created next to the test file:
+
+```csharp
+public static class ApiSnapshot
+{
+    public static void ValidateOpenApiSpec(
+        string spec,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = -1)
+    {
+        var settings = SnapshotSettings.Default with { /* shared configuration */ };
+        Snapshot.Validate(spec, "yaml", settings, filePath, lineNumber);
+    }
+}
+
+public sealed class OpenApiTests
+{
+    [Fact]
+    public void ValidateSpec()
+    {
+        ApiSnapshot.ValidateOpenApiSpec(GetSpec());
+        // => __snapshots__/OpenApiTests_ValidateSpec.verified.yaml
+    }
+}
+```
+
+No custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` is needed for this scenario.
+
+This also works when the helper is `async` and awaits before asserting. The test method is then no longer on
+the call stack, so the test name and class name are read from the test framework context instead (Xunit v3,
+TUnit, and NUnit). Under a test framework that exposes no context (Xunit v2, MSTest), await inside the helper
+*after* the call to `Snapshot.Validate` rather than before it, so the test method is still on the stack.
+
+If the same test calls the helper several times, set `Snapshot.TestContext` to give each call a distinct name
+(see [Test context](#test-context)).
 
 ## Snapshots stored as source files
 
@@ -111,6 +157,9 @@ Snapshot naming uses test context when available:
 
 - `Snapshot.TestContext` (`AsyncLocal<SnapshotTestContext?>`) can be set explicitly.
 - Xunit v3, TUnit, and NUnit display names are auto-detected to improve generated file names.
+- The test class and method names are auto-detected from the same frameworks. They are used when the call
+  stack does not contain the test method, which happens when the assertion runs in a helper method that
+  awaited before asserting.
 
 ## Customization
 
@@ -120,6 +169,12 @@ Use `SnapshotSettings` to customize behavior:
 - `Comparers` (`SnapshotComparerCollection`)
 - `SnapshotUpdateStrategy` (`Disallow`, `Overwrite`, `OverwriteWithoutFailure`, `MergeTool`, `MergeToolSync`)
 - `SnapshotPathStrategy` for full path generation
+
+A custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` receives a `SnapshotPathContext`. Its `ClassName`
+and `MethodName` are read from the call stack, which is the most expensive part of an assertion, so they are
+only resolved when a strategy reads them: a strategy that uses neither never pays for that walk. Use
+`MemberName` when the name of the method that called the assertion - captured by the compiler, always
+available - is enough.
 
 You can also set the default strategy using the `SNAPSHOTTESTING_STRATEGY` environment variable.
 The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).

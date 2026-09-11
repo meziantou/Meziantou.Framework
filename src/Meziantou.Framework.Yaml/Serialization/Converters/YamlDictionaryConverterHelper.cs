@@ -206,7 +206,7 @@ internal static class YamlDictionaryConverterHelper
         var options = reader.Options;
         dictionary ??= createDictionary(options);
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-        var mergeEnabled = options.Schema is YamlSchemaKind.Core or YamlSchemaKind.Extended;
+        var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
@@ -222,10 +222,11 @@ internal static class YamlDictionaryConverterHelper
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
+            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
-            if (mergeEnabled && string.Equals(key, "<<", StringComparison.Ordinal))
+            if (isMergeKey)
             {
                 ReadAndApplyMerge<TDictionary, TValue>(reader, ref valueConverter, dictionary, explicitKeys, createDictionary, containerKind);
                 continue;
@@ -412,6 +413,10 @@ internal static class YamlDictionaryConverterHelper
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
 
+    /// <remarks>
+    /// A key an earlier mapping of the merge already provided keeps its value, so the merged key is recorded
+    /// alongside the explicitly declared ones.
+    /// </remarks>
     private static void ApplyMergeDictionary<TValue>(
         IDictionary<string, TValue> target,
         IEnumerable<KeyValuePair<string, TValue>> merged,
@@ -419,7 +424,7 @@ internal static class YamlDictionaryConverterHelper
     {
         foreach (var pair in merged)
         {
-            if (explicitKeys is not null && explicitKeys.Contains(pair.Key))
+            if (explicitKeys is not null && !explicitKeys.Add(pair.Key))
             {
                 continue;
             }

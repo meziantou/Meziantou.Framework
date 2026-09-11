@@ -5,6 +5,35 @@ namespace Meziantou.Framework.Yaml;
 internal static class CharacterAnalyzer
 {
     /// <summary>
+    /// Check if the character at the specified position can appear in an anchor name.
+    /// </summary>
+    /// <remarks>
+    /// An anchor name is <c>ns-anchor-char+</c>, which is any non-space printable character other than a flow
+    /// indicator, so names such as <c>a.b</c> are valid.
+    /// </remarks>
+    public static bool IsAnchorChar(this ILookAheadBuffer buffer, int offset)
+    {
+        char character = buffer.Peek(offset);
+        if (character is ',' or '[' or ']' or '{' or '}' or '\uFEFF')
+        {
+            return false;
+        }
+
+        // ns-char excludes whitespace, line breaks, and every non-printable character.
+        if (character <= ' ' || (character >= '\x7F' && character <= '\x9F'))
+        {
+            return false;
+        }
+
+        return Emitter.IsPrintable(character);
+    }
+
+    public static bool IsAnchorChar(this ILookAheadBuffer buffer)
+    {
+        return IsAnchorChar(buffer, 0);
+    }
+
+    /// <summary>
     /// Check if the character at the specified position is an alphabetical
     /// character, a digit, '_', or '-'.
     /// </summary>
@@ -142,9 +171,13 @@ internal static class CharacterAnalyzer
     }
 
     /// <summary>Check if the character at the specified position is a line break.</summary>
+    /// <remarks>
+    /// YAML 1.1 also treated NEL (U+0085), LS (U+2028), and PS (U+2029) as line breaks. YAML 1.2 excludes them for
+    /// JSON compatibility and reads them as ordinary content, so folding them here would corrupt scalar values.
+    /// </remarks>
     public static bool IsBreak(this ILookAheadBuffer buffer, int offset)
     {
-        return Check(buffer, "\r\n\x85\x2028\x2029", offset);
+        return Check(buffer, "\r\n", offset);
     }
 
     public static bool IsBreak(this ILookAheadBuffer buffer)

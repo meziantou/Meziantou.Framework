@@ -260,4 +260,153 @@ public sealed class YamlScalarTests
     {
         public string? Bar { get; set; }
     }
+
+    [Fact]
+    public void TryParseUInt64_ReturnsFalseWhenTheValueOverflows()
+    {
+        var cases = new (string Text, bool ExpectedSuccess, ulong ExpectedValue)[]
+        {
+            ("0xFFFFFFFFFFFFFFFF", true, ulong.MaxValue),
+            ("0x10000000000000000", false, 0),
+            ("0o1777777777777777777777", true, ulong.MaxValue),
+            ("0o2000000000000000000000", false, 0),
+            ("0b1111111111111111111111111111111111111111111111111111111111111111", true, ulong.MaxValue),
+            ("0b10000000000000000000000000000000000000000000000000000000000000000", false, 0),
+            ("18446744073709551615", true, ulong.MaxValue),
+            ("18446744073709551616", false, 0),
+        };
+
+        foreach (var @case in cases)
+        {
+            var success = YamlScalar.TryParseUInt64(@case.Text.AsSpan(), out var value);
+            Assert.Equal(@case.ExpectedSuccess, success, @case.Text);
+            if (success)
+            {
+                Assert.Equal(@case.ExpectedValue, value, @case.Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void TryParseInt64_ReturnsFalseWhenTheValueOverflows()
+    {
+        var cases = new (string Text, bool ExpectedSuccess, long ExpectedValue)[]
+        {
+            ("0x7FFFFFFFFFFFFFFF", true, long.MaxValue),
+            ("-0x8000000000000000", true, long.MinValue),
+            ("0x8000000000000000", false, 0),
+            ("0x10000000000000000", false, 0),
+            ("0o777777777777777777777", true, long.MaxValue),
+            ("0o2000000000000000000000", false, 0),
+            ("0b111111111111111111111111111111111111111111111111111111111111111", true, long.MaxValue),
+            ("0b10000000000000000000000000000000000000000000000000000000000000000", false, 0),
+        };
+
+        foreach (var @case in cases)
+        {
+            var success = YamlScalar.TryParseInt64(@case.Text.AsSpan(), out var value);
+            Assert.Equal(@case.ExpectedSuccess, success, @case.Text);
+            if (success)
+            {
+                Assert.Equal(@case.ExpectedValue, value, @case.Text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Serialize_StringThatLooksLikeAnOverflowingNumber_RoundTrips()
+    {
+        var cases = new[]
+        {
+            "0x10000000000000000",
+            "0o2000000000000000000000",
+            "0b10000000000000000000000000000000000000000000000000000000000000000",
+            "18446744073709551616",
+        };
+
+        foreach (var text in cases)
+        {
+            var yaml = YamlSerializer.Serialize(text);
+            Assert.Equal(text, YamlSerializer.Deserialize<string>(yaml), text);
+        }
+    }
+
+    [Fact]
+    public void Deserialize_SchemaKeepsDecimalPrecision()
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        Assert.Equal(0.1234567890123456789012345678m, YamlSerializer.Deserialize<decimal>("0.1234567890123456789012345678", options));
+        Assert.Equal(1.0000000000000000000000000001m, YamlSerializer.Deserialize<decimal>("1.0000000000000000000000000001", options));
+    }
+
+    [Fact]
+    public void Deserialize_SchemaSupportsDecimalsBeyondUInt64()
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        Assert.Equal(decimal.MaxValue, YamlSerializer.Deserialize<decimal>("79228162514264337593543950335", options));
+        Assert.Equal(decimal.MinValue, YamlSerializer.Deserialize<decimal>("-79228162514264337593543950335", options));
+        Assert.Equal(18446744073709551616m, YamlSerializer.Deserialize<decimal>("18446744073709551616", options));
+    }
+
+    [Fact]
+    public void Deserialize_SchemaKeepsTheBaseOfIntegerScalarsForDecimals()
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        Assert.Equal(16m, YamlSerializer.Deserialize<decimal>("0x10", options));
+        Assert.Equal(8m, YamlSerializer.Deserialize<decimal>("0o10", options));
+    }
+
+    [Fact]
+    public void Deserialize_SchemaRejectsIntegersThatDoNotFitTheDestination()
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        _ = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<int>("79228162514264337593543950335", options));
+        _ = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<long>("79228162514264337593543950335", options));
+    }
+
+    [Theory]
+    [InlineData("|-\n  true\n", "true")]
+    [InlineData("|-\n  null\n", "null")]
+    [InlineData("|-\n  123\n", "123")]
+    [InlineData("|-\n  1.5\n", "1.5")]
+    [InlineData(">-\n  true\n", "true")]
+    [InlineData(">-\n  null\n", "null")]
+    [InlineData(">-\n  123\n", "123")]
+    public void Deserialize_SchemaKeepsBlockScalarsAsStrings(string yaml, string expected)
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        var value = YamlSerializer.Deserialize<object>(yaml, options);
+
+        Assert.Equal(expected, value);
+    }
+
+    [Theory]
+    [InlineData("|-\n  true\n", "true")]
+    [InlineData(">-\n  null\n", "null")]
+    public void Deserialize_BlockScalarsAreStringsWithoutSchema(string yaml, string expected)
+    {
+        var value = YamlSerializer.Deserialize<object>(yaml);
+
+        Assert.Equal(expected, value);
+    }
+
+    [Fact]
+    public void Deserialize_SchemaResolvesIntegerSpellings()
+    {
+        var options = new YamlSerializerOptions { UseSchema = true };
+
+        Assert.Equal(12, YamlSerializer.Deserialize<int>("012", options));
+        Assert.Equal(12, YamlSerializer.Deserialize<object>("012", options));
+        Assert.Equal("0b101", YamlSerializer.Deserialize<object>("0b101", options));
+        Assert.Equal("1_000", YamlSerializer.Deserialize<object>("1_000", options));
+
+        var extended = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
+        Assert.Equal(5, YamlSerializer.Deserialize<object>("0b101", extended));
+        Assert.Equal(1000, YamlSerializer.Deserialize<object>("1_000", extended));
+    }
 }

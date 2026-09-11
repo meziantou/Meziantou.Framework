@@ -394,16 +394,32 @@ public sealed class YamlReader : YamlReaderWriterBase
                         Tag = scalar.Tag;
                         Anchor = scalar.Anchor;
                         ThrowIfAnchorNotAllowed();
+                        if (Anchor is not null)
+                        {
+                            ReferenceReader?.RegisterScalar(Anchor, scalar);
+                        }
+
                         return true;
 
                     case AnchorAlias alias:
-                        TokenType = YamlTokenType.Alias;
-                        Alias = alias.Value;
                         if (!_allowAliases)
                         {
                             throw new YamlException(SourceName, Start, End, "YAML aliases are not allowed.");
                         }
 
+                        // An alias to a scalar is presented as that scalar, so every converter reads it as the type
+                        // it expects instead of the type the anchored occurrence produced.
+                        if (ReferenceReader is not null && ReferenceReader.TryResolveScalar(alias.Value, out var anchoredScalar))
+                        {
+                            TokenType = YamlTokenType.Scalar;
+                            ScalarValue = anchoredScalar.Value;
+                            ScalarStyle = anchoredScalar.Style;
+                            Tag = anchoredScalar.Tag;
+                            return true;
+                        }
+
+                        TokenType = YamlTokenType.Alias;
+                        Alias = alias.Value;
                         return true;
                 }
 

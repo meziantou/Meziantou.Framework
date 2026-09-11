@@ -1011,9 +1011,13 @@ public partial class Emitter : IEmitter
         }
     }
 
+    /// <remarks>
+    /// NEL (U+0085), LS (U+2028), and PS (U+2029) were line breaks in YAML 1.1 only. Writing one of them as a line
+    /// break would lose it, because a YAML 1.2 reader treats it as ordinary content.
+    /// </remarks>
     private static bool IsBreak(char character)
     {
-        return character == '\r' || character == '\n' || character == '\x85' || character == '\x2028' || character == '\x2029';
+        return character == '\r' || character == '\n';
     }
 
     private static bool IsBlank(char character)

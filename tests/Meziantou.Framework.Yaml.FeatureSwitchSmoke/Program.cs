@@ -88,4 +88,16 @@ if (cList[0] is not null || cList[1] is not string cy || cy != "y")
     return 9;
 }
 
+// A plain System.Object resolves back to the untyped converter. This runs out of process because a converter that
+// recurses instead of stopping there overflows the stack, which cannot be caught inside a test host.
+if (YamlSerializer.Serialize<object>(new object()) is not "{}\n")
+{
+    return 10;
+}
+
+if (YamlSerializer.Serialize<List<object>>([new object()]) is not "- {}\n")
+{
+    return 11;
+}
+
 return 0;

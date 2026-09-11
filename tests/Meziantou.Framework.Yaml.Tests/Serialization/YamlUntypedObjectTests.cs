@@ -74,4 +74,30 @@ public sealed class YamlUntypedObjectTests
         Assert.Contains("ReferenceHandling", ex.Message);
         Assert.Contains("Preserve", ex.Message);
     }
+
+    [Fact]
+    public void SerializePlainObject_WritesAnEmptyMapping()
+    {
+        // Resolving the runtime type of a plain System.Object leads back to the untyped converter, so the converter
+        // has to stop there instead of recursing until the stack overflows.
+        Assert.Equal("{}\n", YamlSerializer.Serialize<object>(new object()));
+        Assert.Equal("{}\n", YamlSerializer.Serialize(new object(), typeof(object)));
+    }
+
+    [Fact]
+    public void SerializePlainObjectInsideACollection_WritesAnEmptyMapping()
+    {
+        Assert.Equal("- {}\n", YamlSerializer.Serialize<List<object>>([new object()]));
+        Assert.Equal("a: {}\n", YamlSerializer.Serialize<Dictionary<string, object>>(new Dictionary<string, object>(StringComparer.Ordinal) { ["a"] = new object() }));
+    }
+
+    [Fact]
+    public void SerializePlainObject_RoundTripsToAnEmptyMapping()
+    {
+        var yaml = YamlSerializer.Serialize<object>(new object());
+
+        var roundTrip = YamlSerializer.Deserialize<object>(yaml);
+
+        Assert.Empty(Assert.IsType<Dictionary<string, object?>>(roundTrip));
+    }
 }

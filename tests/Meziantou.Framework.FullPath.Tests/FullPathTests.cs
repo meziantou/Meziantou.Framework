@@ -211,6 +211,51 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void ChangeMultipleExtensions_CountBeyondTheAvailableExtensions()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.gz";
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", path.WithExtension(".zip", extensionCount: 5));
+    }
+
+    [Fact]
+    public void ChangeMultipleExtensions_ConsecutiveDotsCountOneEach()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b..gz";
+
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b..zip", path.WithExtension(".zip", extensionCount: 1));
+        Assert.Equal(FullPath.FromPath("test") / "a" / "b.zip", path.WithExtension(".zip", extensionCount: 2));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void ChangeMultipleExtensions_TrailingDotIsAnEmptyExtension()
+    {
+        // Windows path normalization eats a trailing dot, so the name only survives on Unix
+        var path = FullPath.FromPath("test") / "a" / "archive.tar.";
+
+        // Path.ChangeExtension replaces the empty extension the trailing dot stands for, and every removal here has to
+        // behave the same way, so only the number of removed extensions changes with the count
+        Assert.Equal("archive.tar.zip", path.WithExtension("zip").Name);
+        Assert.Equal("archive.zip", path.WithExtension("zip", extensionCount: 2).Name);
+        Assert.Equal("archive.zip", path.WithExtension("zip", replaceAllTrailingExtensions: true).Name);
+        Assert.Equal("archive", path.WithExtension(null, extensionCount: 2).Name);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void ChangeMultipleExtensions_EmptyExtensionKeepsTheDot()
+    {
+        // Windows path normalization eats a trailing dot, so the name only survives on Unix
+        var path = FullPath.FromPath("test") / "a" / "file.txt";
+
+        // An empty extension is not the same as no extension, which is what null asks for
+        Assert.Equal("file.", path.WithExtension("").Name);
+        Assert.Equal("file.", path.WithExtension("", extensionCount: 2).Name);
+        Assert.Equal("file.", path.WithExtension("", replaceAllTrailingExtensions: true).Name);
+        Assert.Equal("file", path.WithExtension(null, extensionCount: 2).Name);
+    }
+
+    [Fact]
     public void CombinePath()
     {
         var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
@@ -688,6 +733,33 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public async Task ResolveSymlink_RelativeTargetWithParentSegmentBelowALinkedDirectory()
+    {
+        // real/sub/link -> ../target, reached through alias -> real/sub. Collapsing "alias/../target" lexically names
+        // <root>/target, which is a different file than the one opening the link reads.
+        await using var temp = TemporaryDirectory.Create();
+        temp.CreateDirectory("real/sub");
+        var expected = temp.CreateTextFile("real/target", "actual target");
+        temp.CreateTextFile("target", "wrong target");
+        CreateSymlink(temp.GetFullPath("alias"), Path.Combine("real", "sub"), isDirectory: true);
+        CreateSymlink(temp.GetFullPath("real/sub/link"), Path.Combine("..", "target"), isDirectory: false);
+
+        var link = temp.GetFullPath("alias/link");
+        Assert.Equal("actual target", File.ReadAllText(link.Value));
+        Assert.True(expected.TryGetCanonicalPath(out var canonicalExpected));
+
+        foreach (var mode in Enum.GetValues<SymbolicLinkResolutionMode>())
+        {
+            Assert.True(link.TryGetSymbolicLinkTarget(mode, out var target));
+            Assert.Equal(canonicalExpected.Value, target.Value);
+            Assert.Equal("actual target", File.ReadAllText(target.Value.Value));
+        }
+
+        Assert.True(link.TryGetCanonicalPath(out var canonical));
+        Assert.Equal(canonicalExpected.Value, canonical.Value);
+    }
+
+    [Fact]
     public async Task TryGetCanonicalPath_File()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -832,9 +904,43 @@ public sealed class FullPathTests
     public void CreateTempFile_ThrowsAfterMaxAttempts()
     {
         var folder = FullPath.GetTempPath();
-        var invalidSuffix = $"{Path.DirectorySeparatorChar}invalid";
-        var exception = Assert.Throws<IOException>(() => FullPath.CreateTempFile(folder, prefix: null, suffix: invalidSuffix));
+
+        // Longer than the maximum length of a file name, so every attempt fails while the affix stays a valid fragment
+        var tooLongSuffix = new string('a', 300);
+        var exception = Assert.Throws<IOException>(() => FullPath.CreateTempFile(folder, prefix: null, suffix: tooLongSuffix));
         Assert.Contains("10 attempts", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("../outside-")]
+    [InlineData("sub/")]
+    [InlineData("\0")]
+    public void CreateTempFile_ThrowsWhenThePrefixIsNotAFileName(string prefix)
+    {
+        var exception = Assert.Throws<ArgumentException>(() => FullPath.CreateTempFile(FullPath.GetTempPath(), prefix, suffix: ".tmp"));
+        Assert.Equal("prefix", exception.ParamName);
+    }
+
+    [Theory]
+    [InlineData("/../fixed.txt")]
+    [InlineData("/outside.txt")]
+    public void CreateTempFile_ThrowsWhenTheSuffixIsNotAFileName(string suffix)
+    {
+        var exception = Assert.Throws<ArgumentException>(() => FullPath.CreateTempFile(FullPath.GetTempPath(), prefix: null, suffix));
+        Assert.Equal("suffix", exception.ParamName);
+    }
+
+    [Fact]
+    public async Task CreateTempFile_RejectedAffixCreatesNothing()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var folder = temp.GetFullPath("destination");
+
+        // The affix would otherwise put the file next to the destination folder rather than inside it
+        Assert.Throws<ArgumentException>(() => FullPath.CreateTempFile(folder, prefix: "../outside-"));
+
+        Assert.False(Directory.Exists(folder));
+        Assert.Empty(Directory.GetFileSystemEntries(temp.FullPath));
     }
 
     [Fact]
@@ -1055,6 +1161,41 @@ public sealed class FullPathTests
         var extended = path.ToWindowsExtendedPath();
         Assert.StartsWith(@"\\?\", extended);
         Assert.Contains(longSegment, extended);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_NTExtendedUncPath()
+    {
+        // A reparse point stores an absolute target in the NT form, so FromPath has to give it back its UNC root
+        Assert.Equal(FullPath.FromPath(@"\\server\share\folder\file.txt"), FullPath.FromPath(@"\??\UNC\server\share\folder\file.txt"));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_NTExtendedDrivePath()
+    {
+        Assert.Equal(FullPath.FromPath(@"C:\temp\test.txt"), FullPath.FromPath(@"\??\C:\temp\test.txt"));
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_VolumeGuidPathKeepsItsRoot()
+    {
+        // A volume GUID path has no ordinary spelling, so dropping the prefix would leave a relative path that
+        // Path.GetFullPath resolves against the current directory
+        const string VolumePath = @"\\?\Volume{12345678-1234-1234-1234-123456789abc}\folder\file.txt";
+
+        Assert.Equal(VolumePath, FullPath.FromPath(VolumePath).RawValue);
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void FromPath_NTVolumeGuidPathUsesTheWin32Spelling()
+    {
+        Assert.Equal(
+            @"\\?\Volume{12345678-1234-1234-1234-123456789abc}\folder\file.txt",
+            FullPath.FromPath(@"\??\Volume{12345678-1234-1234-1234-123456789abc}\folder\file.txt").RawValue);
     }
 
     private static FullPath GetRootDirectory()

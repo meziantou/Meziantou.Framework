@@ -183,6 +183,8 @@ namespace System.IO
         internal const string UncDevicePrefixToInsert = @"?\UNC\";
         internal const string UncExtendedPathPrefix = @"\\?\UNC\";
         internal const string DevicePathPrefix = @"\\.\";
+        internal const string NTPathPrefix = @"\??\";
+        internal const string UncNTPathPrefix = @"\??\UNC\";
 
         internal const int MaxShortPath = 260;
 
@@ -291,7 +293,7 @@ namespace System.IO
         /// for C: (rooted, but relative). "C:\a" is rooted and not relative (the current directory
         /// will not be used to modify the path).
         /// </remarks>
-        internal static bool IsPartiallyQualified(string path)
+        internal static bool IsPartiallyQualified(ReadOnlySpan<char> path)
         {
             if (path.Length < 2)
             {

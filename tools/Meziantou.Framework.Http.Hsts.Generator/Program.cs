@@ -279,6 +279,8 @@ static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOf
     {
         AllowTrailingCommas = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true,
     };
 
     using var getCommitsRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/chromium/chromium/commits?path=net/http/transport_security_state_static.json&per_page=1");

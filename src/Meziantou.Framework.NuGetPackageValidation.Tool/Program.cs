@@ -116,6 +116,8 @@ internal static partial class Program
             var jsonOptions = new JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                RespectNullableAnnotations = true,
+                RespectRequiredConstructorParameters = true,
                 TypeInfoResolver = ResultContext.Default,
                 WriteIndented = true,
             };

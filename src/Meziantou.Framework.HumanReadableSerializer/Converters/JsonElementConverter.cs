@@ -7,6 +7,8 @@ internal sealed class JsonElementConverter : HumanReadableConverter<JsonElement>
 {
     internal static readonly JsonSerializerOptions IndentedOptions = new()
     {
+        RespectNullableAnnotations = false,
+        RespectRequiredConstructorParameters = false,
         WriteIndented = true,
     };
 

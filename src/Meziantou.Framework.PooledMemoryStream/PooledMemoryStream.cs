@@ -409,7 +409,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         EnsureOpen();
         ThrowIfLongerThanAnArray();
-        var result = GC.AllocateUninitializedArray<byte>((int)_length);
+        // CopyAllTo overwrites every byte of the array.
+        var result = unsafe(GC.AllocateUninitializedArray<byte>((int)_length));
         CopyAllTo(result);
         return result;
     }

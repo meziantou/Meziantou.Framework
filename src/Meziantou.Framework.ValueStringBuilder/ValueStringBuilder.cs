@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
@@ -102,7 +101,7 @@ ref partial struct ValueStringBuilder
     /// </summary>
     public ref char GetPinnableReference()
     {
-        return ref MemoryMarshal.GetReference(_chars);
+        return ref _chars.GetPinnableReference();
     }
 
     /// <summary>

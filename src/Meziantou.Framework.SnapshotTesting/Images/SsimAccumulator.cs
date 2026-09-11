@@ -74,8 +74,9 @@ internal struct SsimAccumulator
         double sumActualSquared0 = 0, sumActualSquared1 = 0, sumActualSquared2 = 0;
         double sumCross0 = 0, sumCross1 = 0, sumCross2 = 0;
 
-        ref var expectedRef = ref MemoryMarshal.GetReference(expectedPixels);
-        ref var actualRef = ref MemoryMarshal.GetReference(actualPixels);
+        // The caller slices both spans to the same length, and every vector load below stays within pixelCount.
+        ref var expectedRef = ref unsafe(MemoryMarshal.GetReference(expectedPixels));
+        ref var actualRef = ref unsafe(MemoryMarshal.GetReference(actualPixels));
         var i = 0;
 
         // Vector512 path (AVX-512): 16 pixels per iteration
@@ -90,8 +91,8 @@ internal struct SsimAccumulator
 
             for (; i <= pixelCount - Vector512<uint>.Count; i += Vector512<uint>.Count)
             {
-                var expectedPixel = Vector512.LoadUnsafe(ref expectedRef, (nuint)i);
-                var actualPixel = Vector512.LoadUnsafe(ref actualRef, (nuint)i);
+                var expectedPixel = unsafe(Vector512.LoadUnsafe(ref expectedRef, (nuint)i));
+                var actualPixel = unsafe(Vector512.LoadUnsafe(ref actualRef, (nuint)i));
                 var expected0 = Vector512.ConvertToSingle((expectedPixel & mask).AsInt32());
                 var expected1 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(expectedPixel, 8) & mask).AsInt32());
                 var expected2 = Vector512.ConvertToSingle((Vector512.ShiftRightLogical(expectedPixel, 16) & mask).AsInt32());
@@ -124,8 +125,8 @@ internal struct SsimAccumulator
 
             for (; i <= pixelCount - Vector256<uint>.Count; i += Vector256<uint>.Count)
             {
-                var expectedPixel = Vector256.LoadUnsafe(ref expectedRef, (nuint)i);
-                var actualPixel = Vector256.LoadUnsafe(ref actualRef, (nuint)i);
+                var expectedPixel = unsafe(Vector256.LoadUnsafe(ref expectedRef, (nuint)i));
+                var actualPixel = unsafe(Vector256.LoadUnsafe(ref actualRef, (nuint)i));
                 var expected0 = Vector256.ConvertToSingle((expectedPixel & mask).AsInt32());
                 var expected1 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(expectedPixel, 8) & mask).AsInt32());
                 var expected2 = Vector256.ConvertToSingle((Vector256.ShiftRightLogical(expectedPixel, 16) & mask).AsInt32());
@@ -158,8 +159,8 @@ internal struct SsimAccumulator
 
             for (; i <= pixelCount - Vector128<uint>.Count; i += Vector128<uint>.Count)
             {
-                var expectedPixel = Vector128.LoadUnsafe(ref expectedRef, (nuint)i);
-                var actualPixel = Vector128.LoadUnsafe(ref actualRef, (nuint)i);
+                var expectedPixel = unsafe(Vector128.LoadUnsafe(ref expectedRef, (nuint)i));
+                var actualPixel = unsafe(Vector128.LoadUnsafe(ref actualRef, (nuint)i));
                 var expected0 = Vector128.ConvertToSingle((expectedPixel & mask).AsInt32());
                 var expected1 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(expectedPixel, 8) & mask).AsInt32());
                 var expected2 = Vector128.ConvertToSingle((Vector128.ShiftRightLogical(expectedPixel, 16) & mask).AsInt32());

@@ -21,8 +21,8 @@ internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? setting
         if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
             return false;
 
-        var expectedPixels = MemoryMarshal.Cast<byte, uint>(expectedImage.GetPixelSpan());
-        var actualPixels = MemoryMarshal.Cast<byte, uint>(actualImage.GetPixelSpan());
+        var expectedPixels = unsafe(MemoryMarshal.Cast<byte, uint>(expectedImage.GetPixelSpan()));
+        var actualPixels = unsafe(MemoryMarshal.Cast<byte, uint>(actualImage.GetPixelSpan()));
 
         var threshold = settings?.SimilarityThreshold;
         if (threshold is null)

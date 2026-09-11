@@ -151,7 +151,7 @@ internal sealed class HttpBasicAuthenticationHandler : AuthenticationHandler<Htt
         }
         finally
         {
-            CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(credentialChars));
+            CryptographicOperations.ZeroMemory(unsafe(MemoryMarshal.AsBytes(credentialChars)));
             if (rentedBuffer is not null)
             {
                 charPool.Return(rentedBuffer);

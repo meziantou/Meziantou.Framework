@@ -1234,8 +1234,7 @@ internal class AssertionFormatter
     {
         if (typeof(T) == typeof(char))
         {
-            ref var firstChar = ref System.Runtime.CompilerServices.Unsafe.As<T, char>(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(value));
-            var chars = System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref firstChar, value.Length);
+            var chars = unsafe(System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref System.Runtime.CompilerServices.Unsafe.As<T, char>(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(value)), value.Length));
             return FormatStringValue(chars, highlightedIndex);
         }
 

@@ -956,7 +956,7 @@ sealed class HtmlDocument : HtmlNode
                     {
                         element = current as HtmlElement;
                         var currentAttributeValue = currentAtt.Value;
-                        if (element is not null && currentAttributeValue is not null && !Options.EmptyNamespaces.Contains(currentAttributeValue, StringComparer.Ordinal))
+                        if (element is not null && currentAttributeValue is not null && !Options.EmptyNamespaces.Contains(currentAttributeValue))
                         {
                             element.NamespaceURI = currentAttributeValue;
                         }

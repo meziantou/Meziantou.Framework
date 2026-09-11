@@ -20,6 +20,8 @@ internal static class Program
     private static readonly JsonSerializerOptions ListJsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        RespectNullableAnnotations = true,
+        RespectRequiredConstructorParameters = true,
         WriteIndented = true,
     };
 

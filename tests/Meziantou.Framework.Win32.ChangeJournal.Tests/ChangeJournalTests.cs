@@ -402,7 +402,8 @@ public class ChangeJournalTests
 
     private static void WriteName(byte[] buffer, int offset, string name)
     {
-        MemoryMarshal.AsBytes(name.AsSpan()).CopyTo(buffer.AsSpan(offset));
+        var bytes = unsafe(MemoryMarshal.AsBytes(name.AsSpan()));
+        bytes.CopyTo(buffer.AsSpan(offset));
     }
 
     // The change journal aligns records on 8 byte boundaries.
@@ -410,16 +411,19 @@ public class ChangeJournalTests
 
     private static ChangeJournalEntry ParseRecord(byte[] buffer)
     {
-        var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        try
+        unsafe
         {
-            var pointer = handle.AddrOfPinnedObject();
-            var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>(pointer);
-            return ChangeJournalEntries.GetBufferedEntry(pointer, header);
-        }
-        finally
-        {
-            handle.Free();
+            var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            try
+            {
+                var pointer = handle.AddrOfPinnedObject();
+                var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>(pointer);
+                return ChangeJournalEntries.GetBufferedEntry(pointer, header);
+            }
+            finally
+            {
+                handle.Free();
+            }
         }
     }
 }

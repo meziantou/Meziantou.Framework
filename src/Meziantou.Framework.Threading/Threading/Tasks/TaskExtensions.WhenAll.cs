@@ -123,7 +123,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
 
@@ -186,7 +186,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -207,7 +207,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
 
@@ -270,7 +270,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -291,7 +291,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
         T3 result3;
@@ -312,7 +312,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask3, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result3);
+                result3 = default!;
             }
         }
 
@@ -375,7 +375,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -396,7 +396,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
         T3 result3;
@@ -417,7 +417,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask3, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result3);
+                result3 = default!;
             }
         }
         T4 result4;
@@ -438,7 +438,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask4, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result4);
+                result4 = default!;
             }
         }
 
@@ -501,7 +501,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -522,7 +522,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
         T3 result3;
@@ -543,7 +543,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask3, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result3);
+                result3 = default!;
             }
         }
         T4 result4;
@@ -564,7 +564,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask4, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result4);
+                result4 = default!;
             }
         }
         T5 result5;
@@ -585,7 +585,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask5, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result5);
+                result5 = default!;
             }
         }
 
@@ -648,7 +648,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -669,7 +669,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
         T3 result3;
@@ -690,7 +690,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask3, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result3);
+                result3 = default!;
             }
         }
         T4 result4;
@@ -711,7 +711,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask4, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result4);
+                result4 = default!;
             }
         }
         T5 result5;
@@ -732,7 +732,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask5, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result5);
+                result5 = default!;
             }
         }
         T6 result6;
@@ -753,7 +753,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask6, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result6);
+                result6 = default!;
             }
         }
 
@@ -816,7 +816,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask1, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result1);
+                result1 = default!;
             }
         }
         T2 result2;
@@ -837,7 +837,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask2, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result2);
+                result2 = default!;
             }
         }
         T3 result3;
@@ -858,7 +858,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask3, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result3);
+                result3 = default!;
             }
         }
         T4 result4;
@@ -879,7 +879,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask4, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result4);
+                result4 = default!;
             }
         }
         T5 result5;
@@ -900,7 +900,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask5, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result5);
+                result5 = default!;
             }
         }
         T6 result6;
@@ -921,7 +921,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask6, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result6);
+                result6 = default!;
             }
         }
         T7 result7;
@@ -942,7 +942,7 @@ public static partial class TaskExtensions
             else
             {
                 Observe(observedTask7, ref observedExceptions, ref observedCancellation);
-                Unsafe.SkipInit(out result7);
+                result7 = default!;
             }
         }
 

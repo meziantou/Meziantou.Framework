@@ -375,7 +375,7 @@ public sealed class SensitiveDataTests
     public void SystemTestJsonDoesNotRevealValue_Field()
     {
         using var data = SensitiveData.Create("foo");
-        var text = JsonSerializer.Serialize(data, new JsonSerializerOptions { IncludeFields = true });
+        var text = JsonSerializer.Serialize(data, new JsonSerializerOptions { IncludeFields = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true });
         Assert.DoesNotContain("foo", text, ignoreCase: true);
     }
 

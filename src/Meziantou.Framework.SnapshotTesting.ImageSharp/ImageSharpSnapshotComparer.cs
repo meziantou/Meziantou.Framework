@@ -47,8 +47,9 @@ internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settin
         {
             for (var y = 0; y < expectedAccessor.Height && equal; y++)
             {
-                var expectedRow = MemoryMarshal.AsBytes(expectedAccessor.GetRowSpan(y));
-                var actualRow = MemoryMarshal.AsBytes(actualAccessor.GetRowSpan(y));
+                // Rgba32 is four bytes without padding, so its byte and uint views are exact.
+                var expectedRow = unsafe(MemoryMarshal.AsBytes(expectedAccessor.GetRowSpan(y)));
+                var actualRow = unsafe(MemoryMarshal.AsBytes(actualAccessor.GetRowSpan(y)));
                 if (!expectedRow.SequenceEqual(actualRow))
                     equal = false;
             }
@@ -68,8 +69,8 @@ internal sealed class ImageSharpSnapshotComparer(ImageComparisonSettings? settin
             for (var y = 0; y < expectedAccessor.Height; y++)
             {
                 accumulator.Add(
-                    MemoryMarshal.Cast<Rgba32, uint>(expectedAccessor.GetRowSpan(y)),
-                    MemoryMarshal.Cast<Rgba32, uint>(actualAccessor.GetRowSpan(y)));
+                    unsafe(MemoryMarshal.Cast<Rgba32, uint>(expectedAccessor.GetRowSpan(y))),
+                    unsafe(MemoryMarshal.Cast<Rgba32, uint>(actualAccessor.GetRowSpan(y))));
             }
         });
 

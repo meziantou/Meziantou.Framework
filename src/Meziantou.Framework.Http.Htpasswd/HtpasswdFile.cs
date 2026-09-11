@@ -267,7 +267,7 @@ public sealed class HtpasswdFile
     /// a length difference is still observable.
     /// </remarks>
     private static bool FixedTimeEquals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
-        => CryptographicOperations.FixedTimeEquals(MemoryMarshal.AsBytes(left), MemoryMarshal.AsBytes(right));
+        => CryptographicOperations.FixedTimeEquals(unsafe(MemoryMarshal.AsBytes(left)), unsafe(MemoryMarshal.AsBytes(right)));
 
     private static bool VerifyMd5Crypt(ReadOnlySpan<char> password, ReadOnlySpan<char> expectedHash, string prefix)
     {

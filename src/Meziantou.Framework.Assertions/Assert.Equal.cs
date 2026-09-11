@@ -193,8 +193,10 @@ public partial class Assert
             return false;
 
         var byteCount = expected.Length * elementSize;
-        var expectedBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(expected)), byteCount);
-        var actualBytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(actual)), byteCount);
+        // Both spans have the same length, checked by every caller, and BitwiseEquatable<T> only admits primitive
+        // types, which have no padding, so the byte views cover exactly the memory of the elements.
+        var expectedBytes = unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(expected)), byteCount));
+        var actualBytes = unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(actual)), byteCount));
 
         return expectedBytes.SequenceEqual(actualBytes);
     }

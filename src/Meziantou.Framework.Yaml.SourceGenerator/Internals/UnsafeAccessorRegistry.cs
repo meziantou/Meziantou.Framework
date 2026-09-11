@@ -21,11 +21,18 @@ internal sealed class UnsafeAccessorRegistry
     private readonly Dictionary<string, string> _namesByKey = new(StringComparer.Ordinal);
     private readonly List<string> _declarations = [];
     private readonly Dictionary<string, GenericAccessorClass> _genericClassesByKey = new(StringComparer.Ordinal);
+    private readonly string _externModifiers;
 
     public UnsafeAccessorRegistry(Compilation compilation, INamedTypeSymbol contextSymbol)
     {
         _compilation = compilation;
         _contextSymbol = contextSymbol;
+
+        // Under the updated memory safety rules, an 'extern' member must be marked 'safe' or 'unsafe' (CS9389). The
+        // stubs are safe: their signatures mirror the target members, and the runtime throws a MissingMemberException
+        // rather than binding a mismatched signature. The 'safe' keyword does not exist in older language versions,
+        // so it is only emitted when the compilation opted into the rules.
+        _externModifiers = UsesUpdatedMemorySafetyRules(compilation) ? " safe extern " : " extern ";
     }
 
     public bool HasAccessors => _declarations.Count != 0 || _genericClassesByKey.Count != 0;
@@ -70,7 +77,7 @@ internal sealed class UnsafeAccessorRegistry
             name = CreateName(context, field.MetadataName);
             var builder = new StringBuilder();
             AppendAttribute(builder, context, "Field", field.MetadataName);
-            builder.Append(context.Indent).Append(context.Modifiers).Append(" extern ref ")
+            builder.Append(context.Indent).Append(context.Modifiers).Append(_externModifiers).Append("ref ")
                 .Append(context.TypeName(field, static f => f.Type))
                 .Append(' ').Append(name).Append('(');
             AppendReceiverParameter(builder, context, field);
@@ -95,7 +102,7 @@ internal sealed class UnsafeAccessorRegistry
             var parameters = constructor.OriginalDefinition.Parameters;
             var builder = new StringBuilder();
             AppendAttribute(builder, context, "Constructor", name: null);
-            builder.Append(context.Indent).Append(context.Modifiers).Append(" extern ").Append(context.ReceiverTypeName)
+            builder.Append(context.Indent).Append(context.Modifiers).Append(_externModifiers).Append(context.ReceiverTypeName)
                 .Append(' ').Append(name).Append('(');
             for (var i = 0; i < parameters.Length; i++)
             {
@@ -156,7 +163,7 @@ internal sealed class UnsafeAccessorRegistry
         name = CreateName(context, method.MetadataName);
         var builder = new StringBuilder();
         AppendAttribute(builder, context, "Method", method.MetadataName);
-        builder.Append(context.Indent).Append(context.Modifiers).Append(" extern ").Append(returnType).Append(' ').Append(name).Append('(');
+        builder.Append(context.Indent).Append(context.Modifiers).Append(_externModifiers).Append(returnType).Append(' ').Append(name).Append('(');
         var hasReceiver = AppendReceiverParameter(builder, context, method);
         for (var i = 0; i < parameters.Length; i++)
         {
@@ -211,6 +218,19 @@ internal sealed class UnsafeAccessorRegistry
 
         var self = member.ContainingType.IsValueType ? "ref " + receiver : receiver;
         return additionalArguments is null ? self : self + ", " + additionalArguments;
+    }
+
+    private static bool UsesUpdatedMemorySafetyRules(Compilation compilation)
+    {
+        foreach (var syntaxTree in compilation.SyntaxTrees)
+        {
+            if (syntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private string CreateName(AccessorContext context, string hint)

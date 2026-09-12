@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Windows.Win32;
+using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework;
 
@@ -20,23 +22,25 @@ internal static partial class CanonicalPath
     {
         public static bool TryGetCanonicalPath(string path, [NotNullWhen(true)] out string? canonicalPath)
         {
-            using var handle = Interop.Kernel32.CreateFile(
-                path,
+            using var handle = PInvoke.CreateFile(
+                PathInternal.EnsureExtendedPrefixIfNeeded(path),
                 dwDesiredAccess: 0,
-                dwShareMode: FileShare.ReadWrite | FileShare.Delete,
-                dwCreationDisposition: FileMode.Open,
-                dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS);
+                FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE | FILE_SHARE_MODE.FILE_SHARE_DELETE,
+                lpSecurityAttributes: null,
+                FILE_CREATION_DISPOSITION.OPEN_EXISTING,
+                FILE_FLAGS_AND_ATTRIBUTES.FILE_FLAG_BACKUP_SEMANTICS,
+                hTemplateFile: null);
             if (handle.IsInvalid)
             {
                 canonicalPath = null;
                 return false;
             }
 
-            var bufferSize = Interop.Kernel32.MAX_PATH;
+            var bufferSize = (int)PInvoke.MAX_PATH;
             while (true)
             {
                 var buffer = new char[bufferSize];
-                var result = Interop.Kernel32.GetFinalPathNameByHandle(handle, buffer, (uint)buffer.Length, dwFlags: 0);
+                var result = PInvoke.GetFinalPathNameByHandle(handle, buffer, GETFINALPATHNAMEBYHANDLE_FLAGS.FILE_NAME_NORMALIZED | GETFINALPATHNAMEBYHANDLE_FLAGS.VOLUME_NAME_DOS);
                 if (result == 0)
                 {
                     canonicalPath = null;

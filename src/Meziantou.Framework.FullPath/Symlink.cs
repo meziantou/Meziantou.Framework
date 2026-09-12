@@ -196,7 +196,7 @@ internal static partial class Symlink
         // Adapted from dotnet/runtime's reparse point reader, licensed to the .NET Foundation under one or more
         // agreements. The .NET Foundation licenses this file to you under the MIT license.
         // Source: https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/IO/FileSystem.Windows.cs
-        internal static unsafe string? GetSingleSymbolicLinkTarget(string path)
+        internal static string? GetSingleSymbolicLinkTarget(string path)
         {
             // https://docs.microsoft.com/en-us/windows-hardware/drivers/ifs/fsctl-get-reparse-point
             using var handle = PInvoke.CreateFile(
@@ -223,8 +223,16 @@ internal static partial class Symlink
                 var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    var result = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_GET_REPARSE_POINT, lpInBuffer: default, buffer, out var bytesRead, lpOverlapped: null) ?
-                        0 : Marshal.GetLastWin32Error();
+                    // DeviceIoControl only takes the overlapped structure as a pointer, so the call needs an unsafe
+                    // context. Nothing else in this method does.
+                    bool succeeded;
+                    uint bytesRead;
+                    unsafe
+                    {
+                        succeeded = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_GET_REPARSE_POINT, lpInBuffer: default, buffer, out bytesRead, lpOverlapped: null);
+                    }
+
+                    var result = succeeded ? 0 : Marshal.GetLastWin32Error();
 
                     if (result is not ERROR_SUCCESS and not ERROR_INSUFFICIENT_BUFFER and not ERROR_MORE_DATA)
                     {

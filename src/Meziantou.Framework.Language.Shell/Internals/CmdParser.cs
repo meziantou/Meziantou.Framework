@@ -379,7 +379,15 @@ internal sealed partial class CmdParser
             _position++;
         }
 
-        return new CmdLabelStatementSyntax(colonToken, CreateToken(SyntaxKind.GenericToken, start, null, start));
+        // Only the first token names the label, so `:strLen string len -- returns the length` is the label `strLen`
+        // followed by a description that `goto` and `call` never look at.
+        var nameEnd = start;
+        while (nameEnd < _position && !IsTokenEnd(_text[nameEnd]))
+        {
+            nameEnd++;
+        }
+
+        return new CmdLabelStatementSyntax(colonToken, CreateToken(SyntaxKind.GenericToken, start, null, start, _text[start..nameEnd]));
     }
 
     private CmdGotoStatementSyntax ParseGotoStatement(int prefixLength)
@@ -402,7 +410,16 @@ internal sealed partial class CmdParser
         }
         else
         {
-            labelToken = CreateToken(SyntaxKind.GenericToken, start, trivia, fullStart);
+            // `goto` only reads its first argument and ignores the rest of the command, which stays in the token
+            // rather than turning into a command that never runs.
+            var labelEnd = _position;
+            while (!IsAtEnd && GetLineBreakLength(_position) == 0 && Current is not ('&' or '|') && !(Current == ')' && _stopAtCloseParen))
+            {
+                _position++;
+            }
+
+            _position = TrimTrailingWhitespace(labelEnd, _position);
+            labelToken = CreateToken(SyntaxKind.GenericToken, start, trivia, fullStart, _text[start..labelEnd]);
         }
 
         return new CmdGotoStatementSyntax(gotoKeyword, labelToken);

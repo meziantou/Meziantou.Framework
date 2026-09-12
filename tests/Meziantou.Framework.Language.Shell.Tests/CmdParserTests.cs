@@ -897,6 +897,33 @@ public sealed class CmdParserTests
     }
 
     [Theory]
+    [InlineData(":strLen string len -- returns the length", "strLen")]
+    [InlineData(":end rem trailing text", "end")]
+    [InlineData(":end", "end")]
+    public void LabelIsNamedByItsFirstToken(string text, string expectedName)
+    {
+        Assert.Equal(expectedName, Assert.IsType<CmdLabelStatementSyntax>(SingleStatement(text)).Name);
+    }
+
+    [Theory]
+    [InlineData("goto end extra words", "end")]
+    [InlineData("goto :eof   ", "eof")]
+    public void GotoIgnoresTheRestOfItsArguments(string text, string expectedLabel)
+    {
+        Assert.Equal(expectedLabel, Assert.IsType<CmdGotoStatementSyntax>(SingleStatement(text)).Label);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Fact]
+    public void GotoArgumentsStopAtAnOperator()
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful("goto end extra & echo x", ShellDialect.Cmd);
+
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[1]).NameValue);
+    }
+
+    [Theory]
     [InlineData("goto")]
     [InlineData("goto\r\necho hi")]
     [InlineData("if 1==1 goto")]

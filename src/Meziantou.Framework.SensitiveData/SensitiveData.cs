@@ -213,7 +213,7 @@ public static partial class SensitiveData
 /// </code>
 /// </example>
 [TypeConverter(typeof(SensitiveDataTypeConverter))]
-public sealed unsafe class SensitiveData<T> : IDisposable
+public sealed class SensitiveData<T> : IDisposable
     where T : unmanaged
 {
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Disposed through the local returned by Interlocked.Exchange in Dispose")]

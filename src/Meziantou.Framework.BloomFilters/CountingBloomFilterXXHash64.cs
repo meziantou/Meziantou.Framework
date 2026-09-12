@@ -45,7 +45,6 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
             return;
         }
 
-        ref var valuesReference = ref unsafe(MemoryMarshal.GetReference(values));
         var index = 0;
         var prime1 = new Vector<ulong>(Prime1);
         var prime2 = new Vector<ulong>(Prime2);
@@ -54,7 +53,7 @@ public sealed partial class CountingBloomFilterXXHash64 : CountingBloomFilter
         var hash = new Vector<ulong>(Prime5 + sizeof(ulong));
         while (index <= values.Length - Vector<ulong>.Count)
         {
-            var current = unsafe(Vector.LoadUnsafe(ref valuesReference, (nuint)index));
+            var current = Vector.Create(values[index..]);
             var round = RotateLeft(current * prime2, 31) * prime1;
             var hashes = RotateLeft(hash ^ round, 27) * prime1 + prime4;
             hashes ^= hashes >> 33;

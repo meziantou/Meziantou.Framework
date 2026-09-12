@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
@@ -62,8 +61,7 @@ internal sealed class SegmentedBitStorage
 
         var wordIndex = bitIndex >> 6;
         var segment = _segments[(int)(wordIndex >> SegmentShift)];
-        ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment));
-        ref var wordRef = ref unsafe(Unsafe.Add(ref baseRef, (nint)(wordIndex & SegmentMask)));
+        ref var wordRef = ref segment[(int)(wordIndex & SegmentMask)];
         Interlocked.Or(ref wordRef, 1UL << (int)bitIndex);
     }
 
@@ -74,8 +72,7 @@ internal sealed class SegmentedBitStorage
 
         var wordIndex = bitIndex >> 6;
         var segment = _segments[(int)(wordIndex >> SegmentShift)];
-        ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment));
-        ref var wordRef = ref unsafe(Unsafe.Add(ref baseRef, (nint)(wordIndex & SegmentMask)));
+        ref var wordRef = ref segment[(int)(wordIndex & SegmentMask)];
         return (Volatile.Read(ref wordRef) & (1UL << (int)bitIndex)) != 0;
     }
 

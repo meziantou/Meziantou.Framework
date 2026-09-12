@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
@@ -72,8 +71,7 @@ internal sealed class SegmentedCounterStorage
         ValidateCounterIndex(counterIndex);
 
         var segment = _segments[(int)(counterIndex >> SegmentShift)];
-        ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment));
-        return ref unsafe(Unsafe.Add(ref baseRef, (nint)(counterIndex & SegmentMask)));
+        return ref segment[(int)(counterIndex & SegmentMask)];
     }
 
     [Conditional("DEBUG")]

@@ -125,7 +125,7 @@ namespace Meziantou.Framework
             internal const int MAX_PATH = 260;
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            internal unsafe struct WIN32_FIND_DATA
+            internal struct WIN32_FIND_DATA
             {
                 internal uint dwFileAttributes;
                 internal FILE_TIME ftCreationTime;

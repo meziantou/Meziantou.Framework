@@ -117,7 +117,7 @@ public sealed class SecurityProvidersSnapshot
     }
 
     // The projected properties hand back an owned BSTR, so it must be released once it has been copied to a managed string.
-    private static unsafe string? GetString(Func<BSTR> getter)
+    private static string? GetString(Func<BSTR> getter)
     {
         var value = default(BSTR);
         try

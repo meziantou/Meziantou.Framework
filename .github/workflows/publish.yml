@@ -1,12 +1,19 @@
+# Builds and validates the NuGet packages on pull requests, and publishes them on main.
 name: publish
 on:
   workflow_dispatch:
   push:
     branches:
       - 'main'
+  pull_request:
+    branches:
+      - '*'
 
-# No concurrency group: each run only packs the packages changed since the previous push, so a
-# cancelled or replaced run would never publish its packages.
+concurrency:
+  # A run on main gets a group of its own: it only packs the packages changed since the previous
+  # push, so a cancelled or replaced run would never publish them.
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
@@ -25,7 +32,7 @@ jobs:
     outputs:
       has-project: ${{ steps.package-project.outputs.has-project }}
     env:
-      # Analyzers already ran on the pull request
+      # Analyzers run in the run_analyzers job of ci.yml
       RunAnalyzers: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -41,7 +48,7 @@ jobs:
           output-project: eng/packages.delta.proj
           base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
           # A manual run packs every package, so it can recover from a partial publish
-          run-generate: ${{ case(github.event_name == 'push', 'true', 'false') }}
+          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/publish.yml
             eng/**/*.proj
@@ -57,7 +64,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path $env:NuGetDirectory -Force | Out-Null
           Set-Content -Path (Join-Path $env:NuGetDirectory "artifact-placeholder.txt") -Value "placeholder"
-      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
+      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output $env:NuGetDirectory /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog
         if: steps.package-project.outputs.has-project == 'true'
 
       - name: Skip packaging
@@ -97,11 +104,12 @@ jobs:
         run: dotnet run ./eng/validate-nuget.cs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'push' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
+          NUGET_VALIDATION_IS_DELTA: ${{ case((github.event_name == 'pull_request' || github.event_name == 'push') && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   deploy:
-    # A manual run from another branch must not publish to nuget.org
-    if: github.ref == 'refs/heads/main' && needs.create_nuget.outputs.has-project == 'true'
+    # Pull requests only build and validate the packages. A manual run from another branch must not
+    # publish to nuget.org either.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.create_nuget.outputs.has-project == 'true'
     runs-on: ubuntu-26.04
     needs: [ create_nuget, validate_nuget ]
     permissions:

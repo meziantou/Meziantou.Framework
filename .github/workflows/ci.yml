@@ -1,5 +1,5 @@
-# Validates pull requests. Pushes to main only pack and publish the packages (publish.yml), as the
-# code was already validated by its pull request.
+# Validates pull requests: generated files, analyzers, tests and trimming. The NuGet packages are
+# built by publish.yml, which runs on pull requests too and publishes them on main.
 name: ci
 on:
   workflow_dispatch:
@@ -20,7 +20,6 @@ concurrency:
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
-  NuGetDirectory: ${{ github.workspace}}/nuget
 
 defaults:
   run:
@@ -51,85 +50,6 @@ jobs:
         uses: ./.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
         run: dotnet run ./eng/update-all.cs
-
-  create_nuget:
-    runs-on: ubuntu-26.04
-    timeout-minutes: 20
-    outputs:
-      has-project: ${{ steps.package-project.outputs.has-project }}
-    env:
-      # Analyzers run in the run_analyzers job
-      RunAnalyzers: false
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-      - run: git config --global protocol.file.allow always
-      - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-      - name: Generate delta build file
-        id: package-project
-        uses: ./.github/actions/deltabuild
-        with:
-          input-project: eng/packages.proj
-          output-project: eng/packages.delta.proj
-          run-generate: ${{ case(github.event_name == 'pull_request', 'true', 'false') }}
-          full-rebuild-triggers: |
-            .github/workflows/ci.yml
-            eng/**/*.proj
-
-      - run: dotnet restore ${{ steps.package-project.outputs.project }} -p:Configuration=Release /p:IsOfficialBuild=true /bl:restore.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-
-      - name: Prepare NuGet artifact directory
-        run: |
-          New-Item -ItemType Directory -Path "${{ env.NuGetDirectory }}" -Force | Out-Null
-          Set-Content -Path "${{ env.NuGetDirectory }}/artifact-placeholder.txt" -Value "placeholder"
-      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-
-      - name: Skip packaging
-        if: steps.package-project.outputs.has-project != 'true'
-        run: Write-Host "No package project was impacted. Skipping build and pack."
-      - parallel:
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-            if: always()
-            with:
-              name: nuget
-              if-no-files-found: error
-              retention-days: 3
-              path: ${{ env.NuGetDirectory }}/**/*
-          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-            if: always()
-            with:
-              name: binlog
-              if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
-              retention-days: 3
-              path: '**/*.binlog'
-
-  validate_nuget:
-    runs-on: ubuntu-26.04
-    needs: [ create_nuget ]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - parallel:
-          - name: Setup .NET
-            uses: ./.github/actions/setup-dotnet
-          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-            if: needs.create_nuget.outputs.has-project == 'true'
-            with:
-              name: nuget
-              path: ${{ env.NuGetDirectory }}
-      - name: Validate NuGet packages
-        if: needs.create_nuget.outputs.has-project == 'true'
-        run: dotnet run ./eng/validate-nuget.cs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_VALIDATION_IS_DELTA: ${{ case(github.event_name == 'pull_request' && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
 
   run_analyzers:
     runs-on: ubuntu-26.04
@@ -543,7 +463,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, create_nuget, validate_nuget, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage ]
+    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, merge_coverage ]
     steps:
       - name: Check previous jobs status
         env:

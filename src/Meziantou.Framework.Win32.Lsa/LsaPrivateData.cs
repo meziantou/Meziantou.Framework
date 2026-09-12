@@ -143,7 +143,7 @@ public static class LsaPrivateData
         ArgumentOutOfRangeException.ThrowIfGreaterThan(key.Length, MaxLengthInChars, nameof(key));
     }
 
-    private static unsafe LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes, uint desiredAccess)
+    private static LsaCloseSafeHandle GetLsaPolicy(in LSA_OBJECT_ATTRIBUTES objectAttributes, uint desiredAccess)
     {
         // A null SystemName means the local system
         var ntsResult = PInvoke.LsaOpenPolicy(SystemName: null, in objectAttributes, desiredAccess, out var lsaPolicyHandle);

@@ -6,9 +6,9 @@ using System.Text.RegularExpressions;
 namespace Meziantou.Framework.SnapshotTesting;
 
 /// <summary>
-/// Describes the call site of an assertion. The names of the test class and of the test method are read from
-/// the call stack, which is the most expensive part of an assertion, so the walk only runs when something
-/// asks for them: a naming or path strategy that uses neither never pays for it.
+/// Describes the call site of an assertion. The names of the test class and of the test method come from the
+/// test framework when it exposes them, and from the call stack otherwise. The walk is the most expensive
+/// part of an assertion, so it only runs when something asks for a name the test framework did not provide.
 /// </summary>
 internal sealed partial class SnapshotCallerContext
 {
@@ -67,38 +67,26 @@ internal sealed partial class SnapshotCallerContext
     public string? MemberName { get; }
 
     /// <summary>
-    /// Name of the test method the assertion belongs to. Reading it walks the call stack the first time.
+    /// Name of the test method the assertion belongs to. The test framework is asked first: its view is free,
+    /// and it is the only one that survives an await in a helper method, which drops the test method from
+    /// the call stack. The stack is walked only when the framework exposes nothing (Xunit v2, MSTest, or no
+    /// test framework at all), the first time the name is read.
     /// </summary>
     public string MethodName
     {
         get
         {
-            // The call stack only contains the test method as long as the assertion runs synchronously below
-            // it. A helper method that awaited before asserting runs on a continuation where the test method
-            // is gone, and the innermost frames then describe the helper. The test framework still knows
-            // which test is running, so its own view wins whenever the stack could not produce one.
-            var stackWalk = ResolveStackWalk();
-            if (stackWalk.TestMethodResolved && stackWalk.MethodName is not null)
-                return stackWalk.MethodName;
+            if (_testContext?.MethodName is { } methodName)
+                return methodName;
 
-            return _testContext?.MethodName ?? stackWalk.MethodName ?? MemberName ?? "Snapshot";
+            return ResolveStackWalk().MethodName ?? MemberName ?? "Snapshot";
         }
     }
 
     /// <summary>
-    /// Simple name of the type declaring the test method. Reading it walks the call stack the first time.
+    /// Simple name of the type declaring the test method. Same sources and precedence as <see cref="MethodName" />.
     /// </summary>
-    public string? ClassName
-    {
-        get
-        {
-            var stackWalk = ResolveStackWalk();
-            if (stackWalk.TestMethodResolved)
-                return stackWalk.ClassName;
-
-            return _testContext?.ClassName ?? stackWalk.ClassName;
-        }
-    }
+    public string? ClassName => _testContext?.ClassName ?? ResolveStackWalk().ClassName;
 
     /// <summary>Indicates whether the call stack was actually walked. Used by the tests.</summary>
     internal bool StackWalkPerformed => _stackWalk is not null && !ReferenceEquals(_stackWalk, StackWalkResult.Unavailable);
@@ -124,7 +112,6 @@ internal sealed partial class SnapshotCallerContext
         var stackAnalysisStartIndex = GetStackAnalysisStartIndex(stackTrace);
         string? discoveredMethodName = null;
         string? discoveredClassName = null;
-        var testMethodResolved = false;
 
         for (var i = stackAnalysisStartIndex; i < stackTrace.FrameCount; i++)
         {
@@ -139,7 +126,6 @@ internal sealed partial class SnapshotCallerContext
             {
                 discoveredMethodName = stackFrameMethod.NormalizedMethodName;
                 discoveredClassName = stackFrameMethod.NormalizedTypeName;
-                testMethodResolved = true;
                 break;
             }
 
@@ -162,7 +148,7 @@ internal sealed partial class SnapshotCallerContext
             }
         }
 
-        return new StackWalkResult(discoveredMethodName, discoveredClassName, testMethodResolved, sourceFilePath);
+        return new StackWalkResult(discoveredMethodName, discoveredClassName, sourceFilePath);
     }
 
     private static int GetStackAnalysisStartIndex(StackTrace stackTrace)
@@ -296,9 +282,9 @@ internal sealed partial class SnapshotCallerContext
 
     private sealed record StackFrameMethod(bool IsSnapshotAssertion, bool IsTestMethod, string NormalizedMethodName, string? NormalizedTypeName);
 
-    private sealed record StackWalkResult(string? MethodName, string? ClassName, bool TestMethodResolved, string? SourceFilePath)
+    private sealed record StackWalkResult(string? MethodName, string? ClassName, string? SourceFilePath)
     {
         /// <summary>Result of a walk that cannot run because the frames of the assertion are gone.</summary>
-        public static StackWalkResult Unavailable { get; } = new(MethodName: null, ClassName: null, TestMethodResolved: false, SourceFilePath: null);
+        public static StackWalkResult Unavailable { get; } = new(MethodName: null, ClassName: null, SourceFilePath: null);
     }
 }

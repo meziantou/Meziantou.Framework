@@ -66,6 +66,8 @@ internal sealed class SegmentedCounterStorage
         return Volatile.Read(ref GetCounterReference(counterIndex));
     }
 
+    // The masked index is in range by construction, so the reference is taken without a bounds check.
+    // See the note in SegmentedBitStorage: the safe indexer measured slower on the probe path.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ref int GetCounterReference(long counterIndex)
     {

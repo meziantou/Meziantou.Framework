@@ -407,7 +407,7 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
-    public void Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames()
+    public void Validate_DoesNotWalkTheStack_WhenTheTestFrameworkProvidesTheNames()
     {
         using var directory = TemporaryDirectory.Create();
         SnapshotPathContext? capturedContext = null;
@@ -418,20 +418,98 @@ public sealed partial class SnapshotTests
             SnapshotPathStrategy = context =>
             {
                 capturedContext = context;
-                return directory / (context.MethodName + ".verified.txt");
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
             },
         };
 
         Snapshot.Validate("sample", settings);
 
+        // Xunit v3 exposes both names, so the strategy read them without paying for the walk.
         Assert.NotNull(capturedContext);
-        Assert.True(capturedContext.StackWalkPerformed);
-        Assert.Equal(nameof(Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames), capturedContext.MethodName);
+        Assert.False(capturedContext.StackWalkPerformed);
+        Assert.Equal(nameof(Validate_DoesNotWalkTheStack_WhenTheTestFrameworkProvidesTheNames), capturedContext.MethodName);
         Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
 
         var files = Directory.GetFiles(directory.FullPath);
         Assert.Single(files);
-        Assert.Equal(nameof(Validate_WalksTheStack_WhenTheStrategyReadsTheTestNames) + ".verified.txt", Path.GetFileName(files[0]));
+        Assert.Equal(nameof(SnapshotTests) + "_" + nameof(Validate_DoesNotWalkTheStack_WhenTheTestFrameworkProvidesTheNames) + ".verified.txt", Path.GetFileName(files[0]));
+    }
+
+    [Fact]
+    public void Validate_WalksTheStack_WhenTheTestContextDoesNotProvideTheNames()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
+            },
+        };
+
+        // An explicit context replaces the one detected from the test framework. This one carries no names,
+        // so the call stack is the only remaining source.
+        using (new SnapshotTestContextScope(new SnapshotTestContext(TestName: "custom")))
+        {
+            Snapshot.Validate("sample", settings);
+        }
+
+        Assert.NotNull(capturedContext);
+        Assert.True(capturedContext.StackWalkPerformed);
+        Assert.Equal(nameof(Validate_WalksTheStack_WhenTheTestContextDoesNotProvideTheNames), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal(nameof(SnapshotTests) + "_" + nameof(Validate_WalksTheStack_WhenTheTestContextDoesNotProvideTheNames) + ".verified.txt", Path.GetFileName(files[0]));
+    }
+
+    [Fact]
+    public void Validate_UsesTheNamesOfAnExplicitTestContext_OverTheCallStack()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
+            },
+        };
+
+        using (new SnapshotTestContextScope(new SnapshotTestContext { ClassName = "CustomClass", MethodName = "CustomMethod" }))
+        {
+            Snapshot.Validate("sample", settings);
+        }
+
+        Assert.NotNull(capturedContext);
+        Assert.False(capturedContext.StackWalkPerformed);
+        Assert.Equal("CustomClass", capturedContext.ClassName);
+        Assert.Equal("CustomMethod", capturedContext.MethodName);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal("CustomClass_CustomMethod.verified.txt", Path.GetFileName(files[0]));
+    }
+
+    private sealed class SnapshotTestContextScope : IDisposable
+    {
+        private readonly SnapshotTestContext? _previous;
+
+        public SnapshotTestContextScope(SnapshotTestContext? context)
+        {
+            _previous = Snapshot.TestContext.Value;
+            Snapshot.TestContext.Value = context;
+        }
+
+        public void Dispose() => Snapshot.TestContext.Value = _previous;
     }
 
     private static class SnapshotHelpers
@@ -2244,4 +2322,42 @@ public sealed partial class SnapshotTests
             ? "snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.txt"
             : "snapshot.verified.txt");
     }
+
+    /// <summary>
+    /// A test declared in a base class runs once per derived class. The test framework reports the class the
+    /// test ran in, whereas the call stack could only report the declaring class, so each derived class gets
+    /// its own snapshot name.
+    /// </summary>
+    public abstract class InheritedSnapshotTestsBase
+    {
+        [Fact]
+        public void Validate_NamesTheSnapshotAfterTheRunningClass_WhenTheTestIsInherited()
+        {
+            using var directory = TemporaryDirectory.Create();
+            SnapshotPathContext? capturedContext = null;
+            var settings = new SnapshotSettings()
+            {
+                AutoDetectContinuousEnvironment = false,
+                SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+                SnapshotPathStrategy = context =>
+                {
+                    capturedContext = context;
+                    return directory / (SnapshotSettings.Default.SnapshotPathStrategy(context).Name);
+                },
+            };
+
+            Snapshot.Validate("sample", settings);
+
+            Assert.NotNull(capturedContext);
+            Assert.False(capturedContext.StackWalkPerformed);
+            Assert.Equal(GetType().Name, capturedContext.ClassName);
+            Assert.Equal(nameof(Validate_NamesTheSnapshotAfterTheRunningClass_WhenTheTestIsInherited), capturedContext.MethodName);
+
+            var files = Directory.GetFiles(directory.FullPath);
+            Assert.Single(files);
+            Assert.Equal(GetType().Name + "_" + nameof(Validate_NamesTheSnapshotAfterTheRunningClass_WhenTheTestIsInherited) + ".verified.txt", Path.GetFileName(files[0]));
+        }
+    }
+
+    public sealed class InheritedSnapshotTests : InheritedSnapshotTestsBase;
 }

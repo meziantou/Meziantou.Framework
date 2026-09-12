@@ -82,9 +82,10 @@ You can choose how snapshot names are generated using `SnapshotSettings.Snapshot
 
 ## Calling `Snapshot.Validate` from a helper method
 
-Wrapping `Snapshot.Validate` in a helper method is supported. The test method is resolved by walking the
-stack until a method carrying a test attribute (`[Fact]`, `[Theory]`, `[Test]`, `[TestMethod]`) is found, so
-the helper frames are skipped and the snapshot is still named after the test, not after the helper.
+Wrapping `Snapshot.Validate` in a helper method is supported. The snapshot is still named after the test,
+not after the helper: the test method is read from the test framework context (Xunit v3, TUnit, and NUnit)
+and, under a framework that exposes no context (Xunit v2, MSTest), by walking the stack until a method
+carrying a test attribute (`[Fact]`, `[Theory]`, `[Test]`, `[TestMethod]`) is found.
 
 The snapshot directory, however, comes from `[CallerFilePath]`, which points at the file declaring the
 helper. Forward the caller information so the snapshots are created next to the test file:
@@ -115,10 +116,9 @@ public sealed class OpenApiTests
 
 No custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` is needed for this scenario.
 
-This also works when the helper is `async` and awaits before asserting. The test method is then no longer on
-the call stack, so the test name and class name are read from the test framework context instead (Xunit v3,
-TUnit, and NUnit). Under a test framework that exposes no context (Xunit v2, MSTest), await inside the helper
-*after* the call to `Snapshot.Validate` rather than before it, so the test method is still on the stack.
+This also works when the helper is `async` and awaits before asserting, as long as the test framework exposes
+a context. Under a test framework that exposes no context (Xunit v2, MSTest), the test method must still be on
+the call stack, so await inside the helper *after* the call to `Snapshot.Validate` rather than before it.
 
 If the same test calls the helper several times, set `Snapshot.TestContext` to give each call a distinct name
 (see [Test context](#test-context)).
@@ -157,9 +157,10 @@ Snapshot naming uses test context when available:
 
 - `Snapshot.TestContext` (`AsyncLocal<SnapshotTestContext?>`) can be set explicitly.
 - Xunit v3, TUnit, and NUnit display names are auto-detected to improve generated file names.
-- The test class and method names are auto-detected from the same frameworks. They are used when the call
-  stack does not contain the test method, which happens when the assertion runs in a helper method that
-  awaited before asserting.
+- The test class and method names are auto-detected from the same frameworks and are used as-is. The call
+  stack is only walked for a name the context does not provide: under Xunit v2, MSTest, or no test framework,
+  or when `Snapshot.TestContext` is set to a context that carries no `ClassName` or `MethodName`.
+- A test declared in a base class is named after the class it ran in, as reported by the test framework.
 
 ## Customization
 
@@ -171,10 +172,10 @@ Use `SnapshotSettings` to customize behavior:
 - `SnapshotPathStrategy` for full path generation
 
 A custom `SnapshotNamingStrategy` or `SnapshotPathStrategy` receives a `SnapshotPathContext`. Its `ClassName`
-and `MethodName` are read from the call stack, which is the most expensive part of an assertion, so they are
-only resolved when a strategy reads them: a strategy that uses neither never pays for that walk. Use
-`MemberName` when the name of the method that called the assertion - captured by the compiler, always
-available - is enough.
+and `MethodName` come from the test framework context when it exposes them, and from the call stack otherwise.
+The walk is the most expensive part of an assertion and only runs when a strategy reads a name the context did
+not provide: a strategy that uses neither name never pays for it. Use `MemberName` when the name of the method
+that called the assertion - captured by the compiler, always available - is enough.
 
 You can also set the default strategy using the `SNAPSHOTTESTING_STRATEGY` environment variable.
 The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).

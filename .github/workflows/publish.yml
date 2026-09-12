@@ -56,8 +56,8 @@ jobs:
 
       - name: Prepare NuGet artifact directory
         run: |
-          New-Item -ItemType Directory -Path "${{ env.NuGetDirectory }}" -Force | Out-Null
-          Set-Content -Path "${{ env.NuGetDirectory }}/artifact-placeholder.txt" -Value "placeholder"
+          New-Item -ItemType Directory -Path $env:NuGetDirectory -Force | Out-Null
+          Set-Content -Path (Join-Path $env:NuGetDirectory "artifact-placeholder.txt") -Value "placeholder"
       - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
         if: steps.package-project.outputs.has-project == 'true'
 
@@ -127,10 +127,10 @@ jobs:
         env:
           NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
         run: |
-          Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
-          $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+          Write-Host "Searching nupkg in folder: $env:NuGetDirectory"
+          $files = Get-ChildItem (Join-Path $env:NuGetDirectory "*") -Include *.nupkg
           $apiKey = $env:NUGETAPIKEY
-          $source = "${{ env.NuGetSource }}"
+          $source = $env:NuGetSource
 
           if ($files.Count -eq 0) {
             Write-Host "No NuGet package found to push."

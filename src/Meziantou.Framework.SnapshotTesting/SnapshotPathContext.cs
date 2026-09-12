@@ -63,9 +63,10 @@ public sealed record SnapshotPathContext
     /// Simple name of the type declaring the test, or <see langword="null" /> when it is unknown.
     /// </summary>
     /// <remarks>
-    /// Unless the value was provided explicitly, reading this walks the call stack the first time, which is
-    /// the most expensive part of an assertion. A strategy that reads neither this nor <see cref="MethodName" />
-    /// never pays for that walk.
+    /// Unless the value was provided explicitly, it comes from <see cref="TestContext" /> when the test
+    /// framework exposes it, and from the call stack otherwise. The walk is the most expensive part of an
+    /// assertion and runs the first time a name the test framework did not provide is read; a strategy that
+    /// reads neither this nor <see cref="MethodName" /> never pays for it.
     /// </remarks>
     public string? ClassName
     {
@@ -77,9 +78,10 @@ public sealed record SnapshotPathContext
     /// Name of the test method the snapshot belongs to.
     /// </summary>
     /// <remarks>
-    /// Unless the value was provided explicitly, reading this walks the call stack the first time, which is
-    /// the most expensive part of an assertion. Use <see cref="MemberName" /> when the name the compiler
-    /// captured at the call site is enough.
+    /// Unless the value was provided explicitly, it comes from <see cref="TestContext" /> when the test
+    /// framework exposes it, and from the call stack otherwise. The walk is the most expensive part of an
+    /// assertion and runs the first time a name the test framework did not provide is read. Use
+    /// <see cref="MemberName" /> when the name the compiler captured at the call site is enough.
     /// </remarks>
     public string MethodName
     {
@@ -89,8 +91,8 @@ public sealed record SnapshotPathContext
 
     /// <summary>
     /// Member name captured by the compiler at the call site, or <see langword="null" /> when the assertion
-    /// did not provide one. Unlike <see cref="MethodName" />, it never walks the call stack, but it describes
-    /// the method that called the assertion rather than the test method.
+    /// did not provide one. Unlike <see cref="MethodName" />, it never needs the test framework nor the call
+    /// stack, but it describes the method that called the assertion rather than the test method.
     /// </summary>
     public string? MemberName { get; init; }
 

@@ -9,15 +9,16 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     private static Func<SnapshotTestContext?>? s_nunitGetContext;
 
     /// <summary>
-    /// Simple name of the class declaring the running test, when the test framework exposes it. It is used
-    /// when the call stack does not contain the test method, which happens when the assertion runs in a
-    /// helper method that awaited before calling <see cref="Snapshot.Validate(object?, SnapshotType?, SnapshotSettings?, string?, int, string?)" />.
+    /// Simple name of the class the running test belongs to, when the test framework exposes it. When set, it
+    /// is used as <see cref="SnapshotPathContext.ClassName" /> without walking the call stack; the stack is
+    /// only consulted when it is <see langword="null" />.
     /// </summary>
     public string? ClassName { get; init; }
 
     /// <summary>
     /// Name of the running test method, when the test framework exposes it. Unlike <see cref="TestName" />,
-    /// it never contains the test arguments.
+    /// it never contains the test arguments. When set, it is used as <see cref="SnapshotPathContext.MethodName" />
+    /// without walking the call stack; the stack is only consulted when it is <see langword="null" />.
     /// </summary>
     public string? MethodName { get; init; }
 

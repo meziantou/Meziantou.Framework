@@ -26,22 +26,29 @@ public class SnapshotCallerContextBenchmark
         File.WriteAllText(_sourceFilePath, "");
     }
 
+    private static readonly SnapshotTestContext TestContext = new() { ClassName = nameof(SnapshotCallerContextBenchmark), MethodName = nameof(Create) };
+
+    /// <summary>No test framework context: the name has to come from the call stack.</summary>
+    [Benchmark(Baseline = true)]
+    public string Create() => Recurse(StackDepth, testContext: null);
+
+    /// <summary>The test framework exposes the names, so the call stack is never walked.</summary>
     [Benchmark]
-    public string Create() => Recurse(StackDepth);
+    public string CreateWithTestContext() => Recurse(StackDepth, TestContext);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private string Recurse(int depth)
+    private string Recurse(int depth, SnapshotTestContext? testContext)
     {
         if (depth > 0)
-            return Recurse(depth - 1);
+            return Recurse(depth - 1, testContext);
 
-        return CreateCallerContext();
+        return CreateCallerContext(testContext);
     }
 
     [SnapshotAssertion]
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    private string CreateCallerContext()
+    private string CreateCallerContext(SnapshotTestContext? testContext)
     {
-        return SnapshotCallerContext.Create(_sourceFilePath, lineNumber: 1, memberName: nameof(CreateCallerContext), testContext: null).MethodName;
+        return SnapshotCallerContext.Create(_sourceFilePath, lineNumber: 1, memberName: nameof(CreateCallerContext), testContext).MethodName;
     }
 }

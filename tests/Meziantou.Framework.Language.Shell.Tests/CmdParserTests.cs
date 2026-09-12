@@ -125,7 +125,11 @@ public sealed class CmdParserTests
     {
         var call = Assert.IsType<CmdCallStatementSyntax>(ShellSyntaxTree.ParseCommand("call :sub arg", ShellDialect.Cmd));
 
-        Assert.IsType<CmdLabelStatementSyntax>(call.Target);
+        // Calling a label is an ordinary command named after the label, not a label statement: its arguments,
+        // redirections, and the operators after it are parsed like any other command's.
+        var target = Assert.IsType<ShellCommandSyntax>(call.Target);
+        Assert.Equal(":sub", target.NameValue);
+        Assert.Equal(["arg"], target.Arguments.Select(argument => argument.Value));
     }
 
     [Fact]
@@ -444,7 +448,9 @@ public sealed class CmdParserTests
         var block = Assert.IsType<CmdParenthesizedBlockSyntax>(ShellSyntaxTree.ParseCommand("(call :VARDEL X)", ShellDialect.Cmd));
         var call = Assert.IsType<CmdCallStatementSyntax>(Assert.Single(block.Statements.Statements));
 
-        Assert.Equal("VARDEL X", Assert.IsType<CmdLabelStatementSyntax>(call.Target).Name);
+        var target = Assert.IsType<ShellCommandSyntax>(call.Target);
+        Assert.Equal(":VARDEL", target.NameValue);
+        Assert.Equal(["X"], target.Arguments.Select(argument => argument.Value));
         Assert.Equal(")", block.CloseParenToken.Text);
     }
 
@@ -527,5 +533,522 @@ public sealed class CmdParserTests
         var statement = Assert.IsType<CmdForStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
 
         Assert.Equal("%%i", tree.GetText().Text[statement.VariableToken.Span.Start..statement.VariableToken.Span.End]);
+    }
+
+    // The tests below pin down how cmd.exe itself splits a line. The grammar they follow is the one cmd's parser
+    // implements: a line is `s0 -> s1 [& s0]`, `s1 -> s2 [|| s1]`, `s2 -> s3 [&& s2]`, `s3 -> s4 [| s3]`, and the
+    // command of an `if`, `else`, or `for ... do` is a whole `s0`, so it runs to the end of the logical line.
+
+    private static ShellStatementSyntax SingleStatement(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        return Assert.Single(tree.GetRoot().Statements.Statements);
+    }
+
+    private static string[] DiagnosticIds(string text) => [.. ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).GetDiagnostics().Select(diagnostic => diagnostic.Id)];
+
+    [Theory]
+    // `if exist f del f & echo deleted` only echoes when the file existed: the `&` is part of the `if` command.
+    [InlineData("if 1==0 echo a & echo b", 2)]
+    [InlineData("if 1==0 echo a && echo b & echo c", 2)]
+    [InlineData("if exist a (echo y) & echo z", 2)]
+    public void IfBodyRunsToTheEndOfTheLine(string text, int expectedCommands)
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(SingleStatement(text));
+        var body = Assert.IsType<ShellCommandListSyntax>(statement.Body);
+
+        Assert.Equal(expectedCommands, body.Pipelines.Count);
+        Assert.Equal("&", Assert.Single(body.OperatorTokens).Text);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Fact]
+    public void ForBodyRunsToTheEndOfTheLine()
+    {
+        // `for %%i in (1 2) do echo %%i & echo x` echoes `x` once per iteration.
+        var statement = Assert.IsType<CmdForStatementSyntax>(SingleStatement("for %%i in (1 2) do echo %%i & echo x"));
+
+        Assert.HasCount(2, Assert.IsType<ShellCommandListSyntax>(statement.Body).Pipelines);
+    }
+
+    [Fact]
+    public void ElseBodyRunsToTheEndOfTheLine()
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(SingleStatement("if exist a (echo y) else echo n & echo m"));
+
+        Assert.NotNull(statement.ElseClause);
+        Assert.HasCount(2, Assert.IsType<ShellCommandListSyntax>(statement.ElseClause.Body).Pipelines);
+    }
+
+    [Fact]
+    public void BodyInsideABlockStopsAtTheClosingParenthesis()
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful("(if 1==1 echo a & echo b) & echo c", ShellDialect.Cmd);
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        var block = Assert.IsType<CmdParenthesizedBlockSyntax>(tree.GetRoot().Statements.Statements[0]);
+        var statement = Assert.IsType<CmdIfStatementSyntax>(Assert.Single(block.Statements.Statements));
+
+        Assert.HasCount(2, Assert.IsType<ShellCommandListSyntax>(statement.Body).Pipelines);
+    }
+
+    [Fact]
+    public void TrailingAmpersandAfterABodySeparatesTheStatement()
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful("if 1==1 echo a &\r\necho b\r\n", ShellDialect.Cmd);
+
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        Assert.IsType<ShellCommandSyntax>(Assert.IsType<CmdIfStatementSyntax>(tree.GetRoot().Statements.Statements[0]).Body);
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Theory]
+    // cmd reads a script a line at a time, so an `else` on the next line is a command of its own.
+    [InlineData("if exist a (echo y)\r\nelse (echo n)\r\n")]
+    [InlineData("if exist a (\r\necho y\r\n)\r\nelse (\r\necho n\r\n)\r\n")]
+    public void ElseOnTheFollowingLineIsNotAnElseClause(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+        var statement = Assert.IsType<CmdIfStatementSyntax>(tree.GetRoot().Statements.Statements[0]);
+
+        Assert.Null(statement.ElseClause);
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0002");
+    }
+
+    [Theory]
+    // A command body takes every word to the end of the line, `else` included, so only a `)` can precede an `else`.
+    [InlineData("if exist a goto x else goto y")]
+    [InlineData("if exist a echo x else echo y")]
+    public void ElseAfterACommandBodyIsNotAnElseClause(string text)
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(ShellSyntaxTree.ParseText(text, ShellDialect.Cmd).GetRoot().Statements.Statements[0]);
+
+        Assert.Null(statement.ElseClause);
+    }
+
+    [Theory]
+    [InlineData("else echo x")]
+    [InlineData("echo a\r\nelse echo x")]
+    [InlineData("(echo a\r\nelse (echo b))")]
+    public void ElseWithoutAnIf_IsReported(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0002");
+    }
+
+    [Theory]
+    // Outside a block a line break ends the line, so the command cannot start on the next one.
+    [InlineData("if exist a\r\necho hi\r\n")]
+    [InlineData("if 1==1\r\necho hi\r\n")]
+    [InlineData("for %%i in (a) do\r\necho hi\r\n")]
+    [InlineData("if exist a (echo y) else\r\necho hi\r\n")]
+    [InlineData("echo a |\r\necho hi\r\n")]
+    [InlineData("echo a &&\r\necho hi\r\n")]
+    [InlineData("echo a ||\r\necho hi\r\n")]
+    [InlineData("call\r\necho hi\r\n")]
+    public void MissingCommandAtTheEndOfTheLine_IsReportedAndTheNextLineStandsAlone(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains(tree.GetDiagnostics(), diagnostic => diagnostic.Id == "SHELL0001");
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[1]).NameValue);
+    }
+
+    [Theory]
+    [InlineData("call :sub arg & echo done", 2)]
+    [InlineData("call :sub & echo done", 2)]
+    [InlineData("(call :sub arg) & echo done", 2)]
+    public void CallToALabelEndsAtAnOperator(string text, int expectedStatements)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Equal(expectedStatements, tree.GetRoot().Statements.Statements.Count);
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void CallToALabelTakesArgumentsAndRedirections()
+    {
+        var list = Assert.IsType<ShellCommandListSyntax>(SingleStatement("call :sub \"a b\" %1 >> log.txt 2>&1 || goto :error"));
+        var call = Assert.IsType<CmdCallStatementSyntax>(list.Pipelines[0]);
+        var target = Assert.IsType<ShellCommandSyntax>(call.Target);
+
+        Assert.Equal(":sub", target.NameValue);
+        Assert.Equal("a b", target.Arguments[0].Value);
+        Assert.HasCount(2, target.Redirections);
+        Assert.IsType<CmdGotoStatementSyntax>(list.Pipelines[1]);
+    }
+
+    [Theory]
+    [InlineData("set /p VERSION=<version.txt", "VERSION", null, "<", "version.txt")]
+    [InlineData("set x=hello>out.txt", "x", "hello", ">", "out.txt")]
+    [InlineData("set /a x=1 2>nul", "x", "1 ", ">", "nul")]
+    [InlineData("set \"x=a b\" >nul", "x", "a b", ">", "nul")]
+    public void SetRedirectionIsNotPartOfTheValue(string text, string expectedName, string? expectedValue, string expectedOperator, string expectedTarget)
+    {
+        var set = Assert.IsType<CmdSetStatementSyntax>(SingleStatement(text));
+        var redirection = Assert.Single(set.Redirections);
+
+        Assert.Equal(expectedName, set.Name);
+        Assert.Equal(expectedValue, set.Value?.Value);
+        Assert.Equal(expectedOperator, redirection.OperatorToken.Text);
+        Assert.Equal(expectedTarget, redirection.Target?.Value);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    // Quotes, escapes, and a redirection followed by more text keep the characters in the value.
+    [InlineData("set x=\"a>b\"", "\"a>b\"")]
+    [InlineData("set x=a^>b", "a>b")]
+    [InlineData("set \"x=a>b\"", "a>b")]
+    public void SetValueKeepsProtectedRedirectionCharacters(string text, string expectedValue)
+    {
+        var set = Assert.IsType<CmdSetStatementSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedValue, set.Value?.Value);
+        Assert.Empty(set.Redirections);
+    }
+
+    [Theory]
+    [InlineData("(echo a & echo b) > out.txt", 1)]
+    [InlineData("(\r\necho a\r\necho b\r\n) >> out.txt 2>&1", 2)]
+    public void BlockRedirectionBelongsToTheBlock(string text, int expectedRedirections)
+    {
+        var block = Assert.IsType<CmdParenthesizedBlockSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedRedirections, block.Redirections.Count);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    [InlineData("set \"NAME=value\"", "NAME", "value")]
+    [InlineData("set \"NAME=value with spaces\"", "NAME", "value with spaces")]
+    [InlineData("set \"NAME=a & b\"", "NAME", "a & b")]
+    // Everything after the last quote is ignored.
+    [InlineData("set \"NAME=value\" junk", "NAME", "value")]
+    [InlineData("set /p \"NAME=Prompt: \"", "NAME", "Prompt: ")]
+    [InlineData("set \"NAME=\"", "NAME", "")]
+    public void QuotedSetAssignment_ExposesTheNameAndValueWithoutTheQuotes(string text, string expectedName, string expectedValue)
+    {
+        var set = Assert.IsType<CmdSetStatementSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedName, set.Name);
+        Assert.Equal(expectedValue, set.Value?.Value ?? "");
+    }
+
+    [Fact]
+    public void UnquotedSetAssignment_KeepsTheQuotesInTheValue()
+    {
+        var set = Assert.IsType<CmdSetStatementSyntax>(SingleStatement("set x=\"a b\""));
+
+        Assert.Equal("x", set.Name);
+        Assert.Equal("\"a b\"", set.Value?.Value);
+    }
+
+    [Theory]
+    // `,`, `;`, and `=` separate the items of a for set like spaces do; `for /l` relies on it.
+    [InlineData("for %%i in (a,b;c) do echo %%i", new[] { "a", "b", "c" })]
+    [InlineData("for %%i in (a=b) do echo %%i", new[] { "a", "b" })]
+    [InlineData("for /l %%n in (1,1,10) do echo %%n", new[] { "1", "1", "10" })]
+    [InlineData("for /l %%n in (1, 1, 10) do echo %%n", new[] { "1", "1", "10" })]
+    [InlineData("for %%i in (\r\n  a\r\n  b\r\n) do echo %%i", new[] { "a", "b" })]
+    // Inside the set, `rem` and `::` are items, not comments that would hide the rest of the line.
+    [InlineData("for %%i in (rem x) do echo %%i", new[] { "rem", "x" })]
+    [InlineData("for %%i in (::x y) do echo %%i", new[] { "::x", "y" })]
+    public void ForSetItemsAreSplitOnTokenDelimiters(string text, string[] expectedItems)
+    {
+        var statement = Assert.IsType<CmdForStatementSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedItems, statement.Items.Select(item => item.Value));
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Fact]
+    public void ForFSetKeepsTheDelimitersOfItsCommand()
+    {
+        // `for /f` hands the text between the parentheses to its own parser, which is why `delims=,` works.
+        var statement = Assert.IsType<CmdForStatementSyntax>(SingleStatement("for /f \"delims=,\" %%a in ('echo a,b') do echo %%a"));
+
+        Assert.Equal(["'echo", "a,b'"], statement.Items.Select(item => item.Value));
+    }
+
+    [Theory]
+    [InlineData("for /r %ROOT% %%f in (*) do echo %%f", "f", 1)]
+    [InlineData("for /r \"%ROOT%\" %%f in (*) do echo %%f", "f", 1)]
+    [InlineData("for /r %1 %%f in (*) do echo %%f", "f", 1)]
+    [InlineData("for /d /r . %%d in (bin obj) do rd /s /q \"%%d\"", "d", 2)]
+    [InlineData("for %%# in (a) do echo %%#", "#", 0)]
+    [InlineData("for %i in (a) do echo %i", "i", 0)]
+    public void ForVariableIsTheTokenBeforeIn(string text, string expectedVariable, int expectedSwitchArguments)
+    {
+        var statement = Assert.IsType<CmdForStatementSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedVariable, statement.VariableName);
+        Assert.Equal(expectedSwitchArguments, statement.SwitchArguments.Count);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    // cmd only recognizes a keyword that forms a whole token, so these run programs.
+    [InlineData("for_each.bat arg")]
+    [InlineData("set-env.cmd arg")]
+    [InlineData("goto2 arg")]
+    [InlineData("if-x.cmd arg")]
+    [InlineData("call_me.bat arg")]
+    [InlineData("ifconfig arg")]
+    public void KeywordPrefixOfALongerWord_IsACommand(string text)
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(SingleStatement(text));
+
+        Assert.Equal(text[..text.IndexOf(' ', StringComparison.Ordinal)], command.NameValue);
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    [InlineData("goto:eof", typeof(CmdGotoStatementSyntax))]
+    [InlineData("call:sub", typeof(CmdCallStatementSyntax))]
+    [InlineData("set/a x=1", typeof(CmdSetStatementSyntax))]
+    [InlineData("if/i a==b echo x", typeof(CmdIfStatementSyntax))]
+    [InlineData("for/l %%n in (1,1,2) do echo %%n", typeof(CmdForStatementSyntax))]
+    public void KeywordFollowedByASwitchOrColon_IsStillAKeyword(string text, Type expectedType)
+    {
+        Assert.IsType(expectedType, SingleStatement(text));
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    [InlineData("if defined_x==1 echo y")]
+    [InlineData("if not_x==1 echo y")]
+    [InlineData("if exist.txt==x echo y")]
+    [InlineData("if errorlevel1==1 echo y")]
+    public void IfOperatorPrefixOfALongerWord_IsAComparisonOperand(string text)
+    {
+        var statement = Assert.IsType<CmdIfStatementSyntax>(SingleStatement(text));
+
+        Assert.False(statement.IsNegated);
+        Assert.IsType<ShellBinaryExpressionSyntax>(statement.Condition);
+    }
+
+    [Theory]
+    [InlineData("@if exist a (echo y) else (echo n)", typeof(CmdIfStatementSyntax))]
+    [InlineData("@for %%i in (a) do echo %%i", typeof(CmdForStatementSyntax))]
+    [InlineData("@set x=1", typeof(CmdSetStatementSyntax))]
+    [InlineData("@goto :eof", typeof(CmdGotoStatementSyntax))]
+    [InlineData("@call :sub", typeof(CmdCallStatementSyntax))]
+    [InlineData("@(echo a)", typeof(CmdParenthesizedBlockSyntax))]
+    public void AtPrefixDoesNotHideAKeyword(string text, Type expectedType)
+    {
+        Assert.IsType(expectedType, SingleStatement(text));
+        Assert.Empty(DiagnosticIds(text));
+    }
+
+    [Fact]
+    public void AtPrefixedIfBlockSpanningLinesParsesAsOneStatement()
+    {
+        const string Text = "@if not exist out (\r\n  mkdir out\r\n)\r\necho done\r\n";
+        var tree = ShellSyntaxAssert.TextIsFaithful(Text, ShellDialect.Cmd);
+
+        Assert.HasCount(2, tree.GetRoot().Statements.Statements);
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Theory]
+    // A caret at the end of a line escapes the first character of the next one, so this `&` is literal text.
+    [InlineData("echo a^\r\n&b", "a&b")]
+    [InlineData("echo a^\n|b", "a|b")]
+    // When the next line is empty the escaped character is the line break itself, and the command goes on.
+    [InlineData("echo a^\r\n\r\nb", "a\nb")]
+    public void CaretAtTheEndOfALineEscapesTheNextCharacter(string text, string expectedValue)
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(SingleStatement(text));
+
+        Assert.Equal(expectedValue, Assert.Single(command.Arguments).Value);
+    }
+
+    [Fact]
+    public void CaretContinuationBeforeAnOperatorAfterWhitespace_EscapesTheOperator()
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(SingleStatement("echo a ^\r\n& b"));
+
+        Assert.Equal(["a", "&", "b"], command.Arguments.Select(argument => argument.Value));
+    }
+
+    [Fact]
+    public void CaretDoesNotEscapeAPercentExpansion()
+    {
+        // Percent expansion happens before carets are processed, so `^%PATH%` escapes the first expanded character.
+        var command = Assert.IsType<ShellCommandSyntax>(SingleStatement("echo ^%PATH%"));
+
+        Assert.Equal("PATH", Assert.Single(command.DescendantNodes().OfType<CmdVariableReferenceSyntax>()).Name);
+    }
+
+    [Theory]
+    // Delayed expansion runs after the line is split, so a `!` cannot pair with one past an operator.
+    [InlineData("echo Done! & echo ok!", 2)]
+    [InlineData("echo a! | findstr b!", 1)]
+    public void DelayedExpansionDoesNotSpanAnOperator(string text, int expectedStatements)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Equal(expectedStatements, tree.GetRoot().Statements.Statements.Count);
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<CmdVariableReferenceSyntax>());
+    }
+
+    [Theory]
+    [InlineData("goto")]
+    [InlineData("goto\r\necho hi")]
+    [InlineData("if 1==1 goto")]
+    public void GotoWithoutALabel_IsReported(string text)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains("SHELL0013", DiagnosticIds(text));
+    }
+
+    [Theory]
+    [InlineData(")")]
+    [InlineData(") comment & echo x")]
+    [InlineData("echo a & ) echo b")]
+    public void CloseParenWithNoOpenBlock_IgnoresTheRestOfTheLineAndIsReported(string text)
+    {
+        // With no block open, cmd discards a `)` in command position together with the rest of its line.
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains("SHELL0002", DiagnosticIds(text));
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes().OfType<ShellCommandSyntax>(), command => command.NameValue is ")" or "x" or "b");
+    }
+
+    [Fact]
+    public void CloseParenWithNoOpenBlock_DoesNotSwallowTheNextLine()
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(")\r\necho after\r\n", ShellDialect.Cmd);
+
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[^1]).NameValue);
+    }
+
+    [Theory]
+    [InlineData("if", "SHELL0040")]
+    [InlineData("if 1==", "SHELL0040")]
+    [InlineData("if 1== \r\necho hi", "SHELL0040")]
+    [InlineData("if exist", "SHELL0040")]
+    [InlineData("if not defined", "SHELL0040")]
+    [InlineData("if 1 equ", "SHELL0040")]
+    [InlineData("if a b echo x", "SHELL0041")]
+    public void IncompleteIfCondition_IsReported(string text, string expectedId)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains(expectedId, DiagnosticIds(text));
+    }
+
+    [Fact]
+    public void IfConditionWhoseOperatorComesFromAVariable_IsNotReported()
+    {
+        // `set C=1==1` makes `if %C% echo hi` a valid comparison, so the parser cannot tell.
+        Assert.Empty(DiagnosticIds("if %C% echo hi"));
+    }
+
+    [Theory]
+    [InlineData("for %%i\r\necho hi\r\n")]
+    [InlineData("for %%i in\r\necho hi\r\n")]
+    [InlineData("for %%i in (a)\r\necho hi\r\n")]
+    [InlineData("for %%i in a do echo %%i\r\necho hi\r\n")]
+    public void MalformedForHeader_IsReportedWithoutSwallowingTheNextLine(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains("SHELL0012", DiagnosticIds(text));
+        Assert.IsType<CmdForStatementSyntax>(tree.GetRoot().Statements.Statements[0]);
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[^1]).NameValue);
+    }
+
+    [Fact]
+    public void MissingForParenthesis_StillFindsTheBody()
+    {
+        var statement = Assert.IsType<CmdForStatementSyntax>(ShellSyntaxTree.ParseText("for %%i in a do echo %%i", ShellDialect.Cmd).GetRoot().Statements.Statements[0]);
+
+        Assert.True(statement.DoKeyword.IsPresent());
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(statement.Body).NameValue);
+    }
+
+    [Fact]
+    public void UnclosedBlock_KeepsTheStatementsAfterItAsNodes()
+    {
+        // cmd reads to the end of the file looking for the `)`, so the rest of the script belongs to the block.
+        const string Text = "if exist a (\r\n  echo a\r\nif exist b (echo b) else (echo c)\r\nfor %%i in (x) do echo %%i\r\n:end\r\necho done\r\n";
+        var tree = ShellSyntaxAssert.TextIsFaithful(Text, ShellDialect.Cmd);
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("SHELL0009", diagnostic.Id);
+        var block = Assert.IsType<CmdParenthesizedBlockSyntax>(Assert.IsType<CmdIfStatementSyntax>(Assert.Single(tree.GetRoot().Statements.Statements)).Body);
+        Assert.Equal(
+            [typeof(ShellCommandSyntax), typeof(CmdIfStatementSyntax), typeof(CmdForStatementSyntax), typeof(CmdLabelStatementSyntax), typeof(ShellCommandSyntax)],
+            block.Statements.Statements.Select(statement => statement.GetType()));
+    }
+
+    [Theory]
+    [InlineData("()")]
+    [InlineData("if 1==1 (\r\n) else (echo b)")]
+    public void EmptyBlock_IsReported(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Contains("SHELL0001", DiagnosticIds(text));
+        Assert.NotEmpty(tree.GetRoot().DescendantNodes().OfType<CmdParenthesizedBlockSyntax>());
+    }
+
+    [Fact]
+    public void BlockHoldingOnlyAComment_IsNotEmpty()
+    {
+        Assert.Empty(DiagnosticIds("if 1==1 (\r\n  rem nothing to do\r\n) else (echo b)\r\n"));
+    }
+
+    [Fact]
+    public void TextAfterTheClosingParenthesisOfABlock_IsReported()
+    {
+        const string Text = "(echo a) b\r\necho c\r\n";
+        var tree = ShellSyntaxAssert.TextIsFaithful(Text, ShellDialect.Cmd);
+
+        Assert.Contains("SHELL0002", DiagnosticIds(Text));
+        Assert.Equal("echo", Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[^1]).NameValue);
+    }
+
+    [Theory]
+    [InlineData("echo a | | echo b")]
+    [InlineData("echo a && && echo b")]
+    [InlineData("echo > & echo b")]
+    [InlineData("echo \"a & echo b")]
+    [InlineData("if exist a (echo a) else")]
+    [InlineData("for /f \"tokens=1 %%a in (x) do echo %%a")]
+    [InlineData("set \"x=1")]
+    [InlineData("@(")]
+    [InlineData("@if")]
+    [InlineData("for %%i in (a) do (")]
+    [InlineData("if a==b (echo) else (")]
+    [InlineData(") ^\r\nx")]
+    public void MalformedInputReportsAndRoundTrips(string text)
+    {
+        ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.NotEmpty(DiagnosticIds(text));
+    }
+
+    [Theory]
+    [InlineData("@echo off\r\nsetlocal EnableDelayedExpansion\r\nset /p VERSION=<version.txt\r\n(\r\n  echo !VERSION!\r\n) > out.txt\r\n")]
+    [InlineData("call :build || goto :error\r\ngoto :eof\r\n:build\r\nmsbuild ^\r\n  /p:Configuration=Release\r\nexit /b %errorlevel%\r\n:error\r\nexit /b 1\r\n")]
+    [InlineData("if errorlevel 1 echo failed & exit /b 1\r\n")]
+    [InlineData("for /d /r . %%d in (bin obj) do @if exist \"%%d\" rd /s /q \"%%d\"\r\n")]
+    [InlineData("for /f \"usebackq tokens=1,2 delims==\" %%a in (\"config.ini\") do set \"%%a=%%b\"\r\n")]
+    [InlineData("set \"PATH=%PATH%;C:\\Program Files (x86)\\tool\"\r\n")]
+    [InlineData("if \"%~1\"==\"\" (echo usage) else if /i \"%~1\"==\"--help\" (echo help) else (call :run %*)\r\n")]
+    [InlineData("echo Done!\r\n")]
+    [InlineData("(for %%i in (a b) do (\r\n  echo %%i\r\n)) 2>nul\r\n")]
+    public void RealisticScripts_ParseWithoutDiagnostics(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Cmd);
+
+        Assert.Empty(tree.GetDiagnostics());
     }
 }

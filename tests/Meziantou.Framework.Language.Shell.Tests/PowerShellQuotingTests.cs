@@ -346,15 +346,26 @@ public sealed class PowerShellQuotingTests
     [Theory]
     [InlineData("param 1")]
     [InlineData("param")]
-    [InlineData("clean -eq 2")]
-    [InlineData("end -Path x")]
-    [InlineData("data 1")]
     public void KeywordsWithoutTheirSyntax_AreOrdinaryCommands(string text)
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
 
         Assert.Empty(tree.GetDiagnostics());
         Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
+    }
+
+    [Theory]
+    // A named block keyword only counts as one at the start of a script body. pwsh rejects `end -Path x` on its own
+    // (MissingNamedStatementBlock) but accepts it as a command after another statement.
+    [InlineData("Get-Date; clean -eq 2")]
+    [InlineData("Get-Date; end -Path x")]
+    [InlineData("Get-Date\nprocess { }")]
+    public void NamedBlockKeywordsAfterAStatement_AreOrdinaryCommands(string text)
+    {
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.IsType<ShellCommandSyntax>(tree.GetRoot().Statements.Statements[^1]);
     }
 
     [Theory]
@@ -412,10 +423,22 @@ public sealed class PowerShellQuotingTests
         Assert.Equal("outer", statement.Label);
     }
 
-    [Fact]
-    public void NumberMayBeIndexed()
+    [Theory]
+    // pwsh tokenizes a number that runs into other text as a single generic token, so these are command names.
+    [InlineData("1[int]")]
+    [InlineData("1abc")]
+    public void NumberGluedToOtherText_IsACommandName(string text)
     {
-        var tree = ShellSyntaxTree.ParseText("1[int]", ShellDialect.PowerShellCore);
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements)).NameValue);
+    }
+
+    [Fact]
+    public void ParenthesizedNumberMayBeIndexed()
+    {
+        var tree = ShellSyntaxTree.ParseText("(1)[0]", ShellDialect.PowerShellCore);
 
         Assert.Empty(tree.GetDiagnostics());
         Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellIndexExpressionSyntax>());

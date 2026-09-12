@@ -437,11 +437,89 @@ public sealed class PowerShellParserTests
     [InlineData("$x = $info.$name")]
     // Automatic variables keep their scope prefix.
     [InlineData("$x = [int]!$global:?")]
-    [InlineData("$x = $global:^")]
     // The unary comma builds a one-element array.
     [InlineData("$x = ,1")]
     [InlineData(",1")]
     [InlineData("$x = ,$y")]
+    // Switch clauses and hash entries may be separated by `;`, also at the start of a line.
+    [InlineData("switch ($x) { 'a' { 1 } ; 'b' { 2 } }")]
+    [InlineData("switch ($x) { 'a' { };; }")]
+    [InlineData("switch ($x) { [int] { 1 } }")]
+    [InlineData("$h = @{ a = 1\n; b = 2 }")]
+    [InlineData("$h = @{ a = 1 ;; b = 2 }")]
+    // Data sections: the block may start on the next line, and -SupportedCommand takes a list of commands.
+    [InlineData("data\n{ 'a' }")]
+    [InlineData("data x -SupportedCommand a, b { 'a' }")]
+    [InlineData("try { } catch [a]\n, [b] { }")]
+    // Pipeline chains are allowed wherever a pipeline is.
+    [InlineData("foreach ($a in a && b) { }")]
+    [InlineData("@{ a = b && c }")]
+    [InlineData("return a && b")]
+    // The value of an assignment is a statement.
+    [InlineData("$x = if ($a) { 1 } else { 2 }")]
+    [InlineData("$x = foreach ($i in 1..2) { $i }")]
+    [InlineData("$x = switch ($a) { 1 { 2 } }")]
+    [InlineData("$x = $y = 1")]
+    // Assignment targets PowerShell accepts.
+    [InlineData(",$x = 1")]
+    [InlineData("$a.b, $c[0] = 1, 2")]
+    [InlineData("$x.M() = 1")]
+    [InlineData("[ValidateNotNull()][int]$x = 1")]
+    [InlineData("$repoRoot == Split-Path x")]
+    // Command arguments: arrays across `,` and member access on values.
+    [InlineData("Write-Output a , b")]
+    [InlineData("Write-Output a,\nb")]
+    [InlineData("Write-Host -Path:a,b")]
+    [InlineData("Write-Host $a.b.c()")]
+    [InlineData("Write-Host (Get-Date).Year")]
+    [InlineData("Write-Host $(1).ToString()")]
+    [InlineData("Write-Host \"a\".Length")]
+    [InlineData("Write-Host $a. b")]
+    [InlineData("Get-Item $x ; Get-Date")]
+    // Member access forms.
+    [InlineData("$x.Where{ $_ }.Count")]
+    [InlineData("$Matches.1")]
+    [InlineData("$x. y")]
+    [InlineData("$x.($name)")]
+    [InlineData("$x.$($name)")]
+    [InlineData("[int]::(1)")]
+    [InlineData("[int]:: MaxValue")]
+    [InlineData("$a::b()")]
+    [InlineData("{ 1 }.Invoke()")]
+    // Casts and numbers.
+    [InlineData("$x -is [int] -and $y")]
+    [InlineData("$x = [int] -1")]
+    [InlineData("$x = [int]!$a")]
+    [InlineData("$x = [int] { 1 }")]
+    [InlineData("1.")]
+    [InlineData("$x = 5.")]
+    [InlineData("1kb + 0x10L")]
+    // Statements that end with a block need no terminator.
+    [InlineData("if ($true) { 1 } 2")]
+    [InlineData("function f { } f")]
+    [InlineData("param($a) Get-Date")]
+    // Named blocks, and their keywords used as commands outside of that position.
+    [InlineData("function f { begin { } ; process { } }")]
+    [InlineData("function f { [CmdletBinding()] param($a) begin { } end { } }")]
+    [InlineData("Get-Date; process { }")]
+    // Background jobs, added in PowerShell 7.
+    [InlineData("Start-Sleep 1 &")]
+    [InlineData("(Start-Sleep 1 &)")]
+    [InlineData("a && b &")]
+    // Words that look like operators but are commands.
+    [InlineData("$ foo")]
+    [InlineData("!abc")]
+    [InlineData("-abc")]
+    [InlineData("+1")]
+    [InlineData("$x = $y>out.txt")]
+    // Variables.
+    [InlineData("\"${a}:\"")]
+    [InlineData("${a`}b}")]
+    [InlineData("$env::x")]
+    // Class members, which the tree keeps as plain statements.
+    [InlineData("class A { M() { } }")]
+    [InlineData("class A { A() : base() { } }")]
+    [InlineData("class A { hidden [string]$y = 'a'; static [int] N([int]$a) { return $a } }")]
     public void ConstructsAcceptedByPowerShell_ParseWithoutDiagnostics(string text)
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
@@ -657,7 +735,7 @@ public sealed class PowerShellParserTests
     [InlineData("$?", "?")]
     [InlineData("$^", "^")]
     [InlineData("$global:?", "global:?")]
-    [InlineData("$script:^", "script:^")]
+    [InlineData("$script:?", "script:?")]
     public void AutomaticVariables_KeepTheirScopePrefix(string text, string expectedName)
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);

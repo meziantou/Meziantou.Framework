@@ -89,10 +89,73 @@ internal sealed partial class PowerShellParser
             return left;
 
         var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, length);
+        if (!IsAssignable(left))
+        {
+            AddDiagnostic(operatorToken.Span, "SHELL0027", "The left-hand side of an assignment must be a variable, a property, or an array element.");
+        }
+
         AccumulateStatementTrivia();
-        ShellSyntaxNode value = IsExpressionStart() ? ParseAssignmentExpression() : ParseCommand();
+
+        // The value of an assignment is a statement, so `$x = if ($a) { 1 }` and `$x = foreach (…) { }` assign what
+        // the statement outputs.
+        ShellSyntaxNode value;
+        if (IsExpressionStart())
+        {
+            value = ParseAssignmentExpression();
+        }
+        else if (IsAtStatementKeyword())
+        {
+            value = ParseStatement();
+        }
+        else
+        {
+            value = ParseCommand();
+        }
 
         return new PowerShellAssignmentExpressionSyntax(left, operatorToken, value);
+    }
+
+    /// <summary>
+    /// Returns whether <paramref name="target"/> can be assigned to. PowerShell checks this while parsing, so
+    /// <c>1 = 2</c> and <c>-$x = 1</c> are syntax errors, while <c>[int]$x, $y = 1, 2</c> is not.
+    /// </summary>
+    private static bool IsAssignable(ShellSyntaxNode? target) => target switch
+    {
+        PowerShellVariableExpressionSyntax or PowerShellMemberAccessExpressionSyntax or PowerShellIndexExpressionSyntax
+            or PowerShellInvocationExpressionSyntax or PowerShellParenthesizedExpressionSyntax => true,
+        PowerShellCastExpressionSyntax cast => IsAssignable(cast.GetSlot(1) as ShellSyntaxNode),
+
+        // `,$x = 1` assigns to a one-element array of assignable targets.
+        PowerShellUnaryExpressionSyntax unary when unary.GetSlot(0)?.ToString() == "," => IsAssignable(unary.GetSlot(1) as ShellSyntaxNode),
+        PowerShellArrayLiteralSyntax array => AllAssignable(array.GetSlot(0)),
+        _ => false,
+    };
+
+    private static bool AllAssignable(GreenNode? elements)
+    {
+        if (elements is null)
+            return false;
+
+        if (!elements.IsList)
+            return IsAssignable(elements as ShellSyntaxNode);
+
+        for (var index = 0; index < elements.SlotCount; index += 2)
+        {
+            if (!IsAssignable(elements.GetSlot(index) as ShellSyntaxNode))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Returns whether a keyword that starts a statement other than a pipeline is at the current position.</summary>
+    private bool IsAtStatementKeyword()
+    {
+        if (_lexer.Current == ':' && PowerShellLexer.IsNameStart(_lexer.Peek(1)) && IsLabelOnALoop())
+            return true;
+
+        return PeekKeyword() is "if" or "while" or "do" or "for" or "foreach" or "switch" or "try" or "trap" or "function" or "filter"
+            or "workflow" or "class" or "enum" or "data" or "using" or "return" or "throw" or "exit" or "break" or "continue";
     }
 
     private int GetAssignmentOperatorLength()
@@ -103,7 +166,8 @@ internal sealed partial class PowerShellParser
         {
             ('?', '?', '=') when _options.Dialect.HasFeature(ShellDialectFeatures.NullCoalescing) => 3,
             ('+', '=', _) or ('-', '=', _) or ('*', '=', _) or ('/', '=', _) or ('%', '=', _) => 2,
-            ('=', not '=', _) => 1,
+            // PowerShell has no `==` operator: `$a == 1` assigns the result of a command named `=`.
+            ('=', _, _) => 1,
             _ => 0,
         };
     }
@@ -357,16 +421,42 @@ internal sealed partial class PowerShellParser
         return ParsePostfixExpression();
     }
 
-    private bool IsCastOperandStart() => _lexer.Current is '$' or '(' or '@' or '"' or '\'' or '[' || char.IsAsciiDigit(_lexer.Current);
+    /// <summary>Returns whether what follows a type literal is the operand of a cast, as in <c>[int]$x</c> or <c>[int] -1</c>.</summary>
+    private bool IsCastOperandStart()
+    {
+        var current = _lexer.Current;
+        if (current is '$' or '(' or '@' or '"' or '\'' or '[' or '!' or '{' || char.IsAsciiDigit(current))
+            return true;
+
+        // A binary operator such as `-and` or `-is` is not an operand: `$x -is [int] -and $y`.
+        if (current is '-' or '+')
+        {
+            if (PeekWordOperator() is { } wordOperator)
+                return current == '-' && Array.IndexOf(UnaryWordOperators, wordOperator) >= 0;
+
+            var next = _lexer.Peek(1);
+
+            return char.IsAsciiDigit(next) || next is '$' or '(' or '@' or '"' or '\'' or '[' || (next == '.' && char.IsAsciiDigit(_lexer.Peek(2)));
+        }
+
+        return false;
+    }
 
     private ShellExpressionSyntax ParsePostfixExpression() => ParsePostfixOperators(ParsePrimaryExpression());
 
-    private ShellExpressionSyntax ParsePostfixOperators(ShellExpressionSyntax expression)
+    /// <param name="expression">The expression the operators apply to.</param>
+    /// <param name="argumentMode">
+    /// Set for an expression inside a command argument, as in <c>Write-Host $a.b.c()</c>. There, a member name has to
+    /// touch its <c>.</c> and <c>++</c> is plain text.
+    /// </param>
+    private ShellExpressionSyntax ParsePostfixOperators(ShellExpressionSyntax expression, bool argumentMode = false)
     {
         var nullConditional = _options.Dialect.HasFeature(ShellDialectFeatures.NullCoalescing);
         while (true)
         {
-            if (_lexer.Current is '.' && (PowerShellLexer.IsNameStart(_lexer.Peek(1)) || _lexer.Peek(1) is '$' or '\'' or '"'))
+            // A `.` that touches the expression accesses a member, and in expression mode the name may follow after
+            // whitespace, as in `$x. y`. Two dots are the range operator instead.
+            if (_lexer.Current is '.' && _lexer.Peek(1) != '.' && (!argumentMode || !IsSpaceOrLineEnd(1)))
             {
                 var operatorToken = ReadOperatorToken(SyntaxKind.DotToken, length: 1);
                 expression = ContinueMemberAccess(expression, operatorToken);
@@ -399,7 +489,7 @@ internal sealed partial class PowerShellParser
             }
 
             // `$x++` and `$x ++` are both postfix increments; the whitespace becomes the operator's leading trivia.
-            if (IsAtPostfixIncrement())
+            if (!argumentMode && IsAtPostfixIncrement())
             {
                 AccumulateInlineTrivia();
                 var operatorToken = ReadOperatorToken(SyntaxKind.OperatorToken, length: 2);
@@ -429,6 +519,19 @@ internal sealed partial class PowerShellParser
         var memberNameToken = ReadMemberNameToken();
         var access = new PowerShellMemberAccessExpressionSyntax(target, operatorToken, memberNameToken);
 
+        // `$items.Where{ $_ }` calls the method with a script block and no parentheses at all.
+        if (_lexer.Current == '{' && memberNameToken.Green is { IsMissing: false })
+        {
+            var blockStart = _lexer.Position;
+            var scriptBlock = ParseScriptBlock();
+
+            return new PowerShellInvocationExpressionSyntax(
+                access,
+                MissingToken(SyntaxKind.OpenParenToken, blockStart),
+                ParserHelpers.Separated(new List<ShellExpressionSyntax> { scriptBlock }, separators: null),
+                MissingToken(SyntaxKind.CloseParenToken, _lexer.Position));
+        }
+
         if (_lexer.Current != '(')
             return access;
 
@@ -439,7 +542,14 @@ internal sealed partial class PowerShellParser
         {
             AccumulateStatementTrivia();
             if (_lexer.IsAtEnd || _lexer.Current == ')')
+            {
+                if (separators.Count > 0)
+                {
+                    AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected an expression after ','.");
+                }
+
                 break;
+            }
 
             arguments.Add(ParseTernaryExpression());
             AccumulateStatementTrivia();
@@ -459,9 +569,34 @@ internal sealed partial class PowerShellParser
 
     private ScannedToken ReadMemberNameToken()
     {
+        AccumulateStatementTrivia();
         var text = _lexer.Text;
         var start = _lexer.Position;
         var scan = start;
+
+        // A member name may be computed, as in `$x.($name)`, `$x.$($name)`, or `$x.{ $name }`. The tree keeps the
+        // whole group as the name.
+        if (scan < text.Length && (text[scan] is '(' or '{' || (text[scan] is '$' or '@' && scan + 1 < text.Length && text[scan + 1] == '(')))
+        {
+            if (text[scan] is not ('(' or '{'))
+            {
+                scan++;
+            }
+
+            var end = SkipBalancedGroup(text, scan);
+            if (end < 0)
+            {
+                // Taking the rest of the line keeps an unclosed group from swallowing the statements after it.
+                AddDiagnostic(new TextSpan(start, 1), "SHELL0009", "Missing closing delimiter in member name.");
+                end = scan;
+                while (end < text.Length && SourceText.GetLineBreakLength(text, end) == 0)
+                {
+                    end++;
+                }
+            }
+
+            return ReadOperatorToken(SyntaxKind.GenericToken, end - start);
+        }
 
         // A member name may be quoted when it is not a valid identifier, as in `$xml.results.'test-case'`.
         if (scan < text.Length && text[scan] is '\'' or '"')
@@ -496,11 +631,58 @@ internal sealed partial class PowerShellParser
         if (scan == start)
         {
             AddDiagnostic(new TextSpan(start, 0), "SHELL0021", "Expected a member name.");
+            var (trivia, fullStart) = TakeTrivia();
 
-            return MissingToken(SyntaxKind.GenericToken, start);
+            return MissingToken(SyntaxKind.GenericToken, fullStart, trivia);
         }
 
         return ReadOperatorToken(SyntaxKind.GenericToken, scan - start);
+    }
+
+    /// <summary>
+    /// Returns the index just past the <c>( )</c> or <c>{ }</c> group that starts at <paramref name="index"/>, skipping
+    /// over quoted strings, or <c>-1</c> when the group is not closed.
+    /// </summary>
+    private static int SkipBalancedGroup(string text, int index)
+    {
+        var depth = 0;
+        while (index < text.Length)
+        {
+            var current = text[index];
+            if (current is '\'' or '"')
+            {
+                var quote = current;
+                index++;
+                while (index < text.Length && text[index] != quote)
+                {
+                    index += text[index] == '`' && quote == '"' ? 2 : 1;
+                }
+
+                index++;
+                continue;
+            }
+
+            if (current == '`')
+            {
+                index += 2;
+                continue;
+            }
+
+            if (current is '(' or '{')
+            {
+                depth++;
+            }
+            else if (current is ')' or '}')
+            {
+                depth--;
+                if (depth == 0)
+                    return index + 1;
+            }
+
+            index++;
+        }
+
+        return -1;
     }
 
     // ---- primary expressions ----
@@ -521,6 +703,12 @@ internal sealed partial class PowerShellParser
                 return ParseHashLiteral();
             case '@' when IsAtHereStringStart():
                 return ParseHereString();
+            case '@' when _lexer.Peek(1) is '"' or '\'':
+                return ParseMalformedHereStringHeader();
+            case '@' when PowerShellLexer.IsVariableNameCharacter(_lexer.Peek(1)):
+                // `@args` splats, which only an argument of a command can do.
+                AddDiagnostic(new TextSpan(_lexer.Position, 1), "SHELL0002", "A splatted variable can only be used as a command argument.");
+                return ParseVariableExpression();
             case '@':
                 return ParseVariableExpression();
             case '(':
@@ -538,15 +726,22 @@ internal sealed partial class PowerShellParser
         if (char.IsAsciiDigit(_lexer.Current) || (_lexer.Current == '.' && char.IsAsciiDigit(_lexer.Peek(1))))
             return ParseNumberLiteral();
 
-        return new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, ReadBareToken());
+        // Expression mode has no bare words: in `1 + abc` the operand is missing and `abc` is left for the statement
+        // list, which reports it as unexpected. Not consuming it is what keeps `$x = 1 +` from swallowing the next
+        // line's command.
+        AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected an expression.");
+        var (trivia, fullStart) = TakeTrivia();
+
+        return new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, MissingToken(SyntaxKind.GenericToken, fullStart, trivia));
     }
 
     private PowerShellParenthesizedExpressionSyntax ParseParenthesizedExpression()
     {
-        var openParen = ExpectCharacter('(', SyntaxKind.OpenParenToken);
-        var statements = ParseStatementList(stopCharacter: ')');
+        AccumulateStatementTrivia();
+        var openParen = ReadOperatorToken(SyntaxKind.OpenParenToken, length: 1);
+        var (statements, closeParen) = ParseParenthesizedPipeline();
 
-        return new PowerShellParenthesizedExpressionSyntax(openParen, statements, ExpectCharacter(')', SyntaxKind.CloseParenToken));
+        return new PowerShellParenthesizedExpressionSyntax(openParen, statements, closeParen);
     }
 
     private PowerShellSubExpressionSyntax ParseSubExpression(SyntaxKind kind, int openLength)
@@ -568,25 +763,63 @@ internal sealed partial class PowerShellParser
             if (_lexer.IsAtEnd || _lexer.Current == '}')
                 break;
 
-            if (_lexer.Current == ';')
+            if (_lexer.Current is ';' or ')')
             {
                 // A separator with no entry in front of it is an error in PowerShell too. Leaving it unread ends the
                 // literal here and keeps the text, which consuming the token would drop.
-                AddDiagnostic(new TextSpan(_lexer.Position, 1), "SHELL0002", "Unexpected ';'.");
+                AddDiagnostic(new TextSpan(_lexer.Position, 1), "SHELL0002", $"Unexpected '{_lexer.Current}'.");
                 break;
             }
 
             var positionBefore = _lexer.Position;
+            var checkpoint = CreateCheckpoint();
 
-            // A key may be any simple expression, as in `@{ $parameter.Name = $parameter.Value }`, and a value may be
-            // an array or a whole pipeline, as in `@{ Names = $items | Sort-Object }`.
-            var key = ParsePostfixExpression();
-            var equalsToken = ExpectCharacter('=', SyntaxKind.EqualsToken);
-            AccumulateStatementTrivia();
-            var value = ParseClause(ParseArrayLiteralExpression);
+            // A key may be a bare word or any simple expression, as in `@{ $parameter.Name = $parameter.Value }`, and
+            // a value may be an array or a whole pipeline, as in `@{ Names = $items | Sort-Object }`.
+            var key = PowerShellLexer.IsNameStart(_lexer.Current)
+                ? new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, ReadIdentifierToken())
+                : ParsePostfixExpression();
 
+            // The `=` has to be on the same line as the key.
             AccumulateInlineTrivia();
-            var separator = _lexer.Current == ';' ? ReadOperatorToken(SyntaxKind.SemicolonToken, length: 1) : default;
+            if (_lexer.Current != '=')
+            {
+                // Without the `=` this is not an entry. Going back to where the key started and ending the literal
+                // there leaves what follows, often the statements after a forgotten `}`, to be read as statements.
+                Restore(checkpoint);
+                AddDiagnostic(new TextSpan(positionBefore, 0), "SHELL0012", "Expected '=' after the key of a hash literal entry, or '}' to close the hash literal.");
+                break;
+            }
+
+            var equalsToken = ReadOperatorToken(SyntaxKind.EqualsToken, length: 1);
+            AccumulateStatementTrivia();
+            ShellSyntaxNode value;
+            if (_lexer.IsAtEnd || _lexer.Current is ';' or '}' or ')')
+            {
+                AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected a value after '='.");
+                var (trivia, fullStart) = TakeTrivia();
+                value = new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, MissingToken(SyntaxKind.GenericToken, fullStart, trivia));
+            }
+            else
+            {
+                value = ParseClause(ParseArrayLiteralExpression);
+            }
+
+            // Entries are separated by `;` or by line breaks, and a `;` may start the next line.
+            AccumulateInlineTrivia();
+            var separator = default(ScannedToken);
+            if (_lexer.Current == ';' || IsAtSemicolonOnNextLines())
+            {
+                AccumulateStatementTrivia();
+                separator = ReadSemicolonRun();
+            }
+            else if (!_lexer.IsAtEnd && _lexer.Current != '}' && SourceText.GetLineBreakLength(_lexer.Text, _lexer.Position) == 0)
+            {
+                AddUnexpectedTokenDiagnostic();
+                entries.Add(new PowerShellHashEntrySyntax(key, equalsToken, value, separator));
+                break;
+            }
+
             entries.Add(new PowerShellHashEntrySyntax(key, equalsToken, value, separator));
 
             if (_lexer.Position == positionBefore)
@@ -594,6 +827,65 @@ internal sealed partial class PowerShellParser
         }
 
         return new PowerShellHashLiteralSyntax(openToken, ParserHelpers.List(entries), ExpectCharacter('}', SyntaxKind.CloseBraceToken));
+    }
+
+    /// <summary>Returns whether a <c>;</c> comes next once whitespace, line breaks, and comments are skipped.</summary>
+    private bool IsAtSemicolonOnNextLines()
+    {
+        var text = _lexer.Text;
+        var scan = _lexer.Position;
+        while (scan < text.Length)
+        {
+            if (char.IsWhiteSpace(text[scan]))
+            {
+                scan++;
+            }
+            else if (text[scan] == '<' && scan + 1 < text.Length && text[scan + 1] == '#')
+            {
+                var end = text.IndexOf("#>", scan + 2, StringComparison.Ordinal);
+                if (end < 0)
+                    return false;
+
+                scan = end + 2;
+            }
+            else if (text[scan] == '#')
+            {
+                while (scan < text.Length && SourceText.GetLineBreakLength(text, scan) == 0)
+                {
+                    scan++;
+                }
+            }
+            else
+            {
+                return text[scan] == ';';
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Reads an identifier, which unlike a command word stops at <c>-</c>, <c>.</c>, and <c>:</c>.</summary>
+    private ScannedToken ReadIdentifierToken()
+    {
+        var length = 0;
+        while (PowerShellLexer.IsNameCharacter(_lexer.Peek(length)))
+        {
+            length++;
+        }
+
+        return ReadOperatorToken(SyntaxKind.GenericToken, length);
+    }
+
+    /// <summary>Reads a run of adjacent <c>;</c> as one separator, since an empty entry between two of them is allowed.</summary>
+    private ScannedToken ReadSemicolonRun()
+    {
+        var length = 0;
+        while (_lexer.Peek(length) == ';')
+        {
+            length++;
+        }
+
+        return ReadOperatorToken(SyntaxKind.SemicolonToken, length);
     }
 
     private PowerShellVariableExpressionSyntax ParseVariableExpression()
@@ -610,8 +902,22 @@ internal sealed partial class PowerShellParser
             _lexer.Position++;
             while (!_lexer.IsAtEnd && _lexer.Current != '}')
             {
+                if (_lexer.Current == '`' && _lexer.Peek(1) != '\0')
+                {
+                    // A backtick escapes the next character, which is how `${a`}b}` names `a}b`.
+                    _lexer.Position += 2;
+                    continue;
+                }
+
+                if (_lexer.Current == '{')
+                {
+                    AddDiagnostic(new TextSpan(_lexer.Position, 1), "SHELL0002", "A '{' in a braced variable name must be escaped with a backtick.");
+                }
+
                 _lexer.Position++;
             }
+
+            _lexer.Position = Math.Min(_lexer.Position, _lexer.Text.Length);
 
             if (_lexer.IsAtEnd)
             {
@@ -624,15 +930,21 @@ internal sealed partial class PowerShellParser
         }
         else if (PowerShellLexer.IsVariableNameCharacter(_lexer.Current))
         {
-            while (!_lexer.IsAtEnd && PowerShellLexer.IsVariableNameCharacter(_lexer.Current))
+            // `::` is the static member operator, not part of a scope-qualified name: `$type::Name`.
+            while (!_lexer.IsAtEnd && PowerShellLexer.IsVariableNameCharacter(_lexer.Current) && !(_lexer.Current == ':' && _lexer.Peek(1) == ':'))
             {
                 _lexer.Position++;
             }
 
-            // An automatic variable keeps its scope prefix, as in `$global:?`.
-            if (!_lexer.IsAtEnd && _lexer.Current is '?' or '^' && _lexer.Peek(-1) == ':')
+            // `$?` keeps its scope prefix, as in `$global:?`. `$global:^` is an error in PowerShell, though `$^` is not.
+            if (!_lexer.IsAtEnd && _lexer.Current == '?' && _lexer.Peek(-1) == ':')
             {
                 _lexer.Position++;
+            }
+            else if (_lexer.Peek(-1) == ':')
+            {
+                // `"$name: value"` names a drive and then nothing; `${name}:` is how to write the variable.
+                AddDiagnostic(TextSpan.FromBounds(sigilStart, _lexer.Position), "SHELL0013", "Expected a variable name after the scope or drive qualifier.");
             }
         }
         else if (!_lexer.IsAtEnd && _lexer.Current is '?' or '^' or '$' or '_')
@@ -641,6 +953,12 @@ internal sealed partial class PowerShellParser
         }
 
         var rawName = _lexer.Text[nameStart..Math.Clamp(_lexer.Position, nameStart, _lexer.Text.Length)];
+        if (rawName.Length == 0 && sigilToken.Text == "@")
+        {
+            // `@` splats a variable, so on its own, as in `@-Recurse`, it is not a token PowerShell knows.
+            AddDiagnostic(sigilToken.Span, "SHELL0002", "Unexpected '@'.");
+        }
+
         var nameToken = _lexer.CreateToken(SyntaxKind.VariableNameToken, nameStart, null, nameStart, rawName.Trim('{', '}'));
 
         return new PowerShellVariableExpressionSyntax(sigilToken, nameToken);
@@ -650,8 +968,20 @@ internal sealed partial class PowerShellParser
     {
         var openBracket = ExpectCharacter('[', SyntaxKind.OpenBracketToken);
         var nameToken = ReadTypeNameToken(includeArgumentList: true, insideBrackets: true);
+        if (nameToken.Green is { IsMissing: true } && openBracket.Green is { IsMissing: false })
+        {
+            AddDiagnostic(new TextSpan(nameToken.Start, 0), "SHELL0013", "Expected a type name.");
+        }
 
-        return new PowerShellTypeLiteralSyntax(openBracket, nameToken, ExpectCharacter(']', SyntaxKind.CloseBracketToken));
+        // A type name cannot continue on the next line, so neither can its `]`.
+        AccumulateInlineTrivia();
+        if (_lexer.Current == ']')
+            return new PowerShellTypeLiteralSyntax(openBracket, nameToken, ReadOperatorToken(SyntaxKind.CloseBracketToken, length: 1));
+
+        AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0012", "Expected ']'.");
+        var (trivia, fullStart) = TakeTrivia();
+
+        return new PowerShellTypeLiteralSyntax(openBracket, nameToken, MissingToken(SyntaxKind.CloseBracketToken, fullStart, trivia));
     }
 
     private PowerShellLiteralExpressionSyntax ParseNumberLiteral()
@@ -676,7 +1006,8 @@ internal sealed partial class PowerShellParser
                 scan++;
             }
 
-            // A dot only continues the number when it is not the range operator or a member access.
+            // A dot only continues the number when it is not the range operator or a member access. A trailing dot
+            // with nothing after it, as in `1.`, still belongs to the number.
             if (scan < text.Length && text[scan] == '.' && scan + 1 < text.Length && char.IsAsciiDigit(text[scan + 1]))
             {
                 scan++;
@@ -684,6 +1015,10 @@ internal sealed partial class PowerShellParser
                 {
                     scan++;
                 }
+            }
+            else if (scan < text.Length && text[scan] == '.' && (scan + 1 >= text.Length || char.IsWhiteSpace(text[scan + 1]) || text[scan + 1] is ';' or ')' or '}' or ']' or ',' or '|'))
+            {
+                scan++;
             }
 
             if (scan < text.Length && text[scan] is 'e' or 'E' && scan + 1 < text.Length && (char.IsAsciiDigit(text[scan + 1]) || text[scan + 1] is '+' or '-'))
@@ -834,6 +1169,26 @@ internal sealed partial class PowerShellParser
         var kind = quote == '"' ? SyntaxKind.PowerShellHereString : SyntaxKind.PowerShellStringLiteral;
 
         return new PowerShellExpandableStringSyntax(kind, openToken, (bodyText.Length == 0 ? null : (GreenNode?)body), closeToken);
+    }
+
+    /// <summary>
+    /// Reports an <c>@"</c> or <c>@'</c> followed by more text on its line. PowerShell reads it as a here-string
+    /// header, which has to end its line. The rest of the line is kept as one bad token, so that it does not become
+    /// the body of a here-string that never ends and the next line still parses.
+    /// </summary>
+    private ShellRawExpressionSyntax ParseMalformedHereStringHeader()
+    {
+        AccumulateInlineTrivia();
+        AddDiagnostic(new TextSpan(_lexer.Position, 2), "SHELL0022", "A here-string header must be the last thing on its line.");
+
+        var text = _lexer.Text;
+        var end = _lexer.Position;
+        while (end < text.Length && SourceText.GetLineBreakLength(text, end) == 0)
+        {
+            end++;
+        }
+
+        return new ShellRawExpressionSyntax(ReadOperatorToken(SyntaxKind.BadToken, end - _lexer.Position));
     }
 
     /// <summary>

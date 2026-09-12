@@ -2493,34 +2493,38 @@ internal sealed partial class PowerShellSwitchClauseSyntax : ShellSyntaxNode
 {
     private readonly GreenNode _pattern;
     private readonly GreenNode _body;
+    private readonly GreenNode? _separatorToken;
 
-    public PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body)
-        : this(pattern, body, diagnostics: null, annotations: null)
+    public PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, GreenNode? separatorToken)
+        : this(pattern, body, separatorToken, diagnostics: null, annotations: null)
     {
     }
 
-    private PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, GreenNode? separatorToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.PowerShellSwitchClause, diagnostics, annotations)
     {
-        SlotCount = 2;
+        SlotCount = 3;
         AdjustFlagsAndWidth(pattern);
         _pattern = pattern;
         AdjustFlagsAndWidth(body);
         _body = body;
+        AdjustFlagsAndWidth(separatorToken);
+        _separatorToken = separatorToken;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
     {
         0 => _pattern,
         1 => _body,
+        2 => _separatorToken,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellSwitchClauseSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellSwitchClauseSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellSwitchClauseSyntax(_pattern, _body, diagnostics, GetAnnotations());
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellSwitchClauseSyntax(_pattern, _body, _separatorToken, diagnostics, GetAnnotations());
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellSwitchClauseSyntax(_pattern, _body, GetDiagnostics(), annotations);
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellSwitchClauseSyntax(_pattern, _body, _separatorToken, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PowerShellSwitchClauseSyntax(this, parent, position);
 }
@@ -7758,20 +7762,25 @@ public sealed partial class PowerShellSwitchClauseSyntax : ShellSyntaxNode
 
     public PowerShellScriptBlockSyntax Body => (PowerShellScriptBlockSyntax)GetRed(ref _body, 1)!;
 
+    public SyntaxToken SeparatorToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public PowerShellSwitchClauseSyntax Update(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body)
+    public PowerShellSwitchClauseSyntax Update(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body, SyntaxToken separatorToken)
     {
-        if (ReferenceEquals(pattern.Green, Green.GetSlot(0)) && ReferenceEquals(body.Green, Green.GetSlot(1)))
+        if (ReferenceEquals(pattern.Green, Green.GetSlot(0)) && ReferenceEquals(body.Green, Green.GetSlot(1)) && separatorToken.Node == Green.GetSlot(2))
             return this;
 
-        return SyntaxFactory.PowerShellSwitchClause(pattern, body).WithAnnotationsFrom(this);
+        return SyntaxFactory.PowerShellSwitchClause(pattern, body, separatorToken).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="pattern"/> in place of its <see cref="Pattern"/>.</summary>
-    public PowerShellSwitchClauseSyntax WithPattern(ShellSyntaxNode pattern) => Update(pattern, Body);
+    public PowerShellSwitchClauseSyntax WithPattern(ShellSyntaxNode pattern) => Update(pattern, Body, SeparatorToken);
 
     /// <summary>Returns this node with <paramref name="body"/> in place of its <see cref="Body"/>.</summary>
-    public PowerShellSwitchClauseSyntax WithBody(PowerShellScriptBlockSyntax body) => Update(Pattern, body);
+    public PowerShellSwitchClauseSyntax WithBody(PowerShellScriptBlockSyntax body) => Update(Pattern, body, SeparatorToken);
+
+    /// <summary>Returns this node with <paramref name="separatorToken"/> in place of its <see cref="SeparatorToken"/>.</summary>
+    public PowerShellSwitchClauseSyntax WithSeparatorToken(SyntaxToken separatorToken) => Update(Pattern, Body, separatorToken);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
@@ -10609,7 +10618,7 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update((ShellSyntaxNode?)Visit(node.Pattern) ?? node.Pattern, (PowerShellScriptBlockSyntax?)Visit(node.Body) ?? node.Body);
+        return node.Update((ShellSyntaxNode?)Visit(node.Pattern) ?? node.Pattern, (PowerShellScriptBlockSyntax?)Visit(node.Body) ?? node.Body, VisitToken(node.SeparatorToken));
     }
 
     public override SyntaxNode? VisitSwitchStatement(PowerShellSwitchStatementSyntax node)
@@ -11082,8 +11091,8 @@ public static partial class SyntaxFactory
         => (PowerShellSubExpressionSyntax)new Syntax.InternalSyntax.PowerShellSubExpressionSyntax(kind, Required(openToken), statements.Green, Required(closeParenToken)).CreateRed();
 
     /// <summary>Builds a <see cref="PowerShellSwitchClauseSyntax"/> from its parts.</summary>
-    public static PowerShellSwitchClauseSyntax PowerShellSwitchClause(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body)
-        => (PowerShellSwitchClauseSyntax)new Syntax.InternalSyntax.PowerShellSwitchClauseSyntax(pattern.Green, body.Green).CreateRed();
+    public static PowerShellSwitchClauseSyntax PowerShellSwitchClause(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body, SyntaxToken separatorToken)
+        => (PowerShellSwitchClauseSyntax)new Syntax.InternalSyntax.PowerShellSwitchClauseSyntax(pattern.Green, body.Green, separatorToken.Node).CreateRed();
 
     /// <summary>Builds a <see cref="PowerShellSwitchStatementSyntax"/> from its parts.</summary>
     public static PowerShellSwitchStatementSyntax PowerShellSwitchStatement(SyntaxToken switchKeyword, SyntaxTokenList parameterTokens, SyntaxToken openParenToken, ShellStatementListSyntax condition, SyntaxToken closeParenToken, SyntaxToken openBraceToken, SyntaxList<PowerShellSwitchClauseSyntax> clauses, SyntaxToken closeBraceToken)

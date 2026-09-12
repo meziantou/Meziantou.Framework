@@ -1,0 +1,200 @@
+# Builds and validates the NuGet packages on pull requests, and publishes them on main.
+name: publish
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+
+concurrency:
+  # A run on main gets a group of its own: it only packs the packages changed since the previous
+  # push, so a cancelled or replaced run would never publish them.
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace}}/nuget
+  NuGetSource: "https://api.nuget.org/v3/index.json"
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  create_nuget:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    outputs:
+      has-project: ${{ steps.package-project.outputs.has-project }}
+    env:
+      # Analyzers run in the run_analyzers job of ci.yml
+      RunAnalyzers: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+      - name: Generate delta build file
+        id: package-project
+        uses: ./.github/actions/deltabuild
+        with:
+          input-project: eng/packages.proj
+          output-project: eng/packages.delta.proj
+          base-commit: ${{ case(github.event_name == 'push', github.event.before, '') }}
+          # A manual run packs every package, so it can recover from a partial publish
+          run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
+          full-rebuild-triggers: |
+            .github/workflows/publish.yml
+            eng/**/*.proj
+
+      - run: dotnet restore ${{ steps.package-project.outputs.project }} -p:Configuration=Release /p:IsOfficialBuild=true /bl:restore.binlog
+        if: steps.package-project.outputs.has-project == 'true'
+      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
+        if: steps.package-project.outputs.has-project == 'true'
+      - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
+        if: steps.package-project.outputs.has-project == 'true'
+
+      - name: Prepare NuGet artifact directory
+        run: |
+          New-Item -ItemType Directory -Path $env:NuGetDirectory -Force | Out-Null
+          Set-Content -Path (Join-Path $env:NuGetDirectory "artifact-placeholder.txt") -Value "placeholder"
+      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output $env:NuGetDirectory /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog
+        if: steps.package-project.outputs.has-project == 'true'
+
+      - name: Skip packaging
+        if: steps.package-project.outputs.has-project != 'true'
+        run: Write-Host "No package project was impacted. Skipping build and pack."
+      - parallel:
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always()
+            with:
+              name: nuget
+              if-no-files-found: error
+              retention-days: 3
+              path: ${{ env.NuGetDirectory }}/**/*
+          - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+            if: always()
+            with:
+              name: binlog
+              if-no-files-found: ${{ case(steps.package-project.outputs.has-project == 'true', 'error', 'warn') }}
+              retention-days: 3
+              path: '**/*.binlog'
+
+  validate_nuget:
+    runs-on: ubuntu-26.04
+    needs: [ create_nuget ]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - parallel:
+          - name: Setup .NET
+            uses: ./.github/actions/setup-dotnet
+          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+            if: needs.create_nuget.outputs.has-project == 'true'
+            with:
+              name: nuget
+              path: ${{ env.NuGetDirectory }}
+      - name: Validate NuGet packages
+        if: needs.create_nuget.outputs.has-project == 'true'
+        run: dotnet run ./eng/validate-nuget.cs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_VALIDATION_IS_DELTA: ${{ case((github.event_name == 'pull_request' || github.event_name == 'push') && needs.create_nuget.outputs.has-project == 'true', 'true', 'false') }}
+
+  deploy:
+    # Pull requests only build and validate the packages. A manual run from another branch must not
+    # publish to nuget.org either.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.create_nuget.outputs.has-project == 'true'
+    runs-on: ubuntu-26.04
+    needs: [ create_nuget, validate_nuget ]
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - parallel:
+          - name: Setup .NET
+            uses: ./.github/actions/setup-dotnet
+          - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+            with:
+              name: nuget
+              path: ${{ env.NuGetDirectory }}
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
+        id: login
+        with:
+          user: meziantou
+
+      - name: Publish NuGet packages
+        env:
+          NUGETAPIKEY: ${{steps.login.outputs.NUGET_API_KEY}}
+        run: |
+          Write-Host "Searching nupkg in folder: $env:NuGetDirectory"
+          $files = Get-ChildItem (Join-Path $env:NuGetDirectory "*") -Include *.nupkg
+          $apiKey = $env:NUGETAPIKEY
+          $source = $env:NuGetSource
+
+          if ($files.Count -eq 0) {
+            Write-Host "No NuGet package found to push."
+          }
+          else {
+            $maxAttempts = 3
+            $baseDelaySeconds = 2
+            $results = $files | ForEach-Object -Parallel {
+              $packagePath = $_.FullName
+              $apiKey = $using:apiKey
+              $source = $using:source
+              $maxAttempts = $using:maxAttempts
+              $baseDelaySeconds = $using:baseDelaySeconds
+
+              for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+                Write-Host "Pushing NuGet package: $packagePath (attempt $attempt/$maxAttempts)"
+                & dotnet nuget push "$packagePath" --api-key "$apiKey" --source "$source" --force-english-output --skip-duplicate
+                $exitCode = $LASTEXITCODE
+
+                if ($exitCode -eq 0) {
+                  return [pscustomobject]@{
+                    PackagePath = $packagePath
+                    Succeeded = $true
+                    Attempts = $attempt
+                  }
+                }
+
+                if ($attempt -lt $maxAttempts) {
+                  $delaySeconds = [int]($baseDelaySeconds * [math]::Pow(2, $attempt - 1))
+                  Write-Host "Retrying NuGet push for $packagePath in $delaySeconds second(s)."
+                  Start-Sleep -Seconds $delaySeconds
+                }
+              }
+
+              return [pscustomobject]@{
+                PackagePath = $packagePath
+                Succeeded = $false
+                Attempts = $maxAttempts
+              }
+            } -ThrottleLimit 8
+
+            $pushResults = @(
+              $results
+              | Where-Object { $_.PSObject.Properties.Name -contains "Succeeded" }
+            )
+            $failedPackages = @($pushResults | Where-Object { -not $_.Succeeded })
+            $succeededPackages = @($pushResults | Where-Object { $_.Succeeded })
+            foreach ($item in $succeededPackages) {
+              Write-Host "Successfully pushed NuGet package: $($item.PackagePath) (attempts: $($item.Attempts))"
+            }
+
+            if ($failedPackages.Count -gt 0) {
+              foreach ($item in $failedPackages) {
+                Write-Host "::error::Failed to push NuGet package after retries: $($item.PackagePath)"
+              }
+
+              Write-Host "::error::Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+              throw "Failed to push NuGet packages after retries: $($failedPackages.PackagePath -join ', ')"
+            }
+          }

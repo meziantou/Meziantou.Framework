@@ -170,19 +170,22 @@ jobs:
             "tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj"
           )
 
-          # Remaining expensive suites. They are assigned round-robin in declaration order
-          # (1st -> shard 1, 2nd -> shard 2, ...), so the list is ordered from slowest to fastest
-          # to spread them across shards.
+          # Remaining expensive suites, ordered from slowest to fastest. They are dealt out before
+          # everything else, so this order is what keeps the shards balanced: see the assignment
+          # loop below. The durations come from the .trx files of a full-rebuild run, taking the
+          # slowest of the Linux and Windows legs for each project.
           $HeavyProjects = @(
+            "tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj"
             "tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj"
+            "tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj"
             "tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj"
-            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
             "tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj"
-            "tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj"
-            "tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj"
+            "tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj"
+            "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_6.csproj"
+            "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
           )
 
-          $MaxShards = 3
+          $MaxShards = 2
           $ProjectsPerShard = 15
 
           # Fail explicitly when a configured project is renamed or removed instead of silently
@@ -222,9 +225,16 @@ jobs:
             $shardCount = [int][Math]::Min($MaxShards, [Math]::Max(1, [Math]::Ceiling($rest.Count / $ProjectsPerShard)))
             $shards = @(1..$shardCount | ForEach-Object { ,[System.Collections.Generic.List[string]]::new() })
 
+            # Deal the heavy projects out in boustrophedon order: the first pass walks the shards
+            # forwards, the next one backwards, so shard 1 gets ranks 1 and 4 while shard 2 gets
+            # ranks 2 and 3. Plain round-robin pairs rank 1 with rank 3 and rank 2 with rank 4,
+            # which is lopsided whenever the costs drop off sharply, as they do here.
             $heavy = @($HeavyProjects | Where-Object { $rest -contains $_ })
             for ($i = 0; $i -lt $heavy.Count; $i++) {
-              $shards[$i % $shardCount].Add($heavy[$i])
+              $position = $i % $shardCount
+              $isReversePass = [Math]::Floor($i / $shardCount) % 2 -eq 1
+              $index = $(if ($isReversePass) { $shardCount - 1 - $position } else { $position })
+              $shards[$index].Add($heavy[$i])
             }
 
             # Split the remaining projects into contiguous blocks of equal size

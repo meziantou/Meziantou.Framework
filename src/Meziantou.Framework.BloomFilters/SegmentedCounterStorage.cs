@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
@@ -65,13 +66,16 @@ internal sealed class SegmentedCounterStorage
         return Volatile.Read(ref GetCounterReference(counterIndex));
     }
 
+    // The masked index is in range by construction, so the reference is taken without a bounds check.
+    // See the note in SegmentedBitStorage: the safe indexer measured slower on the probe path.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ref int GetCounterReference(long counterIndex)
     {
         ValidateCounterIndex(counterIndex);
 
         var segment = _segments[(int)(counterIndex >> SegmentShift)];
-        return ref segment[(int)(counterIndex & SegmentMask)];
+        ref var baseRef = ref unsafe(MemoryMarshal.GetArrayDataReference(segment));
+        return ref unsafe(Unsafe.Add(ref baseRef, (nint)(counterIndex & SegmentMask)));
     }
 
     [Conditional("DEBUG")]

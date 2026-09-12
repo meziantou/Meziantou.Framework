@@ -182,7 +182,7 @@ jobs:
             "tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj"
           )
 
-          $MaxShards = 3
+          $MaxShards = 2
           $ProjectsPerShard = 15
 
           # Fail explicitly when a configured project is renamed or removed instead of silently

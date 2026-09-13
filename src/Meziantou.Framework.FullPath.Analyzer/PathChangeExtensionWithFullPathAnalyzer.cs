@@ -11,8 +11,8 @@ public sealed class PathChangeExtensionWithFullPathAnalyzer : DiagnosticAnalyzer
 {
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.PathChangeExtensionWithFullPathDiagnosticId,
-        title: "Use FullPath.ChangeExtension instead of Path.ChangeExtension",
-        messageFormat: "Use FullPath.ChangeExtension instead of calling Path.ChangeExtension",
+        title: "Use FullPath.WithExtension instead of Path.ChangeExtension",
+        messageFormat: "Use FullPath.WithExtension instead of calling Path.ChangeExtension",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true);

@@ -60,7 +60,7 @@ System.IO.File.WriteAllText(filePath, content);
 | `MFFP0006` | FullPath | Use FullPath.NameWithoutExtension instead of Path.GetFileNameWithoutExtension | Info | ✔️ |
 | `MFFP0007` | FullPath | Use FullPath.Extension instead of Path.GetExtension | Info | ✔️ |
 | `MFFP0008` | FullPath | Use FullPath.Parent instead of Path.GetDirectoryName | Info | ✔️ |
-| `MFFP0009` | FullPath | Use FullPath.ChangeExtension instead of Path.ChangeExtension | Info | ✔️ |
+| `MFFP0009` | FullPath | Use FullPath.WithExtension instead of Path.ChangeExtension | Info | ✔️ |
 | `MFFP0010` | FullPath | Use FullPath.MakePathRelativeTo instead of Path.GetRelativePath | Info | ✔️ |
 | `MFFP0011` | FullPath | Return FullPath instead of string | Info | ✔️ |
 | `MFFP0012` | FullPath | Declare the property as FullPath instead of string | Info | ✔️ |

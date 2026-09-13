@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.Testing;
 using PathCombineWithFullPathAnalyzerType = Meziantou.Framework.Analyzers.FullPath.PathCombineWithFullPathAnalyzer;
 using PathCombineWithFullPathCodeFixProviderType = Meziantou.Framework.Analyzers.FullPath.PathCombineWithFullPathCodeFixProvider;
 
@@ -79,6 +80,147 @@ public sealed class PathCombineWithFullPathRuleTests : FullPathAnalyzerTestBase
             """;
 
         await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPathCombineWithFullPathFirstAndParamsSegments()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0004:Path.Combine(fullPath, "value1", "value2", "value3", "value4")|};
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return fullPath / "value1" / "value2" / "value3" / "value4";
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPathCombineWithFullPathInParamsSegments()
+    {
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0004:Path.Combine("value1", "value2", "value3", fullPath.Value, "value4")|};
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return fullPath / "value4";
+                    }
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForPathCombineWithFullPathInParamsArray()
+    {
+        // Before .NET 9, Path.Combine has no ReadOnlySpan overload, so five segments bind to 'params string[]'
+        var source = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return {|MFFP0004:Path.Combine(fullPath, "value1", "value2", "value3", "value4")|};
+                    }
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.IO;
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        return fullPath / "value1" / "value2" / "value3" / "value4";
+                    }
+                }
+            }
+            """;
+
+        var test = CreateCodeFixTest<PathCombineWithFullPathAnalyzerType, PathCombineWithFullPathCodeFixProviderType>(source, fixedSource);
+        test.ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
+
+        // The FullPath assembly targets a newer System.Runtime (CS1705), which does not affect overload resolution
+        test.CompilerDiagnostics = CompilerDiagnostics.None;
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForPathCombineWithStringParamsSegments()
+    {
+        var source = """
+            using System.IO;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M()
+                    {
+                        return Path.Combine("value1", "value2", "value3", "value4", "value5");
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<PathCombineWithFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
 
     [Fact]

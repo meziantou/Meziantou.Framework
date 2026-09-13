@@ -44,9 +44,9 @@ public sealed class PathCombineWithFullPathAnalyzer : DiagnosticAnalyzer
         if (!SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, analyzerContext.PathType))
             return;
 
-        foreach (var argument in invocationOperation.Arguments)
+        foreach (var argumentValue in FullPathAnalyzerCommon.GetArgumentValues(invocationOperation))
         {
-            if (!analyzerContext.IsFullPathType(argument.Value))
+            if (!analyzerContext.IsFullPathType(argumentValue))
                 continue;
 
             context.ReportDiagnostic(Descriptor, invocationOperation, targetMethod.Name);

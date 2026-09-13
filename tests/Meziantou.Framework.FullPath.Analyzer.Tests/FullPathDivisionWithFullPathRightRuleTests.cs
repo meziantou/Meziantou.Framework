@@ -61,4 +61,30 @@ public sealed class FullPathDivisionWithFullPathRightRuleTests : FullPathAnalyze
 
         await CreateAnalyzerTest<FullPathDivisionWithFullPathRightAnalyzerType>(source).RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_ForOtherTypeDivisionOperatorWithFullPathRight()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public readonly struct OtherPath
+                {
+                    public static OtherPath operator /(OtherPath left, string right) => left;
+                }
+
+                public static class TestClass
+                {
+                    public static OtherPath M(OtherPath left, FullPath right)
+                    {
+                        return left / right;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<FullPathDivisionWithFullPathRightAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
 }

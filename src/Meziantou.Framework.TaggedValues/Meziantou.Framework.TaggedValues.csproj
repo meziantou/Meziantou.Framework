@@ -2,15 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.0</Version>
     <Description>Tag primitive values (ids, units, keys) with [ValueTag] and let the bundled Roslyn analyzer report when values with different tags are mixed</Description>
     <PackageTags>analyzer, roslyn, strongly-typed-id, primitive-obsession, tagged-values, branded-types</PackageTags>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Remove="Meziantou.Polyfill" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="$(OutputPath)/../../Meziantou.Framework.TaggedValues.Analyzer/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.TaggedValues.Analyzer.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />

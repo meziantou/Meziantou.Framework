@@ -141,7 +141,7 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
             arguments.Add(generator.AttributeArgument("Value", generator.LiteralExpression(value)));
         }
 
-        var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
+        var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
         var newAttribute = generator.Attribute(attributeName, arguments);
         if (isReturnValue)
         {

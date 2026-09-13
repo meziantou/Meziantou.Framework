@@ -231,14 +231,14 @@ public sealed class InvalidAnnotationRuleTests : TaggedValuesAnalyzerTestBase
         var test = CreateAnalyzerTest("""
             class Sample
             {
-                bool M([Meziantou.Framework.ValueTag("OrderId")] Guid orderId, [Meziantou.Framework.ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:orderId == projectId|};
+                bool M([Meziantou.Framework.TaggedValues.ValueTag("OrderId")] Guid orderId, [Meziantou.Framework.TaggedValues.ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:orderId == projectId|};
             }
             """);
 
         // The package reference is replaced by an internal copy of the attribute
         test.TestState.AdditionalReferences.Clear();
         test.TestState.Sources.Add("""
-            namespace Meziantou.Framework
+            namespace Meziantou.Framework.TaggedValues
             {
                 [System.AttributeUsage(System.AttributeTargets.All, AllowMultiple = true)]
                 internal sealed class ValueTagAttribute : System.Attribute

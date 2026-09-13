@@ -3,7 +3,7 @@
 Tag primitive values with `[ValueTag]`, and the bundled Roslyn analyzer reports when values with different tags are mixed. The value stays a `Guid`, an `int` or a `string`, so there is nothing to change in serializers, ORMs, or APIs.
 
 ````c#
-using Meziantou.Framework;
+using Meziantou.Framework.TaggedValues;
 
 class Order
 {

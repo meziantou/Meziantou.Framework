@@ -1,4 +1,4 @@
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.TaggedValues;
 
 /// <summary>
 /// Tags a value so the Meziantou.Framework.TaggedValues analyzer can report when values with different tags are mixed,

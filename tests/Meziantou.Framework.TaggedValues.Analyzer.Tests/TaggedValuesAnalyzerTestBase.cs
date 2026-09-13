@@ -1,3 +1,4 @@
+using Meziantou.Framework.TaggedValues;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -14,7 +15,7 @@ public abstract class TaggedValuesAnalyzerTestBase
         using System.Collections.Generic;
         using System.Linq;
         using System.Threading.Tasks;
-        using Meziantou.Framework;
+        using Meziantou.Framework.TaggedValues;
 
         """;
 

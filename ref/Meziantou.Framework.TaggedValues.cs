@@ -2,7 +2,7 @@
 // Target Frameworks: net10.0, net11.0, netstandard2.0
 #nullable enable
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework.TaggedValues
 {
     [System.AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
     public sealed class ValueTagAttribute : System.Attribute

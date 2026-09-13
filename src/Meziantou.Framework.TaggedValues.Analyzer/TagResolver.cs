@@ -31,12 +31,12 @@ internal sealed class TagResolver
 
     public static bool IsValueTagAttribute(INamedTypeSymbol? type)
     {
-        return type is { Name: "ValueTagAttribute", ContainingType: null, ContainingNamespace: { Name: "Framework", ContainingNamespace: { Name: "Meziantou", ContainingNamespace.IsGlobalNamespace: true } } };
+        return type is { Name: "ValueTagAttribute", ContainingType: null, ContainingNamespace: { Name: "TaggedValues", ContainingNamespace: { Name: "Framework", ContainingNamespace: { Name: "Meziantou", ContainingNamespace.IsGlobalNamespace: true } } } };
     }
 
     public static bool HasValueTagAttributeType(Compilation compilation)
     {
-        return !compilation.GetTypesByMetadataName("Meziantou.Framework.ValueTagAttribute").IsEmpty;
+        return !compilation.GetTypesByMetadataName("Meziantou.Framework.TaggedValues.ValueTagAttribute").IsEmpty;
     }
 
     public bool AreConventionsEnabled(SyntaxTree tree)

@@ -145,9 +145,10 @@ When enabled, the analyzer infers tags from names, so most ids need no attribute
 taggedvalues.infer_tags_from_names = true
 ````
 
-- A property or a field named `Id` takes the name of its type: `Id` on `Order` is an `"OrderId"`. When the member is inherited, it is also an id of every type between the receiver and the declaring type.
+- A property or a field named `Id` takes the name of its declaring type: `Id` on `Order` is an `"OrderId"`. When the member is inherited, it is also an id of every type between the receiver and the declaring type.
 - A property, a field, or a parameter named `xxxId` takes its name with the first letter in upper case: `projectId` is a `"ProjectId"`. The `s_` prefix and leading underscores of fields are ignored: `s_projectId` and `_projectId` are both `"ProjectId"`.
-- Explicit tags always win. Collections, indexers, and parameters named exactly `id` are not tagged by convention.
+- A parameter named `id` takes the name of its type: `void Load(Order id)` is an `"OrderId"`, and `void Load(OrderId id)` is an `"OrderId"` too. A parameter named `id` whose type is a primitive, a `string`, a `Guid`, or an enum is not tagged, as its type does not say what it identifies.
+- Explicit tags always win. Collections and indexers are not tagged by convention.
 
 ## What is reported
 

@@ -9,6 +9,7 @@ namespace Meziantou.Framework.TaggedValues.Analyzer;
 /// </summary>
 internal sealed class KnownTypes
 {
+    private readonly INamedTypeSymbol? _guidType;
     private readonly INamedTypeSymbol? _keyValuePairType;
     private readonly INamedTypeSymbol? _expressionType;
     private readonly INamedTypeSymbol? _asyncEnumerableType;
@@ -17,6 +18,7 @@ internal sealed class KnownTypes
 
     public KnownTypes(Compilation compilation)
     {
+        _guidType = compilation.GetBestTypeByMetadataName("System.Guid");
         _keyValuePairType = compilation.GetBestTypeByMetadataName("System.Collections.Generic.KeyValuePair`2");
         _expressionType = compilation.GetBestTypeByMetadataName("System.Linq.Expressions.Expression`1");
         _asyncEnumerableType = compilation.GetBestTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1");
@@ -37,6 +39,11 @@ internal sealed class KnownTypes
             "System.ReadOnlyMemory`1",
             "System.Collections.Generic.IAsyncEnumerable`1",
             "System.Collections.Generic.IAsyncEnumerator`1");
+    }
+
+    public bool IsGuid(ITypeSymbol type)
+    {
+        return SymbolEqualityComparer.Default.Equals(type, _guidType);
     }
 
     public bool IsKeyValuePair(INamedTypeSymbol type)

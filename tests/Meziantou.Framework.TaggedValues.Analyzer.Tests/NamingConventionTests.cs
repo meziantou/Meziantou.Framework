@@ -131,6 +131,44 @@ public sealed class NamingConventionTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task IdParameterTakesTheNameOfItsType()
+    {
+        await VerifyAsync("""
+            class Bar { }
+            readonly record struct UserId(Guid Value);
+            enum Status { }
+
+            class Sample
+            {
+                [ValueTag("ProjectId")] Bar _projectBar = new();
+                [ValueTag("ProjectId")] UserId _projectUser;
+                [ValueTag("ProjectId")] Guid _projectGuid;
+                [ValueTag("ProjectId")] int _projectInt;
+                [ValueTag("ProjectId")] string _projectString = "";
+                [ValueTag("ProjectId")] Status _projectStatus;
+
+                static void LoadBar(Bar id) { }
+                static void LoadUser(UserId? id) { }
+                static void LoadGuid(Guid id) { }
+                static void LoadInt(int id) { }
+                static void LoadString(string id) { }
+                static void LoadStatus(Status id) { }
+                static void LoadRedundant([{|MFTV0007:ValueTag("BarId")|}] Bar id) { }
+
+                void M()
+                {
+                    LoadBar({|MFTV0002:_projectBar|});
+                    LoadUser({|MFTV0002:_projectUser|});
+                    LoadGuid(_projectGuid);
+                    LoadInt(_projectInt);
+                    LoadString(_projectString);
+                    LoadStatus(_projectStatus);
+                }
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_WhenTypesWithTheSameNameDeclareId()
     {
         await VerifyAsync("""

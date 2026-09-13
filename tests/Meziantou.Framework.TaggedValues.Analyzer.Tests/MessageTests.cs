@@ -53,6 +53,26 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task FlowMismatchMessage_ForIdParameterConvention()
+    {
+        await VerifyAsync(
+            """
+            class Bar { }
+
+            class Sample
+            {
+                [ValueTag("ProjectId")] Bar _projectBar = new();
+
+                static void LoadBar(Bar id) { }
+
+                void M() => LoadBar({|#0:_projectBar|});
+            }
+            """,
+            inferTagsFromNames: true,
+            Diagnostic("MFTV0002").WithLocation(0).WithLocation(12, 29).WithMessage("field 'Sample._projectBar' is [ValueTag(\"ProjectId\")] and flows to parameter 'id' of 'Sample.LoadBar' (line 12), which is [ValueTag(\"BarId\")]"));
+    }
+
+    [Fact]
     public async Task CombinedValuesMessage()
     {
         await VerifyAsync(

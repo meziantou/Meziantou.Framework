@@ -201,8 +201,9 @@ internal sealed class TagResolver
 
         if (name is "Id")
         {
+            // Foo(Bar id) is a BarId, while Id on Sample is a SampleId
             if (symbol is IParameterSymbol)
-                return TagInfo.None;
+                return GetIdParameterConventionTags(type);
 
             return TagInfo.Create([containingType.Name + "Id"], isExplicit: false);
         }
@@ -211,6 +212,22 @@ internal sealed class TagResolver
             return TagInfo.Create([name], isExplicit: false);
 
         return TagInfo.None;
+    }
+
+    private TagInfo GetIdParameterConventionTags(ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableType)
+        {
+            type = nullableType.TypeArguments[0];
+        }
+
+        // A primitive such as Guid id does not say what it identifies
+        if (type is not INamedTypeSymbol { SpecialType: SpecialType.None, TypeKind: TypeKind.Class or TypeKind.Struct or TypeKind.Interface, IsAnonymousType: false } namedType || KnownTypes.IsGuid(namedType))
+            return TagInfo.None;
+
+        // UserId id is a UserId, not a UserIdId
+        var tag = namedType.Name.Length > 2 && namedType.Name.EndsWith("Id", StringComparison.Ordinal) ? namedType.Name : namedType.Name + "Id";
+        return TagInfo.Create([tag], isExplicit: false);
     }
 
     private bool IsConventionType(INamedTypeSymbol type)

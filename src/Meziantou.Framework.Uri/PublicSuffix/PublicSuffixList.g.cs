@@ -7,11 +7,11 @@ namespace Meziantou.Framework;
 
 static partial class PublicSuffixList
 {
-    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/f540a06159213b6e8ed9c87d2dd3a52373637e92/public_suffix_list.dat
-    // Commit date: 2026-09-05T20:59:37.0000000+00:00
-    private const int EntryCount = 10323;
-    private const int RuleCountValue = 10323;
-    private const long LastUpdatedTicks = 639242387770000000L;
+    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/3955e3ec29b94c3cca7bd4509c5f14a7c0959e26/public_suffix_list.dat
+    // Commit date: 2026-09-08T12:18:25.0000000+00:00
+    private const int EntryCount = 10325;
+    private const int RuleCountValue = 10325;
+    private const long LastUpdatedTicks = 639244667050000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -7030,6 +7030,7 @@ static partial class PublicSuffixList
         "af-south-1.elasticbeanstalk.com",
         "affinitylottery.org.uk",
         "africa.com",
+        "ai.studio",
         "aiven.app",
         "akadns.net",
         "akamai-staging.net",
@@ -7386,6 +7387,7 @@ static partial class PublicSuffixList
         "cloud.goog",
         "cloud.interhostsolutions.be",
         "cloud.nospamproxy.com",
+        "cloud.run",
         "cloud66.ws",
         "cloudaccess.host",
         "cloudaccess.net",

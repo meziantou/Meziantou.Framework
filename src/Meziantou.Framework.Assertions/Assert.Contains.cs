@@ -33,7 +33,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(Contains), "Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
         }
 
         if (actual.Contains(expected))
@@ -54,7 +54,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<T>("Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(Contains), "Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -79,7 +79,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsPredicateNullActualAssertionError(actualExpression, predicateExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new PredicateNullActualAssertionError(nameof(Contains), actualExpression, predicateExpression, message)));
         }
 
         using var matchingSnapshot = CollectionSnapshot.Create<T>(EnumerateMatchingItems(actual, predicate));
@@ -100,7 +100,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<TKey>(nameof(Contains), "Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
         }
 
         if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.TryGetValue(expected, out var readOnlyValue))
@@ -131,7 +131,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<TKey>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<TKey>(nameof(Contains), "Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
         }
 
         if (actual.TryGetValue(expected, out var value))
@@ -152,7 +152,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<object?>("Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(Contains), "Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
         }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
@@ -176,7 +176,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<object?>("Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(Contains), "Expected key expression", "Expected key", expected, actualExpression, expectedExpression, message)));
         }
 
         if (actual.Contains(expected!))
@@ -236,7 +236,7 @@ public partial class Assert
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new StringContainsNullActualAssertionError(expected, comparison, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(Contains), "Expected", expected, comparison, actualExpression, expectedExpression, message)));
         }
 
         if (actual.Contains(expected, comparison))
@@ -255,7 +255,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<IEnumerable<T>>("Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(Contains), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         comparer ??= EqualityComparer<T>.Default;
@@ -281,7 +281,7 @@ public partial class Assert
     {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new ContainsNullActualAssertionError<System.Collections.IEnumerable>("Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(Contains), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);

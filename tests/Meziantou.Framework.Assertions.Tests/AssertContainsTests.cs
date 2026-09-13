@@ -444,29 +444,149 @@ public sealed class AssertContainsTests
     {
         AssertionsAssert.DoesNotContain(4, [1, 2, 3]);
         AssertionsAssert.DoesNotContain("z", "abc");
-
-        IEnumerable<int>? enumerable = null;
-        IEnumerable<KeyValuePair<string, int>>? keyValuePairs = null;
-        Dictionary<string, int>? genericDictionary = null;
-        System.Collections.IEnumerable? nonGenericEnumerable = null;
-        System.Collections.IDictionary? dictionary = null;
-        string? text = null;
-
-        AssertionsAssert.DoesNotContain(4, enumerable);
-        AssertionsAssert.DoesNotContain("key", keyValuePairs);
-        AssertionsAssert.DoesNotContain("key", genericDictionary);
-        AssertionsAssert.DoesNotContain(4, nonGenericEnumerable);
-        AssertionsAssert.DoesNotContain("key", dictionary);
-        AssertionsAssert.DoesNotContain("z", text);
     }
 
     [Fact]
-    public async Task DoesNotContain_AsyncEnumerableSucceedsWhenActualIsNull()
+    public void DoesNotContain_ValueEnumerableFailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(4, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Not expected item: 4
+            Actual:            <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_ValueCollectionFailsWhenActualIsNull()
+    {
+        ICollection<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(4, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Not expected item: 4
+            Actual:            <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_PredicateEnumerableFailsWhenActualIsNull()
+    {
+        IEnumerable<string>? collection = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(collection, item => item == "sample"), """
+            Assert.DoesNotContain() assertion failed.
+            Expression:           collection
+            Predicate expression: item => item == "sample"
+            Actual: <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_KeyValuePairEnumerableFailsWhenActualIsNull()
+    {
+        IEnumerable<KeyValuePair<string, int>>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("key", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected key expression: "key"
+            Actual expression:       actual
+            Not expected key: "key"
+            Actual:           <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_DictionaryFailsWhenActualIsNull()
+    {
+        Dictionary<string, int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("key", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected key expression: "key"
+            Actual expression:       actual
+            Not expected key: "key"
+            Actual:           <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_ValueNonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(4, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 4
+            Actual expression:   actual
+            Not expected: 4
+            Actual:       <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_NonGenericDictionaryFailsWhenActualIsNull()
+    {
+        System.Collections.IDictionary? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("key", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected key expression: "key"
+            Actual expression:       actual
+            Not expected key: "key"
+            Actual:           <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_StringFailsWhenActualIsNull()
+    {
+        var expected = "z";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(expected, actual, ignoreCase: true), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: OrdinalIgnoreCase
+            Not expected: "z"
+            Actual:       <null>
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotContain_AsyncEnumerableFailsWhenActualIsNull()
     {
         IEnumerable<int> expected = [2, 3];
         IAsyncEnumerable<int>? actual = null;
 
-        await AssertionsAssert.DoesNotContain(expected, actual);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotContain(expected, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [2, 3]
+            Actual:       <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_NonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 2, 3 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(expected, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [2, 3]
+            Actual:       <null>
+            """);
     }
 
     [Fact]

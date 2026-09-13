@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -191,9 +192,10 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     /// Recognizes <c>a.Equals(b)</c>, <c>a.CompareTo(b)</c>, <c>object.Equals(a, b)</c>, <c>comparer.Equals(a, b)</c>, <c>comparer.Compare(a, b)</c>,
     /// <c>string.Equals(a, b, comparison)</c>, and similar calls.
     /// </summary>
-    private static bool TryGetComparedOperands(IInvocationOperation invocation, out IOperation left, out IOperation right)
+    private static bool TryGetComparedOperands(IInvocationOperation invocation, [NotNullWhen(true)] out IOperation? left, [NotNullWhen(true)] out IOperation? right)
     {
-        (left, right) = (null!, null!);
+        left = null;
+        right = null;
         var method = invocation.TargetMethod;
         if (method.Name is not ("Equals" or "ReferenceEquals" or "Compare" or "CompareTo") || method.ReturnType.SpecialType is not (SpecialType.System_Boolean or SpecialType.System_Int32))
             return false;
@@ -347,7 +349,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
 
         var reportTree = value.Syntax.SyntaxTree;
-        targetDescription ??= ValueTagDescriptions.DescribeSymbol(target!) + ValueTagDescriptions.GetSite(target!, reportTree);
+        targetDescription ??= target is null ? "the target" : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree);
 
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();

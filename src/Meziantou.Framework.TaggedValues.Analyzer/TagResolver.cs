@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -369,10 +370,10 @@ internal sealed class TagResolver
         }
     }
 
-    public static bool TryReadExternalAttribute(AttributeData attribute, out ITypeSymbol type, out string memberName, out TagInfo tags)
+    public static bool TryReadExternalAttribute(AttributeData attribute, [NotNullWhen(true)] out ITypeSymbol? type, [NotNullWhen(true)] out string? memberName, out TagInfo tags)
     {
-        type = null!;
-        memberName = null!;
+        type = null;
+        memberName = null;
         tags = TagInfo.None;
         if (!IsValueTagAttribute(attribute.AttributeClass) || attribute.ConstructorArguments.Length is not 3)
             return false;
@@ -483,8 +484,7 @@ internal sealed class TagResolver
     {
         switch (declaration)
         {
-            case VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: LocalDeclarationStatementSyntax or ForStatementSyntax or UsingStatementSyntax or FixedStatementSyntax } variableDeclaration } declarator:
-                var statement = variableDeclaration.Parent!;
+            case VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: (LocalDeclarationStatementSyntax or ForStatementSyntax or UsingStatementSyntax or FixedStatementSyntax) and { } statement } variableDeclaration } declarator:
                 var typeArgumentTrivia = TypeArgumentComments.GetAllTrivia(variableDeclaration.Type);
                 return GetTokenTrivia(declarator.Identifier)
                     .Concat(statement.DescendantTokens().TakeWhile(token => token.SpanStart < variableDeclaration.Variables[0].SpanStart).SelectMany(GetTokenTrivia).Where(trivia => !typeArgumentTrivia.Contains(trivia)))
@@ -728,7 +728,7 @@ internal sealed class TagResolver
     /// <summary>
     /// Returns the first pair of combined values whose tags are incompatible.
     /// </summary>
-    public bool TryFindIncompatibleValues(IEnumerable<IOperation> operations, out IOperation first, out TagInfo firstTags, out IOperation second, out TagInfo secondTags)
+    public bool TryFindIncompatibleValues(IEnumerable<IOperation> operations, [NotNullWhen(true)] out IOperation? first, out TagInfo firstTags, [NotNullWhen(true)] out IOperation? second, out TagInfo secondTags)
     {
         var tagged = new List<(IOperation Operation, TagInfo Tags)>();
         foreach (var operation in operations)
@@ -752,9 +752,9 @@ internal sealed class TagResolver
             tagged.Add((operation, tag));
         }
 
-        first = null!;
+        first = null;
         firstTags = TagInfo.None;
-        second = null!;
+        second = null;
         secondTags = TagInfo.None;
         return false;
     }
@@ -884,7 +884,7 @@ internal sealed class TagResolver
         return ComputeTag(parameterType, typeParameters);
     }
 
-    public static bool TryGetArgumentOwner(IArgumentOperation argument, out ISymbol member, out IOperation? instance, out ImmutableArray<IArgumentOperation> arguments)
+    public static bool TryGetArgumentOwner(IArgumentOperation argument, [NotNullWhen(true)] out ISymbol? member, out IOperation? instance, out ImmutableArray<IArgumentOperation> arguments)
     {
         switch (argument.Parent)
         {
@@ -901,7 +901,9 @@ internal sealed class TagResolver
                 return true;
 
             default:
-                (member, instance, arguments) = (null!, null, []);
+                member = null;
+                instance = null;
+                arguments = [];
                 return false;
         }
     }
@@ -1077,9 +1079,9 @@ internal sealed class TagResolver
     /// Returns the type of the value a tag describes for a wrapper type: the element of a collection, or the value of a
     /// <c>Nullable&lt;T&gt;</c>, a <c>Task&lt;T&gt;</c>, a <c>ValueTask&lt;T&gt;</c>, a <c>Lazy&lt;T&gt;</c>, a span, or a memory.
     /// </summary>
-    public static bool TryGetWrappedType(INamedTypeSymbol type, out ITypeSymbol wrappedType)
+    public static bool TryGetWrappedType(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? wrappedType)
     {
-        wrappedType = null!;
+        wrappedType = null;
         if (type.SpecialType is SpecialType.System_String)
             return false;
 

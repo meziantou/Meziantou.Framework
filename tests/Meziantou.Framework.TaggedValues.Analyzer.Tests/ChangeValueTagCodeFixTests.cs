@@ -153,6 +153,28 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ChangesTheTagOfTheOutVariableComment()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M() => TryGet(out {|MFTV0002:var /* ValueTag=ProjectId */ id|});
+            }
+            """,
+            """
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M() => TryGet(out var /* ValueTag=OrderId */ id);
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CopiesTheTagOfTheOverriddenMember()
     {
         await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(

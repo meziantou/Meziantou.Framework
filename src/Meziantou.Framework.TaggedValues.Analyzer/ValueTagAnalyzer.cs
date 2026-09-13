@@ -229,6 +229,12 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
 
         var value = argument.Value.UnwrapImplicitConversions();
+        if (value is IDeclarationExpressionOperation { Expression: ILocalReferenceOperation outVariable })
+        {
+            ReportOutVariableMismatch(context, resolver, argument, outVariable.Local);
+            return;
+        }
+
         if (value is IDeclarationExpressionOperation or IDelegateCreationOperation or IAnonymousFunctionOperation)
             return;
 
@@ -239,6 +245,41 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         var parameter = argument.Parameter.OriginalDefinition;
         var isDeclared = !resolver.GetDeclaredTags(parameter).IsEmpty;
         ReportFlow(context, resolver, argument.Value, parameter, expected, isDeclared ? ValueTagTargetKind.Symbol : null);
+    }
+
+    /// <summary>
+    /// Reports <c>Get(out var /* ValueTag=ProjectId */ id)</c> when the parameter is tagged differently: the value flows from the parameter to the variable.
+    /// </summary>
+    private static void ReportOutVariableMismatch(OperationAnalysisContext context, TagResolver resolver, IArgumentOperation argument, ILocalSymbol local)
+    {
+        var localTags = resolver.GetLocalCommentTags(local);
+        if (localTags.IsEmpty || argument.Parameter is null)
+            return;
+
+        var parameterTags = resolver.GetExpectedArgumentTags(argument);
+        if (parameterTags.IsEmpty || TagInfo.AreCompatible(parameterTags, localTags))
+            return;
+
+        var properties = ImmutableDictionary<string, string?>.Empty;
+        var additionalLocations = new List<Location>();
+        if (parameterTags.IsExplicit && local.Locations.FirstOrDefault(location => location.IsInSource) is { } localLocation)
+        {
+            properties = properties
+                .Add(ValueTagDiagnostics.TagsProperty, parameterTags.Serialize())
+                .Add(ValueTagDiagnostics.TargetKindProperty, ValueTagTargetKind.Local);
+            additionalLocations.Add(localLocation);
+        }
+
+        var parameter = argument.Parameter.OriginalDefinition;
+        context.ReportDiagnostic(Diagnostic.Create(
+            FlowMismatch,
+            argument.Value.Syntax.GetLocation(),
+            additionalLocations,
+            properties,
+            ValueTagDescriptions.DescribeSymbol(parameter) + ValueTagDescriptions.GetSite(parameter, argument.Syntax.SyntaxTree),
+            parameterTags.ToAttributeString(),
+            ValueTagDescriptions.DescribeSymbol(local),
+            localTags.ToAttributeString()));
     }
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, TagResolver resolver)

@@ -94,7 +94,7 @@ Load(id);             // ok
 id = order.ProjectId; // MFTV0002
 ````
 
-When the comment and the initializer disagree, the comment wins and the initializer is reported (MFTV0002). The code fix changes the tag in the comment.
+When the comment disagrees with the initializer, or with the parameter of an `out var`, the comment wins and the value is reported (MFTV0002). The code fix changes the tag in the comment.
 
 ### Tagging type arguments
 

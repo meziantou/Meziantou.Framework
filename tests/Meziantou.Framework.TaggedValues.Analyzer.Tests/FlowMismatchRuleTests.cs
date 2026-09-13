@@ -66,6 +66,105 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task OutArgument_ToAVariableWithADifferentTag_IsReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M([ValueTag("ProjectId")] Guid projectId) => TryGet(out {|MFTV0002:projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task OutArgument_ToAFieldWithADifferentTag_IsReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M() => TryGet(out {|MFTV0002:_projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task OutArgument_ToAVariableWithTheSameTag_IsNotReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M([ValueTag("OrderId")] Guid orderId) => TryGet(out orderId);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task OutVariable_WithACommentThatDisagreesWithTheParameter_IsReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                void M()
+                {
+                    TryGet(out {|MFTV0002:var /* ValueTag=ProjectId */ a|});
+                    TryGet(out {|MFTV0002:Guid /* ValueTag=ProjectId */ b|});
+                    TryGet(out var /* ValueTag=OrderId */ c);
+                    TryGet(out var d);
+                    TryGet(out _);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task OutVariable_TakesTheTagOfTheParameter()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid orderId) { orderId = Guid.Empty; return true; }
+
+                bool M([ValueTag("ProjectId")] Guid projectId) => TryGet(out var id) && {|MFTV0001:id == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task OutParameter_AssignedAValueWithADifferentTag_IsReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Get([ValueTag("OrderId")] out Guid orderId, [ValueTag("ProjectId")] Guid projectId) => orderId = {|MFTV0002:projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericOutParameter_TakesTheTagOfTheReceiver()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId)
+                {
+                    map.TryGetValue(orderId, out {|MFTV0002:var /* ValueTag=CustomerId */ customerId|});
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_ForAssignments()
     {
         await VerifyAsync("""

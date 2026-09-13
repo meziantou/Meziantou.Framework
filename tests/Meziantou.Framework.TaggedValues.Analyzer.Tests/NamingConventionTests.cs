@@ -169,6 +169,21 @@ public sealed class NamingConventionTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task OutParameterNamedId_TakesTheNameOfItsType()
+    {
+        await VerifyAsync("""
+            class Bar { }
+
+            class Sample
+            {
+                static bool TryGet(out Bar id) { id = new(); return true; }
+
+                bool M([ValueTag("ProjectId")] Bar projectBar) => TryGet(out var bar) && {|MFTV0001:bar == projectBar|};
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_WhenTypesWithTheSameNameDeclareId()
     {
         await VerifyAsync("""

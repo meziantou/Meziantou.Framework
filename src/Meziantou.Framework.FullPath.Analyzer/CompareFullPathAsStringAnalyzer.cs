@@ -13,7 +13,12 @@ namespace Meziantou.Framework.Analyzers.FullPath;
 /// <para>
 /// <c>fullPath == "value"</c> binds to <c>string.operator ==</c>, because there is no implicit conversion from
 /// <see cref="string"/> to <c>FullPath</c> that would make <c>FullPath.operator ==</c> applicable. The comparison is
-/// therefore ordinal, whereas <c>FullPathComparer.Default</c> is case-insensitive on Windows.
+/// therefore ordinal, whereas <c>FullPathComparer.Default</c> is case-insensitive on Windows. <c>string.Equals</c> is
+/// ordinal as well.
+/// </para>
+/// <para>
+/// <c>string.Compare(string, string)</c> and <c>string.CompareTo(string)</c> use the current culture, so the ordering
+/// of paths depends on the culture of the machine. The message states which kind of comparison is performed.
 /// </para>
 /// <para>
 /// An explicit <see cref="StringComparison"/> is left alone: the developer asked for a string comparison.
@@ -25,10 +30,13 @@ public sealed class CompareFullPathAsStringAnalyzer : DiagnosticAnalyzer
     public static readonly DiagnosticDescriptor Descriptor = new(
         id: FullPathAnalyzerCommon.CompareFullPathAsStringDiagnosticId,
         title: "Compare FullPath values instead of their string representation",
-        messageFormat: "This compares the string representation of a FullPath, which is ordinal, instead of using FullPathComparer",
+        messageFormat: "This compares the string representation of a FullPath, which is {0}, instead of using FullPathComparer",
         category: "FullPath",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    private const string OrdinalComparison = "ordinal";
+    private const string CultureSensitiveComparison = "culture-sensitive";
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => [Descriptor];
 
@@ -60,7 +68,7 @@ public sealed class CompareFullPathAsStringAnalyzer : DiagnosticAnalyzer
         if (!analyzerContext.IsFullPathType(binaryOperation.LeftOperand) && !analyzerContext.IsFullPathType(binaryOperation.RightOperand))
             return;
 
-        context.ReportDiagnostic(Descriptor, binaryOperation);
+        context.ReportDiagnostic(Descriptor, binaryOperation, OrdinalComparison);
     }
 
     private static void AnalyzeInvocation(OperationAnalysisContext context, FullPathContext analyzerContext)
@@ -92,7 +100,9 @@ public sealed class CompareFullPathAsStringAnalyzer : DiagnosticAnalyzer
         if (!comparesFullPath)
             return;
 
-        context.ReportDiagnostic(Descriptor, invocationOperation);
+        // string.Equals is ordinal, whereas string.Compare(string, string) and string.CompareTo(string) use the current culture
+        var comparisonKind = targetMethod.Name is "Equals" ? OrdinalComparison : CultureSensitiveComparison;
+        context.ReportDiagnostic(Descriptor, invocationOperation, comparisonKind);
     }
 
     private static bool IsString(IOperation operation)

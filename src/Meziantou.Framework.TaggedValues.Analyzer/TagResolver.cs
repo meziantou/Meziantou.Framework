@@ -143,7 +143,7 @@ internal sealed class TagResolver
             return external;
 
         var declared = GetDeclaredTags(member);
-        if (declared.IsEmpty || declared.IsExplicit || GetConventionName(member) is not "Id")
+        if (declared.IsEmpty || declared.IsExplicit || !IsConventionIdName(member))
             return declared;
 
         // An inherited 'Id' is also an id of every type between the receiver and the declaring type
@@ -162,24 +162,29 @@ internal sealed class TagResolver
         return result;
     }
 
+    /// <summary>
+    /// Returns whether the naming convention reads the symbol as an <c>Id</c>, such as <c>Id</c>, <c>_id</c>, or <c>id</c>.
+    /// </summary>
+    public static bool IsConventionIdName(ISymbol symbol)
+    {
+        return string.Equals(GetConventionName(symbol), "Id", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static string? GetConventionName(ISymbol symbol)
     {
         switch (symbol)
         {
             case IFieldSymbol field:
-                // s_orderId and _orderId both read as OrderId
+                // s_orderId and _orderId both read as orderId
                 var name = field.Name.StartsWith("s_", StringComparison.Ordinal) ? field.Name.Substring(2) : field.Name;
                 name = name.TrimStart('_');
-                if (name.Length is 0)
-                    return null;
-
-                return char.ToUpperInvariant(name[0]) + name.Substring(1);
+                return name.Length is 0 ? null : name;
 
             case IPropertySymbol { IsIndexer: false } property:
                 return property.Name;
 
             case IParameterSymbol parameter:
-                return parameter.Name.Length is 0 ? null : char.ToUpperInvariant(parameter.Name[0]) + parameter.Name.Substring(1);
+                return parameter.Name.Length is 0 ? null : parameter.Name;
 
             default:
                 return null;
@@ -212,7 +217,7 @@ internal sealed class TagResolver
         if (name is null)
             return TagInfo.None;
 
-        if (name is "Id")
+        if (string.Equals(name, "Id", StringComparison.OrdinalIgnoreCase))
         {
             // Foo(Bar id) is a BarId, while Id on Sample is a SampleId
             if (symbol is IParameterSymbol)

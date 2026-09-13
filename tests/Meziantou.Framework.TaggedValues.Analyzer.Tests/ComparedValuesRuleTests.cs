@@ -31,6 +31,17 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task NoDiagnostic_WhenTagsOnlyDifferByCase()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] Guid orderId1, [ValueTag("orderid")] Guid orderId2) => orderId1 == orderId2;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NoDiagnostic_WhenOneOperandIsNotTagged()
     {
         await VerifyAsync("""

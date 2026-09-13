@@ -1049,7 +1049,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
     private static void CollectConventionIdMember(TagResolver resolver, ISymbol symbol, ConcurrentBag<ISymbol> conventionIdMembers)
     {
-        if (symbol.IsOverride || TagResolver.GetConventionName(symbol) is not "Id" || !TagResolver.GetExplicitAndInheritedTags(symbol).IsEmpty)
+        if (symbol.IsOverride || !TagResolver.IsConventionIdName(symbol) || !TagResolver.GetExplicitAndInheritedTags(symbol).IsEmpty)
             return;
 
         if (!resolver.GetConventionTags(symbol).IsEmpty)

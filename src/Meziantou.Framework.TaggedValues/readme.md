@@ -31,6 +31,7 @@ Values that are not tagged are never reported, so you can adopt the package one 
 - **Return values**: `[return: ValueTag("OrderId")]`. This also works for async methods and iterators, where the tag describes the result or the elements.
 - **Local variables** cannot have attributes, so use a comment: `Guid /* ValueTag=OrderId */ id = ...;`. See [Tagging local variables](#tagging-local-variables).
 - **Unions**: `[ValueTag("OrderId", "ProjectId")]` accepts both. Two values are compatible when they share at least one tag.
+- **Casing** does not matter: tags are compared ignoring case, so `"OrderId"` and `"orderId"` are the same tag.
 - **Members of types you do not own**: `[assembly: ValueTag(typeof(Process), nameof(Process.Id), "ProcessId")]`. The tags also apply when the member is accessed through a derived type. Assembly attributes are read from referenced assemblies too, so a shared project can declare them once.
 
 Tags are inherited from overridden members, from implemented interface members, and from the parameters of a record primary constructor. An explicit cast through `object` drops the tag: `(Guid)(object)value`.
@@ -162,7 +163,7 @@ taggedvalues.infer_tags_from_names = true
 ````
 
 - A property or a field named `Id` takes the name of its declaring type: `Id` on `Order` is an `"OrderId"`. When the member is inherited, it is also an id of every type between the receiver and the declaring type.
-- A property, a field, or a parameter named `xxxId` takes its name with the first letter in upper case: `projectId` is a `"ProjectId"`. The `s_` prefix and leading underscores of fields are ignored: `s_projectId` and `_projectId` are both `"ProjectId"`.
+- A property, a field, or a parameter named `xxxId` takes its name: `projectId` is a `"projectId"`, which is the same tag as `"ProjectId"` as tags are compared ignoring case. The `s_` prefix and leading underscores of fields are ignored: `s_projectId` and `_projectId` are both `"projectId"`.
 - A parameter named `id` takes the name of its type: `void Load(Order id)` is an `"OrderId"`, and `void Load(OrderId id)` is an `"OrderId"` too. A parameter named `id` whose type is a primitive, a `string`, a `Guid`, or an enum is not tagged, as its type does not say what it identifies.
 - Explicit tags always win. Collections and indexers are not tagged by convention.
 

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.TaggedValues.Analyzer;
 /// <remarks>
 /// Tags describe the innermost value: for a <c>List&lt;Guid&gt;</c> they describe the elements, for a <c>Task&lt;Guid&gt;</c> the result.
 /// <see cref="Key"/> and <see cref="Value"/> describe the keys and the values of a dictionary, or of a <c>KeyValuePair</c>.
-/// An empty set means the value is not tagged, which is never reported.
+/// An empty set means the value is not tagged, which is never reported. Tags are compared ignoring case.
 /// </remarks>
 internal sealed class TagInfo
 {
@@ -86,7 +86,7 @@ internal sealed class TagInfo
 
         foreach (var tag in left)
         {
-            if (right.Contains(tag, StringComparer.Ordinal))
+            if (right.Contains(tag, StringComparer.OrdinalIgnoreCase))
                 return true;
         }
 
@@ -106,7 +106,7 @@ internal sealed class TagInfo
 
     public bool TagsEqual(TagInfo other)
     {
-        return Tags.SequenceEqual(other.Tags, StringComparer.Ordinal) && Key.SequenceEqual(other.Key, StringComparer.Ordinal) && Value.SequenceEqual(other.Value, StringComparer.Ordinal);
+        return Tags.SequenceEqual(other.Tags, StringComparer.OrdinalIgnoreCase) && Key.SequenceEqual(other.Key, StringComparer.OrdinalIgnoreCase) && Value.SequenceEqual(other.Value, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -185,13 +185,13 @@ internal sealed class TagInfo
             if (string.IsNullOrWhiteSpace(tag))
                 continue;
 
-            if (!builder.Contains(tag, StringComparer.Ordinal))
+            if (!builder.Contains(tag, StringComparer.OrdinalIgnoreCase))
             {
                 builder.Add(tag);
             }
         }
 
-        builder.Sort(StringComparer.Ordinal);
+        builder.Sort(StringComparer.OrdinalIgnoreCase);
         return builder.ToImmutable();
     }
 }

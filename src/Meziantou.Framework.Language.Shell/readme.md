@@ -53,6 +53,28 @@ foreach (var diagnostic in tree.GetDiagnostics())
 }
 ```
 
+### Diagnostics
+
+A syntax error is reported and parsing carries on: the parser resynchronizes at the next statement, or at the keyword
+that closes the construct it is in, so one mistake does not hide the rest of the script. The ids are shared by every
+dialect; the message says what was found.
+
+| Id | Meaning |
+| --- | --- |
+| `SHELL0001` | A command was expected, as in `a \|` at the end of a line or `if true; then fi` outside zsh |
+| `SHELL0002` | An unexpected token, such as `fi` with no `if`, a command right after `}` on the same line, or `;;` outside `case` |
+| `SHELL0003` | An unterminated string |
+| `SHELL0004` | A redirection with no target |
+| `SHELL0005`–`SHELL0007`, `SHELL0010` | An unterminated `${`, `$(` or backquote, `$((` or `((`, `[[` |
+| `SHELL0008`, `SHELL0009` | A missing `)` or `}` |
+| `SHELL0011` | A here-document with no closing delimiter, a warning because the shells read it to the end of the input |
+| `SHELL0012`, `SHELL0013` | A missing keyword or character, a missing name |
+| `SHELL0014` | A function body that is not a compound command, outside zsh |
+| `SHELL0015` | An invalid `[[ ]]` expression |
+| `SHELL0020`–`SHELL0027` | PowerShell: block comments, member names, here-strings, missing expressions, `using` placement, reserved keywords, missing parameter arguments, invalid assignment targets |
+| `SHELL0040`, `SHELL0041` | cmd: an incomplete `if` condition, a missing comparison operator |
+| `SHELL0100`, `SHELL0101` | Nesting past `MaxRecursionDepth`; content after the statement `ParseCommand` read |
+
 To read a single command rather than a whole script:
 
 ```csharp

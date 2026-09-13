@@ -166,10 +166,35 @@ foreach (var diagnostic in JsonSyntaxTree.ParseText("{\"a\": }").GetDiagnostics(
 | `JSON0005` | An unexpected token or comma |
 | `JSON0006` | A missing `{`, `}`, `[`, `]`, or `:` |
 | `JSON0007` | A missing value |
-| `JSON0008` | A missing property name |
+| `JSON0008` | A missing or unquoted property name |
 | `JSON0009` | A missing comma |
 | `JSON0010` | Data after the root value |
-| `JSON0011` | A line break inside a string |
+| `JSON0011` | An unescaped control character inside a string |
+| `JSON0012` | Objects and arrays nested more than 256 deep |
+| `JSON0013` | Whitespace JSON does not allow, such as a form feed or a non-breaking space |
+| `JSON0014` | A string in single quotes |
+| `JSON0015` | A property name used twice in one object (a warning) |
+
+Everything is an error except `JSON0015`: RFC 8259 only says names *should* be unique.
+
+### What is accepted
+
+The grammar is [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259), with two extensions that are accepted without a
+diagnostic: `//` and `/* */` comments wherever whitespace may appear, and a trailing comma after the last member or
+element. A byte order mark at the very start of the text is ignored, as the RFC allows. Anything else the RFC does not
+allow is reported, including an empty document, a raw tab inside a string, and `NaN`.
+
+### Recovering from mistakes
+
+The common mistakes are reported once and parsed into the tree they were meant to be, so one error does not bury the
+rest of the document under others:
+
+- A string ends at the end of its line when its closing quote is missing, instead of running on to the next quote.
+- `{name: 1}` and `{'name': 'value'}` produce a member called `name`, with a diagnostic on the quotes.
+- `0x1F`, `1.2.3`, `-Infinity`, and `+1` are each a single malformed number rather than a number and a stray word.
+- A closing brace or bracket ends every construct it closes over: in `{"a": [1, 2}` the array is reported as missing
+  its `]`, and the object still ends at the `}`.
+- A stray `}` after the root value is reported on its own, and the root value is kept.
 
 ## Walking a tree
 

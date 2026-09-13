@@ -75,12 +75,13 @@ internal sealed class Lexer(SourceText source)
                 return Punctuation(SyntaxKind.ColonToken, out text);
             case ',':
                 return Punctuation(SyntaxKind.CommaToken, out text);
-            case '"':
+            case '"' or '\'':
                 return ScanString(out text, out valueText);
-            case '-' or (>= '0' and <= '9'):
+            case '-' or '+' or (>= '0' and <= '9'):
+            case '.' when IsDigit(LookAhead):
                 return ScanNumber(out text);
             default:
-                while (!IsAtEnd && !IsTokenBoundary(Current))
+                while (!IsAtTokenEnd)
                 {
                     Position++;
                 }
@@ -106,9 +107,16 @@ internal sealed class Lexer(SourceText source)
         return kind;
     }
 
+    /// <summary>Reads a string, which ends at its closing quote or at the end of its line, whichever comes first.</summary>
+    /// <remarks>
+    /// JSON strings cannot contain a line break, so one that reaches the end of its line was never closed. Stopping
+    /// there keeps the lines below out of it: otherwise a single missing quote would turn the rest of the document into
+    /// one string, and every quote after it would open or close the wrong one.
+    /// </remarks>
     private SyntaxKind ScanString(out string text, out string valueText)
     {
         var start = Position;
+        var quote = Current;
         var builder = new StringBuilder();
         Position++;
 
@@ -116,22 +124,25 @@ internal sealed class Lexer(SourceText source)
         while (!IsAtEnd)
         {
             var current = Current;
-            if (current == '"')
+            if (current == quote)
             {
                 Position++;
                 terminated = true;
                 break;
             }
 
+            if (current is '\r' or '\n')
+                break;
+
             if (current == '\\')
             {
-                ScanEscapeSequence(builder, start);
+                ScanEscapeSequence(builder, quote);
                 continue;
             }
 
-            if (current is '\r' or '\n')
+            if (current < ' ')
             {
-                AddDiagnostic(Position, SourceText.GetLineBreakLength(_text, Position), JsonDiagnosticDescriptors.LineBreakInString);
+                AddDiagnostic(Position, 1, JsonDiagnosticDescriptors.ControlCharacterInString, ToCodePoint(current));
             }
 
             builder.Append(current);
@@ -140,7 +151,13 @@ internal sealed class Lexer(SourceText source)
 
         if (!terminated)
         {
-            AddDiagnostic(start, _text.Length - start, JsonDiagnosticDescriptors.UnterminatedString);
+            AddDiagnostic(start, Position - start, JsonDiagnosticDescriptors.UnterminatedString);
+        }
+
+        // Read as a string all the same, so a value written with the wrong quotes is still where it belongs in the tree.
+        if (quote == '\'')
+        {
+            AddDiagnostic(start, Position - start, JsonDiagnosticDescriptors.SingleQuotedString);
         }
 
         text = _text[start..Position];
@@ -149,21 +166,25 @@ internal sealed class Lexer(SourceText source)
         return SyntaxKind.StringToken;
     }
 
-    private void ScanEscapeSequence(StringBuilder builder, int stringStart)
+    private void ScanEscapeSequence(StringBuilder builder, char quote)
     {
         var escapeStart = Position;
         Position++;
-        if (IsAtEnd)
-        {
-            AddDiagnostic(stringStart, _text.Length - stringStart, JsonDiagnosticDescriptors.UnterminatedString);
+
+        // A backslash that ends the text or the line has nothing to escape; the string is reported as unterminated.
+        if (IsAtEnd || Current is '\r' or '\n')
             return;
-        }
 
         switch (Current)
         {
             case '"':
             case '\\':
             case '/':
+                builder.Append(Current);
+                Position++;
+                break;
+            case '\'' when quote == '\'':
+                // The quotes are already reported; escaping the one that delimits the string is what such a string does.
                 builder.Append(Current);
                 Position++;
                 break;
@@ -191,85 +212,68 @@ internal sealed class Lexer(SourceText source)
                 ScanUnicodeEscape(builder, escapeStart);
                 break;
             default:
-                AddDiagnostic(escapeStart, Math.Min(2, _text.Length - escapeStart), JsonDiagnosticDescriptors.InvalidEscapeSequence);
+                AddDiagnostic(escapeStart, 2, JsonDiagnosticDescriptors.InvalidEscapeSequence);
                 builder.Append(Current);
                 Position++;
                 break;
         }
     }
 
+    /// <summary>Reads the four hex digits after <c>\u</c>, stopping at the first character that is not one.</summary>
+    /// <remarks>Stopping there matters: that character may be the closing quote, which must still end the string.</remarks>
     private void ScanUnicodeEscape(StringBuilder builder, int escapeStart)
     {
-        if (Position + 4 >= _text.Length)
-        {
-            AddDiagnostic(escapeStart, _text.Length - escapeStart, JsonDiagnosticDescriptors.InvalidUnicodeEscapeSequence);
-            Position++;
-            return;
-        }
+        Position++;
 
         var value = 0;
-        for (var index = 1; index <= 4; index++)
+        for (var digits = 0; digits < 4; digits++)
         {
-            var digit = GetHexValue(_text[Position + index]);
+            var digit = IsAtEnd ? -1 : GetHexValue(Current);
             if (digit < 0)
             {
-                AddDiagnostic(escapeStart, 6, JsonDiagnosticDescriptors.InvalidUnicodeEscapeSequence);
-                Position++;
+                AddDiagnostic(escapeStart, Position - escapeStart, JsonDiagnosticDescriptors.InvalidUnicodeEscapeSequence);
                 return;
             }
 
             value = (value * 16) + digit;
+            Position++;
         }
 
         builder.Append((char)value);
-        Position += 5;
     }
 
+    /// <summary>Reads a number, and anything glued to it.</summary>
+    /// <remarks>
+    /// Whatever runs on up to the next token boundary is part of the same mistake -- <c>0x1F</c>, <c>1.2.3</c>,
+    /// <c>-Infinity</c>, <c>+1</c> -- so it is kept in the one token and reported once, rather than split into a number
+    /// followed by a stray word that would also be reported as a missing comma.
+    /// </remarks>
     private SyntaxKind ScanNumber(out string text)
     {
         var start = Position;
-        var hasDigits = false;
-        if (Current == '-')
+        var malformed = false;
+        if (Current is '-' or '+')
         {
+            malformed = Current == '+';
             Position++;
         }
 
-        if (Current == '0')
+        var integerStart = Position;
+        SkipDigits();
+        if (Position == integerStart)
         {
-            hasDigits = true;
-            Position++;
-            if (Current is >= '0' and <= '9')
-            {
-                AddDiagnostic(start, Position - start + 1, JsonDiagnosticDescriptors.LeadingZero);
-                while (Current is >= '0' and <= '9')
-                {
-                    Position++;
-                }
-            }
+            malformed = true;
         }
-        else
+        else if (Position - integerStart > 1 && _text[integerStart] == '0')
         {
-            while (Current is >= '0' and <= '9')
-            {
-                hasDigits = true;
-                Position++;
-            }
-        }
-
-        if (!hasDigits)
-        {
-            AddDiagnostic(start, Position - start, JsonDiagnosticDescriptors.InvalidNumber);
+            AddDiagnostic(start, Position - start, JsonDiagnosticDescriptors.LeadingZero);
         }
 
         if (Current == '.')
         {
             Position++;
             var fractionStart = Position;
-            while (Current is >= '0' and <= '9')
-            {
-                Position++;
-            }
-
+            SkipDigits();
             if (Position == fractionStart)
             {
                 AddDiagnostic(fractionStart, 0, JsonDiagnosticDescriptors.ExpectedFractionDigit);
@@ -285,20 +289,39 @@ internal sealed class Lexer(SourceText source)
             }
 
             var exponentStart = Position;
-            while (Current is >= '0' and <= '9')
-            {
-                Position++;
-            }
-
+            SkipDigits();
             if (Position == exponentStart)
             {
                 AddDiagnostic(exponentStart, 0, JsonDiagnosticDescriptors.ExpectedExponentDigit);
             }
         }
 
+        if (!IsAtTokenEnd)
+        {
+            malformed = true;
+            while (!IsAtTokenEnd)
+            {
+                Position++;
+            }
+        }
+
+        if (malformed)
+        {
+            _tokenDiagnostics = null;
+            AddDiagnostic(start, Position - start, JsonDiagnosticDescriptors.InvalidNumber);
+        }
+
         text = _text[start..Position];
 
         return SyntaxKind.NumberToken;
+    }
+
+    private void SkipDigits()
+    {
+        while (IsDigit(Current))
+        {
+            Position++;
+        }
     }
 
     private GreenNode? LexTrivia(bool isTrailing)
@@ -307,14 +330,35 @@ internal sealed class Lexer(SourceText source)
         while (!IsAtEnd)
         {
             var start = Position;
-            if (Current is ' ' or '\t' or '\f' or '\v')
+            if (Current is ' ' or '\t')
             {
-                while (!IsAtEnd && Current is ' ' or '\t' or '\f' or '\v')
+                while (!IsAtEnd && Current is ' ' or '\t')
                 {
                     Position++;
                 }
 
                 Add(ref trivia, SyntaxKind.WhitespaceTrivia, start);
+                continue;
+            }
+
+            // RFC 8259 lets a parser ignore a byte order mark at the start of the text.
+            if (Position == 0 && Current == '\uFEFF')
+            {
+                Position++;
+                Add(ref trivia, SyntaxKind.WhitespaceTrivia, start);
+                continue;
+            }
+
+            // Anything else that looks like whitespace is kept as whitespace, so the tokens around it still read the
+            // way they were meant to, but JSON only has four whitespace characters.
+            if (IsNonJsonWhitespace(Current))
+            {
+                while (!IsAtEnd && IsNonJsonWhitespace(Current))
+                {
+                    Position++;
+                }
+
+                Add(ref trivia, SyntaxKind.WhitespaceTrivia, start, JsonDiagnosticDescriptors.InvalidWhitespace, ToCodePoint(_text[start]));
                 continue;
             }
 
@@ -367,12 +411,12 @@ internal sealed class Lexer(SourceText source)
         return trivia is null ? null : SyntaxFactory.List(trivia.ToArray());
     }
 
-    private void Add(ref List<GreenNode?>? trivia, SyntaxKind kind, int start, DiagnosticDescriptor? descriptor = null)
+    private void Add(ref List<GreenNode?>? trivia, SyntaxKind kind, int start, DiagnosticDescriptor? descriptor = null, params object?[]? arguments)
     {
         GreenNode item = SyntaxFactory.Trivia(kind, _text[start..Position]);
         if (descriptor is not null)
         {
-            item = item.WithAdditionalDiagnostics(new SyntaxDiagnosticInfo(0, Position - start, descriptor));
+            item = item.WithAdditionalDiagnostics(new SyntaxDiagnosticInfo(0, Position - start, descriptor, arguments));
         }
 
         (trivia ??= []).Add(item);
@@ -385,8 +429,20 @@ internal sealed class Lexer(SourceText source)
     private char Current => Position < _text.Length ? _text[Position] : '\0';
     private char LookAhead => Position + 1 < _text.Length ? _text[Position + 1] : '\0';
 
-    private static bool IsTokenBoundary(char value)
-        => value is '\0' or ' ' or '\t' or '\f' or '\v' or '\r' or '\n' or '{' or '}' or '[' or ']' or ':' or ',' or '"';
+    /// <summary>Gets whether the current character cannot continue a number or a bare word.</summary>
+    private bool IsAtTokenEnd => IsAtEnd || Current switch
+    {
+        ' ' or '\t' or '\r' or '\n' or '{' or '}' or '[' or ']' or ':' or ',' or '"' => true,
+        '/' => LookAhead is '/' or '*',
+        var value => IsNonJsonWhitespace(value),
+    };
+
+    private static bool IsDigit(char value) => value is >= '0' and <= '9';
+
+    private static bool IsNonJsonWhitespace(char value)
+        => value is not (' ' or '\t' or '\r' or '\n') && (char.IsWhiteSpace(value) || value == '\uFEFF');
+
+    private static string ToCodePoint(char value) => ((int)value).ToString("X4", CultureInfo.InvariantCulture);
 
     private static int GetHexValue(char value) => value switch
     {

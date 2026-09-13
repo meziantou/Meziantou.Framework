@@ -829,6 +829,270 @@ public sealed class JsonSyntaxTreeTests
         Assert.Equal(1, diagnostic.Location.GetLineSpan().Start.Line);
     }
 
+    public static TheoryData<string> ValidJsonSamples => new()
+    {
+        "{}",
+        "[]",
+        "0",
+        "-0",
+        "-0.0e-0",
+        "1E+2",
+        "1e-2",
+        "0e5",
+        "123456789012345678901234567890.123456789e+999",
+        "true",
+        "false",
+        "null",
+        "\"\"",
+        "\"\\\"\\\\\\/\\b\\f\\n\\r\\t\"",
+        "\"\\u0000\\u001f\\uD834\\uDD1E\\uFFFF\"",
+        "\"é中😀\u007F\u0080\u2028\u2029\u00A0\"",
+        " \t\r\n[ 1 , \"a\" ]\r\n ",
+        "{\"\":\"\",\"a\":{\"b\":[[],{}]}}",
+        "\uFEFF{\"a\": 1}",
+        "[true/*comment*/, false//comment\n, null/**/]",
+        "{\"a\"/*c*/:/*c*/1/*c*/}",
+        "[1//comment\n]",
+    };
+
+    [Theory]
+    [MemberData(nameof(ValidJsonSamples))]
+    public void ParseText_ValidJson_ReportsNothing(string text)
+    {
+        var tree = JsonSyntaxTree.ParseText(text);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Single(tree.GetRoot().Values);
+        Assert.False(tree.GetRoot().ContainsSkippedText);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Theory]
+    [InlineData("", "JSON0007@0:0")]
+    [InlineData("  ", "JSON0007@2:0")]
+    [InlineData("// only a comment", "JSON0007@17:0")]
+    [InlineData("/* unterminated", "JSON0001@0:15 JSON0007@15:0")]
+    [InlineData("\"a\tb\"", "JSON0011@2:1")]
+    [InlineData("\"a\u0001\u001Fb\"", "JSON0011@2:1 JSON0011@3:1")]
+    [InlineData("\"a\0\"", "JSON0011@2:1")]
+    [InlineData("\"abc\\", "JSON0002@0:5")]
+    [InlineData("\"\\x\"", "JSON0003@1:2")]
+    [InlineData("\"\\u12\"", "JSON0003@1:4")]
+    [InlineData("\"\\u12", "JSON0002@0:5 JSON0003@1:4")]
+    [InlineData("\"\\uZZZZ\"", "JSON0003@1:2")]
+    [InlineData("\"a\\\n", "JSON0002@0:3")]
+    [InlineData("[1\f]", "JSON0013@2:1")]
+    [InlineData("[1\v]", "JSON0013@2:1")]
+    [InlineData("[1,\u00A02]", "JSON0013@3:1")]
+    [InlineData(" \uFEFF1", "JSON0013@1:1")]
+    [InlineData("[+1]", "JSON0004@1:2")]
+    [InlineData("[.5]", "JSON0004@1:2")]
+    [InlineData("[0x1F]", "JSON0004@1:4")]
+    [InlineData("[1.2.3]", "JSON0004@1:5")]
+    [InlineData("[-Infinity]", "JSON0004@1:9")]
+    [InlineData("[01]", "JSON0004@1:2")]
+    [InlineData("[-012]", "JSON0004@1:4")]
+    [InlineData("[1.]", "JSON0004@3:0")]
+    [InlineData("[1e+]", "JSON0004@4:0")]
+    [InlineData("[-]", "JSON0004@1:1")]
+    [InlineData("[NaN]", "JSON0005@1:3")]
+    [InlineData("[True]", "JSON0005@1:4")]
+    [InlineData("{'a': 'b'}", "JSON0014@1:3 JSON0014@6:3")]
+    [InlineData("{a: 1}", "JSON0008@1:1")]
+    [InlineData("{\"a\" 1}", "JSON0006@5:1")]
+    [InlineData("{\"a\": 1}}", "JSON0005@8:1")]
+    [InlineData("{\"a\": 1},", "JSON0005@8:1")]
+    [InlineData("[1]]]", "JSON0005@3:1 JSON0005@4:1")]
+    [InlineData("\"a\" \"b\"", "JSON0010@4:3")]
+    [InlineData("{\"a\": [1, 2}", "JSON0006@11:1")]
+    [InlineData("[{\"a\": 1]", "JSON0006@8:1")]
+    [InlineData("{\"a\": \"x\n, \"b\": 2}", "JSON0002@6:2")]
+    [InlineData("[1 // comment\n 2]", "JSON0009@2:0")]
+    [InlineData("{\"a\": 1, \"a\": 2}", "JSON0015@9:3")]
+    [InlineData("{\"a\": 1, \"\\u0061\": 2}", "JSON0015@9:8")]
+    public void ParseText_InvalidJson_ReportsTheExpectedDiagnostics(string text, string expected)
+    {
+        var tree = ParseWithTimeout(text);
+
+        Assert.Equal(expected, string.Join(' ', tree.GetDiagnostics().Select(diagnostic => $"{diagnostic.Id}@{diagnostic.Location.SourceSpan.Start}:{diagnostic.Location.SourceSpan.Length}")));
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void ParseText_DuplicatePropertyName_IsAWarning()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a": 1, "b": 2, "a": 3}""");
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal("The property name 'a' is already used in this object.", diagnostic.Message);
+    }
+
+    [Fact]
+    public void ParseText_UnterminatedString_StopsAtTheEndOfItsLine()
+    {
+        const string Text = "{\n  \"a\": \"unterminated,\n  \"b\": 2\n}";
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var obj = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value);
+
+        Assert.Equal(["JSON0002", "JSON0009"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal("unterminated,", Assert.IsType<JsonStringSyntax>(obj.GetMember("a")!.Value).Value);
+        Assert.Equal("2", Assert.IsType<JsonNumberSyntax>(obj.GetMember("b")!.Value).Text);
+        Assert.False(obj.CloseBraceToken.IsMissing);
+    }
+
+    [Fact]
+    public void ParseText_UnquotedPropertyNames_AreReportedAndKeptAsNames()
+    {
+        const string Text = """{ name: "x", age: 3, true: false }""";
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var obj = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value);
+
+        Assert.Equal(["JSON0008", "JSON0008", "JSON0008"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal(["name", "age", "true"], obj.Members.Select(member => member.Name));
+        Assert.Equal("x", Assert.IsType<JsonStringSyntax>(obj.GetMember("name")!.Value).Value);
+        Assert.Equal("3", Assert.IsType<JsonNumberSyntax>(obj.GetMember("age")!.Value).Text);
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void ParseText_SingleQuotedStrings_AreReportedAndKeptAsStrings()
+    {
+        const string Text = """{'name': 'it\'s "quoted"'}""";
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var member = Assert.Single(Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).Members);
+
+        Assert.Equal(["JSON0014", "JSON0014"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal("name", member.Name);
+        Assert.Equal("it's \"quoted\"", Assert.IsType<JsonStringSyntax>(member.Value).Value);
+    }
+
+    [Fact]
+    public void ParseText_AMissingCloseBracket_LeavesTheEnclosingBraceToTheObject()
+    {
+        const string Text = """{"a": [1, 2}""";
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var obj = Assert.IsType<JsonObjectSyntax>(Assert.Single(tree.GetRoot().Values));
+        var array = Assert.IsType<JsonArraySyntax>(obj.GetMember("a")!.Value);
+
+        Assert.False(obj.CloseBraceToken.IsMissing);
+        Assert.True(array.CloseBracketToken.IsMissing);
+        Assert.Equal(2, array.Elements.Count);
+        Assert.False(tree.GetRoot().ContainsSkippedText);
+    }
+
+    [Fact]
+    public void ParseText_AStrayCloserAfterTheRoot_KeepsTheRootAndIsReportedOnce()
+    {
+        var tree = JsonSyntaxTree.ParseText("""{"a": 1}}""");
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("JSON0005", diagnostic.Id);
+        Assert.Equal("1", Assert.IsType<JsonNumberSyntax>(Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value).GetMember("a")!.Value).Text);
+    }
+
+    [Fact]
+    public void ParseText_TruncatedDocument_ReportsEachMissingPieceOnceAtTheEnd()
+    {
+        const string Text = """{"a": [1, {"b": """;
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+
+        Assert.Equal(["Expected ']'.", "Expected '}'.", "Expected '}'.", "Expected a JSON value."], tree.GetDiagnostics().Select(diagnostic => diagnostic.Message).Order(StringComparer.Ordinal));
+        Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Equal(new TextSpan(Text.Length, 0), diagnostic.Location.SourceSpan));
+    }
+
+    [Fact]
+    public void ParseText_AMissingValueOrColon_DoesNotLoseTheFollowingMembers()
+    {
+        const string Text = """{"a": , "b" 2, "c": 3}""";
+
+        var tree = JsonSyntaxTree.ParseText(Text);
+        var obj = Assert.IsType<JsonObjectSyntax>(tree.GetRoot().Value);
+
+        Assert.Equal(["JSON0007", "JSON0006"], tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal(["a", "b", "c"], obj.Members.Select(member => member.Name));
+        Assert.Equal("2", Assert.IsType<JsonNumberSyntax>(obj.GetMember("b")!.Value).Text);
+        Assert.Equal("3", Assert.IsType<JsonNumberSyntax>(obj.GetMember("c")!.Value).Text);
+    }
+
+    public static TheoryData<string> DifferentialSeeds => new()
+    {
+        """{"a":[1,-2.5e+3,true,false,null],"b":{"c":"d\n\u0041"}}""",
+        """["x", {"y": [0, 1e5]}, [], "\/"]""",
+        "{\n  // comment\n  \"a\": 1, /* block */\n  \"b\": [1,2,],\n}",
+    };
+
+    /// <summary>
+    /// System.Text.Json, set to accept comments and trailing commas, is a strict implementation of the same grammar, so
+    /// every document it rejects has to produce an error and every document it accepts has to produce none.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DifferentialSeeds))]
+    public void ParseText_ReportsAnErrorExactlyWhenSystemTextJsonRejectsTheText(string seed)
+    {
+        string[] fragments =
+        [
+            "\"", "'", "\\", "/", "*", ",", ":", "{", "}", "[", "]", "0", "-", "+", ".", "e", "x", " ", "\t", "\n", "\r",
+            "\f", "\v", "\u0001", "\u00A0", "\\u", "\\uZ", "//", "/*", "*/", "true", "nul",
+        ];
+
+        var candidates = new HashSet<string>(StringComparer.Ordinal);
+        for (var index = 0; index <= seed.Length; index++)
+        {
+            candidates.Add(seed[..index]);
+            if (index < seed.Length)
+            {
+                candidates.Add(seed.Remove(index, 1));
+            }
+
+            foreach (var fragment in fragments)
+            {
+                candidates.Add(seed.Insert(index, fragment));
+                if (index < seed.Length)
+                {
+                    candidates.Add(seed.Remove(index, 1).Insert(index, fragment));
+                }
+            }
+        }
+
+        var mismatches = new List<string>();
+        foreach (var candidate in candidates)
+        {
+            var expectedValid = IsAcceptedBySystemTextJson(candidate);
+            var actualValid = !JsonSyntaxTree.ParseText(candidate).GetDiagnostics().Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+            if (expectedValid != actualValid)
+            {
+                mismatches.Add($"{(expectedValid ? "valid" : "invalid")}: {System.Text.Json.JsonSerializer.Serialize(candidate)}");
+            }
+        }
+
+        Assert.Empty(mismatches, string.Join('\n', mismatches.Take(30)));
+
+        static bool IsAcceptedBySystemTextJson(string text)
+        {
+            try
+            {
+                using var document = System.Text.Json.JsonDocument.Parse(text, new System.Text.Json.JsonDocumentOptions
+                {
+                    AllowTrailingCommas = true,
+                    CommentHandling = System.Text.Json.JsonCommentHandling.Skip,
+                    MaxDepth = 256,
+                });
+
+                return true;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
+        }
+    }
+
     /// <summary>
     /// A member always has a value, so taking it out would leave a member whose own type says the value is there and
     /// whose property returns nothing. The edit is refused instead.

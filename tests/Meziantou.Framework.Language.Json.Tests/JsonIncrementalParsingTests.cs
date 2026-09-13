@@ -38,6 +38,12 @@ public sealed class JsonIncrementalParsingTests
         "{\"a\": foo}",
         "{} xyz",
         "[1, :, 2]",
+        "{a: 1, 'b': 'c'}",
+        "{\"a\": [1, 2}",
+        "{\"a\":1,\"a\":2}",
+        "[0x1F, -Infinity, \"x\\u12\"]",
+        "{\"a\": \"x\n, \"b\": 2}",
+        "{\"a\":1}}",
     ];
 
     /// <summary>The fragments worth inserting: the ones that change how the text lexes.</summary>
@@ -46,6 +52,7 @@ public sealed class JsonIncrementalParsingTests
         "", " ", "\t", "\n", "\r\n", "\"", "\\", "\\\\", "\\n", "\\u0041",
         "/", "//", "/*", "*/", "{", "}", "[", "]", ",", ":",
         "0", "9", "-", ".", "e", "e+", "+", "true", "fals", "nul", "\"a\"", "\"\"", "x",
+        "'", "\f", "\u00A0", "\uFEFF", "\u0001", "a:", "\"a\":",
     ];
 
     [Theory]

@@ -39,6 +39,10 @@ public sealed class FullPathDivisionWithFullPathRightAnalyzer : DiagnosticAnalyz
         if (binaryOperation.OperatorKind != BinaryOperatorKind.Divide)
             return;
 
+        // Only FullPath.operator / discards its left operand when the right one is rooted
+        if (!analyzerContext.IsFullPathType(binaryOperation.OperatorMethod?.ContainingType))
+            return;
+
         if (!analyzerContext.IsFullPathType(binaryOperation.RightOperand))
             return;
 

@@ -18,10 +18,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
-    public static void DoesNotContain<T>(T expected, ICollection<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain<T>(T expected, [NotNull] ICollection<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(DoesNotContain), "Expected expression", "Not expected item", expected, actualExpression, expectedExpression, message)));
+        }
 
         if (!actual.Contains(expected))
             return;
@@ -30,10 +32,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
-    public static void DoesNotContain<T>(T expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(DoesNotContain), "Expected expression", "Not expected item", expected, actualExpression, expectedExpression, message)));
+        }
 
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
@@ -48,10 +52,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
-    public static void DoesNotContain<T>(IEnumerable<T>? actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
+    public static void DoesNotContain<T>([NotNull] IEnumerable<T>? actual, Func<T, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new PredicateNullActualAssertionError(nameof(DoesNotContain), actualExpression, predicateExpression, message)));
+        }
 
         using var matchingSnapshot = CollectionSnapshot.Create<T>(EnumerateMatchingItems(actual, predicate));
         if (!matchingSnapshot.TryGetItem(0, out _))
@@ -61,10 +67,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
-    public static void DoesNotContain<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>>? actual, IEqualityComparer<TKey>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain<TKey, TValue>(TKey expected, [NotNull] IEnumerable<KeyValuePair<TKey, TValue>>? actual, IEqualityComparer<TKey>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<TKey>(nameof(DoesNotContain), "Expected key expression", "Not expected key", expected, actualExpression, expectedExpression, message)));
+        }
 
         comparer ??= EqualityComparer<TKey>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<KeyValuePair<TKey, TValue>>(actual);
@@ -79,11 +87,13 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(1)]
-    public static void DoesNotContain<TKey, TValue>(TKey expected, Dictionary<TKey, TValue>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain<TKey, TValue>(TKey expected, [NotNull] Dictionary<TKey, TValue>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
         where TKey : notnull
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<TKey>(nameof(DoesNotContain), "Expected key expression", "Not expected key", expected, actualExpression, expectedExpression, message)));
+        }
 
         if (!actual.ContainsKey(expected))
             return;
@@ -92,10 +102,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(-1)]
-    public static void DoesNotContain(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(object? expected, [NotNull] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(DoesNotContain), "Expected expression", "Not expected", expected, actualExpression, expectedExpression, message)));
+        }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
@@ -109,10 +121,12 @@ public partial class Assert
     }
 
     [OverloadResolutionPriority(-1)]
-    public static void DoesNotContain(object? expected, System.Collections.IDictionary? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(object? expected, [NotNull] System.Collections.IDictionary? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(DoesNotContain), "Expected key expression", "Not expected key", expected, actualExpression, expectedExpression, message)));
+        }
 
         if (!actual.Contains(expected!))
             return;
@@ -120,7 +134,7 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, System.Collections.IDictionary>("Not expected key", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotContain(string expected, System.Collections.IDictionary? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(string expected, [NotNull] System.Collections.IDictionary? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         DoesNotContain((object?)expected, actual, message, actualExpression, expectedExpression);
     }
@@ -143,22 +157,26 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotContain), "Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotContain(string expected, string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(string expected, [NotNull] string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-            return;
-
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(DoesNotContain), "Not expected", expected, comparison, actualExpression, expectedExpression, message)));
+        }
+
         if (!actual.Contains(expected, comparison))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<string, string>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static async Task DoesNotContain<T>(IEnumerable<T> expected, IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task DoesNotContain<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(DoesNotContain), "Expected expression", "Not expected", expected, actualExpression, expectedExpression, message)));
+        }
 
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
@@ -171,10 +189,12 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotContain(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotContain(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(DoesNotContain), "Expected expression", "Not expected", expected, actualExpression, expectedExpression, message)));
+        }
 
         // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
         // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can

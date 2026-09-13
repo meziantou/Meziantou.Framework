@@ -582,9 +582,9 @@ internal class AssertionFormatter
             .ToString();
     }
 
-    public virtual string Format(ContainsPredicateNullActualAssertionError error)
+    public virtual string Format(PredicateNullActualAssertionError error)
     {
-        return CreateMessage("Assert.Contains() assertion failed.", error.Message)
+        return CreateMessage($"Assert.{error.AssertionName}() assertion failed.", error.Message)
             .AppendGroup(
                 ("Expression", error.ActualExpression),
                 ("Predicate expression", error.PredicateExpression))
@@ -812,18 +812,6 @@ internal class AssertionFormatter
             .ToString();
     }
 
-    public virtual string Format<TExpected>(ContainsNullActualAssertionError<TExpected> error)
-    {
-        return CreateMessage("Assert.Contains() assertion failed.", error.Message)
-            .AppendGroup(
-                (error.ExpectedExpressionLabel, error.ExpectedExpression ?? string.Empty),
-                ("Actual expression", error.ActualExpression ?? string.Empty))
-            .AppendGroup(
-                (error.ExpectedValueLabel, FormatValue(error.ExpectedValue)),
-                ("Actual", "<null>"))
-            .ToString();
-    }
-
     public virtual string Format<TExpected>(NullActualAssertionError<TExpected> error)
     {
         return CreateMessage($"Assert.{error.AssertionName}() assertion failed.", error.Message)
@@ -884,19 +872,6 @@ internal class AssertionFormatter
             .AppendGroup(
                 ("Expected", FormatStringValue(error.ExpectedValue, highlightedIndex: null)),
                 ("Actual", FormatStringValue(error.ActualValue, highlightedIndex: null)))
-            .ToString();
-    }
-
-    public virtual string Format(StringContainsNullActualAssertionError error)
-    {
-        return CreateMessage("Assert.Contains() assertion failed.", error.Message)
-            .AppendGroup(
-                ("Expected expression", error.ExpectedExpression),
-                ("Actual expression", error.ActualExpression))
-            .Append("Comparison", error.Comparison.ToString())
-            .AppendGroup(
-                ("Expected", FormatValue(error.ExpectedValue)),
-                ("Actual", "<null>"))
             .ToString();
     }
 

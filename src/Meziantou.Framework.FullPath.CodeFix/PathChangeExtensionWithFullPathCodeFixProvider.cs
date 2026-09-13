@@ -46,7 +46,7 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
 
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title: "Use FullPath.ChangeExtension",
+                    title: "Use FullPath.WithExtension",
                     createChangedDocument: cancellationToken => ApplyFixAsync(context.Document, expression, pathType, fullPathType, cancellationToken),
                     equivalenceKey: GetType().FullName),
                 diagnostic);
@@ -93,7 +93,7 @@ public sealed class PathChangeExtensionWithFullPathCodeFixProvider : CodeFixProv
                     SyntaxFactory.MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         fullPathExpression.WithoutTrivia().Parenthesize(),
-                        SyntaxFactory.IdentifierName("ChangeExtension")),
+                        SyntaxFactory.IdentifierName("WithExtension")),
                     SyntaxFactory.ArgumentList(
                     [
                         SyntaxFactory.Argument(extensionExpression.WithoutTrivia()),

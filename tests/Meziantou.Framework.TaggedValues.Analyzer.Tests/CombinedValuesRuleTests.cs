@@ -43,6 +43,57 @@ public sealed class CombinedValuesRuleTests : TaggedValuesAnalyzerTestBase
             """);
     }
 
+    [Theory]
+    [InlineData("orderId + {|MFTV0003:projectId|}")]
+    [InlineData("orderId - {|MFTV0003:projectId|}")]
+    public async Task ReportDiagnostic_ForAdditionsOfDifferentTags(string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] int orderId, [ValueTag("ProjectId")] int projectId) => _ = {{expression}};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForCompoundAdditionsOfDifferentTags()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] int orderId, [ValueTag("ProjectId")] int projectId) => orderId += {|MFTV0003:projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForMultiplicationsOfDifferentTags()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("Meters")] double meters, [ValueTag("Seconds")] double seconds) => _ = meters / seconds;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForOperandsOfAUserDefinedOperator()
+    {
+        await VerifyAsync("""
+            readonly record struct Distance(double Value)
+            {
+                public static Distance operator +([ValueTag("Meters")] Distance left, [ValueTag("Meters")] Distance right) => new(left.Value + right.Value);
+            }
+
+            class Sample
+            {
+                void M([ValueTag("Meters")] Distance meters, [ValueTag("Feet")] Distance feet) => _ = meters + {|MFTV0002:feet|};
+            }
+            """);
+    }
+
     [Fact]
     public async Task ReportDiagnostic_ForCollectionElements()
     {

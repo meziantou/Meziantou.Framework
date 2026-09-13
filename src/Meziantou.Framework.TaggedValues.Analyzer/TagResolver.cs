@@ -614,8 +614,9 @@ internal sealed class TagResolver
         switch (operation)
         {
             case IConversionOperation conversion:
+                // A user-defined conversion creates a new value, tagged by the return value of the operator
                 if (conversion.Conversion.IsUserDefined)
-                    return TagInfo.None;
+                    return conversion.Conversion.MethodSymbol is { } conversionMethod ? GetDeclaredTags(conversionMethod) : TagInfo.None;
 
                 // (Guid)(object)value is the explicit way to drop the tag
                 if (!conversion.IsImplicit && (IsObjectOrDynamic(conversion.Type) || IsObjectOrDynamic(conversion.Operand.Type)))
@@ -631,6 +632,35 @@ internal sealed class TagResolver
 
             case ISimpleAssignmentOperation assignment:
                 return GetTag(assignment.Value, depth + 1);
+
+            // A user-defined operator creates a new value, tagged by the return value of the operator
+            case IBinaryOperation binary when !IsBuiltInNumericOperator(binary.OperatorMethod, binary.Type):
+                return binary.OperatorMethod is null ? TagInfo.None : GetDeclaredTags(binary.OperatorMethod);
+
+            case IBinaryOperation { OperatorKind: BinaryOperatorKind.Add or BinaryOperatorKind.Subtract } additive:
+                return Combine([additive.LeftOperand, additive.RightOperand], depth);
+
+            // price * 2 is still a price, but meters / seconds is neither
+            case IBinaryOperation { OperatorKind: BinaryOperatorKind.Multiply or BinaryOperatorKind.Divide } multiplicative:
+                var leftTags = GetTag(multiplicative.LeftOperand, depth + 1);
+                var rightTags = GetTag(multiplicative.RightOperand, depth + 1);
+                return leftTags.IsEmpty ? rightTags : rightTags.IsEmpty ? leftTags : TagInfo.None;
+
+            case IUnaryOperation unary when !IsBuiltInNumericOperator(unary.OperatorMethod, unary.Type):
+                return unary.OperatorMethod is null ? TagInfo.None : GetDeclaredTags(unary.OperatorMethod);
+
+            case IUnaryOperation { OperatorKind: UnaryOperatorKind.Plus or UnaryOperatorKind.Minus } unary:
+                return GetTag(unary.Operand, depth + 1);
+
+            case IIncrementOrDecrementOperation increment when !IsBuiltInNumericOperator(increment.OperatorMethod, increment.Type):
+                return increment.OperatorMethod is null ? TagInfo.None : GetDeclaredTags(increment.OperatorMethod);
+
+            case IIncrementOrDecrementOperation increment:
+                return GetTag(increment.Target, depth + 1);
+
+            // The value of orderId += 1 is the new value of orderId
+            case ICompoundAssignmentOperation compoundAssignment:
+                return GetTag(compoundAssignment.Target, depth + 1);
 
             case IFieldReferenceOperation fieldReference:
                 return GetMemberTags(fieldReference.Field, fieldReference.Instance?.Type);
@@ -1089,6 +1119,28 @@ internal sealed class TagResolver
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// Returns whether an operator is a built-in arithmetic operator on numbers, which keeps the tag of its operands.
+    /// Other operators, such as <c>DateTime - DateTime</c>, create a value of another kind.
+    /// </summary>
+    public static bool IsBuiltInNumericOperator(IMethodSymbol? operatorMethod, ITypeSymbol? resultType)
+    {
+        if (resultType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableType)
+        {
+            resultType = nullableType.TypeArguments[0];
+        }
+
+        if (resultType?.SpecialType is not (SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16 or SpecialType.System_UInt16 or
+            SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Int64 or SpecialType.System_UInt64 or
+            SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal or SpecialType.System_IntPtr or SpecialType.System_UIntPtr))
+        {
+            return false;
+        }
+
+        // decimal operators are exposed as methods of System.Decimal
+        return operatorMethod is null || operatorMethod.ContainingType.SpecialType == resultType.SpecialType;
     }
 
     private static bool IsObjectOrDynamic(ITypeSymbol? type)

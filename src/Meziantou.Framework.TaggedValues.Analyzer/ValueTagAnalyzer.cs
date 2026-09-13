@@ -41,7 +41,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         category: "TaggedValues",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The branches of a conditional expression, a null-coalescing expression, or a switch expression, or the elements of a collection, have different tags. Make every branch or element produce a value with the same tag, or fix the [ValueTag] of the declaration that is tagged incorrectly.");
+        description: "The operands of an addition or a subtraction, the branches of a conditional expression, a null-coalescing expression, or a switch expression, or the elements of a collection, have different tags. Make every branch or element produce a value with the same tag, or fix the [ValueTag] of the declaration that is tagged incorrectly.");
 
     public static readonly DiagnosticDescriptor InheritedTagMismatch = new(
         id: ValueTagDiagnostics.InheritedTagMismatchDiagnosticId,
@@ -131,6 +131,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationAction(context => AnalyzeVariableDeclarator(context, resolver), OperationKind.VariableDeclarator);
             context.RegisterOperationAction(context => AnalyzeMemberInitializer(context, resolver), OperationKind.FieldInitializer, OperationKind.PropertyInitializer);
             context.RegisterOperationAction(context => AnalyzeReturn(context, resolver), OperationKind.Return, OperationKind.YieldReturn);
+            context.RegisterOperationAction(context => AnalyzeCompoundAssignment(context, resolver), OperationKind.CompoundAssignment);
             context.RegisterOperationAction(context => AnalyzeCombinedValues(context, resolver), OperationKind.Conditional, OperationKind.Coalesce, OperationKind.SwitchExpression, OperationKind.ArrayInitializer, OperationKind.CollectionExpression);
             context.RegisterOperationAction(context => AnalyzeAttribute(context, resolver), OperationKind.Attribute);
             context.RegisterSemanticModelAction(context => AnalyzeComments(context, resolver));
@@ -144,10 +145,49 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeBinary(OperationAnalysisContext context, TagResolver resolver)
     {
         var operation = (IBinaryOperation)context.Operation;
-        if (operation.OperatorKind is not (BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals or BinaryOperatorKind.LessThan or BinaryOperatorKind.LessThanOrEqual or BinaryOperatorKind.GreaterThan or BinaryOperatorKind.GreaterThanOrEqual))
+        if (operation.OperatorKind is BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals or BinaryOperatorKind.LessThan or BinaryOperatorKind.LessThanOrEqual or BinaryOperatorKind.GreaterThan or BinaryOperatorKind.GreaterThanOrEqual)
+        {
+            ReportComparison(context, resolver, operation.Syntax, operation.LeftOperand, operation.RightOperand);
             return;
+        }
 
-        ReportComparison(context, resolver, operation.Syntax, operation.LeftOperand, operation.RightOperand);
+        if (TagResolver.IsBuiltInNumericOperator(operation.OperatorMethod, operation.Type))
+        {
+            // orderId + projectId
+            if (operation.OperatorKind is BinaryOperatorKind.Add or BinaryOperatorKind.Subtract)
+            {
+                ReportCombinedValues(context, resolver, [operation.LeftOperand, operation.RightOperand]);
+            }
+
+            return;
+        }
+
+        // The operands of a user-defined operator flow to its parameters
+        if (operation.OperatorMethod is { Parameters.Length: 2 } operatorMethod)
+        {
+            ReportFlow(context, resolver, operation.LeftOperand, operatorMethod.Parameters[0], resolver.GetDeclaredTags(operatorMethod.Parameters[0]), ValueTagTargetKind.Symbol);
+            ReportFlow(context, resolver, operation.RightOperand, operatorMethod.Parameters[1], resolver.GetDeclaredTags(operatorMethod.Parameters[1]), ValueTagTargetKind.Symbol);
+        }
+    }
+
+    private static void AnalyzeCompoundAssignment(OperationAnalysisContext context, TagResolver resolver)
+    {
+        var operation = (ICompoundAssignmentOperation)context.Operation;
+        if (TagResolver.IsBuiltInNumericOperator(operation.OperatorMethod, operation.Type))
+        {
+            // orderId += projectId
+            if (operation.OperatorKind is BinaryOperatorKind.Add or BinaryOperatorKind.Subtract)
+            {
+                ReportCombinedValues(context, resolver, [operation.Target, operation.Value]);
+            }
+
+            return;
+        }
+
+        if (operation.OperatorMethod is { Parameters.Length: 2 } operatorMethod)
+        {
+            ReportFlow(context, resolver, operation.Value, operatorMethod.Parameters[1], resolver.GetDeclaredTags(operatorMethod.Parameters[1]), ValueTagTargetKind.Symbol);
+        }
     }
 
     private static void AnalyzeTupleBinary(OperationAnalysisContext context, TagResolver resolver)
@@ -576,6 +616,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (values is null)
             return;
 
+        ReportCombinedValues(context, resolver, values);
+    }
+
+    private static void ReportCombinedValues(OperationAnalysisContext context, TagResolver resolver, IEnumerable<IOperation> values)
+    {
         if (resolver.TryFindIncompatibleValues(values, out var first, out var firstTags, out var second, out var secondTags))
         {
             context.ReportDiagnostic(CombinedValues, second.Syntax, ValueTagDescriptions.Describe(second), secondTags.ToAttributeString(), ValueTagDescriptions.Describe(first), firstTags.ToAttributeString());

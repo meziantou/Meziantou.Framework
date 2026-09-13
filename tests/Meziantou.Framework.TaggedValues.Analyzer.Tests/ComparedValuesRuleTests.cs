@@ -133,13 +133,123 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
             """);
     }
 
+    [Theory]
+    [InlineData("orderId + 1")]
+    [InlineData("1 + orderId")]
+    [InlineData("orderId - offset")]
+    [InlineData("orderId * 2")]
+    [InlineData("2 * orderId")]
+    [InlineData("orderId / 2")]
+    [InlineData("-orderId")]
+    [InlineData("+orderId")]
+    [InlineData("(orderId + 1) * 2")]
+    [InlineData("orderId++")]
+    [InlineData("--orderId")]
+    [InlineData("(orderId += 1)")]
+    public async Task ReportDiagnostic_WhenArithmeticKeepsTheTag(string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] int orderId, [ValueTag("ProjectId")] int projectId, int offset) => {|MFTV0001:{{expression}} == projectId|};
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("orderId % 10")]
+    [InlineData("orderId & 0xFF")]
+    [InlineData("orderId << 1")]
+    [InlineData("orderId * orderCount")]
+    [InlineData("orderId / orderCount")]
+    public async Task NoDiagnostic_WhenArithmeticCreatesAnotherKindOfValue(string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] int orderId, [ValueTag("OrderCount")] int orderCount, [ValueTag("ProjectId")] int projectId) => ({{expression}}) == projectId;
+            }
+            """);
+    }
+
     [Fact]
-    public async Task NoDiagnostic_ForArithmeticOrMemberAccess()
+    public async Task ReportDiagnostic_ForDecimalArithmetic()
     {
         await VerifyAsync("""
             class Sample
             {
-                bool M([ValueTag("OrderId")] int orderId, [ValueTag("ProjectId")] int projectId) => orderId + 1 == projectId || orderId.ToString() == projectId.ToString();
+                bool M([ValueTag("Price")] decimal price, [ValueTag("Discount")] decimal discount) => {|MFTV0001:price * 2 == discount|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForMemberAccess()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] int orderId, [ValueTag("ProjectId")] int projectId) => orderId.ToString() == projectId.ToString();
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForStringConcatenation()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("UserName")] string userName, [ValueTag("Email")] string email) => userName + "@example.com" == email;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task UserDefinedOperator_TakesTheTagOfItsReturnValue()
+    {
+        await VerifyAsync("""
+            readonly record struct Distance(double Value)
+            {
+                [return: ValueTag("Meters")]
+                public static Distance operator +(Distance left, Distance right) => new(left.Value + right.Value);
+
+                public static Distance operator -(Distance left, Distance right) => new(left.Value - right.Value);
+            }
+
+            class Sample
+            {
+                bool M([ValueTag("Meters")] Distance a, [ValueTag("Meters")] Distance b, [ValueTag("Feet")] Distance feet)
+                    => {|MFTV0001:a + b == feet|} || a - b == feet;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task UserDefinedOperator_DoesNotKeepTheTagOfItsOperands()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("DueDate")] DateTime dueDate, [ValueTag("StartDate")] DateTime startDate, [ValueTag("Timeout")] TimeSpan timeout)
+                    => dueDate - startDate == timeout;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task UserDefinedConversion_TakesTheTagOfItsReturnValue()
+    {
+        await VerifyAsync("""
+            readonly record struct Distance(double Value)
+            {
+                [return: ValueTag("Meters")]
+                public static implicit operator double(Distance distance) => distance.Value;
+            }
+
+            class Sample
+            {
+                bool M(Distance distance, [ValueTag("Feet")] double feet) => {|MFTV0001:distance == feet|};
             }
             """);
     }

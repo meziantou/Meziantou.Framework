@@ -136,6 +136,22 @@ public Dictionary<Guid, Guid> ProjectIdByOrderId { get; }
 
 Anonymous type properties take the tag of their initializer, so projections keep their tags.
 
+## Arithmetic and operators
+
+Built-in arithmetic on numbers keeps the tag, so `orderId + 1 == projectId` is still reported:
+
+- `+` and `-` keep the tag of their operands. Adding values with different tags is reported (MFTV0003): `orderId + projectId`.
+- `*` and `/` keep the tag when the other operand is not tagged: `price * 2` is a price, but `meters / seconds` is not tagged.
+- Unary `+` and `-`, `++`, `--`, `+=`, and `-=` keep the tag.
+- `%`, bitwise operators, shifts, and string concatenations create another kind of value, so the result is not tagged.
+
+A user-defined operator or conversion creates a new value, so it does not keep the tag of its operands: `dueDate - startDate` is a `TimeSpan`, not a due date. Tag the return value of the operator to tag its result, and its parameters to check its operands:
+
+````c#
+[return: ValueTag("Meters")]
+public static Distance operator +([ValueTag("Meters")] Distance left, [ValueTag("Meters")] Distance right) => ...;
+````
+
 ## Naming conventions (opt-in)
 
 When enabled, the analyzer infers tags from names, so most ids need no attribute:
@@ -180,7 +196,7 @@ _ = order.Id == Guid.Empty; // ok
 
 - Comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`, tuple equality, `Equals`, `CompareTo`, `EqualityComparer<T>.Equals`, `Comparer<T>.Compare`, `string.Equals(a, b, comparison)`
 - Flows: assignments, object initializers, `with` expressions, field and property initializers, arguments (including `ref`, `out`, and generic arguments that must share a type), `return` and `yield return`
-- Combined values: branches of `?:`, `??`, and switch expressions, and the elements of arrays and collection expressions
+- Combined values: operands of `+` and `-`, branches of `?:`, `??`, and switch expressions, and the elements of arrays and collection expressions
 - Overrides and interface implementations whose tags differ from the base member
 - In strict mode, tagged values mixed with untagged values
 - Suggestions to tag a return value: when every value returned by a method, a local function, or a property getter has the same tag, but the return value is not tagged, so the callers lose the tag (only for tags written by the user, not inferred from a naming convention)

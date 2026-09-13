@@ -253,6 +253,17 @@ public sealed class StrictModeTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Addition_WithAnUntaggedValue_IsReported()
+    {
+        await VerifyStrictAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] int orderId, int offset) => _ = orderId + {|MFTV0009:offset|} + 1;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CodeFix_TagsTheUntaggedParameter()
     {
         await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(

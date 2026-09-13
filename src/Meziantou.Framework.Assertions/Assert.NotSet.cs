@@ -6,10 +6,7 @@ public partial class Assert
 {
     public static void NotProperSubset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        comparer ??= EqualityComparer<T>.Default;
-        var expectedSet = CreateSet(expected, comparer);
-        var actualSet = CreateSet(actual, comparer);
-        if (!(expectedSet.Count < actualSet.Count && expectedSet.IsSubsetOf(actualSet)))
+        if (!IsProperSubset(expected, expected, actual, comparer))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeSetAssertionError(expected, actual, isSuperset: false, actualExpression, expectedExpression, message)));
@@ -22,10 +19,7 @@ public partial class Assert
 
     public static void NotProperSuperset<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        comparer ??= EqualityComparer<T>.Default;
-        var expectedSet = CreateSet(expected, comparer);
-        var actualSet = CreateSet(actual, comparer);
-        if (!(expectedSet.Count > actualSet.Count && expectedSet.IsSupersetOf(actualSet)))
+        if (!IsProperSuperset(expected, expected, actual, comparer))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeSetAssertionError(expected, actual, isSuperset: true, actualExpression, expectedExpression, message)));

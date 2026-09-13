@@ -154,4 +154,112 @@ public sealed class AssertSetTests
             Actual:                [1]
             """);
     }
+
+    [Fact]
+    public void ProperSubset_UsesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+        var actual = new[] { "A", "b" };
+
+        AssertionsAssert.ProperSubset(expected, actual);
+    }
+
+    [Fact]
+    public void ProperSubset_FailsWithExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+        var actual = AssertionTestHelpers.SingleUse("A");
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSubset(expected, actual), """
+            Assert.ProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Expected subset: ["a"]
+            Actual:          ["A"]
+            """);
+    }
+
+    [Fact]
+    public void ProperSubset_ExplicitComparerOverridesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+        var actual = new[] { "A", "b" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSubset(expected, actual, StringComparer.Ordinal), """
+            Assert.ProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Expected subset: ["a"]
+            Actual:          ["A", "b"]
+            """);
+    }
+
+    [Fact]
+    public void ProperSubset_IgnoresActualSetComparer()
+    {
+        var expected = new[] { "a" };
+        var actual = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "A", "b" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSubset(expected, actual), """
+            Assert.ProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Expected subset: ["a"]
+            Actual:          ["A", "b"]
+            """);
+    }
+
+    [Fact]
+    public void ProperSuperset_UsesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "b" };
+        var actual = new[] { "A" };
+
+        AssertionsAssert.ProperSuperset(expected, actual);
+    }
+
+    [Fact]
+    public void ProperSuperset_ExplicitComparerOverridesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "b" };
+        var actual = new[] { "A" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.ProperSuperset(expected, actual, StringComparer.Ordinal), """
+            Assert.ProperSuperset() assertion failed.
+            Expected superset expression: expected
+            Actual expression:            actual
+            Expected superset: ["a", "b"]
+            Actual:            ["A"]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSubset_UsesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };
+        var actual = new[] { "A", "b" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSubset(expected, actual), """
+            Assert.NotProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Not expected subset: ["a"]
+            Actual:              ["A", "b"]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSuperset_UsesExpectedSetComparer()
+    {
+        var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "b" };
+        var actual = new[] { "A" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSuperset(expected, actual), """
+            Assert.NotProperSuperset() assertion failed.
+            Expected superset expression: expected
+            Actual expression:            actual
+            Not expected superset: ["a", "b"]
+            Actual:                ["A"]
+            """);
+    }
 }

@@ -28,7 +28,17 @@ public abstract class TaggedValuesAnalyzerTestBase
         return test.RunAsync(XunitCancellationToken);
     }
 
-    protected static CSharpAnalyzerTest<ValueTagAnalyzerType, DefaultVerifier> CreateAnalyzerTest(string source, bool inferTagsFromNames = false)
+    /// <summary>
+    /// Verifies the diagnostics with <c>taggedvalues.strict = true</c>.
+    /// </summary>
+    protected static Task VerifyStrictAsync(string source, params DiagnosticResult[] expected)
+    {
+        var test = CreateAnalyzerTest(source, inferTagsFromNames: false, strict: true);
+        test.ExpectedDiagnostics.AddRange(expected);
+        return test.RunAsync(XunitCancellationToken);
+    }
+
+    protected static CSharpAnalyzerTest<ValueTagAnalyzerType, DefaultVerifier> CreateAnalyzerTest(string source, bool inferTagsFromNames = false, bool strict = false)
     {
         var test = new CSharpAnalyzerTest<ValueTagAnalyzerType, DefaultVerifier>
         {
@@ -36,11 +46,11 @@ public abstract class TaggedValuesAnalyzerTestBase
             ReferenceAssemblies = Net11,
         };
 
-        Configure(test, inferTagsFromNames);
+        Configure(test, inferTagsFromNames, strict);
         return test;
     }
 
-    protected static Task VerifyCodeFixAsync<TCodeFixProvider>(string source, string fixedSource, bool inferTagsFromNames = false)
+    protected static Task VerifyCodeFixAsync<TCodeFixProvider>(string source, string fixedSource, bool inferTagsFromNames = false, bool strict = false)
         where TCodeFixProvider : CodeFixProvider, new()
     {
         var test = new CSharpCodeFixTest<ValueTagAnalyzerType, TCodeFixProvider, DefaultVerifier>
@@ -50,7 +60,7 @@ public abstract class TaggedValuesAnalyzerTestBase
             ReferenceAssemblies = Net11,
         };
 
-        Configure(test, inferTagsFromNames);
+        Configure(test, inferTagsFromNames, strict);
         return test.RunAsync(XunitCancellationToken);
     }
 
@@ -79,16 +89,17 @@ public abstract class TaggedValuesAnalyzerTestBase
         return MetadataReference.CreateFromImage(stream.ToArray());
     }
 
-    private static void Configure(AnalyzerTest<DefaultVerifier> test, bool inferTagsFromNames)
+    private static void Configure(AnalyzerTest<DefaultVerifier> test, bool inferTagsFromNames, bool strict)
     {
         test.TestState.AdditionalReferences.Add(GetTaggedValuesReference());
-        if (inferTagsFromNames)
+        if (inferTagsFromNames || strict)
         {
-            test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", """
+            test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", $"""
                 root = true
 
                 [*.cs]
-                taggedvalues.infer_tags_from_names = true
+                taggedvalues.infer_tags_from_names = {(inferTagsFromNames ? "true" : "false")}
+                taggedvalues.strict = {(strict ? "true" : "false")}
                 """));
         }
     }

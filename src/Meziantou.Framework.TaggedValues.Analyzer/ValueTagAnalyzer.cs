@@ -89,6 +89,15 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         description: "Every return statement of the method, the local function, or the property getter returns values with the same tag, but the return value is not tagged, so the callers lose the tag. Add the [ValueTag] attribute to the return value or to the property.");
 
+    public static readonly DiagnosticDescriptor UntaggedValue = new(
+        id: ValueTagDiagnostics.UntaggedValueDiagnosticId,
+        title: "Do not mix tagged values with untagged values",
+        messageFormat: "{0}",
+        category: "TaggedValues",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "In strict mode, enabled with taggedvalues.strict in .editorconfig, a tagged value cannot be compared with an untagged value, or flow from or to an untagged declaration. Tag the untagged declaration. Default values, null, constants, and Guid.Empty are allowed, and so are new values, such as the result of Guid.NewGuid, when they flow to a tagged declaration.");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
     [
         ComparedValues,
@@ -99,6 +108,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         AmbiguousConvention,
         RedundantTag,
         MissingReturnTag,
+        UntaggedValue,
     ];
 
     public override void Initialize(AnalysisContext context)
@@ -178,11 +188,24 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void ReportComparison(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, IOperation left, IOperation right)
     {
         var leftTags = resolver.GetTag(left);
-        if (leftTags.IsEmpty)
-            return;
-
         var rightTags = resolver.GetTag(right);
-        if (rightTags.IsEmpty || TagInfo.AreCompatible(leftTags, rightTags))
+        if (leftTags.IsEmpty != rightTags.IsEmpty)
+        {
+            var (tagged, tags, untagged) = leftTags.IsEmpty ? (right, rightTags, left) : (left, leftTags, right);
+            if (resolver.IsStrictModeEnabled(reportNode.SyntaxTree) && !IsNeutralValue(untagged, resolver))
+            {
+                ReportUntaggedValue(
+                    context,
+                    reportNode,
+                    ValueTagDescriptions.Describe(tagged) + " is " + tags.ToAttributeString() + " and is compared with " + ValueTagDescriptions.Describe(untagged) + ", which is not tagged",
+                    untagged,
+                    tags);
+            }
+
+            return;
+        }
+
+        if (leftTags.IsEmpty || TagInfo.AreCompatible(leftTags, rightTags))
             return;
 
         context.ReportDiagnostic(ComparedValues, reportNode, ValueTagDescriptions.Describe(left), leftTags.ToAttributeString(), ValueTagDescriptions.Describe(right), rightTags.ToAttributeString());
@@ -239,7 +262,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
 
         var expected = resolver.GetExpectedArgumentTags(argument);
-        if (expected.IsEmpty)
+        if (expected.IsEmpty && !resolver.IsStrictModeEnabled(argument.Syntax.SyntaxTree))
             return;
 
         var parameter = argument.Parameter.OriginalDefinition;
@@ -295,7 +318,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
 
         var expected = resolver.GetTag(target);
-        if (expected.IsEmpty)
+        if (expected.IsEmpty && !resolver.IsStrictModeEnabled(target.Syntax.SyntaxTree))
             return;
 
         var (symbol, kind) = target switch
@@ -367,29 +390,62 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         switch (owner)
         {
             case IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property }:
-                ReportFlow(context, resolver, operation.ReturnedValue, property, resolver.GetDeclaredTags(property), ValueTagTargetKind.Symbol);
+                ReportFlow(context, resolver, operation.ReturnedValue, property, resolver.GetDeclaredTags(property), ValueTagTargetKind.Symbol, reportUntaggedTarget: false);
                 break;
 
             case IMethodSymbol { MethodKind: MethodKind.AnonymousFunction } lambda:
-                ReportFlow(context, resolver, operation.ReturnedValue, lambda, TagResolver.GetOwnExplicitTags(lambda), targetKind: null);
+                ReportFlow(context, resolver, operation.ReturnedValue, lambda, TagResolver.GetOwnExplicitTags(lambda), targetKind: null, reportUntaggedTarget: false);
                 break;
 
             case IMethodSymbol method:
-                ReportFlow(context, resolver, operation.ReturnedValue, method, resolver.GetDeclaredTags(method), ValueTagTargetKind.ReturnValue);
+                ReportFlow(context, resolver, operation.ReturnedValue, method, resolver.GetDeclaredTags(method), ValueTagTargetKind.ReturnValue, reportUntaggedTarget: false);
                 break;
         }
     }
 
-    private static void ReportFlow(OperationAnalysisContext context, TagResolver resolver, IOperation value, ISymbol? target, TagInfo expected, string? targetKind, string? targetDescription = null)
+    private static void ReportFlow(OperationAnalysisContext context, TagResolver resolver, IOperation value, ISymbol? target, TagInfo expected, string? targetKind, string? targetDescription = null, bool reportUntaggedTarget = true)
     {
+        var reportTree = value.Syntax.SyntaxTree;
         if (expected.IsEmpty)
+        {
+            // Strict mode: a tagged value flows to a declaration that could be tagged
+            if (!reportUntaggedTarget || target is null || !CanDeclareTag(target) || !resolver.IsStrictModeEnabled(reportTree))
+                return;
+
+            var taggedSource = resolver.GetTag(value);
+            if (taggedSource.IsEmpty)
+                return;
+
+            ReportUntaggedValue(
+                context,
+                value.Syntax,
+                ValueTagDescriptions.Describe(value) + " is " + taggedSource.ToAttributeString() + " and flows to " + (targetDescription ?? ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree)) + ", which is not tagged",
+                target is ILocalSymbol ? null : target,
+                taggedSource,
+                ValueTagTargetKind.Symbol);
             return;
+        }
 
         var source = resolver.GetTag(value);
-        if (source.IsEmpty || TagInfo.AreCompatible(source, expected))
+        if (source.IsEmpty)
+        {
+            // Strict mode: an existing untagged value flows to a tagged declaration
+            if (resolver.IsStrictModeEnabled(reportTree) && !IsNeutralValue(value, resolver) && !IsNewValue(value))
+            {
+                ReportUntaggedValue(
+                    context,
+                    value.Syntax,
+                    ValueTagDescriptions.Describe(value) + " is not tagged and flows to " + (targetDescription ?? (target is null ? "the target" : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree))) + ", which is " + expected.ToAttributeString(),
+                    value,
+                    expected);
+            }
+
+            return;
+        }
+
+        if (TagInfo.AreCompatible(source, expected))
             return;
 
-        var reportTree = value.Syntax.SyntaxTree;
         targetDescription ??= target is null ? "the target" : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree);
 
         var properties = ImmutableDictionary<string, string?>.Empty;
@@ -517,10 +573,124 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
-        if (values is null || !resolver.TryFindIncompatibleValues(values, out var first, out var firstTags, out var second, out var secondTags))
+        if (values is null)
             return;
 
-        context.ReportDiagnostic(CombinedValues, second.Syntax, ValueTagDescriptions.Describe(second), secondTags.ToAttributeString(), ValueTagDescriptions.Describe(first), firstTags.ToAttributeString());
+        if (resolver.TryFindIncompatibleValues(values, out var first, out var firstTags, out var second, out var secondTags))
+        {
+            context.ReportDiagnostic(CombinedValues, second.Syntax, ValueTagDescriptions.Describe(second), secondTags.ToAttributeString(), ValueTagDescriptions.Describe(first), firstTags.ToAttributeString());
+            return;
+        }
+
+        if (!resolver.IsStrictModeEnabled(context.Operation.Syntax.SyntaxTree))
+            return;
+
+        // Strict mode: existing untagged values combined with tagged values
+        var taggedValues = values.Select(value => (Value: value, Tags: resolver.GetTag(value))).ToArray();
+        var tagged = taggedValues.FirstOrDefault(item => !item.Tags.IsEmpty);
+        if (tagged.Value is null)
+            return;
+
+        foreach (var (value, tags) in taggedValues)
+        {
+            if (tags.IsEmpty && !IsNeutralValue(value, resolver) && !IsNewValue(value))
+            {
+                ReportUntaggedValue(
+                    context,
+                    value.Syntax,
+                    ValueTagDescriptions.Describe(value) + " is not tagged but " + ValueTagDescriptions.Describe(tagged.Value) + " is " + tagged.Tags.ToAttributeString(),
+                    value,
+                    tagged.Tags);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns whether strict mode accepts an untagged value anywhere: a default value, <see langword="null"/>, a constant, or <c>Guid.Empty</c>.
+    /// </summary>
+    private static bool IsNeutralValue(IOperation operation, TagResolver resolver)
+    {
+        operation = operation.UnwrapConversions();
+        return operation.ConstantValue.HasValue ||
+            operation is IDefaultValueOperation ||
+            (operation is IFieldReferenceOperation { Field: var field } && resolver.KnownTypes.IsGuidEmpty(field));
+    }
+
+    /// <summary>
+    /// Returns whether an untagged value is a new value, which strict mode accepts in a tagged declaration, such as <c>Guid.NewGuid()</c>,
+    /// <c>new Guid(bytes)</c>, or <c>Guid.Parse(text)</c>. Reading an untagged field, property, parameter, or local, or calling an untagged method
+    /// declared in the compilation, does not create a new value.
+    /// </summary>
+    private static bool IsNewValue(IOperation operation)
+    {
+        return operation.UnwrapConversions() switch
+        {
+            IFieldReferenceOperation or IPropertyReferenceOperation or IParameterReferenceOperation or ILocalReferenceOperation => false,
+            IAwaitOperation awaitOperation => IsNewValue(awaitOperation.Operation),
+            IInvocationOperation invocation => invocation.TargetMethod.DeclaringSyntaxReferences.IsEmpty,
+            _ => true,
+        };
+    }
+
+    /// <summary>
+    /// Returns whether a declaration of the compilation can carry a <c>[ValueTag]</c>: it is written in the source, and its type is not
+    /// <see langword="object"/>, <see langword="dynamic"/>, or a type parameter.
+    /// </summary>
+    private static bool CanDeclareTag(ISymbol symbol)
+    {
+        if (symbol.IsImplicitlyDeclared || !symbol.Locations.Any(location => location.IsInSource) || symbol.ContainingType is { IsAnonymousType: true })
+            return false;
+
+        var type = symbol switch
+        {
+            IFieldSymbol field => field.Type,
+            IPropertySymbol property => property.Type,
+            IParameterSymbol { ContainingSymbol: IMethodSymbol { MethodKind: not MethodKind.AnonymousFunction } } parameter => parameter.Type,
+            IMethodSymbol { ReturnsVoid: false, MethodKind: MethodKind.Ordinary or MethodKind.LocalFunction or MethodKind.ExplicitInterfaceImplementation } method => method.ReturnType,
+            ILocalSymbol local => local.Type,
+            _ => null,
+        };
+
+        return type is not null && type.SpecialType is not SpecialType.System_Object && type.TypeKind is not TypeKind.Dynamic && !TagResolver.ContainsTypeParameter(type);
+    }
+
+    private static void ReportUntaggedValue(OperationAnalysisContext context, SyntaxNode reportNode, string message, IOperation untaggedValue, TagInfo tags)
+    {
+        var operation = untaggedValue.UnwrapImplicitConversions();
+        if (operation is IAwaitOperation awaitOperation)
+        {
+            operation = awaitOperation.Operation.UnwrapImplicitConversions();
+        }
+
+        var (symbol, targetKind) = operation switch
+        {
+            IFieldReferenceOperation fieldReference => (fieldReference.Field.OriginalDefinition, ValueTagTargetKind.Symbol),
+            IPropertyReferenceOperation propertyReference => (propertyReference.Property.OriginalDefinition, ValueTagTargetKind.Symbol),
+            IParameterReferenceOperation parameterReference => (parameterReference.Parameter.OriginalDefinition, ValueTagTargetKind.Symbol),
+            IInvocationOperation invocation => (invocation.TargetMethod.OriginalDefinition, ValueTagTargetKind.ReturnValue),
+            _ => ((ISymbol?)null, (string?)null),
+        };
+
+        ReportUntaggedValue(context, reportNode, message, symbol, tags, targetKind);
+    }
+
+    /// <summary>
+    /// Reports MFTV0009. The code fix adds <paramref name="tags"/> to <paramref name="untaggedDeclaration"/>.
+    /// </summary>
+    private static void ReportUntaggedValue(OperationAnalysisContext context, SyntaxNode reportNode, string message, ISymbol? untaggedDeclaration, TagInfo tags, string? targetKind)
+    {
+        var properties = ImmutableDictionary<string, string?>.Empty;
+        var additionalLocations = new List<Location>();
+        if (untaggedDeclaration is not null && targetKind is not null && tags.IsExplicit && CanDeclareTag(untaggedDeclaration) &&
+            untaggedDeclaration.Locations.FirstOrDefault(location => location.IsInSource) is { } location)
+        {
+            properties = properties
+                .Add(ValueTagDiagnostics.TagsProperty, tags.Serialize())
+                .Add(ValueTagDiagnostics.TargetKindProperty, targetKind);
+            additionalLocations.Add(location);
+        }
+
+        context.ReportDiagnostic(Diagnostic.Create(UntaggedValue, reportNode.GetLocation(), additionalLocations, properties, message));
     }
 
     private static void AnalyzeAttribute(OperationAnalysisContext context, TagResolver resolver)

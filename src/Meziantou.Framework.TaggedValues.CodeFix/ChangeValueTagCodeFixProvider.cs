@@ -16,7 +16,7 @@ namespace Meziantou.Framework.TaggedValues.CodeFix;
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ChangeValueTagCodeFixProvider))]
 public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
 {
-    public override ImmutableArray<string> FixableDiagnosticIds => [ValueTagDiagnostics.FlowMismatchDiagnosticId, ValueTagDiagnostics.InheritedTagMismatchDiagnosticId, ValueTagDiagnostics.MissingReturnTagDiagnosticId];
+    public override ImmutableArray<string> FixableDiagnosticIds => [ValueTagDiagnostics.FlowMismatchDiagnosticId, ValueTagDiagnostics.InheritedTagMismatchDiagnosticId, ValueTagDiagnostics.MissingReturnTagDiagnosticId, ValueTagDiagnostics.UntaggedValueDiagnosticId];
 
     public override FixAllProvider? GetFixAllProvider()
     {
@@ -62,7 +62,7 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
                     continue;
 
                 var isReturnValue = targetKind is ValueTagTargetKind.ReturnValue;
-                var title = diagnostic.Id is ValueTagDiagnostics.MissingReturnTagDiagnosticId
+                var title = diagnostic.Id is ValueTagDiagnostics.MissingReturnTagDiagnosticId or ValueTagDiagnostics.UntaggedValueDiagnosticId
                     ? "Add " + tags.ToAttributeString(isReturnValue) + " to '" + token.ValueText + "'"
                     : "Change the tag of '" + token.ValueText + "' to " + tags.ToAttributeString();
                 context.RegisterCodeFix(

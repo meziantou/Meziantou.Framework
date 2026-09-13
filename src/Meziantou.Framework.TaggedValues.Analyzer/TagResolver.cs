@@ -21,6 +21,7 @@ internal sealed class TagResolver
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _declaredTags = new(SymbolEqualityComparer.Default);
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _localTags = new(SymbolEqualityComparer.Default);
     private readonly ConcurrentDictionary<SyntaxTree, bool> _conventionsEnabled = new();
+    private readonly ConcurrentDictionary<SyntaxTree, bool> _strictModeEnabled = new();
     private readonly Lazy<Dictionary<(ITypeSymbol Type, string MemberName), TagInfo>> _externalTags;
 
     public TagResolver(Compilation compilation, AnalyzerConfigOptionsProvider optionsProvider)
@@ -45,10 +46,22 @@ internal sealed class TagResolver
 
     public bool AreConventionsEnabled(SyntaxTree tree)
     {
-        return _conventionsEnabled.GetOrAdd(tree, tree =>
-            _optionsProvider.GetOptions(tree).TryGetValue(ValueTagDiagnostics.InferTagsFromNamesOption, out var value) &&
-            bool.TryParse(value, out var enabled) &&
-            enabled);
+        return IsOptionEnabled(_conventionsEnabled, tree, ValueTagDiagnostics.InferTagsFromNamesOption);
+    }
+
+    public bool IsStrictModeEnabled(SyntaxTree tree)
+    {
+        return IsOptionEnabled(_strictModeEnabled, tree, ValueTagDiagnostics.StrictOption);
+    }
+
+    private bool IsOptionEnabled(ConcurrentDictionary<SyntaxTree, bool> cache, SyntaxTree tree, string optionName)
+    {
+        if (cache.TryGetValue(tree, out var enabled))
+            return enabled;
+
+        enabled = _optionsProvider.GetOptions(tree).TryGetValue(optionName, out var value) && bool.TryParse(value, out var parsed) && parsed;
+        cache.TryAdd(tree, enabled);
+        return enabled;
     }
 
     /// <summary>
@@ -1054,7 +1067,7 @@ internal sealed class TagResolver
         }
     }
 
-    private static bool ContainsTypeParameter(ITypeSymbol? type)
+    public static bool ContainsTypeParameter(ITypeSymbol? type)
     {
         switch (type)
         {

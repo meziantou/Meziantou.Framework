@@ -46,6 +46,11 @@ internal sealed class KnownTypes
         return SymbolEqualityComparer.Default.Equals(type, _guidType);
     }
 
+    public bool IsGuidEmpty(IFieldSymbol field)
+    {
+        return field is { Name: "Empty", IsStatic: true } && IsGuid(field.ContainingType);
+    }
+
     public bool IsKeyValuePair(INamedTypeSymbol type)
     {
         return SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _keyValuePairType);

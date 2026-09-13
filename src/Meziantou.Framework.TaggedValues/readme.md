@@ -150,12 +150,39 @@ taggedvalues.infer_tags_from_names = true
 - A parameter named `id` takes the name of its type: `void Load(Order id)` is an `"OrderId"`, and `void Load(OrderId id)` is an `"OrderId"` too. A parameter named `id` whose type is a primitive, a `string`, a `Guid`, or an enum is not tagged, as its type does not say what it identifies.
 - Explicit tags always win. Collections and indexers are not tagged by convention.
 
+## Strict mode (opt-in)
+
+By default, untagged values are never reported. Strict mode also reports a tagged value mixed with an untagged value (MFTV0009), so every value that interacts with a tagged value must be tagged too:
+
+````editorconfig
+[*.cs]
+taggedvalues.strict = true
+````
+
+````c#
+[ValueTag("OrderId")] public Guid Id { get; set; } = Guid.NewGuid(); // ok, a new value
+
+void Load(Guid id) { }
+Guid _other;
+
+_ = order.Id == _other;     // MFTV0009, compared with an untagged value
+order.Id = _other;          // MFTV0009, an untagged value flows to a tagged declaration
+Load(order.Id);             // MFTV0009, a tagged value flows to an untagged declaration
+_ = order.Id == Guid.Empty; // ok
+````
+
+- Default values, `null`, constants, and `Guid.Empty` are always allowed.
+- New values, such as `Guid.NewGuid()`, `new Guid(bytes)`, or `Guid.Parse(text)`, can flow to a tagged declaration. Values read from an untagged field, property, parameter, or local, or returned by an untagged method of your code, cannot.
+- A tagged value can flow to a declaration of a referenced assembly, or typed `object`, `dynamic`, or a type parameter, as they cannot be tagged. A local initialized with a tagged value takes its tag, so it is not reported.
+- The code fix adds the tag to the untagged declaration.
+
 ## What is reported
 
 - Comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`, tuple equality, `Equals`, `CompareTo`, `EqualityComparer<T>.Equals`, `Comparer<T>.Compare`, `string.Equals(a, b, comparison)`
 - Flows: assignments, object initializers, `with` expressions, field and property initializers, arguments (including `ref`, `out`, and generic arguments that must share a type), `return` and `yield return`
 - Combined values: branches of `?:`, `??`, and switch expressions, and the elements of arrays and collection expressions
 - Overrides and interface implementations whose tags differ from the base member
+- In strict mode, tagged values mixed with untagged values
 - Suggestions to tag a return value: when every value returned by a method, a local function, or a property getter has the same tag, but the return value is not tagged, so the callers lose the tag (only for tags written by the user, not inferred from a naming convention)
 - Invalid annotations: empty tags, malformed comments, comments on something other than a local variable, `Key` and `Value` on something other than a dictionary, and assembly attributes that name a missing member
 
@@ -174,4 +201,5 @@ Every message names both declarations and their tags, so a build log is enough t
 | `MFTV0006` | TaggedValues | Add an explicit tag to disambiguate the conventional tag | Warning | ✔️ |
 | `MFTV0007` | TaggedValues | Remove the redundant value tag | Info | ✔️ |
 | `MFTV0008` | TaggedValues | Tag the return value with the tag of the returned values | Info | ✔️ |
+| `MFTV0009` | TaggedValues | Do not mix tagged values with untagged values | Warning | ✔️ |
 <!-- analyzer-rules -->

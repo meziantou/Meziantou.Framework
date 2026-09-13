@@ -125,6 +125,55 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task UntaggedValueMessage_ForComparisons()
+    {
+        var test = CreateAnalyzerTest(
+            """
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] Guid orderId) => {|#0:orderId == Guid.NewGuid()|};
+            }
+            """,
+            strict: true);
+        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0009").WithLocation(0).WithMessage("parameter 'orderId' of 'Sample.M' is [ValueTag(\"OrderId\")] and is compared with the return value of 'Guid.NewGuid', which is not tagged"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task UntaggedValueMessage_ForUntaggedValuesFlowingToTaggedDeclarations()
+    {
+        var test = CreateAnalyzerTest(
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid orderId) { }
+
+                void M(Guid {|#1:other|}) => Load({|#0:other|});
+            }
+            """,
+            strict: true);
+        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0009").WithLocation(0).WithLocation(1).WithMessage("parameter 'other' of 'Sample.M' is not tagged and flows to parameter 'orderId' of 'Sample.Load' (line 8), which is [ValueTag(\"OrderId\")]"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task UntaggedValueMessage_ForTaggedValuesFlowingToUntaggedDeclarations()
+    {
+        var test = CreateAnalyzerTest(
+            """
+            class Sample
+            {
+                static void Load(Guid {|#1:id|}) { }
+
+                void M([ValueTag("OrderId")] Guid orderId) => Load({|#0:orderId|});
+            }
+            """,
+            strict: true);
+        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0009").WithLocation(0).WithLocation(1).WithMessage("parameter 'orderId' of 'Sample.M' is [ValueTag(\"OrderId\")] and flows to parameter 'id' of 'Sample.Load' (line 8), which is not tagged"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task AmbiguousConventionMessage()
     {
         await VerifyAsync(

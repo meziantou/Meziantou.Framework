@@ -280,22 +280,25 @@ internal sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
     private readonly GreenNode _openParenToken;
     private readonly GreenNode _statements;
     private readonly GreenNode _closeParenToken;
+    private readonly GreenNode? _redirections;
 
-    public CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken)
-        : this(openParenToken, statements, closeParenToken, diagnostics: null, annotations: null)
+    public CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, GreenNode? redirections)
+        : this(openParenToken, statements, closeParenToken, redirections, diagnostics: null, annotations: null)
     {
     }
 
-    private CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.CmdParenthesizedBlock, diagnostics, annotations)
     {
-        SlotCount = 3;
+        SlotCount = 4;
         AdjustFlagsAndWidth(openParenToken);
         _openParenToken = openParenToken;
         AdjustFlagsAndWidth(statements);
         _statements = statements;
         AdjustFlagsAndWidth(closeParenToken);
         _closeParenToken = closeParenToken;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
@@ -303,14 +306,17 @@ internal sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
         0 => _openParenToken,
         1 => _statements,
         2 => _closeParenToken,
+        3 => _redirections,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdParenthesizedBlockSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdParenthesizedBlockSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), slots[3], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, diagnostics, GetAnnotations());
+    internal override bool IsListSlot(int index) => index is 3;
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, GetDiagnostics(), annotations);
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, _redirections, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.CmdParenthesizedBlockSyntax(this, parent, position);
 }
@@ -322,16 +328,17 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
     private readonly GreenNode? _nameToken;
     private readonly GreenNode? _equalsToken;
     private readonly GreenNode? _value;
+    private readonly GreenNode? _redirections;
 
-    public CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value)
-        : this(setKeyword, switchToken, nameToken, equalsToken, value, diagnostics: null, annotations: null)
+    public CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, GreenNode? redirections)
+        : this(setKeyword, switchToken, nameToken, equalsToken, value, redirections, diagnostics: null, annotations: null)
     {
     }
 
-    private CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.CmdSetStatement, diagnostics, annotations)
     {
-        SlotCount = 5;
+        SlotCount = 6;
         AdjustFlagsAndWidth(setKeyword);
         _setKeyword = setKeyword;
         AdjustFlagsAndWidth(switchToken);
@@ -342,6 +349,8 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
         _equalsToken = equalsToken;
         AdjustFlagsAndWidth(value);
         _value = value;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
@@ -351,14 +360,17 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
         2 => _nameToken,
         3 => _equalsToken,
         4 => _value,
+        5 => _redirections,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdSetStatementSyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], slots[4], GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdSetStatementSyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], slots[4], slots[5], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, diagnostics, GetAnnotations());
+    internal override bool IsListSlot(int index) => index is 5;
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, GetDiagnostics(), annotations);
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, _redirections, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.CmdSetStatementSyntax(this, parent, position);
 }
@@ -4454,6 +4466,7 @@ public sealed partial class CmdLabelStatementSyntax : ShellStatementSyntax
 public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 {
     private SyntaxNode? _statements;
+    private SyntaxNode? _redirections;
 
     internal CmdParenthesizedBlockSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -4466,33 +4479,40 @@ public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 
     public SyntaxToken CloseParenToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 3));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public CmdParenthesizedBlockSyntax Update(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken)
+    public CmdParenthesizedBlockSyntax Update(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken, SyntaxList<ShellRedirectionSyntax> redirections)
     {
-        if (openParenToken.Node == Green.GetSlot(0) && ReferenceEquals(statements.Green, Green.GetSlot(1)) && closeParenToken.Node == Green.GetSlot(2))
+        if (openParenToken.Node == Green.GetSlot(0) && ReferenceEquals(statements.Green, Green.GetSlot(1)) && closeParenToken.Node == Green.GetSlot(2) && redirections.Green == Green.GetSlot(3))
             return this;
 
-        return SyntaxFactory.CmdParenthesizedBlock(openParenToken, statements, closeParenToken).WithAnnotationsFrom(this);
+        return SyntaxFactory.CmdParenthesizedBlock(openParenToken, statements, closeParenToken, redirections).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="openParenToken"/> in place of its <see cref="OpenParenToken"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithOpenParenToken(SyntaxToken openParenToken) => Update(openParenToken, Statements, CloseParenToken);
+    public CmdParenthesizedBlockSyntax WithOpenParenToken(SyntaxToken openParenToken) => Update(openParenToken, Statements, CloseParenToken, Redirections);
 
     /// <summary>Returns this node with <paramref name="statements"/> in place of its <see cref="Statements"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithStatements(ShellStatementListSyntax statements) => Update(OpenParenToken, statements, CloseParenToken);
+    public CmdParenthesizedBlockSyntax WithStatements(ShellStatementListSyntax statements) => Update(OpenParenToken, statements, CloseParenToken, Redirections);
 
     /// <summary>Returns this node with <paramref name="closeParenToken"/> in place of its <see cref="CloseParenToken"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithCloseParenToken(SyntaxToken closeParenToken) => Update(OpenParenToken, Statements, closeParenToken);
+    public CmdParenthesizedBlockSyntax WithCloseParenToken(SyntaxToken closeParenToken) => Update(OpenParenToken, Statements, closeParenToken, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public CmdParenthesizedBlockSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(OpenParenToken, Statements, CloseParenToken, redirections);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
         1 => GetRed(ref _statements, 1),
+        3 => GetRed(ref _redirections, 3),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
         1 => _statements,
+        3 => _redirections,
         _ => null,
     };
 
@@ -4515,6 +4535,7 @@ public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 public sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
 {
     private SyntaxNode? _value;
+    private SyntaxNode? _redirections;
 
     internal CmdSetStatementSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -4531,39 +4552,46 @@ public sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
 
     public ShellWordSyntax? Value => (ShellWordSyntax?)GetRed(ref _value, 4);
 
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 5));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public CmdSetStatementSyntax Update(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value)
+    public CmdSetStatementSyntax Update(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value, SyntaxList<ShellRedirectionSyntax> redirections)
     {
-        if (setKeyword.Node == Green.GetSlot(0) && switchToken.Node == Green.GetSlot(1) && nameToken.Node == Green.GetSlot(2) && equalsToken.Node == Green.GetSlot(3) && ReferenceEquals(value?.Green, Green.GetSlot(4)))
+        if (setKeyword.Node == Green.GetSlot(0) && switchToken.Node == Green.GetSlot(1) && nameToken.Node == Green.GetSlot(2) && equalsToken.Node == Green.GetSlot(3) && ReferenceEquals(value?.Green, Green.GetSlot(4)) && redirections.Green == Green.GetSlot(5))
             return this;
 
-        return SyntaxFactory.CmdSetStatement(setKeyword, switchToken, nameToken, equalsToken, value).WithAnnotationsFrom(this);
+        return SyntaxFactory.CmdSetStatement(setKeyword, switchToken, nameToken, equalsToken, value, redirections).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="setKeyword"/> in place of its <see cref="SetKeyword"/>.</summary>
-    public CmdSetStatementSyntax WithSetKeyword(SyntaxToken setKeyword) => Update(setKeyword, SwitchToken, NameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithSetKeyword(SyntaxToken setKeyword) => Update(setKeyword, SwitchToken, NameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="switchToken"/> in place of its <see cref="SwitchToken"/>.</summary>
-    public CmdSetStatementSyntax WithSwitchToken(SyntaxToken switchToken) => Update(SetKeyword, switchToken, NameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithSwitchToken(SyntaxToken switchToken) => Update(SetKeyword, switchToken, NameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="nameToken"/> in place of its <see cref="NameToken"/>.</summary>
-    public CmdSetStatementSyntax WithNameToken(SyntaxToken nameToken) => Update(SetKeyword, SwitchToken, nameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithNameToken(SyntaxToken nameToken) => Update(SetKeyword, SwitchToken, nameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="equalsToken"/> in place of its <see cref="EqualsToken"/>.</summary>
-    public CmdSetStatementSyntax WithEqualsToken(SyntaxToken equalsToken) => Update(SetKeyword, SwitchToken, NameToken, equalsToken, Value);
+    public CmdSetStatementSyntax WithEqualsToken(SyntaxToken equalsToken) => Update(SetKeyword, SwitchToken, NameToken, equalsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="value"/> in place of its <see cref="Value"/>.</summary>
-    public CmdSetStatementSyntax WithValue(ShellWordSyntax? value) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, value);
+    public CmdSetStatementSyntax WithValue(ShellWordSyntax? value) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, value, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public CmdSetStatementSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, Value, redirections);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
         4 => GetRed(ref _value, 4),
+        5 => GetRed(ref _redirections, 5),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
         4 => _value,
+        5 => _redirections,
         _ => null,
     };
 
@@ -10365,14 +10393,14 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.OpenParenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseParenToken));
+        return node.Update(VisitToken(node.OpenParenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseParenToken), VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitCmdSet(CmdSetStatementSyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.SetKeyword), VisitToken(node.SwitchToken), VisitToken(node.NameToken), VisitToken(node.EqualsToken), node.Value is null ? null : (ShellWordSyntax?)Visit(node.Value));
+        return node.Update(VisitToken(node.SetKeyword), VisitToken(node.SwitchToken), VisitToken(node.NameToken), VisitToken(node.EqualsToken), node.Value is null ? null : (ShellWordSyntax?)Visit(node.Value), VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitCmdVariableReference(CmdVariableReferenceSyntax node)
@@ -10992,12 +11020,12 @@ public static partial class SyntaxFactory
         => (CmdLabelStatementSyntax)new Syntax.InternalSyntax.CmdLabelStatementSyntax(Required(colonToken), Required(nameToken)).CreateRed();
 
     /// <summary>Builds a <see cref="CmdParenthesizedBlockSyntax"/> from its parts.</summary>
-    public static CmdParenthesizedBlockSyntax CmdParenthesizedBlock(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken)
-        => (CmdParenthesizedBlockSyntax)new Syntax.InternalSyntax.CmdParenthesizedBlockSyntax(Required(openParenToken), statements.Green, Required(closeParenToken)).CreateRed();
+    public static CmdParenthesizedBlockSyntax CmdParenthesizedBlock(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (CmdParenthesizedBlockSyntax)new Syntax.InternalSyntax.CmdParenthesizedBlockSyntax(Required(openParenToken), statements.Green, Required(closeParenToken), redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="CmdSetStatementSyntax"/> from its parts.</summary>
-    public static CmdSetStatementSyntax CmdSetStatement(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value)
-        => (CmdSetStatementSyntax)new Syntax.InternalSyntax.CmdSetStatementSyntax(Required(setKeyword), switchToken.Node, nameToken.Node, equalsToken.Node, value?.Green).CreateRed();
+    public static CmdSetStatementSyntax CmdSetStatement(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (CmdSetStatementSyntax)new Syntax.InternalSyntax.CmdSetStatementSyntax(Required(setKeyword), switchToken.Node, nameToken.Node, equalsToken.Node, value?.Green, redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="CmdVariableReferenceSyntax"/> from its parts.</summary>
     public static CmdVariableReferenceSyntax CmdVariableReference(SyntaxToken openToken, SyntaxToken nameToken, SyntaxToken closeToken)

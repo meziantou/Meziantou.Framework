@@ -273,7 +273,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             localName: string.Empty,
             prefix: string.Empty,
             namespaceUri: string.Empty,
-            value: text.Text,
+            value: text.Value,
             underlyingObject: text);
     }
 
@@ -284,7 +284,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             localName: string.Empty,
             prefix: string.Empty,
             namespaceUri: string.Empty,
-            value: comment.Text,
+            value: NormalizeLineBreaks(comment.Text),
             underlyingObject: comment);
     }
 
@@ -295,7 +295,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             localName: string.Empty,
             prefix: string.Empty,
             namespaceUri: string.Empty,
-            value: cdataSection.Text,
+            value: NormalizeLineBreaks(cdataSection.Text),
             underlyingObject: cdataSection);
     }
 
@@ -306,7 +306,7 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             localName: processingInstruction.Target,
             prefix: string.Empty,
             namespaceUri: string.Empty,
-            value: processingInstruction.Data ?? string.Empty,
+            value: NormalizeLineBreaks(processingInstruction.Data ?? string.Empty),
             underlyingObject: processingInstruction);
     }
 
@@ -349,6 +349,10 @@ internal sealed class XmlSyntaxNavigator : XPathNavigator
             value: skippedText.Text,
             underlyingObject: skippedText);
     }
+
+    /// <summary>Normalizes line breaks the way an XML processor does before anything else reads the text.</summary>
+    private static string NormalizeLineBreaks(string text)
+        => text.Contains('\r', StringComparison.Ordinal) ? text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') : text;
 
     private static string GetValue(NavigatorNode node)
     {

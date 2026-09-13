@@ -60,6 +60,7 @@ namespace Meziantou.Framework.Language.Xml
     {
         public static string GetText(Meziantou.Framework.Language.Xml.SyntaxKind kind) => throw null;
         public static bool IsTrivia(Meziantou.Framework.Language.Xml.SyntaxKind kind) => throw null;
+        public static bool IsWhitespace(char value) => throw null;
         public static bool IsNameStartCharacter(System.Text.Rune value) => throw null;
         public static bool IsNameCharacter(System.Text.Rune value) => throw null;
     }
@@ -106,7 +107,8 @@ namespace Meziantou.Framework.Language.Xml
         BadToken = 37,
         EndOfFileToken = 38,
         WhitespaceTrivia = 39,
-        EndOfLineTrivia = 40
+        EndOfLineTrivia = 40,
+        SkippedTextTrivia = 41
     }
 
     public sealed class XmlAttributeSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode
@@ -451,6 +453,7 @@ namespace Meziantou.Framework.Language.Xml
     {
         public Meziantou.Framework.Language.SyntaxToken TextToken { get => throw null; }
         public string Text { get => throw null; }
+        public string Value { get => throw null; }
         public Meziantou.Framework.Language.Xml.XmlTextSyntax WithText(string text) => throw null;
         public Meziantou.Framework.Language.Xml.XmlTextSyntax Update(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;
         public Meziantou.Framework.Language.Xml.XmlTextSyntax WithTextToken(Meziantou.Framework.Language.SyntaxToken textToken) => throw null;

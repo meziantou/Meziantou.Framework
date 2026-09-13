@@ -30,7 +30,7 @@ public sealed class XmlSyntaxTree : SyntaxTree
     /// <summary>Gets the document this tree holds.</summary>
     public new XmlDocumentSyntax GetRoot() => _root;
 
-    /// <summary>Gets everything wrong with the document, in the order the parser found it.</summary>
+    /// <summary>Gets everything wrong with the document, in the order it appears in the text.</summary>
     public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>

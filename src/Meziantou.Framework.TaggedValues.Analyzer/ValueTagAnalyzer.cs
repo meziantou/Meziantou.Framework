@@ -122,8 +122,8 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationAction(context => AnalyzeMemberInitializer(context, resolver), OperationKind.FieldInitializer, OperationKind.PropertyInitializer);
             context.RegisterOperationAction(context => AnalyzeReturn(context, resolver), OperationKind.Return, OperationKind.YieldReturn);
             context.RegisterOperationAction(context => AnalyzeCombinedValues(context, resolver), OperationKind.Conditional, OperationKind.Coalesce, OperationKind.SwitchExpression, OperationKind.ArrayInitializer, OperationKind.CollectionExpression);
-            context.RegisterOperationAction(AnalyzeAttribute, OperationKind.Attribute);
-            context.RegisterSemanticModelAction(AnalyzeComments);
+            context.RegisterOperationAction(context => AnalyzeAttribute(context, resolver), OperationKind.Attribute);
+            context.RegisterSemanticModelAction(context => AnalyzeComments(context, resolver));
             context.RegisterOperationBlockAction(context => AnalyzeReturnedValues(context, resolver));
             context.RegisterSymbolStartAction(context => AnalyzePropertyReturnedValues(context, resolver), SymbolKind.NamedType);
             context.RegisterSymbolAction(context => AnalyzeSymbol(context, resolver, conventionIdMembers), SymbolKind.Method, SymbolKind.Property, SymbolKind.Field);
@@ -262,7 +262,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             IFieldReferenceOperation fieldReference => (fieldReference.Field, ValueTagTargetKind.Symbol),
             IPropertyReferenceOperation propertyReference => (propertyReference.Property, ValueTagTargetKind.Symbol),
             IParameterReferenceOperation parameterReference => (parameterReference.Parameter, ValueTagTargetKind.Symbol),
-            ILocalReferenceOperation localReference => (localReference.Local, TagResolver.GetLocalCommentTags(localReference.Local).IsEmpty ? null : ValueTagTargetKind.Local),
+            ILocalReferenceOperation localReference => (localReference.Local, resolver.GetLocalCommentTags(localReference.Local).IsEmpty ? null : ValueTagTargetKind.Local),
             _ => ((ISymbol?)null, (string?)null),
         };
 
@@ -276,7 +276,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (initializer is null)
             return;
 
-        var expected = TagResolver.GetLocalCommentTags(operation.Symbol);
+        var expected = resolver.GetLocalCommentTags(operation.Symbol);
         if (expected.IsEmpty)
             return;
 
@@ -482,7 +482,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         context.ReportDiagnostic(CombinedValues, second.Syntax, ValueTagDescriptions.Describe(second), secondTags.ToAttributeString(), ValueTagDescriptions.Describe(first), firstTags.ToAttributeString());
     }
 
-    private static void AnalyzeAttribute(OperationAnalysisContext context)
+    private static void AnalyzeAttribute(OperationAnalysisContext context, TagResolver resolver)
     {
         var operation = (IAttributeOperation)context.Operation;
         if (operation.Operation is not IObjectCreationOperation { Constructor: { } constructor } creation || !TagResolver.IsValueTagAttribute(constructor.ContainingType))
@@ -566,7 +566,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (annotatedType is null)
             return;
 
-        var isKeyValueShaped = TagResolver.IsKeyValueShaped(annotatedType);
+        var isKeyValueShaped = resolver.KnownTypes.IsKeyValueShaped(annotatedType);
         if (hasKeyOrValue && !isKeyValueShaped)
         {
             ReportInvalidAttribute("Key and Value only apply to dictionaries, and '" + annotatedType.ToDisplayString() + "' is not a dictionary; use [ValueTag(\"Tag\")] instead", removable: true);
@@ -612,7 +612,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         };
     }
 
-    private static void AnalyzeComments(SemanticModelAnalysisContext context)
+    private static void AnalyzeComments(SemanticModelAnalysisContext context, TagResolver resolver)
     {
         var tree = context.SemanticModel.SyntaxTree;
         var root = tree.GetRoot(context.CancellationToken);
@@ -634,7 +634,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
                     ? "'" + text + "' is not a valid value tag comment; use // ValueTag=Tag, // ValueTag=Tag1, Tag2, or // ValueTag Key=Tag Value=Tag"
                     : "'" + text + "' is not a valid value tag comment; use /* ValueTag=Tag */, /* ValueTag=Tag1, Tag2 */, or /* ValueTag Key=Tag Value=Tag */";
             }
-            else if (TypeArgumentComments.TryValidate(trivia, tags, context.SemanticModel, context.CancellationToken, out var typeArgumentError))
+            else if (TypeArgumentComments.TryValidate(trivia, tags, context.SemanticModel, resolver.KnownTypes, context.CancellationToken, out var typeArgumentError))
             {
                 if (typeArgumentError is null)
                     continue;

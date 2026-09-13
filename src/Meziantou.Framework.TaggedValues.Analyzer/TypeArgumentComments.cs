@@ -52,7 +52,7 @@ internal static class TypeArgumentComments
     /// <summary>
     /// Returns the tags declared by the comments in the type arguments of <paramref name="typeSyntax"/>.
     /// </summary>
-    public static TagInfo GetTags(TypeSyntax typeSyntax, ITypeSymbol? type)
+    public static TagInfo GetTags(TypeSyntax typeSyntax, ITypeSymbol? type, KnownTypes knownTypes)
     {
         while (true)
         {
@@ -82,16 +82,16 @@ internal static class TypeArgumentComments
         if (typeSyntax is not GenericNameSyntax genericName || type is not INamedTypeSymbol namedType || genericName.TypeArgumentList.Arguments.Count != namedType.TypeArguments.Length)
             return TagInfo.None;
 
-        if (IsElementShaped(namedType))
-            return GetArgumentTags(genericName.TypeArgumentList, 0, namedType.TypeArguments[0]);
+        if (IsElementShaped(namedType, knownTypes))
+            return GetArgumentTags(genericName.TypeArgumentList, 0, namedType.TypeArguments[0], knownTypes);
 
-        if (IsKeyValueShaped(namedType))
-            return TagInfo.KeyValue(GetArgumentTags(genericName.TypeArgumentList, 0, namedType.TypeArguments[0]), GetArgumentTags(genericName.TypeArgumentList, 1, namedType.TypeArguments[1]));
+        if (IsKeyValueShaped(namedType, knownTypes))
+            return TagInfo.KeyValue(GetArgumentTags(genericName.TypeArgumentList, 0, namedType.TypeArguments[0], knownTypes), GetArgumentTags(genericName.TypeArgumentList, 1, namedType.TypeArguments[1], knownTypes));
 
         return TagInfo.None;
     }
 
-    private static TagInfo GetArgumentTags(TypeArgumentListSyntax typeArgumentList, int index, ITypeSymbol typeArgument)
+    private static TagInfo GetArgumentTags(TypeArgumentListSyntax typeArgumentList, int index, ITypeSymbol typeArgument, KnownTypes knownTypes)
     {
         foreach (var trivia in GetTrivia(typeArgumentList, index))
         {
@@ -99,35 +99,35 @@ internal static class TypeArgumentComments
                 return tags;
         }
 
-        return GetTags(typeArgumentList.Arguments[index], typeArgument);
+        return GetTags(typeArgumentList.Arguments[index], typeArgument, knownTypes);
     }
 
     /// <summary>
     /// Returns whether the only type argument of the type describes its elements or its value.
     /// </summary>
-    public static bool IsElementShaped(INamedTypeSymbol type)
+    public static bool IsElementShaped(INamedTypeSymbol type, KnownTypes knownTypes)
     {
         var definition = type.OriginalDefinition;
         return definition.TypeArguments.Length is 1 &&
-            TagResolver.TryGetWrappedType(definition, out var wrappedType) &&
+            knownTypes.TryGetWrappedType(definition, out var wrappedType) &&
             SymbolEqualityComparer.Default.Equals(wrappedType, definition.TypeArguments[0]);
     }
 
     /// <summary>
     /// Returns whether the two type arguments of the type describe its keys and its values.
     /// </summary>
-    public static bool IsKeyValueShaped(INamedTypeSymbol type)
+    public static bool IsKeyValueShaped(INamedTypeSymbol type, KnownTypes knownTypes)
     {
         var definition = type.OriginalDefinition;
         if (definition.TypeArguments.Length is not 2)
             return false;
 
-        if (TagResolver.IsKeyValuePair(definition))
+        if (knownTypes.IsKeyValuePair(definition))
             return true;
 
-        return TagResolver.TryGetWrappedType(definition, out var wrappedType) &&
+        return knownTypes.TryGetWrappedType(definition, out var wrappedType) &&
             wrappedType is INamedTypeSymbol keyValuePair &&
-            TagResolver.IsKeyValuePair(keyValuePair) &&
+            knownTypes.IsKeyValuePair(keyValuePair) &&
             SymbolEqualityComparer.Default.Equals(keyValuePair.TypeArguments[0], definition.TypeArguments[0]) &&
             SymbolEqualityComparer.Default.Equals(keyValuePair.TypeArguments[1], definition.TypeArguments[1]);
     }
@@ -136,7 +136,7 @@ internal static class TypeArgumentComments
     /// Validates a comment that belongs to a type argument.
     /// </summary>
     /// <returns><see langword="false"/> when the comment does not belong to a type argument.</returns>
-    public static bool TryValidate(SyntaxTrivia trivia, TagInfo tags, SemanticModel semanticModel, CancellationToken cancellationToken, out string? errorMessage)
+    public static bool TryValidate(SyntaxTrivia trivia, TagInfo tags, SemanticModel semanticModel, KnownTypes knownTypes, CancellationToken cancellationToken, out string? errorMessage)
     {
         errorMessage = null;
         GenericNameSyntax? genericName = null;
@@ -170,7 +170,7 @@ internal static class TypeArgumentComments
         while (true)
         {
             var type = semanticModel.GetSymbolInfo(genericName, cancellationToken).Symbol as INamedTypeSymbol ?? semanticModel.GetTypeInfo(genericName, cancellationToken).Type as INamedTypeSymbol;
-            if (type is null || !(IsElementShaped(type) || IsKeyValueShaped(type)))
+            if (type is null || !(IsElementShaped(type, knownTypes) || IsKeyValueShaped(type, knownTypes)))
             {
                 errorMessage = "The type arguments of '" + (type?.ToDisplayString() ?? genericName.ToString()) + "' cannot be tagged; only the type arguments of collections, dictionaries, and wrappers such as Nullable<T>, Task<T>, or Lazy<T> can be tagged";
                 return true;

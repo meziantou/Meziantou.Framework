@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/KnownTypes.cs" Link="KnownTypes.cs" />
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/TagInfo.cs" Link="TagInfo.cs" />
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/TagResolver.cs" Link="TagResolver.cs" />
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/TypeArgumentComments.cs" Link="TypeArgumentComments.cs" />
@@ -18,7 +19,7 @@
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/ValueTagCommentKind.cs" Link="ValueTagCommentKind.cs" />
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/ValueTagDiagnostics.cs" Link="ValueTagDiagnostics.cs" />
     <Compile Include="../Meziantou.Framework.TaggedValues.Analyzer/ValueTagTargetKind.cs" Link="ValueTagTargetKind.cs" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

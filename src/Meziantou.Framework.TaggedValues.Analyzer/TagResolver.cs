@@ -28,7 +28,10 @@ internal sealed class TagResolver
         _compilation = compilation;
         _optionsProvider = optionsProvider;
         _externalTags = new(LoadExternalTags);
+        KnownTypes = new KnownTypes(compilation);
     }
+
+    public KnownTypes KnownTypes { get; }
 
     public static bool IsValueTagAttribute(INamedTypeSymbol? type)
     {
@@ -189,7 +192,7 @@ internal sealed class TagResolver
             _ => default,
         };
 
-        if (type is null || containingType is null || containingType.IsAnonymousType || IsCollectionType(type))
+        if (type is null || containingType is null || containingType.IsAnonymousType || KnownTypes.IsCollectionType(type))
             return TagInfo.None;
 
         var name = GetConventionName(symbol);
@@ -435,7 +438,7 @@ internal sealed class TagResolver
         return tags;
     }
 
-    public static TagInfo GetLocalCommentTags(ILocalSymbol local)
+    public TagInfo GetLocalCommentTags(ILocalSymbol local)
     {
         foreach (var reference in local.DeclaringSyntaxReferences)
         {
@@ -452,7 +455,7 @@ internal sealed class TagResolver
             var typeSyntax = GetLocalDeclarationType(reference.GetSyntax());
             if (typeSyntax is not null)
             {
-                var tags = TypeArgumentComments.GetTags(typeSyntax, local.Type);
+                var tags = TypeArgumentComments.GetTags(typeSyntax, local.Type, KnownTypes);
                 if (!tags.IsEmpty)
                     return tags;
             }
@@ -759,10 +762,10 @@ internal sealed class TagResolver
         return false;
     }
 
-    private static TagInfo GetObjectCreationTypeArgumentTags(IObjectCreationOperation objectCreation)
+    private TagInfo GetObjectCreationTypeArgumentTags(IObjectCreationOperation objectCreation)
     {
         return objectCreation.Syntax is ObjectCreationExpressionSyntax objectCreationSyntax
-            ? TypeArgumentComments.GetTags(objectCreationSyntax.Type, objectCreation.Type)
+            ? TypeArgumentComments.GetTags(objectCreationSyntax.Type, objectCreation.Type, KnownTypes)
             : TagInfo.None;
     }
 
@@ -814,7 +817,7 @@ internal sealed class TagResolver
         if (current is not IArgumentOperation { Parameter: not null } argument || !TryGetArgumentOwner(argument, out var member, out var instance, out var arguments))
             return TagInfo.None;
 
-        var delegateType = GetDelegateType(argument.Parameter.OriginalDefinition.Type);
+        var delegateType = KnownTypes.GetDelegateType(argument.Parameter.OriginalDefinition.Type);
         if (delegateType?.DelegateInvokeMethod is not { } invokeMethod || ordinal >= invokeMethod.Parameters.Length)
             return TagInfo.None;
 
@@ -955,7 +958,7 @@ internal sealed class TagResolver
             switch (value)
             {
                 case IAnonymousFunctionOperation anonymousFunction:
-                    if (GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } invokeMethod)
+                    if (KnownTypes.GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } invokeMethod)
                     {
                         Bind(invokeMethod.ReturnType, GetAnonymousFunctionReturnTags(anonymousFunction, depth + 1), ref typeParameters);
                     }
@@ -963,7 +966,7 @@ internal sealed class TagResolver
                     break;
 
                 case IMethodReferenceOperation methodReference:
-                    if (GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } methodReferenceInvokeMethod)
+                    if (KnownTypes.GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } methodReferenceInvokeMethod)
                     {
                         Bind(methodReferenceInvokeMethod.ReturnType, GetDeclaredTags(methodReference.Method), ref typeParameters);
                     }
@@ -979,7 +982,7 @@ internal sealed class TagResolver
         return typeParameters;
     }
 
-    private static void Bind(ITypeSymbol type, TagInfo tags, ref Dictionary<ITypeParameterSymbol, TagInfo>? typeParameters)
+    private void Bind(ITypeSymbol type, TagInfo tags, ref Dictionary<ITypeParameterSymbol, TagInfo>? typeParameters)
     {
         if (tags.IsEmpty)
             return;
@@ -999,18 +1002,18 @@ internal sealed class TagResolver
                 Bind(arrayType.ElementType, tags, ref typeParameters);
                 break;
 
-            case INamedTypeSymbol namedType when IsKeyValuePair(namedType):
+            case INamedTypeSymbol namedType when KnownTypes.IsKeyValuePair(namedType):
                 Bind(namedType.TypeArguments[0], tags.GetKey(), ref typeParameters);
                 Bind(namedType.TypeArguments[1], tags.GetValue(), ref typeParameters);
                 break;
 
-            case INamedTypeSymbol namedType when TryGetWrappedType(namedType, out var wrappedType):
+            case INamedTypeSymbol namedType when KnownTypes.TryGetWrappedType(namedType, out var wrappedType):
                 Bind(wrappedType, tags, ref typeParameters);
                 break;
         }
     }
 
-    private static TagInfo ComputeTag(ITypeSymbol type, Dictionary<ITypeParameterSymbol, TagInfo>? typeParameters)
+    private TagInfo ComputeTag(ITypeSymbol type, Dictionary<ITypeParameterSymbol, TagInfo>? typeParameters)
     {
         if (typeParameters is null)
             return TagInfo.None;
@@ -1023,10 +1026,10 @@ internal sealed class TagResolver
             case IArrayTypeSymbol arrayType:
                 return ComputeTag(arrayType.ElementType, typeParameters);
 
-            case INamedTypeSymbol namedType when IsKeyValuePair(namedType):
+            case INamedTypeSymbol namedType when KnownTypes.IsKeyValuePair(namedType):
                 return TagInfo.KeyValue(ComputeTag(namedType.TypeArguments[0], typeParameters), ComputeTag(namedType.TypeArguments[1], typeParameters));
 
-            case INamedTypeSymbol namedType when TryGetWrappedType(namedType, out var wrappedType):
+            case INamedTypeSymbol namedType when KnownTypes.TryGetWrappedType(namedType, out var wrappedType):
                 return ComputeTag(wrappedType, typeParameters);
 
             default:
@@ -1056,116 +1059,6 @@ internal sealed class TagResolver
             default:
                 return false;
         }
-    }
-
-    private static INamedTypeSymbol? GetDelegateType(ITypeSymbol type)
-    {
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Delegate } delegateType)
-            return delegateType;
-
-        // Queryable methods take Expression<Func<...>>
-        if (type is INamedTypeSymbol { Name: "Expression", TypeArguments.Length: 1 } expressionType && IsInNamespace(expressionType, "System", "Linq", "Expressions"))
-            return expressionType.TypeArguments[0] as INamedTypeSymbol;
-
-        return null;
-    }
-
-    public static bool IsKeyValuePair(INamedTypeSymbol type)
-    {
-        return type is { Name: "KeyValuePair", TypeArguments.Length: 2 } && IsInNamespace(type, "System", "Collections", "Generic");
-    }
-
-    /// <summary>
-    /// Returns the type of the value a tag describes for a wrapper type: the element of a collection, or the value of a
-    /// <c>Nullable&lt;T&gt;</c>, a <c>Task&lt;T&gt;</c>, a <c>ValueTask&lt;T&gt;</c>, a <c>Lazy&lt;T&gt;</c>, a span, or a memory.
-    /// </summary>
-    public static bool TryGetWrappedType(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? wrappedType)
-    {
-        wrappedType = null;
-        if (type.SpecialType is SpecialType.System_String)
-            return false;
-
-        if (type.TypeArguments.Length is 1)
-        {
-            var isWrapper = type.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T or SpecialType.System_Collections_Generic_IEnumerable_T or SpecialType.System_Collections_Generic_IEnumerator_T ||
-                (type.Name is "Task" or "ValueTask" && IsInNamespace(type, "System", "Threading", "Tasks")) ||
-                (type.Name is "Lazy" or "Span" or "ReadOnlySpan" or "Memory" or "ReadOnlyMemory" && IsInNamespace(type, "System")) ||
-                (type.Name is "IAsyncEnumerable" or "IAsyncEnumerator" && IsInNamespace(type, "System", "Collections", "Generic"));
-
-            if (isWrapper)
-            {
-                wrappedType = type.TypeArguments[0];
-                return true;
-            }
-        }
-
-        ITypeSymbol? elementType = null;
-        foreach (var @interface in type.AllInterfaces)
-        {
-            if (@interface.OriginalDefinition.SpecialType is SpecialType.System_Collections_Generic_IEnumerable_T ||
-                (@interface is { Name: "IAsyncEnumerable", TypeArguments.Length: 1 } && IsInNamespace(@interface, "System", "Collections", "Generic")))
-            {
-                if (elementType is not null && !SymbolEqualityComparer.Default.Equals(elementType, @interface.TypeArguments[0]))
-                    return false;
-
-                elementType = @interface.TypeArguments[0];
-            }
-        }
-
-        if (elementType is null)
-            return false;
-
-        wrappedType = elementType;
-        return true;
-    }
-
-    public static bool IsCollectionType(ITypeSymbol type)
-    {
-        return type is IArrayTypeSymbol ||
-            (type is INamedTypeSymbol namedType && namedType.OriginalDefinition.SpecialType is not SpecialType.System_Nullable_T && TryGetWrappedType(namedType, out _) &&
-             !(namedType.Name is "Task" or "ValueTask" or "Lazy"));
-    }
-
-    /// <summary>
-    /// Returns whether the tags of a value of this type describe a dictionary, whose keys and values are tagged separately.
-    /// </summary>
-    public static bool IsKeyValueShaped(ITypeSymbol type)
-    {
-        for (var depth = 0; depth < 8; depth++)
-        {
-            switch (type)
-            {
-                case IArrayTypeSymbol arrayType:
-                    type = arrayType.ElementType;
-                    break;
-
-                case INamedTypeSymbol namedType when IsKeyValuePair(namedType):
-                    return true;
-
-                case INamedTypeSymbol namedType when TryGetWrappedType(namedType, out var wrappedType):
-                    type = wrappedType;
-                    break;
-
-                default:
-                    return false;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsInNamespace(ISymbol symbol, params string[] namespaceParts)
-    {
-        var ns = symbol.ContainingNamespace;
-        for (var i = namespaceParts.Length - 1; i >= 0; i--)
-        {
-            if (ns is null || ns.Name != namespaceParts[i])
-                return false;
-
-            ns = ns.ContainingNamespace;
-        }
-
-        return ns is { IsGlobalNamespace: true };
     }
 
     private static bool IsObjectOrDynamic(ITypeSymbol? type)

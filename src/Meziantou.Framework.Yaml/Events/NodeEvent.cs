@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Yaml.Events;
 public abstract partial class NodeEvent : ParsingEvent
 {
     /// <summary>Matches <c>ns-anchor-name</c>: one or more printable characters other than whitespace and flow indicators.</summary>
-    [GeneratedRegex(@"^[^\x00-\x20\x7F-\x9F,\[\]{}\uFEFF]+$", RegexOptions.None, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"^[^\x00-\x20\x7F-\x84\x86-\x9F,\[\]{}\uFEFF]+$", RegexOptions.None, matchTimeoutMilliseconds: -1)]
     internal static partial Regex AnchorValidator { get; }
 
     /// <summary>Gets the anchor.</summary>

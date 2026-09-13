@@ -135,6 +135,59 @@ public class ParserTests : ParserTestHelper
         }
     }
 
+    [Theory]
+    [InlineData("|\na\n  b\n", "+STR\n+DOC\n=VAL |a\\n  b\\n\n-DOC\n-STR")]
+    [InlineData(">\na\n  b\nc\n", "+STR\n+DOC\n=VAL >a\\n  b\\nc\\n\n-DOC\n-STR")]
+    [InlineData("--- |\n- >\n x\n", "+STR\n+DOC ---\n=VAL |- >\\n x\\n\n-DOC\n-STR")]
+    [InlineData("|\nx\n  ", "+STR\n+DOC\n=VAL |x\\n  \\n\n-DOC\n-STR")]
+    [InlineData("|\n\ta\n", "+STR\n+DOC\n=VAL |\\ta\\n\n-DOC\n-STR")]
+    [InlineData("a: |+\n  abc", "+STR\n+DOC\n+MAP\n=VAL :a\n=VAL |abc\\n\n-MAP\n-DOC\n-STR")]
+    [InlineData(">+\nabc", "+STR\n+DOC\n=VAL >abc\\n\n-DOC\n-STR")]
+    [InlineData("strip: >-\n \nclip: x", "+STR\n+DOC\n+MAP\n=VAL :strip\n=VAL >\n=VAL :clip\n=VAL :x\n-MAP\n-DOC\n-STR")]
+    [InlineData("? a\n: - b", "+STR\n+DOC\n+MAP\n=VAL :a\n+SEQ\n=VAL :b\n-SEQ\n-MAP\n-DOC\n-STR")]
+    [InlineData("? - ? a\n    : b\n: - c", "+STR\n+DOC\n+MAP\n+SEQ\n+MAP\n=VAL :a\n=VAL :b\n-MAP\n-SEQ\n+SEQ\n=VAL :c\n-SEQ\n-MAP\n-DOC\n-STR")]
+    [InlineData("- x\n\t#c", "+STR\n+DOC\n+SEQ\n=VAL :x\n-SEQ\n-DOC\n-STR")]
+    [InlineData("k: v\n\t# c\n", "+STR\n+DOC\n+MAP\n=VAL :k\n=VAL :v\n-MAP\n-DOC\n-STR")]
+    [InlineData("!#a b", "+STR\n+DOC\n=VAL <!#a> :b\n-DOC\n-STR")]
+    [InlineData("%TAG !e! tag:x#\n--- !e!a b", "+STR\n+DOC ---\n=VAL <tag:x#a> :b\n-DOC\n-STR")]
+    [InlineData("[!]", "+STR\n+DOC\n+SEQ []\n=VAL <!> :\n-SEQ\n-DOC\n-STR")]
+    [InlineData("- &a\u0085 b\n- *a\u0085", "+STR\n+DOC\n+SEQ\n=VAL &a\u0085 :b\n=ALI *a\u0085\n-SEQ\n-DOC\n-STR")]
+    public void SpecificationEdgeCases_ProduceExpectedEvents(string yaml, string expected)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    [Theory]
+    [InlineData(": - b")]
+    [InlineData(": a: b")]
+    [InlineData("- : - b")]
+    [InlineData("? a\n: b\n: - c")]
+    [InlineData("k:\n>\n text")]
+    [InlineData("k:\n|\n text")]
+    [InlineData("-\n>")]
+    [InlineData("a: &b\n>")]
+    [InlineData("k:\n\ta")]
+    [InlineData("k:\n\t\"a\"")]
+    [InlineData("a: &b\n\ta")]
+    [InlineData("k: \"a\n\t\n b\"")]
+    [InlineData("k: a\n\t\n b")]
+    [InlineData("k: \"\\\n\"")]
+    [InlineData("- [a\nb]")]
+    [InlineData("- { multi\nline: value}")]
+    [InlineData("&a[b]")]
+    [InlineData("[&a[b]]")]
+    [InlineData("[!t{a: b}]")]
+    public void SpecificationEdgeCases_ThrowYamlException(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
     private static void AssertConformance(IParser parser, string expectedEvents, bool invalid)
     {
         if (invalid)

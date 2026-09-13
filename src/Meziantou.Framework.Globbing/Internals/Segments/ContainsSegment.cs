@@ -27,8 +27,22 @@ internal sealed class ContainsSegment : Segment
         return false;
     }
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        return '*' + Value + '*';
+        sb.Append('*');
+
+        // MSBuild reads a file name made of "*.*" as every file, including the ones without an extension
+        if (dialect is GlobDialect.MSBuild && Value is ".")
+        {
+            sb.Append("%2E");
+        }
+        else
+        {
+            GlobPatternWriter.AppendLiteral(ref sb, Value, dialect);
+        }
+
+        sb.Append('*');
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

@@ -17,8 +17,18 @@ internal sealed class LastSegment : Segment
 
     public override bool IsRecursiveMatchAll => true;
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        return "**/" + _innerSegment.ToString();
+        sb.Append("**/");
+        if (_innerSegment is LiteralSegment literal)
+        {
+            GlobPatternWriter.AppendPathSegmentLiteral(ref sb, literal.Value, dialect);
+        }
+        else
+        {
+            _innerSegment.AppendPattern(ref sb, dialect);
+        }
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

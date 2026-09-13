@@ -8,10 +8,18 @@ internal sealed class RaggedSegment : Segment
     private readonly int _matchAllSubSegmentCount;
     private readonly int _firstMatchAllSubSegmentIndex;
     private readonly bool _hasLiteralSet;
+    private readonly bool _requiresLiteralLeadingDot;
 
-    public RaggedSegment(Segment[] segments)
+    /// <param name="segments">The subsegments to match in order.</param>
+    /// <param name="requiresLiteralLeadingDot">
+    ///     Whether a path segment starting with a dot only matches when that dot is written in the pattern, rather
+    ///     than matched by a wildcard. It is only needed when the segment starts with a literal set, as the
+    ///     alternative that the path takes decides whether the dot is written.
+    /// </param>
+    public RaggedSegment(Segment[] segments, bool requiresLiteralLeadingDot)
     {
         _segments = segments;
+        _requiresLiteralLeadingDot = requiresLiteralLeadingDot;
 
         _firstMatchAllSubSegmentIndex = -1;
         for (var i = 0; i < segments.Length; i++)
@@ -70,13 +78,19 @@ internal sealed class RaggedSegment : Segment
                 return MatchSingleStar(ref pathReader, patternSegments, _firstMatchAllSubSegmentIndex);
         }
 
-        return Match(ref pathReader, patternSegments);
+        var literalDotPending = _requiresLiteralLeadingDot && pathReader.CurrentSegmentLength > 0 && pathReader.CurrentText[0] == '.';
+        return Match(ref pathReader, patternSegments, literalDotPending);
 
-        static bool Match(ref PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
+        // literalDotPending is true while the leading dot of the path segment has not been consumed yet: only a
+        // literal, or an alternative of a literal set, can consume it.
+        static bool Match(ref PathReader pathReader, ReadOnlySpan<Segment> patternSegments, bool literalDotPending)
         {
             for (var i = 0; i < patternSegments.Length; i++)
             {
                 var patternSegment = patternSegments[i];
+                if (literalDotPending && patternSegment is not (LiteralSegment or LiteralSetSegment))
+                    return false;
+
                 if (patternSegment is MatchAllSubSegment)
                 {
                     var remainingPatternSegments = patternSegments[(i + 1)..];
@@ -86,7 +100,7 @@ internal sealed class RaggedSegment : Segment
                     }
 
                     var copyReader = pathReader;
-                    if (Match(ref copyReader, remainingPatternSegments))
+                    if (Match(ref copyReader, remainingPatternSegments, literalDotPending: false))
                     {
                         pathReader = copyReader;
                         return true;
@@ -96,7 +110,7 @@ internal sealed class RaggedSegment : Segment
                     {
                         pathReader.ConsumeInSegment(1);
                         copyReader = pathReader;
-                        if (Match(ref copyReader, remainingPatternSegments))
+                        if (Match(ref copyReader, remainingPatternSegments, literalDotPending: false))
                         {
                             pathReader = copyReader;
                             return true;
@@ -114,7 +128,7 @@ internal sealed class RaggedSegment : Segment
                         if (!TryConsumeLiteral(ref copyReader, value, literalSet.Comparison))
                             continue;
 
-                        if (Match(ref copyReader, remainingPatternSegments))
+                        if (Match(ref copyReader, remainingPatternSegments, literalDotPending && value.Length == 0))
                         {
                             pathReader = copyReader;
                             return true;
@@ -127,6 +141,8 @@ internal sealed class RaggedSegment : Segment
                 {
                     if (!patternSegment.IsMatch(ref pathReader))
                         return false;
+
+                    literalDotPending = false;
                 }
             }
 
@@ -279,14 +295,13 @@ internal sealed class RaggedSegment : Segment
         }
     }
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        using var sb = new ValueStringBuilder();
         foreach (var item in _segments)
         {
-            sb.Append(item.ToString());
+            item.AppendPattern(ref sb, dialect);
         }
-
-        return sb.ToString();
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

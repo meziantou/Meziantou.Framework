@@ -2,44 +2,24 @@ namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Represents the body of a here-document, including its closing delimiter line.</summary>
 /// <remarks>
-/// The body starts on the line after the whole command line, not right after the <c>&lt;&lt;</c> operator, so it
-/// follows the statement it belongs to rather than nesting inside it. <see cref="Redirection"/> links back to the
-/// redirection that introduced it, and <see cref="ShellRedirectionSyntax.HereDocument"/> is the reverse link.
+/// The body starts at the first line break after the <c>&lt;&lt;</c> operator, not right after it, so it follows the
+/// command line it belongs to rather than nesting inside it. <see cref="Redirection"/> links back to the redirection
+/// that introduced it, and <see cref="ShellRedirectionSyntax.HereDocument"/> is the reverse link.
 /// </remarks>
 public sealed partial class PosixHereDocumentSyntax
 {
     /// <summary>The redirection that introduced this here-document.</summary>
     /// <remarks>
-    /// Worked out from the tree rather than stored. A body sits after the command line that introduced it, so the
-    /// here-documents following a statement pair up in order with the <c>&lt;&lt;</c> redirections inside it.
+    /// Worked out from the tree rather than stored. Bodies come in the order of the <c>&lt;&lt;</c> redirections that
+    /// introduced them, so the n-th body pairs up with the n-th redirection.
     /// </remarks>
     public ShellRedirectionSyntax? Redirection
     {
         get
         {
-            if (Parent is not ShellStatementListSyntax list)
-                return null;
-
-            var statements = list.Statements;
-            var index = statements.IndexOf(this);
-            if (index < 0)
-                return null;
-
-            // Count how many here-document bodies stand between the statement that introduced them and this one.
-            var ordinal = 0;
-            var owner = index - 1;
-            while (owner >= 0 && statements[owner] is PosixHereDocumentSyntax)
+            foreach (var (redirection, hereDocument) in ShellRedirectionSyntax.PairHereDocuments(this))
             {
-                ordinal++;
-                owner--;
-            }
-
-            if (owner < 0)
-                return null;
-
-            foreach (var redirection in ShellRedirectionSyntax.HereDocumentRedirectionsIn(statements[owner]))
-            {
-                if (ordinal-- == 0)
+                if (ReferenceEquals(hereDocument, this))
                     return redirection;
             }
 
@@ -53,5 +33,5 @@ public sealed partial class PosixHereDocumentSyntax
     /// <summary>
     /// Returns <see langword="true"/> when the delimiter was quoted, which disables expansion inside the body.
     /// </summary>
-    public bool IsQuotedDelimiter => Redirection?.Target?.Parts.Any(part => part is ShellQuotedStringSyntax) == true;
+    public bool IsQuotedDelimiter => Redirection?.Target?.Parts.Any(part => part is ShellQuotedStringSyntax or ShellEscapeSequenceSyntax) == true;
 }

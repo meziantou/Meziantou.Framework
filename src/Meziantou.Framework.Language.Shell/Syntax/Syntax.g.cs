@@ -280,22 +280,25 @@ internal sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
     private readonly GreenNode _openParenToken;
     private readonly GreenNode _statements;
     private readonly GreenNode _closeParenToken;
+    private readonly GreenNode? _redirections;
 
-    public CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken)
-        : this(openParenToken, statements, closeParenToken, diagnostics: null, annotations: null)
+    public CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, GreenNode? redirections)
+        : this(openParenToken, statements, closeParenToken, redirections, diagnostics: null, annotations: null)
     {
     }
 
-    private CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private CmdParenthesizedBlockSyntax(GreenNode openParenToken, GreenNode statements, GreenNode closeParenToken, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.CmdParenthesizedBlock, diagnostics, annotations)
     {
-        SlotCount = 3;
+        SlotCount = 4;
         AdjustFlagsAndWidth(openParenToken);
         _openParenToken = openParenToken;
         AdjustFlagsAndWidth(statements);
         _statements = statements;
         AdjustFlagsAndWidth(closeParenToken);
         _closeParenToken = closeParenToken;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
@@ -303,14 +306,17 @@ internal sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
         0 => _openParenToken,
         1 => _statements,
         2 => _closeParenToken,
+        3 => _redirections,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdParenthesizedBlockSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdParenthesizedBlockSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), slots[3], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, diagnostics, GetAnnotations());
+    internal override bool IsListSlot(int index) => index is 3;
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, GetDiagnostics(), annotations);
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdParenthesizedBlockSyntax(_openParenToken, _statements, _closeParenToken, _redirections, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.CmdParenthesizedBlockSyntax(this, parent, position);
 }
@@ -322,16 +328,17 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
     private readonly GreenNode? _nameToken;
     private readonly GreenNode? _equalsToken;
     private readonly GreenNode? _value;
+    private readonly GreenNode? _redirections;
 
-    public CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value)
-        : this(setKeyword, switchToken, nameToken, equalsToken, value, diagnostics: null, annotations: null)
+    public CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, GreenNode? redirections)
+        : this(setKeyword, switchToken, nameToken, equalsToken, value, redirections, diagnostics: null, annotations: null)
     {
     }
 
-    private CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private CmdSetStatementSyntax(GreenNode setKeyword, GreenNode? switchToken, GreenNode? nameToken, GreenNode? equalsToken, GreenNode? value, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.CmdSetStatement, diagnostics, annotations)
     {
-        SlotCount = 5;
+        SlotCount = 6;
         AdjustFlagsAndWidth(setKeyword);
         _setKeyword = setKeyword;
         AdjustFlagsAndWidth(switchToken);
@@ -342,6 +349,8 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
         _equalsToken = equalsToken;
         AdjustFlagsAndWidth(value);
         _value = value;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
@@ -351,14 +360,17 @@ internal sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
         2 => _nameToken,
         3 => _equalsToken,
         4 => _value,
+        5 => _redirections,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdSetStatementSyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], slots[4], GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new CmdSetStatementSyntax(RequiredSlot(slots[0]), slots[1], slots[2], slots[3], slots[4], slots[5], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, diagnostics, GetAnnotations());
+    internal override bool IsListSlot(int index) => index is 5;
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, GetDiagnostics(), annotations);
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new CmdSetStatementSyntax(_setKeyword, _switchToken, _nameToken, _equalsToken, _value, _redirections, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.CmdSetStatementSyntax(this, parent, position);
 }
@@ -555,23 +567,26 @@ internal sealed partial class PosixCaseStatementSyntax : ShellStatementSyntax
 {
     private readonly GreenNode _caseKeyword;
     private readonly GreenNode _subject;
+    private readonly GreenNode? _subjectTerminatorToken;
     private readonly GreenNode _inKeyword;
     private readonly GreenNode? _clauses;
     private readonly GreenNode _esacKeyword;
 
-    public PosixCaseStatementSyntax(GreenNode caseKeyword, GreenNode subject, GreenNode inKeyword, GreenNode? clauses, GreenNode esacKeyword)
-        : this(caseKeyword, subject, inKeyword, clauses, esacKeyword, diagnostics: null, annotations: null)
+    public PosixCaseStatementSyntax(GreenNode caseKeyword, GreenNode subject, GreenNode? subjectTerminatorToken, GreenNode inKeyword, GreenNode? clauses, GreenNode esacKeyword)
+        : this(caseKeyword, subject, subjectTerminatorToken, inKeyword, clauses, esacKeyword, diagnostics: null, annotations: null)
     {
     }
 
-    private PosixCaseStatementSyntax(GreenNode caseKeyword, GreenNode subject, GreenNode inKeyword, GreenNode? clauses, GreenNode esacKeyword, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private PosixCaseStatementSyntax(GreenNode caseKeyword, GreenNode subject, GreenNode? subjectTerminatorToken, GreenNode inKeyword, GreenNode? clauses, GreenNode esacKeyword, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.PosixCaseStatement, diagnostics, annotations)
     {
-        SlotCount = 5;
+        SlotCount = 6;
         AdjustFlagsAndWidth(caseKeyword);
         _caseKeyword = caseKeyword;
         AdjustFlagsAndWidth(subject);
         _subject = subject;
+        AdjustFlagsAndWidth(subjectTerminatorToken);
+        _subjectTerminatorToken = subjectTerminatorToken;
         AdjustFlagsAndWidth(inKeyword);
         _inKeyword = inKeyword;
         AdjustFlagsAndWidth(clauses);
@@ -584,19 +599,20 @@ internal sealed partial class PosixCaseStatementSyntax : ShellStatementSyntax
     {
         0 => _caseKeyword,
         1 => _subject,
-        2 => _inKeyword,
-        3 => _clauses,
-        4 => _esacKeyword,
+        2 => _subjectTerminatorToken,
+        3 => _inKeyword,
+        4 => _clauses,
+        5 => _esacKeyword,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixCaseStatementSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), RequiredSlot(slots[2]), slots[3], RequiredSlot(slots[4]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixCaseStatementSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], RequiredSlot(slots[3]), slots[4], RequiredSlot(slots[5]), GetDiagnostics(), GetAnnotations());
 
-    internal override bool IsListSlot(int index) => index is 3;
+    internal override bool IsListSlot(int index) => index is 4;
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixCaseStatementSyntax(_caseKeyword, _subject, _inKeyword, _clauses, _esacKeyword, diagnostics, GetAnnotations());
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixCaseStatementSyntax(_caseKeyword, _subject, _subjectTerminatorToken, _inKeyword, _clauses, _esacKeyword, diagnostics, GetAnnotations());
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixCaseStatementSyntax(_caseKeyword, _subject, _inKeyword, _clauses, _esacKeyword, GetDiagnostics(), annotations);
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixCaseStatementSyntax(_caseKeyword, _subject, _subjectTerminatorToken, _inKeyword, _clauses, _esacKeyword, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixCaseStatementSyntax(this, parent, position);
 }
@@ -765,6 +781,7 @@ internal sealed partial class PosixForStatementSyntax : ShellStatementSyntax
 {
     private readonly GreenNode _keyword;
     private readonly GreenNode _variableToken;
+    private readonly GreenNode? _additionalVariableTokens;
     private readonly GreenNode? _inKeyword;
     private readonly GreenNode? _items;
     private readonly GreenNode? _listTerminatorToken;
@@ -772,19 +789,21 @@ internal sealed partial class PosixForStatementSyntax : ShellStatementSyntax
     private readonly GreenNode _body;
     private readonly GreenNode _doneKeyword;
 
-    public PosixForStatementSyntax(SyntaxKind kind, GreenNode keyword, GreenNode variableToken, GreenNode? inKeyword, GreenNode? items, GreenNode? listTerminatorToken, GreenNode doKeyword, GreenNode body, GreenNode doneKeyword)
-        : this(kind, keyword, variableToken, inKeyword, items, listTerminatorToken, doKeyword, body, doneKeyword, diagnostics: null, annotations: null)
+    public PosixForStatementSyntax(SyntaxKind kind, GreenNode keyword, GreenNode variableToken, GreenNode? additionalVariableTokens, GreenNode? inKeyword, GreenNode? items, GreenNode? listTerminatorToken, GreenNode doKeyword, GreenNode body, GreenNode doneKeyword)
+        : this(kind, keyword, variableToken, additionalVariableTokens, inKeyword, items, listTerminatorToken, doKeyword, body, doneKeyword, diagnostics: null, annotations: null)
     {
     }
 
-    private PosixForStatementSyntax(SyntaxKind kind, GreenNode keyword, GreenNode variableToken, GreenNode? inKeyword, GreenNode? items, GreenNode? listTerminatorToken, GreenNode doKeyword, GreenNode body, GreenNode doneKeyword, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private PosixForStatementSyntax(SyntaxKind kind, GreenNode keyword, GreenNode variableToken, GreenNode? additionalVariableTokens, GreenNode? inKeyword, GreenNode? items, GreenNode? listTerminatorToken, GreenNode doKeyword, GreenNode body, GreenNode doneKeyword, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(kind, diagnostics, annotations)
     {
-        SlotCount = 8;
+        SlotCount = 9;
         AdjustFlagsAndWidth(keyword);
         _keyword = keyword;
         AdjustFlagsAndWidth(variableToken);
         _variableToken = variableToken;
+        AdjustFlagsAndWidth(additionalVariableTokens);
+        _additionalVariableTokens = additionalVariableTokens;
         AdjustFlagsAndWidth(inKeyword);
         _inKeyword = inKeyword;
         AdjustFlagsAndWidth(items);
@@ -803,22 +822,23 @@ internal sealed partial class PosixForStatementSyntax : ShellStatementSyntax
     {
         0 => _keyword,
         1 => _variableToken,
-        2 => _inKeyword,
-        3 => _items,
-        4 => _listTerminatorToken,
-        5 => _doKeyword,
-        6 => _body,
-        7 => _doneKeyword,
+        2 => _additionalVariableTokens,
+        3 => _inKeyword,
+        4 => _items,
+        5 => _listTerminatorToken,
+        6 => _doKeyword,
+        7 => _body,
+        8 => _doneKeyword,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixForStatementSyntax(Kind, RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], slots[4], RequiredSlot(slots[5]), RequiredSlot(slots[6]), RequiredSlot(slots[7]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixForStatementSyntax(Kind, RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], slots[3], slots[4], slots[5], RequiredSlot(slots[6]), RequiredSlot(slots[7]), RequiredSlot(slots[8]), GetDiagnostics(), GetAnnotations());
 
-    internal override bool IsListSlot(int index) => index is 3;
+    internal override bool IsListSlot(int index) => index is 2 or 4;
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixForStatementSyntax(Kind, _keyword, _variableToken, _inKeyword, _items, _listTerminatorToken, _doKeyword, _body, _doneKeyword, diagnostics, GetAnnotations());
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixForStatementSyntax(Kind, _keyword, _variableToken, _additionalVariableTokens, _inKeyword, _items, _listTerminatorToken, _doKeyword, _body, _doneKeyword, diagnostics, GetAnnotations());
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixForStatementSyntax(Kind, _keyword, _variableToken, _inKeyword, _items, _listTerminatorToken, _doKeyword, _body, _doneKeyword, GetDiagnostics(), annotations);
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixForStatementSyntax(Kind, _keyword, _variableToken, _additionalVariableTokens, _inKeyword, _items, _listTerminatorToken, _doKeyword, _body, _doneKeyword, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixForStatementSyntax(this, parent, position);
 }
@@ -1043,6 +1063,44 @@ internal sealed partial class PosixProcessSubstitutionSyntax : ShellWordPartSynt
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixProcessSubstitutionSyntax(_openToken, _statements, _closeToken, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixProcessSubstitutionSyntax(this, parent, position);
+}
+
+internal sealed partial class PosixRedirectedStatementSyntax : ShellStatementSyntax
+{
+    private readonly GreenNode _statement;
+    private readonly GreenNode? _redirections;
+
+    public PosixRedirectedStatementSyntax(GreenNode statement, GreenNode? redirections)
+        : this(statement, redirections, diagnostics: null, annotations: null)
+    {
+    }
+
+    private PosixRedirectedStatementSyntax(GreenNode statement, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+        : base(SyntaxKind.PosixRedirectedStatement, diagnostics, annotations)
+    {
+        SlotCount = 2;
+        AdjustFlagsAndWidth(statement);
+        _statement = statement;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
+    }
+
+    internal override GreenNode? GetSlot(int index) => index switch
+    {
+        0 => _statement,
+        1 => _redirections,
+        _ => null,
+    };
+
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixRedirectedStatementSyntax(RequiredSlot(slots[0]), slots[1], GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 1;
+
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixRedirectedStatementSyntax(_statement, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixRedirectedStatementSyntax(_statement, _redirections, GetDiagnostics(), annotations);
+
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixRedirectedStatementSyntax(this, parent, position);
 }
 
 internal sealed partial class PosixWhileStatementSyntax : ShellStatementSyntax
@@ -2493,34 +2551,38 @@ internal sealed partial class PowerShellSwitchClauseSyntax : ShellSyntaxNode
 {
     private readonly GreenNode _pattern;
     private readonly GreenNode _body;
+    private readonly GreenNode? _separatorToken;
 
-    public PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body)
-        : this(pattern, body, diagnostics: null, annotations: null)
+    public PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, GreenNode? separatorToken)
+        : this(pattern, body, separatorToken, diagnostics: null, annotations: null)
     {
     }
 
-    private PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private PowerShellSwitchClauseSyntax(GreenNode pattern, GreenNode body, GreenNode? separatorToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.PowerShellSwitchClause, diagnostics, annotations)
     {
-        SlotCount = 2;
+        SlotCount = 3;
         AdjustFlagsAndWidth(pattern);
         _pattern = pattern;
         AdjustFlagsAndWidth(body);
         _body = body;
+        AdjustFlagsAndWidth(separatorToken);
+        _separatorToken = separatorToken;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
     {
         0 => _pattern,
         1 => _body,
+        2 => _separatorToken,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellSwitchClauseSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), GetDiagnostics(), GetAnnotations());
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PowerShellSwitchClauseSyntax(RequiredSlot(slots[0]), RequiredSlot(slots[1]), slots[2], GetDiagnostics(), GetAnnotations());
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellSwitchClauseSyntax(_pattern, _body, diagnostics, GetAnnotations());
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PowerShellSwitchClauseSyntax(_pattern, _body, _separatorToken, diagnostics, GetAnnotations());
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellSwitchClauseSyntax(_pattern, _body, GetDiagnostics(), annotations);
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PowerShellSwitchClauseSyntax(_pattern, _body, _separatorToken, GetDiagnostics(), annotations);
 
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PowerShellSwitchClauseSyntax(this, parent, position);
 }
@@ -4416,6 +4478,7 @@ public sealed partial class CmdLabelStatementSyntax : ShellStatementSyntax
 public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 {
     private SyntaxNode? _statements;
+    private SyntaxNode? _redirections;
 
     internal CmdParenthesizedBlockSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -4428,33 +4491,40 @@ public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 
     public SyntaxToken CloseParenToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 3));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public CmdParenthesizedBlockSyntax Update(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken)
+    public CmdParenthesizedBlockSyntax Update(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken, SyntaxList<ShellRedirectionSyntax> redirections)
     {
-        if (openParenToken.Node == Green.GetSlot(0) && ReferenceEquals(statements.Green, Green.GetSlot(1)) && closeParenToken.Node == Green.GetSlot(2))
+        if (openParenToken.Node == Green.GetSlot(0) && ReferenceEquals(statements.Green, Green.GetSlot(1)) && closeParenToken.Node == Green.GetSlot(2) && redirections.Green == Green.GetSlot(3))
             return this;
 
-        return SyntaxFactory.CmdParenthesizedBlock(openParenToken, statements, closeParenToken).WithAnnotationsFrom(this);
+        return SyntaxFactory.CmdParenthesizedBlock(openParenToken, statements, closeParenToken, redirections).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="openParenToken"/> in place of its <see cref="OpenParenToken"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithOpenParenToken(SyntaxToken openParenToken) => Update(openParenToken, Statements, CloseParenToken);
+    public CmdParenthesizedBlockSyntax WithOpenParenToken(SyntaxToken openParenToken) => Update(openParenToken, Statements, CloseParenToken, Redirections);
 
     /// <summary>Returns this node with <paramref name="statements"/> in place of its <see cref="Statements"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithStatements(ShellStatementListSyntax statements) => Update(OpenParenToken, statements, CloseParenToken);
+    public CmdParenthesizedBlockSyntax WithStatements(ShellStatementListSyntax statements) => Update(OpenParenToken, statements, CloseParenToken, Redirections);
 
     /// <summary>Returns this node with <paramref name="closeParenToken"/> in place of its <see cref="CloseParenToken"/>.</summary>
-    public CmdParenthesizedBlockSyntax WithCloseParenToken(SyntaxToken closeParenToken) => Update(OpenParenToken, Statements, closeParenToken);
+    public CmdParenthesizedBlockSyntax WithCloseParenToken(SyntaxToken closeParenToken) => Update(OpenParenToken, Statements, closeParenToken, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public CmdParenthesizedBlockSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(OpenParenToken, Statements, CloseParenToken, redirections);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
         1 => GetRed(ref _statements, 1),
+        3 => GetRed(ref _redirections, 3),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
         1 => _statements,
+        3 => _redirections,
         _ => null,
     };
 
@@ -4477,6 +4547,7 @@ public sealed partial class CmdParenthesizedBlockSyntax : ShellStatementSyntax
 public sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
 {
     private SyntaxNode? _value;
+    private SyntaxNode? _redirections;
 
     internal CmdSetStatementSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -4493,39 +4564,46 @@ public sealed partial class CmdSetStatementSyntax : ShellStatementSyntax
 
     public ShellWordSyntax? Value => (ShellWordSyntax?)GetRed(ref _value, 4);
 
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 5));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public CmdSetStatementSyntax Update(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value)
+    public CmdSetStatementSyntax Update(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value, SyntaxList<ShellRedirectionSyntax> redirections)
     {
-        if (setKeyword.Node == Green.GetSlot(0) && switchToken.Node == Green.GetSlot(1) && nameToken.Node == Green.GetSlot(2) && equalsToken.Node == Green.GetSlot(3) && ReferenceEquals(value?.Green, Green.GetSlot(4)))
+        if (setKeyword.Node == Green.GetSlot(0) && switchToken.Node == Green.GetSlot(1) && nameToken.Node == Green.GetSlot(2) && equalsToken.Node == Green.GetSlot(3) && ReferenceEquals(value?.Green, Green.GetSlot(4)) && redirections.Green == Green.GetSlot(5))
             return this;
 
-        return SyntaxFactory.CmdSetStatement(setKeyword, switchToken, nameToken, equalsToken, value).WithAnnotationsFrom(this);
+        return SyntaxFactory.CmdSetStatement(setKeyword, switchToken, nameToken, equalsToken, value, redirections).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="setKeyword"/> in place of its <see cref="SetKeyword"/>.</summary>
-    public CmdSetStatementSyntax WithSetKeyword(SyntaxToken setKeyword) => Update(setKeyword, SwitchToken, NameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithSetKeyword(SyntaxToken setKeyword) => Update(setKeyword, SwitchToken, NameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="switchToken"/> in place of its <see cref="SwitchToken"/>.</summary>
-    public CmdSetStatementSyntax WithSwitchToken(SyntaxToken switchToken) => Update(SetKeyword, switchToken, NameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithSwitchToken(SyntaxToken switchToken) => Update(SetKeyword, switchToken, NameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="nameToken"/> in place of its <see cref="NameToken"/>.</summary>
-    public CmdSetStatementSyntax WithNameToken(SyntaxToken nameToken) => Update(SetKeyword, SwitchToken, nameToken, EqualsToken, Value);
+    public CmdSetStatementSyntax WithNameToken(SyntaxToken nameToken) => Update(SetKeyword, SwitchToken, nameToken, EqualsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="equalsToken"/> in place of its <see cref="EqualsToken"/>.</summary>
-    public CmdSetStatementSyntax WithEqualsToken(SyntaxToken equalsToken) => Update(SetKeyword, SwitchToken, NameToken, equalsToken, Value);
+    public CmdSetStatementSyntax WithEqualsToken(SyntaxToken equalsToken) => Update(SetKeyword, SwitchToken, NameToken, equalsToken, Value, Redirections);
 
     /// <summary>Returns this node with <paramref name="value"/> in place of its <see cref="Value"/>.</summary>
-    public CmdSetStatementSyntax WithValue(ShellWordSyntax? value) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, value);
+    public CmdSetStatementSyntax WithValue(ShellWordSyntax? value) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, value, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public CmdSetStatementSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(SetKeyword, SwitchToken, NameToken, EqualsToken, Value, redirections);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
         4 => GetRed(ref _value, 4),
+        5 => GetRed(ref _redirections, 5),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
         4 => _value,
+        5 => _redirections,
         _ => null,
     };
 
@@ -4831,47 +4909,52 @@ public sealed partial class PosixCaseStatementSyntax : ShellStatementSyntax
 
     public ShellWordSyntax Subject => (ShellWordSyntax)GetRed(ref _subject, 1)!;
 
-    public SyntaxToken InKeyword => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+    public SyntaxToken SubjectTerminatorToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
-    public SyntaxList<PosixCaseClauseSyntax> Clauses => new(GetRed(ref _clauses, 3));
+    public SyntaxToken InKeyword => new(this, Green.GetSlot(3), GetChildPosition(3), GetChildIndex(3));
 
-    public SyntaxToken EsacKeyword => new(this, Green.GetSlot(4), GetChildPosition(4), GetChildIndex(4));
+    public SyntaxList<PosixCaseClauseSyntax> Clauses => new(GetRed(ref _clauses, 4));
+
+    public SyntaxToken EsacKeyword => new(this, Green.GetSlot(5), GetChildPosition(5), GetChildIndex(5));
 
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public PosixCaseStatementSyntax Update(SyntaxToken caseKeyword, ShellWordSyntax subject, SyntaxToken inKeyword, SyntaxList<PosixCaseClauseSyntax> clauses, SyntaxToken esacKeyword)
+    public PosixCaseStatementSyntax Update(SyntaxToken caseKeyword, ShellWordSyntax subject, SyntaxToken subjectTerminatorToken, SyntaxToken inKeyword, SyntaxList<PosixCaseClauseSyntax> clauses, SyntaxToken esacKeyword)
     {
-        if (caseKeyword.Node == Green.GetSlot(0) && ReferenceEquals(subject.Green, Green.GetSlot(1)) && inKeyword.Node == Green.GetSlot(2) && clauses.Green == Green.GetSlot(3) && esacKeyword.Node == Green.GetSlot(4))
+        if (caseKeyword.Node == Green.GetSlot(0) && ReferenceEquals(subject.Green, Green.GetSlot(1)) && subjectTerminatorToken.Node == Green.GetSlot(2) && inKeyword.Node == Green.GetSlot(3) && clauses.Green == Green.GetSlot(4) && esacKeyword.Node == Green.GetSlot(5))
             return this;
 
-        return SyntaxFactory.PosixCaseStatement(caseKeyword, subject, inKeyword, clauses, esacKeyword).WithAnnotationsFrom(this);
+        return SyntaxFactory.PosixCaseStatement(caseKeyword, subject, subjectTerminatorToken, inKeyword, clauses, esacKeyword).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="caseKeyword"/> in place of its <see cref="CaseKeyword"/>.</summary>
-    public PosixCaseStatementSyntax WithCaseKeyword(SyntaxToken caseKeyword) => Update(caseKeyword, Subject, InKeyword, Clauses, EsacKeyword);
+    public PosixCaseStatementSyntax WithCaseKeyword(SyntaxToken caseKeyword) => Update(caseKeyword, Subject, SubjectTerminatorToken, InKeyword, Clauses, EsacKeyword);
 
     /// <summary>Returns this node with <paramref name="subject"/> in place of its <see cref="Subject"/>.</summary>
-    public PosixCaseStatementSyntax WithSubject(ShellWordSyntax subject) => Update(CaseKeyword, subject, InKeyword, Clauses, EsacKeyword);
+    public PosixCaseStatementSyntax WithSubject(ShellWordSyntax subject) => Update(CaseKeyword, subject, SubjectTerminatorToken, InKeyword, Clauses, EsacKeyword);
+
+    /// <summary>Returns this node with <paramref name="subjectTerminatorToken"/> in place of its <see cref="SubjectTerminatorToken"/>.</summary>
+    public PosixCaseStatementSyntax WithSubjectTerminatorToken(SyntaxToken subjectTerminatorToken) => Update(CaseKeyword, Subject, subjectTerminatorToken, InKeyword, Clauses, EsacKeyword);
 
     /// <summary>Returns this node with <paramref name="inKeyword"/> in place of its <see cref="InKeyword"/>.</summary>
-    public PosixCaseStatementSyntax WithInKeyword(SyntaxToken inKeyword) => Update(CaseKeyword, Subject, inKeyword, Clauses, EsacKeyword);
+    public PosixCaseStatementSyntax WithInKeyword(SyntaxToken inKeyword) => Update(CaseKeyword, Subject, SubjectTerminatorToken, inKeyword, Clauses, EsacKeyword);
 
     /// <summary>Returns this node with <paramref name="clauses"/> in place of its <see cref="Clauses"/>.</summary>
-    public PosixCaseStatementSyntax WithClauses(SyntaxList<PosixCaseClauseSyntax> clauses) => Update(CaseKeyword, Subject, InKeyword, clauses, EsacKeyword);
+    public PosixCaseStatementSyntax WithClauses(SyntaxList<PosixCaseClauseSyntax> clauses) => Update(CaseKeyword, Subject, SubjectTerminatorToken, InKeyword, clauses, EsacKeyword);
 
     /// <summary>Returns this node with <paramref name="esacKeyword"/> in place of its <see cref="EsacKeyword"/>.</summary>
-    public PosixCaseStatementSyntax WithEsacKeyword(SyntaxToken esacKeyword) => Update(CaseKeyword, Subject, InKeyword, Clauses, esacKeyword);
+    public PosixCaseStatementSyntax WithEsacKeyword(SyntaxToken esacKeyword) => Update(CaseKeyword, Subject, SubjectTerminatorToken, InKeyword, Clauses, esacKeyword);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
         1 => GetRed(ref _subject, 1),
-        3 => GetRed(ref _clauses, 3),
+        4 => GetRed(ref _clauses, 4),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
         1 => _subject,
-        3 => _clauses,
+        4 => _clauses,
         _ => null,
     };
 
@@ -5152,62 +5235,67 @@ public sealed partial class PosixForStatementSyntax : ShellStatementSyntax
 
     public SyntaxToken VariableToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
-    public SyntaxToken InKeyword => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+    public SyntaxTokenList AdditionalVariableTokens => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
-    public SyntaxList<ShellWordSyntax> Items => new(GetRed(ref _items, 3));
+    public SyntaxToken InKeyword => new(this, Green.GetSlot(3), GetChildPosition(3), GetChildIndex(3));
 
-    public SyntaxToken ListTerminatorToken => new(this, Green.GetSlot(4), GetChildPosition(4), GetChildIndex(4));
+    public SyntaxList<ShellWordSyntax> Items => new(GetRed(ref _items, 4));
 
-    public SyntaxToken DoKeyword => new(this, Green.GetSlot(5), GetChildPosition(5), GetChildIndex(5));
+    public SyntaxToken ListTerminatorToken => new(this, Green.GetSlot(5), GetChildPosition(5), GetChildIndex(5));
 
-    public ShellStatementListSyntax Body => (ShellStatementListSyntax)GetRed(ref _body, 6)!;
+    public SyntaxToken DoKeyword => new(this, Green.GetSlot(6), GetChildPosition(6), GetChildIndex(6));
 
-    public SyntaxToken DoneKeyword => new(this, Green.GetSlot(7), GetChildPosition(7), GetChildIndex(7));
+    public ShellStatementListSyntax Body => (ShellStatementListSyntax)GetRed(ref _body, 7)!;
+
+    public SyntaxToken DoneKeyword => new(this, Green.GetSlot(8), GetChildPosition(8), GetChildIndex(8));
 
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public PosixForStatementSyntax Update(SyntaxToken keyword, SyntaxToken variableToken, SyntaxToken inKeyword, SyntaxList<ShellWordSyntax> items, SyntaxToken listTerminatorToken, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
+    public PosixForStatementSyntax Update(SyntaxToken keyword, SyntaxToken variableToken, SyntaxTokenList additionalVariableTokens, SyntaxToken inKeyword, SyntaxList<ShellWordSyntax> items, SyntaxToken listTerminatorToken, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
     {
-        if (keyword.Node == Green.GetSlot(0) && variableToken.Node == Green.GetSlot(1) && inKeyword.Node == Green.GetSlot(2) && items.Green == Green.GetSlot(3) && listTerminatorToken.Node == Green.GetSlot(4) && doKeyword.Node == Green.GetSlot(5) && ReferenceEquals(body.Green, Green.GetSlot(6)) && doneKeyword.Node == Green.GetSlot(7))
+        if (keyword.Node == Green.GetSlot(0) && variableToken.Node == Green.GetSlot(1) && additionalVariableTokens.Node == Green.GetSlot(2) && inKeyword.Node == Green.GetSlot(3) && items.Green == Green.GetSlot(4) && listTerminatorToken.Node == Green.GetSlot(5) && doKeyword.Node == Green.GetSlot(6) && ReferenceEquals(body.Green, Green.GetSlot(7)) && doneKeyword.Node == Green.GetSlot(8))
             return this;
 
-        return SyntaxFactory.PosixForStatement(Kind(), keyword, variableToken, inKeyword, items, listTerminatorToken, doKeyword, body, doneKeyword).WithAnnotationsFrom(this);
+        return SyntaxFactory.PosixForStatement(Kind(), keyword, variableToken, additionalVariableTokens, inKeyword, items, listTerminatorToken, doKeyword, body, doneKeyword).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="keyword"/> in place of its <see cref="Keyword"/>.</summary>
-    public PosixForStatementSyntax WithKeyword(SyntaxToken keyword) => Update(keyword, VariableToken, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithKeyword(SyntaxToken keyword) => Update(keyword, VariableToken, AdditionalVariableTokens, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="variableToken"/> in place of its <see cref="VariableToken"/>.</summary>
-    public PosixForStatementSyntax WithVariableToken(SyntaxToken variableToken) => Update(Keyword, variableToken, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithVariableToken(SyntaxToken variableToken) => Update(Keyword, variableToken, AdditionalVariableTokens, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
+
+    /// <summary>Returns this node with <paramref name="additionalVariableTokens"/> in place of its <see cref="AdditionalVariableTokens"/>.</summary>
+    public PosixForStatementSyntax WithAdditionalVariableTokens(SyntaxTokenList additionalVariableTokens) => Update(Keyword, VariableToken, additionalVariableTokens, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="inKeyword"/> in place of its <see cref="InKeyword"/>.</summary>
-    public PosixForStatementSyntax WithInKeyword(SyntaxToken inKeyword) => Update(Keyword, VariableToken, inKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithInKeyword(SyntaxToken inKeyword) => Update(Keyword, VariableToken, AdditionalVariableTokens, inKeyword, Items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="items"/> in place of its <see cref="Items"/>.</summary>
-    public PosixForStatementSyntax WithItems(SyntaxList<ShellWordSyntax> items) => Update(Keyword, VariableToken, InKeyword, items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithItems(SyntaxList<ShellWordSyntax> items) => Update(Keyword, VariableToken, AdditionalVariableTokens, InKeyword, items, ListTerminatorToken, DoKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="listTerminatorToken"/> in place of its <see cref="ListTerminatorToken"/>.</summary>
-    public PosixForStatementSyntax WithListTerminatorToken(SyntaxToken listTerminatorToken) => Update(Keyword, VariableToken, InKeyword, Items, listTerminatorToken, DoKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithListTerminatorToken(SyntaxToken listTerminatorToken) => Update(Keyword, VariableToken, AdditionalVariableTokens, InKeyword, Items, listTerminatorToken, DoKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="doKeyword"/> in place of its <see cref="DoKeyword"/>.</summary>
-    public PosixForStatementSyntax WithDoKeyword(SyntaxToken doKeyword) => Update(Keyword, VariableToken, InKeyword, Items, ListTerminatorToken, doKeyword, Body, DoneKeyword);
+    public PosixForStatementSyntax WithDoKeyword(SyntaxToken doKeyword) => Update(Keyword, VariableToken, AdditionalVariableTokens, InKeyword, Items, ListTerminatorToken, doKeyword, Body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="body"/> in place of its <see cref="Body"/>.</summary>
-    public PosixForStatementSyntax WithBody(ShellStatementListSyntax body) => Update(Keyword, VariableToken, InKeyword, Items, ListTerminatorToken, DoKeyword, body, DoneKeyword);
+    public PosixForStatementSyntax WithBody(ShellStatementListSyntax body) => Update(Keyword, VariableToken, AdditionalVariableTokens, InKeyword, Items, ListTerminatorToken, DoKeyword, body, DoneKeyword);
 
     /// <summary>Returns this node with <paramref name="doneKeyword"/> in place of its <see cref="DoneKeyword"/>.</summary>
-    public PosixForStatementSyntax WithDoneKeyword(SyntaxToken doneKeyword) => Update(Keyword, VariableToken, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, doneKeyword);
+    public PosixForStatementSyntax WithDoneKeyword(SyntaxToken doneKeyword) => Update(Keyword, VariableToken, AdditionalVariableTokens, InKeyword, Items, ListTerminatorToken, DoKeyword, Body, doneKeyword);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
-        3 => GetRed(ref _items, 3),
-        6 => GetRed(ref _body, 6),
+        4 => GetRed(ref _items, 4),
+        7 => GetRed(ref _body, 7),
         _ => null,
     };
 
     internal override SyntaxNode? GetCachedSlot(int index) => index switch
     {
-        3 => _items,
-        6 => _body,
+        4 => _items,
+        7 => _body,
         _ => null,
     };
 
@@ -5560,6 +5648,65 @@ public sealed partial class PosixProcessSubstitutionSyntax : ShellWordPartSyntax
         ArgumentNullException.ThrowIfNull(visitor);
 
         return visitor.VisitProcessSubstitution(this);
+    }
+}
+
+public sealed partial class PosixRedirectedStatementSyntax : ShellStatementSyntax
+{
+    private SyntaxNode? _statement;
+    private SyntaxNode? _redirections;
+
+    internal PosixRedirectedStatementSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
+    {
+    }
+
+    public ShellStatementSyntax Statement => (ShellStatementSyntax)GetRed(ref _statement, 0)!;
+
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 1));
+
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public PosixRedirectedStatementSyntax Update(ShellStatementSyntax statement, SyntaxList<ShellRedirectionSyntax> redirections)
+    {
+        if (ReferenceEquals(statement.Green, Green.GetSlot(0)) && redirections.Green == Green.GetSlot(1))
+            return this;
+
+        return SyntaxFactory.PosixRedirectedStatement(statement, redirections).WithAnnotationsFrom(this);
+    }
+
+    /// <summary>Returns this node with <paramref name="statement"/> in place of its <see cref="Statement"/>.</summary>
+    public PosixRedirectedStatementSyntax WithStatement(ShellStatementSyntax statement) => Update(statement, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public PosixRedirectedStatementSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(Statement, redirections);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+        0 => GetRed(ref _statement, 0),
+        1 => GetRed(ref _redirections, 1),
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+        0 => _statement,
+        1 => _redirections,
+        _ => null,
+    };
+
+    public override void Accept(ShellSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitRedirectedStatement(this);
+    }
+
+    public override TResult? Accept<TResult>(ShellSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitRedirectedStatement(this);
     }
 }
 
@@ -7758,20 +7905,25 @@ public sealed partial class PowerShellSwitchClauseSyntax : ShellSyntaxNode
 
     public PowerShellScriptBlockSyntax Body => (PowerShellScriptBlockSyntax)GetRed(ref _body, 1)!;
 
+    public SyntaxToken SeparatorToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
-    public PowerShellSwitchClauseSyntax Update(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body)
+    public PowerShellSwitchClauseSyntax Update(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body, SyntaxToken separatorToken)
     {
-        if (ReferenceEquals(pattern.Green, Green.GetSlot(0)) && ReferenceEquals(body.Green, Green.GetSlot(1)))
+        if (ReferenceEquals(pattern.Green, Green.GetSlot(0)) && ReferenceEquals(body.Green, Green.GetSlot(1)) && separatorToken.Node == Green.GetSlot(2))
             return this;
 
-        return SyntaxFactory.PowerShellSwitchClause(pattern, body).WithAnnotationsFrom(this);
+        return SyntaxFactory.PowerShellSwitchClause(pattern, body, separatorToken).WithAnnotationsFrom(this);
     }
 
     /// <summary>Returns this node with <paramref name="pattern"/> in place of its <see cref="Pattern"/>.</summary>
-    public PowerShellSwitchClauseSyntax WithPattern(ShellSyntaxNode pattern) => Update(pattern, Body);
+    public PowerShellSwitchClauseSyntax WithPattern(ShellSyntaxNode pattern) => Update(pattern, Body, SeparatorToken);
 
     /// <summary>Returns this node with <paramref name="body"/> in place of its <see cref="Body"/>.</summary>
-    public PowerShellSwitchClauseSyntax WithBody(PowerShellScriptBlockSyntax body) => Update(Pattern, body);
+    public PowerShellSwitchClauseSyntax WithBody(PowerShellScriptBlockSyntax body) => Update(Pattern, body, SeparatorToken);
+
+    /// <summary>Returns this node with <paramref name="separatorToken"/> in place of its <see cref="SeparatorToken"/>.</summary>
+    public PowerShellSwitchClauseSyntax WithSeparatorToken(SyntaxToken separatorToken) => Update(Pattern, Body, separatorToken);
 
     internal override SyntaxNode? GetNodeSlot(int index) => index switch
     {
@@ -10051,6 +10203,7 @@ public abstract partial class ShellSyntaxVisitor
     public virtual void VisitIfStatement(PosixIfStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitPrefixedStatement(PosixPrefixedStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitProcessSubstitution(PosixProcessSubstitutionSyntax node) => DefaultVisit(node);
+    public virtual void VisitRedirectedStatement(PosixRedirectedStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitWhileStatement(PosixWhileStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitArrayLiteral(PowerShellArrayLiteralSyntax node) => DefaultVisit(node);
     public virtual void VisitAssignmentExpression(PowerShellAssignmentExpressionSyntax node) => DefaultVisit(node);
@@ -10147,6 +10300,7 @@ public abstract partial class ShellSyntaxVisitor<TResult>
     public virtual TResult? VisitIfStatement(PosixIfStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitPrefixedStatement(PosixPrefixedStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitProcessSubstitution(PosixProcessSubstitutionSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitRedirectedStatement(PosixRedirectedStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitWhileStatement(PosixWhileStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitArrayLiteral(PowerShellArrayLiteralSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitAssignmentExpression(PowerShellAssignmentExpressionSyntax node) => DefaultVisit(node);
@@ -10266,14 +10420,14 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.OpenParenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseParenToken));
+        return node.Update(VisitToken(node.OpenParenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseParenToken), VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitCmdSet(CmdSetStatementSyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.SetKeyword), VisitToken(node.SwitchToken), VisitToken(node.NameToken), VisitToken(node.EqualsToken), node.Value is null ? null : (ShellWordSyntax?)Visit(node.Value));
+        return node.Update(VisitToken(node.SetKeyword), VisitToken(node.SwitchToken), VisitToken(node.NameToken), VisitToken(node.EqualsToken), node.Value is null ? null : (ShellWordSyntax?)Visit(node.Value), VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitCmdVariableReference(CmdVariableReferenceSyntax node)
@@ -10308,7 +10462,7 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.CaseKeyword), (ShellWordSyntax?)Visit(node.Subject) ?? node.Subject, VisitToken(node.InKeyword), VisitList(node.Clauses), VisitToken(node.EsacKeyword));
+        return node.Update(VisitToken(node.CaseKeyword), (ShellWordSyntax?)Visit(node.Subject) ?? node.Subject, VisitToken(node.SubjectTerminatorToken), VisitToken(node.InKeyword), VisitList(node.Clauses), VisitToken(node.EsacKeyword));
     }
 
     public override SyntaxNode? VisitCompoundStatement(PosixCompoundStatementSyntax node)
@@ -10343,7 +10497,7 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.Keyword), VisitToken(node.VariableToken), VisitToken(node.InKeyword), VisitList(node.Items), VisitToken(node.ListTerminatorToken), VisitToken(node.DoKeyword), (ShellStatementListSyntax?)Visit(node.Body) ?? node.Body, VisitToken(node.DoneKeyword));
+        return node.Update(VisitToken(node.Keyword), VisitToken(node.VariableToken), VisitList(node.AdditionalVariableTokens), VisitToken(node.InKeyword), VisitList(node.Items), VisitToken(node.ListTerminatorToken), VisitToken(node.DoKeyword), (ShellStatementListSyntax?)Visit(node.Body) ?? node.Body, VisitToken(node.DoneKeyword));
     }
 
     public override SyntaxNode? VisitFunctionDefinition(PosixFunctionDefinitionSyntax node)
@@ -10379,6 +10533,13 @@ public partial class ShellSyntaxRewriter
         ArgumentNullException.ThrowIfNull(node);
 
         return node.Update(VisitToken(node.OpenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseToken));
+    }
+
+    public override SyntaxNode? VisitRedirectedStatement(PosixRedirectedStatementSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update((ShellStatementSyntax?)Visit(node.Statement) ?? node.Statement, VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitWhileStatement(PosixWhileStatementSyntax node)
@@ -10609,7 +10770,7 @@ public partial class ShellSyntaxRewriter
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update((ShellSyntaxNode?)Visit(node.Pattern) ?? node.Pattern, (PowerShellScriptBlockSyntax?)Visit(node.Body) ?? node.Body);
+        return node.Update((ShellSyntaxNode?)Visit(node.Pattern) ?? node.Pattern, (PowerShellScriptBlockSyntax?)Visit(node.Body) ?? node.Body, VisitToken(node.SeparatorToken));
     }
 
     public override SyntaxNode? VisitSwitchStatement(PowerShellSwitchStatementSyntax node)
@@ -10886,12 +11047,12 @@ public static partial class SyntaxFactory
         => (CmdLabelStatementSyntax)new Syntax.InternalSyntax.CmdLabelStatementSyntax(Required(colonToken), Required(nameToken)).CreateRed();
 
     /// <summary>Builds a <see cref="CmdParenthesizedBlockSyntax"/> from its parts.</summary>
-    public static CmdParenthesizedBlockSyntax CmdParenthesizedBlock(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken)
-        => (CmdParenthesizedBlockSyntax)new Syntax.InternalSyntax.CmdParenthesizedBlockSyntax(Required(openParenToken), statements.Green, Required(closeParenToken)).CreateRed();
+    public static CmdParenthesizedBlockSyntax CmdParenthesizedBlock(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (CmdParenthesizedBlockSyntax)new Syntax.InternalSyntax.CmdParenthesizedBlockSyntax(Required(openParenToken), statements.Green, Required(closeParenToken), redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="CmdSetStatementSyntax"/> from its parts.</summary>
-    public static CmdSetStatementSyntax CmdSetStatement(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value)
-        => (CmdSetStatementSyntax)new Syntax.InternalSyntax.CmdSetStatementSyntax(Required(setKeyword), switchToken.Node, nameToken.Node, equalsToken.Node, value?.Green).CreateRed();
+    public static CmdSetStatementSyntax CmdSetStatement(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (CmdSetStatementSyntax)new Syntax.InternalSyntax.CmdSetStatementSyntax(Required(setKeyword), switchToken.Node, nameToken.Node, equalsToken.Node, value?.Green, redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="CmdVariableReferenceSyntax"/> from its parts.</summary>
     public static CmdVariableReferenceSyntax CmdVariableReference(SyntaxToken openToken, SyntaxToken nameToken, SyntaxToken closeToken)
@@ -10910,8 +11071,8 @@ public static partial class SyntaxFactory
         => (PosixCaseClauseSyntax)new Syntax.InternalSyntax.PosixCaseClauseSyntax(openParenToken.Node, patterns.Green, Required(closeParenToken), body.Green, terminatorToken.Node).CreateRed();
 
     /// <summary>Builds a <see cref="PosixCaseStatementSyntax"/> from its parts.</summary>
-    public static PosixCaseStatementSyntax PosixCaseStatement(SyntaxToken caseKeyword, ShellWordSyntax subject, SyntaxToken inKeyword, SyntaxList<PosixCaseClauseSyntax> clauses, SyntaxToken esacKeyword)
-        => (PosixCaseStatementSyntax)new Syntax.InternalSyntax.PosixCaseStatementSyntax(Required(caseKeyword), subject.Green, Required(inKeyword), clauses.Green, Required(esacKeyword)).CreateRed();
+    public static PosixCaseStatementSyntax PosixCaseStatement(SyntaxToken caseKeyword, ShellWordSyntax subject, SyntaxToken subjectTerminatorToken, SyntaxToken inKeyword, SyntaxList<PosixCaseClauseSyntax> clauses, SyntaxToken esacKeyword)
+        => (PosixCaseStatementSyntax)new Syntax.InternalSyntax.PosixCaseStatementSyntax(Required(caseKeyword), subject.Green, subjectTerminatorToken.Node, Required(inKeyword), clauses.Green, Required(esacKeyword)).CreateRed();
 
     /// <summary>Builds a <see cref="PosixCompoundStatementSyntax"/> from its parts.</summary>
     public static PosixCompoundStatementSyntax PosixCompoundStatement(SyntaxKind kind, SyntaxToken openToken, ShellStatementListSyntax statements, SyntaxToken closeToken)
@@ -10930,8 +11091,8 @@ public static partial class SyntaxFactory
         => (PosixElseClauseSyntax)new Syntax.InternalSyntax.PosixElseClauseSyntax(Required(elseKeyword), body.Green).CreateRed();
 
     /// <summary>Builds a <see cref="PosixForStatementSyntax"/> from its parts.</summary>
-    public static PosixForStatementSyntax PosixForStatement(SyntaxKind kind, SyntaxToken keyword, SyntaxToken variableToken, SyntaxToken inKeyword, SyntaxList<ShellWordSyntax> items, SyntaxToken listTerminatorToken, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
-        => (PosixForStatementSyntax)new Syntax.InternalSyntax.PosixForStatementSyntax(kind, Required(keyword), Required(variableToken), inKeyword.Node, items.Green, listTerminatorToken.Node, Required(doKeyword), body.Green, Required(doneKeyword)).CreateRed();
+    public static PosixForStatementSyntax PosixForStatement(SyntaxKind kind, SyntaxToken keyword, SyntaxToken variableToken, SyntaxTokenList additionalVariableTokens, SyntaxToken inKeyword, SyntaxList<ShellWordSyntax> items, SyntaxToken listTerminatorToken, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
+        => (PosixForStatementSyntax)new Syntax.InternalSyntax.PosixForStatementSyntax(kind, Required(keyword), Required(variableToken), additionalVariableTokens.Node, inKeyword.Node, items.Green, listTerminatorToken.Node, Required(doKeyword), body.Green, Required(doneKeyword)).CreateRed();
 
     /// <summary>Builds a <see cref="PosixFunctionDefinitionSyntax"/> from its parts.</summary>
     public static PosixFunctionDefinitionSyntax PosixFunctionDefinition(SyntaxToken functionKeyword, SyntaxToken nameToken, SyntaxToken openParenToken, SyntaxToken closeParenToken, ShellStatementSyntax body)
@@ -10952,6 +11113,10 @@ public static partial class SyntaxFactory
     /// <summary>Builds a <see cref="PosixProcessSubstitutionSyntax"/> from its parts.</summary>
     public static PosixProcessSubstitutionSyntax PosixProcessSubstitution(SyntaxToken openToken, ShellStatementListSyntax statements, SyntaxToken closeToken)
         => (PosixProcessSubstitutionSyntax)new Syntax.InternalSyntax.PosixProcessSubstitutionSyntax(Required(openToken), statements.Green, Required(closeToken)).CreateRed();
+
+    /// <summary>Builds a <see cref="PosixRedirectedStatementSyntax"/> from its parts.</summary>
+    public static PosixRedirectedStatementSyntax PosixRedirectedStatement(ShellStatementSyntax statement, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (PosixRedirectedStatementSyntax)new Syntax.InternalSyntax.PosixRedirectedStatementSyntax(statement.Green, redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="PosixWhileStatementSyntax"/> from its parts.</summary>
     public static PosixWhileStatementSyntax PosixWhileStatement(SyntaxKind kind, SyntaxToken keyword, ShellStatementListSyntax condition, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
@@ -11082,8 +11247,8 @@ public static partial class SyntaxFactory
         => (PowerShellSubExpressionSyntax)new Syntax.InternalSyntax.PowerShellSubExpressionSyntax(kind, Required(openToken), statements.Green, Required(closeParenToken)).CreateRed();
 
     /// <summary>Builds a <see cref="PowerShellSwitchClauseSyntax"/> from its parts.</summary>
-    public static PowerShellSwitchClauseSyntax PowerShellSwitchClause(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body)
-        => (PowerShellSwitchClauseSyntax)new Syntax.InternalSyntax.PowerShellSwitchClauseSyntax(pattern.Green, body.Green).CreateRed();
+    public static PowerShellSwitchClauseSyntax PowerShellSwitchClause(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body, SyntaxToken separatorToken)
+        => (PowerShellSwitchClauseSyntax)new Syntax.InternalSyntax.PowerShellSwitchClauseSyntax(pattern.Green, body.Green, separatorToken.Node).CreateRed();
 
     /// <summary>Builds a <see cref="PowerShellSwitchStatementSyntax"/> from its parts.</summary>
     public static PowerShellSwitchStatementSyntax PowerShellSwitchStatement(SyntaxToken switchKeyword, SyntaxTokenList parameterTokens, SyntaxToken openParenToken, ShellStatementListSyntax condition, SyntaxToken closeParenToken, SyntaxToken openBraceToken, SyntaxList<PowerShellSwitchClauseSyntax> clauses, SyntaxToken closeBraceToken)

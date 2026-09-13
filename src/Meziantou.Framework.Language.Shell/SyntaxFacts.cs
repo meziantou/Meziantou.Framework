@@ -29,6 +29,7 @@ public static class SyntaxFacts
         SyntaxKind.SemicolonSemicolonToken => ";;",
         SyntaxKind.SemicolonAmpersandToken => ";&",
         SyntaxKind.SemicolonSemicolonAmpersandToken => ";;&",
+        SyntaxKind.SemicolonPipeToken => ";|",
         SyntaxKind.OpenBracketBracketToken => "[[",
         SyntaxKind.CloseBracketBracketToken => "]]",
         SyntaxKind.OpenParenParenToken => "((",

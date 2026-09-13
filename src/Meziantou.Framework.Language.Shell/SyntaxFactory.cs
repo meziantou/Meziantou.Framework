@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Green = Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Shell;
@@ -318,6 +319,33 @@ public static partial class SyntaxFactory
     /// </summary>
     internal static ShellWordSyntax WithLeadingSpace(ShellWordSyntax word)
         => word.GetLeadingTrivia().Count > 0 ? word : word.WithLeadingTrivia(Space);
+
+    // ---- The signatures of version 3.0.0, from before a slot was added to these nodes ----
+
+    /// <inheritdoc cref="CmdParenthesizedBlock(SyntaxToken, ShellStatementListSyntax, SyntaxToken, SyntaxList{ShellRedirectionSyntax})"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static CmdParenthesizedBlockSyntax CmdParenthesizedBlock(SyntaxToken openParenToken, ShellStatementListSyntax statements, SyntaxToken closeParenToken)
+        => CmdParenthesizedBlock(openParenToken, statements, closeParenToken, redirections: default);
+
+    /// <inheritdoc cref="CmdSetStatement(SyntaxToken, SyntaxToken, SyntaxToken, SyntaxToken, ShellWordSyntax?, SyntaxList{ShellRedirectionSyntax})"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static CmdSetStatementSyntax CmdSetStatement(SyntaxToken setKeyword, SyntaxToken switchToken, SyntaxToken nameToken, SyntaxToken equalsToken, ShellWordSyntax? value)
+        => CmdSetStatement(setKeyword, switchToken, nameToken, equalsToken, value, redirections: default);
+
+    /// <inheritdoc cref="PosixCaseStatement(SyntaxToken, ShellWordSyntax, SyntaxToken, SyntaxToken, SyntaxList{PosixCaseClauseSyntax}, SyntaxToken)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static PosixCaseStatementSyntax PosixCaseStatement(SyntaxToken caseKeyword, ShellWordSyntax subject, SyntaxToken inKeyword, SyntaxList<PosixCaseClauseSyntax> clauses, SyntaxToken esacKeyword)
+        => PosixCaseStatement(caseKeyword, subject, subjectTerminatorToken: default, inKeyword, clauses, esacKeyword);
+
+    /// <inheritdoc cref="PosixForStatement(SyntaxKind, SyntaxToken, SyntaxToken, SyntaxTokenList, SyntaxToken, SyntaxList{ShellWordSyntax}, SyntaxToken, SyntaxToken, ShellStatementListSyntax, SyntaxToken)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static PosixForStatementSyntax PosixForStatement(SyntaxKind kind, SyntaxToken keyword, SyntaxToken variableToken, SyntaxToken inKeyword, SyntaxList<ShellWordSyntax> items, SyntaxToken listTerminatorToken, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)
+        => PosixForStatement(kind, keyword, variableToken, additionalVariableTokens: default, inKeyword, items, listTerminatorToken, doKeyword, body, doneKeyword);
+
+    /// <inheritdoc cref="PowerShellSwitchClause(ShellSyntaxNode, PowerShellScriptBlockSyntax, SyntaxToken)"/>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static PowerShellSwitchClauseSyntax PowerShellSwitchClause(ShellSyntaxNode pattern, PowerShellScriptBlockSyntax body)
+        => PowerShellSwitchClause(pattern, body, separatorToken: default);
 
     /// <summary>Unwraps a token that a node requires, rejecting the default one no factory should produce.</summary>
     private static Meziantou.Framework.Language.InternalSyntax.GreenNode Required(SyntaxToken token)

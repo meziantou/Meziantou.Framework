@@ -271,6 +271,18 @@ internal sealed partial class PosixParser
             return ParseZshForeachStatement(keyword);
 
         var variableToken = ReadBareWordToken(SyntaxKind.VariableNameToken);
+
+        // zsh takes several variables at once, as in `for key value in ${(kv)map}`.
+        var additionalVariableTokens = new List<ScannedToken>();
+        while (IsZsh && variableToken.IsPresent && !variableToken.IsMissing)
+        {
+            AccumulateInlineTrivia();
+            if (PeekBareWord() is not { } nextName || nextName is "in" or "do" || !(IsName(nextName) || nextName.All(char.IsAsciiDigit)))
+                break;
+
+            additionalVariableTokens.Add(ReadOperatorToken(SyntaxKind.VariableNameToken, nextName.Length));
+        }
+
         // zsh also loops over the positional parameters by number, as in `for 1 2 in ...`.
         if (variableToken.IsPresent && !variableToken.IsMissing && !IsName(variableToken.Text) && !(IsZsh && variableToken.Text.All(char.IsAsciiDigit)))
         {
@@ -310,7 +322,7 @@ internal sealed partial class PosixParser
 
         var (doKeyword, body, doneKeyword) = ParseLoopBody();
 
-        return new PosixForStatementSyntax(kind, keyword, variableToken, inKeyword, ParserHelpers.List(items), listTerminatorToken, doKeyword, body, doneKeyword);
+        return new PosixForStatementSyntax(kind, keyword, variableToken, ParserHelpers.TokenList(additionalVariableTokens), inKeyword, ParserHelpers.List(items), listTerminatorToken, doKeyword, body, doneKeyword);
     }
 
     private static bool IsName(string text)
@@ -335,6 +347,14 @@ internal sealed partial class PosixParser
             ? new ShellWordSyntax(null)
             : ParseWord();
 
+        // zsh accepts a separator before `in`, as in `case $x; in`.
+        ScannedToken subjectTerminatorToken = default;
+        AccumulateInlineTrivia();
+        if (IsZsh && _lexer.Current == ';' && !IsAtCaseTerminator())
+        {
+            subjectTerminatorToken = ReadSeparatorToken();
+        }
+
         var inKeyword = ExpectKeyword("in");
         var clauses = new List<PosixCaseClauseSyntax>();
 
@@ -352,7 +372,7 @@ internal sealed partial class PosixParser
                 break;
         }
 
-        return new PosixCaseStatementSyntax(caseKeyword, subject, inKeyword, ParserHelpers.List(clauses), ExpectKeyword("esac"));
+        return new PosixCaseStatementSyntax(caseKeyword, subject, subjectTerminatorToken, inKeyword, ParserHelpers.List(clauses), ExpectKeyword("esac"));
     }
 
     private bool IsAtZshCasePatternGroup()

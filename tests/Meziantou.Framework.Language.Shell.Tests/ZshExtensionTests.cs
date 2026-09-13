@@ -180,6 +180,32 @@ public sealed class ZshExtensionTests
     }
 
     [Fact]
+    public void ForLoop_TakesSeveralVariables()
+    {
+        var loop = Assert.IsType<PosixForStatementSyntax>(SingleStatement("for key value in ${(kv)map}; do echo $key; done"));
+
+        Assert.Equal("key", loop.VariableName);
+        Assert.Equal(["value"], loop.AdditionalVariableTokens.Select(token => token.Text));
+        Assert.Single(loop.Items);
+    }
+
+    [Fact]
+    public void ForLoop_TakesSeveralVariablesOnlyInZsh()
+    {
+        Assert.NotEmpty(ShellSyntaxTree.ParseText("for key value in a b; do :; done", ShellDialect.Bash).GetDiagnostics());
+    }
+
+    [Fact]
+    public void CaseStatement_AcceptsASeparatorBeforeIn()
+    {
+        var statement = Assert.IsType<PosixCaseStatementSyntax>(SingleStatement("case $x; in a) echo;; esac"));
+
+        Assert.Equal(SyntaxKind.SemicolonToken, statement.SubjectTerminatorToken.Kind());
+        Assert.Single(statement.Clauses);
+        Assert.NotEmpty(ShellSyntaxTree.ParseText("case $x; in a) echo;; esac", ShellDialect.Bash).GetDiagnostics());
+    }
+
+    [Fact]
     public void NumericRangeGlob_IsNotARedirection()
     {
         var command = Assert.IsType<ShellCommandSyntax>(SingleStatement("ls <1-10>.log"));
@@ -197,12 +223,12 @@ public sealed class ZshExtensionTests
     [InlineData("{ for x in a} ")]
     [InlineData("{ case x in a|} ")]
     [InlineData("{ a=(x} ")]
-    public void ClosingBraceEndingAWordList_DoesNotStallTheParser(string text)
+    public async Task ClosingBraceEndingAWordList_DoesNotStallTheParser(string text)
     {
-        var task = Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.Zsh));
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var tree = await Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.Zsh), cancellationToken).WaitAsync(TimeSpan.FromMinutes(1), cancellationToken);
 
-        Assert.True(task.Wait(TimeSpan.FromMinutes(1)), "The parser did not finish.");
-        ShellSyntaxAssert.TextIsFaithful(text, task.Result);
+        ShellSyntaxAssert.TextIsFaithful(text, tree);
     }
 
     [Fact]

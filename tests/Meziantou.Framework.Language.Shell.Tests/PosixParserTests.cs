@@ -645,7 +645,7 @@ public sealed class PosixParserTests
             var tree = ParsesWithoutDiagnostics(text, dialect);
             var reference = tree.GetRoot().DescendantNodes().OfType<ShellVariableReferenceSyntax>().First();
             Assert.EndsWith("}", reference.ToString());
-            Assert.Equal(text.Length - (text.EndsWith('"') ? 1 : 0), reference.Span.End);
+            Assert.Equal(text.Length - (text.EndsWith("\"", StringComparison.Ordinal) ? 1 : 0), reference.Span.End);
         }
     }
 

@@ -349,4 +349,27 @@ public sealed class ShellEditingTests
         Assert.Same(outer, outer.HereDocument!.Redirection);
         Assert.Same(inner, inner.HereDocument!.Redirection);
     }
+
+    /// <summary>
+    /// A slot added after version 3.0.0 keeps the signatures of that version working, and calling one of them keeps
+    /// what the added slot holds rather than dropping it.
+    /// </summary>
+    [Fact]
+    public void UpdateWithTheSignatureOfVersion3_KeepsTheSlotsAddedSince()
+    {
+        var caseStatement = ShellSyntaxTree.ParseText("case $x; in a) ;; esac", ShellDialect.Zsh).GetRoot().DescendantNodes().OfType<PosixCaseStatementSyntax>().Single();
+        var updatedCase = caseStatement.Update(caseStatement.CaseKeyword, caseStatement.Subject, caseStatement.InKeyword, caseStatement.Clauses, caseStatement.EsacKeyword);
+        Assert.Same(caseStatement, updatedCase);
+
+        var block = ShellSyntaxTree.ParseText("(echo a) > out\r\n", ShellDialect.Cmd).GetRoot().DescendantNodes().OfType<CmdParenthesizedBlockSyntax>().Single();
+        var updatedBlock = block.Update(block.OpenParenToken, block.Statements, block.CloseParenToken);
+        Assert.Same(block, updatedBlock);
+
+        var forStatement = ShellSyntaxTree.ParseText("for k v in a b; do :; done", ShellDialect.Zsh).GetRoot().DescendantNodes().OfType<PosixForStatementSyntax>().Single();
+        var updatedFor = forStatement.Update(forStatement.Keyword, forStatement.VariableToken, forStatement.InKeyword, forStatement.Items, forStatement.ListTerminatorToken, forStatement.DoKeyword, forStatement.Body, forStatement.DoneKeyword);
+        Assert.Same(forStatement, updatedFor);
+
+        var built = SyntaxFactory.CmdSetStatement(SyntaxFactory.Token(SyntaxKind.KeywordToken, "set"), default, SyntaxFactory.Token(SyntaxKind.VariableNameToken, "x"), SyntaxFactory.Token(SyntaxKind.EqualsToken, "="), null);
+        Assert.Empty(built.Redirections);
+    }
 }

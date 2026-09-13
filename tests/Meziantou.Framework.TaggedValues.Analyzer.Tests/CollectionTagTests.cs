@@ -2,44 +2,17 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
 {
-    private const string Declarations = """
-        class Repository
-        {
-            [ValueTag("OrderId")] public List<Guid> OrderIds { get; } = [];
-            [ValueTag("OrderId")] public Guid[] OrderIdArray { get; } = [];
-            [ValueTag("OrderId")] public IQueryable<Guid> OrderIdQuery { get; } = null!;
-            [ValueTag(Key = "OrderId", Value = "ProjectId")] public Dictionary<Guid, Guid> ProjectIdByOrderId { get; } = [];
-            [ValueTag("ProjectId")] public Guid ProjectId { get; set; }
-            [ValueTag("OrderId")] public Guid OrderId { get; set; }
-
-            public static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
-            public static void LoadProject([ValueTag("ProjectId")] Guid projectId) { }
-        }
-
-        static class PagingExtensions
-        {
-            public static IEnumerable<T> TakePage<T>(this IEnumerable<T> source, int page) => source.Skip(page * 10).Take(10);
-        }
-
-        """;
-
     [Fact]
-    public async Task ElementTag_FlowsThroughForEach()
+    public async Task ForEachVariable_TakesTheElementTagOfAList()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                void M(Repository repository)
+                void M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId)
                 {
-                    foreach (var id in repository.OrderIds)
+                    foreach (var id in ids)
                     {
-                        Repository.LoadOrder(id);
-                        Repository.LoadProject({|MFTV0002:id|});
-                    }
-
-                    foreach (var id in repository.OrderIdArray)
-                    {
-                        Repository.LoadProject({|MFTV0002:id|});
+                        _ = {|MFTV0001:id == projectId|};
                     }
                 }
             }
@@ -47,66 +20,170 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
-    public async Task ElementTag_FlowsThroughIndexersAndElementReturningMethods()
+    public async Task ForEachVariable_TakesTheElementTagOfAnArray()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                async Task M(Repository repository, IAsyncEnumerable<Guid> source)
+                void M([ValueTag("OrderId")] Guid[] ids, [ValueTag("ProjectId")] Guid projectId)
                 {
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds[0]|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIdArray[0]|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds.First()|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds.Where(id => id != Guid.Empty).OrderBy(id => id).Last()|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds.TakePage(1).Single()|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds.ToList()[0]|});
-                    Repository.LoadProject({|MFTV0002:repository.OrderIds.Max()|});
-                    _ = repository.OrderIds.Count;
+                    foreach (var id in ids)
+                    {
+                        _ = {|MFTV0001:id == projectId|};
+                    }
                 }
             }
             """);
     }
 
-    [Fact]
-    public async Task ElementTag_FlowsToLambdaParameters()
+    [Theory]
+    [InlineData("ids[0]")]
+    [InlineData("ids.First()")]
+    [InlineData("ids.Last()")]
+    [InlineData("ids.Single()")]
+    [InlineData("ids.ElementAt(0)")]
+    [InlineData("ids.Max()")]
+    [InlineData("ids.ToList()[0]")]
+    [InlineData("ids.Where(id => id != Guid.Empty).OrderBy(id => id).First()")]
+    public async Task ElementReturningExpression_TakesTheElementTag(string expression)
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync($$"""
             class Sample
             {
-                void M(Repository repository)
-                {
-                    _ = repository.OrderIds.Where(id => {|MFTV0001:id == repository.ProjectId|});
-                    _ = repository.OrderIds.Any(id => id == repository.OrderId);
-                    _ = repository.OrderIdQuery.Where(id => {|MFTV0001:id == repository.ProjectId|});
-                    _ = from id in repository.OrderIds where {|MFTV0001:id == repository.ProjectId|} select id;
-                    repository.OrderIds.ForEach(id => Repository.LoadProject({|MFTV0002:id|}));
-                }
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:{{expression}} == projectId|};
             }
             """);
     }
 
     [Fact]
-    public async Task ElementTag_IsCheckedWhenAddingOrSearching()
+    public async Task ArrayElement_TakesTheElementTag()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                void M(Repository repository)
-                {
-                    repository.OrderIds.Add({|MFTV0002:repository.ProjectId|});
-                    repository.OrderIds.Add(repository.OrderId);
-                    _ = repository.OrderIds.Contains({|MFTV0002:repository.ProjectId|});
-                    _ = repository.OrderIds.IndexOf({|MFTV0002:repository.ProjectId|});
-                    _ = repository.OrderIdArray.Contains({|MFTV0002:repository.ProjectId|});
-                }
+                bool M([ValueTag("OrderId")] Guid[] ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:ids[0] == projectId|};
             }
             """);
     }
 
     [Fact]
-    public async Task SelectTransformsTheElementTag()
+    public async Task UserDefinedExtension_PreservesTheElementTag()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
+            static class Extensions
+            {
+                public static IEnumerable<T> TakePage<T>(this IEnumerable<T> source, int page) => source.Skip(page * 10).Take(10);
+            }
+
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:ids.TakePage(1).First() == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NonElementMember_IsNotTagged()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectCount")] int projectCount) => ids.Count == projectCount;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LambdaParameter_TakesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => _ = ids.Where(id => {|MFTV0001:id == projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LambdaParameter_WithTheSameTag_IsNotReported()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("OrderId")] Guid orderId) => ids.Any(id => id == orderId);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LambdaParameter_OfAnExpressionTree_TakesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] IQueryable<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => _ = ids.Where(id => {|MFTV0001:id == projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task QueryExpressionVariable_TakesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => _ = from id in ids where {|MFTV0001:id == projectId|} select id;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LambdaParameter_OfAnInstanceMethod_TakesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid projectId) { }
+
+                void M([ValueTag("OrderId")] List<Guid> ids) => ids.ForEach(id => Load({|MFTV0002:id|}));
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Add_ExpectsTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    ids.Add(orderId);
+                    ids.Add({|MFTV0002:projectId|});
+                }
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("List<Guid>", "ids.Contains({|MFTV0002:projectId|})")]
+    [InlineData("List<Guid>", "ids.IndexOf({|MFTV0002:projectId|})")]
+    [InlineData("Guid[]", "ids.Contains({|MFTV0002:projectId|})")]
+    [InlineData("HashSet<Guid>", "ids.Contains({|MFTV0002:projectId|})")]
+    public async Task SearchMethods_ExpectTheElementTag(string collectionType, string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] {{collectionType}} ids, [ValueTag("ProjectId")] Guid projectId) => _ = {{expression}};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Select_TakesTheTagOfTheLambdaBody()
+    {
+        await VerifyAsync("""
             class Order
             {
                 [ValueTag("ProjectId")] public Guid ProjectId { get; set; }
@@ -114,47 +191,111 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
 
             class Sample
             {
+                bool M(List<Order> orders, [ValueTag("OrderId")] Guid orderId) => {|MFTV0001:orders.Select(order => order.ProjectId).First() == orderId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Select_TakesTheReturnTagOfTheMethodGroup()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
                 [return: ValueTag("ProjectId")]
                 static Guid ToProjectId(Guid orderId) => Guid.Empty;
 
-                void M(Repository repository, List<Order> orders)
+                bool M(List<Guid> ids, [ValueTag("OrderId")] Guid orderId) => {|MFTV0001:ids.Select(ToProjectId).First() == orderId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Select_WithAnIdentityLambda_PreservesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:ids.Select(id => id).First() == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task Select_WithAnUntaggedLambdaBody_DropsTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectName")] string projectName) => ids.Select(id => id.ToString()).First() == projectName;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task DictionaryIndexer_ReturnsTheValueTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId) => {|MFTV0001:map[orderId] == orderId|};
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("map[{|MFTV0002:projectId|}]")]
+    [InlineData("map.ContainsKey({|MFTV0002:projectId|})")]
+    [InlineData("map.Remove({|MFTV0002:projectId|})")]
+    public async Task DictionaryKeyArguments_ExpectTheKeyTag(string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("ProjectId")] Guid projectId) => _ = {{expression}};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task DictionaryAdd_ExpectsTheKeyAndValueTags()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
                 {
-                    Repository.LoadOrder({|MFTV0002:orders.Select(order => order.ProjectId).First()|});
-                    Repository.LoadOrder({|MFTV0002:repository.OrderIds.Select(ToProjectId).First()|});
-                    Repository.LoadOrder(repository.OrderIds.Select(id => id).First());
-                    _ = repository.OrderIds.Select(id => id.ToString()).Count();
+                    map.Add(orderId, projectId);
+                    map.Add({|MFTV0002:projectId|}, {|MFTV0002:orderId|});
                 }
             }
             """);
     }
 
     [Fact]
-    public async Task DictionaryKeyAndValueTags()
+    public async Task DictionaryTryGetValue_TagsTheOutVariableWithTheValueTag()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                void M(Repository repository)
+                bool M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId)
+                    => map.TryGetValue(orderId, out var projectId) && {|MFTV0001:projectId == orderId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task DictionaryForEach_TagsTheKeyAndTheValueOfThePair()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId)
                 {
-                    Repository.LoadOrder({|MFTV0002:repository.ProjectIdByOrderId[repository.OrderId]|});
-                    _ = repository.ProjectIdByOrderId[{|MFTV0002:repository.ProjectId|}];
-                    _ = repository.ProjectIdByOrderId.ContainsKey({|MFTV0002:repository.ProjectId|});
-                    repository.ProjectIdByOrderId.Add(repository.OrderId, repository.ProjectId);
-                    repository.ProjectIdByOrderId.Add({|MFTV0002:repository.ProjectId|}, {|MFTV0002:repository.OrderId|});
-                    if (repository.ProjectIdByOrderId.TryGetValue(repository.OrderId, out var projectId))
+                    foreach (var pair in map)
                     {
-                        Repository.LoadOrder({|MFTV0002:projectId|});
-                    }
-
-                    foreach (var pair in repository.ProjectIdByOrderId)
-                    {
-                        Repository.LoadOrder(pair.Key);
-                        Repository.LoadOrder({|MFTV0002:pair.Value|});
-                    }
-
-                    foreach (var key in repository.ProjectIdByOrderId.Keys)
-                    {
-                        Repository.LoadProject({|MFTV0002:key|});
+                        _ = pair.Key == orderId;
+                        _ = {|MFTV0001:pair.Value == orderId|};
                     }
                 }
             }
@@ -162,60 +303,81 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
-    public async Task WrapperTags_FlowThroughNullableTaskAndLazy()
+    public async Task DictionaryKeys_TakeTheKeyTag()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                [return: ValueTag("OrderId")]
-                static Task<Guid> GetOrderIdAsync() => Task.FromResult(Guid.Empty);
+                bool M([ValueTag(Key = "OrderId", Value = "ProjectId")] Dictionary<Guid, Guid> map, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:map.Keys.First() == projectId|};
+            }
+            """);
+    }
 
-                async Task M([ValueTag("OrderId")] Guid? orderId, [ValueTag("OrderId")] Lazy<Guid> lazyOrderId)
+    [Theory]
+    [InlineData("Guid?", "id.Value")]
+    [InlineData("Guid?", "id.GetValueOrDefault()")]
+    [InlineData("Lazy<Guid>", "id.Value")]
+    [InlineData("Task<Guid>", "id.Result")]
+    public async Task WrapperValue_TakesTheTagOfTheWrapper(string wrapperType, string expression)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] {{wrapperType}} id, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:{{expression}} == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AwaitedValue_TakesTheTagOfTheTask()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                async Task<bool> M([ValueTag("OrderId")] Task<Guid> id, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:await id == projectId|};
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("{|MFTV0002:ids|}")]
+    [InlineData("{|MFTV0002:ids.Where(id => id != Guid.Empty)|}")]
+    [InlineData("{|MFTV0002:new List<Guid>(ids)|}")]
+    [InlineData("{|MFTV0002:[ids[0]]|}")]
+    public async Task Collection_FlowsToACollectionWithADifferentTag(string argument)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] IEnumerable<Guid> projectIds) { }
+
+                void M([ValueTag("OrderId")] List<Guid> ids) => Load({{argument}});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AnonymousTypeProperty_TakesTheTagOfItsInitializer()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
                 {
-                    Repository.LoadProject({|MFTV0002:orderId.Value|});
-                    Repository.LoadProject({|MFTV0002:orderId.GetValueOrDefault()|});
-                    Repository.LoadProject({|MFTV0002:lazyOrderId.Value|});
-                    Repository.LoadProject({|MFTV0002:GetOrderIdAsync().Result|});
-                    Repository.LoadProject({|MFTV0002:await GetOrderIdAsync()|});
+                    var item = new { OrderId = orderId };
+                    return {|MFTV0001:item.OrderId == projectId|};
                 }
             }
             """);
     }
 
     [Fact]
-    public async Task CollectionTag_IsCheckedForWholeCollections()
+    public async Task AnonymousTypeProjection_KeepsTheElementTag()
     {
-        await VerifyAsync(Declarations + """
+        await VerifyAsync("""
             class Sample
             {
-                static void LoadProjects([ValueTag("ProjectId")] IEnumerable<Guid> projectIds) { }
-
-                void M(Repository repository)
-                {
-                    LoadProjects({|MFTV0002:repository.OrderIds|});
-                    LoadProjects({|MFTV0002:repository.OrderIdArray.Where(id => id != Guid.Empty)|});
-                    LoadProjects({|MFTV0002:new List<Guid>(repository.OrderIds)|});
-                    LoadProjects([repository.ProjectId]);
-                    LoadProjects({|MFTV0002:[repository.OrderId]|});
-                }
-            }
-            """);
-    }
-
-    [Fact]
-    public async Task AnonymousTypeProperties_InferTheirTagFromTheInitializer()
-    {
-        await VerifyAsync(Declarations + """
-            class Sample
-            {
-                void M(Repository repository)
-                {
-                    var item = new { OrderId = repository.OrderId, Name = "" };
-                    Repository.LoadProject({|MFTV0002:item.OrderId|});
-
-                    var projected = repository.OrderIds.Select(id => new { Id = id }).First();
-                    Repository.LoadProject({|MFTV0002:projected.Id|});
-                }
+                bool M([ValueTag("OrderId")] List<Guid> ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:ids.Select(id => new { Id = id }).First().Id == projectId|};
             }
             """);
     }

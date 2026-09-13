@@ -207,7 +207,6 @@ public class GlobParserTests
     [InlineData(GlobDialect.Standard, @"\{a,b\}", "{a,b}", "a")]
     [InlineData(GlobDialect.Standard, @"{a\,,b}", "a,", "a", "b")]
     [InlineData(GlobDialect.Standard, @"\!a", "!a", "a")]
-    [InlineData(GlobDialect.Standard, @"a\\b", @"a\b", "ab")]
     [InlineData(GlobDialect.Standard, @"\.\.", "..")]
     [InlineData(GlobDialect.Standard, @"**/\./a", "x/./a", "x/a")]
     [InlineData(GlobDialect.Standard, "a/", "a/", "a")]
@@ -238,6 +237,13 @@ public class GlobParserTests
         {
             Assert.Equal(glob.IsMatch(path), roundTripped.IsMatch(path));
         }
+    }
+
+    [Fact]
+    public void ToStringEscapesABackslash()
+    {
+        // '\' is a path separator on Windows, so no path can check this one by matching
+        Assert.Equal(@"a\\b", Glob.Parse(@"a\\b", GlobDialect.Standard).ToString());
     }
 
     [Fact]

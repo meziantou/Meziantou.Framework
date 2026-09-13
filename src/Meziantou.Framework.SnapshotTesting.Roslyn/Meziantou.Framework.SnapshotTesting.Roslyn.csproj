@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of Roslyn objects (source generator results, syntax trees, and diagnostics) using file-based snapshots</Description>
     <PackageTags>snapshot-testing, roslyn, source-generator, testing</PackageTags>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
   </PropertyGroup>
 
   <ItemGroup>

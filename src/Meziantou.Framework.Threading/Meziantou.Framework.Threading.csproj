@@ -5,7 +5,7 @@
     <IsTrimmable>true</IsTrimmable>
     <Description>Types and extension methods to help with threading</Description>
     <PackageTags>threading, concurrency, async, synchronization, collections</PackageTags>
-    <Version>3.1.3</Version>
+    <Version>3.1.4</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 

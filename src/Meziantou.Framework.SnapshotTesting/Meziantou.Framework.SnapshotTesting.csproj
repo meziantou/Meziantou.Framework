@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of objects using file-based snapshots</Description>
     <PackageTags>snapshot-testing, approval-tests, testing, assertions</PackageTags>
-    <Version>3.1.7</Version>
+    <Version>3.1.8</Version>
   </PropertyGroup>
 
   <ItemGroup>

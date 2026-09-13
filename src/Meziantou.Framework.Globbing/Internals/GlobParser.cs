@@ -315,7 +315,7 @@ internal static class GlobParser
             }
 
             errorMessage = null;
-            result = CreateGlob(segments, matchLeadingDot, exclude, settings.IgnoreCase, matchType, settings.MatchLeadingDot, settings.PathSeparatorAware);
+            result = CreateGlob(segments, matchLeadingDot, exclude, settings.IgnoreCase, matchType, settings.MatchLeadingDot, settings.PathSeparatorAware, dialect);
             return true;
         }
         finally
@@ -349,8 +349,12 @@ internal static class GlobParser
                 currentLiteral.Clear();
             }
 
-            segments.Add(CreateSegment(subSegments, ignoreCase, pathSeparatorAware));
-            matchLeadingDot.Add(currentSegmentMatchLeadingDot);
+            // A literal set that starts the segment decides whether a leading dot is written in the pattern, but only
+            // the alternative the path takes tells: '{.a,b}' matches '.a', and '{.a,}*' does not match '.b'. The
+            // segment checks it while matching, so the leading dot must not be rejected before.
+            var requiresLiteralLeadingDot = !currentSegmentMatchLeadingDot && CanStartWithLiteralDot(subSegments);
+            segments.Add(CreateSegment(subSegments, ignoreCase, pathSeparatorAware, restrictsLeadingDot: !currentSegmentMatchLeadingDot, requiresLiteralLeadingDot));
+            matchLeadingDot.Add(currentSegmentMatchLeadingDot || requiresLiteralLeadingDot);
             subSegments = null;
         }
         else if (currentLiteral.Length > 0)
@@ -359,6 +363,28 @@ internal static class GlobParser
             matchLeadingDot.Add(currentSegmentMatchLeadingDot);
             currentLiteral.Clear();
         }
+    }
+
+    /// <summary>Whether a literal set that starts the segment can match a leading dot with a '.' written in the pattern.</summary>
+    private static bool CanStartWithLiteralDot(List<Segment> parts)
+    {
+        foreach (var part in parts)
+        {
+            if (part is LiteralSegment literal)
+                return literal.Value[0] == '.';
+
+            if (part is not LiteralSetSegment literalSet)
+                return false;
+
+            if (Array.Exists(literalSet.Values, value => value is ['.', ..]))
+                return true;
+
+            // An empty alternative consumes nothing, so the next part may still provide the dot
+            if (!Array.Exists(literalSet.Values, value => value.Length == 0))
+                return false;
+        }
+
+        return false;
     }
 
     /// <param name="isAtPatternStart">Whether only separators precede the separator, which makes the pattern an absolute path.</param>
@@ -466,7 +492,7 @@ internal static class GlobParser
     // CanMatchLeadingDot checks Glob.IsMatchCore would otherwise run - that is why each one records 'true' in
     // matchLeadingDot. They are only sound when leading dots are allowed everywhere, so do not loosen this gate
     // without giving the rewritten segments a way to reject a segment that starts with a dot.
-    private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool canSkipLeadingDotChecks, bool pathSeparatorAware)
+    private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool canSkipLeadingDotChecks, bool pathSeparatorAware, GlobDialect dialect)
     {
         // Optimize segments
         if (canSkipLeadingDotChecks && segments.Count >= 3)
@@ -534,7 +560,7 @@ internal static class GlobParser
             }
         }
 
-        return new Glob([.. segments], [.. matchLeadingDot], pathSeparatorAware, exclude ? GlobMode.Exclude : GlobMode.Include, matchType);
+        return new Glob([.. segments], [.. matchLeadingDot], pathSeparatorAware, exclude ? GlobMode.Exclude : GlobMode.Include, matchType, dialect);
     }
 
     private static void AppendLiteral(ref ValueStringBuilder currentLiteral, ref bool currentSegmentMatchLeadingDot, List<Segment>? subSegments, char c, bool defaultMatchLeadingDot)
@@ -702,6 +728,7 @@ internal static class GlobParser
         }
 
         segment = CreateRangeSubsegment(ranges, classes, inverse, settings.IgnoreCase);
+        segment.BracketExpressionText = pattern[start..i].ToString();
         end = i;
         return BracketExpressionParseResult.Parsed;
     }
@@ -886,15 +913,18 @@ internal static class GlobParser
         };
     }
 
-    private static Segment CreateSegment(List<Segment> parts, bool ignoreCase, bool pathSeparatorAware)
+    /// <param name="restrictsLeadingDot">Whether a leading dot of the path segment must be written in the pattern instead of being matched by a wildcard or a bracket expression.</param>
+    /// <param name="requiresLiteralLeadingDot">Whether the segment itself must check that a leading dot is written in the pattern, as it depends on the alternative of a literal set.</param>
+    private static Segment CreateSegment(List<Segment> parts, bool ignoreCase, bool pathSeparatorAware, bool restrictsLeadingDot, bool requiresLiteralLeadingDot)
     {
         Debug.Assert(parts.Count > 0);
+        Debug.Assert(!requiresLiteralLeadingDot || parts[0] is LiteralSetSegment);
 
         // Concat Literal and single character sets (abc[d])
         for (var i = parts.Count - 2; i >= 0; i--)
         {
-            var s1 = GetString(parts[i], pathSeparatorAware);
-            var s2 = GetString(parts[i + 1], pathSeparatorAware);
+            var s1 = GetString(parts[i], pathSeparatorAware, restrictsLeadingDot);
+            var s2 = GetString(parts[i + 1], pathSeparatorAware, restrictsLeadingDot);
 
             if (s1 is null || s2 is null)
                 continue;
@@ -905,13 +935,15 @@ internal static class GlobParser
             parts.RemoveAt(i + 1);
 
             // A path segment never contains a separator, so '[/]' never matches, whereas a literal holding a
-            // separator would read past the end of the segment.
-            static string? GetString(Segment segment, bool pathSeparatorAware)
+            // separator would read past the end of the segment. A '[.]' must not become a literal either when the
+            // leading dot has to be written in the pattern: '{,.a}[.]a' does not match '.a', and the pattern that
+            // ToString writes for '[.]a' must not become '.a'.
+            static string? GetString(Segment segment, bool pathSeparatorAware, bool restrictsLeadingDot)
             {
                 return segment switch
                 {
                     LiteralSegment literal => literal.Value,
-                    CharacterSetSegment set when set.Set.Length == 1 && !(pathSeparatorAware && PathReader.IsPathSeparator(set.Set[0])) => set.Set,
+                    CharacterSetSegment set when set.Set.Length == 1 && !(pathSeparatorAware && PathReader.IsPathSeparator(set.Set[0])) && !(restrictsLeadingDot && set.Set[0] == '.') => set.Set,
                     _ => null,
                 };
             }
@@ -1018,7 +1050,7 @@ internal static class GlobParser
         if (parts.Count == 1 && parts[0] is not LiteralSetSegment)
             return parts[0];
 
-        return new RaggedSegment(parts.ToArray());
+        return new RaggedSegment(parts.ToArray(), requiresLiteralLeadingDot);
     }
 
     private enum BracketExpressionParseResult

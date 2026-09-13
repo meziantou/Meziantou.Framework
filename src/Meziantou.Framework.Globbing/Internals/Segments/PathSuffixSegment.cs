@@ -18,9 +18,8 @@ internal sealed class PathSuffixSegment : Segment
 
     public override bool IsRecursiveMatchAll => true;
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        using var sb = new ValueStringBuilder();
         sb.Append("**/");
 
         var first = true;
@@ -31,10 +30,10 @@ internal sealed class PathSuffixSegment : Segment
                 sb.Append('/');
             }
 
-            sb.Append(segment);
+            GlobPatternWriter.AppendPathSegmentLiteral(ref sb, segment, dialect);
             first = false;
         }
-
-        return sb.ToString();
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

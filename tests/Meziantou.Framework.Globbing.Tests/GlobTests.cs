@@ -35,6 +35,7 @@ public class GlobTests
     [InlineData("test/**/a*.txt", "test/a")]
     [InlineData("test/**/a*.txt", "test/a/b/c/d")]
     [InlineData("!test/**/a*.txt", "test/a/b/c/d")]
+    [InlineData("{.github,docs}/*.yml", ".github")]
     public void ShouldRecurse(string pattern, string folderPath)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
@@ -250,6 +251,11 @@ public class GlobTests
     [InlineData("[.]", ".")]
     [InlineData("**/*.txt", ".hidden/test.txt")]
     [InlineData("**/*.txt", "src/.hidden/test.txt")]
+    [InlineData("{,a}*", ".hidden")]
+    [InlineData("{.a,}*", ".hidden")]
+    [InlineData("{a,b}?", ".a")]
+    [InlineData("{,a}[.]x", ".x")]
+    [InlineData("{,.a}[.]a", ".a")]
     public void DoesNotMatchLeadingDotByDefault(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
@@ -274,6 +280,12 @@ public class GlobTests
     [InlineData(".*", ".hidden")]
     [InlineData("**/.hidden/*.txt", ".hidden/test.txt")]
     [InlineData("**/.hidden/*.txt", "src/.hidden/test.txt")]
+    [InlineData("{.a,b}", ".a")]
+    [InlineData("{.a,b}*", ".ab")]
+    [InlineData("**/{.editorconfig,.gitignore}", "src/.gitignore")]
+    [InlineData("{.github,docs}/*.yml", ".github/ci.yml")]
+    [InlineData("{,a}.x", ".x")]
+    [InlineData("{}{,a}{.x,y}", ".x")]
     public void MatchExplicitLeadingDot(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard);
@@ -590,6 +602,7 @@ public class GlobTests
 
         AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard), ["visible/f2.txt"]);
         AssertEnumerateFiles(directory, Glob.Parse("**/*.txt", GlobDialect.Standard, GlobOptions.MatchLeadingDot), [".hidden/f1.txt", "visible/f2.txt"]);
+        AssertEnumerateFiles(directory, Glob.Parse("{.hidden,visible}/*.txt", GlobDialect.Standard), [".hidden/f1.txt", "visible/f2.txt"]);
     }
 
     [Theory]

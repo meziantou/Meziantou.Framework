@@ -20,9 +20,9 @@ internal sealed class LiteralSetSegment : Segment
     // a RaggedSegment, so a set is never matched through this method.
     public override bool IsMatch(ref PathReader pathReader) => throw new NotSupportedException();
 
-    public override string ToString()
+    // Only the Standard dialect supports literal sets, so the alternatives always use its escape syntax
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        using var sb = new ValueStringBuilder();
         sb.Append('{');
 
         var first = true;
@@ -33,11 +33,12 @@ internal sealed class LiteralSetSegment : Segment
                 sb.Append(',');
             }
 
-            sb.Append(value);
+            GlobPatternWriter.AppendLiteralSetValue(ref sb, value);
             first = false;
         }
 
         sb.Append('}');
-        return sb.ToString();
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

@@ -24,8 +24,11 @@ internal sealed class MatchAllEndsWithSegment : Segment
 
     public override bool IsRecursiveMatchAll => true;
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        return "**/*" + _suffix;
+        sb.Append("**/*");
+        GlobPatternWriter.AppendLiteral(ref sb, _suffix, dialect);
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

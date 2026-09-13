@@ -17,4 +17,30 @@ internal abstract class Segment
     ///     the path is exhausted, so only a segment that says otherwise is given a chance to match nothing.
     /// </summary>
     public virtual bool CanMatchEmptyPath => false;
+
+    /// <summary>
+    ///     The text of the bracket expression the segment was parsed from, such as <c>[[:alpha:]-]</c>. A bracket
+    ///     expression is written back as is: its syntax depends on the dialect, and the parser does not keep the
+    ///     order of its items.
+    /// </summary>
+    public string? BracketExpressionText { get; set; }
+
+    /// <summary>
+    ///     Writes a pattern that <paramref name="dialect"/> parses back into an equivalent segment. The default
+    ///     implementation writes <see cref="ToString"/>, which is enough for a segment that holds no literal text. A
+    ///     segment that holds literal text must override this method, as the characters to escape depend on the
+    ///     dialect.
+    /// </summary>
+    public virtual void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
+    {
+        sb.Append(BracketExpressionText ?? ToString());
+    }
+
+    /// <summary>Returns the pattern that <paramref name="dialect"/> parses back into an equivalent segment.</summary>
+    public string ToString(GlobDialect dialect)
+    {
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        AppendPattern(ref sb, dialect);
+        return sb.ToString();
+    }
 }

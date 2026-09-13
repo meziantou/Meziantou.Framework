@@ -24,8 +24,11 @@ internal sealed class EndsWithSegment : Segment
         return false;
     }
 
-    public override string ToString()
+    public override void AppendPattern(ref ValueStringBuilder sb, GlobDialect dialect)
     {
-        return '*' + Value;
+        sb.Append('*');
+        GlobPatternWriter.AppendLiteral(ref sb, Value, dialect);
     }
+
+    public override string ToString() => ToString(GlobDialect.Standard);
 }

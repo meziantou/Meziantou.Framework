@@ -105,6 +105,7 @@ namespace Meziantou.Framework.Globbing;
 public sealed class Glob : IGlobEvaluatable
 {
     private readonly GlobMatchType _matchType;
+    private readonly GlobDialect _dialect;
     internal readonly Segment[] _segments;
     private readonly bool[] _matchLeadingDot;
     private readonly bool _pathSeparatorAware;
@@ -122,12 +123,13 @@ public sealed class Glob : IGlobEvaluatable
     bool IGlobEvaluatable.CanMatchDirectories => _matchType is GlobMatchType.Directory or GlobMatchType.Any;
     bool IGlobEvaluatable.TraverseDirectories => !_pathSeparatorAware || _segments.Length > 1 || ShouldRecurse(_segments[0]);
 
-    internal Glob(Segment[] segments, bool[] matchLeadingDot, bool pathSeparatorAware, GlobMode mode, GlobMatchType matchType)
+    internal Glob(Segment[] segments, bool[] matchLeadingDot, bool pathSeparatorAware, GlobMode mode, GlobMatchType matchType, GlobDialect dialect)
     {
         _segments = segments;
         _matchLeadingDot = matchLeadingDot;
         _pathSeparatorAware = pathSeparatorAware;
         _matchType = matchType;
+        _dialect = dialect;
         Mode = mode;
 
         _segmentAnchors = new SegmentAnchor?[segments.Length];
@@ -451,27 +453,62 @@ public sealed class Glob : IGlobEvaluatable
         }
     }
 
+    /// <summary>Returns a pattern that parses back, with the same dialect and options, into a glob that matches the same paths.</summary>
+    /// <returns>The pattern of this glob.</returns>
     public override string ToString()
     {
-        using var sb = new ValueStringBuilder();
+        var sb = new ValueStringBuilder(stackalloc char[128]);
         if (Mode is GlobMode.Exclude)
         {
             sb.Append('!');
         }
 
-        var first = true;
-        foreach (var segment in _segments)
+        var patternStart = sb.Length;
+        for (var i = 0; i < _segments.Length; i++)
         {
-            if (!first)
+            if (i > 0)
             {
                 sb.Append('/');
             }
 
-            sb.Append(segment.ToString());
-            first = false;
+            if (_segments[i] is LiteralSegment literal)
+            {
+                GlobPatternWriter.AppendPathSegmentLiteral(ref sb, literal.Value, _dialect);
+            }
+            else
+            {
+                _segments[i].AppendPattern(ref sb, _dialect);
+            }
+        }
+
+        // A DirectoryContentSegment is written as an empty segment, which already ends the pattern with a '/'
+        if (_matchType is GlobMatchType.Directory)
+        {
+            sb.Append('/');
+        }
+
+        if (_dialect is GlobDialect.Git && _segments[0] is not RecursiveMatchAllSegment && !ContainsSeparator(sb.AsSpan(patternStart), _segments[^1] is DirectoryContentSegment))
+        {
+            // gitignore matches an entry without a '/' at any depth, whereas this one is anchored to the root
+            sb.Insert(patternStart, "/");
+        }
+        else if (_dialect is GlobDialect.Standard or GlobDialect.Git && Mode is GlobMode.Include && sb.Length > patternStart && sb[patternStart] == '!')
+        {
+            // A leading '!' would negate the pattern
+            sb.Insert(patternStart, "\\");
         }
 
         return sb.ToString();
+
+        static bool ContainsSeparator(ReadOnlySpan<char> pattern, bool endsWithDirectorySeparator)
+        {
+            if (endsWithDirectorySeparator)
+            {
+                pattern = pattern[..^1];
+            }
+
+            return pattern.Contains('/');
+        }
     }
 
     internal static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)

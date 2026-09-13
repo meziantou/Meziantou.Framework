@@ -26,10 +26,16 @@ internal static class AwaitAssertionAnalyzerCommon
     }
 
     /// <summary>
-    /// Matches an assertion whose returned task is discarded, such as <c>Assert.ThrowsAsync&lt;T&gt;(...);</c>.
+    /// Matches an assertion whose returned task is discarded, such as <c>Assert.ThrowsAsync&lt;T&gt;(...);</c> or
+    /// <c>Assert.ThrowsAsync&lt;T&gt;(...).ConfigureAwait(false);</c>.
     /// </summary>
-    internal static bool IsDiscardedTaskAssertion(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, Symbols symbols)
+    /// <param name="discardedOperation">
+    /// The expression whose value is discarded: the assertion itself, or the outermost <c>ConfigureAwait</c> call
+    /// applied to it. Awaiting this expression fixes the issue.
+    /// </param>
+    internal static bool IsDiscardedTaskAssertion(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, Symbols symbols, [NotNullWhen(true)] out IOperation? discardedOperation)
     {
+        discardedOperation = null;
         if (invocationOperation.TargetMethod is not { IsStatic: true } targetMethod ||
             !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, assertType))
         {
@@ -42,9 +48,26 @@ internal static class AwaitAssertionAnalyzerCommon
         if (!IsTaskLike(targetMethod.OriginalDefinition.ReturnType, symbols))
             return false;
 
+        // ConfigureAwait only wraps the task in an awaitable, so discarding its result still discards the task
+        IOperation operation = invocationOperation;
+        while (operation.Parent is IInvocationOperation parentInvocation &&
+               parentInvocation.Instance == operation &&
+               IsTaskConfigureAwait(parentInvocation.TargetMethod, symbols))
+        {
+            operation = parentInvocation;
+        }
+
         // Anything else (await, return, assignment, argument) consumes the task
-        return invocationOperation.Parent is IExpressionStatementOperation;
+        if (operation.Parent is not IExpressionStatementOperation)
+            return false;
+
+        discardedOperation = operation;
+        return true;
     }
+
+    private static bool IsTaskConfigureAwait(IMethodSymbol method, Symbols symbols)
+        => method is { IsStatic: false, Name: "ConfigureAwait" } &&
+           IsTaskLike(method.ContainingType, symbols);
 
     private static bool IsTaskLike(ITypeSymbol? type, Symbols symbols)
     {

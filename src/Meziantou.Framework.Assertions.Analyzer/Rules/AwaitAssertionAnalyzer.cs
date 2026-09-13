@@ -36,9 +36,9 @@ public sealed class AwaitAssertionAnalyzer : DiagnosticAnalyzer
     private static void Analyze(OperationAnalysisContext context, INamedTypeSymbol assertType, AwaitAssertionAnalyzerCommon.Symbols symbols)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
-        if (!AwaitAssertionAnalyzerCommon.IsDiscardedTaskAssertion(invocationOperation, assertType, symbols))
+        if (!AwaitAssertionAnalyzerCommon.IsDiscardedTaskAssertion(invocationOperation, assertType, symbols, out var discardedOperation))
             return;
 
-        context.ReportDiagnostic(AwaitAssertionDescriptor, invocationOperation);
+        context.ReportDiagnostic(AwaitAssertionDescriptor, discardedOperation);
     }
 }

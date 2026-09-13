@@ -84,6 +84,84 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForDiscardedConfigureAwait()
+    {
+        var source = """
+            using System;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Func<Task> action)
+                {
+                    {|MFAS0048:Assert.ThrowsAsync<InvalidOperationException>(action).ConfigureAwait(false)|};
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static async Task M(Func<Task> action)
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(action).ConfigureAwait(false);
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AwaitAssertionAnalyzerType, AwaitAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForDiscardedConfigureAwaitWithOptions()
+    {
+        var source = """
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static async Task M(IAsyncEnumerable<int> actual)
+                {
+                    {|MFAS0048:Assert.Empty(actual).ConfigureAwait(ConfigureAwaitOptions.None)|};
+                    await Task.Yield();
+                }
+            }
+            """;
+
+        var fixedSource = """
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static async Task M(IAsyncEnumerable<int> actual)
+                {
+                    await Assert.Empty(actual).ConfigureAwait(ConfigureAwaitOptions.None);
+                    await Task.Yield();
+                }
+            }
+            """;
+
+        await CreateCodeFixTest<AwaitAssertionAnalyzerType, AwaitAssertionCodeFixProviderType>(source, fixedSource).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_ReportDiagnostic_AndCodeFix_ForExpressionBodiedMethod()
     {
         var source = """
@@ -279,6 +357,15 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
                 public static Task Returned(IAsyncEnumerable<int> actual)
                 {
                     return Assert.Empty(actual);
+                }
+
+                public static async Task ConfigureAwaitConsumed(IAsyncEnumerable<int> actual, Func<Task> action)
+                {
+                    await Assert.Empty(actual).ConfigureAwait(false);
+                    await Assert.ThrowsAsync<InvalidOperationException>(action).ConfigureAwait(ConfigureAwaitOptions.None);
+                    _ = Assert.Empty(actual).ConfigureAwait(false);
+                    var awaitable = Assert.Empty(actual).ConfigureAwait(false);
+                    await awaitable;
                 }
 
                 public static void Synchronous(List<int> actual, int value)

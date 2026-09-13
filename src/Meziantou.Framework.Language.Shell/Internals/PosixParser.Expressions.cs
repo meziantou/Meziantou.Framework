@@ -106,7 +106,9 @@ internal sealed partial class PosixParser
         var enclosingFailed = _expressionFailed;
         var enclosingFailurePosition = _expressionFailurePosition;
         _expressionFailed = false;
+        _patternDepth++;
         var expression = parse();
+        _patternDepth--;
         AccumulateStatementTrivia();
 
         var succeeded = !_expressionFailed && _lexer.Position == end && _diagnostics.Count == startDiagnostics;
@@ -458,7 +460,10 @@ internal sealed partial class PosixParser
         }
 
         // zsh reads a unary operator with nothing after it as a plain string, so `[[ -f ]]` tests that `-f` is not empty.
-        if (PeekConditionalWord() is { } unary && Array.IndexOf(ConditionalUnaryOperators, unary) >= 0 && !(IsZsh && IsAtConditionalOperandEnd(_lexer.Position + unary.Length)))
+        // zsh modules add condition codes of their own, such as `-prefix` in completion functions.
+        if (PeekConditionalWord() is { } unary
+            && (Array.IndexOf(ConditionalUnaryOperators, unary) >= 0 || (IsZsh && unary.Length > 2 && unary[0] == '-' && !IsConditionalBinaryOperator(unary)))
+            && !(IsZsh && IsAtConditionalOperandEnd(_lexer.Position + unary.Length)))
         {
             var token = ReadOperatorToken(SyntaxKind.OperatorToken, unary.Length);
 
@@ -485,6 +490,8 @@ internal sealed partial class PosixParser
 
         return left;
     }
+
+    private static bool IsConditionalBinaryOperator(string word) => Array.IndexOf(ConditionalBinaryOperators, word) >= 0;
 
     /// <summary>Returns whether nothing but blanks separates <paramref name="position"/> from the end of an operand list.</summary>
     private bool IsAtConditionalOperandEnd(int position)

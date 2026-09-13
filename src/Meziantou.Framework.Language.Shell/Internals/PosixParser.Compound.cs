@@ -271,7 +271,8 @@ internal sealed partial class PosixParser
             return ParseZshForeachStatement(keyword);
 
         var variableToken = ReadBareWordToken(SyntaxKind.VariableNameToken);
-        if (variableToken.IsPresent && !variableToken.IsMissing && !IsName(variableToken.Text))
+        // zsh also loops over the positional parameters by number, as in `for 1 2 in ...`.
+        if (variableToken.IsPresent && !variableToken.IsMissing && !IsName(variableToken.Text) && !(IsZsh && variableToken.Text.All(char.IsAsciiDigit)))
         {
             AddDiagnostic(variableToken.Span, "SHELL0013", "Expected a name.");
         }
@@ -384,10 +385,15 @@ internal sealed partial class PosixParser
             if (_lexer.IsAtEnd || _lexer.Current == ')')
                 break;
 
-            if (IsWordTerminator(_lexer.Current) && !IsAtProcessSubstitution() && !IsAtZshGlobGroup())
+            _patternDepth++;
+            var isAtGroup = IsAtZshGlobGroup();
+            _patternDepth--;
+            if (IsWordTerminator(_lexer.Current) && !IsAtProcessSubstitution() && !isAtGroup)
                 break;
 
+            _patternDepth++;
             patterns.Add(ParseWord());
+            _patternDepth--;
             AccumulateInlineTrivia();
             if (_lexer.Current != '|' || _lexer.Peek(1) == '|')
                 break;
@@ -543,7 +549,13 @@ internal sealed partial class PosixParser
         // `function { ... }` is an anonymous function in zsh; bash needs a name, and `{` cannot be one.
         ScannedToken nameToken;
         AccumulateInlineTrivia();
-        if (PeekBareWord() == "{")
+        if (IsZsh && (_lexer.Current == '(' || (!PosixLexer.IsWordBoundary(_lexer.Current) && PeekBareWord() is null)))
+        {
+            // zsh takes `function () { }` as an anonymous function, and a name built by an expansion, as in
+            // `function $w-by-keymap { }`.
+            nameToken = _lexer.Current == '(' ? MissingToken(SyntaxKind.VariableNameToken, _lexer.Position) : ReadRawWordToken(SyntaxKind.VariableNameToken);
+        }
+        else if (PeekBareWord() == "{")
         {
             nameToken = MissingToken(SyntaxKind.VariableNameToken, _lexer.Position);
             if (!IsZsh)
@@ -840,7 +852,7 @@ internal sealed partial class PosixParser
             if (_lexer.IsAtEnd || _lexer.Current == ')')
                 break;
 
-            if (IsWordTerminator(_lexer.Current) && !IsAtProcessSubstitution())
+            if (IsWordTerminator(_lexer.Current) && !IsAtProcessSubstitution() && !IsAtZshGlobGroup())
                 break;
 
             elements.Add(ParseWord());
@@ -1046,6 +1058,18 @@ internal sealed partial class PosixParser
         var (trivia, fullStart) = TakeTrivia();
 
         return MissingToken(kind, fullStart, trivia);
+    }
+
+    /// <summary>Reads the text up to the next blank or operator as one token, quoting and expansions included.</summary>
+    private ScannedToken ReadRawWordToken(SyntaxKind kind)
+    {
+        var end = _lexer.Position;
+        while (end < _lexer.Text.Length && !PosixLexer.IsWordBoundary(_lexer.Text[end]))
+        {
+            end = SkipQuotedOrSubstitution(end) is var next && next > 0 ? next : end + 1;
+        }
+
+        return ReadOperatorToken(kind, end - _lexer.Position);
     }
 
     private ScannedToken ReadBareWordToken(SyntaxKind kind)

@@ -25,6 +25,9 @@ internal sealed partial class PosixParser
     /// <summary>Unmatched <c>{</c> in the word being read, which a <c>}</c> closes rather than ending a zsh group.</summary>
     private int _wordBraceDepth;
 
+    /// <summary>Set while reading a pattern context, where a zsh glob group may hold blanks, as in <c>*list(| *)</c>.</summary>
+    private int _patternDepth;
+
     /// <summary>The statement lists being parsed, outermost first, so an inner list can end where an outer one does.</summary>
     private readonly List<ParseContext> _contexts = [];
 
@@ -700,9 +703,13 @@ internal sealed partial class PosixParser
             ('<', '&', _) => (SyntaxKind.LessThanAmpersandToken, 2),
             ('<', '>', _) => (SyntaxKind.LessThanGreaterThanToken, 2),
             ('<', _, _) => (SyntaxKind.LessThanToken, 1),
+            ('>', '>', '!') when IsZsh => (SyntaxKind.GreaterThanGreaterThanToken, 3),
             ('>', '>', _) => (SyntaxKind.GreaterThanGreaterThanToken, 2),
             ('>', '&', _) => (SyntaxKind.GreaterThanAmpersandToken, 2),
             ('>', '|', _) => (SyntaxKind.GreaterThanPipeToken, 2),
+
+            // zsh also spells the clobbering redirections with `!`.
+            ('>', '!', _) when IsZsh => (SyntaxKind.GreaterThanPipeToken, 2),
             ('>', _, _) => (SyntaxKind.GreaterThanToken, 1),
             ('&', '>', '>') when !IsPosixSh => (SyntaxKind.AmpersandGreaterThanGreaterThanToken, 3),
             ('&', '>', _) when !IsPosixSh => (SyntaxKind.AmpersandGreaterThanToken, 2),
@@ -886,6 +893,13 @@ internal sealed partial class PosixParser
                 // `()` is not a pattern: after a word, zsh reads it as a function definition.
                 case ')' when scan == position + 1:
                     return -1;
+
+                case '<' when FindZshNumericRangeEnd(scan) is var rangeEnd && rangeEnd > 0:
+                    scan = rangeEnd;
+                    continue;
+
+                case ' ' or '\t' when _patternDepth > 0:
+                    break;
 
                 case ')':
                     depth--;
@@ -1395,7 +1409,7 @@ internal sealed partial class PosixParser
             return ParseCommandSubstitution(leadingTrivia, fullStart);
 
         if (next == '{')
-            return ParseBracedVariableReference(leadingTrivia, fullStart);
+            return ParseBracedVariableReference(leadingTrivia, fullStart, inDoubleQuotes);
 
         if (PosixLexer.IsNameStart(next) || PosixLexer.IsSpecialParameter(next))
             return ParseSimpleVariableReference(leadingTrivia, fullStart);
@@ -1431,7 +1445,7 @@ internal sealed partial class PosixParser
         return new ShellVariableReferenceSyntax(dollarToken, openBraceToken: null, nameToken, closeBraceToken: null);
     }
 
-    private ShellVariableReferenceSyntax ParseBracedVariableReference(GreenNode? leadingTrivia, int fullStart)
+    private ShellVariableReferenceSyntax ParseBracedVariableReference(GreenNode? leadingTrivia, int fullStart, bool inDoubleQuotes)
     {
         var dollarStart = _lexer.Position;
         _lexer.Position++;
@@ -1447,14 +1461,16 @@ internal sealed partial class PosixParser
         while (!_lexer.IsAtEnd && (_lexer.Current != '}' || depth > 0))
         {
             // A `}` that is quoted, escaped, or inside a nested substitution, as in `${x:-"}"}`, `${x:-\}}`, or
-            // `${x:-$(echo })}`, does not close the expansion.
-            if (SkipQuotedOrSubstitution(_lexer.Position) is var next && next > 0)
+            // `${x:-$(echo })}`, does not close the expansion. Inside double quotes only bash reads `'` as a quote.
+            var isLiteralQuote = _lexer.Current == '\'' && inDoubleQuotes && (IsPosixSh || IsZsh);
+            if (!isLiteralQuote && SkipQuotedOrSubstitution(_lexer.Position) is var next && next > 0)
             {
                 _lexer.Position = next;
                 continue;
             }
 
-            if (_lexer.Current == '{')
+            // Only zsh pairs a bare `{` with a `}`, and only outside double quotes: `${x:-{a}b}` is `{ab}` elsewhere.
+            if (_lexer.Current == '{' && IsZsh && !inDoubleQuotes)
             {
                 depth++;
             }

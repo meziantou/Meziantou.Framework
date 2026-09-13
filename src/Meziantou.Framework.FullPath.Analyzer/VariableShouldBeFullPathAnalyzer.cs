@@ -60,6 +60,11 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
                 AnalyzeDeclarator(variableDeclaratorOperation, analyzerContext, candidates);
                 break;
 
+            // 'alias = ref local' lets the alias write to the local
+            case ISimpleAssignmentOperation { IsRef: true } refAssignmentOperation:
+                DisqualifyReferencedLocals(candidates, refAssignmentOperation.Value);
+                break;
+
             case ISimpleAssignmentOperation { Target: ILocalReferenceOperation localReferenceOperation } assignmentOperation:
                 if (candidates.TryGetValue(localReferenceOperation.Local, out var assignedState))
                 {
@@ -72,6 +77,14 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             // Any other kind of write means the variable is used as a string
             case ICompoundAssignmentOperation { Target: ILocalReferenceOperation compoundTarget }:
                 Disqualify(candidates, compoundTarget.Local);
+                break;
+
+            case ICoalesceAssignmentOperation { Target: ILocalReferenceOperation coalesceTarget }:
+                Disqualify(candidates, coalesceTarget.Local);
+                break;
+
+            case IDeconstructionAssignmentOperation deconstructionAssignmentOperation:
+                DisqualifyDeconstructionTargets(candidates, deconstructionAssignmentOperation.Target);
                 break;
 
             case IArgumentOperation { Parameter.RefKind: not RefKind.None, Value: ILocalReferenceOperation argumentReference }:
@@ -88,10 +101,19 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeDeclarator(IVariableDeclaratorOperation operation, FullPathContext analyzerContext, Dictionary<ISymbol, VariableState> candidates)
     {
         var local = operation.Symbol;
-        if (local.Type.SpecialType != SpecialType.System_String)
-            return;
-
+        var initializer = operation.Initializer ?? (operation.Parent as IVariableDeclarationOperation)?.Initializer;
         if (local.IsRef)
+        {
+            // 'ref string alias = ref local' lets the alias write to the local
+            if (initializer is not null)
+            {
+                DisqualifyReferencedLocals(candidates, initializer.Value);
+            }
+
+            return;
+        }
+
+        if (local.Type.SpecialType != SpecialType.System_String)
             return;
 
         // 'var' declarations are left alone: the developer asked for whatever the initializer produces
@@ -99,7 +121,6 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             return;
 
         var state = new VariableState { Location = local.GetFirstSourceLocation() };
-        var initializer = operation.Initializer ?? (operation.Parent as IVariableDeclarationOperation)?.Initializer;
         if (initializer is not null)
         {
             state.HasValue = true;
@@ -107,6 +128,44 @@ public sealed class VariableShouldBeFullPathAnalyzer : DiagnosticAnalyzer
         }
 
         candidates[local] = state;
+    }
+
+    private static void DisqualifyReferencedLocals(Dictionary<ISymbol, VariableState> candidates, IOperation operation)
+    {
+        switch (operation)
+        {
+            case ILocalReferenceOperation localReferenceOperation:
+                Disqualify(candidates, localReferenceOperation.Local);
+                break;
+
+            // 'ref condition ? ref a : ref b' can alias either branch
+            case IConditionalOperation { IsRef: true } conditionalOperation:
+                DisqualifyReferencedLocals(candidates, conditionalOperation.WhenTrue);
+                if (conditionalOperation.WhenFalse is not null)
+                {
+                    DisqualifyReferencedLocals(candidates, conditionalOperation.WhenFalse);
+                }
+
+                break;
+        }
+    }
+
+    private static void DisqualifyDeconstructionTargets(Dictionary<ISymbol, VariableState> candidates, IOperation target)
+    {
+        switch (target)
+        {
+            case ILocalReferenceOperation localReferenceOperation:
+                Disqualify(candidates, localReferenceOperation.Local);
+                break;
+
+            case ITupleOperation tupleOperation:
+                foreach (var element in tupleOperation.Elements)
+                {
+                    DisqualifyDeconstructionTargets(candidates, element);
+                }
+
+                break;
+        }
     }
 
     private static void Disqualify(Dictionary<ISymbol, VariableState> candidates, ILocalSymbol local)

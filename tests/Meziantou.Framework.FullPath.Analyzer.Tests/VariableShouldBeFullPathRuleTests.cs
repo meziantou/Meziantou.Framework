@@ -147,6 +147,151 @@ public sealed class VariableShouldBeFullPathRuleTests : FullPathAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsCoalesceAssigned()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath, string other)
+                    {
+                        string path = fullPath;
+                        path ??= other;
+                        return path;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsDeconstructionTarget()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        int count;
+                        (path, count) = ("relative", 1);
+                        return path + count;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsNestedDeconstructionTarget()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        ((var count, path), var flag) = ((1, "relative"), true);
+                        return path + count + flag;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsAliasedByRefLocal()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        ref string alias = ref path;
+                        alias = "relative";
+                        return path;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsAliasedByRefAssignment()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath, bool condition)
+                    {
+                        string path = fullPath;
+                        string other = "";
+                        ref string alias = ref other;
+                        alias = ref condition ? ref other : ref path;
+                        alias = "relative";
+                        return path;
+                    }
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task Analyzer_DoesNotReportDiagnostic_WhenVariableIsAliasedByRefReturn()
+    {
+        var source = """
+            using Meziantou.Framework;
+
+            namespace Sample
+            {
+                public static class TestClass
+                {
+                    public static string M(FullPath fullPath)
+                    {
+                        string path = fullPath;
+                        Pick(ref path) = "relative";
+                        return path;
+                    }
+
+                    private static ref string Pick(ref string value) => ref value;
+                }
+            }
+            """;
+
+        await CreateAnalyzerTest<VariableShouldBeFullPathAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_ForStringLocalWithoutValue()
     {
         var source = """

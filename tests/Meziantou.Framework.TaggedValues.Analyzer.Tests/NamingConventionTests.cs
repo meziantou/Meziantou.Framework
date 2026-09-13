@@ -5,40 +5,50 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class NamingConventionTests : TaggedValuesAnalyzerTestBase
 {
-    private const string Source = """
-        class Order
-        {
-            public Guid Id { get; set; }
-            public Guid ProjectId { get; set; }
-            Guid _customerId;
-
-            static void Load(Guid orderId) { }
-
-            void M(Guid projectId)
-            {
-                _ = [|Id == ProjectId|];
-                _ = [|_customerId == ProjectId|];
-                Load([|ProjectId|]);
-                _ = projectId == ProjectId;
-            }
-        }
-        """;
-
     [Fact]
     public async Task ConventionsAreDisabledByDefault()
     {
-        await VerifyAsync(Source.Replace("[|", "", StringComparison.Ordinal).Replace("|]", "", StringComparison.Ordinal));
+        await VerifyAsync("""
+            class Order
+            {
+                public Guid Id { get; set; }
+                public Guid ProjectId { get; set; }
+                Guid _customerId;
+
+                static void Load(Guid orderId) { }
+
+                void M(Guid projectId)
+                {
+                    _ = Id == ProjectId;
+                    _ = _customerId == ProjectId;
+                    Load(ProjectId);
+                    _ = projectId == ProjectId;
+                }
+            }
+            """);
     }
 
     [Fact]
     public async Task ConventionsInferTagsFromNames()
     {
-        var source = Source
-            .Replace("[|Id == ProjectId|]", "{|MFTV0001:Id == ProjectId|}", StringComparison.Ordinal)
-            .Replace("[|_customerId == ProjectId|]", "{|MFTV0001:_customerId == ProjectId|}", StringComparison.Ordinal)
-            .Replace("[|ProjectId|]", "{|MFTV0002:ProjectId|}", StringComparison.Ordinal);
+        await VerifyAsync("""
+            class Order
+            {
+                public Guid Id { get; set; }
+                public Guid ProjectId { get; set; }
+                Guid _customerId;
 
-        await VerifyAsync(source, inferTagsFromNames: true);
+                static void Load(Guid orderId) { }
+
+                void M(Guid projectId)
+                {
+                    _ = {|MFTV0001:Id == ProjectId|};
+                    _ = {|MFTV0001:_customerId == ProjectId|};
+                    Load({|MFTV0002:ProjectId|});
+                    _ = projectId == ProjectId;
+                }
+            }
+            """, inferTagsFromNames: true);
     }
 
     [Fact]

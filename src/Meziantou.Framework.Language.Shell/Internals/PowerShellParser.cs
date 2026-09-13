@@ -15,6 +15,7 @@ internal sealed partial class PowerShellParser
     private int _pendingTriviaStart;
     private int _depth;
     private bool _allowEmptyParentheses;
+    private bool _paramBlockAllowed;
     private int _lineBreakTriviaEnd = -1;
 
     public PowerShellParser(SourceText source, ShellParseOptions options)
@@ -63,6 +64,7 @@ internal sealed partial class PowerShellParser
         var inPreamble = hasBody;
         var usingAllowed = kind == StatementListKind.Script;
         var namedBlocks = false;
+        var hasParamBlock = false;
 
         // Class members are kept as plain statements, so a method such as `M() { }` reads as a command whose
         // argument is an empty `()`. That is not an error there, although it is everywhere else.
@@ -116,11 +118,16 @@ internal sealed partial class PowerShellParser
             {
                 var keyword = PeekKeyword();
                 var isNamedBlock = hasBody && IsNamedBlockKeyword(keyword);
-                if (inPreamble && !IsPreambleStatement(keyword, usingAllowed))
+                var isParamBlock = inPreamble && !hasParamBlock && IsParamBlockStart(keyword);
+                if (inPreamble && !isParamBlock && !(keyword == "using" && usingAllowed))
                 {
                     inPreamble = false;
                     namedBlocks = isNamedBlock;
                 }
+
+                // Only the first `param (…)` of a body declares its parameters; anywhere else `param` is a command.
+                hasParamBlock |= isParamBlock;
+                _paramBlockAllowed = isParamBlock;
 
                 if (keyword == "using" && !usingAllowed)
                 {
@@ -145,6 +152,8 @@ internal sealed partial class PowerShellParser
 
                     statement = ParseStatement();
                 }
+
+                _paramBlockAllowed = false;
             }
 
             statements.Add(statement);
@@ -196,12 +205,9 @@ internal sealed partial class PowerShellParser
         _ => false,
     };
 
-    /// <summary>Returns whether the statement at the current position may come before the body of a script block.</summary>
-    private bool IsPreambleStatement(string? keyword, bool usingAllowed)
+    /// <summary>Returns whether a <c>param</c> block, possibly preceded by attributes, starts at the current position.</summary>
+    private bool IsParamBlockStart(string? keyword)
     {
-        if (keyword == "using" && usingAllowed)
-            return true;
-
         if (keyword == "param" && FollowedBy(keyword, '('))
             return true;
 
@@ -262,9 +268,13 @@ internal sealed partial class PowerShellParser
 
     private ShellStatementSyntax ParseStatementCore()
     {
+        // The statement list decides whether a `param` block may stand here; a nested statement never takes it over.
+        var paramBlockAllowed = _paramBlockAllowed;
+        _paramBlockAllowed = false;
+
         // `[Attribute()] param(...)` and `[Attribute()] class X {}` keep their attributes; a bare `[int]$x` is a cast.
         var keywordAfterAttributes = PeekKeywordAfterAttributes();
-        if (keywordAfterAttributes is "param" or "class" or "enum")
+        if (keywordAfterAttributes is "class" or "enum" || (keywordAfterAttributes == "param" && paramBlockAllowed))
         {
             var attributes = ParseAttributeList();
 
@@ -301,7 +311,7 @@ internal sealed partial class PowerShellParser
                 return ParseFunctionDefinition(SyntaxKind.PowerShellWorkflowDefinition);
             case "class" or "enum":
                 return ParseTypeDefinition([]);
-            case "param" when FollowedBy(keyword, '('):
+            case "param" when paramBlockAllowed && FollowedBy(keyword, '('):
                 return ParseParamBlock([]);
             case "data":
                 return ParseDataStatement();
@@ -873,11 +883,12 @@ internal sealed partial class PowerShellParser
             var endsAtClosingQuote = atElementStart && _lexer.Current is '\'' or '"';
 
             var (trivia, fullStart) = takeTrivia ? TakeTrivia() : (null, _lexer.Position);
+            var partAtElementStart = atElementStart;
             takeTrivia = false;
             atElementStart = false;
 
             var positionBefore = _lexer.Position;
-            parts.Add(ParseCommandWordPart(trivia, fullStart));
+            parts.Add(ParseCommandWordPart(trivia, fullStart, partAtElementStart));
             if (_lexer.Position == positionBefore)
             {
                 _lexer.Position++;
@@ -927,10 +938,13 @@ internal sealed partial class PowerShellParser
         return scan < text.Length && text[scan] == ',';
     }
 
-    private ShellWordPartSyntax ParseCommandWordPart(GreenNode? leadingTrivia, int fullStart)
+    private ShellWordPartSyntax ParseCommandWordPart(GreenNode? leadingTrivia, int fullStart, bool atElementStart)
     {
         switch (_lexer.Current)
         {
+            // `@` only splats or opens `@( )` at the start of an argument; `$PSScriptRoot@` ends with a literal `@`.
+            case '@' when !atElementStart:
+                return ParseBareWordRun(leadingTrivia, fullStart);
             case '\'':
                 return ParseVerbatimString(leadingTrivia, fullStart);
             // An argument that starts with a value may go on with member access, indexing, or a method call, as in

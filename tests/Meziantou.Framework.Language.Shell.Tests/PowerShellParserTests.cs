@@ -516,6 +516,19 @@ public sealed class PowerShellParserTests
     [InlineData("\"${a}:\"")]
     [InlineData("${a`}b}")]
     [InlineData("$env::x")]
+    [InlineData("$a?b = 1")]
+    [InlineData("\"$a?\"")]
+    [InlineData("Write-Host $x@")]
+    [InlineData("Write-Output a@b")]
+    // Attributes may stand on their own line, before a comment, above what they apply to.
+    [InlineData("[CmdletBinding()]\n# note\nparam()")]
+    [InlineData("([Parameter()]\n$x)")]
+    [InlineData("if ($a) { param($b) }")]
+    [InlineData("param($a = (,1))")]
+    [InlineData("function Print-Usage=() { }")]
+    // Separators with whitespace between them.
+    [InlineData("@{ a = 1 ;\n; b = 2 }")]
+    [InlineData("switch ($x) { 1 {} ; ; 2 {} }")]
     // Class members, which the tree keeps as plain statements.
     [InlineData("class A { M() { } }")]
     [InlineData("class A { A() : base() { } }")]
@@ -619,24 +632,31 @@ public sealed class PowerShellParserTests
     }
 
     [Theory]
-    [InlineData("$x = $y?.z", "?.")]
+    // A `?` is a variable name character, so pwsh reads `$y?.z` as the member `z` of the variable `y?`; the operator
+    // only applies after a braced variable or another expression.
+    [InlineData("$x = ${y}?.z", "?.")]
+    [InlineData("$x = $y.z?.w", "?.")]
+    [InlineData("$x = $y?.z", ".")]
     [InlineData("$x = $y.z", ".")]
     public void NullConditionalMemberAccess_KeepsItsOperatorText(string text, string expectedOperator)
     {
         var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
-        var access = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>());
+        var access = tree.GetRoot().DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>().First();
 
         Assert.Equal(expectedOperator, access.OperatorToken.Text);
         Assert.Empty(tree.GetDiagnostics());
     }
 
-    [Fact]
-    public void NullConditionalIndex_IsAnIndexExpression()
+    [Theory]
+    [InlineData("$x = ${y}?[0]", "?[", "y")]
+    [InlineData("$x = $y?[0]", "[", "y?")]
+    public void NullConditionalIndex_IsAnIndexExpression(string text, string expectedBracket, string expectedVariable)
     {
-        var tree = ShellSyntaxTree.ParseText("$x = $y?[0]", ShellDialect.PowerShellCore);
+        var tree = ShellSyntaxTree.ParseText(text, ShellDialect.PowerShellCore);
         var index = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellIndexExpressionSyntax>());
 
-        Assert.Equal("?[", index.OpenBracketToken.Text);
+        Assert.Equal(expectedBracket, index.OpenBracketToken.Text);
+        Assert.Equal(expectedVariable, Assert.IsType<PowerShellVariableExpressionSyntax>(index.Target).Name);
         Assert.Empty(tree.GetDiagnostics());
     }
 
@@ -653,10 +673,11 @@ public sealed class PowerShellParserTests
     public void WindowsPowerShellDoesNotHaveNullConditionalAccess()
     {
         // `?.` arrived with PowerShell 7, so in Windows PowerShell the `?` cannot bind to the member access.
-        var tree = ShellSyntaxTree.ParseText("$x = $y?.z", ShellDialect.PowerShell);
+        var tree = ShellSyntaxTree.ParseText("$x = ${y}?.z", ShellDialect.PowerShell);
 
-        Assert.Equal("$x = $y?.z", tree.GetRoot().ToFullString());
-        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>());
+        Assert.Equal("$x = ${y}?.z", tree.GetRoot().ToFullString());
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes().OfType<PowerShellMemberAccessExpressionSyntax>(), access => access.OperatorToken.Text == "?.");
+        Assert.NotEmpty(tree.GetDiagnostics());
     }
 
     [Fact]
@@ -705,6 +726,63 @@ public sealed class PowerShellParserTests
         var entry = Assert.Single(Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellHashLiteralSyntax>()).Entries);
 
         Assert.HasCount(2, Assert.IsType<ShellPipelineSyntax>(entry.Value).Commands);
+    }
+
+    [Fact]
+    public void HashEntry_AcceptsAStatementValue()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = @{ a = if ($y) { 1 } else { 2 } }", ShellDialect.PowerShellCore);
+        var entry = Assert.Single(Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellHashLiteralSyntax>()).Entries);
+
+        Assert.IsType<PowerShellIfStatementSyntax>(entry.Value);
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void AssignmentValue_MayBeAStatement()
+    {
+        var statement = Assert.IsType<PowerShellExpressionStatementSyntax>(ShellSyntaxTree.ParseCommand("$x = foreach ($i in 1..2) { $i }", ShellDialect.PowerShellCore));
+
+        Assert.IsType<PowerShellForEachStatementSyntax>(Assert.IsType<PowerShellAssignmentExpressionSyntax>(statement.Expression).Value);
+    }
+
+    [Fact]
+    public void CommandArgument_MayUseMemberAccessAndMethodCalls()
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("Write-Host $item.Name.ToUpper() (Get-Date).Year", ShellDialect.PowerShellCore));
+
+        Assert.HasCount(2, command.Arguments);
+        var embedded = Assert.IsType<ShellEmbeddedExpressionSyntax>(Assert.Single(command.Arguments[0].Parts));
+        Assert.IsType<PowerShellInvocationExpressionSyntax>(embedded.Expression);
+    }
+
+    [Fact]
+    public void MethodCallWithAScriptBlock_NeedsNoParentheses()
+    {
+        var tree = ShellSyntaxTree.ParseText("$items.Where{ $_ }.Count", ShellDialect.PowerShellCore);
+        var invocation = Assert.Single(tree.GetRoot().DescendantNodes().OfType<PowerShellInvocationExpressionSyntax>());
+
+        Assert.IsType<PowerShellScriptBlockSyntax>(Assert.Single(invocation.Arguments));
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void SwitchClauses_KeepTheirSemicolonSeparator()
+    {
+        var statement = Assert.IsType<PowerShellSwitchStatementSyntax>(ShellSyntaxTree.ParseCommand("switch ($x) { 1 { 'a' }; 2 { 'b' } }", ShellDialect.PowerShellCore));
+
+        Assert.HasCount(2, statement.Clauses);
+        Assert.Equal(";", statement.Clauses[0].SeparatorToken.Text);
+    }
+
+    [Fact]
+    public void ParenthesizedExpression_HoldsASinglePipeline()
+    {
+        var tree = ShellSyntaxTree.ParseText("$x = (1; 2)", ShellDialect.PowerShellCore);
+
+        Assert.NotEmpty(tree.GetDiagnostics());
+        Assert.Equal("$x = (1; 2)", tree.GetRoot().ToFullString());
+        Assert.Empty(ShellSyntaxTree.ParseText("$x = $(1; 2)", ShellDialect.PowerShellCore).GetDiagnostics());
     }
 
     [Fact]

@@ -330,7 +330,7 @@ internal sealed partial class PowerShellParser
         AccumulateStatementTrivia();
         var nameToken = _lexer.Current is '\'' or '"' or '$' or '@'
             ? ReportMissingName()
-            : ReadBareToken();
+            : ReadFunctionNameToken();
 
         ScannedToken openParen = default;
         ScannedToken closeParen = default;
@@ -400,7 +400,17 @@ internal sealed partial class PowerShellParser
         {
             equalsToken = ReadOperatorToken(SyntaxKind.EqualsToken, length: 1);
             AccumulateStatementTrivia();
-            defaultValue = ParseTernaryExpression();
+            if (_lexer.Current is ',' or ')' || _lexer.IsAtEnd)
+            {
+                // The comma separates parameters, so `$a = , $b` leaves `$a` without a default value.
+                AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected a default value after '='.");
+                var (trivia, fullStart) = TakeTrivia();
+                defaultValue = new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, MissingToken(SyntaxKind.GenericToken, fullStart, trivia));
+            }
+            else
+            {
+                defaultValue = ParseTernaryExpression();
+            }
         }
 
         return new PowerShellParameterSyntax(ParserHelpers.List(attributes), variable, equalsToken, defaultValue);
@@ -444,7 +454,6 @@ internal sealed partial class PowerShellParser
                 if (_lexer.IsAtEnd || _lexer.Current == ')')
                     break;
 
-                var positionBefore = _lexer.Position;
                 arguments.Add(ParseAttributeArgument());
                 AccumulateStatementTrivia();
                 if (_lexer.Current == ',')
@@ -453,11 +462,8 @@ internal sealed partial class PowerShellParser
                     continue;
                 }
 
-                if (_lexer.Position == positionBefore)
-                {
-                    _lexer.Position++;
-                }
-
+                // Anything else ends the argument list; the `)` check below reports it, and skipping a character here
+                // would drop it from the tree.
                 break;
             }
 
@@ -551,6 +557,19 @@ internal sealed partial class PowerShellParser
         var members = ParseStatementList(stopCharacter: '}', StatementListKind.TypeBody);
 
         return new PowerShellTypeDefinitionSyntax(kind, ParserHelpers.List(attributes), keyword, nameToken, colonToken, ParserHelpers.Separated(baseTypes, baseSeparators), openBrace, members, ExpectCharacter('}', SyntaxKind.CloseBraceToken));
+    }
+
+    /// <summary>Reads a function name, which runs like a command word up to whitespace, <c>(</c>, or <c>{</c>, so <c>a=b</c> is one name.</summary>
+    private ScannedToken ReadFunctionNameToken()
+    {
+        var text = _lexer.Text;
+        var scan = _lexer.Position;
+        while (scan < text.Length && !PowerShellLexer.IsArgumentBoundary(text[scan]) && text[scan] is not '{' and not '(')
+        {
+            scan++;
+        }
+
+        return scan == _lexer.Position ? ReportMissingName() : ReadOperatorToken(SyntaxKind.GenericToken, scan - _lexer.Position);
     }
 
     /// <summary>Reports a missing name without consuming anything, for a declaration whose name is not a valid one.</summary>
@@ -759,7 +778,6 @@ internal sealed partial class PowerShellParser
                 AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected an expression.");
             }
 
-
             return (new ShellStatementListSyntax(null), ExpectCharacter(')', SyntaxKind.CloseParenToken));
         }
 
@@ -864,9 +882,28 @@ internal sealed partial class PowerShellParser
                 scan++;
             }
 
-            while (scan < text.Length && (char.IsWhiteSpace(text[scan]) || text[scan] == '`'))
+            while (scan < text.Length)
             {
-                scan++;
+                if (char.IsWhiteSpace(text[scan]) || text[scan] == '`')
+                {
+                    scan++;
+                }
+                else if (text[scan] == '#')
+                {
+                    while (scan < text.Length && SourceText.GetLineBreakLength(text, scan) == 0)
+                    {
+                        scan++;
+                    }
+                }
+                else if (text[scan] == '<' && scan + 1 < text.Length && text[scan + 1] == '#')
+                {
+                    var end = text.IndexOf("#>", scan + 2, StringComparison.Ordinal);
+                    scan = end < 0 ? text.Length : end + 2;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 

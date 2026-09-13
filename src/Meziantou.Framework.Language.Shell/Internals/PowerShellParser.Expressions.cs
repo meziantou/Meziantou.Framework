@@ -411,9 +411,26 @@ internal sealed partial class PowerShellParser
         if (_lexer.Current == '[')
         {
             var type = ParseTypeLiteral();
-            AccumulateInlineTrivia();
+
+            // An attribute such as `[Parameter()]` may stand on its own line above what it applies to; a plain type
+            // literal cannot, so `[int]` followed by a line break is a statement of its own.
+            var isAttribute = type.GetSlot(1)?.ToString().Contains('(', StringComparison.Ordinal) == true;
+            if (isAttribute)
+            {
+                AccumulateStatementTrivia();
+            }
+            else
+            {
+                AccumulateInlineTrivia();
+            }
+
             if (!_lexer.IsAtEnd && IsCastOperandStart())
                 return new PowerShellCastExpressionSyntax(type, ParseUnaryExpression());
+
+            if (isAttribute && type.GetSlot(2) is { IsMissing: false })
+            {
+                AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0002", "An attribute has to be followed by the expression it applies to.");
+            }
 
             return ParsePostfixOperators(type);
         }
@@ -548,6 +565,13 @@ internal sealed partial class PowerShellParser
                     AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected an expression after ','.");
                 }
 
+                break;
+            }
+
+            // The commas belong to the argument list, so an argument cannot start with the unary `,`.
+            if (_lexer.Current == ',')
+            {
+                AddDiagnostic(new TextSpan(_lexer.Position, 0), "SHELL0023", "Expected an expression.");
                 break;
             }
 
@@ -800,6 +824,11 @@ internal sealed partial class PowerShellParser
                 var (trivia, fullStart) = TakeTrivia();
                 value = new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, MissingToken(SyntaxKind.GenericToken, fullStart, trivia));
             }
+            else if (IsAtStatementKeyword())
+            {
+                // Like an assignment, an entry takes a whole statement: `@{ a = if ($x) { 1 } else { 2 } }`.
+                value = ParseStatement();
+            }
             else
             {
                 value = ParseClause(ParseArrayLiteralExpression);
@@ -876,13 +905,26 @@ internal sealed partial class PowerShellParser
         return ReadOperatorToken(SyntaxKind.GenericToken, length);
     }
 
-    /// <summary>Reads a run of adjacent <c>;</c> as one separator, since an empty entry between two of them is allowed.</summary>
+    /// <summary>
+    /// Reads a run of <c>;</c> as one separator, since an empty entry between two of them is allowed. The slot holds a
+    /// single token, so whitespace between the semicolons, as in <c>; ;</c>, becomes part of its text.
+    /// </summary>
     private ScannedToken ReadSemicolonRun()
     {
-        var length = 0;
-        while (_lexer.Peek(length) == ';')
+        var length = 1;
+        var scan = 1;
+        while (true)
         {
-            length++;
+            while (_lexer.Peek(scan) is ' ' or '\t' or '\r' or '\n')
+            {
+                scan++;
+            }
+
+            if (_lexer.Peek(scan) != ';')
+                break;
+
+            scan++;
+            length = scan;
         }
 
         return ReadOperatorToken(SyntaxKind.SemicolonToken, length);
@@ -930,18 +972,15 @@ internal sealed partial class PowerShellParser
         }
         else if (PowerShellLexer.IsVariableNameCharacter(_lexer.Current))
         {
-            // `::` is the static member operator, not part of a scope-qualified name: `$type::Name`.
-            while (!_lexer.IsAtEnd && PowerShellLexer.IsVariableNameCharacter(_lexer.Current) && !(_lexer.Current == ':' && _lexer.Peek(1) == ':'))
+            // `::` is the static member operator, not part of a scope-qualified name: `$type::Name`. A `?` continues
+            // the name, so `$a?.b` reads the member `b` of the variable `a?`, and `$global:?` keeps its scope prefix;
+            // the null-conditional operators need the braced form, `${a}?.b`. `$global:^` is an error, unlike `$^`.
+            while (!_lexer.IsAtEnd && (PowerShellLexer.IsVariableNameCharacter(_lexer.Current) || _lexer.Current == '?') && !(_lexer.Current == ':' && _lexer.Peek(1) == ':'))
             {
                 _lexer.Position++;
             }
 
-            // `$?` keeps its scope prefix, as in `$global:?`. `$global:^` is an error in PowerShell, though `$^` is not.
-            if (!_lexer.IsAtEnd && _lexer.Current == '?' && _lexer.Peek(-1) == ':')
-            {
-                _lexer.Position++;
-            }
-            else if (_lexer.Peek(-1) == ':')
+            if (_lexer.Peek(-1) == ':')
             {
                 // `"$name: value"` names a drive and then nothing; `${name}:` is how to write the variable.
                 AddDiagnostic(TextSpan.FromBounds(sigilStart, _lexer.Position), "SHELL0013", "Expected a variable name after the scope or drive qualifier.");
@@ -968,8 +1007,9 @@ internal sealed partial class PowerShellParser
     {
         var openBracket = ExpectCharacter('[', SyntaxKind.OpenBracketToken);
         var nameToken = ReadTypeNameToken(includeArgumentList: true, insideBrackets: true);
-        if (nameToken.Green is { IsMissing: true } && openBracket.Green is { IsMissing: false })
+        if (openBracket.Green is { IsMissing: false } && (nameToken.Green is { IsMissing: true } || !PowerShellLexer.IsNameStart(nameToken.Text[0])))
         {
+            // A type name is an identifier, so `[0]` names no type.
             AddDiagnostic(new TextSpan(nameToken.Start, 0), "SHELL0013", "Expected a type name.");
         }
 

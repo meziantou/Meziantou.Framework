@@ -155,9 +155,10 @@ taggedvalues.infer_tags_from_names = true
 - Flows: assignments, object initializers, `with` expressions, field and property initializers, arguments (including `ref`, `out`, and generic arguments that must share a type), `return` and `yield return`
 - Combined values: branches of `?:`, `??`, and switch expressions, and the elements of arrays and collection expressions
 - Overrides and interface implementations whose tags differ from the base member
+- Suggestions to tag a return value: when every value returned by a method, a local function, or a property getter has the same tag, but the return value is not tagged, so the callers lose the tag (only for tags written by the user, not inferred from a naming convention)
 - Invalid annotations: empty tags, malformed comments, comments on something other than a local variable, `Key` and `Value` on something other than a dictionary, and assembly attributes that name a missing member
 
-Every message names both declarations and their tags, so a build log is enough to act on. Code fixes change the tag of the target of a flow or of an override, and remove invalid or redundant annotations.
+Every message names both declarations and their tags, so a build log is enough to act on. Code fixes change the tag of the target of a flow or of an override, add the suggested tag to a return value, and remove invalid or redundant annotations.
 
 ## Analyzer rules
 
@@ -171,4 +172,5 @@ Every message names both declarations and their tags, so a build log is enough t
 | `MFTV0005` | TaggedValues | Fix or remove the invalid value tag annotation | Warning | ✔️ |
 | `MFTV0006` | TaggedValues | Add an explicit tag to disambiguate the conventional tag | Warning | ✔️ |
 | `MFTV0007` | TaggedValues | Remove the redundant value tag | Info | ✔️ |
+| `MFTV0008` | TaggedValues | Tag the return value with the tag of the returned values | Info | ✔️ |
 <!-- analyzer-rules -->

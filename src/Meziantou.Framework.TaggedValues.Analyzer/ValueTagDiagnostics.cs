@@ -9,6 +9,7 @@ internal static class ValueTagDiagnostics
     internal const string InvalidAnnotationDiagnosticId = "MFTV0005";
     internal const string AmbiguousConventionDiagnosticId = "MFTV0006";
     internal const string RedundantTagDiagnosticId = "MFTV0007";
+    internal const string MissingReturnTagDiagnosticId = "MFTV0008";
 
     /// <summary>The diagnostic property holding the tags a code fix writes, see <see cref="TagInfo.Serialize"/>.</summary>
     internal const string TagsProperty = "Tags";

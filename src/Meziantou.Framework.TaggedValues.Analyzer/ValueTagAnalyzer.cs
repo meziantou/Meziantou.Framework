@@ -79,6 +79,15 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true,
         description: "The [ValueTag] attribute declares the tag the naming convention already infers. Remove the attribute.");
 
+    public static readonly DiagnosticDescriptor MissingReturnTag = new(
+        id: ValueTagDiagnostics.MissingReturnTagDiagnosticId,
+        title: "Tag the return value with the tag of the returned values",
+        messageFormat: "Every value returned by {0} is {1}; add {2} so the tag flows to the callers",
+        category: "TaggedValues",
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "Every return statement of the method, the local function, or the property getter returns values with the same tag, but the return value is not tagged, so the callers lose the tag. Add the [ValueTag] attribute to the return value or to the property.");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
     [
         ComparedValues,
@@ -88,6 +97,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         InvalidAnnotation,
         AmbiguousConvention,
         RedundantTag,
+        MissingReturnTag,
     ];
 
     public override void Initialize(AnalysisContext context)
@@ -113,6 +123,8 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationAction(context => AnalyzeCombinedValues(context, resolver), OperationKind.Conditional, OperationKind.Coalesce, OperationKind.SwitchExpression, OperationKind.ArrayInitializer, OperationKind.CollectionExpression);
             context.RegisterOperationAction(AnalyzeAttribute, OperationKind.Attribute);
             context.RegisterSemanticModelAction(AnalyzeComments);
+            context.RegisterOperationBlockAction(context => AnalyzeReturnedValues(context, resolver));
+            context.RegisterSymbolStartAction(context => AnalyzePropertyReturnedValues(context, resolver), SymbolKind.NamedType);
             context.RegisterSymbolAction(context => AnalyzeSymbol(context, resolver, conventionIdMembers), SymbolKind.Method, SymbolKind.Property, SymbolKind.Field);
             context.RegisterCompilationEndAction(context => ReportAmbiguousConventions(context, resolver, conventionIdMembers));
         });
@@ -356,6 +368,98 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             source.ToAttributeString(),
             targetDescription,
             expected.ToAttributeString()));
+    }
+
+    private static void AnalyzeReturnedValues(OperationBlockAnalysisContext context, TagResolver resolver)
+    {
+        if (context.OwningSymbol is not IMethodSymbol method)
+            return;
+
+        foreach (var block in context.OperationBlocks)
+        {
+            // Property getters are reported on the property, see AnalyzePropertyReturnedValues
+            if (method.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation && !method.ReturnsVoid)
+            {
+                ReportMissingReturnTag(context.ReportDiagnostic, resolver, method, ValueTagTargetKind.ReturnValue, block);
+            }
+
+            foreach (var localFunction in block.Descendants().OfType<ILocalFunctionOperation>())
+            {
+                if (localFunction.Body is not null && !localFunction.Symbol.ReturnsVoid)
+                {
+                    ReportMissingReturnTag(context.ReportDiagnostic, resolver, localFunction.Symbol, ValueTagTargetKind.ReturnValue, localFunction.Body);
+                }
+            }
+        }
+    }
+
+    private static void AnalyzePropertyReturnedValues(SymbolStartAnalysisContext context, TagResolver resolver)
+    {
+        // The diagnostic is reported on the name of the property, which is outside of the getter, so it is reported when the containing type ends
+        var diagnostics = new ConcurrentBag<Diagnostic>();
+        context.RegisterOperationBlockAction(context =>
+        {
+            if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property })
+                return;
+
+            foreach (var block in context.OperationBlocks)
+            {
+                ReportMissingReturnTag(diagnostics.Add, resolver, property, ValueTagTargetKind.Symbol, block);
+            }
+        });
+
+        context.RegisterSymbolEndAction(context =>
+        {
+            foreach (var diagnostic in diagnostics)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
+        });
+    }
+
+    private static void ReportMissingReturnTag(Action<Diagnostic> reportDiagnostic, TagResolver resolver, ISymbol target, string targetKind, IOperation body)
+    {
+        if (target.IsImplicitlyDeclared || !resolver.GetDeclaredTags(target).IsEmpty)
+            return;
+
+        var location = target.Locations.FirstOrDefault(location => location.IsInSource);
+        if (location is null)
+            return;
+
+        var returnedValues = new List<IOperation>();
+        TagResolver.CollectReturnedValues(body, returnedValues);
+
+        TagInfo? tags = null;
+        foreach (var returnedValue in returnedValues)
+        {
+            // Only suggest tags the user wrote, not tags inferred from a naming convention
+            var returnedTags = resolver.GetTag(returnedValue);
+            if (returnedTags.IsEmpty || !returnedTags.IsExplicit || (tags is not null && !tags.TagsEqual(returnedTags)))
+                return;
+
+            tags ??= returnedTags;
+        }
+
+        if (tags is null)
+            return;
+
+        var properties = ImmutableDictionary<string, string?>.Empty
+            .Add(ValueTagDiagnostics.TagsProperty, tags.Serialize())
+            .Add(ValueTagDiagnostics.TargetKindProperty, targetKind);
+
+        reportDiagnostic(Diagnostic.Create(
+            MissingReturnTag,
+            location,
+            [location],
+            properties,
+            target switch
+            {
+                IMethodSymbol { MethodKind: MethodKind.LocalFunction } => "local function '" + target.Name + "'",
+                IMethodSymbol => "method '" + target.ContainingType.Name + "." + target.Name + "'",
+                _ => ValueTagDescriptions.DescribeSymbol(target),
+            },
+            tags.ToAttributeString(),
+            tags.ToAttributeString(isReturnValue: targetKind is ValueTagTargetKind.ReturnValue)));
     }
 
     private static void AnalyzeCombinedValues(OperationAnalysisContext context, TagResolver resolver)

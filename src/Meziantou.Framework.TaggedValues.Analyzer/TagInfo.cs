@@ -110,11 +110,11 @@ internal sealed class TagInfo
     }
 
     /// <summary>
-    /// Formats the tags as the attribute to write, e.g. <c>[ValueTag("OrderId")]</c>.
+    /// Formats the tags as the attribute to write, e.g. <c>[ValueTag("OrderId")]</c>, or <c>[return: ValueTag("OrderId")]</c> for a return value.
     /// </summary>
-    public string ToAttributeString()
+    public string ToAttributeString(bool isReturnValue = false)
     {
-        var sb = new StringBuilder("[ValueTag(");
+        var sb = new StringBuilder(isReturnValue ? "[return: ValueTag(" : "[ValueTag(");
         var first = true;
         foreach (var tag in Tags)
         {

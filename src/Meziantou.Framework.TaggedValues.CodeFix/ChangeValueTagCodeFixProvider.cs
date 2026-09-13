@@ -16,7 +16,7 @@ namespace Meziantou.Framework.TaggedValues.CodeFix;
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ChangeValueTagCodeFixProvider))]
 public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
 {
-    public override ImmutableArray<string> FixableDiagnosticIds => [ValueTagDiagnostics.FlowMismatchDiagnosticId, ValueTagDiagnostics.InheritedTagMismatchDiagnosticId];
+    public override ImmutableArray<string> FixableDiagnosticIds => [ValueTagDiagnostics.FlowMismatchDiagnosticId, ValueTagDiagnostics.InheritedTagMismatchDiagnosticId, ValueTagDiagnostics.MissingReturnTagDiagnosticId];
 
     public override FixAllProvider? GetFixAllProvider()
     {
@@ -61,9 +61,12 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
                 if (GetDeclaration(token) is null)
                     continue;
 
-                var title = "Change the tag of '" + token.ValueText + "' to " + tags.ToAttributeString();
+                var isReturnValue = targetKind is ValueTagTargetKind.ReturnValue;
+                var title = diagnostic.Id is ValueTagDiagnostics.MissingReturnTagDiagnosticId
+                    ? "Add " + tags.ToAttributeString(isReturnValue) + " to '" + token.ValueText + "'"
+                    : "Change the tag of '" + token.ValueText + "' to " + tags.ToAttributeString();
                 context.RegisterCodeFix(
-                    CodeAction.Create(title, cancellationToken => ChangeAttributeAsync(document, targetLocation.SourceSpan.Start, tags, isReturnValue: targetKind is ValueTagTargetKind.ReturnValue, cancellationToken), equivalenceKey: title),
+                    CodeAction.Create(title, cancellationToken => ChangeAttributeAsync(document, targetLocation.SourceSpan.Start, tags, isReturnValue, cancellationToken), equivalenceKey: title),
                     diagnostic);
             }
         }
@@ -144,7 +147,14 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
 
         var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
         var newAttribute = generator.Attribute(attributeName, arguments);
-        if (isReturnValue)
+        if (isReturnValue && declaration is LocalFunctionStatementSyntax localFunction)
+        {
+            // SyntaxGenerator does not support the attributes of local functions
+            var attributeList = ((AttributeListSyntax)newAttribute)
+                .WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)));
+            editor.ReplaceNode(localFunction, (node, _) => AddLocalFunctionAttributeList((LocalFunctionStatementSyntax)node, attributeList));
+        }
+        else if (isReturnValue)
         {
             editor.AddReturnAttribute(declaration, newAttribute);
         }
@@ -154,6 +164,23 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         }
 
         return editor.GetChangedDocument();
+    }
+
+    private static LocalFunctionStatementSyntax AddLocalFunctionAttributeList(LocalFunctionStatementSyntax localFunction, AttributeListSyntax attributeList)
+    {
+        // Put the attribute on its own line, with the indentation of the local function
+        var leadingTrivia = localFunction.GetLeadingTrivia();
+        var indentation = leadingTrivia.Count > 0 && leadingTrivia[leadingTrivia.Count - 1].IsKind(SyntaxKind.WhitespaceTrivia)
+            ? SyntaxFactory.TriviaList(leadingTrivia[leadingTrivia.Count - 1])
+            : SyntaxTriviaList.Empty;
+        var endOfLine = localFunction.SyntaxTree.GetRoot().DescendantTrivia().FirstOrDefault(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+        if (endOfLine.IsKind(SyntaxKind.None))
+        {
+            endOfLine = SyntaxFactory.ElasticCarriageReturnLineFeed;
+        }
+
+        var result = localFunction.WithLeadingTrivia(indentation);
+        return result.WithAttributeLists(result.AttributeLists.Insert(0, attributeList.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(endOfLine)));
     }
 
     private static SyntaxList<AttributeListSyntax> GetAttributeLists(SyntaxNode declaration)

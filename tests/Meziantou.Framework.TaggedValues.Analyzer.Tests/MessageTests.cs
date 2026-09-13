@@ -86,6 +86,25 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task MissingReturnTagMessage()
+    {
+        await VerifyAsync(
+            """
+            class Order
+            {
+                [ValueTag("OrderId")] Guid _id;
+
+                Guid {|#0:GetId|}() => _id;
+
+                Guid {|#1:Id|} => _id;
+            }
+            """,
+            inferTagsFromNames: false,
+            Diagnostic("MFTV0008").WithSeverity(Microsoft.CodeAnalysis.DiagnosticSeverity.Info).WithLocation(0).WithLocation(0).WithMessage("Every value returned by method 'Order.GetId' is [ValueTag(\"OrderId\")]; add [return: ValueTag(\"OrderId\")] so the tag flows to the callers"),
+            Diagnostic("MFTV0008").WithSeverity(Microsoft.CodeAnalysis.DiagnosticSeverity.Info).WithLocation(1).WithLocation(1).WithMessage("Every value returned by property 'Order.Id' is [ValueTag(\"OrderId\")]; add [ValueTag(\"OrderId\")] so the tag flows to the callers"));
+    }
+
+    [Fact]
     public async Task AmbiguousConventionMessage()
     {
         await VerifyAsync(

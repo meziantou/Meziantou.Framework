@@ -835,23 +835,26 @@ internal sealed class TagResolver
         var returnedValues = new List<IOperation>();
         CollectReturnedValues(anonymousFunction.Body, returnedValues);
         return Combine(returnedValues, depth);
+    }
 
-        static void CollectReturnedValues(IOperation operation, List<IOperation> returnedValues)
+    /// <summary>
+    /// Collects the values of the <c>return</c> and <c>yield return</c> statements of a body, ignoring nested lambdas and local functions.
+    /// </summary>
+    public static void CollectReturnedValues(IOperation operation, List<IOperation> returnedValues)
+    {
+        foreach (var child in operation.ChildOperations)
         {
-            foreach (var child in operation.ChildOperations)
+            switch (child)
             {
-                switch (child)
-                {
-                    case IAnonymousFunctionOperation or ILocalFunctionOperation:
-                        continue;
+                case IAnonymousFunctionOperation or ILocalFunctionOperation:
+                    continue;
 
-                    case IReturnOperation { ReturnedValue: not null } returnOperation:
-                        returnedValues.Add(returnOperation.ReturnedValue);
-                        break;
-                }
-
-                CollectReturnedValues(child, returnedValues);
+                case IReturnOperation { ReturnedValue: not null } returnOperation:
+                    returnedValues.Add(returnOperation.ReturnedValue);
+                    break;
             }
+
+            CollectReturnedValues(child, returnedValues);
         }
     }
 

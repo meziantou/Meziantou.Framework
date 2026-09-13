@@ -113,21 +113,6 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         if (declaration is null)
             return document;
 
-        foreach (var attributeList in GetAttributeLists(declaration))
-        {
-            var isReturnList = attributeList.Target?.Identifier.IsKind(SyntaxKind.ReturnKeyword) is true;
-            if (isReturnList != isReturnValue || (!isReturnValue && attributeList.Target is not null))
-                continue;
-
-            foreach (var attribute in attributeList.Attributes)
-            {
-                if (editor.SemanticModel.GetSymbolInfo(attribute, cancellationToken).Symbol is IMethodSymbol constructor && TagResolver.IsValueTagAttribute(constructor.ContainingType))
-                {
-                    editor.RemoveNode(attribute);
-                }
-            }
-        }
-
         var generator = editor.Generator;
         var arguments = new List<SyntaxNode>();
         foreach (var tag in tags.Tags)
@@ -146,41 +131,92 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         }
 
         var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
-        var newAttribute = generator.Attribute(attributeName, arguments);
-        if (isReturnValue && declaration is LocalFunctionStatementSyntax localFunction)
+        var newAttributeList = (AttributeListSyntax)generator.Attribute(attributeName, arguments);
+        if (isReturnValue)
         {
-            // SyntaxGenerator does not support the attributes of local functions
-            var attributeList = ((AttributeListSyntax)newAttribute)
-                .WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)));
-            editor.ReplaceNode(localFunction, (node, _) => AddLocalFunctionAttributeList((LocalFunctionStatementSyntax)node, attributeList));
-        }
-        else if (isReturnValue)
-        {
-            editor.AddReturnAttribute(declaration, newAttribute);
-        }
-        else
-        {
-            editor.AddAttribute(declaration, newAttribute);
+            newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)));
         }
 
+        var lists = new List<AttributeListSyntax>();
+        var insertIndex = -1;
+        foreach (var attributeList in GetAttributeLists(declaration))
+        {
+            var isReturnList = attributeList.Target?.Identifier.IsKind(SyntaxKind.ReturnKeyword) is true;
+            var isTargetList = isReturnValue ? isReturnList : attributeList.Target is null;
+            var attributes = attributeList.Attributes
+                .Where(attribute => !isTargetList || !IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))
+                .ToList();
+
+            // The new attribute replaces the first list that only contained value tags
+            if (attributes.Count is 0)
+            {
+                if (insertIndex < 0)
+                {
+                    insertIndex = lists.Count;
+                }
+
+                continue;
+            }
+
+            lists.Add(attributes.Count == attributeList.Attributes.Count ? attributeList : attributeList.WithAttributes(SyntaxFactory.SeparatedList(attributes)));
+        }
+
+        lists.Insert(insertIndex < 0 ? lists.Count : insertIndex, newAttributeList);
+        editor.ReplaceNode(declaration, SetAttributeLists(declaration, lists));
         return editor.GetChangedDocument();
     }
 
-    private static LocalFunctionStatementSyntax AddLocalFunctionAttributeList(LocalFunctionStatementSyntax localFunction, AttributeListSyntax attributeList)
+    private static bool IsValueTagAttribute(SemanticModel semanticModel, AttributeSyntax attribute, CancellationToken cancellationToken)
     {
-        // Put the attribute on its own line, with the indentation of the local function
-        var leadingTrivia = localFunction.GetLeadingTrivia();
+        return semanticModel.GetSymbolInfo(attribute, cancellationToken).Symbol is IMethodSymbol constructor && TagResolver.IsValueTagAttribute(constructor.ContainingType);
+    }
+
+    private static SyntaxNode SetAttributeLists(SyntaxNode declaration, List<AttributeListSyntax> lists)
+    {
+        if (declaration is ParameterSyntax parameter)
+        {
+            // [ValueTag("OrderId")] Guid orderId: the attributes stay on the line of the parameter
+            var parameterLeadingTrivia = parameter.GetLeadingTrivia();
+            for (var i = 0; i < lists.Count; i++)
+            {
+                lists[i] = lists[i].WithLeadingTrivia(i is 0 ? parameterLeadingTrivia : SyntaxTriviaList.Empty).WithTrailingTrivia(SyntaxFactory.Space);
+            }
+
+            var parameterWithoutAttributes = parameter.WithAttributeLists(default).WithoutLeadingTrivia();
+            return parameterWithoutAttributes.WithAttributeLists(SyntaxFactory.List(lists));
+        }
+
+        // One attribute list per line, with the indentation and the line endings of the declaration. The formatter is not used,
+        // because it would use the line endings of the environment instead of the ones of the document.
+        var leadingTrivia = declaration.GetLeadingTrivia();
         var indentation = leadingTrivia.Count > 0 && leadingTrivia[leadingTrivia.Count - 1].IsKind(SyntaxKind.WhitespaceTrivia)
             ? SyntaxFactory.TriviaList(leadingTrivia[leadingTrivia.Count - 1])
             : SyntaxTriviaList.Empty;
-        var endOfLine = localFunction.SyntaxTree.GetRoot().DescendantTrivia().FirstOrDefault(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+        var endOfLine = declaration.SyntaxTree.GetRoot().DescendantTrivia().FirstOrDefault(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
         if (endOfLine.IsKind(SyntaxKind.None))
         {
             endOfLine = SyntaxFactory.ElasticCarriageReturnLineFeed;
         }
 
-        var result = localFunction.WithLeadingTrivia(indentation);
-        return result.WithAttributeLists(result.AttributeLists.Insert(0, attributeList.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(endOfLine)));
+        for (var i = 0; i < lists.Count; i++)
+        {
+            lists[i] = lists[i].WithLeadingTrivia(i is 0 ? leadingTrivia : indentation).WithTrailingTrivia(endOfLine);
+        }
+
+        SyntaxNode withoutAttributes = declaration switch
+        {
+            MemberDeclarationSyntax member => member.WithAttributeLists(default),
+            LocalFunctionStatementSyntax localFunction => localFunction.WithAttributeLists(default),
+            _ => declaration,
+        };
+
+        withoutAttributes = withoutAttributes.WithLeadingTrivia(indentation);
+        return withoutAttributes switch
+        {
+            MemberDeclarationSyntax member => member.WithAttributeLists(SyntaxFactory.List(lists)),
+            LocalFunctionStatementSyntax localFunction => localFunction.WithAttributeLists(SyntaxFactory.List(lists)),
+            _ => withoutAttributes,
+        };
     }
 
     private static SyntaxList<AttributeListSyntax> GetAttributeLists(SyntaxNode declaration)

@@ -19,7 +19,11 @@ public sealed class XmlAttributeSyntax : XmlSyntaxNode
     /// <summary>Gets the name of the attribute.</summary>
     public string Name => NameToken.Text;
 
-    /// <summary>Gets the value of the attribute, with any escape the source used resolved.</summary>
+    /// <summary>Gets the value of the attribute as an XML processor reads it.</summary>
+    /// <remarks>
+    /// Character references and the predefined entities are resolved, and each tab and line break becomes a space
+    /// (XML 1.0 §3.3.3). A reference to any other entity is left as written.
+    /// </remarks>
     public string Value => ValueToken.ValueText;
 
     /// <summary>Returns this attribute renamed.</summary>

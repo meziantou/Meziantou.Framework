@@ -62,4 +62,7 @@ public enum SyntaxKind
     // Trivia
     WhitespaceTrivia,
     EndOfLineTrivia,
+
+    /// <summary>Text inside a tag that the parser could not read, kept so the document still reproduces its source.</summary>
+    SkippedTextTrivia,
 }

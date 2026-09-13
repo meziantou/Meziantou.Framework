@@ -7,8 +7,9 @@ public static class SyntaxFacts
 {
     /// <summary>Returns the text a kind is always spelled with, or an empty string when its text varies.</summary>
     /// <remarks>
-    /// This is the canonical spelling. A document may write <c>&lt;?xml</c> and <c>&lt;!DOCTYPE</c> in any case, and
-    /// the token then carries what the document said; a token built from a kind alone gets the spelling here.
+    /// This is the canonical spelling, and the only one XML allows. The parser still reads <c>&lt;?XML</c> or
+    /// <c>&lt;!doctype</c> as the construct they were meant to be, reporting the spelling, and the token then carries
+    /// what the document said; a token built from a kind alone gets the spelling here.
     /// </remarks>
     public static string GetText(SyntaxKind kind) => kind switch
     {
@@ -30,8 +31,15 @@ public static class SyntaxFacts
         _ => "",
     };
 
-    /// <summary>Determines whether <paramref name="kind"/> is whitespace or a line break.</summary>
-    public static bool IsTrivia(SyntaxKind kind) => kind is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia;
+    /// <summary>Determines whether <paramref name="kind"/> is whitespace, a line break, or text skipped inside a tag.</summary>
+    public static bool IsTrivia(SyntaxKind kind) => kind is SyntaxKind.WhitespaceTrivia or SyntaxKind.EndOfLineTrivia or SyntaxKind.SkippedTextTrivia;
+
+    /// <summary>Determines whether <paramref name="value"/> is whitespace as XML defines it.</summary>
+    /// <remarks>
+    /// This is the <c>S</c> production: a space, a tab, a carriage return, or a line feed. It is much narrower than
+    /// <see cref="char.IsWhiteSpace(char)"/>, which also accepts characters such as a no-break space.
+    /// </remarks>
+    public static bool IsWhitespace(char value) => value is ' ' or '\t' or '\r' or '\n';
 
     /// <summary>Determines whether <paramref name="value"/> may begin an XML name.</summary>
     /// <remarks>

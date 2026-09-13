@@ -15,12 +15,15 @@ public sealed class XmlTextSyntax : XmlNodeSyntax
     /// <summary>Gets the character data, exactly as it was written.</summary>
     public string Text => TextToken.Text;
 
+    /// <summary>Gets the character data as XML reads it: references resolved and line breaks normalized.</summary>
+    public string Value => TextToken.ValueText;
+
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public XmlTextSyntax WithText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return string.Equals(text, Text, StringComparison.Ordinal) ? this : WithTextToken(SyntaxFactory.Token(SyntaxKind.TextToken, text).WithTriviaFrom(TextToken));
+        return string.Equals(text, Text, StringComparison.Ordinal) ? this : WithTextToken(SyntaxFactory.TextToken(text).WithTriviaFrom(TextToken));
     }
 
     /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>

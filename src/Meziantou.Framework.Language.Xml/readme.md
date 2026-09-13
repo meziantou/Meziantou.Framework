@@ -131,8 +131,13 @@ var found = edited.GetAnnotatedNodes(marker).Single();
 
 ## Diagnostics
 
-Nothing is thrown for bad input; it is reported instead, with a location you can turn into line and character
-positions.
+Nothing is thrown for bad input; it is reported instead, in the order it appears in the text, with a location you
+can turn into line and character positions.
+
+The checks are those of a non-validating XML processor: every well-formedness constraint of XML 1.0 (Fifth Edition)
+and of Namespaces in XML 1.0. A document System.Xml can read produces no diagnostic, with two deliberate exceptions
+where the specifications are stricter than it is — an encoding name that is not an `EncName`, and an element name
+with the `xmlns` prefix — and one where they are more permissive: any `1.x` version is accepted.
 
 ```csharp
 foreach (var diagnostic in XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>").GetDiagnostics())
@@ -145,13 +150,39 @@ foreach (var diagnostic in XmlSyntaxTree.ParseText("<root>\n  <item>\n</root>").
 | Id | Reported for |
 | --- | --- |
 | `XML0001` | An element with no end tag |
-| `XML0002` | An unexpected or mismatched end tag |
+| `XML0002` | An unexpected, mismatched, or malformed end tag |
+| `XML0003` | A character XML does not allow, such as U+0001, U+FFFE, or a lone surrogate |
+| `XML0004` | A malformed or invalid character reference, an `&` that starts no reference, or an undeclared entity |
+| `XML0005` | A `<` in an attribute value, or `]]>` in character data |
+| `XML0006` | A duplicate attribute, including two that differ only by a prefix bound to the same namespace |
 | `XML0007` | An unterminated XML declaration |
 | `XML0008` | An unterminated comment |
 | `XML0009` | An unterminated CDATA section |
-| `XML0010` | An invalid start tag or attribute |
+| `XML0010` | An invalid start tag or attribute: text a tag cannot use, a missing `>`, a missing or unquoted value, or attributes not separated by whitespace |
 | `XML0011` | An unterminated document type declaration |
 | `XML0012` | An unterminated processing instruction |
+| `XML0013` | An invalid or misplaced XML declaration |
+| `XML0014` | A document that does not have exactly one root element, or holds text, a CDATA section, or a document type declaration where it cannot |
+| `XML0015` | A comment containing `--` |
+| `XML0016` | A processing instruction with no target, the reserved target `xml`, or no whitespace after its target |
+| `XML0017` | A namespace error: an undeclared prefix, a name that is not a qualified name, or a reserved prefix misused |
+| `XML0018` | A malformed document type declaration |
+
+An entity reference counts as declared when the internal subset declares it, or when the document has an external
+subset or a parameter entity reference, which could declare it where the parser cannot see.
+
+### Recovery
+
+The parser keeps the shape the author most likely meant, so one mistake produces one diagnostic rather than a cascade:
+
+- An end tag that matches an element further up closes the elements left open in between, each reported as missing its
+  end tag. One that matches no open element is kept as `XmlSkippedTextSyntax`.
+- A start tag missing its `>` still opens its element, with a missing `GreaterThanToken`.
+- Text a tag cannot use — `<a @ b="1">` — is kept as `SkippedTextTrivia` on the next token, and the element and the rest
+  of its attributes are read as usual.
+- An attribute value that meets what looks like the next tag before its closing quote stops there.
+- A `<` that starts no markup, as in `a < b`, is skipped on its own rather than swallowing the text up to the next `>`.
+- An unterminated XML declaration, document type declaration, or end tag stops at the next `<`.
 
 ## Walking a tree
 
@@ -222,6 +253,12 @@ edit expressed as text can change how everything after it reads.
 Nodes are shared between the trees an edit produces, so holding several versions of a document costs little more
 than holding one.
 
-This is a parser, not a validator. It reads the shape of a document without resolving entities or applying a schema.
+This is a parser, not a validator. It reads the shape of a document without applying a DTD or a schema.
+
+The syntax keeps text exactly as written, references included; `XmlAttributeSyntax.Value` and `XmlTextSyntax.Value`
+are what an XML processor reads it as. Character references and the five predefined entities are resolved, line
+breaks are normalized to `\n`, and an attribute value turns each tab and line break into a space. Other entities are
+left as written, since resolving one means reading the DTD. `WithValue` escapes a tab or a line break as a character
+reference, so the value it sets is the value read back.
 Names do follow XML's own `NameStartChar` and `NameChar` productions, so a name may hold a combining mark, a middle
 dot, or a character from outside the basic plane, and a Unicode letter XML leaves out — `ª`, say — does not start one.

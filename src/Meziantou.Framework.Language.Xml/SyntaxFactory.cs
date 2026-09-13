@@ -1,4 +1,3 @@
-using System.Security;
 using Meziantou.Framework.Language.InternalSyntax;
 using Green = Meziantou.Framework.Language.Xml.Syntax.InternalSyntax;
 
@@ -174,11 +173,15 @@ public static class SyntaxFactory
         => (XmlAttributeSyntax)new Green.XmlAttributeSyntax(Required(nameToken), Required(equalsToken), Required(startQuoteToken), Required(valueToken), Required(endQuoteToken)).CreateRed();
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// <paramref name="text"/> is written exactly as given, so a reference it holds stays a reference; the node's
+    /// <see cref="XmlTextSyntax.Value"/> is what that text reads as.
+    /// </remarks>
     public static XmlTextSyntax XmlText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return XmlText(Token(SyntaxKind.TextToken, text));
+        return XmlText(TextToken(text));
     }
 
     public static XmlTextSyntax XmlText(SyntaxToken textToken) => (XmlTextSyntax)new Green.XmlTextSyntax(Required(textToken)).CreateRed();
@@ -284,15 +287,50 @@ public static class SyntaxFactory
         return value.Length == name.Length || char.IsWhiteSpace(value[name.Length]);
     }
 
-    internal static SyntaxToken ProcessingInstructionData(string? data)
-        => data is null ? MissingToken(SyntaxKind.ProcessingInstructionDataToken) : Token(SyntaxKind.ProcessingInstructionDataToken, " " + data);
+    /// <summary>Creates a character data token whose value is what <paramref name="text"/> reads as.</summary>
+    internal static SyntaxToken TextToken(string text)
+        => new(parent: null, Green.SyntaxFactory.TokenWithValue(leading: null, SyntaxKind.TextToken, text, Green.CharacterData.Decode(text, isAttribute: false)), position: 0, index: 0);
 
+    /// <summary>Creates the data of a processing instruction, separated from its target by a space.</summary>
+    /// <remarks>An instruction carrying no data is written without one, which is also how the parser reads it back.</remarks>
+    internal static SyntaxToken ProcessingInstructionData(string? data)
+        => string.IsNullOrEmpty(data) ? MissingToken(SyntaxKind.ProcessingInstructionDataToken) : Token(SyntaxKind.ProcessingInstructionDataToken, data).WithLeadingTrivia(Space);
+
+    /// <summary>Escapes what an attribute value cannot hold literally.</summary>
+    /// <remarks>
+    /// Besides the markup characters and the quote in use, a tab, a line feed and a carriage return are written as
+    /// character references: written literally, XML reads each of them back as a space.
+    /// </remarks>
     private static string EscapeAttributeValue(string value, char quote)
     {
-        var escaped = SecurityElement.Escape(value) ?? "";
+        StringBuilder? builder = null;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var replacement = value[i] switch
+            {
+                '&' => "&amp;",
+                '<' => "&lt;",
+                '>' => "&gt;",
+                '"' when quote == '"' => "&quot;",
+                '\'' when quote == '\'' => "&apos;",
+                '\t' => "&#x9;",
+                '\n' => "&#xA;",
+                '\r' => "&#xD;",
+                _ => null,
+            };
 
-        // SecurityElement escapes both quote characters. Only the one the attribute is written with has to be.
-        return quote == '\'' ? escaped.Replace("&quot;", "\"", StringComparison.Ordinal) : escaped.Replace("&apos;", "'", StringComparison.Ordinal);
+            if (replacement is null)
+            {
+                builder?.Append(value[i]);
+            }
+            else
+            {
+                builder ??= new StringBuilder(value.Length + 16).Append(value, 0, i);
+                builder.Append(replacement);
+            }
+        }
+
+        return builder?.ToString() ?? value;
     }
 
     private static XmlAttributeSyntax SpaceBefore(XmlAttributeSyntax attribute)

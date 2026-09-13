@@ -18,7 +18,7 @@ public sealed class XmlProcessingInstructionSyntax : XmlNodeSyntax
     /// <summary>Gets the target the instruction names.</summary>
     public string Target => NameToken.Text;
 
-    /// <summary>Gets what follows the target, or <see langword="null"/> when the instruction carries nothing.</summary>
+    /// <summary>Gets what follows the target and the whitespace after it, or <see langword="null"/> when the instruction carries nothing.</summary>
     public string? Data => DataToken.IsMissing ? null : DataToken.Text;
 
     /// <exception cref="ArgumentNullException"><paramref name="target"/> is <see langword="null"/>.</exception>

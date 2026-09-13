@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// Describes symbols and expressions in diagnostic messages, so the build output alone is enough to act on.

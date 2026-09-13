@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Text;
 
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// The tags carried by a value.

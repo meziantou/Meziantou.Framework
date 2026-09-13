@@ -1,5 +1,5 @@
 using Microsoft.CodeAnalysis;
-using RemoveValueTagCodeFixProviderType = Meziantou.Framework.Analyzers.TaggedValues.RemoveValueTagCodeFixProvider;
+using RemoveValueTagCodeFixProviderType = Meziantou.Framework.TaggedValues.CodeFix.RemoveValueTagCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 

@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// Computes the tags of symbols and expressions for one compilation.

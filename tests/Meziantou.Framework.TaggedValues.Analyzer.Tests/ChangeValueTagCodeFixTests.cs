@@ -1,4 +1,4 @@
-using ChangeValueTagCodeFixProviderType = Meziantou.Framework.Analyzers.TaggedValues.ChangeValueTagCodeFixProvider;
+using ChangeValueTagCodeFixProviderType = Meziantou.Framework.TaggedValues.CodeFix.ChangeValueTagCodeFixProvider;
 
 namespace Meziantou.Framework.Tests;
 

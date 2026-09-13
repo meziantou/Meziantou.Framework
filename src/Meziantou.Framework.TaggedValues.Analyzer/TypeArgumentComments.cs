@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// Reads the <c>/* ValueTag=... */</c> comments written in the type arguments of a generic type,

@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
-using ValueTagAnalyzerType = Meziantou.Framework.Analyzers.TaggedValues.ValueTagAnalyzer;
+using ValueTagAnalyzerType = Meziantou.Framework.TaggedValues.Analyzer.ValueTagAnalyzer;
 
 namespace Meziantou.Framework.Tests;
 

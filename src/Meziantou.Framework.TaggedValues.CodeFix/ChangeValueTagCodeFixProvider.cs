@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Meziantou.Framework.TaggedValues.Analyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -7,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Simplification;
 
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.CodeFix;
 
 /// <summary>
 /// Changes the tags of the declaration a mismatched value flows to, or of an override, to the expected tags.

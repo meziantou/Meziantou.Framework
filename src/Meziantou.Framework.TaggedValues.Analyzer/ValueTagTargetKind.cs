@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// Identifies the declaration a code fix edits.

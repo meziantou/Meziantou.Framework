@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
 /// Parses the comments that tag local variables, which cannot have attributes.

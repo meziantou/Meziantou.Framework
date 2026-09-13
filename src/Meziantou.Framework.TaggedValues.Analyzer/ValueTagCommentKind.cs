@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Analyzers.TaggedValues;
+namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 internal enum ValueTagCommentKind
 {

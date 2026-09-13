@@ -24,6 +24,9 @@ internal abstract class RegexParser
 {
     private readonly List<Diagnostic> _diagnostics = [];
     private readonly Dictionary<int, TextSpan> _captureSpans = [];
+    private readonly List<(int Alternation, int Branch)> _alternativePath = [];
+    private readonly List<int> _completedCaptures = [];
+    private int _nextAlternationId;
     private int _depth;
 
     protected RegexParser(SourceText source, RegexParseOptions parseOptions)
@@ -45,8 +48,14 @@ internal abstract class RegexParser
     /// <summary>The options in effect at the reading position.</summary>
     protected RegexPatternOptions Options { get; set; }
 
-    /// <summary>The options saved at each open parenthesis, restored at the matching close.</summary>
-    protected Stack<RegexPatternOptions> OptionsStack { get; } = new();
+    /// <summary>
+    /// The options saved at each open parenthesis, restored at the matching close, along with whether duplicate group
+    /// names were allowed, which PCRE scopes the same way.
+    /// </summary>
+    protected Stack<(RegexPatternOptions Options, bool DuplicateNamesAllowed)> OptionsStack { get; } = new();
+
+    /// <summary>Whether a group name may be declared again, as PCRE's <c>(?J)</c> allows, at the reading position.</summary>
+    protected bool DuplicateNamesAllowed { get; set; }
 
     protected RegexCaptureTable CaptureTable { get; set; }
 
@@ -88,6 +97,7 @@ internal abstract class RegexParser
     {
         CaptureTable = captureTable;
         var root = ParseRoot();
+        OnPatternParsed();
         Captures = BuildCaptures();
 
         return root;
@@ -134,6 +144,11 @@ internal abstract class RegexParser
         }
 
         return SyntaxFactory.ListNode([.. items]);
+    }
+
+    /// <summary>Called once the whole pattern has been read, for checks that need groups declared after the point they concern.</summary>
+    private protected virtual void OnPatternParsed()
+    {
     }
 
     /// <summary>Reads the opening delimiter of a JavaScript literal. Every other dialect has none.</summary>
@@ -190,15 +205,28 @@ internal abstract class RegexParser
     protected bool IsAtSequenceStart { get; private set; }
 
     /// <summary>Parses the branches of an alternation, in order.</summary>
-    protected RegexAlternationSyntax ParseAlternation(bool insideGroup)
+    /// <param name="insideGroup">Whether a <c>)</c> ends the alternation.</param>
+    /// <param name="resetsCaptureNumbers">
+    /// Whether every branch numbers its groups from the same starting point, as a PCRE branch reset group does. The
+    /// groups after the alternation then continue from the highest number any branch reached.
+    /// </param>
+    protected RegexAlternationSyntax ParseAlternation(bool insideGroup, bool resetsCaptureNumbers = false)
     {
         var branches = new List<RegexSequenceSyntax>();
         var barTokens = new List<ScannedToken>();
         var supportsAlternation = Dialect.HasFeature(RegexDialectFeatures.Alternation);
+        var alternationId = _nextAlternationId++;
+        var firstCaptureNumber = AutoCaptureNumber;
+        var nextCaptureNumber = AutoCaptureNumber;
+        var completedBefore = _completedCaptures.Count;
+        List<int>? completedInEarlierBranches = null;
 
         while (true)
         {
+            _alternativePath.Add((alternationId, branches.Count));
             branches.Add(ParseSequence(insideGroup));
+            _alternativePath.RemoveAt(_alternativePath.Count - 1);
+            nextCaptureNumber = Math.Max(nextCaptureNumber, AutoCaptureNumber);
 
             var barPosition = PeekTriviaEnd();
             if (!supportsAlternation || IsAtBodyEnd(barPosition))
@@ -212,9 +240,56 @@ internal abstract class RegexParser
             var barStart = Scanner.Position;
             Scanner.Position += separatorLength;
             barTokens.Add(Scanner.Token(SyntaxKind.BarToken, barStart, trivia));
+
+            if (resetsCaptureNumbers)
+            {
+                AutoCaptureNumber = firstCaptureNumber;
+            }
+
+            // A group closed in one branch has not matched in the next one, so a backreference there cannot see it.
+            // The groups are set aside until the alternation ends, after which all of them have been closed.
+            if (_completedCaptures.Count > completedBefore)
+            {
+                completedInEarlierBranches ??= [];
+                completedInEarlierBranches.AddRange(_completedCaptures.Skip(completedBefore));
+                _completedCaptures.RemoveRange(completedBefore, _completedCaptures.Count - completedBefore);
+            }
+        }
+
+        if (completedInEarlierBranches is not null)
+        {
+            _completedCaptures.AddRange(completedInEarlierBranches);
+        }
+
+        if (resetsCaptureNumbers)
+        {
+            AutoCaptureNumber = nextCaptureNumber;
         }
 
         return new RegexAlternationSyntax(Interleave(branches, barTokens), Options);
+    }
+
+    /// <summary>
+    /// Where the reading position is, as the branch it is in of every alternation around it, outermost first.
+    /// </summary>
+    /// <remarks>
+    /// Two constructs can never both take part in a match when their paths first differ at the same alternation, which
+    /// is the only case in which JavaScript lets two groups share a name.
+    /// </remarks>
+    protected (int Alternation, int Branch)[] CurrentAlternativePath => [.. _alternativePath];
+
+    /// <summary>Whether two constructs, located by <see cref="CurrentAlternativePath"/>, can take part in the same match.</summary>
+    protected static bool MightBothParticipate((int Alternation, int Branch)[] first, (int Alternation, int Branch)[] second)
+    {
+        for (var index = 0; index < first.Length && index < second.Length; index++)
+        {
+            if (first[index] == second[index])
+                continue;
+
+            return first[index].Alternation != second[index].Alternation;
+        }
+
+        return true;
     }
 
     /// <summary>Parses one branch: the terms that must match one after another.</summary>
@@ -280,7 +355,7 @@ internal abstract class RegexParser
             if (quantifier is null)
                 return term;
 
-            if (term is RegexQuantifiedSyntax)
+            if (term is RegexQuantifiedSyntax && !AllowsStackedQuantifier(quantifier))
             {
                 Scanner.AddDiagnostic(
                     JustParsedSpan(quantifier),
@@ -298,6 +373,9 @@ internal abstract class RegexParser
             term = new RegexQuantifiedSyntax(term, quantifier, Options);
         }
     }
+
+    /// <summary>Whether <paramref name="quantifier"/> may apply to a term that is already quantified.</summary>
+    protected virtual bool AllowsStackedQuantifier(RegexQuantifierSyntax quantifier) => false;
 
     /// <summary>Returns whether a quantifier starts at <paramref name="position"/>.</summary>
     protected virtual bool IsQuantifierAt(int position)
@@ -325,7 +403,7 @@ internal abstract class RegexParser
         if (openLength == 0)
             return false;
 
-        var index = position + openLength;
+        var index = SkipBoundSpaces(position + openLength);
         var digits = 0;
         while (index < Text.Length && char.IsAsciiDigit(Text[index]))
         {
@@ -333,19 +411,58 @@ internal abstract class RegexParser
             digits++;
         }
 
-        if (digits == 0)
-            return false;
-
+        index = SkipBoundSpaces(index);
+        var maxDigits = 0;
         if (index < Text.Length && Text[index] == ',')
         {
-            index++;
+            index = SkipBoundSpaces(index + 1);
             while (index < Text.Length && char.IsAsciiDigit(Text[index]))
+            {
+                index++;
+                maxDigits++;
+            }
+
+            index = SkipBoundSpaces(index);
+            if (digits == 0 && (maxDigits == 0 || !AllowsOmittedMinimumBound))
+                return false;
+        }
+        else if (digits == 0)
+        {
+            return false;
+        }
+
+        return BoundCloseLength(index) > 0;
+    }
+
+    /// <summary>The largest number a bound may be, or <see langword="null"/> when the dialect sets no limit.</summary>
+    protected virtual long? MaxBoundValue => int.MaxValue;
+
+    /// <summary>Whether spaces may surround the numbers of a bound, as in PCRE's <c>{ 2 , 3 }</c>.</summary>
+    protected virtual bool AllowsSpacesInBounds => false;
+
+    /// <summary>Whether a bound may leave out its minimum, as <c>{,3}</c> does in PCRE and GNU POSIX.</summary>
+    protected virtual bool AllowsOmittedMinimumBound => false;
+
+    private int SkipBoundSpaces(int index)
+    {
+        if (AllowsSpacesInBounds)
+        {
+            while (index < Text.Length && Text[index] is ' ' or '\t')
             {
                 index++;
             }
         }
 
-        return BoundCloseLength(index) > 0;
+        return index;
+    }
+
+    /// <summary>Claims the spaces a bound may contain, as trivia of the token that follows them.</summary>
+    private GreenNode? TakeBoundSpaces()
+    {
+        var start = Scanner.Position;
+        Scanner.Position = SkipBoundSpaces(start);
+
+        return Scanner.Position > start ? SyntaxFactory.List([SyntaxFactory.Trivia(SyntaxKind.WhitespaceTrivia, Text[start..Scanner.Position])]) : null;
     }
 
     private RegexQuantifierSyntax? ParseQuantifier(GreenNode? leadingTrivia)
@@ -382,17 +499,20 @@ internal abstract class RegexParser
         Scanner.Position += BoundOpenLength(braceStart);
         var openBraceToken = Scanner.Token(SyntaxKind.OpenBraceToken, braceStart, leadingTrivia);
 
-        var minToken = ReadBound();
+        var minToken = ReadBound(TakeBoundSpaces());
         ScannedToken commaToken = default;
         ScannedToken maxToken = default;
+        var commaTrivia = TakeBoundSpaces();
         if (Scanner.Current == ',')
         {
             var commaStart = Scanner.Position;
             Scanner.Position++;
-            commaToken = Scanner.Token(SyntaxKind.CommaToken, commaStart);
+            commaToken = Scanner.Token(SyntaxKind.CommaToken, commaStart, commaTrivia);
+            commaTrivia = TakeBoundSpaces();
             if (BoundCloseLength(Scanner.Position) == 0)
             {
-                maxToken = ReadBound();
+                maxToken = ReadBound(commaTrivia);
+                commaTrivia = TakeBoundSpaces();
             }
         }
 
@@ -402,54 +522,71 @@ internal abstract class RegexParser
         if (closeLength > 0)
         {
             Scanner.Position += closeLength;
-            closeBraceToken = Scanner.Token(SyntaxKind.CloseBraceToken, closeStart);
+            closeBraceToken = Scanner.Token(SyntaxKind.CloseBraceToken, closeStart, commaTrivia);
         }
         else
         {
             closeBraceToken = Scanner.MissingToken(SyntaxKind.CloseBraceToken);
+            AddDiagnostic(TextSpan.FromBounds(braceStart, Scanner.Position), RegexDiagnosticIds.MalformedInterval, "Malformed interval: expected a bound such as '{2}', '{2,}', or '{2,5}'.");
+        }
+
+        if (closeBraceToken.IsPresent && !commaToken.IsPresent && minToken.Text.Trim().Length == 0)
+        {
+            AddDiagnostic(TextSpan.FromBounds(braceStart, closeBraceToken.End), RegexDiagnosticIds.MalformedInterval, "An interval must contain at least one bound.");
         }
 
         var quantifier = new RegexRangeQuantifierSyntax(openBraceToken, minToken, commaToken, maxToken, closeBraceToken, ReadQuantifierModifier(), Options);
-        if (quantifier.MaxCount is { } max && quantifier.MinCount > max)
+
+        // The bounds are compared as written rather than as the clamped values, so a reversed pair of numbers too
+        // large for an int is still reported.
+        if (maxToken.IsPresent && maxToken.Text.Trim().Length > 0 && CompareDecimals(minToken.Text.Trim(), maxToken.Text.Trim()) > 0)
         {
             Scanner.AddDiagnostic(
                 TextSpan.FromBounds(openBraceToken.Span.Start, closeBraceToken.End),
                 RegexDiagnosticIds.ReversedQuantifierRange,
-                FormattableString.Invariant($"Quantifier range {quantifier.MinCount},{max} is reversed."));
+                FormattableString.Invariant($"Quantifier range {minToken.Text.Trim()},{maxToken.Text.Trim()} is reversed."));
         }
 
         return quantifier;
     }
 
-    private ScannedToken ReadBound()
+    /// <summary>Compares two runs of decimal digits by the numbers they spell, whatever their size.</summary>
+    private static int CompareDecimals(string left, string right)
+    {
+        left = left.TrimStart('0');
+        right = right.TrimStart('0');
+
+        return left.Length != right.Length ? left.Length.CompareTo(right.Length) : string.CompareOrdinal(left, right);
+    }
+
+    private ScannedToken ReadBound(GreenNode? leadingTrivia)
     {
         var start = Scanner.Position;
-        var overflowed = false;
         long value = 0;
         while (char.IsAsciiDigit(Scanner.Current))
         {
-            if (!overflowed)
+            if (value <= int.MaxValue)
             {
                 value = (value * 10) + (Scanner.Current - '0');
-                if (value > int.MaxValue)
-                {
-                    overflowed = true;
-                }
             }
 
             Scanner.Position++;
         }
 
-        if (overflowed)
+        var max = MaxBoundValue;
+        if (max is not null && value > max)
         {
             Scanner.AddDiagnostic(
                 TextSpan.FromBounds(start, Scanner.Position),
                 RegexDiagnosticIds.QuantifierOrCaptureGroupOutOfRange,
-                "The quantifier or capture group number is larger than Int32.MaxValue.");
-            value = int.MaxValue;
+                max == int.MaxValue
+                    ? "The quantifier or capture group number is larger than Int32.MaxValue."
+                    : FormattableString.Invariant($"The quantifier bound is larger than {max}, the largest this dialect accepts."));
         }
 
-        return Scanner.Token(SyntaxKind.NumberToken, start, leadingTrivia: null, value.ToString(CultureInfo.InvariantCulture));
+        value = Math.Min(value, int.MaxValue);
+
+        return Scanner.Token(SyntaxKind.NumberToken, start, leadingTrivia, value.ToString(CultureInfo.InvariantCulture));
     }
 
     /// <summary>Reads the <c>?</c> or <c>+</c> that makes a quantifier lazy or possessive.</summary>
@@ -508,7 +645,8 @@ internal abstract class RegexParser
         Dialect.HasFeature(RegexDialectFeatures.ClassSetOperations);
 
     /// <summary>Whether the pattern is read as a sequence of code points rather than of UTF-16 code units.</summary>
-    protected bool UsesUnicodeMode => (Options & RegexPatternOptions.Unicode) != RegexPatternOptions.None;
+    /// <remarks>The <c>v</c> flag is the <c>u</c> flag with more, so either one turns this on.</remarks>
+    protected bool UsesUnicodeMode => (Options & (RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets)) != RegexPatternOptions.None;
 
     protected int PeekTriviaEnd() => Scanner.PeekTriviaEnd(Options, Dialect);
 
@@ -519,11 +657,29 @@ internal abstract class RegexParser
     protected void AddDiagnostic(int start, string id, string message) =>
         Scanner.AddDiagnostic(TextSpan.FromBounds(start, Math.Max(start, Scanner.Position)), id, message);
 
-    /// <summary>Takes the next capture number, noting the slot when this is the numbering pass.</summary>
-    protected int NoteAutoCapture(int position) => CaptureBuilder?.NoteAutoSlot(position) ?? NextAutoCapture();
+    /// <summary>The number the next group that numbers itself will take.</summary>
+    protected int AutoCaptureNumber { get; set; } = 1;
 
-    /// <summary>Takes the next capture number without noting it.</summary>
-    protected abstract int NextAutoCapture();
+    /// <summary>Takes the next capture number, noting the slot when this is the numbering pass.</summary>
+    protected int NoteAutoCapture(int position)
+    {
+        var number = AutoCaptureNumber++;
+        CaptureBuilder?.NoteSlot(number, position);
+
+        return number;
+    }
+
+    /// <summary>Notes a named group that takes the next capture number where it stands.</summary>
+    protected int NoteNumberedCaptureName(string name, int position)
+    {
+        var number = AutoCaptureNumber++;
+        CaptureBuilder?.NoteNumberedName(name, number, position);
+
+        return number;
+    }
+
+    /// <summary>Whether this is the pass that only collects the capture groups, whose diagnostics are discarded.</summary>
+    protected bool IsNumberingPass => CaptureBuilder is not null;
 
     /// <summary>Notes an explicitly numbered group, as <c>(?&lt;3&gt;x)</c> declares.</summary>
     protected void NoteCaptureNumber(int number, int position) => CaptureBuilder?.NoteSlot(number, position);
@@ -537,8 +693,15 @@ internal abstract class RegexParser
         if (number > 0)
         {
             _captureSpans[number] = span;
+            _completedCaptures.Add(number);
         }
     }
+
+    /// <summary>
+    /// Whether the group <paramref name="number"/> has been closed before the reading position, in this branch or before
+    /// the alternation around it, which is what a POSIX backreference needs.
+    /// </summary>
+    protected bool IsCaptureCompleted(int number) => _completedCaptures.Contains(number);
 
     /// <summary>Enters a nested construct, or reports that the pattern nests too deeply.</summary>
     protected bool TryEnterRecursion(TextSpan span)

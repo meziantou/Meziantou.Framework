@@ -39,11 +39,6 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     /// </remarks>
     private bool _inConditionalTest;
 
-    private int _autocap = 1;
-
-    /// <summary>Takes the next capture number without noting it.</summary>
-    protected override int NextAutoCapture() => _autocap++;
-
     protected PerlStyleRegexParser(SourceText source, RegexParseOptions parseOptions)
         : base(source, parseOptions)
     {
@@ -96,7 +91,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
                 // In Unicode mode a pattern is a sequence of code points, so a surrogate pair is one atom and a
                 // quantifier after it repeats the whole character rather than half of one.
-                if (UsesUnicodeMode && char.IsHighSurrogate(Text[start]) && char.IsLowSurrogate(Scanner.Current))
+                if (ReadsCodePoints && char.IsHighSurrogate(Text[start]) && char.IsLowSurrogate(Scanner.Current))
                 {
                     Scanner.Position++;
                 }
@@ -121,7 +116,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             Scanner.Position += openLength;
             var openParenToken = Scanner.Token(SyntaxKind.OpenParenToken, start, leadingTrivia);
-            OptionsStack.Push(Options);
+            OptionsStack.Push((Options, DuplicateNamesAllowed));
 
             // The flag applies to this parenthesis only, never to anything nested inside it.
             var inConditionalTest = _inConditionalTest;
@@ -171,6 +166,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
 
                 case 'R':
                 case >= '0' and <= '9' when Dialect.HasFeature(RegexDialectFeatures.Recursion):
+                case '-' or '+' when Dialect.HasFeature(RegexDialectFeatures.Recursion) && char.IsAsciiDigit(Scanner.Peek()):
                     if (Dialect.HasFeature(RegexDialectFeatures.Recursion))
                         return ParseRecursion(openParenToken, questionStart);
 
@@ -185,6 +181,22 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         {
             ExitRecursion();
         }
+    }
+
+    /// <summary>How many lookarounds, of either direction, enclose the reading position.</summary>
+    private protected int LookaroundDepth { get; set; }
+
+    /// <summary>How many lookbehinds enclose the reading position.</summary>
+    private protected int LookbehindDepth { get; set; }
+
+    /// <summary>Called once the body of a lookbehind has been read, for the dialects that restrict what it may match.</summary>
+    private protected virtual void OnLookbehindParsed(RegexAlternationSyntax body, TextSpan span, int bodyStart)
+    {
+    }
+
+    /// <summary>Called once a capturing group has been read, with the number it took.</summary>
+    private protected virtual void OnCaptureGroupParsed(int number, RegexGroupSyntax group)
+    {
     }
 
     /// <summary>Parses a <c>(?…</c> header that only some dialects have, or returns null to fall through.</summary>
@@ -239,6 +251,30 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     protected virtual bool AllowsEmptyOptionGroup => false;
 
     /// <summary>
+    /// Whether the pattern is a sequence of code points rather than of UTF-16 code units, so that a surrogate pair is
+    /// one character wherever it appears, a character class and its ranges included.
+    /// </summary>
+    protected virtual bool ReadsCodePoints => UsesUnicodeMode;
+
+    /// <summary>Whether <c>\a</c> (bell) and <c>\e</c> (escape) are character escapes.</summary>
+    protected virtual bool HasBellAndEscapeEscapes => true;
+
+    /// <summary>Whether <c>\u</c> introduces a character escape at all.</summary>
+    protected virtual bool SupportsUnicodeEscape => true;
+
+    /// <summary>
+    /// Whether a backslash followed by digits follows the ECMAScript grammar: the digits name a group when the pattern
+    /// has that many, and are otherwise an error in Unicode mode or a legacy octal escape outside it.
+    /// </summary>
+    protected virtual bool UsesJavaScriptDecimalEscapes => false;
+
+    /// <summary>
+    /// Whether a shorthand class followed by a dash is reported as the start of a range. .NET makes that dash an
+    /// ordinary character; PCRE and the strict ECMAScript grammar reject it.
+    /// </summary>
+    protected virtual bool ReportsShorthandClassAsRangeStart => false;
+
+    /// <summary>
     /// Whether any character may follow <c>\c</c>. PCRE exclusive-ors whatever is there with <c>0x40</c> and accepts
     /// the result; .NET only takes it when it lands on a control character.
     /// </summary>
@@ -263,19 +299,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     protected virtual bool AllowsUndefinedNamedBackreference => false;
 
     /// <summary>Whether the pattern declares any named group, which decides what a bare <c>\k</c> means.</summary>
-    protected bool HasAnyGroupName
-    {
-        get
-        {
-            foreach (var number in CaptureTable.Numbers)
-            {
-                if (!char.IsAsciiDigit(CaptureTable.GetName(number)[0]))
-                    return true;
-            }
-
-            return false;
-        }
-    }
+    protected bool HasAnyGroupName => CaptureTable.HasNames;
 
     /// <summary>Whether the letter after a backslash names a shorthand character class at the atom level.</summary>
     protected virtual bool IsShorthandClassLetter(char letter) => IsCoreShorthandClassLetter(letter);
@@ -323,6 +347,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         var group = new RegexCapturingGroupSyntax(openParenToken, alternation, closeParenToken, Options, alternation.Options, number);
         RestoreOptions();
         NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.End));
+        OnCaptureGroupParsed(number, group);
 
         return group;
     }
@@ -344,7 +369,9 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             kind = SyntaxKind.NonCapturingGroup;
         }
 
-        var alternation = ParseAlternation(insideGroup: true);
+        LookaroundDepth += kind == SyntaxKind.Lookaround ? 1 : 0;
+        var alternation = ParseAlternation(insideGroup: true, resetsCaptureNumbers: kind == SyntaxKind.BranchResetGroup);
+        LookaroundDepth -= kind == SyntaxKind.Lookaround ? 1 : 0;
         var closeParenToken = ReadCloseParen(openParenToken);
         RegexGroupSyntax group = kind switch
         {
@@ -372,6 +399,11 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
         else
         {
+            if (Scanner.Current is '-' or '+')
+            {
+                Scanner.Position++;
+            }
+
             ReadDecimal(out _);
         }
 
@@ -390,9 +422,17 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             return;
 
         var target = targetToken.Text;
-        if (int.TryParse(target, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number))
+        if (target is ['-' or '+', _, ..] && int.TryParse(target.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var relative))
         {
-            if (!CaptureTable.ContainsNumber(number))
+            ReportUnknownRelativeReference(targetToken.Span, target[0] == '-' ? -relative : relative);
+
+            return;
+        }
+
+        if (int.TryParse(target, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+        {
+            // Group 0 is the whole pattern, which is always there to recurse into.
+            if (number != 0 && !CaptureTable.ContainsNumber(number))
             {
                 AddDiagnostic(targetToken.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {target}.");
             }
@@ -406,8 +446,33 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
     }
 
+    /// <summary>
+    /// Reports a relative reference, <c>-1</c> for the group opened last or <c>+1</c> for the one opened next, that
+    /// names no group.
+    /// </summary>
+    private protected void ReportUnknownRelativeReference(TextSpan span, int offset)
+    {
+        // The reading position is past the reference, and the groups opened so far have taken every number below the
+        // next one to be assigned.
+        var number = offset switch
+        {
+            0 => 0,
+            < 0 => AutoCaptureNumber + offset,
+            _ => AutoCaptureNumber + offset - 1,
+        };
+
+        if (offset == 0)
+        {
+            AddDiagnostic(span, RegexDiagnosticIds.UndefinedNumberedReference, "A relative reference cannot be zero.");
+        }
+        else if (number < 1 || !CaptureTable.ContainsNumber(number))
+        {
+            AddDiagnostic(span, RegexDiagnosticIds.UndefinedNumberedReference, FormattableString.Invariant($"Reference to undefined group, {offset:+0;-0} from here."));
+        }
+    }
+
     /// <summary>Parses a backtracking control verb such as <c>(*SKIP)</c>.</summary>
-    private RegexBacktrackingVerbSyntax ParseBacktrackingVerb(ScannedToken openParenToken)
+    private protected virtual RegexAtomSyntax ParseBacktrackingVerb(ScannedToken openParenToken)
     {
         var verbStart = Scanner.Position;
         Scanner.Position++;
@@ -447,9 +512,14 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
                 AddDiagnostic(lookbehindKindToken.Span, RegexDiagnosticIds.InvalidGroupingConstruct, $"The '{lookbehindKindToken.Text}' grouping construct is not supported by the {Dialect.Name} dialect.");
             }
 
+            LookaroundDepth++;
+            LookbehindDepth++;
             var lookbehindBody = ParseAlternation(insideGroup: true);
+            LookaroundDepth--;
+            LookbehindDepth--;
             var lookbehindClose = ReadCloseParen(openParenToken);
             var lookbehind = new RegexLookaroundSyntax(openParenToken, lookbehindKindToken, lookbehindBody, lookbehindClose, Options, lookbehindBody.Options);
+            OnLookbehindParsed(lookbehindBody, TextSpan.FromBounds(openParenToken.Span.Start, lookbehindClose.End), lookbehindKindToken.End);
             RestoreOptions();
 
             return lookbehind;
@@ -509,6 +579,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var number = capnum > 0 ? capnum : ResolveDeclaredNumber(nameToken);
             result = new RegexNamedGroupSyntax(openParenToken, groupKindToken, nameToken, closeNameToken, alternationBody, closeParenToken, Options, alternationBody.Options, number);
             NoteCaptureSpan(number, TextSpan.FromBounds(openParenToken.Span.Start, closeParenToken.Span.End));
+            OnCaptureGroupParsed(number, result);
         }
 
         RestoreOptions();
@@ -525,7 +596,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         var start = Scanner.Position;
         var ch = Scanner.Current;
 
-        if (char.IsAsciiDigit(ch))
+        if (char.IsAsciiDigit(ch) && AllowsNumberedGroups)
         {
             capnum = ReadDecimal(out _);
             var token = Scanner.Token(SyntaxKind.NameToken, start);
@@ -552,17 +623,28 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             return token;
         }
 
-        if (RegexCharacterTables.IsBoundaryWordChar(ch))
+        if (IsGroupNameStartAt(Scanner.Position))
         {
-            var name = ReadCaptureName();
-            NoteCaptureName(name, groupStart);
-            var token = Scanner.Token(SyntaxKind.NameToken, start);
+            var name = ReadGroupName();
+            var token = Scanner.Token(SyntaxKind.NameToken, start, leadingTrivia: null, ValueIfDifferent(name, start));
             if (!Scanner.IsAtEnd && Scanner.Current != close && Scanner.Current != '-')
             {
                 AddDiagnostic(token.Span, RegexDiagnosticIds.CaptureGroupNameInvalid, "Invalid capture group name.");
             }
 
-            capnum = CaptureTable.TryGetNumber(name, out var declared) ? declared : -1;
+            if (NamedGroupsTakeNumbersInOrder)
+            {
+                capnum = NoteNumberedCaptureName(name, groupStart);
+                if (!IsNumberingPass)
+                {
+                    CheckGroupNameDeclaration(name, capnum, token.Span);
+                }
+            }
+            else
+            {
+                NoteCaptureName(name, groupStart);
+                capnum = CaptureTable.TryGetNumber(name, out var declared) ? declared : -1;
+            }
 
             return token;
         }
@@ -638,7 +720,28 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     }
 
     private int ResolveDeclaredNumber(ScannedToken nameToken) =>
-        nameToken.IsPresent && CaptureTable.TryGetNumber(nameToken.Text, out var number) ? number : 0;
+        nameToken.IsPresent && CaptureTable.TryGetNumber(nameToken.ValueText, out var number) ? number : 0;
+
+    /// <summary>
+    /// Whether a named group takes the next number where it stands, as in JavaScript and PCRE, rather than one after
+    /// every unnamed group, as in .NET.
+    /// </summary>
+    protected virtual bool NamedGroupsTakeNumbersInOrder => false;
+
+    /// <summary>Whether a group may be given an explicit number, as <c>(?&lt;3&gt;x)</c> does in .NET.</summary>
+    protected virtual bool AllowsNumberedGroups => true;
+
+    /// <summary>Whether a group name starts at <paramref name="position"/>.</summary>
+    protected virtual bool IsGroupNameStartAt(int position) => RegexCharacterTables.IsBoundaryWordChar(Scanner.CharAt(position));
+
+    /// <summary>Reads a group name at the reading position and returns the name it spells.</summary>
+    /// <remarks>The name may differ from its text where the dialect lets a name contain escapes.</remarks>
+    protected virtual string ReadGroupName() => ReadCaptureName();
+
+    /// <summary>Checks a group name against the groups already declared, in the pass that reports diagnostics.</summary>
+    protected virtual void CheckGroupNameDeclaration(string name, int number, TextSpan span)
+    {
+    }
 
     /// <summary>Parses <c>(?(…)yes|no)</c>.</summary>
     private RegexConditionalSyntax ParseConditional(ScannedToken openParenToken, int questionStart)
@@ -650,8 +753,10 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         }
 
         var conditionStart = Scanner.Position;
+        ConditionAllowsOneBranchOnly = false;
 
         RegexSyntaxNode? condition = ReadConditionalReference(conditionStart);
+        var maxBranches = ConditionAllowsOneBranchOnly ? 1 : 2;
         if (condition is null)
         {
             // Not a reference, so the condition is an expression. The engine rewinds to the parenthesis and lets the
@@ -660,12 +765,12 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             ReportIllegalConditionHeader(conditionStart);
             _ignoreNextParen = true;
             _inConditionalTest = true;
-            condition = ParseAtom(leadingTrivia: null);
+            condition = ParseAtom(ConditionMayStartWithComment ? TakeTrivia() : null);
             _inConditionalTest = false;
         }
 
         var alternation = ParseAlternation(insideGroup: true);
-        if (alternation.BranchCount > 2)
+        if (alternation.BranchCount > maxBranches)
         {
             AddDiagnostic(JustParsedSpan(alternation), RegexDiagnosticIds.AlternationHasTooManyConditions, "A conditional alternation has too many branches.");
         }
@@ -677,8 +782,14 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
         return conditional;
     }
 
+    /// <summary>Set by <see cref="ReadConditionalReference"/> when the condition is one, like PCRE's <c>DEFINE</c>, that takes a single branch.</summary>
+    private protected bool ConditionAllowsOneBranchOnly { get; set; }
+
+    /// <summary>Whether a comment may stand in front of an expression condition, as PCRE allows.</summary>
+    private protected virtual bool ConditionMayStartWithComment => false;
+
     /// <summary>Reads <c>(1)</c> or <c>(name)</c>, or reports that the condition is an expression by returning null.</summary>
-    private RegexConditionalReferenceSyntax? ReadConditionalReference(int conditionStart)
+    private protected virtual RegexConditionalReferenceSyntax? ReadConditionalReference(int conditionStart)
     {
         Scanner.Position++;
         var openParenToken = Scanner.Token(SyntaxKind.OpenParenToken, conditionStart);
@@ -730,7 +841,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     }
 
     /// <summary>Reports the two headers a conditional's expression condition may not have.</summary>
-    private void ReportIllegalConditionHeader(int conditionStart)
+    private protected virtual void ReportIllegalConditionHeader(int conditionStart)
     {
         if (conditionStart + 2 >= Text.Length || Text[conditionStart + 1] != '?')
             return;
@@ -767,7 +878,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
             var closeStart = Scanner.Position;
             Scanner.Position++;
             var closeToken = Scanner.Token(SyntaxKind.CloseParenToken, closeStart);
-            OptionsStack.Pop();
+            _ = OptionsStack.Pop();
             _ignoreNextParen = false;
 
             return new RegexInlineOptionsSyntax(openParenToken, questionToken, optionsToken, closeToken, Options, Options);
@@ -802,7 +913,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     }
 
     /// <summary>Reads an <c>imnsx-imnsx</c> run and applies it, stopping at the first character it does not know.</summary>
-    private ScannedToken ScanInlineOptions(int start)
+    private protected virtual ScannedToken ScanInlineOptions(int start)
     {
         var off = false;
         while (!Scanner.IsAtEnd)
@@ -854,7 +965,7 @@ internal abstract partial class PerlStyleRegexParser : RegexParser
     {
         if (OptionsStack.Count > 0)
         {
-            Options = OptionsStack.Pop();
+            (Options, DuplicateNamesAllowed) = OptionsStack.Pop();
         }
     }
 

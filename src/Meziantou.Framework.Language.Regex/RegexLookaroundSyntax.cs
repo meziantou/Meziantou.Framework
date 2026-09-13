@@ -4,11 +4,12 @@ namespace Meziantou.Framework.Language.Regex;
 public sealed partial class RegexLookaroundSyntax : RegexGroupSyntax
 {
     /// <summary>The direction and polarity of the assertion.</summary>
+    /// <remarks>PCRE's alpha assertions, such as <c>(*nlb:…)</c>, report the same kinds as their symbolic spellings.</remarks>
     public RegexLookaroundKind LookaroundKind => GroupKindToken.Text switch
     {
-        "?!" => RegexLookaroundKind.NegativeLookahead,
-        "?<=" => RegexLookaroundKind.PositiveLookbehind,
-        "?<!" => RegexLookaroundKind.NegativeLookbehind,
+        "?!" or "*nla:" or "*negative_lookahead:" => RegexLookaroundKind.NegativeLookahead,
+        "?<=" or "*plb:" or "*positive_lookbehind:" or "*naplb:" or "*non_atomic_positive_lookbehind:" => RegexLookaroundKind.PositiveLookbehind,
+        "?<!" or "*nlb:" or "*negative_lookbehind:" => RegexLookaroundKind.NegativeLookbehind,
         _ => RegexLookaroundKind.PositiveLookahead,
     };
 

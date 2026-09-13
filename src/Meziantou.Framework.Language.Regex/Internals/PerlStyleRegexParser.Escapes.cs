@@ -46,6 +46,9 @@ internal partial class PerlStyleRegexParser
                 Scanner.Position += 2;
                 return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
+            case 'k' when Scanner.Peek(2) == '{' && Dialect.Family == RegexDialectFamily.Pcre:
+                return TryParseDialectEscape(leadingTrivia) ?? ParseBackreferenceOrEscape(leadingTrivia);
+
             // Where the dialect has no such anchor the escape is not an anchor at all: it falls through and stands for
             // the letter, which is what an engine without it does.
             case 'A' or 'G' or 'z' or 'Z' when Dialect.HasFeature(RegexDialectFeatures.AnchorsAZ):
@@ -54,6 +57,11 @@ internal partial class PerlStyleRegexParser
 
             case 'K' when Dialect.HasFeature(RegexDialectFeatures.KeepOut):
                 Scanner.Position += 2;
+                if (LookaroundDepth > 0)
+                {
+                    AddDiagnostic(TextSpan.FromBounds(start, Scanner.Position), RegexDiagnosticIds.UnrecognizedEscape, "'\\K' is not allowed inside a lookaround.");
+                }
+
                 return new RegexAnchorSyntax(Scanner.Token(SyntaxKind.AnchorToken, start, leadingTrivia), Options);
 
             case var letter when IsShorthandClassLetter(letter):
@@ -126,8 +134,10 @@ internal partial class PerlStyleRegexParser
             {
                 var letterStart = Scanner.Position;
                 Scanner.Position++;
+                var letterToken = Scanner.Token(SyntaxKind.CategoryNameToken, letterStart);
+                ValidatePropertyName(letterToken.Span, letterToken.Text, negated: categoryStartToken.Text[1] == 'P', braced: false);
 
-                return new RegexUnicodeCategorySyntax(categoryStartToken, null, Scanner.Token(SyntaxKind.CategoryNameToken, letterStart), null, Options);
+                return new RegexUnicodeCategorySyntax(categoryStartToken, null, letterToken, null, Options);
             }
 
             AddDiagnostic(categoryStartToken.Span, RegexDiagnosticIds.MalformedUnicodePropertyEscape, "Malformed '\\p{...}' character escape.");
@@ -139,22 +149,8 @@ internal partial class PerlStyleRegexParser
         Scanner.Position++;
         var openBraceToken = Scanner.Token(SyntaxKind.OpenBraceToken, braceStart);
 
-        // Dialects that name a property as well as a value accept "Script=Greek", so the separator has to be part of
-        // the name rather than the character that ends it.
-        var namesProperties = Dialect.HasFeature(RegexDialectFeatures.UnicodePropertyNames);
         var nameStart = Scanner.Position;
-
-        // "\p{^L}" is the other way of writing "\P{L}" where the dialect has it.
-        if (namesProperties && Scanner.Current == '^')
-        {
-            Scanner.Position++;
-        }
-
-        while (!Scanner.IsAtEnd &&
-            (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current) || Scanner.Current == '-' || (namesProperties && Scanner.Current == '=')))
-        {
-            Scanner.Position++;
-        }
+        ReadPropertyName();
 
         var name = Text[nameStart..Scanner.Position];
         var nameToken = Scanner.Token(SyntaxKind.CategoryNameToken, nameStart);
@@ -171,12 +167,9 @@ internal partial class PerlStyleRegexParser
             {
                 AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, "The property name is empty.");
             }
-
-            // The known-name set is .NET's own. Another dialect has a different and larger one, so checking a name
-            // against this table there would reject properties that dialect really does have.
-            else if (!namesProperties && !NetUnicodeCategoryNames.IsDefined(name))
+            else
             {
-                AddDiagnostic(nameToken.Span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, $"Unknown Unicode property or block name '{name}'.");
+                ValidatePropertyName(nameToken.Span, name, negated: categoryStartToken.Text[1] == 'P', braced: true);
             }
         }
         else
@@ -188,6 +181,41 @@ internal partial class PerlStyleRegexParser
         }
 
         return new RegexUnicodeCategorySyntax(categoryStartToken, openBraceToken, nameToken, closeBraceToken, Options);
+    }
+
+    /// <summary>Reads the name inside <c>\p{…}</c>, stopping before whatever cannot be part of it.</summary>
+    protected virtual void ReadPropertyName()
+    {
+        // Dialects that name a property as well as a value accept "Script=Greek", so the separator has to be part of
+        // the name rather than the character that ends it.
+        var namesProperties = Dialect.HasFeature(RegexDialectFeatures.UnicodePropertyNames);
+
+        // "\p{^L}" is the other way of writing "\P{L}" where the dialect has it.
+        if (namesProperties && Scanner.Current == '^')
+        {
+            Scanner.Position++;
+        }
+
+        while (!Scanner.IsAtEnd &&
+            (RegexCharacterTables.IsBoundaryWordChar(Scanner.Current) || Scanner.Current == '-' || (namesProperties && Scanner.Current == '=')))
+        {
+            Scanner.Position++;
+        }
+    }
+
+    /// <summary>Reports a property name the dialect does not know.</summary>
+    /// <param name="span">Where the name is.</param>
+    /// <param name="name">The name as written, never empty.</param>
+    /// <param name="negated">Whether the escape is <c>\P</c>.</param>
+    /// <param name="braced">Whether the name was written in braces rather than as a single letter.</param>
+    protected virtual void ValidatePropertyName(TextSpan span, string name, bool negated, bool braced)
+    {
+        // The known-name set is .NET's own. Another dialect has a different and larger one, so checking a name against
+        // this table there would reject properties that dialect really does have.
+        if (!Dialect.HasFeature(RegexDialectFeatures.UnicodePropertyNames) && !NetUnicodeCategoryNames.IsDefined(name))
+        {
+            AddDiagnostic(span, RegexDiagnosticIds.UnrecognizedUnicodeProperty, $"Unknown Unicode property or block name '{name}'.");
+        }
     }
 
     /// <summary>Parses a backreference, or falls back to a character escape.</summary>
@@ -207,7 +235,17 @@ internal partial class PerlStyleRegexParser
         ScannedToken openNameToken = default;
 
         // "\k" introduces a named backreference only where the dialect has named groups at all.
-        if (ch == 'k' && Dialect.HasFeature(RegexDialectFeatures.NamedGroups))
+        var isNamedReference = ch == 'k' && Dialect.HasFeature(RegexDialectFeatures.NamedGroups);
+        if (isNamedReference && AllowsUndefinedNamedBackreference && !HasAnyGroupName)
+        {
+            // With no named group anywhere in the pattern there is nothing "\k" could refer to, so it is the letter
+            // rather than a reference, whatever follows it.
+            var identity = ScanCharEscape();
+
+            return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, backpos, leadingTrivia, identity), Options);
+        }
+
+        if (isNamedReference)
         {
             if (Scanner.Position + 1 < Text.Length)
             {
@@ -226,16 +264,6 @@ internal partial class PerlStyleRegexParser
                 {
                     Scanner.Position = openStart;
                 }
-            }
-
-            if ((!angled || Scanner.IsAtEnd) && AllowsUndefinedNamedBackreference && !HasAnyGroupName)
-            {
-                // With no named group anywhere in the pattern there is nothing "\k" could refer to, so it is the
-                // letter rather than a malformed reference.
-                Scanner.Position = backpos + 1;
-                var identity = ScanCharEscape();
-
-                return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, backpos, leadingTrivia, identity), Options);
             }
 
             if (!angled || Scanner.IsAtEnd)
@@ -262,7 +290,7 @@ internal partial class PerlStyleRegexParser
             ch = Scanner.Current;
         }
 
-        if (angled && char.IsAsciiDigit(ch))
+        if (angled && char.IsAsciiDigit(ch) && AllowsNumberedGroups)
         {
             var nameStart = Scanner.Position;
             var number = ReadDecimal(out _);
@@ -285,11 +313,11 @@ internal partial class PerlStyleRegexParser
             if (TryParseUnangledBackreference(backpos, leadingTrivia, out var backreference))
                 return backreference;
         }
-        else if (angled && RegexCharacterTables.IsBoundaryWordChar(ch))
+        else if (angled && IsGroupNameStartAt(Scanner.Position))
         {
             var nameStart = Scanner.Position;
-            var name = ReadCaptureName();
-            var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart);
+            var name = ReadGroupName();
+            var nameToken = Scanner.Token(SyntaxKind.NameToken, nameStart, leadingTrivia: null, ValueIfDifferent(name, nameStart));
             if (!Scanner.IsAtEnd && Text[Scanner.Position] == close)
             {
                 var closeStart = Scanner.Position;
@@ -304,6 +332,16 @@ internal partial class PerlStyleRegexParser
             }
         }
 
+        // Where "\k" can only be a reference, one that is not well formed is an error rather than a letter.
+        if (isNamedReference && Dialect.Family == RegexDialectFamily.JavaScript)
+        {
+            Scanner.Position = backpos + 2;
+            var malformed = Scanner.Token(SyntaxKind.NamedBackreferenceStartToken, backpos, leadingTrivia);
+            AddDiagnostic(malformed.Span, RegexDiagnosticIds.MalformedNamedReference, "Malformed '\\k<...>' named backreference.");
+
+            return new RegexNamedBackreferenceSyntax(malformed, null, null, null, Options);
+        }
+
         // Not a backreference after all: rewind and read the whole thing as a character escape.
         Scanner.Position = backpos + 1;
         var value = ScanCharEscape();
@@ -311,9 +349,46 @@ internal partial class PerlStyleRegexParser
         return new RegexCharacterEscapeSyntax(Scanner.Token(SyntaxKind.EscapeToken, backpos, leadingTrivia, value), Options);
     }
 
+    /// <summary>Returns <paramref name="value"/> when it differs from the text read since <paramref name="start"/>, else null.</summary>
+    private protected string? ValueIfDifferent(string value, int start) =>
+        Text.AsSpan(start, Scanner.Position - start).SequenceEqual(value) ? null : value;
+
     /// <summary>Reads <c>\1</c>-style backreferences, which are octal escapes when no such group exists.</summary>
     private bool TryParseUnangledBackreference(int backpos, GreenNode? leadingTrivia, out RegexAtomSyntax result)
     {
+        if (UsesJavaScriptDecimalEscapes)
+        {
+            // The whole run of digits is one number, and it names a group when the pattern has that many anywhere,
+            // before or after this point.
+            long number = 0;
+            while (char.IsAsciiDigit(Scanner.Current))
+            {
+                number = Math.Min((number * 10) + (Scanner.Current - '0'), int.MaxValue);
+                Scanner.Position++;
+            }
+
+            var token = Scanner.Token(SyntaxKind.BackreferenceToken, backpos, leadingTrivia, FormatNumber((int)number));
+            if (number <= CaptureTable.Numbers.Count)
+            {
+                result = new RegexBackreferenceSyntax(token, Options);
+
+                return true;
+            }
+
+            if (!AllowsOctalEscape)
+            {
+                AddDiagnostic(token.Span, RegexDiagnosticIds.UndefinedNumberedReference, $"Reference to undefined group number {token.Text[1..]}.");
+                result = new RegexBackreferenceSyntax(token, Options);
+
+                return true;
+            }
+
+            // The web-compatibility grammar falls back to a legacy octal escape, or to the digit itself for 8 and 9.
+            result = null!;
+
+            return false;
+        }
+
         if (UsesEcmaScriptBehavior)
         {
             // ECMAScript takes the longest prefix of the digits that names a group declared before this point.
@@ -388,6 +463,9 @@ internal partial class PerlStyleRegexParser
         if (!RecognizesPerlCharacterEscapes)
             return ch.ToString();
 
+        if (TryScanDialectCharacterEscape(ch, escapeStart) is { } dialectValue)
+            return dialectValue;
+
         if (ch is >= '0' and <= '7')
         {
             Scanner.Position--;
@@ -402,19 +480,23 @@ internal partial class PerlStyleRegexParser
 
             // In Unicode mode "\u{10FFFF}" names a code point directly, so the braces are part of the escape rather
             // than a bound applied to the letter.
+            case 'u' when !SupportsUnicodeEscape:
+                AddDiagnostic(TextSpan.FromBounds(escapeStart, Scanner.Position), RegexDiagnosticIds.UnrecognizedEscape, "The '\\u' escape is not supported by this dialect.");
+                return "u";
+
             case 'u' when UsesUnicodeMode && Scanner.Current == '{':
                 return ScanBracedCodePoint(escapeStart);
 
             case 'u':
-                return ScanHex(4, escapeStart);
+                return ScanUnicodeEscape(escapeStart);
 
-            case 'a':
+            case 'a' when HasBellAndEscapeEscapes:
                 return "\a";
 
             case 'b':
                 return "\b";
 
-            case 'e':
+            case 'e' when HasBellAndEscapeEscapes:
                 return "\u001b";
 
             case 'f':
@@ -445,6 +527,12 @@ internal partial class PerlStyleRegexParser
         }
     }
 
+    /// <summary>
+    /// Reads a character escape only some dialects have, returning the character, or null to fall through. The reading
+    /// position is just past <paramref name="letter"/>.
+    /// </summary>
+    private protected virtual string? TryScanDialectCharacterEscape(char letter, int escapeStart) => null;
+
     /// <summary>Reads up to three octal digits, stopping before the value exceeds 0377.</summary>
     private string ScanOctal()
     {
@@ -463,8 +551,9 @@ internal partial class PerlStyleRegexParser
                 break;
         }
 
-        // A lone "\0" is the null character everywhere; it is the digits after it that make it an octal escape.
-        if (!AllowsOctalEscape && (Scanner.Position - octalStart > 1 || Text[octalStart] != '0'))
+        // A lone "\0" is the null character everywhere; it is the digits after it that make it an octal escape, and
+        // where octal is not allowed even a digit it could not have taken ("\08") makes it one.
+        if (!AllowsOctalEscape && (Scanner.Position - octalStart > 1 || Text[octalStart] != '0' || char.IsAsciiDigit(Scanner.Current)))
         {
             AddDiagnostic(
                 TextSpan.FromBounds(Math.Max(0, octalStart - 1), Scanner.Position),
@@ -513,7 +602,39 @@ internal partial class PerlStyleRegexParser
             return string.Empty;
         }
 
-        return char.ConvertFromUtf32(value);
+        // A surrogate written as a code point is still one character, even though it is not a scalar value.
+        return value is >= 0xD800 and <= 0xDFFF ? ((char)value).ToString() : char.ConvertFromUtf32(value);
+    }
+
+    /// <summary>Reads the four digits of <c>\uHHHH</c>.</summary>
+    /// <remarks>
+    /// In Unicode mode a high surrogate written this way pairs with a low surrogate written the same way right after
+    /// it, so the two escapes stand for one code point.
+    /// </remarks>
+    private string ScanUnicodeEscape(int escapeStart)
+    {
+        var value = ScanHex(4, escapeStart);
+        if (ReadsCodePoints && value.Length == 1 && char.IsHighSurrogate(value[0]) &&
+            Scanner.Current == '\\' && Scanner.Peek() == 'u' && Scanner.Position + 6 <= Text.Length)
+        {
+            var low = 0;
+            for (var index = Scanner.Position + 2; index < Scanner.Position + 6; index++)
+            {
+                var digit = FromHexChar(Text[index]);
+                low = digit < 0 ? -1 : (low * 0x10) + digit;
+                if (low < 0)
+                    break;
+            }
+
+            if (low >= 0 && char.IsLowSurrogate((char)low))
+            {
+                Scanner.Position += 6;
+
+                return string.Concat(value, ((char)low).ToString());
+            }
+        }
+
+        return value;
     }
 
     /// <summary>Reads exactly <paramref name="count"/> hexadecimal digits.</summary>
@@ -575,6 +696,12 @@ internal partial class PerlStyleRegexParser
     /// <summary>Reads the character of a <c>\c</c> control escape and converts it.</summary>
     private string ScanControl(int escapeStart)
     {
+        // Inside a class the web-compatibility grammar also takes a digit or "_" as the control letter.
+        if (AllowsMalformedNumericEscape && IsInCharacterClass && (char.IsAsciiDigit(Scanner.Current) || Scanner.Current == '_'))
+        {
+            return ((char)(Text[Scanner.Position++] % 32)).ToString();
+        }
+
         if (Scanner.IsAtEnd || (AllowsMalformedNumericEscape && !char.IsAsciiLetter(Scanner.Current)))
         {
             if (AllowsMalformedNumericEscape)
@@ -601,8 +728,19 @@ internal partial class PerlStyleRegexParser
             ch = (char)(ch - ('a' - 'A'));
         }
 
+        if (AllowsAnyControlEscapeCharacter)
+        {
+            // PCRE flips a bit of whatever follows, but only a printable ASCII character may.
+            if (Text[Scanner.Position - 1] is < ' ' or > '~')
+            {
+                AddDiagnostic(TextSpan.FromBounds(escapeStart, Scanner.Position), RegexDiagnosticIds.UnrecognizedControlCharacter, "The '\\c' escape must be followed by a printable ASCII character.");
+            }
+
+            return ((char)(ch ^ 0x40)).ToString();
+        }
+
         ch = (char)(ch - '@');
-        if (ch < ' ' || AllowsAnyControlEscapeCharacter)
+        if (ch < ' ')
             return ch.ToString();
 
         if (AllowsMalformedNumericEscape)

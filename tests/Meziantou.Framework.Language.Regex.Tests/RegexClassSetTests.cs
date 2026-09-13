@@ -35,7 +35,7 @@ public sealed class RegexClassSetTests
     [InlineData(@"[\w--\d]", "--", 2)]
     [InlineData("[a--b]", "--", 2)]
     [InlineData("[a--b--c]", "--", 3)]
-    [InlineData(@"[\w--a-z]", "--", 2)]
+    [InlineData(@"[\w--[a-z]]", "--", 2)]
     [InlineData(@"[^\w--\d]", "--", 2)]
     public void AnOperationKeepsItsOperatorAndOperands(string pattern, string op, int operands)
     {
@@ -76,6 +76,11 @@ public sealed class RegexClassSetTests
     [InlineData("[a&&b--c]")]
     [InlineData("[[a][b]--[c]]")]
     [InlineData("[a&&]")]
+    [InlineData("[&&a]")]
+    [InlineData("[a&&&b]")]
+    [InlineData("[a&&bc]")]
+    [InlineData(@"[\w--a-z]")]
+    [InlineData("[a-z&&[aeiou]]")]
     public void AMalformedOperationIsReported(string pattern)
     {
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, SetMode);

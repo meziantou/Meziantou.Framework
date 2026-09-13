@@ -16,14 +16,16 @@ annotations.
 
 The .NET dialect's scanner is ported from [dotnet/runtime](https://github.com/dotnet/runtime)'s own `RegexParser`, so its grammar decisions come from the engine rather than being re-derived. See `THIRD-PARTY-NOTICES.TXT`. A differential test runs every sample and several thousand generated patterns through both this parser and `System.Text.RegularExpressions`, asserting they agree on what is valid.
 
+The other dialects are checked the same way against their engines -- V8 for JavaScript, PCRE2 10.47 for PCRE, and glibc's `regcomp` for POSIX. Several thousand patterns per dialect, with the verdict and the capture groups each engine reported, are replayed by the tests.
+
 ## Dialects
 
 | `RegexDialect` | Family | Notes |
 | --- | --- | --- |
 | `Net` | .NET | balancing groups, character class subtraction, conditionals, `(?#…)`, extended mode |
-| `JavaScript` | ECMAScript | the `u` and `v` flags, `\u{…}`, `[]` and `[^]`, class set operations, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode, no inline options |
-| `PcrePerl` | PCRE | possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX brackets, recursion and subroutine calls, the `\g` family, callouts, `\h\H\v\V\R\X\N`, `\o{…}`, `\N{U+…}` |
-| `PosixExtended` | POSIX | extended regular expressions (ERE) |
+| `JavaScript` | ECMAScript | the `u` and `v` flags, `\u{…}`, `[]` and `[^]`, class set operations, `(?ims-ims:…)` modifiers, duplicate group names in different alternatives, no `\A`/`\Z`/`\z`/`\G`, no atomic groups, no extended mode |
+| `PcrePerl` | PCRE | possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX brackets, recursion and subroutine calls, the `\g` family, callouts, verbs and alpha assertions, branch reset groups, `\h\H\v\V\R\X\N`, `\o{…}`, `\N{U+…}` |
+| `PosixExtended` | POSIX | extended regular expressions (ERE), with the GNU `\w`, `\s`, `\b`, `\<`, and `\>` |
 | `PosixBasic` | POSIX | basic regular expressions (BRE): `\(…\)` groups, `\{n,m\}` bounds, GNU `\|`, `\+`, `\?`; a bare `(` or `{` is an ordinary character |
 
 Dialects within a family share a parser; `RegexDialect.Features` records what each one supports.
@@ -36,15 +38,19 @@ Every dialect parses its own grammar into its own node types, not into a pile of
 
 - **`Net`** is complete against Microsoft's regular-expression language reference, balancing groups
   (`(?<c-o>…)`, `(?'c-o'…)`, and the pop-only `(?<-o>…)`) included, with capture numbering that matches the engine.
-- **`JavaScript`** covers both Unicode flags. `u` makes a surrogate pair one atom and enables `\u{…}`; `v` adds the
-  class set grammar — nested classes, `&&`, `--`, and `\q{…}` string disjunctions.
-- **`PcrePerl`** covers recursion and subroutine calls in every spelling (`(?R)`, `(?1)`, `(?&name)`, `(?P>name)`,
-  `\g<name>`), the `\g` reference family including relative ones, `(?P=name)`, callouts, backtracking verbs,
-  `\Q…\E`, `\h\H\v\V\R\X\N`, `\o{…}`, `\N{U+…}`, `\p{^L}`, and the `J` and `U` options.
-- **`PosixExtended`** and **`PosixBasic`** cover bracket expressions, collating elements, and equivalence classes.
-  A basic expression's `\(…\)` groups, `\{n,m\}` bounds, and backreferences are all in the tree, as are the GNU
-  `\|`, `\+`, and `\?` extensions, and the positional rules that make `^`, `$`, and `*` ordinary characters where
-  they cannot be special.
+- **`JavaScript`** covers both Unicode flags. `u` makes the pattern a sequence of code points -- a surrogate pair is one
+  atom and one endpoint of a range -- and enables `\u{…}`; `v` adds the class set grammar: nested classes, `&&`, `--`,
+  and `\q{…}` string disjunctions, with the rules that keep strings out of a negated class. `\p{…}` names are checked
+  against the tables of the specification.
+- **`PcrePerl`** covers recursion and subroutine calls in every spelling (`(?R)`, `(?1)`, `(?-1)`, `(?&name)`,
+  `(?P>name)`, `\g<name>`), the `\g` reference family including relative ones, `(?P=name)`, callouts, backtracking
+  verbs, start-of-pattern options, alpha assertions such as `(*plb:…)`, every condition PCRE has (`(?(<name>)…)`,
+  `(?(R1)…)`, `(?(DEFINE)…)`, `(?(VERSION>=10.4)…)`, assertions), `\Q…\E` inside and outside a class, the
+  `J`, `U`, `^`, `r`, and `aD` options, and loosely matched `\p{…}` names. A lookbehind must have a bounded length.
+- **`PosixExtended`** and **`PosixBasic`** cover bracket expressions, collating elements, and equivalence classes, in
+  which a backslash is an ordinary character. A basic expression's `\(…\)` groups, `\{n,m\}` bounds, and
+  backreferences are all in the tree, as are the GNU `\|`, `\+`, and `\?` extensions, and the positional rules that
+  make `^`, `$`, and `*` ordinary characters where they cannot be special.
 
 Two notes on how faithful each dialect is, since they were checked against the engines themselves rather than against
 a reading of the grammars:
@@ -56,7 +62,11 @@ a reading of the grammars:
   `{5,2}`; PCRE2 rejects all three, and so does this.
 - **POSIX has no character escapes.** `\x41`, `\cA`, `\n`, and `\k` are the letters `x41`, `cA`, `n`, and `k`, which
   is what the engines see. The shorthand classes it does accept -- `\w`, `\s`, `\b` and their negations -- are the
-  GNU extensions.
+  GNU extensions. Where POSIX leaves a construct undefined, the parser does what glibc does: `a**` is fine in an
+  extended expression, a `{` always starts an interval, and a backreference must name a group already closed in its
+  branch.
+- **`JavaScript` follows the specification where V8 does not.** V8 accepts `(?<a>x)(?:y|(?<a>z))`, in which both
+  groups can take part in one match; the specification forbids it, and so does this.
 
 Java, Python, and RE2/Go are not dialects.
 
@@ -166,8 +176,9 @@ Console.WriteLine(literals[0].Options);   // None
 Console.WriteLine(literals[1].Options);   // IgnoreCase
 ```
 
-Capture groups are numbered the way the engine numbers them, which is not the order they are written in: named groups
-take the first free numbers after every explicitly numbered one.
+Capture groups are numbered the way the engine numbers them. In .NET that is not the order they are written in: named
+groups take the first free numbers after every explicitly numbered one. JavaScript and PCRE number every group where it
+stands, and a PCRE branch reset group gives each of its branches the same numbers.
 
 ```csharp
 var tree = RegexSyntaxTree.ParseText("(a)(?<x>b)(c)", RegexDialect.Net);
@@ -176,6 +187,8 @@ foreach (var capture in tree.Captures)
 {
     Console.WriteLine($"{capture.Number}: {capture.Name}");   // 1: 1 / 2: 2 / 3: x
 }
+
+// The same pattern in JavaScript or PCRE: 1: 1 / 2: x / 3: 3
 ```
 
 ## Trivia

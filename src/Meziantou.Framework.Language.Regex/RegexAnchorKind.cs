@@ -29,4 +29,10 @@ public enum RegexAnchorKind
 
     /// <summary><c>\K</c>.</summary>
     KeepOut,
+
+    /// <summary><c>\&lt;</c>, the GNU start-of-word assertion.</summary>
+    StartOfWord,
+
+    /// <summary><c>\&gt;</c>, the GNU end-of-word assertion.</summary>
+    EndOfWord,
 }

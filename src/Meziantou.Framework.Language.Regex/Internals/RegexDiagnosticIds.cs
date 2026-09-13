@@ -4,9 +4,9 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// <remarks>
 /// <para>
 /// The identifiers are banded: <c>REGEX0001</c>-<c>REGEX0019</c> are structural facts about brackets, parentheses, and
-/// quantifiers that every dialect shares; <c>REGEX0030</c>-<c>REGEX0034</c> concern escapes, backreferences, and Unicode
+/// quantifiers that every dialect shares; <c>REGEX0030</c>-<c>REGEX0035</c> concern escapes, backreferences, and Unicode
 /// properties, which POSIX has none of; <c>REGEX0050</c>-<c>REGEX0056</c> are constructs only .NET has;
-/// <c>REGEX0070</c>, <c>REGEX0090</c>, and <c>REGEX0110</c> are reserved for JavaScript, PCRE, and POSIX; and
+/// <c>REGEX0070</c>, <c>REGEX0090</c>, and <c>REGEX0110</c> start the bands of JavaScript, PCRE, and POSIX; and
 /// <c>REGEX0200</c> and up belong to the parser itself rather than to the grammar.
 /// </para>
 /// <para>
@@ -47,11 +47,15 @@ internal static class RegexDiagnosticIds
     public const string InvalidUnicodePropertyEscape = "REGEX0032";
     public const string MalformedUnicodePropertyEscape = "REGEX0033";
     public const string UnrecognizedUnicodeProperty = "REGEX0034";
+    public const string DuplicateGroupName = "REGEX0035";
 
     // ---- JavaScript only ----
     public const string MalformedClassSetOperation = "REGEX0070";
     public const string ReservedClassSetPunctuator = "REGEX0071";
     public const string MalformedClassString = "REGEX0072";
+    public const string InvalidClassSetCharacter = "REGEX0073";
+    public const string NegatedClassContainsStrings = "REGEX0074";
+    public const string InvalidModifiers = "REGEX0075";
 
     // ---- .NET only ----
     public const string ExclusionGroupNotLast = "REGEX0050";
@@ -60,6 +64,16 @@ internal static class RegexDiagnosticIds
     public const string AlternationHasComment = "REGEX0054";
     public const string AlternationHasMalformedReference = "REGEX0055";
     public const string AlternationHasUndefinedReference = "REGEX0056";
+
+    // ---- PCRE only ----
+    public const string InvalidBacktrackingVerb = "REGEX0090";
+    public const string InvalidCallout = "REGEX0091";
+    public const string UnboundedLookbehind = "REGEX0092";
+    public const string InvalidConditionalCondition = "REGEX0093";
+
+    // ---- POSIX bracket expressions, which PCRE shares ----
+    public const string InvalidPosixBracketExpression = "REGEX0110";
+    public const string MalformedInterval = "REGEX0111";
 
     // ---- the parser itself ----
     public const string MaxRecursionDepthExceeded = "REGEX0200";

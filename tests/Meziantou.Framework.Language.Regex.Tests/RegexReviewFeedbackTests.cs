@@ -124,7 +124,7 @@ public sealed class RegexReviewFeedbackTests
     [InlineData("javascript", "(?<a-b>x)")]
     [InlineData("javascript", "(?(1)a|b)")]
     [InlineData("javascript", "(?i)a")]
-    [InlineData("javascript", "(?i:a)")]
+    [InlineData("javascript", "(?x:a)")]
     [InlineData("pcre", "(?<a-b>x)")]
     [InlineData("ere", "(?:a)")]
     [InlineData("ere", "(?=a)")]

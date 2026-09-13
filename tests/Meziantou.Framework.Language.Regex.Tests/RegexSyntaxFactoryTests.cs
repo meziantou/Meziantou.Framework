@@ -105,7 +105,10 @@ public sealed class RegexSyntaxFactoryTests
         foreach (var kind in Enum.GetValues<RegexAnchorKind>())
         {
             var built = SyntaxFactory.Anchor(kind).ToFullString();
-            var tree = RegexSyntaxAssert.TextIsFaithful(built, RegexDialect.PcrePerl);
+
+            // The word anchors are the GNU ones, which only the POSIX dialects have.
+            var dialect = kind is RegexAnchorKind.StartOfWord or RegexAnchorKind.EndOfWord ? RegexDialect.PosixExtended : RegexDialect.PcrePerl;
+            var tree = RegexSyntaxAssert.TextIsFaithful(built, dialect);
 
             var anchor = Assert.Single(tree.GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
             Assert.Equal(kind, anchor.AnchorKind);

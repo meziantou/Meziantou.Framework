@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.TaggedValues/Meziantou.Framework.TaggedValues.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TaggedValues.CodeFix/Meziantou.Framework.TaggedValues.CodeFix.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.4" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
+  </ItemGroup>
+</Project>

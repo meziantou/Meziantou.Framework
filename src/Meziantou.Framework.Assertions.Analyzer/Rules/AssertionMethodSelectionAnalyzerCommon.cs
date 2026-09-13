@@ -135,8 +135,13 @@ internal static class AssertionMethodSelectionAnalyzerCommon
 
         var expectedOperation = expectedArgument.Value.UnwrapImplicitConversions();
         var actualOperation = actualArgument.Value.UnwrapImplicitConversions();
-        if (!AssertionsAnalyzerHelpers.IsValueType(expectedOperation.Type) ||
-            !AssertionsAnalyzerHelpers.IsValueType(actualOperation.Type))
+        // Boxing a value type always allocates a new instance, so the reference comparison can never succeed.
+        // A nullable value type is only excluded when compared to a reference, as both sides can box to null.
+        var isExpectedValueType = AssertionsAnalyzerHelpers.IsValueType(expectedOperation.Type);
+        var isActualValueType = AssertionsAnalyzerHelpers.IsValueType(actualOperation.Type);
+        if (!(isExpectedValueType && isActualValueType) &&
+            !IsNonNullableValueType(expectedOperation.Type) &&
+            !IsNonNullableValueType(actualOperation.Type))
         {
             match = default;
             return false;
@@ -147,6 +152,11 @@ internal static class AssertionMethodSelectionAnalyzerCommon
             actualOperation,
             invocationOperation.TargetMethod.Name == "Same" ? EqualAssertionMethodName : NotEqualAssertionMethodName);
         return true;
+    }
+
+    private static bool IsNonNullableValueType(ITypeSymbol? type)
+    {
+        return type is { IsValueType: true } && type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T;
     }
 
     private static bool IsAssertInvocation(IInvocationOperation invocationOperation, INamedTypeSymbol assertType, params string[] methodNames)

@@ -4,5 +4,5 @@ namespace Meziantou.Framework.Language.Regex;
 public sealed partial class RegexNamedBackreferenceSyntax : RegexAtomSyntax
 {
     /// <summary>The group name the reference names, or an empty string when the construct is incomplete.</summary>
-    public string Name => NameToken.Text;
+    public string Name => NameToken.ValueText;
 }

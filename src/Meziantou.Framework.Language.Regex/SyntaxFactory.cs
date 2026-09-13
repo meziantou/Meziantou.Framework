@@ -76,6 +76,8 @@ public static partial class SyntaxFactory
             RegexAnchorKind.ContiguousMatch => "\\G",
             RegexAnchorKind.NonWordBoundary => "\\B",
             RegexAnchorKind.KeepOut => "\\K",
+            RegexAnchorKind.StartOfWord => "\\<",
+            RegexAnchorKind.EndOfWord => "\\>",
             _ => "\\b",
         };
 

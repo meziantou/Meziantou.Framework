@@ -25,7 +25,9 @@ namespace Meziantou.Framework.Language.Regex
         ContiguousMatch = 5,
         WordBoundary = 6,
         NonWordBoundary = 7,
-        KeepOut = 8
+        KeepOut = 8,
+        StartOfWord = 9,
+        EndOfWord = 10
     }
 
     public sealed class RegexAnchorSyntax : Meziantou.Framework.Language.Regex.RegexAtomSyntax

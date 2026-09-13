@@ -6,7 +6,8 @@
 // Permalink: https://github.com/dotnet/runtime/blob/5ec6efc171b19c0e2d591fbd451920e8f43a1552/src/libraries/System.Text.RegularExpressions/src/System/Text/RegularExpressions/RegexParser.cs
 //
 // Changes: NoteCaptureSlot, NoteCaptureName, and AssignNameSlots keep their algorithm; the sparse-to-dense remapping
-// that only the matching engine needed is not here, and Hashtable is replaced by typed dictionaries.
+// that only the matching engine needed is not here, and Hashtable is replaced by typed dictionaries. Named groups that
+// take their number where they stand, as they do in JavaScript and PCRE, are an addition.
 
 using System.Globalization;
 
@@ -20,36 +21,33 @@ namespace Meziantou.Framework.Language.Regex.Internals;
 /// </remarks>
 internal sealed class RegexCaptureTable
 {
-    public static RegexCaptureTable Empty { get; } = new([], [], new Dictionary<string, int>(StringComparer.Ordinal));
+    public static RegexCaptureTable Empty { get; } = new([], [], new Dictionary<string, int>(StringComparer.Ordinal), []);
 
     private readonly Dictionary<int, int> _positions;
     private readonly Dictionary<string, int> _numbersByName;
+    private readonly Dictionary<int, string> _namesByNumber;
 
-    private RegexCaptureTable(IReadOnlyList<int> numbers, Dictionary<int, int> positions, Dictionary<string, int> numbersByName)
+    private RegexCaptureTable(IReadOnlyList<int> numbers, Dictionary<int, int> positions, Dictionary<string, int> numbersByName, Dictionary<int, string> namesByNumber)
     {
         Numbers = numbers;
         _positions = positions;
         _numbersByName = numbersByName;
+        _namesByNumber = namesByNumber;
     }
 
     /// <summary>Every capture number the pattern uses, in ascending order. Group 0 is not included.</summary>
     public IReadOnlyList<int> Numbers { get; }
 
+    /// <summary>Whether any group of the pattern has a name.</summary>
+    public bool HasNames => _numbersByName.Count > 0;
+
     public bool ContainsNumber(int number) => _positions.ContainsKey(number);
 
+    /// <summary>Resolves a name to its group number, the first one when several groups share the name.</summary>
     public bool TryGetNumber(string name, out int number) => _numbersByName.TryGetValue(name, out number);
 
     /// <summary>The name of a group, which is the number written out when the group has none.</summary>
-    public string GetName(int number)
-    {
-        foreach (var pair in _numbersByName)
-        {
-            if (pair.Value == number)
-                return pair.Key;
-        }
-
-        return number.ToString(CultureInfo.InvariantCulture);
-    }
+    public string GetName(int number) => _namesByNumber.TryGetValue(number, out var name) ? name : number.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>The position of the <c>(</c> that declares a group.</summary>
     public int GetPosition(int number) => _positions.TryGetValue(number, out var position) ? position : 0;
@@ -60,8 +58,7 @@ internal sealed class RegexCaptureTable
         private readonly Dictionary<int, int> _caps = [];
         private readonly Dictionary<string, int> _capnamePositions = new(StringComparer.Ordinal);
         private readonly List<string> _capnamelist = [];
-
-        private int _autocap = 1;
+        private readonly List<(string Name, int Number)> _numberedNames = [];
 
         /// <summary>Notes a used capture slot.</summary>
         public void NoteSlot(int number, int position)
@@ -72,22 +69,20 @@ internal sealed class RegexCaptureTable
             _caps.TryAdd(number, position);
         }
 
-        /// <summary>Notes an unnamed group, taking the next free number.</summary>
-        public int NoteAutoSlot(int position)
-        {
-            var number = _autocap++;
-            NoteSlot(number, position);
-
-            return number;
-        }
-
-        /// <summary>Notes a named group.</summary>
+        /// <summary>Notes a named group whose number is assigned after every numbered one, as .NET does.</summary>
         public void NoteName(string name, int position)
         {
             if (_capnamePositions.TryAdd(name, position))
             {
                 _capnamelist.Add(name);
             }
+        }
+
+        /// <summary>Notes a named group that already took its number where it stands, as JavaScript and PCRE do.</summary>
+        public void NoteNumberedName(string name, int number, int position)
+        {
+            NoteSlot(number, position);
+            _numberedNames.Add((name, number));
         }
 
         /// <summary>
@@ -100,17 +95,27 @@ internal sealed class RegexCaptureTable
         public RegexCaptureTable Build()
         {
             var numbersByName = new Dictionary<string, int>(StringComparer.Ordinal);
+            var namesByNumber = new Dictionary<int, string>();
+
+            foreach (var (name, number) in _numberedNames)
+            {
+                numbersByName.TryAdd(name, number);
+                namesByNumber.TryAdd(number, name);
+            }
+
+            var autocap = 1;
             foreach (var name in _capnamelist)
             {
-                while (_caps.ContainsKey(_autocap))
+                while (_caps.ContainsKey(autocap))
                 {
-                    _autocap++;
+                    autocap++;
                 }
 
                 var position = _capnamePositions[name];
-                numbersByName[name] = _autocap;
-                NoteSlot(_autocap, position);
-                _autocap++;
+                numbersByName[name] = autocap;
+                namesByNumber[autocap] = name;
+                NoteSlot(autocap, position);
+                autocap++;
             }
 
             var numbers = new List<int>(_caps.Count);
@@ -124,7 +129,7 @@ internal sealed class RegexCaptureTable
 
             numbers.Sort();
 
-            return new RegexCaptureTable(numbers, _caps, numbersByName);
+            return new RegexCaptureTable(numbers, _caps, numbersByName, namesByNumber);
         }
     }
 }

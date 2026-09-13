@@ -140,6 +140,53 @@ public sealed class RegexRoundTripFuzzTests
         }
     }
 
+    /// <summary>
+    /// Every dialect and every option that changes the grammar, over text made of the characters each grammar gives a
+    /// meaning to, surrogates and escapes that name surrogates included.
+    /// </summary>
+    [Theory]
+    [InlineData(21)]
+    [InlineData(22)]
+    public void RandomSoup_RoundTripsInEveryDialectAndMode(int seed)
+    {
+        string[] pieces =
+        [
+            "a", "0", "9", "-", "&", "!", "|", "^", "$", ".", "*", "+", "?", "(", ")", "[", "]", "{", "}", ",", ":", "=", "<", ">", "'", "#", " ",
+            "\\", "\\d", "\\p{", "\\q{", "\\u{D83D}", "\\uD83D", "\\uDE00", "\\x{", "\\k<", "\\g{-", "\\Q", "\\E", "\\N{U+", "(?", "(*", "(?(", "(?<",
+            "[:", ":]", "[.", ".]", "&&", "--", "\uD83D", "\uDE00", "\U0001F600", "é",
+        ];
+
+        (RegexDialect Dialect, RegexPatternOptions Options)[] modes =
+        [
+            (RegexDialect.Net, RegexPatternOptions.None),
+            (RegexDialect.Net, RegexPatternOptions.IgnorePatternWhitespace | RegexPatternOptions.EcmaScript),
+            (RegexDialect.JavaScript, RegexPatternOptions.None),
+            (RegexDialect.JavaScript, RegexPatternOptions.Unicode),
+            (RegexDialect.JavaScript, RegexPatternOptions.Unicode | RegexPatternOptions.UnicodeSets),
+            (RegexDialect.PcrePerl, RegexPatternOptions.None),
+            (RegexDialect.PcrePerl, RegexPatternOptions.IgnorePatternWhitespace),
+            (RegexDialect.PosixExtended, RegexPatternOptions.None),
+            (RegexDialect.PosixBasic, RegexPatternOptions.None),
+        ];
+
+        var random = new DeterministicRandom(seed);
+        for (var iteration = 0; iteration < 300; iteration++)
+        {
+            var builder = new StringBuilder();
+            var length = random.Next(16);
+            for (var index = 0; index < length; index++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var pattern = builder.ToString();
+            foreach (var (dialect, options) in modes)
+            {
+                RegexSyntaxAssert.TextIsFaithful(pattern, new RegexParseOptions(dialect) { PatternOptions = options });
+            }
+        }
+    }
+
     [Fact]
     public void ParseText_NeverThrows()
     {

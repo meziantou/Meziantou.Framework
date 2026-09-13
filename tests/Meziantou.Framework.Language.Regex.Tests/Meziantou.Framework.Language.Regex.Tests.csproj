@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Corpus/*.txt" />
+    <EmbeddedResource Include="Corpus/*.jsonl" />
   </ItemGroup>
 
   <ItemGroup>

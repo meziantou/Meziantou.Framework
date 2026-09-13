@@ -14,6 +14,10 @@ public sealed partial class RegexAnchorSyntax : RegexAtomSyntax
         "\\G" => RegexAnchorKind.ContiguousMatch,
         "\\B" => RegexAnchorKind.NonWordBoundary,
         "\\K" => RegexAnchorKind.KeepOut,
+        "\\<" => RegexAnchorKind.StartOfWord,
+        "\\>" => RegexAnchorKind.EndOfWord,
+        "\\`" => RegexAnchorKind.StartOfInput,
+        "\\'" => RegexAnchorKind.EndOfInput,
         _ => RegexAnchorKind.WordBoundary,
     };
 }

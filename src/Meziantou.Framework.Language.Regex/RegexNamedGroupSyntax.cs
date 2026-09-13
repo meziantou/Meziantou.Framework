@@ -4,5 +4,5 @@ namespace Meziantou.Framework.Language.Regex;
 public sealed partial class RegexNamedGroupSyntax : RegexGroupSyntax
 {
     /// <summary>The group name.</summary>
-    public string Name => NameToken.Text;
+    public string Name => NameToken.ValueText;
 }

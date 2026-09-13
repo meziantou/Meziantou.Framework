@@ -12,6 +12,11 @@ namespace Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
 /// everything up to the first of them, so it always consumes something unless it is already looking at one. Each loop
 /// then excludes exactly the tokens it passes down, which is why none of them can spin.
 /// </para>
+/// <para>
+/// The closers of every enclosing construct are among those tokens, not only the construct's own. That is what lets
+/// <c>{"a": [1, 2}</c> end the array at the brace and report the missing bracket, rather than skip the brace as
+/// garbage and then report the object as unterminated too.
+/// </para>
 /// </remarks>
 internal sealed class LanguageParser
 {
@@ -53,8 +58,7 @@ internal sealed class LanguageParser
         CloseBracket = 8,
 
         Document = EndOfFile,
-        Object = EndOfFile | Comma | CloseBrace,
-        Array = EndOfFile | Comma | CloseBracket,
+        Closers = CloseBrace | CloseBracket,
     }
 
     public JsonDocumentSyntax ParseDocument()
@@ -65,6 +69,14 @@ internal sealed class LanguageParser
 
         while (CurrentKind != SyntaxKind.EndOfFileToken)
         {
+            // Nothing can start with these, so each is reported on its own and parsing picks up after it: a stray
+            // closing brace does not take the rest of the document with it, nor stand in for the root value.
+            if (!CanStartValue(CurrentKind))
+            {
+                values.Add(ParseStrayTokens());
+                continue;
+            }
+
             if (hasRootValue)
             {
                 AddErrorAtCurrentToken(JsonDiagnosticDescriptors.UnexpectedDataAfterRootValue);
@@ -72,6 +84,12 @@ internal sealed class LanguageParser
 
             values.Add(ParseValue(TerminatorState.Document));
             hasRootValue = true;
+        }
+
+        // A document is exactly one value; whitespace and comments alone are not one.
+        if (values.Count == 0)
+        {
+            AddErrorForMissingToken(JsonDiagnosticDescriptors.ExpectedValue);
         }
 
         var node = new JsonDocumentSyntax(SyntaxFactory.List(values.ToArray()), EatToken());
@@ -90,6 +108,16 @@ internal sealed class LanguageParser
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
         return eaten;
+    }
+
+    /// <summary>Gets the kind of the token after the current one, without moving past anything.</summary>
+    private SyntaxKind PeekKind()
+    {
+        var position = _lexer.Position;
+        var next = _lexer.Lex();
+        _lexer.Position = position;
+
+        return (SyntaxKind)next.RawKind;
     }
 
     private GreenToken EatToken(SyntaxKind kind, DiagnosticDescriptor descriptor, params object?[] arguments)
@@ -147,7 +175,7 @@ internal sealed class LanguageParser
         _depth++;
         try
         {
-            return CurrentKind == SyntaxKind.OpenBraceToken ? ParseObject() : ParseArray();
+            return CurrentKind == SyntaxKind.OpenBraceToken ? ParseObject(terminators) : ParseArray(terminators);
         }
         finally
         {
@@ -176,14 +204,33 @@ internal sealed class LanguageParser
         return (JsonSkippedTextSyntax)Finish(node, start, mark);
     }
 
-    private JsonObjectSyntax ParseObject()
+    /// <summary>Parses the tokens at the document level that cannot start a value, reporting each of them.</summary>
+    private JsonSkippedTextSyntax ParseStrayTokens()
+    {
+        var mark = _pending.Count;
+        var start = _currentFullStart;
+        var tokens = new List<GreenNode?>();
+
+        while (CurrentKind != SyntaxKind.EndOfFileToken && !CanStartValue(CurrentKind))
+        {
+            AddErrorAtCurrentToken(JsonDiagnosticDescriptors.UnexpectedToken, _current.Text);
+            tokens.Add(EatToken());
+        }
+
+        var node = new JsonSkippedTextSyntax(SyntaxFactory.ListNode(tokens.ToArray()));
+
+        return (JsonSkippedTextSyntax)Finish(node, start, mark);
+    }
+
+    private JsonObjectSyntax ParseObject(TerminatorState outerTerminators)
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
         var openBrace = EatToken(SyntaxKind.OpenBraceToken, JsonDiagnosticDescriptors.ExpectedCharacter, "{");
         var members = new List<GreenNode?>();
+        var closers = TerminatorState.EndOfFile | TerminatorState.CloseBrace | (outerTerminators & TerminatorState.Closers);
 
-        while (CurrentKind is not SyntaxKind.EndOfFileToken and not SyntaxKind.CloseBraceToken)
+        while (!IsTerminator(CurrentKind, closers))
         {
             if (CurrentKind == SyntaxKind.CommaToken)
             {
@@ -203,8 +250,10 @@ internal sealed class LanguageParser
                 members.Add(SyntaxFactory.MissingToken(SyntaxKind.CommaToken));
             }
 
-            members.Add(ParseMember());
+            members.Add(ParseMember(closers | TerminatorState.Comma));
         }
+
+        ReportDuplicateNames(start + openBrace.FullWidth, members);
 
         var closeBrace = EatToken(SyntaxKind.CloseBraceToken, JsonDiagnosticDescriptors.ExpectedCharacter, "}");
         var node = new JsonObjectSyntax(openBrace, SyntaxFactory.ListNode(members.ToArray()), closeBrace);
@@ -212,7 +261,7 @@ internal sealed class LanguageParser
         return (JsonObjectSyntax)Finish(node, start, mark);
     }
 
-    private JsonMemberSyntax ParseMember()
+    private JsonMemberSyntax ParseMember(TerminatorState terminators)
     {
         if (TryReuse(Blender.NodeContext.Member) is JsonMemberSyntax reused)
             return reused;
@@ -225,6 +274,14 @@ internal sealed class LanguageParser
         {
             nameToken = EatToken();
         }
+        else if (CurrentKind is SyntaxKind.BadToken or SyntaxKind.NumberToken or SyntaxKind.TrueKeyword or SyntaxKind.FalseKeyword or SyntaxKind.NullKeyword
+            && PeekKind() == SyntaxKind.ColonToken)
+        {
+            // A bare word before a colon is a name someone forgot to quote. Reading it as the name keeps the member
+            // whole, where skipping it would lose the name, the colon, and the value together.
+            AddErrorAtCurrentToken(JsonDiagnosticDescriptors.UnquotedPropertyName);
+            nameToken = AsStringToken(EatToken());
+        }
         else
         {
             AddErrorForMissingToken(JsonDiagnosticDescriptors.ExpectedPropertyName);
@@ -232,20 +289,21 @@ internal sealed class LanguageParser
         }
 
         var colonToken = EatToken(SyntaxKind.ColonToken, JsonDiagnosticDescriptors.ExpectedCharacter, ":");
-        var value = ParseValue(TerminatorState.Object);
+        var value = ParseValue(terminators);
         var node = new JsonMemberSyntax(nameToken, colonToken, value);
 
         return (JsonMemberSyntax)Finish(node, start, mark);
     }
 
-    private JsonArraySyntax ParseArray()
+    private JsonArraySyntax ParseArray(TerminatorState outerTerminators)
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
         var openBracket = EatToken(SyntaxKind.OpenBracketToken, JsonDiagnosticDescriptors.ExpectedCharacter, "[");
         var elements = new List<GreenNode?>();
+        var closers = TerminatorState.EndOfFile | TerminatorState.CloseBracket | (outerTerminators & TerminatorState.Closers);
 
-        while (CurrentKind is not SyntaxKind.EndOfFileToken and not SyntaxKind.CloseBracketToken)
+        while (!IsTerminator(CurrentKind, closers))
         {
             if (CurrentKind == SyntaxKind.CommaToken)
             {
@@ -265,7 +323,7 @@ internal sealed class LanguageParser
                 elements.Add(SyntaxFactory.MissingToken(SyntaxKind.CommaToken));
             }
 
-            elements.Add(ParseValue(TerminatorState.Array));
+            elements.Add(ParseValue(closers | TerminatorState.Comma));
         }
 
         var closeBracket = EatToken(SyntaxKind.CloseBracketToken, JsonDiagnosticDescriptors.ExpectedCharacter, "]");
@@ -292,6 +350,64 @@ internal sealed class LanguageParser
 
         return reused;
     }
+
+    /// <summary>Reports every member whose name an earlier member of the same object already has.</summary>
+    /// <remarks>
+    /// RFC 8259 only says names should be unique, and readers disagree on which of two values they keep, so this is a
+    /// warning rather than an error. The positions are worked out from the widths of the members, which is why a
+    /// member taken from the previous tree is checked like any other.
+    /// </remarks>
+    private void ReportDuplicateNames(int membersStart, List<GreenNode?> members)
+    {
+        var memberCount = (members.Count + 1) / 2;
+        if (memberCount < 2)
+            return;
+
+        // Comparing each name with the ones before it costs nothing for the small objects most documents are made of.
+        HashSet<string>? seen = memberCount > 8 ? new(StringComparer.Ordinal) : null;
+        var position = membersStart;
+        for (var i = 0; i < members.Count; i++)
+        {
+            var item = members[i];
+            if (i % 2 == 0 && GetNameToken(item) is { } nameToken)
+            {
+                var name = nameToken.ValueText;
+                if (seen is null ? IsNameUsedBefore(members, i, name) : !seen.Add(name))
+                {
+                    _pending.Add(new PendingDiagnostic(position + nameToken.GetLeadingTriviaWidth(), nameToken.Text.Length, JsonDiagnosticDescriptors.DuplicatePropertyName, [name]));
+                }
+            }
+
+            position += item?.FullWidth ?? 0;
+        }
+
+        static bool IsNameUsedBefore(List<GreenNode?> members, int index, string name)
+        {
+            for (var i = 0; i < index; i += 2)
+            {
+                if (GetNameToken(members[i]) is { } other && string.Equals(other.ValueText, name, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
+        // A name that is missing, or too broken to have a reliable value, is already reported for that.
+        static GreenToken? GetNameToken(GreenNode? member)
+            => member is JsonMemberSyntax && member.GetSlot(0) is GreenToken { IsMissing: false } token && token.GetDiagnostics().Length == 0 ? token : null;
+    }
+
+    private static GreenToken AsStringToken(GreenToken token)
+    {
+        var converted = SyntaxFactory.TokenWithValue(token.LeadingTrivia, SyntaxKind.StringToken, token.Text, token.Text, token.TrailingTrivia);
+        var diagnostics = token.GetDiagnostics();
+
+        return diagnostics.Length == 0 ? converted : (GreenToken)converted.WithAdditionalDiagnostics(diagnostics);
+    }
+
+    private static bool CanStartValue(SyntaxKind kind)
+        => kind is SyntaxKind.OpenBraceToken or SyntaxKind.OpenBracketToken or SyntaxKind.StringToken or SyntaxKind.NumberToken
+            or SyntaxKind.TrueKeyword or SyntaxKind.FalseKeyword or SyntaxKind.NullKeyword;
 
     private static JsonMemberSyntax MissingMember()
         => new(SyntaxFactory.MissingToken(SyntaxKind.StringToken), SyntaxFactory.MissingToken(SyntaxKind.ColonToken), new JsonSkippedTextSyntax(tokens: null));

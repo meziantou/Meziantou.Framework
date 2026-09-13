@@ -16,11 +16,15 @@ internal static class JsonDiagnosticDescriptors
     public static readonly DiagnosticDescriptor ExpectedCharacter = Error("JSON0006", "Expected a character", "Expected '{0}'.");
     public static readonly DiagnosticDescriptor ExpectedValue = Error("JSON0007", "Expected a value", "Expected a JSON value.");
     public static readonly DiagnosticDescriptor ExpectedPropertyName = Error("JSON0008", "Expected a property name", "Expected a JSON property name.");
+    public static readonly DiagnosticDescriptor UnquotedPropertyName = Error("JSON0008", "Unquoted property name", "JSON property names must be enclosed in double quotes.");
     public static readonly DiagnosticDescriptor ExpectedCommaOrEndOfObject = Error("JSON0009", "Expected a comma or the end of the object", "Expected a comma or the end of the object.");
     public static readonly DiagnosticDescriptor ExpectedCommaOrEndOfArray = Error("JSON0009", "Expected a comma or the end of the array", "Expected a comma or the end of the array.");
     public static readonly DiagnosticDescriptor UnexpectedDataAfterRootValue = Error("JSON0010", "Unexpected data after the root value", "Unexpected data after the root JSON value.");
-    public static readonly DiagnosticDescriptor LineBreakInString = Error("JSON0011", "Line break in a string", "Line breaks are not allowed in JSON strings.");
+    public static readonly DiagnosticDescriptor ControlCharacterInString = Error("JSON0011", "Unescaped control character in a string", "The control character U+{0} must be escaped in a JSON string.");
     public static readonly DiagnosticDescriptor NestingTooDeep = Error("JSON0012", "Nesting too deep", "Objects and arrays cannot nest more than {0} deep.");
+    public static readonly DiagnosticDescriptor InvalidWhitespace = Error("JSON0013", "Invalid whitespace", "The character U+{0} is not whitespace in JSON, which only allows spaces, tabs, and line breaks.");
+    public static readonly DiagnosticDescriptor SingleQuotedString = Error("JSON0014", "Single-quoted string", "JSON strings must be enclosed in double quotes.");
+    public static readonly DiagnosticDescriptor DuplicatePropertyName = new("JSON0015", "Duplicate property name", "The property name '{0}' is already used in this object.", DiagnosticSeverity.Warning);
 
     private static DiagnosticDescriptor Error(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Error);
 }

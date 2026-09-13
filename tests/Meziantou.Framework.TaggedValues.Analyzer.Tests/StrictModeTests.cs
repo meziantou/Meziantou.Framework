@@ -309,4 +309,71 @@ public sealed class StrictModeTests : TaggedValuesAnalyzerTestBase
             """,
             strict: true);
     }
+
+    [Fact]
+    public async Task AwaitedUntaggedMethodResult_FlowingToATaggedDeclaration_IsReported()
+    {
+        await VerifyStrictAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] public Guid OrderId { get; set; }
+
+                static Task<Guid> CreateIdAsync() => Task.FromResult(Guid.NewGuid());
+
+                async Task M() => OrderId = {|MFTV0009:await CreateIdAsync()|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CodeFix_TagsTheReturnValueOfTheAwaitedMethod()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                [ValueTag("OrderId")] public Guid OrderId { get; set; }
+
+                static Task<Guid> CreateIdAsync() => Task.FromResult(Guid.NewGuid());
+
+                async Task M() => OrderId = {|MFTV0009:await CreateIdAsync()|};
+            }
+            """,
+            """
+            class Sample
+            {
+                [ValueTag("OrderId")] public Guid OrderId { get; set; }
+
+                [return: ValueTag("OrderId")]
+                static Task<Guid> CreateIdAsync() => Task.FromResult(Guid.NewGuid());
+
+                async Task M() => OrderId = await CreateIdAsync();
+            }
+            """,
+            strict: true);
+    }
+
+    [Fact]
+    public async Task CodeFix_TagsTheUntaggedPropertyOfAComparison()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                public Guid OtherId { get; set; }
+
+                bool M([ValueTag("OrderId")] Guid orderId) => {|MFTV0009:orderId == OtherId|};
+            }
+            """,
+            """
+            class Sample
+            {
+                [ValueTag("OrderId")]
+                public Guid OtherId { get; set; }
+
+                bool M([ValueTag("OrderId")] Guid orderId) => orderId == OtherId;
+            }
+            """,
+            strict: true);
+    }
 }

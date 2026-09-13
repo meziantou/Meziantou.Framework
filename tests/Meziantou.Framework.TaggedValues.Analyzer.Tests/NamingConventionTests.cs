@@ -184,6 +184,26 @@ public sealed class NamingConventionTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task TypeImplementingSeveralEnumerables_IsNotACollection()
+    {
+        await VerifyAsync("""
+            class Ids : IEnumerable<Guid>, IEnumerable<int>
+            {
+                IEnumerator<Guid> IEnumerable<Guid>.GetEnumerator() => throw null!;
+                IEnumerator<int> IEnumerable<int>.GetEnumerator() => throw null!;
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null!;
+            }
+
+            class Sample
+            {
+                public Ids ProjectId { get; set; } = new();
+
+                bool M([ValueTag("OrderId")] Ids orderIds) => {|MFTV0001:ProjectId == orderIds|};
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_WhenTypesWithTheSameNameDeclareId()
     {
         await VerifyAsync("""

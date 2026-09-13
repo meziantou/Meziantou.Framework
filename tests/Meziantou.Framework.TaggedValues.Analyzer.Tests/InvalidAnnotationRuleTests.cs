@@ -252,4 +252,110 @@ public sealed class InvalidAnnotationRuleTests : TaggedValuesAnalyzerTestBase
         test.CompilerDiagnostics = CompilerDiagnostics.None;
         await test.RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForARepeatedKeyInAComment()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M()
+                {
+                    var {|MFTV0005:/* ValueTag Key=OrderId Key=ProjectId */|} map = new Dictionary<Guid, Guid>();
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForKeyAndValueOnTheAssembly()
+    {
+        await VerifyAsync("""
+            [assembly: {|MFTV0005:ValueTag(typeof(System.Diagnostics.Process), nameof(System.Diagnostics.Process.Id), "ProcessId", Key = "ProcessId")|}]
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForKeyAndValueOnIndexers()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [{|MFTV0005:ValueTag(Key = "OrderId")|}]
+                public Guid this[int index] => Guid.Empty;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_WhenTheCompilationDoesNotReferenceTheAttribute()
+    {
+        var test = CreateAnalyzerTest("""
+            class Sample
+            {
+                void M()
+                {
+                    Guid /* ValueTag= */ id = Guid.Empty;
+                }
+            }
+            """);
+
+        // Without the package, the using directive of the test does not compile
+        test.TestState.AdditionalReferences.Clear();
+        test.CompilerDiagnostics = CompilerDiagnostics.None;
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_WhenTheAnnotationCannotBeRemoved()
+    {
+        await VerifyCodeFixAsync<RemoveValueTagCodeFixProviderType>(
+            """
+            [assembly: {|MFTV0005:ValueTag(typeof(System.Diagnostics.Process), "ProcessId", "ProcessId")|}]
+            """,
+            """
+            [assembly: {|MFTV0005:ValueTag(typeof(System.Diagnostics.Process), "ProcessId", "ProcessId")|}]
+            """);
+    }
+
+    [Theory]
+    [InlineData("/* ValueTag */")]
+    [InlineData("/* ValueTag Key */")]
+    [InlineData("/* ValueTag Key=OrderId, Value= */")]
+    public async Task ReportDiagnostic_ForIncompleteComments(string comment)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M()
+                {
+                    var {|MFTV0005:{{comment}}|} map = new Dictionary<Guid, Guid>();
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CodeFix_RemovesTheCommentAtTheEndOfALine()
+    {
+        await VerifyCodeFixAsync<RemoveValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                void M()
+                {
+                    var id = Guid.Empty; {|MFTV0005:/* ValueTag=OrderId */|}
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                void M()
+                {
+                    var id = Guid.Empty;
+                }
+            }
+            """);
+    }
 }

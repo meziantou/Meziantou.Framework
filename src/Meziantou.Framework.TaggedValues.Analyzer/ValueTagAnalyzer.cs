@@ -863,7 +863,6 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             IndexerDeclarationSyntax indexer => semanticModel.GetDeclaredSymbol(indexer, cancellationToken)?.Type,
             FieldDeclarationSyntax field => semanticModel.GetTypeInfo(field.Declaration.Type, cancellationToken).Type,
             MethodDeclarationSyntax method when isReturnTarget => semanticModel.GetDeclaredSymbol(method, cancellationToken)?.ReturnType,
-            LocalFunctionStatementSyntax localFunction when isReturnTarget => (semanticModel.GetDeclaredSymbol(localFunction, cancellationToken) as IMethodSymbol)?.ReturnType,
             _ => null,
         };
     }

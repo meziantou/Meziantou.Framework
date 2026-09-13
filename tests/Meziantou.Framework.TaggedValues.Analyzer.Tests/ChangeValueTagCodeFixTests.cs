@@ -228,4 +228,56 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
             """,
             inferTagsFromNames: true);
     }
+
+    [Fact]
+    public async Task ChangesTheKeyAndValueTagsOfTheLocalComment()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                [return: ValueTag(Key = "OrderId", Value = "CustomerId")]
+                static Dictionary<Guid, Guid> GetMap() => [];
+
+                void M()
+                {
+                    var /* ValueTag Key=OrderId Value=ProjectId */ map = {|MFTV0002:GetMap()|};
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                [return: ValueTag(Key = "OrderId", Value = "CustomerId")]
+                static Dictionary<Guid, Guid> GetMap() => [];
+
+                void M()
+                {
+                    var /* ValueTag Key=OrderId Value=CustomerId */ map = GetMap();
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_ForAFieldDeclaringSeveralVariables()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _first, _second;
+
+                void M([ValueTag("ProjectId")] Guid projectId) => _first = {|MFTV0002:projectId|};
+            }
+            """,
+            """
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _first, _second;
+
+                void M([ValueTag("ProjectId")] Guid projectId) => _first = {|MFTV0002:projectId|};
+            }
+            """);
+    }
 }

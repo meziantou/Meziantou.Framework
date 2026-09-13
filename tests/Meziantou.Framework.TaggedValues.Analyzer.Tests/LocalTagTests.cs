@@ -391,4 +391,182 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task CommentAfterTheOpenParenthesisOfForEach_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M(List<Guid> ids, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    foreach (/* ValueTag=OrderId */ var id in ids)
+                    {
+                        _ = {|MFTV0001:id == projectId|};
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CommentInAUsingStatement_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("ProjectStream")] System.IO.Stream projectStream)
+                {
+                    using (var /* ValueTag=OrderStream */ orderStream = new System.IO.MemoryStream())
+                    {
+                        _ = {|MFTV0001:orderStream == projectStream|};
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CommentWithKeyAndValue_AcceptsSpacesAndCommas()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M(Dictionary<Guid, Guid> map, [ValueTag("OrderId")] Guid orderId)
+                {
+                    var /* ValueTag Key = OrderId, Value = ProjectId */ lookup = map;
+                    _ = {|MFTV0001:lookup[orderId] == orderId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task SwitchStatementPatternVariable_TakesTheTagOfTheValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] object orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    switch (orderId)
+                    {
+                        case Guid id:
+                            _ = {|MFTV0001:id == projectId|};
+                            break;
+                    }
+                }
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("List</* ValueTag=OrderId */ Guid>? ids = null;")]
+    [InlineData("global::System.Collections.Generic.List</* ValueTag=OrderId */ Guid> ids = [];")]
+    public async Task TypeArgumentComment_InANullableOrQualifiedType_TagsTheVariable(string declaration)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    {{declaration}}
+                    _ = {|MFTV0001:ids![0] == projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task TypeArgumentComment_InAnOutVariable_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet(out List<Guid> ids) { ids = []; return true; }
+
+                bool M([ValueTag("ProjectId")] Guid projectId) => TryGet(out List</* ValueTag=OrderId */ Guid> ids) && {|MFTV0001:ids[0] == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task SwitchExpressionPatternVariable_TakesTheTagOfTheValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] object orderId, [ValueTag("ProjectId")] Guid projectId) => orderId switch
+                {
+                    Guid id => {|MFTV0001:id == projectId|},
+                    _ => false,
+                };
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CommentAfterTheNameOfAnOutVariable_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static bool TryGet(out Guid value) { value = Guid.Empty; return true; }
+
+                bool M([ValueTag("ProjectId")] Guid projectId) => TryGet(out var id /* ValueTag=OrderId */) && {|MFTV0001:id == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LineCommentBeforeAUsingStatement_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("ProjectStream")] System.IO.Stream projectStream)
+                {
+                    // ValueTag=OrderStream
+                    using (var orderStream = new System.IO.MemoryStream())
+                    {
+                        _ = {|MFTV0001:orderStream == projectStream|};
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task TypeArgumentComment_InANullableValueType_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    KeyValuePair</* ValueTag=OrderId */ Guid, Guid>? pair = null;
+                    _ = {|MFTV0001:pair!.Value.Key == projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task TypeArgumentComment_InAGlobalAliasQualifiedType_TagsTheVariable()
+    {
+        await VerifyAsync("""
+            class Box<T> : List<T>
+            {
+            }
+
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    global::Box</* ValueTag=OrderId */ Guid> ids = new();
+                    _ = {|MFTV0001:ids[0] == projectId|};
+                }
+            }
+            """);
+    }
 }

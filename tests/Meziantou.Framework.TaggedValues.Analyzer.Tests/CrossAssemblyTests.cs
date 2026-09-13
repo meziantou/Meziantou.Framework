@@ -88,4 +88,27 @@ public sealed class CrossAssemblyTests : TaggedValuesAnalyzerTestBase
         test.TestState.AdditionalReferences.Add(library);
         await test.RunAsync(XunitCancellationToken);
     }
+
+    [Fact]
+    public async Task AssemblyAttributeOnAnInterfaceMember_TagsTheImplementations()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(IEntity), nameof(IEntity.Id), "EntityId")]
+
+            interface IEntity
+            {
+                Guid Id { get; }
+            }
+
+            class User : IEntity
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                bool M(User user, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:user.Id == projectId|};
+            }
+            """);
+    }
 }

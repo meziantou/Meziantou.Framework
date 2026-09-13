@@ -366,4 +366,62 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task AssignmentExpression_TakesTheTagOfTheAssignedValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid orderId) { }
+
+                void M(Guid id, [ValueTag("ProjectId")] Guid projectId) => Load({|MFTV0002:id = projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CoalesceAssignmentExpression_TakesTheTagOfItsOperands()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid? orderId) { }
+
+                void M([ValueTag("ProjectId")] Guid? projectId, [ValueTag("ProjectId")] Guid? otherProjectId) => Load({|MFTV0002:projectId ??= otherProjectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ConditionalAccess_TakesTheTagOfTheMember()
+    {
+        await VerifyAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid? projectId) { }
+
+                void M(Order? order) => Load({|MFTV0002:order?.Id|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ConditionalAccess_OnATaggedCollection_TakesTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid? projectId) { }
+
+                void M([ValueTag("OrderId")] List<Guid>? ids) => Load({|MFTV0002:ids?.First()|});
+            }
+            """);
+    }
+
 }

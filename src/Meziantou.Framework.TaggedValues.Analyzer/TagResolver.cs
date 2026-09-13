@@ -624,9 +624,6 @@ internal sealed class TagResolver
 
                 return GetTag(conversion.Operand, depth + 1);
 
-            case IParenthesizedOperation parenthesized:
-                return GetTag(parenthesized.Operand, depth + 1);
-
             case IAwaitOperation awaitOperation:
                 return GetTag(awaitOperation.Operation, depth + 1);
 

@@ -126,4 +126,20 @@ public sealed class CombinedValuesRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheOperandOfAUserDefinedCompoundAssignment()
+    {
+        await VerifyAsync("""
+            readonly record struct Distance(double Value)
+            {
+                public static Distance operator +(Distance left, [ValueTag("Meters")] Distance right) => new(left.Value + right.Value);
+            }
+
+            class Sample
+            {
+                void M(Distance total, [ValueTag("Feet")] Distance feet) => total += {|MFTV0002:feet|};
+            }
+            """);
+    }
 }

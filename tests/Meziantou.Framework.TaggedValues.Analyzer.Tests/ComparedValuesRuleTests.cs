@@ -265,4 +265,46 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForLiftedArithmetic()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] int? orderId, [ValueTag("ProjectId")] int projectId) => {|MFTV0001:orderId + 1 == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task UserDefinedUnaryOperators_TakeTheTagOfTheirReturnValue()
+    {
+        await VerifyAsync("""
+            readonly record struct Distance(double Value)
+            {
+                [return: ValueTag("Meters")]
+                public static Distance operator -(Distance value) => new(-value.Value);
+
+                [return: ValueTag("Meters")]
+                public static Distance operator ++(Distance value) => new(value.Value + 1);
+            }
+
+            class Sample
+            {
+                bool M(Distance distance, [ValueTag("Feet")] Distance feet) => {|MFTV0001:-distance == feet|} || {|MFTV0001:distance++ == feet|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForCompareMethodsWithDifferentParameterTypes()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                int M([ValueTag("OrderName")] string orderName, [ValueTag("ProjectName")] string projectName) => string.Compare(orderName, 0, projectName, 0, 1, StringComparison.Ordinal);
+            }
+            """);
+    }
 }

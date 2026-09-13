@@ -185,4 +185,40 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
             Diagnostic("MFTV0006").WithLocation(0).WithMessage("property 'Sales.Order.Id' and property 'Billing.Order.Id' both infer the tag 'OrderId' from their type name; add an explicit [ValueTag] with a distinct tag to at least one of them"),
             Diagnostic("MFTV0006").WithLocation(1).WithMessage("property 'Billing.Order.Id' and property 'Sales.Order.Id' both infer the tag 'OrderId' from their type name; add an explicit [ValueTag] with a distinct tag to at least one of them"));
     }
+
+    [Fact]
+    public async Task FlowMismatchMessage_ForADeclarationInAnotherFile()
+    {
+        var test = CreateAnalyzerTest("""
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId) => Repository.Load({|#0:projectId|});
+            }
+            """);
+        test.TestState.Sources.Add(("/0/Repository.cs", """
+            using System;
+            using Meziantou.Framework.TaggedValues;
+
+            static class Repository
+            {
+                public static void Load([ValueTag("OrderId")] Guid orderId) { }
+            }
+            """));
+        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0002").WithLocation(0).WithLocation("/0/Repository.cs", 6, 56).WithMessage("parameter 'projectId' of 'Sample.M' is [ValueTag(\"ProjectId\")] and flows to parameter 'orderId' of 'Repository.Load' (/0/Repository.cs:6), which is [ValueTag(\"OrderId\")]"));
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task ComparedValuesMessage_ForALongExpressionAndATagWithQuotes()
+    {
+        await VerifyAsync(
+            """
+            class Sample
+            {
+                bool M([ValueTag("Order\"Id")] int orderId, [ValueTag("ProjectId")] int projectId) => {|#0:orderId + orderId + orderId + orderId + orderId + orderId + orderId + 1 == projectId|};
+            }
+            """,
+            inferTagsFromNames: false,
+            Diagnostic("MFTV0001").WithLocation(0).WithMessage("the value is [ValueTag(\"Order\\\"Id\")] and is compared with parameter 'projectId' of 'Sample.M', which is [ValueTag(\"ProjectId\")]"));
+    }
 }

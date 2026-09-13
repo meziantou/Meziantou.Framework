@@ -381,4 +381,94 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ArrayCreation_TakesTheTagOfItsElements()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid[] projectIds) { }
+
+                void M([ValueTag("OrderId")] Guid orderId) => Load({|MFTV0002:new[] { orderId }|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task SpreadElement_TakesTheTagOfTheSpreadCollection()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid[] projectIds) { }
+
+                void M([ValueTag("OrderId")] List<Guid> orderIds) => Load({|MFTV0002:[.. orderIds]|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericArrayParameter_BindsTheElementTag()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static T FirstOf<T>(T[] items) => items[0];
+
+                bool M([ValueTag("OrderId")] Guid[] ids, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:FirstOf(ids) == projectId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericKeyValuePairResult_TakesTheTagsOfItsArguments()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:KeyValuePair.Create(orderId, projectId).Value == orderId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LambdaWithAReturnTag_TagsTheSelectedValues()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M(List<Guid> ids, [ValueTag("OrderId")] Guid orderId) => {|MFTV0001:ids.Select([return: ValueTag("ProjectId")] (Guid id) => Guid.Empty).First() == orderId|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NestedCollectionInitializer_ExpectsTheElementTagOfTheMember()
+    {
+        await VerifyAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public List<Guid> RelatedIds { get; } = [];
+            }
+
+            class Sample
+            {
+                Order M([ValueTag("ProjectId")] Guid projectId) => new Order { RelatedIds = { {|MFTV0002:projectId|} } };
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task GenericArrayResult_TakesTheTagOfTheBoundTypeParameter()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static T[] Wrap<T>(T item) => [item];
+
+                bool M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:Wrap(orderId)[0] == projectId|};
+            }
+            """);
+    }
 }

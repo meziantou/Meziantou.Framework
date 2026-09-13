@@ -65,6 +65,43 @@ internal static class FullPathAnalyzerCommon
         }
     }
 
+    /// <summary>
+    /// Returns the values passed to an invocation in source order, expanding the implicit array or collection that the
+    /// compiler creates for the expanded form of a <see langword="params"/> parameter.
+    /// </summary>
+    /// <remarks>
+    /// <c>Path.Combine(a, "b", "c", "d", "e")</c> binds to <c>Path.Combine(params ReadOnlySpan&lt;string&gt;)</c> and has a
+    /// single argument; this method returns its five elements instead.
+    /// </remarks>
+    internal static IEnumerable<IOperation> GetArgumentValues(IInvocationOperation invocationOperation)
+    {
+        foreach (var argument in invocationOperation.Arguments)
+        {
+            switch (argument)
+            {
+                case { ArgumentKind: ArgumentKind.ParamArray, Value: IArrayCreationOperation { Initializer: { } initializer } }:
+                    foreach (var elementValue in initializer.ElementValues)
+                    {
+                        yield return elementValue;
+                    }
+
+                    break;
+
+                case { ArgumentKind: ArgumentKind.ParamCollection, Value: ICollectionExpressionOperation collectionExpressionOperation }:
+                    foreach (var element in collectionExpressionOperation.Elements)
+                    {
+                        yield return element;
+                    }
+
+                    break;
+
+                default:
+                    yield return argument.Value;
+                    break;
+            }
+        }
+    }
+
     private static bool IsFullPathType(ITypeSymbol? typeSymbol, ITypeSymbol? fullPathType)
     {
         return SymbolEqualityComparer.Default.Equals(typeSymbol, fullPathType);

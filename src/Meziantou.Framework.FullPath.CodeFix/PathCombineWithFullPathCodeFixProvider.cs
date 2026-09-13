@@ -81,17 +81,17 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
     {
         if (semanticModel.GetOperation(expressionSyntax, cancellationToken) is not IInvocationOperation invocationOperation ||
             invocationOperation.TargetMethod is not { IsStatic: true, Name: "Combine" } targetMethod ||
-            !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType) ||
-            invocationOperation.Arguments.Length == 0)
+            !SymbolEqualityComparer.Default.Equals(targetMethod.ContainingType, pathType))
         {
             replacementExpression = null!;
             return false;
         }
 
+        var argumentValues = FullPathAnalyzerCommon.GetArgumentValues(invocationOperation).ToArray();
         var fullPathIndex = -1;
-        for (var i = 0; i < invocationOperation.Arguments.Length; i++)
+        for (var i = 0; i < argumentValues.Length; i++)
         {
-            var argument = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[i].Value, fullPathType);
+            var argument = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[i], fullPathType);
             if (SymbolEqualityComparer.Default.Equals(argument.Type, fullPathType))
             {
                 fullPathIndex = i;
@@ -108,14 +108,14 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         // everything before a rooted segment. Dropping them is only safe when evaluating them does nothing.
         for (var i = 0; i < fullPathIndex; i++)
         {
-            if (!IsSideEffectFree(invocationOperation.Arguments[i].Value))
+            if (!IsSideEffectFree(argumentValues[i]))
             {
                 replacementExpression = null!;
                 return false;
             }
         }
 
-        var startOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[fullPathIndex].Value, fullPathType);
+        var startOperation = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[fullPathIndex], fullPathType);
         if (startOperation.Syntax is not ExpressionSyntax expression)
         {
             replacementExpression = null!;
@@ -123,9 +123,9 @@ public sealed class PathCombineWithFullPathCodeFixProvider : CodeFixProvider
         }
 
         replacementExpression = expression.WithoutTrivia().Parenthesize();
-        for (var i = fullPathIndex + 1; i < invocationOperation.Arguments.Length; i++)
+        for (var i = fullPathIndex + 1; i < argumentValues.Length; i++)
         {
-            var nextOperation = FullPathAnalyzerCommon.UnwrapToFullPath(invocationOperation.Arguments[i].Value, fullPathType);
+            var nextOperation = FullPathAnalyzerCommon.UnwrapToFullPath(argumentValues[i], fullPathType);
             if (nextOperation.Syntax is not ExpressionSyntax nextExpression)
             {
                 replacementExpression = null!;

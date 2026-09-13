@@ -1045,6 +1045,44 @@ internal sealed partial class PosixProcessSubstitutionSyntax : ShellWordPartSynt
     internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixProcessSubstitutionSyntax(this, parent, position);
 }
 
+internal sealed partial class PosixRedirectedStatementSyntax : ShellStatementSyntax
+{
+    private readonly GreenNode _statement;
+    private readonly GreenNode? _redirections;
+
+    public PosixRedirectedStatementSyntax(GreenNode statement, GreenNode? redirections)
+        : this(statement, redirections, diagnostics: null, annotations: null)
+    {
+    }
+
+    private PosixRedirectedStatementSyntax(GreenNode statement, GreenNode? redirections, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+        : base(SyntaxKind.PosixRedirectedStatement, diagnostics, annotations)
+    {
+        SlotCount = 2;
+        AdjustFlagsAndWidth(statement);
+        _statement = statement;
+        AdjustFlagsAndWidth(redirections);
+        _redirections = redirections;
+    }
+
+    internal override GreenNode? GetSlot(int index) => index switch
+    {
+        0 => _statement,
+        1 => _redirections,
+        _ => null,
+    };
+
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new PosixRedirectedStatementSyntax(RequiredSlot(slots[0]), slots[1], GetDiagnostics(), GetAnnotations());
+
+    internal override bool IsListSlot(int index) => index is 1;
+
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new PosixRedirectedStatementSyntax(_statement, _redirections, diagnostics, GetAnnotations());
+
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new PosixRedirectedStatementSyntax(_statement, _redirections, GetDiagnostics(), annotations);
+
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Shell.PosixRedirectedStatementSyntax(this, parent, position);
+}
+
 internal sealed partial class PosixWhileStatementSyntax : ShellStatementSyntax
 {
     private readonly GreenNode _keyword;
@@ -5563,6 +5601,65 @@ public sealed partial class PosixProcessSubstitutionSyntax : ShellWordPartSyntax
     }
 }
 
+public sealed partial class PosixRedirectedStatementSyntax : ShellStatementSyntax
+{
+    private SyntaxNode? _statement;
+    private SyntaxNode? _redirections;
+
+    internal PosixRedirectedStatementSyntax(GreenNode green, SyntaxNode? parent, int position)
+        : base(green, parent, position)
+    {
+    }
+
+    public ShellStatementSyntax Statement => (ShellStatementSyntax)GetRed(ref _statement, 0)!;
+
+    public SyntaxList<ShellRedirectionSyntax> Redirections => new(GetRed(ref _redirections, 1));
+
+    /// <summary>Returns this node with the given parts, or itself when nothing changed.</summary>
+    public PosixRedirectedStatementSyntax Update(ShellStatementSyntax statement, SyntaxList<ShellRedirectionSyntax> redirections)
+    {
+        if (ReferenceEquals(statement.Green, Green.GetSlot(0)) && redirections.Green == Green.GetSlot(1))
+            return this;
+
+        return SyntaxFactory.PosixRedirectedStatement(statement, redirections).WithAnnotationsFrom(this);
+    }
+
+    /// <summary>Returns this node with <paramref name="statement"/> in place of its <see cref="Statement"/>.</summary>
+    public PosixRedirectedStatementSyntax WithStatement(ShellStatementSyntax statement) => Update(statement, Redirections);
+
+    /// <summary>Returns this node with <paramref name="redirections"/> in place of its <see cref="Redirections"/>.</summary>
+    public PosixRedirectedStatementSyntax WithRedirections(SyntaxList<ShellRedirectionSyntax> redirections) => Update(Statement, redirections);
+
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+        0 => GetRed(ref _statement, 0),
+        1 => GetRed(ref _redirections, 1),
+        _ => null,
+    };
+
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+        0 => _statement,
+        1 => _redirections,
+        _ => null,
+    };
+
+    public override void Accept(ShellSyntaxVisitor visitor)
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        visitor.VisitRedirectedStatement(this);
+    }
+
+    public override TResult? Accept<TResult>(ShellSyntaxVisitor<TResult> visitor)
+        where TResult : default
+    {
+        ArgumentNullException.ThrowIfNull(visitor);
+
+        return visitor.VisitRedirectedStatement(this);
+    }
+}
+
 public sealed partial class PosixWhileStatementSyntax : ShellStatementSyntax
 {
     private SyntaxNode? _condition;
@@ -10051,6 +10148,7 @@ public abstract partial class ShellSyntaxVisitor
     public virtual void VisitIfStatement(PosixIfStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitPrefixedStatement(PosixPrefixedStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitProcessSubstitution(PosixProcessSubstitutionSyntax node) => DefaultVisit(node);
+    public virtual void VisitRedirectedStatement(PosixRedirectedStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitWhileStatement(PosixWhileStatementSyntax node) => DefaultVisit(node);
     public virtual void VisitArrayLiteral(PowerShellArrayLiteralSyntax node) => DefaultVisit(node);
     public virtual void VisitAssignmentExpression(PowerShellAssignmentExpressionSyntax node) => DefaultVisit(node);
@@ -10147,6 +10245,7 @@ public abstract partial class ShellSyntaxVisitor<TResult>
     public virtual TResult? VisitIfStatement(PosixIfStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitPrefixedStatement(PosixPrefixedStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitProcessSubstitution(PosixProcessSubstitutionSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitRedirectedStatement(PosixRedirectedStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitWhileStatement(PosixWhileStatementSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitArrayLiteral(PowerShellArrayLiteralSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitAssignmentExpression(PowerShellAssignmentExpressionSyntax node) => DefaultVisit(node);
@@ -10379,6 +10478,13 @@ public partial class ShellSyntaxRewriter
         ArgumentNullException.ThrowIfNull(node);
 
         return node.Update(VisitToken(node.OpenToken), (ShellStatementListSyntax?)Visit(node.Statements) ?? node.Statements, VisitToken(node.CloseToken));
+    }
+
+    public override SyntaxNode? VisitRedirectedStatement(PosixRedirectedStatementSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update((ShellStatementSyntax?)Visit(node.Statement) ?? node.Statement, VisitList(node.Redirections));
     }
 
     public override SyntaxNode? VisitWhileStatement(PosixWhileStatementSyntax node)
@@ -10952,6 +11058,10 @@ public static partial class SyntaxFactory
     /// <summary>Builds a <see cref="PosixProcessSubstitutionSyntax"/> from its parts.</summary>
     public static PosixProcessSubstitutionSyntax PosixProcessSubstitution(SyntaxToken openToken, ShellStatementListSyntax statements, SyntaxToken closeToken)
         => (PosixProcessSubstitutionSyntax)new Syntax.InternalSyntax.PosixProcessSubstitutionSyntax(Required(openToken), statements.Green, Required(closeToken)).CreateRed();
+
+    /// <summary>Builds a <see cref="PosixRedirectedStatementSyntax"/> from its parts.</summary>
+    public static PosixRedirectedStatementSyntax PosixRedirectedStatement(ShellStatementSyntax statement, SyntaxList<ShellRedirectionSyntax> redirections)
+        => (PosixRedirectedStatementSyntax)new Syntax.InternalSyntax.PosixRedirectedStatementSyntax(statement.Green, redirections.Green).CreateRed();
 
     /// <summary>Builds a <see cref="PosixWhileStatementSyntax"/> from its parts.</summary>
     public static PosixWhileStatementSyntax PosixWhileStatement(SyntaxKind kind, SyntaxToken keyword, ShellStatementListSyntax condition, SyntaxToken doKeyword, ShellStatementListSyntax body, SyntaxToken doneKeyword)

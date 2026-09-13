@@ -43,6 +43,9 @@ internal sealed partial class PosixParser
     /// </summary>
     private bool _expressionFailed;
 
+    /// <summary>Where <see cref="_expressionFailed"/> was first set.</summary>
+    private int _expressionFailurePosition;
+
     /// <summary>Unary tests in a conditional expression, such as <c>-f</c> in <c>[[ -f path ]]</c>.</summary>
     private static readonly string[] ConditionalUnaryOperators =
     [
@@ -62,37 +65,54 @@ internal sealed partial class PosixParser
     /// <summary>Parses the text up to <paramref name="end"/> as an arithmetic expression, or returns null.</summary>
     private ShellExpressionSyntax? TryParseArithmeticExpression(int end)
     {
-        return TryParseDelimited(end, () => ParseArithmetic(minimumPrecedence: 0));
+        return TryParseDelimited(end, () => ParseArithmetic(minimumPrecedence: 0), out _);
     }
 
     /// <summary>Parses the text up to <paramref name="end"/> as a conditional expression, or returns null.</summary>
-    private ShellExpressionSyntax? TryParseConditionalExpression(int end)
+    /// <param name="end">Where the expression ends.</param>
+    /// <param name="failurePosition">When the grammar does not fit, the position where it stopped fitting.</param>
+    private ShellExpressionSyntax? TryParseConditionalExpression(int end, out int failurePosition)
     {
-        return TryParseDelimited(end, ParseConditionalOr);
+        return TryParseDelimited(end, ParseConditionalOr, out failurePosition);
+    }
+
+    /// <summary>Records that the grammar does not fit, and where; the first failure is the one worth reporting.</summary>
+    private void MarkExpressionFailed()
+    {
+        if (!_expressionFailed)
+        {
+            _expressionFailurePosition = _lexer.Position;
+        }
+
+        _expressionFailed = true;
     }
 
     /// <summary>
     /// Runs <paramref name="parse"/> and keeps the result only if it consumed everything up to <paramref name="end"/>.
     /// On anything else the lexer, the pending trivia, and the diagnostics are rolled back to where they were.
     /// </summary>
-    private ShellExpressionSyntax? TryParseDelimited(int end, Func<ShellExpressionSyntax> parse)
+    private ShellExpressionSyntax? TryParseDelimited(int end, Func<ShellExpressionSyntax> parse, out int failurePosition)
     {
         var startPosition = _lexer.Position;
         var startTrivia = _pendingTrivia.ToArray();
         var startTriviaStart = _pendingTriviaStart;
         var startDiagnostics = _diagnostics.Count;
 
+        failurePosition = startPosition;
         if (startPosition >= end)
             return null;
 
         // A nested `$(( ))` runs this same method, so the outer attempt's flag has to survive the inner one.
         var enclosingFailed = _expressionFailed;
+        var enclosingFailurePosition = _expressionFailurePosition;
         _expressionFailed = false;
         var expression = parse();
         AccumulateStatementTrivia();
 
         var succeeded = !_expressionFailed && _lexer.Position == end && _diagnostics.Count == startDiagnostics;
+        failurePosition = _expressionFailed ? _expressionFailurePosition : _lexer.Position;
         _expressionFailed = enclosingFailed;
+        _expressionFailurePosition = enclosingFailurePosition;
 
         // Trailing trivia belongs to the closing delimiter, so only real text left over is a failure.
         if (succeeded)
@@ -115,7 +135,7 @@ internal sealed partial class PosixParser
     {
         if (_depth >= _options.MaxRecursionDepth)
         {
-            _expressionFailed = true;
+            MarkExpressionFailed();
 
             return false;
         }
@@ -206,7 +226,7 @@ internal sealed partial class PosixParser
                 AccumulateStatementTrivia();
                 if (_lexer.Current != ':')
                 {
-                    _expressionFailed = true;
+                    MarkExpressionFailed();
 
                     return left;
                 }
@@ -299,7 +319,7 @@ internal sealed partial class PosixParser
             AccumulateStatementTrivia();
             if (_lexer.Current != ')')
             {
-                _expressionFailed = true;
+                MarkExpressionFailed();
 
                 return inner;
             }
@@ -313,7 +333,7 @@ internal sealed partial class PosixParser
         if (operand.PartCount() == 0)
         {
             // An operator with nothing to operate on: the text is not arithmetic.
-            _expressionFailed = true;
+            MarkExpressionFailed();
         }
 
         return new ShellOperandExpressionSyntax(operand);
@@ -427,7 +447,7 @@ internal sealed partial class PosixParser
             AccumulateStatementTrivia();
             if (_lexer.Current != ')')
             {
-                _expressionFailed = true;
+                MarkExpressionFailed();
 
                 return inner;
             }
@@ -437,7 +457,8 @@ internal sealed partial class PosixParser
             return new ShellGroupedExpressionSyntax(openParenToken, inner, closeParenToken);
         }
 
-        if (PeekConditionalWord() is { } unary && Array.IndexOf(ConditionalUnaryOperators, unary) >= 0)
+        // zsh reads a unary operator with nothing after it as a plain string, so `[[ -f ]]` tests that `-f` is not empty.
+        if (PeekConditionalWord() is { } unary && Array.IndexOf(ConditionalUnaryOperators, unary) >= 0 && !(IsZsh && IsAtConditionalOperandEnd(_lexer.Position + unary.Length)))
         {
             var token = ReadOperatorToken(SyntaxKind.OperatorToken, unary.Length);
 
@@ -465,17 +486,29 @@ internal sealed partial class PosixParser
         return left;
     }
 
+    /// <summary>Returns whether nothing but blanks separates <paramref name="position"/> from the end of an operand list.</summary>
+    private bool IsAtConditionalOperandEnd(int position)
+    {
+        var text = _lexer.Text;
+        while (position < text.Length && text[position] is ' ' or '\t')
+        {
+            position++;
+        }
+
+        return position >= text.Length || MatchesAt(position, "]]") || MatchesAt(position, "&&") || MatchesAt(position, "||") || text[position] == ')';
+    }
+
     private ShellOperandExpressionSyntax ParseConditionalOperand()
     {
         AccumulateInlineTrivia();
 
-        var word = _lexer.IsAtEnd || PosixLexer.IsWordBoundary(_lexer.Current)
+        var word = _lexer.IsAtEnd || (PosixLexer.IsWordBoundary(_lexer.Current) && !IsAtZshGlobGroup() && FindZshNumericRangeEnd(_lexer.Position) < 0)
             ? new ShellWordSyntax(null)
             : ParseWord();
 
         if (word.PartCount() == 0)
         {
-            _expressionFailed = true;
+            MarkExpressionFailed();
         }
 
         return new ShellOperandExpressionSyntax(word);
@@ -500,7 +533,7 @@ internal sealed partial class PosixParser
 
             if (word.PartCount() == 0 || _regexParenDepth != 0)
             {
-                _expressionFailed = true;
+                MarkExpressionFailed();
             }
 
             return new ShellOperandExpressionSyntax(word);

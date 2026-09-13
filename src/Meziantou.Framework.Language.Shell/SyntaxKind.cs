@@ -228,4 +228,12 @@ public enum SyntaxKind
     PowerShellVariableExpression,
     PowerShellWhileStatement,
     PowerShellWorkflowDefinition,
+
+    // ---- Added after version 3.0.0; appended so the values above keep their numbers ----
+
+    /// <summary>A POSIX compound command followed by redirections, as in <c>{ ...; } &gt; out</c>.</summary>
+    PosixRedirectedStatement,
+
+    /// <summary>The zsh <c>;|</c> case terminator, which tests the following patterns too.</summary>
+    SemicolonPipeToken,
 }

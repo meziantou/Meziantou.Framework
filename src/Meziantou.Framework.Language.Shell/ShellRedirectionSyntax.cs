@@ -11,66 +11,67 @@ public sealed partial class ShellRedirectionSyntax
     {
         get
         {
-            if (OperatorToken.Kind() is not (SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken))
+            if (!IsHereDocumentOperator(OperatorToken.Kind()))
                 return null;
 
-            foreach (var ancestor in Ancestors())
+            foreach (var (redirection, hereDocument) in PairHereDocuments(this))
             {
-                if (ancestor is not ShellStatementListSyntax list)
-                    continue;
-
-                var statements = list.Statements;
-                var owner = statements.IndexOf(node => node.DescendantNodesAndSelf().Contains(this));
-                if (owner < 0)
-                    continue;
-
-                // The bodies follow the statement in the order their redirections appear inside it.
-                var ordinal = CountPrecedingHereDocumentsIn(statements[owner]);
-                for (var index = owner + 1; index < statements.Count; index++)
-                {
-                    if (statements[index] is not PosixHereDocumentSyntax hereDocument)
-                        break;
-
-                    if (ordinal-- == 0)
-                        return hereDocument;
-                }
-
-                return null;
+                if (ReferenceEquals(redirection, this))
+                    return hereDocument;
             }
 
             return null;
         }
     }
 
+    private static bool IsHereDocumentOperator(SyntaxKind kind) => kind is SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken;
+
     /// <summary>
-    /// The here-document redirections of <paramref name="owner"/>, in source order.
+    /// Pairs the here-document redirections around <paramref name="node"/> with the bodies they introduced.
     /// </summary>
     /// <remarks>
-    /// Counted over the whole statement the bodies are ordered against, not over the nearest statement above the
-    /// redirection: a pipeline is one statement holding several, and its bodies follow it in one sequence, so
-    /// counting inside the nearer one would give every branch of the pipeline the same ordinal.
+    /// A body starts at the first line break after its redirection, so the bodies come in the same order as the
+    /// redirections that introduced them, each one after its own redirection: the n-th body belongs to the n-th
+    /// redirection. Where exactly a body sits depends on where that line break is -- after the statement, after a later
+    /// statement on the same line, or inside a construct that started on that line -- which is why the pairing is by
+    /// order rather than by position.
     /// <para>
-    /// A statement list of its own is where the walk stops. The body of a substitution has its own list and its own
-    /// here-documents, which follow the command line <em>inside</em> the substitution; counting them here would
-    /// shift every body of the list outside.
+    /// A substitution reads its own here-documents, so the pairing is done within the nearest substitution, or the
+    /// whole tree, and never looks inside a nested one.
     /// </para>
     /// </remarks>
-    internal static IEnumerable<ShellRedirectionSyntax> HereDocumentRedirectionsIn(ShellStatementSyntax owner)
-        => owner.DescendantNodes(node => node is not ShellStatementListSyntax)
-            .OfType<ShellRedirectionSyntax>()
-            .Where(redirection => redirection.OperatorToken.Kind() is SyntaxKind.LessThanLessThanToken or SyntaxKind.LessThanLessThanDashToken);
-
-    private int CountPrecedingHereDocumentsIn(ShellStatementSyntax owner)
+    internal static IEnumerable<(ShellRedirectionSyntax Redirection, PosixHereDocumentSyntax HereDocument)> PairHereDocuments(ShellSyntaxNode node)
     {
-        var ordinal = 0;
-        foreach (var redirection in HereDocumentRedirectionsIn(owner))
+        SyntaxNode scope = node;
+        while (scope.Parent is { } parent && scope is not (ShellCommandSubstitutionSyntax or PosixProcessSubstitutionSyntax))
         {
-            if (ReferenceEquals(redirection, this))
-                break;
-
-            ordinal++;
+            scope = parent;
         }
 
-        return ordinal;
+        var pending = new Queue<ShellRedirectionSyntax>();
+        foreach (var descendant in scope.DescendantNodes(child => ReferenceEquals(child, scope) || child is not (ShellCommandSubstitutionSyntax or PosixProcessSubstitutionSyntax)))
+        {
+            switch (descendant)
+            {
+                case ShellRedirectionSyntax redirection when IsHereDocumentOperator(redirection.OperatorToken.Kind()) && redirection.Target is not null && !IsInNestedScope(redirection, scope):
+                    pending.Enqueue(redirection);
+                    break;
+
+                case PosixHereDocumentSyntax hereDocument when !IsInNestedScope(hereDocument, scope) && pending.TryDequeue(out var owner):
+                    yield return (owner, hereDocument);
+                    break;
+            }
+        }
+    }
+
+    private static bool IsInNestedScope(SyntaxNode node, SyntaxNode scope)
+    {
+        for (var ancestor = node.Parent; ancestor is not null && !ReferenceEquals(ancestor, scope); ancestor = ancestor.Parent)
+        {
+            if (ancestor is ShellCommandSubstitutionSyntax or PosixProcessSubstitutionSyntax)
+                return true;
+        }
+
+        return false;
     }
 }

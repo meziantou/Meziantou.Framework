@@ -42,6 +42,7 @@
         Node("PosixIfStatementSyntax", "ShellStatementSyntax", "PosixIfStatement", "IfStatement", "t:IfKeyword", "n:Condition:ShellStatementListSyntax", "t:ThenKeyword", "n:Body:ShellStatementListSyntax", "l:ElifClauses:PosixElifClauseSyntax", "n?:ElseClause:PosixElseClauseSyntax", "t:FiKeyword"),
         MultiKind("PosixPrefixedStatementSyntax", "ShellStatementSyntax", "PrefixedStatement", "t:Keyword", "t?:NameToken", "n:Statement:ShellStatementSyntax"),
         Node("PosixProcessSubstitutionSyntax", "ShellWordPartSyntax", "PosixProcessSubstitution", "ProcessSubstitution", "t:OpenToken", "n:Statements:ShellStatementListSyntax", "t:CloseToken"),
+        Node("PosixRedirectedStatementSyntax", "ShellStatementSyntax", "PosixRedirectedStatement", "RedirectedStatement", "n:Statement:ShellStatementSyntax", "l:Redirections:ShellRedirectionSyntax"),
         MultiKind("PosixWhileStatementSyntax", "ShellStatementSyntax", "WhileStatement", "t:Keyword", "n:Condition:ShellStatementListSyntax", "t:DoKeyword", "n:Body:ShellStatementListSyntax", "t:DoneKeyword"),
         Node("PowerShellArrayLiteralSyntax", "ShellExpressionSyntax", "PowerShellArrayLiteral", "ArrayLiteral", "s:Elements:ShellExpressionSyntax:CommaToken"),
         Node("PowerShellAssignmentExpressionSyntax", "ShellExpressionSyntax", "PowerShellAssignmentExpression", "AssignmentExpression", "n:Target:ShellExpressionSyntax", "t:OperatorToken", "n:Value:ShellSyntaxNode"),

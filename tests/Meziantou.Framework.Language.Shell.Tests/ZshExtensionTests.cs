@@ -159,6 +159,52 @@ public sealed class ZshExtensionTests
             node.Kind() is SyntaxKind.ZshForeachStatement or SyntaxKind.ZshRepeatStatement or SyntaxKind.ZshAlwaysStatement);
     }
 
+    /// <summary>Constructs found in the completion functions shipped with zsh 5.9, which zsh -n accepts.</summary>
+    [Theory]
+    [InlineData("if [[ $1 != <-> ]]; then echo; fi")]
+    [InlineData("j=( \"$i\"/<1-> )")]
+    [InlineData("ls <1-10>.log")]
+    [InlineData("case $x in %<->) a ;; (net|open)bsd*) b ;; (x) c ;; esac")]
+    [InlineData("case $x in (un|)install|pristine) a ;; esac")]
+    [InlineData("f() {\n  _arguments -{i,x} \\\n    '(-U)-L[strict]'\n}")]
+    [InlineData("{\n  exec {fd}>&-\n}")]
+    [InlineData("{ for i in {1..$#p}; do :; done }")]
+    [InlineData("old[(Re)$f]=()")]
+    [InlineData("() { echo $1 } =(<<<x)")]
+    [InlineData("l l () echo hi")]
+    public void ZshOnlyGlobsAndGroups_ParseWithoutDiagnostics(string text)
+    {
+        var tree = ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.Zsh);
+
+        Assert.Empty(tree.GetDiagnostics());
+    }
+
+    [Fact]
+    public void NumericRangeGlob_IsNotARedirection()
+    {
+        var command = Assert.IsType<ShellCommandSyntax>(SingleStatement("ls <1-10>.log"));
+
+        Assert.Empty(command.Redirections);
+        Assert.Equal("<1-10>.log", command.Arguments.Single().ToString());
+    }
+
+    /// <summary>
+    /// Inside a zsh brace group a `}` ends the word in front of it, so a loop that reads words until something else
+    /// ends them must stop there rather than read empty words forever. Found in `_init_d` shipped with zsh.
+    /// </summary>
+    [Theory]
+    [InlineData("{ for x in } ")]
+    [InlineData("{ for x in a} ")]
+    [InlineData("{ case x in a|} ")]
+    [InlineData("{ a=(x} ")]
+    public void ClosingBraceEndingAWordList_DoesNotStallTheParser(string text)
+    {
+        var task = Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.Zsh));
+
+        Assert.True(task.Wait(TimeSpan.FromMinutes(1)), "The parser did not finish.");
+        ShellSyntaxAssert.TextIsFaithful(text, task.Result);
+    }
+
     [Fact]
     public void ShHasNoZshExtensionsEither()
     {

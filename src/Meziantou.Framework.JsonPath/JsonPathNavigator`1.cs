@@ -50,4 +50,22 @@ public abstract class JsonPathNavigator<TValue>
     /// <param name="result">When this method returns, contains the boolean value.</param>
     /// <returns><see langword="true"/> when <paramref name="value"/> represents a boolean; otherwise, <see langword="false"/>.</returns>
     public abstract bool TryGetBoolean(TValue? value, out bool result);
+
+    /// <summary>
+    /// Gets whether <see cref="TryGetElement"/> takes constant time. When it does not, the evaluator copies an array
+    /// with <see cref="CopyElements"/> before walking it, so that visiting every element stays linear.
+    /// </summary>
+    internal virtual bool HasConstantTimeElementAccess => true;
+
+    /// <summary>Copies the elements of an array, in index order, to the start of <paramref name="destination"/>.</summary>
+    /// <param name="value">The array value.</param>
+    /// <param name="destination">A buffer holding at least <see cref="GetArrayLength"/> items.</param>
+    internal virtual void CopyElements(TValue? value, TValue?[] destination)
+    {
+        var length = GetArrayLength(value);
+        for (var i = 0; i < length; i++)
+        {
+            destination[i] = TryGetElement(value, i, out var element) ? element : default;
+        }
+    }
 }

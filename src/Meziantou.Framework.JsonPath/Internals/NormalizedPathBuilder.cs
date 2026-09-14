@@ -6,22 +6,34 @@ namespace Meziantou.Framework.Json.Internals;
 /// </summary>
 internal static class NormalizedPathBuilder
 {
-    public static string Build(List<PathComponent> components)
+    public static string Build(PathNode? path)
     {
+        if (path is null)
+        {
+            return "$";
+        }
+
+        // The steps are linked from the last one back to the root, so put them in order first.
+        var steps = new PathNode[path.Depth];
+        for (var step = path; step is not null; step = step.Parent)
+        {
+            steps[step.Depth - 1] = step;
+        }
+
         var sb = new StringBuilder();
         sb.Append('$');
-        foreach (var component in components)
+        foreach (var step in steps)
         {
-            if (component.IsIndex)
+            if (step.Name is null)
             {
                 sb.Append('[');
-                sb.Append(component.Index);
+                sb.Append(step.Index);
                 sb.Append(']');
             }
             else
             {
                 sb.Append("['");
-                AppendEscapedName(sb, component.Name!);
+                AppendEscapedName(sb, step.Name);
                 sb.Append("']");
             }
         }

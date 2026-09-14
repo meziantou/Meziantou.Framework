@@ -553,6 +553,38 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_Function_Match_RegexCache_KeepsSeveralPatternsAndEvictsTheOldest()
+    {
+        // Nodes whose patterns alternate between a few values must not recompile on every switch, yet a document
+        // with many patterns must not grow the cache without bound.
+        var func = new FunctionCallExpression("match", [], FunctionExpressionType.LogicalType);
+        var built = new List<string>();
+        var patterns = Enumerable.Range(0, FunctionCallExpression.RegexCacheCapacity).Select(i => "p" + i).ToArray();
+
+        for (var round = 0; round < 3; round++)
+        {
+            foreach (var pattern in patterns)
+            {
+                func.GetOrCreateRegex(pattern, anchored: true, Factory);
+            }
+        }
+
+        Assert.Equal(patterns, built);
+
+        func.GetOrCreateRegex("new", anchored: true, Factory);
+        func.GetOrCreateRegex(patterns[^1], anchored: true, Factory);
+        func.GetOrCreateRegex(patterns[0], anchored: true, Factory);
+
+        Assert.Equal([.. patterns, "new", patterns[0]], built);
+
+        FunctionCallExpression.RegexCacheEntry Factory(string p, bool _)
+        {
+            built.Add(p);
+            return new FunctionCallExpression.RegexCacheEntry(regex: null);
+        }
+    }
+
+    [Fact]
     public void Evaluate_Function_Match_CachedRegex_IsStableAcrossReuseAndThreads()
     {
         // A parsed JsonPath is documented as reusable and thread-safe, and the regex cache is populated lazily.
@@ -1257,6 +1289,132 @@ public sealed class JsonPathEvaluateTests
         var json = new JsonArray(new JsonObject { ["a"] = JsonValue.Create(42.5m) });
         var result = JsonPath.Parse("$[?@.a > 42]").Evaluate(json);
         Assert.Single(result);
+    }
+
+    [Fact]
+    public void Evaluate_JsonValueWrappingNonStringClrType_ReadsTheStringValue()
+    {
+        // These CLR types serialize as JSON strings, but their JsonValue.ToString() is quoted and escaped JSON text.
+        var json = new JsonArray(new JsonObject
+        {
+            ["date"] = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+            ["offset"] = new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(1)),
+            ["guid"] = Guid.Empty,
+            ["char"] = 'x',
+        });
+
+        Assert.Single(JsonPath.Parse("$[?@.date == '2020-01-02T03:04:05Z']").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?@.offset == '2020-01-02T03:04:05+01:00']").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?@.guid == '00000000-0000-0000-0000-000000000000']").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?@.char == 'x']").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?length(@.char) == 1]").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?match(@.date, '2020-.*Z')]").Evaluate(json));
+        Assert.Single(JsonPath.Parse("$[?@.date < '2021']").Evaluate(json));
+    }
+
+    [Fact]
+    public void Evaluate_JsonValueWrappingEnum_ReadsTheNumberValue()
+    {
+        var json = new JsonArray(new JsonObject { ["day"] = JsonValue.Create(DayOfWeek.Monday) });
+
+        Assert.Single(JsonPath.Parse("$[?@.day == 1]").Evaluate(json));
+        Assert.Empty(JsonPath.Parse("$[?@.day == 0]").Evaluate(json));
+    }
+
+    [Fact]
+    public void Evaluate_JsonValueWrappingClrObject_IsNavigatedAsAnObject()
+    {
+        var json = new JsonObject
+        {
+            ["dictionary"] = JsonValue.Create(new Dictionary<string, int>(StringComparer.Ordinal) { ["a"] = 1, ["b"] = 2 }),
+            ["list"] = JsonValue.Create(new List<int> { 10, 20, 30 }),
+        };
+
+        Assert.Empty(JsonPath.Parse("$[?@ == null]").Evaluate(json));
+        Assert.Equal(2, JsonPath.Parse("$.dictionary.b").EvaluateValue(json)!.GetValue<int>());
+        Assert.Equal(30, JsonPath.Parse("$.list[-1]").EvaluateValue(json)!.GetValue<int>());
+        Assert.Equal(["$['dictionary']['a']", "$['dictionary']['b']"], JsonPath.Parse("$.dictionary.*").Evaluate(json).Select(match => match.Path));
+        Assert.Single(JsonPath.Parse("$[?length(@) == 3]").Evaluate(json));
+        Assert.Equal(5, JsonPath.Parse("$..*").Evaluate(json).Count(match => match.Value is JsonValue value && value.GetValueKind() is JsonValueKind.Number));
+    }
+
+    [Theory]
+    // JsonElement's indexer walks an array of objects or arrays from its start, so the evaluator copies such an
+    // array before walking it. Every way of walking one must still see each element at its own index.
+    [InlineData("$.items[*]")]
+    [InlineData("$.items[?@.id > 1]")]
+    [InlineData("$.items[1:4]")]
+    [InlineData("$.items[::2]")]
+    [InlineData("$.items[::-1]")]
+    [InlineData("$.items[-2:0:-1]")]
+    [InlineData("$.items[3]")]
+    [InlineData("$..id")]
+    [InlineData("$..[1]")]
+    [InlineData("$.items[?@.tags == $.items[2].tags]")]
+    [InlineData("$.items[?@ == $.items[4]]")]
+    [InlineData("$.nested[?@[1][0] == 'b']")]
+    [InlineData("$.scalars[1:]")]
+    public void Evaluate_JsonElement_ArrayWalks_MatchJsonNode(string query)
+    {
+        const string Json = """
+            {
+              "items": [
+                {"id": 0, "tags": ["a"]},
+                {"id": 1, "tags": ["a", "b"]},
+                {"id": 2, "tags": ["c"]},
+                {"id": 3, "tags": ["a", "b"]},
+                {"id": 4, "tags": []}
+              ],
+              "nested": [[["a"], ["b"]], [["c"]], [[], ["b"]]],
+              "scalars": [1, 2, 3]
+            }
+            """;
+        using var document = JsonDocument.Parse(Json);
+        var path = JsonPath.Parse(query);
+
+        var expected = path.Evaluate(JsonNode.Parse(Json)).Select(match => (match.Path, match.Value!.ToJsonString())).ToArray();
+        var actual = path.Evaluate(document).Select(match => (match.Path, match.Value.GetRawText().Replace(" ", "", StringComparison.Ordinal))).ToArray();
+
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void Evaluate_ExistenceTest_StopsAtTheFirstNode()
+    {
+        // '@..name' on the child finds its parent's name before it would follow the cycle any further, and an
+        // existence test needs no more than that. count() needs every node, so it still hits the depth limit.
+        var root = CyclicNode.CreateCycle();
+
+        var result = JsonPath.Parse("$[?@..name]").Evaluate(root, CyclicNavigator.Instance);
+
+        Assert.Single(result);
+        Assert.Equal("$['child']", result[0].Path);
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$[?count(@..name) > 0]").Evaluate(root, CyclicNavigator.Instance));
+    }
+
+    [Theory]
+    // Stopping a subquery early must not change what it answers: existence needs one node, value() exactly one.
+    [InlineData("$[?@.*]", "$[1]", "$[2]", "$[3]")]
+    [InlineData("$[?@..x]", "$[2]", "$[3]")]
+    [InlineData("$[?@.*.x]", "$[2]", "$[3]")]
+    [InlineData("$[?!@.*]", "$[0]", "$[4]")]
+    [InlineData("$[?value(@.*) == 1]", "$[1]")]
+    [InlineData("$[?value(@..x) == 1]", "$[2]")]
+    [InlineData("$[?count(@..*) == 4]", "$[3]")]
+    public void Evaluate_FilterSubqueries_KeepTheirResultsWhenStoppedEarly(string query, params string[] expectedPaths)
+    {
+        var doc = JsonNode.Parse("""
+            [
+              {},
+              {"a": 1},
+              {"a": 1, "b": {"x": 1}},
+              {"a": {"x": 2}, "b": {"x": 3}},
+              5
+            ]
+            """);
+
+        Assert.Equal(expectedPaths, JsonPath.Parse(query).Evaluate(doc).Select(match => match.Path));
     }
 
     [Fact]

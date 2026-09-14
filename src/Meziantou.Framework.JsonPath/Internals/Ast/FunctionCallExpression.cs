@@ -5,25 +5,26 @@ namespace Meziantou.Framework.Json.Internals;
 internal sealed class FunctionCallExpression : LogicalExpression
 {
     /// <summary>
-    /// The last pattern a <c>match()</c>/<c>search()</c> call compiled, with its result. A literal pattern never
-    /// changes, and a pattern read from the document is usually one value shared by every node the filter
-    /// visits (<c>$.pattern</c>), so a single entry avoids recompiling per node in both cases. An invalid pattern
-    /// is cached as <see cref="RegexCacheEntry.Unusable"/> so it is not re-translated per node either.
+    /// The number of compiled patterns a single <c>match()</c>/<c>search()</c> call keeps. A pattern read from the
+    /// document may be attacker-controlled, which is why the cache is bounded rather than a growing map.
+    /// </summary>
+    internal const int RegexCacheCapacity = 8;
+
+    /// <summary>
+    /// The patterns this <c>match()</c>/<c>search()</c> call compiled most recently, newest first, with their results.
+    /// A literal pattern never changes, and a pattern read from the document is usually one of a few values shared by
+    /// the nodes the filter visits (<c>$.pattern</c>, or <c>@.pattern</c> alternating between a handful of values),
+    /// so a few entries avoid recompiling per node. Compiling costs far more than matching, often tens of
+    /// milliseconds. An invalid pattern is cached as <see cref="RegexCacheEntry.Unusable"/> so it is not
+    /// re-translated per node either.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// A pattern read from the document may be attacker-controlled, which is why this is one entry rather than
-    /// a growing map. Nodes whose patterns alternate replace the entry each time, which costs what an uncached
-    /// compilation costs.
-    /// </para>
-    /// <para>
     /// A parsed <see cref="JsonPath"/> is documented as thread-safe and reusable. Publishing this field races
-    /// benignly: <see cref="RegexCacheSlot"/> is immutable, so a reader never pairs one pattern with another's
-    /// regex, reference assignment is atomic, and the worst case is that concurrent evaluations using different
-    /// patterns keep replacing each other's entry.
-    /// </para>
+    /// benignly: the array is never mutated once published and <see cref="RegexCacheSlot"/> is immutable, so a
+    /// reader never pairs one pattern with another's regex, reference assignment is atomic, and the worst case is
+    /// that concurrent evaluations drop an entry another one just added.
     /// </remarks>
-    private RegexCacheSlot? _regexCache;
+    private RegexCacheSlot[] _regexCache = [];
 
     public FunctionCallExpression(string name, FunctionArgument[] arguments, FunctionExpressionType resultType)
     {
@@ -50,14 +51,21 @@ internal sealed class FunctionCallExpression : LogicalExpression
     /// <returns>The entry for <paramref name="pattern"/>.</returns>
     public RegexCacheEntry GetOrCreateRegex(string pattern, bool anchored, Func<string, bool, RegexCacheEntry> factory)
     {
-        var cached = _regexCache;
-        if (cached is not null && string.Equals(cached.Pattern, pattern, StringComparison.Ordinal))
+        var slots = _regexCache;
+        foreach (var slot in slots)
         {
-            return cached.Entry;
+            if (string.Equals(slot.Pattern, pattern, StringComparison.Ordinal))
+            {
+                return slot.Entry;
+            }
         }
 
+        // Evict the oldest entry once full. A hit does not move its entry forward, so reads never allocate.
         var entry = factory(pattern, anchored);
-        _regexCache = new RegexCacheSlot(pattern, entry);
+        var updated = new RegexCacheSlot[Math.Min(slots.Length + 1, RegexCacheCapacity)];
+        updated[0] = new RegexCacheSlot(pattern, entry);
+        Array.Copy(slots, 0, updated, 1, updated.Length - 1);
+        _regexCache = updated;
         return entry;
     }
 

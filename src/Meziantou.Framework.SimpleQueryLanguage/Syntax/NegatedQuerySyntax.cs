@@ -10,13 +10,16 @@ public sealed class NegatedQuerySyntax : QuerySyntax
 
         OperatorToken = notToken;
         Query = query;
+
+        // Computed once: reading Query.Span lazily recurses through every nested negation
+        Span = TextSpan.FromBounds(notToken.Span.Start, query.Span.End);
     }
 
     /// <summary>Gets the kind of this syntax node.</summary>
     public override QuerySyntaxKind Kind => QuerySyntaxKind.NegatedQuery;
 
     /// <summary>Gets the text span covered by this syntax node.</summary>
-    public override TextSpan Span => TextSpan.FromBounds(OperatorToken.Span.Start, Query.Span.End);
+    public override TextSpan Span { get; }
 
     /// <summary>Gets the NOT operator token.</summary>
     public QueryToken OperatorToken { get; }

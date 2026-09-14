@@ -24,7 +24,7 @@ record Person(string FullName, DateTime DateOfBirth);
 - `AddHandler`: supported operators: `:`
 - `AddRangeHandler`: supported operators: `:`, `<`, `<=`, `>`, `>=`, `..` (range)
 - `SetTextFilterHandler` matches all non-bound filters
-- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`
+- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`. They are resolved when the query is built, so rebuild a query that is kept across days.
 
 Examples:
 - `name:john` or `name=john`

@@ -38,7 +38,9 @@ internal static class RangeSyntax
     {
         // Every keyword below expands to a range of dates, so it cannot be represented for any other type.
         // Returning false lets the caller fall back to the type's own parser instead of failing the cast.
-        if (typeof(T) != typeof(DateTime) && typeof(T) != typeof(DateTimeOffset) && typeof(T) != typeof(DateOnly))
+        // A nullable date is supported too: a boxed date unboxes to its Nullable<T>.
+        var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        if (type != typeof(DateTime) && type != typeof(DateTimeOffset) && type != typeof(DateOnly))
         {
             value = default;
             return false;
@@ -100,10 +102,11 @@ internal static class RangeSyntax
 
         static T ConvertValue(DateTimeOffset value)
         {
-            if (typeof(T) == typeof(DateTimeOffset))
+            var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+            if (type == typeof(DateTimeOffset))
                 return (T)(object)value;
 
-            if (typeof(T) == typeof(DateOnly))
+            if (type == typeof(DateOnly))
                 return (T)(object)DateOnly.FromDateTime(value.UtcDateTime);
 
             // UtcDateTime yields DateTimeKind.Utc, matching what ValueConverter produces for an explicit date

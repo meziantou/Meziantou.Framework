@@ -371,6 +371,116 @@ public sealed class ExpressionQueryBuilderTests
         Assert.Single(queryBuilder.Build($"guid:{id}").Apply(items).ToList());
     }
 
+    [Fact]
+    public void ManyDisjunctions_BuildsAndApplies()
+    {
+        // 2^12 disjunctions, only the last of which matches. Combining them pairwise took seconds.
+        var query = string.Join(" AND ", Enumerable.Range(0, 12).Select(i => $"(a{i.ToString(CultureInfo.InvariantCulture)} OR sample)"));
+
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.SetFreeTextHandler(value => item => item.StringValue == value);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "sample" },
+            new Sample { StringValue = "a0" },
+        }.AsQueryable();
+        var result = queryBuilder.Build(query).Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("sample", result[0].StringValue);
+    }
+
+    [Fact]
+    public void CombinedTerms_ShareTheLambdaParameter()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("int32", item => item.Int32Value);
+        queryBuilder.AddHandler("int64", other => other.Int64Value);
+        queryBuilder.SetFreeTextHandler(value => text => text.StringValue == value);
+        var query = queryBuilder.Build("(int32:1 OR sample) AND NOT int64:2");
+
+        var items = new[]
+        {
+            new Sample { Int32Value = 1, Int64Value = 1 },
+            new Sample { Int32Value = 2, Int64Value = 1, StringValue = "sample" },
+            new Sample { Int32Value = 1, Int64Value = 2 },
+            new Sample { Int32Value = 2, Int64Value = 1 },
+        }.AsQueryable();
+        var result = query.Apply(items).ToList();
+
+        Assert.HasCount(2, result);
+        Assert.Single(query.Predicate!.Parameters);
+    }
+
+    [Theory]
+    [InlineData("today", 1)]
+    [InlineData("yesterday", 0)]
+    public void DateKeyword_OnNullableDateTime_IsSupported(string keyword, int expectedCount)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new ExpressionQueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddHandler<DateTime?>("date", item => item.NullableDateTimeValue);
+
+        var items = new[]
+        {
+            new Sample { NullableDateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { NullableDateTimeValue = null },
+        }.AsQueryable();
+
+        Assert.HasCount(expectedCount, queryBuilder.Build($"date:{keyword}").Apply(items).ToList());
+    }
+
+    [Theory]
+    [InlineData("state:or", 1)]
+    [InlineData("state:and", 0)]
+    public void KeywordDirectlyAfterOperator_IsTheValue(string query, int expectedCount)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("state", item => item.StringValue);
+        queryBuilder.SetFreeTextHandler(value => item => true);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "oregon" },
+            new Sample { StringValue = "idaho" },
+        }.AsQueryable();
+
+        Assert.HasCount(expectedCount, queryBuilder.Build(query).Apply(items).ToList());
+    }
+
+    [Fact]
+    public void UnhandledField_FallbackToTextSearch_KeepsOperator()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.SetFreeTextHandler(value => item => item.StringValue == value);
+
+        var items = new[]
+        {
+            new Sample { StringValue = "dummy>10" },
+            new Sample { StringValue = "dummy:10" },
+        }.AsQueryable();
+        var result = queryBuilder.Build("dummy>10").Apply(items).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("dummy>10", result[0].StringValue);
+    }
+
+    [Theory]
+    [InlineData("sample", 0)]
+    [InlineData("NOT sample", 2)]
+    public void TextWithoutTextHandler_OnlyItsNegationMatches(string query, int expectedCount)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("int32", item => item.Int32Value);
+
+        var items = new[] { new Sample { Int32Value = 1 }, new Sample { Int32Value = 2 } }.AsQueryable();
+
+        Assert.HasCount(expectedCount, queryBuilder.Build(query).Apply(items).ToList());
+    }
+
     private static ExpressionQueryBuilder<Sample> CreateDateQueryBuilder(DateTimeOffset utcNow)
     {
         var timeProvider = new FakeTimeProvider();
@@ -389,6 +499,7 @@ public sealed class ExpressionQueryBuilderTests
         public int? NullableInt32Value { get; set; }
         public TimeSpan TimeSpanValue { get; set; }
         public DateTime DateTimeValue { get; set; }
+        public DateTime? NullableDateTimeValue { get; set; }
         public DayOfWeek DayOfWeekValue { get; set; }
         public Guid GuidValue { get; set; }
     }

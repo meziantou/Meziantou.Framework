@@ -155,29 +155,50 @@ public sealed class ExpressionQueryBuilder<T>
         var syntax = QuerySyntax.Parse(query);
         var boundQuery = BoundQuery.Create(syntax);
 
-        Expression<Func<T, bool>>? filter = null;
+        if (boundQuery is [[var single]])
+            return new ExpressionQuery<T>(query, CreateExpression(single));
 
-        foreach (var disjunction in boundQuery)
+        // Combining the terms pairwise with AndAlso/OrElse would rebind the parameter of the whole expression built
+        // so far at every step, which is quadratic. Instead, rebind each distinct term once onto a shared parameter.
+        var parameter = Expression.Parameter(typeof(T), "item");
+        var bodies = new Dictionary<BoundQuery, Expression>();
+        var disjunctions = new Expression[boundQuery.Count];
+        for (var i = 0; i < boundQuery.Count; i++)
         {
-            Expression<Func<T, bool>>? disjunctionPredicate = null;
-
-            foreach (var conjunction in disjunction)
+            var disjunction = boundQuery[i];
+            var conjunctions = new Expression[disjunction.Count];
+            for (var j = 0; j < disjunction.Count; j++)
             {
-                var next = CreateExpression(conjunction);
-                disjunctionPredicate = disjunctionPredicate is null
-                    ? next
-                    : disjunctionPredicate.AndAlso(next);
+                // Distributing AND over OR repeats the same term in many disjunctions, so create its expression once
+                var node = disjunction[j];
+                if (!bodies.TryGetValue(node, out var body))
+                {
+                    var expression = CreateExpression(node);
+                    body = new ReplaceParameterVisitor(expression.Parameters[0], parameter).Visit(expression.Body);
+                    bodies.Add(node, body);
+                }
+
+                conjunctions[j] = body;
             }
 
-            if (disjunctionPredicate is not null)
-            {
-                filter = filter is null
-                    ? disjunctionPredicate
-                    : filter.OrElse(disjunctionPredicate);
-            }
+            disjunctions[i] = Combine(conjunctions, Expression.AndAlso);
         }
 
+        var filter = Expression.Lambda<Func<T, bool>>(Combine(disjunctions, Expression.OrElse), parameter);
         return new ExpressionQuery<T>(query, filter);
+    }
+
+    /// <summary>
+    /// Combines the operands as a balanced tree, keeping their order. A left-leaning chain would be as deep as the
+    /// number of operands, and compiling or translating the expression recurses through that depth.
+    /// </summary>
+    private static Expression Combine(ReadOnlySpan<Expression> operands, Func<Expression, Expression, BinaryExpression> combine)
+    {
+        if (operands.Length == 1)
+            return operands[0];
+
+        var half = operands.Length / 2;
+        return combine(Combine(operands[..half], combine), Combine(operands[half..], combine));
     }
 
     private Expression<Func<T, bool>> CreateExpression(BoundQuery node)
@@ -193,7 +214,10 @@ public sealed class ExpressionQueryBuilder<T>
     private Expression<Func<T, bool>> CreateExpression(BoundTextQuery node)
     {
         if (_freeTextHandler is null)
-            return CreateFalseExpression();
+        {
+            // Free text is not supported, so it never matches, and its negation always does
+            return CreateConstantExpression(node.IsNegated);
+        }
 
         var expression = _freeTextHandler(node.Text);
         return node.IsNegated ? expression.Negate() : expression;
@@ -228,7 +252,7 @@ public sealed class ExpressionQueryBuilder<T>
         }
 
         // Fall back to free text
-        return CreateExpression(new BoundTextQuery(node.IsNegated, $"{node.Key}:{node.Value}"));
+        return CreateExpression(new BoundTextQuery(node.IsNegated, $"{node.Key}{op.ToQueryText()}{node.Value}"));
     }
 
     /// <summary>
@@ -325,14 +349,24 @@ public sealed class ExpressionQueryBuilder<T>
             return CreateComparisonExpressionCore(unary.Operand, selector, factory);
         }
 
-        // Fall back to simple equality
-        return CreateComparisonExpression(value, selector, Expression.Equal, parser);
+        // RangeSyntax.TryParse already tried the value as a single operand
+        return CreateFalseExpression();
     }
 
-    private static Expression<Func<T, bool>> CreateFalseExpression()
+    private static Expression<Func<T, bool>> CreateFalseExpression() => CreateConstantExpression(value: false);
+
+    private static Expression<Func<T, bool>> CreateConstantExpression(bool value)
     {
         var parameter = Expression.Parameter(typeof(T), "item");
-        return Expression.Lambda<Func<T, bool>>(Expression.Constant(false), parameter);
+        return Expression.Lambda<Func<T, bool>>(Expression.Constant(value), parameter);
+    }
+
+    private sealed class ReplaceParameterVisitor(ParameterExpression oldParameter, ParameterExpression newParameter) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return node == oldParameter ? newParameter : base.VisitParameter(node);
+        }
     }
 
     private readonly record struct ExpressionFilterKey(string Key, KeyValueOperator Operator);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
@@ -65,16 +66,52 @@ public partial class QuerySyntax
 
         public QuerySyntax Parse()
         {
+            MarkUnmatchedCloseParenthesesAsText();
+
         Again:
             var result = ParseExpression();
             if (Current.Kind != QuerySyntaxKind.EndOfFile)
             {
+                // Not expected once unmatched parentheses are text, but restarting still yields a valid tree
+                Debug.Fail($"Unexpected token {Current.Kind} at position {Current.Span.Start}");
                 MarkCurrentAsText();
                 _tokenIndex = 0;
                 goto Again;
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Turns every ')' that cannot close a parenthesis into text before parsing. Discovering them while parsing
+        /// means restarting from the first token for each one, which is quadratic in the number of such tokens.
+        /// </summary>
+        private void MarkUnmatchedCloseParenthesesAsText()
+        {
+            var depth = 0;
+            for (var i = 0; i < _tokens.Length; i++)
+            {
+                switch (_tokens[i].Kind)
+                {
+                    case QuerySyntaxKind.OpenParenthesisToken:
+                        depth++;
+                        break;
+
+                    // A ')' starting the query or directly following '(' is where an expression must start, so
+                    // ParsePrimaryExpression already reads it as a search term. It does not close a parenthesis.
+                    case QuerySyntaxKind.CloseParenthesisToken when i == 0 || _tokens[i - 1].Kind is QuerySyntaxKind.OpenParenthesisToken:
+                        break;
+
+                    // Any other ')' with no open parenthesis would stop the parser before the end of the query
+                    case QuerySyntaxKind.CloseParenthesisToken when depth == 0:
+                        _tokens[i] = _tokens[i].AsText();
+                        break;
+
+                    case QuerySyntaxKind.CloseParenthesisToken:
+                        depth--;
+                        break;
+                }
+            }
         }
 
         private QuerySyntax ParseExpression()
@@ -88,6 +125,14 @@ public partial class QuerySyntax
 
             while (Current.Kind is QuerySyntaxKind.OrKeyword)
             {
+                // A trailing OR has no right operand. Like a trailing AND, it is a search term rather than an operator,
+                // otherwise the missing operand becomes an empty search term that matches everything.
+                if (Lookahead.Kind is QuerySyntaxKind.EndOfFile or QuerySyntaxKind.CloseParenthesisToken)
+                {
+                    result = new AndQuerySyntax(result, @operator: null, new TextQuerySyntax(Next().AsText()));
+                    break;
+                }
+
                 var operatorToken = Next();
                 var term = ParseAndExpression();
                 result = new OrQuerySyntax(result, operatorToken, term);
@@ -130,7 +175,8 @@ public partial class QuerySyntax
             return Current.Kind switch
             {
                 QuerySyntaxKind.NotKeyword => ParseNotExpression(),
-                QuerySyntaxKind.OpenParenthesisToken => ParseParenthesizedExpression(),
+                // A '(' ending the query encloses nothing, so it is a search term rather than an empty search term
+                QuerySyntaxKind.OpenParenthesisToken when Lookahead.Kind is not QuerySyntaxKind.EndOfFile => ParseParenthesizedExpression(),
                 _ => ParseTextOrKeyValueExpression(),
             };
         }
@@ -244,9 +290,12 @@ public partial class QuerySyntax
         {
             switch (kind)
             {
+                // Keywords directly after the operator are part of the value: "state:or" searches for "or"
                 case QuerySyntaxKind.TextToken:
                 case QuerySyntaxKind.ColonToken:
                 case QuerySyntaxKind.NotKeyword:
+                case QuerySyntaxKind.AndKeyword:
+                case QuerySyntaxKind.OrKeyword:
                     return true;
                 default:
                     return false;

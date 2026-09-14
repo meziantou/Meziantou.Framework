@@ -1394,7 +1394,7 @@ internal class AssertionFormatter
         return result.ToString();
     }
 
-    private static string FormatStringValue(string value, int? highlightedIndex)
+    internal static string FormatStringValue(string value, int? highlightedIndex)
     {
         var result = new StringBuilder(value.Length + 2);
         result.Append('"');

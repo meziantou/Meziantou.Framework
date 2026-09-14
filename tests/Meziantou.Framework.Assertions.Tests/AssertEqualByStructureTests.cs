@@ -436,6 +436,359 @@ public sealed class AssertEqualByStructureTests
             """);
     }
 
+    [Fact]
+    public void Equivalent_NumbersWithoutTypeCode_Success()
+    {
+        AssertionsAssert.Equivalent((Int128)1, (Int128)1);
+        AssertionsAssert.Equivalent((UInt128)1, (UInt128)1);
+        AssertionsAssert.Equivalent((Half)1, (Half)1);
+        AssertionsAssert.Equivalent(new System.Numerics.BigInteger(3), new System.Numerics.BigInteger(3));
+        AssertionsAssert.Equivalent(new { X = (Int128)1 }, new { X = 1 });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenInt128Differs()
+    {
+        var expected = (Int128)1;
+        var actual = (Int128)2;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $
+            Reason: Values differ.
+            Expected: 1
+            Actual:   2
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenUInt128Differs()
+    {
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equivalent((UInt128)1, (UInt128)2));
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenHalfMemberDiffers()
+    {
+        var expected = new { X = (Half)1 };
+        var actual = new { X = (Half)2 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.X
+            Reason: Values differ.
+            Expected: 1
+            Actual:   2
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenBigIntegerDiffers()
+    {
+        // 3 and 5 agree on every public property of BigInteger (IsZero, IsOne, IsEven, Sign, IsPowerOfTwo).
+        var expected = new System.Numerics.BigInteger(3);
+        var actual = new System.Numerics.BigInteger(5);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $
+            Reason: Values differ.
+            Expected: 3
+            Actual:   5
+            """);
+        AssertionsAssert.NotEquivalent(expected, actual);
+    }
+
+    [Fact]
+    public void Equivalent_ValuesWithoutPublicMembersUseEquality()
+    {
+        AssertionsAssert.Equivalent(new OpaqueValue(1), new OpaqueValue(1));
+        AssertionsAssert.NotEquivalent(new object(), new object());
+
+        var expected = new { Value = new OpaqueValue(1) };
+        var actual = new { Value = new OpaqueValue(2) };
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.Value
+            Reason: Values differ.
+            Expected: Opaque(1)
+            Actual:   Opaque(2)
+            """);
+        AssertionsAssert.NotEquivalent(expected, actual);
+    }
+
+    [Fact]
+    public void Equivalent_Memory_Success()
+    {
+        AssertionsAssert.Equivalent(new { D = new byte[] { 1 }.AsMemory() }, new { D = new byte[] { 1 }.AsMemory() });
+        AssertionsAssert.Equivalent(new ReadOnlyMemory<int>([1, 2]), new ReadOnlyMemory<int>([1, 2]));
+        AssertionsAssert.Equivalent(new[] { 1, 2 }, new Memory<long>([1, 2]));
+        AssertionsAssert.NotEquivalent(new ReadOnlyMemory<int>([1, 2]), new ReadOnlyMemory<int>([1, 3]));
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenMemoryContentDiffers()
+    {
+        var expected = new { D = new byte[] { 1, 2 }.AsMemory() };
+        var actual = new { D = new byte[] { 1, 3 }.AsMemory() };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.D[1]
+            Reason: Values differ.
+            Expected: 2
+            Actual:   3
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_ReadOnlySequenceComparesContent()
+    {
+        var expected = new { Data = new System.Buffers.ReadOnlySequence<byte>(new byte[] { 1, 2 }) };
+
+        AssertionsAssert.Equivalent(expected, new { Data = new System.Buffers.ReadOnlySequence<byte>(new byte[] { 1, 2 }) });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, new { Data = new System.Buffers.ReadOnlySequence<byte>(new byte[] { 1, 3 }) }), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   new { Data = new System.Buffers.ReadOnlySequence<byte>(new byte[] { 1, 3 }) }
+            Path: $.Data[1]
+            Reason: Values differ.
+            Expected: 2
+            Actual:   3
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_MembersThatCannotBeReadAreIgnored()
+    {
+        AssertionsAssert.Equivalent(new SpanHolder("Alice", [1]), new SpanHolder("Alice", [2]));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(new SpanHolder("Alice", [1]), new SpanHolder("Bob", [1])), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: new SpanHolder("Alice", [1])
+            Actual expression:   new SpanHolder("Bob", [1])
+            Path: $.Name
+            Reason: Values differ.
+            Expected: "Alice"
+            Actual:   "Bob"
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_RefReturningPropertiesAreCompared()
+    {
+        AssertionsAssert.Equivalent(new RefValueHolder(1), new RefValueHolder(1));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(new RefValueHolder(1), new RefValueHolder(2)), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: new RefValueHolder(1)
+            Actual expression:   new RefValueHolder(2)
+            Path: $.Value
+            Reason: Values differ.
+            Expected: 1
+            Actual:   2
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_DictionariesIgnoreEntryOrder()
+    {
+        var expected = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 };
+        var actual = new Dictionary<string, int> { ["b"] = 2, ["a"] = 1 };
+
+        AssertionsAssert.Equivalent(expected, actual);
+        AssertionsAssert.Equivalent(new { Values = expected }, new { Values = actual });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEquivalent(expected, actual), """
+            Assert.NotEquivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [[a, 1], [b, 2]]
+            Actual:       [[b, 2], [a, 1]]
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_DictionariesOfDifferentTypes_Success()
+    {
+        AssertionsAssert.Equivalent(new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }, new SortedDictionary<string, long>(StringComparer.Ordinal) { ["b"] = 2, ["a"] = 1 });
+        AssertionsAssert.Equivalent(new Dictionary<int, string> { [1] = "a", [2] = "b" }, new Dictionary<long, string> { [2] = "b", [1] = "a" });
+        AssertionsAssert.Equivalent(new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }, new System.Collections.Hashtable { ["b"] = 2, ["a"] = 1 });
+        AssertionsAssert.Equivalent(new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }, new ReadOnlyOnlyDictionary(new Dictionary<string, int> { ["b"] = 2, ["a"] = 1 }));
+        AssertionsAssert.Equivalent(new Dictionary<(int, string), int> { [(1, "a")] = 1, [(2, "b")] = 2 }, new Dictionary<(int, string), int> { [(2, "b")] = 2, [(1, "a")] = 1 });
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenDictionaryValueDiffers()
+    {
+        var expected = new { Values = new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 } };
+        var actual = new { Values = new Dictionary<string, int> { ["b"] = 3, ["a"] = 1 } };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.Values["b"]
+            Reason: Values differ.
+            Expected: 2
+            Actual:   3
+            """);
+        AssertionsAssert.NotEquivalent(expected, actual);
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenDictionaryIsMissingKey()
+    {
+        var expected = new Dictionary<int, string> { [1] = "a", [2] = "b" };
+        var actual = new Dictionary<int, string> { [2] = "b" };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $[1]
+            Reason: Actual dictionary is missing a key.
+            Expected: "a"
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenDictionaryHasUnexpectedKey()
+    {
+        var expected = new Dictionary<string, int> { ["b"] = 2 };
+        var actual = new Dictionary<string, int> { ["a\""] = 1, ["b"] = 2 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $["a\""]
+            Reason: Actual dictionary contains an unexpected key.
+            Expected: <missing>
+            Actual:   1
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_DictionaryKeysUseStringCaseOption()
+    {
+        var expected = new Dictionary<string, int> { ["A"] = 1, ["b"] = 2 };
+        var actual = new Dictionary<string, int> { ["B"] = 2, ["a"] = 1 };
+
+        AssertionsAssert.Equivalent(expected, actual, new EquivalentOptions { IgnoreStringCase = true });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $["A"]
+            Reason: Actual dictionary is missing a key.
+            Expected: 1
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_SetsIgnoreOrder()
+    {
+        var descending = Comparer<int>.Create((x, y) => y.CompareTo(x));
+
+        AssertionsAssert.Equivalent(new[] { 1, 2, 3 }, new SortedSet<int>([1, 2, 3], descending));
+        AssertionsAssert.Equivalent(new SortedSet<int>([1, 2, 3], descending), new List<long> { 1, 2, 3 });
+        AssertionsAssert.Equivalent(new { Tags = new SortedSet<string>(["a", "b"], StringComparer.Ordinal) }, new { Tags = new[] { "b", "a" } });
+        AssertionsAssert.NotEquivalent(new[] { 1, 2, 3 }, new SortedSet<int>([1, 2, 4], descending));
+    }
+
+    [Fact]
+    public void Equivalent_FailsWhenSetItemIsMissing()
+    {
+        var expected = new[] { 1, 2, 3 };
+        var actual = new SortedSet<int>([1, 2, 4], Comparer<int>.Create((x, y) => y.CompareTo(x)));
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $[2]
+            Reason: Actual collection is missing an equivalent item.
+            Expected: 3
+            Actual:   <missing>
+            """);
+    }
+
+    [Fact]
+    public void Equivalent_IgnoresCollectionOrderWithDuplicateLeaves()
+    {
+        var options = new EquivalentOptions { IgnoreCollectionOrder = true };
+        AssertionsAssert.Equivalent(new[] { 1, 1, 2 }, new[] { 1, 2, 1 }, options);
+        AssertionsAssert.Equivalent(new[] { 1, 1, 2 }, new object[] { 1L, 2, 1 }, options);
+
+        var expected = new[] { 1, 1, 2 };
+        var actual = new[] { 1, 2, 2 };
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(expected, actual, options), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $[1]
+            Reason: Actual collection is missing an equivalent item.
+            Expected: 1
+            Actual:   <missing>
+            """);
+    }
+
+    private sealed class OpaqueValue(int value) : IEquatable<OpaqueValue>
+    {
+        private readonly int _value = value;
+
+        public bool Equals([NotNullWhen(true)] OpaqueValue? other) => other is not null && _value == other._value;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as OpaqueValue);
+
+        public override int GetHashCode() => _value;
+
+        public override string ToString() => "Opaque(" + _value.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    private sealed class SpanHolder(string name, byte[] data)
+    {
+        public string Name { get; } = name;
+
+        public ReadOnlySpan<byte> Data => data;
+    }
+
+    private sealed class RefValueHolder(int value)
+    {
+        private int _value = value;
+
+        public ref int Value => ref _value;
+    }
+
+    private sealed class ReadOnlyOnlyDictionary(Dictionary<string, int> inner) : IReadOnlyDictionary<string, int>
+    {
+        public int this[string key] => inner[key];
+
+        public IEnumerable<string> Keys => inner.Keys;
+
+        public IEnumerable<int> Values => inner.Values;
+
+        public int Count => inner.Count;
+
+        public bool ContainsKey(string key) => inner.ContainsKey(key);
+
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator() => inner.GetEnumerator();
+
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out int value) => inner.TryGetValue(key, out value);
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
     private sealed class ExpectedPerson
     {
         public string? Name { get; set; }

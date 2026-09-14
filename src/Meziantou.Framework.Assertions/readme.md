@@ -139,4 +139,5 @@ The package ships analyzers and code fixes to help write clearer assertions.
 | `MFAS0053` | Assertions | Use Assert.Single with a predicate instead of Assert.Single(collection.Where(...)) | Warning | ✔️ |
 | `MFAS0054` | Assertions | Use Assert.Contains with the expected value instead of an equality predicate | Warning | ✔️ |
 | `MFAS0055` | Assertions | Use Assert.DoesNotContain with the expected value instead of an equality predicate | Warning | ✔️ |
+| `MFAS0056` | Assertions | Use the value returned by the assertion instead of re-deriving it | Info | ✔️ |
 <!-- analyzer-rules -->

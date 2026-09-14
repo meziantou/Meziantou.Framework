@@ -103,6 +103,17 @@ public partial class Assert
             return true;
         }
 
+        if (expected is null || actual is null)
+            return false;
+
+        // Numeric widening and user-defined implicit conversions can only make values of different runtime types compare
+        // equal. When the runtime types match, Equals has already answered for them, and converting both values to
+        // decimal on every mismatch is expensive, so only the structural comparison is left. The check is only a shortcut:
+        // two different value types seldom share a runtime type (only through Nullable<T>), so they skip it rather than
+        // being boxed for it.
+        if ((!typeof(TExpected).IsValueType || !typeof(TActual).IsValueType) && expected.GetType() == actual.GetType())
+            return TryCompareEnumerableValues(expected, actual, out var sameTypeResult) && sameTypeResult;
+
         return (TryCompareNumericValues(expected, actual, out var result) && result)
             || (TryCompareEnumerableValues(expected, actual, out result) && result)
             || ValuesEqualAfterImplicitConversion(expected, actual);

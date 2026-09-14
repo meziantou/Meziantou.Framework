@@ -133,6 +133,25 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void DecimalTolerance_ValuesTooFarApartToSubtract()
+    {
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(decimal.MaxValue, -1m, 1m));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(decimal.MinValue, decimal.MaxValue, decimal.MaxValue));
+        AssertionsAssert.NotEqual(decimal.MaxValue, decimal.MinValue, 1m);
+        AssertionsAssert.NotEqual(-1m, decimal.MaxValue, decimal.MaxValue);
+    }
+
+    [Fact]
+    public void DecimalTolerance_ValuesOfOppositeSigns()
+    {
+        AssertionsAssert.Equal(0.5m, -0.5m, 1m);
+        AssertionsAssert.Equal(-0.25m, 0.5m, 1m);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(0.5m, -0.75m, 1m));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(0.5m, -0.5m, 1m));
+        AssertionsAssert.NotEqual(0.5m, -0.75m, 1m);
+    }
+
+    [Fact]
     public void NFloatTolerance_Success()
     {
         var expected = (NFloat)1;
@@ -489,6 +508,116 @@ public sealed class AssertEqualTests
         ];
 
         AssertionsAssert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void ListsOfArrays_CompareNestedContent()
+    {
+        var expected = new List<int[]> { new[] { 1, 2 } };
+        var actual = new List<int[]> { new[] { 1, 2 } };
+        IEnumerable<int[]> expectedEnumerable = expected;
+        IEnumerable<int[]> actualEnumerable = actual;
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Equal(expectedEnumerable, actualEnumerable);
+        AssertionsAssert.Equal(expectedEnumerable, actualEnumerable, comparer: null);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expectedEnumerable, actualEnumerable));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expectedEnumerable, actualEnumerable, comparer: null));
+    }
+
+    [Fact]
+    public void ListsOfArrays_ExplicitDefaultComparerComparesReferences()
+    {
+        IEnumerable<int[]> expected = new List<int[]> { new[] { 1, 2 } };
+        IEnumerable<int[]> actual = new List<int[]> { new[] { 1, 2 } };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual, EqualityComparer<int[]>.Default));
+        AssertionsAssert.NotEqual(expected, actual, EqualityComparer<int[]>.Default);
+    }
+
+    [Fact]
+    public void ListsOfBoxedNumbers_CompareValues()
+    {
+        var expected = new List<object> { 1 };
+        var actual = new List<object> { 1L };
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+    }
+
+    [Fact]
+    public void ListsOfArrays_FailWhenNestedContentDiffers()
+    {
+        var expected = new List<int[]> { new[] { 1, 2 } };
+        var actual = new List<int[]> { new[] { 1, 3 } };
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual));
+        AssertionsAssert.NotEqual(expected, actual);
+    }
+
+    [Fact]
+    public async Task AsyncEnumerablesOfArrays_CompareNestedContent()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([new[] { 1 }, new[] { 2 }]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([new[] { 1 }, new[] { 2 }]);
+
+        await AssertionsAssert.Equal(expected, actual);
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+    }
+
+    [Fact]
+    public void NullArray_IsNotEqualToEmptyArray()
+    {
+        int[]? expected = null;
+        var actual = Array.Empty<int>();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: <null>
+            Actual:   []
+            """);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(actual, expected));
+        AssertionsAssert.NotEqual(expected, actual);
+        AssertionsAssert.NotEqual(actual, expected);
+    }
+
+    [Fact]
+    public void NullArrays_AreEqual()
+    {
+        int[]? expected = null;
+        int[]? actual = null;
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, actual));
+    }
+
+    [Fact]
+    public void Arrays_KeepReadOnlySpanFailureMessage()
+    {
+        var expected = new[] { 1, 2 };
+        var actual = new[] { 1 };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed: Lengths differ.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected length: 2
+            Actual length:   1
+            Index of first difference: 1
+            Expected: [1, 2̲]
+            Actual:   [1]
+            """);
+    }
+
+    [Fact]
+    public void ArrayAndCollectionExpression_Success()
+    {
+        var actual = new[] { 1, 2 };
+
+        AssertionsAssert.Equal([1, 2], actual);
     }
 
     [Fact]
@@ -964,6 +1093,66 @@ public sealed class AssertEqualTests
             Actual:       1.1
             Tolerance: 0.2
             """);
+    }
+
+    [Fact]
+    public void NotEqual_ReadOnlySpanOfBoxedNumbers_IsTheComplementOfEqual()
+    {
+        object[] expected = [1, 2.5];
+        object[] actual = [1L, 2.5f];
+
+        AssertionsAssert.Equal<object>(expected.AsSpan(), actual.AsSpan());
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual<object>(expected.AsSpan(), actual.AsSpan()));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual<object>(expected.AsMemory(), actual.AsMemory()));
+    }
+
+    [Fact]
+    public void NotEqual_ReadOnlySpanOfArrays_IsTheComplementOfEqual()
+    {
+        int[][] expected = [[1, 2]];
+        int[][] actual = [[1, 2]];
+
+        AssertionsAssert.Equal<int[]>(expected.AsSpan(), actual.AsSpan());
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual<int[]>(expected.AsSpan(), actual.AsSpan()));
+    }
+
+    [Fact]
+    public void NotEqual_ReadOnlySpanOfPrimitives()
+    {
+        int[] values = [1, 2, 3];
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual<int>([1, 2, 3], values.AsSpan()));
+        AssertionsAssert.NotEqual<int>([1, 2, 4], values.AsSpan());
+        AssertionsAssert.NotEqual<int>([1, 2], values.AsSpan());
+    }
+
+    [Fact]
+    public void NotEqual_EnumeratesASingleUseSequenceOnlyOnce()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(AssertionTestHelpers.SingleUse(1, 2), AssertionTestHelpers.SingleUse(1, 2)), """
+            Assert.NotEqual() assertion failed.
+            Expected expression: AssertionTestHelpers.SingleUse(1, 2)
+            Actual expression:   AssertionTestHelpers.SingleUse(1, 2)
+            Not expected: [1, 2]
+            Actual:       [1, 2]
+            """);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(AssertionTestHelpers.SingleUse(1, 2), AssertionTestHelpers.SingleUse(1, 2), EqualityComparer<int>.Default));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(AssertionTestHelpers.SingleUse(1, 2), AssertionTestHelpers.SingleUse(1L, 2L)));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual((System.Collections.IEnumerable)AssertionTestHelpers.SingleUse(1, 2), (System.Collections.IEnumerable)AssertionTestHelpers.SingleUse(1, 2)));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual((System.Collections.IEnumerable)AssertionTestHelpers.SingleUse(1, 2), (System.Collections.IEnumerable)AssertionTestHelpers.SingleUse(1, 2), comparer: null));
+    }
+
+    [Fact]
+    public void BoxedValuesOfTheSameType_KeepEqualsSemantics()
+    {
+        AssertionsAssert.Equal<object>(double.NaN, double.NaN);
+        AssertionsAssert.Equal<object>(0.0, -0.0);
+        AssertionsAssert.Equal<object>(1.0m, 1.00m);
+        AssertionsAssert.NotEqual<object>(1, 2);
+        AssertionsAssert.NotEqual<object>(decimal.MaxValue, decimal.MinValue);
+        AssertionsAssert.Equal<object>((nint)42, 42L);
+        AssertionsAssert.Equal<object>(42L, (nuint)42);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal<object>(1, 2));
     }
 
     [Fact]

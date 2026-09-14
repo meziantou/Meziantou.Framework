@@ -610,8 +610,8 @@ public sealed class AssertEqualByStructureTests
             Assert.NotEquivalent() assertion failed.
             Expected expression: expected
             Actual expression:   actual
-            Not expected: [[a, 1], [b, 2]]
-            Actual:       [[b, 2], [a, 1]]
+            Not expected: [["a", 1], ["b", 2]]
+            Actual:       [["b", 2], ["a", 1]]
             """);
     }
 

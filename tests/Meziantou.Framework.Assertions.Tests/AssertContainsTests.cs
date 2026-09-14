@@ -720,7 +720,7 @@ public sealed class AssertContainsTests
             Expected expression: "a"
             Actual expression:   actual
             Not expected key: "a"
-            Actual:           [[A, 1]]
+            Actual:           [["A", 1]]
             """);
 
         AssertionsAssert.Equal(1, AssertionsAssert.Contains("a", actual, StringComparer.Ordinal));

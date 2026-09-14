@@ -54,10 +54,15 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
         }
 
+        EndsWithValue(expected, actual, comparer: null, message, actualExpression, expectedExpression);
+    }
+
+    private static void EndsWithValue(object? expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
+    {
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         actualSnapshot.EnsureComplete();
 
-        if (actualSnapshot.Items.Count > 0 && object.Equals(expected, actualSnapshot.Items[^1]))
+        if (actualSnapshot.Items.Count > 0 && Equals(expected, actualSnapshot.Items[^1], comparer))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new ValueCollectionEndsWithAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
@@ -154,6 +159,15 @@ public partial class Assert
         if (actual is null)
         {
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
+
+        // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
+        // and is compared as a char suffix of a collection whose elements are not chars. That comparison can only
+        // match an empty string, which makes the assertion fail for a matching last item and pass for "".
+        if (expected is string && actual is not IEnumerable<char>)
+        {
+            EndsWithValue(expected, actual, comparer, message, actualExpression, expectedExpression);
+            return;
         }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);

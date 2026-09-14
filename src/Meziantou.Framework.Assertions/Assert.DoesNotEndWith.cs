@@ -13,10 +13,12 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanExpectedActualValueAssertionError<T, T>(nameof(DoesNotEndWith), "Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotEndWith<T>(T expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotEndWith<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(DoesNotEndWith), "Expected expression", "Not expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
 
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
@@ -29,10 +31,12 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<T, IReadOnlyList<T>>("Not expected suffix", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotEndWith(object? expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotEndWith(object? expected, [NotNull] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(DoesNotEndWith), "Expected expression", "Not expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
 
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         actualSnapshot.EnsureComplete();
@@ -62,22 +66,26 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<char, char>(nameof(DoesNotEndWith), "Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotEndWith(string expected, string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotEndWith(string expected, [NotNull] string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-            return;
-
         var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(DoesNotEndWith), "Not expected suffix", expected, comparison, actualExpression, expectedExpression, message)));
+        }
+
         if (!actual.EndsWith(expected, comparison))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<string, string>("Not expected suffix", expected, actual, actualExpression, expectedExpression, message)));
     }
 
-    public static async Task DoesNotEndWith<T>(IEnumerable<T> expected, IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static async Task DoesNotEndWith<T>(IEnumerable<T> expected, [NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(DoesNotEndWith), "Expected expression", "Not expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
 
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
@@ -91,15 +99,17 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new DoesNotEndWithAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected suffix", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
-    public static void DoesNotEndWith(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    public static void DoesNotEndWith(System.Collections.IEnumerable expected, [NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
-            return;
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(DoesNotEndWith), "Expected expression", "Not expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
 
         // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
         // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
         // never match, which makes the assertion impossible to fail.
-        if (expected is string)
+        if (expected is string && actual is not IEnumerable<char>)
         {
             using var stringActualSnapshot = CollectionSnapshot.Create(actual);
             stringActualSnapshot.EnsureComplete();

@@ -155,15 +155,7 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(Contains), "Expected expression", "Expected item", expected, actualExpression, expectedExpression, message)));
         }
 
-        using var actualSnapshot = CollectionSnapshot.Create(actual);
-
-        for (var i = 0; actualSnapshot.TryGetItem(i, out var item); i++)
-        {
-            if (object.Equals(expected, item))
-                return;
-        }
-
-        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
+        ContainsValue(expected, actual, comparer: null, message, actualExpression, expectedExpression);
     }
 
     /// <summary>Asserts that a non-generic dictionary contains the specified key and returns the associated value.</summary>
@@ -284,6 +276,15 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<System.Collections.IEnumerable>(nameof(Contains), "Expected expression", "Expected", expected, actualExpression, expectedExpression, message)));
         }
 
+        // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
+        // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
+        // only match an empty string, which makes the assertion fail for a present item and pass for "".
+        if (expected is string && actual is not IEnumerable<char>)
+        {
+            ContainsValue(expected, actual, comparer, message, actualExpression, expectedExpression);
+            return;
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
 
@@ -293,6 +294,19 @@ public partial class Assert
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new CollectionContainsAssertionError<object?, object?>(expectedSnapshot, actualSnapshot, actualExpression, expectedExpression, message)));
+    }
+
+    private static void ContainsValue(object? expected, System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer, string? message, string? actualExpression, string? expectedExpression)
+    {
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+
+        for (var i = 0; actualSnapshot.TryGetItem(i, out var item); i++)
+        {
+            if (Equals(expected, item, comparer))
+                return;
+        }
+
+        throw new AssertionException(ErrorFormatter.Format(new ValueCollectionContainsAssertionError<object?>(expected, actualSnapshot, actualExpression, expectedExpression, message)));
     }
 
     private static bool ContainsSubsequence<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, IEqualityComparer<T> comparer)

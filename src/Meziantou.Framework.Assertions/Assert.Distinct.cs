@@ -84,9 +84,22 @@ public partial class Assert
     {
         using var actualSnapshot = CollectionSnapshot.Create(actual);
 
+        FirstIndexLookup<object?>? firstIndexes = null;
         for (var duplicateIndex = 0; actualSnapshot.TryGetItem(duplicateIndex, out var item); duplicateIndex++)
         {
-            var firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            int firstIndex;
+            if (duplicateIndex < LinearDuplicateSearchThreshold)
+            {
+                firstIndex = IndexOf(actualSnapshot.Items, duplicateIndex, item, comparer);
+            }
+            else
+            {
+                // ObjectEqualityComparer hashes with the comparer, or with object.GetHashCode, which agrees with the
+                // object.Equals comparison used by the linear scan
+                firstIndexes ??= FirstIndexLookup<object?>.Create(actualSnapshot.Items, duplicateIndex, new ObjectEqualityComparer(comparer), duplicateIndex);
+                firstIndex = firstIndexes.Add(item, duplicateIndex);
+            }
+
             if (firstIndex >= 0)
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionDistinctAssertionError<object?>(actualSnapshot, duplicateIndex, firstIndex, actualExpression, message)));

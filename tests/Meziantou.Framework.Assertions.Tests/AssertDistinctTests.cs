@@ -242,4 +242,109 @@ public sealed class AssertDistinctTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(actual));
     }
 
+    [Fact]
+    public void NonGenericEnumerable_LargeCollectionUsesHashLookup()
+    {
+        var comparer = new CountingEqualityComparer();
+        System.Collections.IEnumerable actual = Enumerable.Range(0, 5_000).ToList();
+
+        AssertionsAssert.Distinct(actual, comparer);
+
+        AssertionsAssert.InRange(comparer.EqualsCallCount, 0, 50_000);
+    }
+
+    [Fact]
+    public void NonGenericEnumerable_DuplicateBeyondThreshold_Fails()
+    {
+        var items = Enumerable.Range(0, 100).Cast<object?>().ToList();
+        items.Add(20);
+        System.Collections.IEnumerable actual = items;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(actual));
+
+        AssertionsAssert.Contains("Duplicate item found at index 100", exception.Message);
+        AssertionsAssert.Contains("First index:     20", exception.Message);
+    }
+
+    [Fact]
+    public void NonGenericEnumerable_ValuesOfDifferentTypesBeyondThreshold_AreDistinct()
+    {
+        // object.Equals(1, 1L) is false, so the hash lookup must not treat them as duplicates either
+        var items = Enumerable.Range(0, 100).Cast<object?>().ToList();
+        items.Add(20L);
+        items.Add(null);
+        System.Collections.IEnumerable actual = items;
+
+        AssertionsAssert.Distinct(actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(actual));
+    }
+
+    [Fact]
+    public void NotDistinct_LargeCollectionsUseHashLookup()
+    {
+        var genericComparer = new CountingEqualityComparer<int>();
+        var array = Enumerable.Range(0, 5_000).ToArray();
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct<int>(array, genericComparer));
+        AssertionsAssert.InRange(genericComparer.EqualsCallCount, 0, 50_000);
+
+        genericComparer = new CountingEqualityComparer<int>();
+        var list = Enumerable.Range(0, 5_000).ToList();
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(list, genericComparer));
+        AssertionsAssert.InRange(genericComparer.EqualsCallCount, 0, 50_000);
+
+        var comparer = new CountingEqualityComparer();
+        System.Collections.IEnumerable nonGeneric = list;
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(nonGeneric, comparer));
+        AssertionsAssert.InRange(comparer.EqualsCallCount, 0, 50_000);
+    }
+
+    [Fact]
+    public async Task NotDistinct_LargeAsyncEnumerableUsesHashLookup()
+    {
+        var comparer = new CountingEqualityComparer<int>();
+        var actual = AssertionTestHelpers.ToAsyncEnumerable(Enumerable.Range(0, 5_000));
+
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(actual, comparer));
+
+        AssertionsAssert.InRange(comparer.EqualsCallCount, 0, 50_000);
+    }
+
+    [Fact]
+    public async Task NotDistinct_DuplicateBeyondThreshold_Succeeds()
+    {
+        var values = Enumerable.Range(0, 100).Append(20).ToArray();
+
+        AssertionsAssert.NotDistinct<int>(values);
+        AssertionsAssert.NotDistinct(values.ToList());
+        AssertionsAssert.NotDistinct((System.Collections.IEnumerable)values.Cast<object?>().ToList());
+        AssertionsAssert.NotDistinct(values.Select(i => i.ToString(CultureInfo.InvariantCulture)).Append("A").Append("a").ToList(), StringComparer.OrdinalIgnoreCase);
+        await AssertionsAssert.NotDistinct(AssertionTestHelpers.ToAsyncEnumerable(values));
+    }
+
+    private sealed class CountingEqualityComparer<T> : IEqualityComparer<T>
+    {
+        public int EqualsCallCount { get; private set; }
+
+        public bool Equals(T? x, T? y)
+        {
+            EqualsCallCount++;
+            return EqualityComparer<T>.Default.Equals(x, y);
+        }
+
+        public int GetHashCode([DisallowNull] T obj) => EqualityComparer<T>.Default.GetHashCode(obj);
+    }
+
+    private sealed class CountingEqualityComparer : System.Collections.IEqualityComparer
+    {
+        public int EqualsCallCount { get; private set; }
+
+        public new bool Equals(object? x, object? y)
+        {
+            EqualsCallCount++;
+            return object.Equals(x, y);
+        }
+
+        public int GetHashCode(object obj) => obj.GetHashCode();
+    }
+
 }

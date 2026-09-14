@@ -275,23 +275,80 @@ public sealed class AssertStartsWithTests
     {
         AssertionsAssert.DoesNotStartWith(2, [1, 2, 3]);
         AssertionsAssert.DoesNotStartWith("He", "hello");
-
-        IEnumerable<int>? enumerable = null;
-        System.Collections.IEnumerable? nonGenericEnumerable = null;
-        string? text = null;
-
-        AssertionsAssert.DoesNotStartWith(1, enumerable);
-        AssertionsAssert.DoesNotStartWith(1, nonGenericEnumerable);
-        AssertionsAssert.DoesNotStartWith("He", text);
     }
 
     [Fact]
-    public async Task DoesNotStartWith_AsyncEnumerableSucceedsWhenActualIsNull()
+    public void DoesNotStartWith_ValueEnumerableFailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(1, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Not expected prefix: 1
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_ValueNonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(1, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   actual
+            Not expected prefix: 1
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_StringFailsWhenActualIsNull()
+    {
+        var expected = "He";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(expected, actual, ignoreCase: true), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: OrdinalIgnoreCase
+            Not expected prefix: "He"
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotStartWith_AsyncEnumerableFailsWhenActualIsNull()
     {
         IEnumerable<int> expected = [1, 2];
         IAsyncEnumerable<int>? actual = null;
 
-        await AssertionsAssert.DoesNotStartWith(expected, actual);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: [1, 2]
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_NonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 1, 2 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: [1, 2]
+            Actual:              <null>
+            """);
     }
 
     [Fact]
@@ -340,6 +397,100 @@ public sealed class AssertStartsWithTests
 
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotStartWith("a", actual));
         AssertionsAssert.DoesNotStartWith("b", actual);
+    }
+
+    [Fact]
+    public void StartsWith_StringExpectedAgainstNonGenericCollection_ComparesTheFirstItem()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.StartsWith("a", actual);
+        AssertionsAssert.StartsWith("A", actual, StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.StartsWith("b", actual));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.StartsWith("", actual));
+    }
+
+    [Fact]
+    public void StartsWith_StringExpectedAgainstNonGenericCharSequence_ComparesThePrefix()
+    {
+        System.Collections.IEnumerable actual = "abc";
+
+        AssertionsAssert.StartsWith("ab", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.StartsWith("b", actual));
+        AssertionsAssert.DoesNotStartWith("b", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotStartWith("ab", actual));
+    }
+
+    [Fact]
+    public void DoesNotStartWith_ValueEnumerableFailsOnEndlessSequence()
+    {
+        var actual = AssertionTestHelpers.EndlessSequence();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(0, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: 0
+            Actual expression:   actual
+            Not expected prefix: 0
+            Actual:              [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_ValueNonGenericEnumerableFailsOnEndlessSequence()
+    {
+        System.Collections.IEnumerable actual = AssertionTestHelpers.EndlessSequence();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(0, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: 0
+            Actual expression:   actual
+            Not expected prefix: 0
+            Actual:              [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_StringExpectedAgainstNonGenericEndlessSequenceFails()
+    {
+        System.Collections.IEnumerable actual = AssertionTestHelpers.EndlessSequence().Select(i => i.ToString(CultureInfo.InvariantCulture));
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith("0", actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: "0"
+            Actual expression:   actual
+            Not expected prefix: "0"
+            Actual:              ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ...]
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotStartWith_AsyncEnumerableFailsOnEndlessSequence()
+    {
+        IEnumerable<int> expected = [0, 1];
+        var actual = AssertionTestHelpers.ToAsyncEnumerable(AssertionTestHelpers.EndlessSequence());
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: [0, 1]
+            Actual:              [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotStartWith_NonGenericEnumerableFailsOnEndlessSequence()
+    {
+        System.Collections.IEnumerable expected = new object[] { 0, 1 };
+        System.Collections.IEnumerable actual = AssertionTestHelpers.EndlessSequence();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotStartWith(expected, actual), """
+            Assert.DoesNotStartWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected prefix: [0, 1]
+            Actual:              [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
     }
 
 }

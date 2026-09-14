@@ -1354,6 +1354,25 @@ internal class AssertionFormatter
         return message.Replace("\n", "\n           ", StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Observes only the items a failure message can show, so formatting a long or infinite sequence does not
+    /// materialize it. The returned items format the same way as the complete sequence would.
+    /// </summary>
+    internal IReadOnlyList<T> GetFormattedItems<T>(CollectionSnapshot<T> snapshot)
+    {
+        EnsureObservedItems(snapshot, MaxFormattedItems - 1);
+
+        return snapshot.Items;
+    }
+
+    /// <inheritdoc cref="GetFormattedItems{T}(CollectionSnapshot{T})"/>
+    internal async Task<IReadOnlyList<T>> GetFormattedItemsAsync<T>(AsyncCollectionSnapshot<T> snapshot)
+    {
+        await EnsureObservedItemsAsync(snapshot, MaxFormattedItems - 1).ConfigureAwait(false);
+
+        return snapshot.Items;
+    }
+
     private static void EnsureObservedItems<T>(CollectionSnapshot<T> snapshot, int maxIndex)
     {
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)

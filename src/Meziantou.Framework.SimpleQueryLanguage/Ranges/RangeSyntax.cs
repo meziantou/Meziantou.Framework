@@ -61,31 +61,31 @@ internal static class RangeSyntax
             value = Between(end.AddDays(-1), end);
             return true;
         }
-        else if (span.Equals("this week", StringComparison.OrdinalIgnoreCase))
+        else if (IsKeyword(span, "this week"))
         {
             var start = StartOfWeek(utcNow);
             value = Between(start, start.AddDays(7));
             return true;
         }
-        else if (span.Equals("this month", StringComparison.OrdinalIgnoreCase))
+        else if (IsKeyword(span, "this month"))
         {
             var start = StartOfMonth(utcNow);
             value = Between(start, start.AddMonths(1));
             return true;
         }
-        else if (span.Equals("last month", StringComparison.OrdinalIgnoreCase))
+        else if (IsKeyword(span, "last month"))
         {
             var end = StartOfMonth(utcNow);
             value = Between(end.AddMonths(-1), end);
             return true;
         }
-        else if (span.Equals("this year", StringComparison.OrdinalIgnoreCase))
+        else if (IsKeyword(span, "this year"))
         {
             var start = StartOfYear(utcNow);
             value = Between(start, start.AddYears(1));
             return true;
         }
-        else if (span.Equals("last year", StringComparison.OrdinalIgnoreCase))
+        else if (IsKeyword(span, "last year"))
         {
             var end = StartOfYear(utcNow);
             value = Between(end.AddYears(-1), end);
@@ -94,6 +94,16 @@ internal static class RangeSyntax
 
         value = default;
         return false;
+
+        // Two-word keywords also accept an underscore, which needs no quotes: created:this_week
+        static bool IsKeyword(ReadOnlySpan<char> text, string keyword)
+        {
+            var separatorIndex = keyword.IndexOf(' ', StringComparison.Ordinal);
+            return text.Length == keyword.Length
+                && text[separatorIndex] is ' ' or '_'
+                && text[..separatorIndex].Equals(keyword.AsSpan(0, separatorIndex), StringComparison.OrdinalIgnoreCase)
+                && text[(separatorIndex + 1)..].Equals(keyword.AsSpan(separatorIndex + 1), StringComparison.OrdinalIgnoreCase);
+        }
 
         static RangeSyntax<T> Between(DateTimeOffset lowerBound, DateTimeOffset upperBound)
         {

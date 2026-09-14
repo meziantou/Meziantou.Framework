@@ -24,14 +24,14 @@ record Person(string FullName, DateTime DateOfBirth);
 - `AddHandler`: supported operators: `:`
 - `AddRangeHandler`: supported operators: `:`, `<`, `<=`, `>`, `>=`, `..` (range)
 - `SetTextFilterHandler` matches all non-bound filters
-- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`. They are resolved when the query is built, so rebuild a query that is kept across days.
+- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`. The two-word values also accept an underscore, which needs no quotes: `this_week`, `this_month`, `last_month`, `this_year`, `last_year`. They are resolved when the query is built, so rebuild a query that is kept across days.
 
 Examples:
 - `name:john` or `name=john`
 - `name:"john doe"`
 - `name<>john` or `-name:john` or `NOT name:john`
 - `(name:"john doe" OR name:jane) AND age>21`
-- `created:"this week"`
+- `created:"this week"` or `created:this_week`
 - `age:13..19` (lower and upper bound are included)
 - `age>=21`
 - `is_open:true free form text`

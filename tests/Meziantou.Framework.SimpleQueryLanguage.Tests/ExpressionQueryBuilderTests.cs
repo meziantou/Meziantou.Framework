@@ -279,6 +279,25 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Theory]
+    [InlineData("date:last_month", "2026-02-20")]
+    [InlineData("date:\"last month\"", "2026-02-20")]
+    [InlineData("date:this_year", "2026-02-20", "2026-03-15")]
+    [InlineData("date:last_year", "2025-12-31")]
+    public void DateKeyword_UnderscoreForm_IsSupported(string query, params string[] expectedDates)
+    {
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2025, 12, 31, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 2, 20, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+
+        var result = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build(query).Apply(items);
+
+        Assert.Equal(expectedDates, result.Select(item => item.DateTimeValue.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+    }
+
+    [Theory]
     [InlineData("id:10", 1)]
     [InlineData("id>5", 1)]
     [InlineData("id<5", 1)]

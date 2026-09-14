@@ -716,6 +716,7 @@ public sealed class QueryBuilderTests
     [InlineData("last month")]
     [InlineData("this year")]
     [InlineData("last year")]
+    [InlineData("this_week")]
     public void DateKeyword_OnNonDateHandler_DoesNotMatch(string keyword)
     {
         var queryBuilder = new QueryBuilder<Sample>();
@@ -742,6 +743,29 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>(timeProvider);
         queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
         var query = queryBuilder.Build($"date:\"{keyword}\"");
+
+        Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    // 2026-03-15 is a Sunday, so "this week" is 2026-03-09..2026-03-16
+    [Theory]
+    [InlineData("this_week", true)]
+    [InlineData("this_month", true)]
+    [InlineData("last_month", false)]
+    [InlineData("this_year", true)]
+    [InlineData("last_year", false)]
+    [InlineData("THIS_Week", true)]
+    [InlineData("\"this_month\"", true)]
+    [InlineData("this__week", false)]
+    [InlineData("this-week", false)]
+    public void DateKeyword_UnderscoreForm_IsSupportedWithoutQuotes(string keyword, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var query = queryBuilder.Build($"date:{keyword}");
 
         Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
     }

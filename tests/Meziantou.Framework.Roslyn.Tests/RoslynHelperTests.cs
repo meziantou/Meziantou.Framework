@@ -1734,6 +1734,192 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void IsAssignableTo_ReturnsTrueForConversionsKeepingIdentity()
+    {
+        var compilation = CreateCompilation("""
+            using System;
+            using System.Collections.Generic;
+
+            public class Base;
+            public class Sample : Base, IDisposable
+            {
+                public void Dispose() { }
+                public void M<T>(T value, int number, int? nullableNumber, string[] strings, IEnumerable<string> enumerable, IEnumerable<int> numbers, List<dynamic> list)
+                    where T : IDisposable
+                {
+                }
+            }
+            """);
+        var baseType = GetRequiredType(compilation, "Base");
+        var sampleType = GetRequiredType(compilation, "Sample");
+        var disposableType = GetRequiredType(compilation, "System.IDisposable");
+        var method = GetRequiredMethod(sampleType, "M");
+        var typeParameter = method.TypeParameters.Single();
+        var parameters = method.Parameters;
+        var intType = parameters[1].Type;
+        var nullableIntType = parameters[2].Type;
+        var stringArrayType = parameters[3].Type;
+        var enumerableOfStringType = parameters[4].Type;
+        var enumerableOfIntType = parameters[5].Type;
+        var listOfDynamicType = parameters[6].Type;
+        var objectType = compilation.GetSpecialType(SpecialType.System_Object);
+        var longType = compilation.GetSpecialType(SpecialType.System_Int64);
+        var valueType = compilation.GetSpecialType(SpecialType.System_ValueType);
+        var enumerableOfObjectType = GetRequiredType(compilation, "System.Collections.Generic.IEnumerable`1").Construct(objectType);
+        var listOfObjectType = GetRequiredType(compilation, "System.Collections.Generic.List`1").Construct(objectType);
+        var listOfObjectInterfaceType = GetRequiredType(compilation, "System.Collections.Generic.IList`1").Construct(objectType);
+
+        Assert.True(sampleType.IsAssignableTo(sampleType));
+        Assert.True(sampleType.IsAssignableTo(baseType));
+        Assert.True(sampleType.IsAssignableTo(disposableType));
+        Assert.True(sampleType.IsAssignableTo(objectType));
+        Assert.True(typeParameter.IsAssignableTo(disposableType));
+        Assert.True(typeParameter.IsAssignableTo(objectType));
+        Assert.True(intType.IsAssignableTo(valueType));
+        Assert.True(nullableIntType.IsAssignableTo(objectType));
+        Assert.True(stringArrayType.IsAssignableTo(enumerableOfObjectType));
+        Assert.True(stringArrayType.IsAssignableTo(listOfObjectInterfaceType));
+        Assert.True(enumerableOfStringType.IsAssignableTo(enumerableOfObjectType));
+        Assert.True(listOfDynamicType.IsAssignableTo(listOfObjectType));
+        Assert.False(baseType.IsAssignableTo(sampleType));
+        Assert.False(baseType.IsAssignableTo(disposableType));
+        Assert.False(intType.IsAssignableTo(longType));
+        Assert.False(intType.IsAssignableTo(nullableIntType));
+        Assert.False(enumerableOfIntType.IsAssignableTo(enumerableOfObjectType));
+        Assert.False(enumerableOfObjectType.IsAssignableTo(enumerableOfStringType));
+        Assert.False(sampleType.IsAssignableTo(null));
+
+        Assert.True(baseType.IsAssignableFrom(sampleType));
+        Assert.True(enumerableOfObjectType.IsAssignableFrom(stringArrayType));
+        Assert.False(sampleType.IsAssignableFrom(baseType));
+        Assert.False(longType.IsAssignableFrom(intType));
+        Assert.False(sampleType.IsAssignableFrom(null));
+    }
+
+    [Fact]
+    public void IsAssignableTo_MatchesCompilerIdentityReferenceAndBoxingConversions()
+    {
+#if ROSLYN_4_12_OR_GREATER
+        const string RefLikeDeclarations = """
+            public ref struct RefStructWithInterface : IBase;
+            public class RefLikeHolder<TRefLike, TRefLikeInterface, TDependsOnRefLike, TInterface, TRefLikeDependsOnInterface>
+                where TRefLike : allows ref struct
+                where TRefLikeInterface : IDerived, allows ref struct
+                where TDependsOnRefLike : TRefLike, allows ref struct
+                where TInterface : IDerived
+                where TRefLikeDependsOnInterface : TInterface, allows ref struct
+            {
+                public void M(TRefLike p0, TRefLikeInterface p1, RefStructWithInterface p2, TDependsOnRefLike p3, TInterface p4, TRefLikeDependsOnInterface p5, IDerived p6, object p7) { }
+            }
+            """;
+        var parseOptions = DefaultParseOptions.WithLanguageVersion(LanguageVersion.CSharp13);
+#else
+        const string RefLikeDeclarations = "";
+        var parseOptions = DefaultParseOptions;
+#endif
+        var compilation = CreateCompilation($$"""
+            using System;
+            using System.Collections.Generic;
+
+            public class Base;
+            public class Derived : Base, IDerived;
+            public sealed class SealedDerived : Derived;
+            public interface IBase;
+            public interface IDerived : IBase;
+            public interface ICovariant<out T>;
+            public interface IContravariant<in T>;
+            public interface IInvariant<T>;
+            public interface IDerivedCovariant<out T> : ICovariant<T>;
+            public class CovariantImplementation : IDerivedCovariant<Derived>;
+            public class ContravariantImplementation : IContravariant<Base>;
+            public struct Struct : IDerived, ICovariant<Derived>;
+            public ref struct RefStruct;
+            public enum Enumeration { A }
+            public delegate void Handler();
+            public delegate T CovariantDelegate<out T>();
+            public delegate void ContravariantDelegate<in T>(T value);
+            public class Outer<T>
+            {
+                public interface IInner;
+                public class Inner : IInner;
+            }
+
+            {{RefLikeDeclarations}}
+
+            public unsafe class Holder<TUnconstrained, TClass, TStruct, TBase, TDependsOnBase, TInterface, TStructInterface, TUnmanaged, TNotNull, TEnum, TDependsOnUnconstrained, TDependsOnInterface>
+                where TClass : class
+                where TStruct : struct
+                where TBase : Base
+                where TDependsOnBase : TBase
+                where TInterface : IDerived
+                where TStructInterface : struct, IDerived
+                where TUnmanaged : unmanaged
+                where TNotNull : notnull
+                where TEnum : struct, Enum
+                where TDependsOnUnconstrained : TUnconstrained
+                where TDependsOnInterface : TInterface
+            {
+                public void M(
+                    object p0, dynamic p1, string p2, string? p3, int p4, int? p5, long p6, ValueType p7, Enum p8, Array p9,
+                    Delegate p10, MulticastDelegate p11, Base p12, Derived p13, SealedDerived p14, IBase p15, IDerived p16, Struct p17, Struct? p18, RefStruct p19,
+                    Enumeration p20, Enumeration? p21, Handler p22, Action p23, Func<string> p24, Func<object> p25, Action<string> p26, Action<object> p27, CovariantDelegate<Derived> p28, CovariantDelegate<Base> p29,
+                    ContravariantDelegate<Derived> p30, ContravariantDelegate<Base> p31, ICovariant<Base> p32, ICovariant<Derived> p33, ICovariant<IBase> p34, ICovariant<object> p35, ICovariant<int> p36, ICovariant<dynamic> p37, IContravariant<Base> p38, IContravariant<Derived> p39,
+                    IInvariant<Base> p40, IInvariant<Derived> p41, IInvariant<object> p42, IInvariant<dynamic> p43, CovariantImplementation p44, ContravariantImplementation p45, IDerivedCovariant<Base> p46, IEnumerable<string> p47, IEnumerable<object> p48, IEnumerable<int> p49,
+                    IEnumerable<dynamic> p50, IList<object> p51, IList<string> p52, IReadOnlyList<object> p53, ICollection<IBase> p54, List<object> p55, List<dynamic> p56, string[] p57, object[] p58, dynamic[] p59,
+                    Base[] p60, Derived[] p61, IBase[] p62, IDerived[] p63, int[] p64, long[] p65, Struct[] p66, object[,] p67, string[,] p68, int[][] p69,
+                    object[][] p70, (int A, int B) p71, (int, int) p72, (int X, int Y)? p73, (object, string) p74, (object, object) p75, IEnumerable<(int A, int B)> p76, IEnumerable<(int, int)> p77, Outer<object>.Inner p78, Outer<dynamic>.Inner p79,
+                    Outer<object>.IInner p80, Outer<string>.IInner p81, Span<int> p82, ReadOnlySpan<int> p83, IComparable p84, IComparable<int> p85, IComparable<string> p86, IFormattable p87, IEquatable<int> p88, ICloneable p89,
+                    int* p90, void* p91, delegate*<void> p92, nint p93, IntPtr p94, IList<IBase> p95, IReadOnlyList<IBase> p96, (int, int, int, int, int, int, int, int A) p97, (int, int, int, int, int, int, int, int) p98, IEnumerable<IEnumerable<object>> p99,
+                    TUnconstrained p100, TClass p101, TStruct p102, TBase p103, TDependsOnBase p104, TInterface p105, TStructInterface p106, TUnmanaged p107, TNotNull p108, TEnum p109,
+                    TDependsOnUnconstrained p110, TDependsOnInterface p111, TClass[] p112, TBase[] p113, TInterface[] p114, TStruct? p115, ICovariant<TClass> p116, ICovariant<TBase> p117, IContravariant<TBase> p118, IEnumerable<TInterface> p119,
+                    ICovariant<TInterface> p120, TStructInterface? p121, TEnum? p122, IEnumerable<IEnumerable<string>> p123)
+                {
+                }
+            }
+            """, parseOptions: parseOptions, compilationOptions: DefaultCompilationOptions.WithAllowUnsafe(true));
+
+        var types = compilation.GetSymbolsWithName("M", SymbolFilter.Member, TestContext.Current.CancellationToken)
+            .OfType<IMethodSymbol>()
+            .SelectMany(method => method.Parameters)
+            .Select(parameter => parameter.Type)
+            .ToArray();
+
+        var mismatches = new List<string>();
+        foreach (var source in types)
+        {
+            foreach (var destination in types)
+            {
+                var conversion = compilation.ClassifyConversion(source, destination);
+                var expected = conversion.IsIdentity || (conversion.IsImplicit && (conversion.IsReference || conversion.IsBoxing));
+                if (source.IsAssignableTo(destination) != expected)
+                {
+                    mismatches.Add($"{source.ToDisplayString()} -> {destination.ToDisplayString()}: expected {expected} ({conversion})");
+                }
+
+                if (destination.IsAssignableFrom(source) != expected)
+                {
+                    mismatches.Add($"{destination.ToDisplayString()} <- {source.ToDisplayString()}: expected {expected} ({conversion})");
+                }
+            }
+        }
+
+        Assert.Empty(mismatches);
+    }
+
+    [Fact]
+    public void IsAssignableTo_StopsOnInfinitelyExpandingContravariance()
+    {
+        var compilation = CreateCompilation("""
+            public interface IContravariant<in T>;
+            public class Sample<T> : IContravariant<IContravariant<Sample<Sample<T>>>>;
+            """);
+        var sampleType = GetRequiredType(compilation, "Sample`1").Construct(compilation.GetSpecialType(SpecialType.System_Int32));
+        var targetType = GetRequiredType(compilation, "IContravariant`1").Construct(sampleType);
+
+        Assert.False(sampleType.IsAssignableTo(targetType));
+    }
+
+    [Fact]
     public void IsEqualToAny_ReturnsTrueForAnyMatchingExpectedType()
     {
         var compilation = CreateCompilation("""

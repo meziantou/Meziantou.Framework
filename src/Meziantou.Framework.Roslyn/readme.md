@@ -53,7 +53,7 @@ The package also defines Roslyn and C# feature constants before compilation base
 
 `InheritsFrom`, `Implements` and `ImplementsGenericInterface` are strict: a type never derives from or implements itself. When the queried symbol is a type parameter, its constraints are inspected and a constraint that is the queried type is a match, so `T` in `where T : Base` derives from `Base` and `T` in `where T : ISample` implements `ISample`.
 
-Use `IsOrInheritsFrom` and `IsOrImplements` to ask whether a type is assignable to another one; they include the type itself, so they don't depend on that distinction:
+`IsOrInheritsFrom` and `IsOrImplements` include the type itself, so they don't depend on that distinction:
 
 ````csharp
 // true when the type is Base or derives from it
@@ -61,6 +61,17 @@ if (type.IsOrInheritsFrom(baseType))
 {
 }
 ````
+
+Use `IsAssignableTo` and `IsAssignableFrom` when the target can be any type. They follow the C# conversions that keep the identity of the value: identity, implicit reference and boxing conversions. On top of base types, interfaces and type parameter constraints, they handle `object`, the variance of generic interfaces and delegates, array covariance, and boxing to `System.ValueType`, `System.Enum` and the interfaces of a value type:
+
+````csharp
+// true for string[], List<string>, IEnumerable<Derived>, or T where T : IEnumerable<string>
+if (type.IsAssignableTo(enumerableOfObjectType))
+{
+}
+````
+
+Conversions that create a new value are not considered, so `int` is not assignable to `long` or `int?`, and `IEnumerable<int>` is not assignable to `IEnumerable<object>`. Use `Compilation.ClassifyCommonConversion` to take every conversion into account.
 
 ### Generated code
 

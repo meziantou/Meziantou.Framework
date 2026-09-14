@@ -77,25 +77,25 @@ public partial class RecurrenceRuleTests
     [Fact]
     public void Monthly_GetHumanText_en_us_01()
     {
-        TestGetHumanText("FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=1", "en-US", "every month the 1st");
+        TestGetHumanText("FREQ=MONTHLY;INTERVAL=1;BYMONTHDAY=1", "en-US", "every month on the 1st");
     }
 
     [Fact]
     public void Monthly_GetHumanText_en_us_02()
     {
-        TestGetHumanText("FREQ=MONTHLY;BYMONTHDAY=2;COUNT=4", "en-US", "every month the 2nd for 4 times");
+        TestGetHumanText("FREQ=MONTHLY;BYMONTHDAY=2;COUNT=4", "en-US", "every month on the 2nd for 4 times");
     }
 
     [Fact]
     public void Monthly_GetHumanText_en_us_03()
     {
-        TestGetHumanText("FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=3;UNTIL=20150101", "en-US", "every other month the 3rd until January 1, 2015");
+        TestGetHumanText("FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=3;UNTIL=20150101", "en-US", "every other month on the 3rd until January 1, 2015");
     }
 
     [Fact]
     public void Monthly_GetHumanText_en_us_04()
     {
-        TestGetHumanText("FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=10", "en-US", "every 3 months the 10th");
+        TestGetHumanText("FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=10", "en-US", "every 3 months on the 10th");
     }
 
     [Fact]
@@ -186,5 +186,60 @@ public partial class RecurrenceRuleTests
     public void Yearly_GetHumanText_en_us_08()
     {
         TestGetHumanText("FREQ=YEARLY;BYMONTH=5;BYDAY=TH;BYSETPOS=4;INTERVAL=2", "en-US", "every other year on the fourth Thursday of May");
+    }
+
+    [Theory]
+    [InlineData("FREQ=MONTHLY;BYDAY=2TU", "every month on the second Tuesday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=+3WE", "every month on the third Wednesday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=-1FR", "every month on the last Friday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=-2FR", "every month on the second to last Friday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=-5FR", "every month on the 5th to last Friday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=1MO,-1FR", "every month on the first Monday and the last Friday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=1MO,FR", "every month on the first Monday and every Friday")]
+    [InlineData("FREQ=YEARLY;BYDAY=20MO", "every year on the 20th Monday")]
+    [InlineData("FREQ=YEARLY;BYDAY=-1SU;BYMONTH=10", "every year on the last Sunday of October")]
+    [InlineData("FREQ=DAILY;BYDAY=MO,WE", "every day on Monday and Wednesday")]
+    [InlineData("FREQ=HOURLY;BYDAY=SA,SU", "every hour on Saturday and Sunday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO,WE", "every month on Mondays and Wednesdays")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR", "every month on weekdays")]
+    [InlineData("FREQ=YEARLY;BYDAY=MO;BYMONTH=10", "every year on Mondays in October")]
+    [InlineData("FREQ=DAILY;BYHOUR=9,17", "every day at hours 9 and 17")]
+    [InlineData("FREQ=DAILY;BYHOUR=9,17;BYMINUTE=0,30", "every day at 9:00, 9:30, 17:00 and 17:30")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=5;BYSECOND=30", "every week on Monday at 9:05:30")]
+    [InlineData("FREQ=HOURLY;BYMINUTE=0,30;BYSECOND=15", "every hour at minutes 0 and 30, second 15")]
+    [InlineData("FREQ=MINUTELY;BYSECOND=0,15,30,45", "every minute at seconds 0, 15, 30 and 45")]
+    [InlineData("FREQ=YEARLY;BYMONTH=1,6", "every year in January and June")]
+    [InlineData("FREQ=DAILY;BYMONTH=12", "every day in December")]
+    [InlineData("FREQ=MONTHLY;BYMONTH=1,6;BYMONTHDAY=1", "every month on the 1st in January and June")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=100", "every year on the 100th day of the year")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=1,-1", "every year on the 1st and last day of the year")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=-2", "every year on the second to last day of the year")]
+    [InlineData("FREQ=YEARLY;BYMONTH=4,8;BYMONTHDAY=-1", "every year on the last day of April and August")]
+    [InlineData("FREQ=YEARLY;BYMONTH=4,8;BYMONTHDAY=1,15", "every year on the 1st and 15th of April and August")]
+    [InlineData("FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=1,15", "every year on April the 1st and 15th")]
+    [InlineData("FREQ=YEARLY;BYMONTHDAY=1", "every year on the 1st of every month")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-2", "every month on the second to last day")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=1,-1", "every month on the 1st and last day")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=11,12,13,21,22,23", "every month on the 11th, 12th, 13th, 21st, 22nd and 23rd")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-2", "every month on the second to last Monday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1,-1", "every month on the first and last Monday")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO,TU;BYSETPOS=1", "every month on the first Monday or Tuesday")]
+    [InlineData("FREQ=YEARLY;BYMONTH=3;BYDAY=MO;BYSETPOS=1,-1", "every year on the first and last Monday of March")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=1,15;BYSETPOS=-1", "every month on the 1st and 15th, only the last occurrence")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;BYSETPOS=1,2", "every week on Monday and Tuesday, only the first and second occurrences")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=13;BYDAY=FR", "every month on Friday the 13th")]
+    [InlineData("FREQ=YEARLY;BYMONTH=10;BYMONTHDAY=13;BYDAY=FR", "every year on Friday the 13th in October")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1;BYDAY=MO,TU,WE,TH,FR", "every month on the last day if it is a weekday")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=1;BYDAY=MO,SU", "every year on the 1st day of the year if it is a Monday or a Sunday")]
+    [InlineData("FREQ=SECONDLY;INTERVAL=2", "every other second")]
+    [InlineData("FREQ=MINUTELY;INTERVAL=2;COUNT=1", "every other minute for 1 time")]
+    [InlineData("FREQ=HOURLY;COUNT=0", "every hour for 0 times")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2", "every other week")]
+    [InlineData("FREQ=MONTHLY;INTERVAL=12;COUNT=5", "every 12 months for 5 times")]
+    [InlineData("FREQ=YEARLY;INTERVAL=4;UNTIL=20251231", "every 4 years until December 31, 2025")]
+    [InlineData("FREQ=HOURLY;UNTIL=20250101T103000Z", "every hour until January 1, 2025 at 10:30 UTC")]
+    public void GetHumanText_en_us(string rrule, string expected)
+    {
+        TestGetHumanText(rrule, "en-US", expected);
     }
 }

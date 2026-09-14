@@ -12,62 +12,17 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
     /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = [];
 
+    /// <summary>Limits occurrences to specific days of the year (1-366, -1 to -366).</summary>
+    public IList<int> ByYearDays { get; set; } = [];
+
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-        var current = startDate;
-
-        while (true)
-        {
-            var matches = true;
-
-            if (!IsEmpty(ByMonths) && !ByMonths.Contains(current.Month))
-                matches = false;
-
-            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
-                matches = false;
-
-            if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
-                matches = false;
-
-            if (matches)
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(current, startDate))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return current;
-                }
-            }
-
-            current = current.AddHours(Interval);
-        }
-
-        // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateHour = new DateTime(date.Year, date.Month, date.Day, date.Hour, 0, 0, date.Kind);
-        foreach (var minute in minutes)
-        {
-            foreach (var second in seconds)
-            {
-                var result = dateHour.AddMinutes(minute).AddSeconds(second);
-                if (result >= lowerBound)
-                {
-                    yield return result;
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Hourly, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays, yearDays: ByYearDays);
     }
 
     /// <inheritdoc />
@@ -108,6 +63,12 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
                 sb.AppendJoin(',', ByMonths);
             }
 
+            if (!IsEmpty(ByYearDays))
+            {
+                sb.Append(";BYYEARDAY=");
+                sb.AppendJoin(',', ByYearDays);
+            }
+
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
@@ -118,6 +79,12 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYDAY=");
                 sb.AppendJoin(',', ByWeekDays.Select(Utilities.DayOfWeekToString));
+            }
+
+            if (!IsEmpty(ByHours))
+            {
+                sb.Append(";BYHOUR=");
+                sb.AppendJoin(',', ByHours);
             }
 
             if (!IsEmpty(ByMinutes))

@@ -14,79 +14,12 @@ internal sealed class DailyRecurrenceRule : RecurrenceRule
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-        var current = startDate;
-
-        while (true)
-        {
-            var b = true;
-
-            if (!IsEmpty(ByMonths))
-            {
-                if (!ByMonths.Contains(current.Month))
-                {
-                    b = false;
-                }
-            }
-
-            if (!IsEmpty(ByMonthDays))
-            {
-                if (!ByMonthDays.Contains(current.Day))
-                {
-                    b = false;
-                }
-            }
-
-            if (!IsEmpty(ByWeekDays))
-            {
-                if (!ByWeekDays.Contains(current.DayOfWeek))
-                {
-                    b = false;
-                }
-            }
-
-            if (b)
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(current, startDate))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return current;
-                }
-            }
-
-            current = current.AddDays(Interval);
-        }
-
-        // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= lowerBound)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Daily, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays);
     }
 
     /// <inheritdoc />

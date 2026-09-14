@@ -443,23 +443,69 @@ public sealed class InternetCalendarTests
     public void ToIcs_KeepsTheTimeStampsUnchangedWhenTheEventHasATimeZone()
     {
         var @event = CreateEvent();
+        @event.Created = new DateTime(2023, 12, 01, 10, 00, 00, DateTimeKind.Utc);
+        @event.LastModified = new DateTime(2023, 12, 02, 10, 00, 00, DateTimeKind.Utc);
+        @event.DateTimeStamp = new DateTime(2023, 12, 03, 10, 00, 00, DateTimeKind.Utc);
         @event.TimeZone = CreateTestTimeZone();
 
         var ics = CreateCalendarWithEvent(@event).ToIcs();
 
-        foreach (var name in new[] { "CREATED", "LAST-MODIFIED", "DTSTAMP" })
+        Assert.Equal("CREATED:20231201T100000Z", GetContentLine(ics, "CREATED"));
+        Assert.Equal("LAST-MODIFIED:20231202T100000Z", GetContentLine(ics, "LAST-MODIFIED"));
+        Assert.Equal("DTSTAMP:20231203T100000Z", GetContentLine(ics, "DTSTAMP"));
+    }
+
+    [Fact]
+    public void ToIcs_OmitsTheDateTimesThatAreNotSet()
+    {
+        var @event = new Event { Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Utc) };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("DTSTART:20240102T080000Z", GetContentLine(ics, "DTSTART"));
+        foreach (var name in new[] { "CREATED", "LAST-MODIFIED", "DTSTAMP", "DTEND" })
         {
-            Assert.DoesNotContain(";TZID=", GetContentLine(ics, name));
-            Assert.Matches(@"^\d{8}T\d{6}Z?$", GetContentLineValue(ics, name));
+            Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith(name + ":", StringComparison.Ordinal), name);
         }
+
+        Assert.DoesNotContain("00010101", ics);
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Utc)]
+    [InlineData(DateTimeKind.Unspecified)]
+    public void ToIcs_WritesTheTimeStampsInUtc(DateTimeKind kind)
+    {
+        var @event = CreateEvent();
+        @event.Created = new DateTime(2023, 12, 01, 10, 00, 00, kind);
+        @event.LastModified = new DateTime(2023, 12, 02, 10, 00, 00, kind);
+        @event.DateTimeStamp = new DateTime(2023, 12, 03, 10, 00, 00, kind);
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // RFC 5545 requires these properties in UTC, so an unspecified value is taken as UTC rather than written floating
+        Assert.Equal("CREATED:20231201T100000Z", GetContentLine(ics, "CREATED"));
+        Assert.Equal("LAST-MODIFIED:20231202T100000Z", GetContentLine(ics, "LAST-MODIFIED"));
+        Assert.Equal("DTSTAMP:20231203T100000Z", GetContentLine(ics, "DTSTAMP"));
+    }
+
+    [Fact]
+    public void ToIcs_ConvertsALocalTimeStampToUtc()
+    {
+        var created = new DateTime(2023, 12, 01, 10, 00, 00, DateTimeKind.Local);
+        var @event = CreateEvent();
+        @event.Created = created;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("CREATED:" + created.ToUniversalTime().ToString("yyyyMMddTHHmmss", CultureInfo.InvariantCulture) + "Z", GetContentLine(ics, "CREATED"));
     }
 
     [Theory]
     [InlineData("Evil\r\nBEGIN:VEVENT")]
-    [InlineData("Evil;TZID=Other")]
-    [InlineData("Evil:INJECTED")]
-    [InlineData("Evil,Other")]
+    [InlineData("Evil\nBEGIN:VEVENT")]
     [InlineData("Evil\"Quoted")]
+    [InlineData("Evil\";X-INJECTED=\"")]
     [InlineData("Evil\u0007Bell")]
     public void ToIcs_ThrowsWhenTheTimeZoneIdentifierIsNotSafe(string id)
     {
@@ -467,6 +513,38 @@ public sealed class InternetCalendarTests
         @event.TimeZone = TimeZoneInfo.CreateCustomTimeZone(id, TimeSpan.Zero, id, id);
 
         Assert.Throws<InvalidOperationException>(() => CreateCalendarWithEvent(@event).ToIcs());
+    }
+
+    [Theory]
+    [InlineData("Evil;TZID=Other", "\"Evil;TZID=Other\"", @"Evil\;TZID=Other")]
+    [InlineData("Evil:INJECTED", "\"Evil:INJECTED\"", "Evil:INJECTED")]
+    [InlineData("Evil,Other", "\"Evil,Other\"", @"Evil\,Other")]
+    [InlineData("(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna", "\"(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna\"", @"(UTC+01:00) Amsterdam\, Berlin\, Bern\, Rome\, Stockholm\, Vienna")]
+    [InlineData(@"Back\slash", @"Back\slash", @"Back\\slash")]
+    [InlineData("Heure d'été", "Heure d'été", "Heure d'été")]
+    public void ToIcs_QuotesATimeZoneIdentifierThatIsNotAParameterText(string id, string parameterValue, string propertyValue)
+    {
+        var @event = new Event
+        {
+            Start = new DateTime(2024, 07, 01, 09, 00, 00),
+            End = new DateTime(2024, 07, 01, 10, 00, 00),
+            TimeZone = CreateTestTimeZone(id),
+        };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+        var unfolded = ics.Replace("\r\n ", "", StringComparison.Ordinal);
+
+        // RFC 5545 section 3.1: a parameter value containing a colon, a semicolon or a comma is a quoted-string, while the
+        // TZID property of the VTIMEZONE is a TEXT value, whose separators are escaped.
+        Assert.Equal(1, CountContentLines(unfolded, "DTSTART;TZID=" + parameterValue + ":20240701T090000"));
+        Assert.Equal(1, CountContentLines(unfolded, "TZID:" + propertyValue));
+
+        var parsed = InternetCalendar.Parse(ics);
+        var parsedEvent = Assert.Single(parsed.Events);
+        Assert.NotNull(parsedEvent.TimeZone);
+        Assert.Equal(id, parsedEvent.TimeZone.Id);
+        Assert.Equal(new DateTime(2024, 07, 01, 13, 00, 00, DateTimeKind.Utc), TimeZoneInfo.ConvertTimeToUtc(parsedEvent.Start, parsedEvent.TimeZone));
+        Assert.Equal(ics, parsed.ToIcs());
     }
 
     [Fact]
@@ -585,6 +663,102 @@ public sealed class InternetCalendarTests
         Assert.Equal(1, beginEventCount);
     }
 
+    private static void AssertLinesAreFolded(string ics)
+    {
+        foreach (var physicalLine in ics.Split("\r\n"))
+        {
+            // RFC 5545 section 3.1: 75 octets excluding the line break, and a fold never splits a character.
+            Assert.True(Encoding.UTF8.GetByteCount(physicalLine) <= 75, physicalLine);
+            if (physicalLine.Length > 0)
+            {
+                Assert.False(char.IsLowSurrogate(physicalLine[0]), physicalLine);
+                Assert.False(char.IsHighSurrogate(physicalLine[^1]), physicalLine);
+            }
+        }
+    }
+
+    [Fact]
+    public void ToIcs_FoldsALongContentLine()
+    {
+        var @event = CreateEvent();
+        @event.Summary = string.Concat(Enumerable.Range(0, 15).Select(i => "Summary-" + i.ToString("00", CultureInfo.InvariantCulture)));
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.HasCount(150, @event.Summary);
+        AssertLinesAreFolded(ics);
+        Assert.Contains("\r\n ", ics);
+        Assert.Equal(@event.Summary, Assert.Single(InternetCalendar.Parse(ics).Events).Summary);
+    }
+
+    [Fact]
+    public void ToIcs_FoldsOnUtf8OctetsWithoutSplittingACharacter()
+    {
+        var emoji = char.ConvertFromUtf32(0x1F4C5);
+        var @event = CreateEvent();
+        @event.Summary = string.Concat(Enumerable.Repeat("é", 50)) + string.Concat(Enumerable.Repeat(emoji, 40)) + string.Concat(Enumerable.Repeat("日本", 30));
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        AssertLinesAreFolded(ics);
+        using var stream = new MemoryStream();
+        CreateCalendarWithEvent(@event).ToIcs(stream);
+        stream.Position = 0;
+        Assert.Equal(@event.Summary, Assert.Single(InternetCalendar.Parse(stream).Events).Summary);
+    }
+
+    [Fact]
+    public void ToIcs_DoesNotFoldAContentLineOf75Octets()
+    {
+        var @event = CreateEvent();
+        @event.Summary = new string('a', 75 - "SUMMARY:".Length);
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("SUMMARY:" + @event.Summary, GetContentLine(ics, "SUMMARY"));
+    }
+
+    [Fact]
+    public void ToIcs_SkipsAnAttendeeWithoutAnAddress()
+    {
+        var @event = CreateEvent();
+        @event.Attendees.Add(new Attendee());
+        @event.Attendees.Add(new Attendee { Address = new InternetCalendarUserAddress("attendee@meziantou.net") });
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal(["ATTENDEE:mailto:attendee@meziantou.net"], GetEventContentLines(ics).Where(line => line.StartsWith("ATTENDEE", StringComparison.Ordinal)));
+        Assert.Single(InternetCalendar.Parse(ics).Events[0].Attendees);
+    }
+
+    [Fact]
+    public void ToIcs_OmitsTheStatusWhenItIsNotSet()
+    {
+        var ics = CreateCalendarWithEvent(CreateEvent()).ToIcs();
+
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("STATUS", StringComparison.Ordinal));
+        Assert.Null(Assert.Single(InternetCalendar.Parse(ics).Events).Status);
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnAllDayEventWithDateValues()
+    {
+        var @event = new Event
+        {
+            Start = new DateTime(2024, 01, 01, 13, 00, 00, DateTimeKind.Utc),
+            End = new DateTime(2024, 01, 02),
+            IsAllDay = true,
+            TimeZone = CreateTestTimeZone(),
+        };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // A DATE value denotes a day wherever the reader is, so neither the time nor the time zone is written
+        Assert.Equal("DTSTART;VALUE=DATE:20240101", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("DTEND;VALUE=DATE:20240102", GetContentLine(ics, "DTEND"));
+        Assert.DoesNotContain("VTIMEZONE", ics);
+        Assert.DoesNotContain("TZID", ics);
+    }
     [Fact]
     public void ToIcs_ANewLineInAnAdditionalPropertyDoesNotCloseTheCalendar()
     {
@@ -628,6 +802,84 @@ public sealed class InternetCalendarTests
         Assert.Contains(name + ":OOF\r\n", ics);
     }
 
+    [Theory]
+    [InlineData("BEGIN", "VEVENT", 1)]
+    [InlineData("END", "VCALENDAR", 1)]
+    [InlineData("VERSION", "3.0", 0)]
+    [InlineData("prodid", "-//Evil//EN", 0)]
+    public void ToIcs_SkipsACalendarAdditionalPropertyNamedAsAPropertyTheCalendarIsWrittenWith(string name, string value, int expectedCount)
+    {
+        var calendar = CreateCalendarWithEvent(CreateEvent());
+        calendar.AdditionalProperties[name] = value;
+        calendar.RawProperties.Add(new InternetCalendarProperty(name, value));
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal(expectedCount, CountContentLines(ics, name + ":" + value));
+        Assert.True(InternetCalendar.TryParse(ics, out _, out var error), error);
+    }
+
+    [Theory]
+    [InlineData("END", "VEVENT", 1)]
+    [InlineData("BEGIN", "VALARM", 0)]
+    [InlineData("DTSTART", "20200101T000000Z", 0)]
+    [InlineData("uid", "other-uid", 0)]
+    [InlineData("SUMMARY", "Other summary", 0)]
+    [InlineData("DESCRIPTION", "Other description", 0)]
+    public void ToIcs_SkipsAnEventAdditionalPropertyNamedAsAPropertyTheEventIsWrittenWith(string name, string value, int expectedCount)
+    {
+        var @event = CreateEvent();
+        @event.Id = "uid";
+        @event.Summary = "Summary";
+        @event.AdditionalProperties[name] = value;
+        @event.RawProperties.Add(new InternetCalendarProperty(name, value));
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal(expectedCount, CountContentLines(ics, name + ":" + value));
+        var parsed = Assert.Single(InternetCalendar.Parse(ics).Events);
+        Assert.Equal("uid", parsed.Id);
+        Assert.Equal(@event.Start, parsed.Start);
+    }
+
+    [Fact]
+    public void ToIcs_WritesARawPropertyVerbatim()
+    {
+        var @event = CreateEvent();
+        @event.RawProperties.Add(new InternetCalendarProperty("GEO", "37.386013;-122.082932"));
+        @event.RawProperties.Add(new InternetCalendarProperty("EXDATE", [new("TZID", "Europe/Paris")], "20240104T100000,20240105T100000"));
+        @event.RawProperties.Add(new InternetCalendarProperty("X-ALT", [new("ALTREP", "\"cid:part1@example.org\""), new("MEMBER", "\"mailto:a@example.org\",\"mailto:b@example.org\"")], "a:b"));
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("GEO:37.386013;-122.082932", GetContentLine(ics, "GEO"));
+        Assert.Equal("EXDATE;TZID=Europe/Paris:20240104T100000,20240105T100000", GetContentLine(ics, "EXDATE"));
+        Assert.Contains("X-ALT;ALTREP=\"cid:part1@example.org\";MEMBER=\"mailto:a@example.org\",\"mailto:b@example.org\":a:b", ics.Replace("\r\n ", "", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("X A", "value")]
+    [InlineData("X-A\r\nEND:VCALENDAR", "value")]
+    [InlineData("", "value")]
+    [InlineData("X-A", "v\r\nEND:VCALENDAR")]
+    [InlineData("X-A", "v\nEND:VCALENDAR")]
+    public void InternetCalendarProperty_RejectsANameOrAValueThatCannotBeWritten(string name, string value)
+    {
+        Assert.Throws<ArgumentException>(() => new InternetCalendarProperty(name, value));
+    }
+
+    [Theory]
+    [InlineData("P\r\nX", "a")]
+    [InlineData("P", "a;X-EVIL=b")]
+    [InlineData("P", "a:b")]
+    [InlineData("P", "\"unterminated")]
+    [InlineData("P", "\"a\"b")]
+    [InlineData("P", "a\"b")]
+    [InlineData("P", "\"a\r\nb\"")]
+    public void InternetCalendarProperty_RejectsAParameterThatCannotBeWritten(string name, string value)
+    {
+        Assert.Throws<ArgumentException>(() => new InternetCalendarProperty("X-A", [new(name, value)], "value"));
+    }
     [Fact]
     public void ToIcs_WritesTheRequiredProductIdentifier()
     {
@@ -696,6 +948,9 @@ public sealed class InternetCalendarTests
         {
             Start = new DateTime(2024, 01, 02, 08, 00, 00, kind),
             End = new DateTime(2024, 01, 02, 09, 00, 00, kind),
+            Created = new DateTime(2023, 12, 01, 10, 00, 00, kind),
+            LastModified = new DateTime(2023, 12, 02, 10, 00, 00, kind),
+            DateTimeStamp = new DateTime(2023, 12, 03, 10, 00, 00, kind),
         };
         var calendar = CreateCalendarWithEvent(@event);
 
@@ -766,6 +1021,73 @@ public sealed class InternetCalendarTests
         Assert.Equal(new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Utc), @event.End);
         Assert.Null(@event.TimeZone);
         Assert.Equal(new[] { KeyValuePair.Create("X-MICROSOFT-CDO-BUSYSTATUS", "OOF") }, @event.AdditionalProperties);
+        Assert.Empty(@event.RawProperties);
+    }
+
+    [Theory]
+    [InlineData("GEO:37.386013;-122.082932")]
+    [InlineData("CATEGORIES:WORK,MEETING")]
+    [InlineData("URL:http://example.com/?a=1;b=2")]
+    [InlineData("X-ESCAPE:a\\Nb")]
+    [InlineData("X-TRAILING-BACKSLASH:a\\")]
+    [InlineData("EXDATE;TZID=Europe/Paris:20240104T100000")]
+    [InlineData("X-QUOTED;X-P=\"a:b;c\";X-LIST=\"x\",y:value")]
+    public void Parse_KeepsAnUnknownPropertyThatIsNotASingleTextValueVerbatim(string contentLine)
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("UID:event-1", contentLine));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.Empty(@event.AdditionalProperties);
+        Assert.Single(@event.RawProperties);
+        Assert.Equal(1, CountContentLines(calendar.ToIcs(), contentLine));
+    }
+
+    [Fact]
+    public void Parse_KeepsTheNameParametersAndValueOfAnUnknownProperty()
+    {
+        var property = Assert.Single(ParseSingleEvent("EXDATE;TZID=Europe/Paris;X-Q=\"a:b\":20240104T100000").RawProperties);
+
+        Assert.Equal("EXDATE", property.Name);
+        Assert.Equal([new("TZID", "Europe/Paris"), new("X-Q", "\"a:b\"")], property.Parameters);
+        Assert.Equal("20240104T100000", property.Value);
+    }
+
+    [Fact]
+    public void Parse_KeepsEveryOccurrenceOfARepeatedUnknownProperty()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("X-A:1", "EXDATE:20240104T100000", "EXDATE:20240105T100000"));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.Equal(new[] { KeyValuePair.Create("X-A", "1") }, @event.AdditionalProperties);
+        Assert.Equal(["20240104T100000", "20240105T100000"], @event.RawProperties.Select(p => p.Value));
+
+        var ics = calendar.ToIcs();
+        Assert.Equal(1, CountContentLines(ics, "EXDATE:20240104T100000"));
+        Assert.Equal(1, CountContentLines(ics, "EXDATE:20240105T100000"));
+    }
+
+    [Fact]
+    public void Parse_StoresAnUnknownPropertyWhoseTextValueRoundTripsAsAnAdditionalProperty()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs(@"X-A:a\, b\; c\\ d\ne"));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.Equal(new[] { KeyValuePair.Create("X-A", "a, b; c\\ d\ne") }, @event.AdditionalProperties);
+        Assert.Empty(@event.RawProperties);
+        Assert.Equal(1, CountContentLines(calendar.ToIcs(), @"X-A:a\, b\; c\\ d\ne"));
+    }
+
+    [Fact]
+    public void Parse_KeepsAStructuredCalendarPropertyVerbatim()
+    {
+        var calendar = InternetCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nX-WR-CALNAME;VALUE=TEXT:Work\r\nX-LIST:a,b\r\nEND:VCALENDAR\r\n");
+
+        Assert.Empty(calendar.AdditionalProperties);
+        Assert.Equal(["X-WR-CALNAME", "X-LIST"], calendar.RawProperties.Select(p => p.Name));
+
+        var ics = calendar.ToIcs();
+        Assert.Equal(1, CountContentLines(ics, "X-WR-CALNAME;VALUE=TEXT:Work"));
+        Assert.Equal(1, CountContentLines(ics, "X-LIST:a,b"));
     }
 
     [Theory]
@@ -783,6 +1105,43 @@ public sealed class InternetCalendarTests
     {
         Assert.False(InternetCalendar.TryParse(CreateIcs("STATUS:NEEDS-ACTION"), out _, out var error));
         Assert.Contains("NEEDS-ACTION", error);
+    }
+
+    [Fact]
+    public void Parse_LeavesTheStatusUnsetWhenTheEventHasNone()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("UID:event-1"));
+
+        Assert.Null(Assert.Single(calendar.Events).Status);
+        Assert.DoesNotContain("STATUS", calendar.ToIcs());
+    }
+
+    [Fact]
+    public void Parse_ReadsALeapSecondAsTheLastSecondOfTheMinute()
+    {
+        var @event = ParseSingleEvent("DTSTART:20241231T235960Z", "DTEND:20241231T235960");
+
+        Assert.Equal(new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Utc), @event.Start);
+        Assert.Equal(new DateTime(2024, 12, 31, 23, 59, 59, DateTimeKind.Unspecified), @event.End);
+    }
+
+    [Theory]
+    [InlineData("/home/john")]
+    [InlineData("C:\\Users\\john")]
+    [InlineData("john@example.com")]
+    public void Parse_RejectsACalendarUserAddressWithoutAScheme(string address)
+    {
+        Assert.False(InternetCalendar.TryParse(CreateIcs("ORGANIZER:" + address), out _, out var error));
+        Assert.Contains("calendar user address", error);
+    }
+
+    [Theory]
+    [InlineData("MAILTO:john@example.com")]
+    [InlineData("urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6")]
+    [InlineData("https://example.com/users/john")]
+    public void Parse_AcceptsACalendarUserAddressWithAScheme(string address)
+    {
+        Assert.NotNull(ParseSingleEvent("ATTENDEE:" + address).Attendees[0].Address);
     }
 
     [Fact]
@@ -804,6 +1163,53 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void Parse_ReadsAnAllDayEventAndWritesItBackWithDateValues()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART;VALUE=DATE:20240101", "DTEND;VALUE=DATE:20240102"));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.True(@event.IsAllDay);
+        Assert.Equal(new DateTime(2024, 01, 01), @event.Start);
+        Assert.Equal(new DateTime(2024, 01, 02), @event.End);
+
+        var ics = calendar.ToIcs();
+        Assert.Equal("DTSTART;VALUE=DATE:20240101", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("DTEND;VALUE=DATE:20240102", GetContentLine(ics, "DTEND"));
+    }
+
+    [Fact]
+    public void Parse_ReadsADateWithoutTheValueParameterAsAnAllDayEvent()
+    {
+        var @event = ParseSingleEvent("DTSTART:20240101", "DTEND:20240102");
+
+        Assert.True(@event.IsAllDay);
+        Assert.Equal(new DateTime(2024, 01, 01), @event.Start);
+    }
+
+    [Fact]
+    public void Parse_ReadsADateTimeAsNotAllDay()
+    {
+        Assert.False(ParseSingleEvent("DTSTART:20240101T080000").IsAllDay);
+    }
+
+    [Fact]
+    public void Parse_DoesNotApplyATimeZoneToADateValue()
+    {
+        var @event = ParseSingleEvent("DTSTART;VALUE=DATE;TZID=UTC:20240101", "DTEND;VALUE=DATE;TZID=UTC:20240102");
+
+        Assert.True(@event.IsAllDay);
+        Assert.Null(@event.TimeZone);
+        Assert.Equal(DateTimeKind.Unspecified, @event.Start.Kind);
+    }
+
+    [Fact]
+    public void Parse_RejectsADateValueThatIsNotADate()
+    {
+        Assert.False(InternetCalendar.TryParse(CreateIcs("DTSTART;VALUE=DATE:20240101T080000"), out _, out var error));
+        Assert.Contains("not a date", error);
+    }
+
+    [Fact]
     public void Parse_ReadsTheTimeZoneNamedByTheTzidParameter()
     {
         // UTC is the only identifier every platform is guaranteed to resolve.
@@ -815,10 +1221,484 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
-    public void Parse_RejectsATimeZoneThatIsNotFound()
+    public void Parse_ReadsATimeZoneThatIsNotFoundAsFloating()
     {
-        Assert.False(InternetCalendar.TryParse(CreateIcs("DTSTART;TZID=Nowhere/Unknown:20240102T080000"), out _, out var error));
-        Assert.Contains("Nowhere/Unknown", error);
+        // Rejecting the whole calendar would lose every other event; a floating value keeps the wall-clock reading.
+        var @event = ParseSingleEvent("DTSTART;TZID=Nowhere/Unknown:20240102T080000", "DTEND;TZID=Nowhere/Unknown:20240102T090000");
+
+        Assert.Null(@event.TimeZone);
+        Assert.Equal(new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Unspecified), @event.Start);
+        Assert.Equal(DateTimeKind.Unspecified, @event.Start.Kind);
+        Assert.Equal(new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Unspecified), @event.End);
+    }
+
+    private static string CreateIcsWithTimeZone(string[] timeZoneContentLines, params string[] eventContentLines)
+    {
+        var lines = new List<string> { "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Test//Test//EN", "BEGIN:VTIMEZONE" };
+        lines.AddRange(timeZoneContentLines);
+        lines.Add("END:VTIMEZONE");
+        lines.Add("BEGIN:VEVENT");
+        lines.AddRange(eventContentLines);
+        lines.Add("END:VEVENT");
+        lines.Add("END:VCALENDAR");
+        return string.Join("\r\n", lines) + "\r\n";
+    }
+
+    private static DateTime ToUtc(Event @event, DateTime wallClock)
+    {
+        Assert.NotNull(@event.TimeZone);
+        return TimeZoneInfo.ConvertTimeToUtc(wallClock, @event.TimeZone);
+    }
+
+    // Outlook writes a custom time zone anchored in 1601, whose DTSTART does not follow its RRULE.
+    private static readonly string[] OutlookTimeZone =
+    [
+        "TZID:Customized Time Zone",
+        "BEGIN:STANDARD",
+        "DTSTART:16010101T030000",
+        "TZOFFSETFROM:+0200",
+        "TZOFFSETTO:+0100",
+        "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=10",
+        "END:STANDARD",
+        "BEGIN:DAYLIGHT",
+        "DTSTART:16010101T020000",
+        "TZOFFSETFROM:+0100",
+        "TZOFFSETTO:+0200",
+        "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=-1SU;BYMONTH=3",
+        "END:DAYLIGHT",
+    ];
+
+    [Fact]
+    public void Parse_BuildsTheTimeZoneOfAnOutlookVTimeZone()
+    {
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(OutlookTimeZone, "DTSTART;TZID=\"Customized Time Zone\":20240715T090000")).Events);
+
+        Assert.Equal("Customized Time Zone", @event.TimeZone?.Id);
+        Assert.Equal(new DateTime(2024, 07, 15, 09, 00, 00, DateTimeKind.Unspecified), @event.Start);
+        Assert.Equal(new DateTime(2024, 07, 15, 07, 00, 00, DateTimeKind.Utc), ToUtc(@event, @event.Start));
+        Assert.Equal(new DateTime(2024, 01, 15, 08, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 01, 15, 09, 00, 00)));
+
+        // The last Sunday of March 2024 is the 31st and the last Sunday of October 2024 the 27th
+        Assert.Equal(new DateTime(2024, 03, 31, 00, 59, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 03, 31, 01, 59, 00)));
+        Assert.Equal(new DateTime(2024, 03, 31, 01, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 03, 31, 03, 00, 00)));
+        Assert.Equal(new DateTime(2024, 03, 24, 08, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 03, 24, 09, 00, 00)));
+        Assert.Equal(new DateTime(2024, 10, 26, 07, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 10, 26, 09, 00, 00)));
+        Assert.Equal(new DateTime(2024, 10, 27, 08, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 10, 27, 09, 00, 00)));
+
+        // The identifier is kept, so the event is written back with the TZID it was read with
+        Assert.Equal("DTSTART;TZID=Customized Time Zone:20240715T090000", GetContentLine(CreateCalendarWithEvent(@event).ToIcs(), "DTSTART"));
+    }
+
+    [Fact]
+    public void Parse_BuildsTheTimeZoneOfAMozillaVTimeZone()
+    {
+        const string Id = "/mozilla.org/20050126_1/America/New_York";
+        string[] timeZone =
+        [
+            "TZID:" + Id,
+            "X-LIC-LOCATION:America/New_York",
+            "BEGIN:DAYLIGHT",
+            "TZOFFSETFROM:-0500",
+            "TZOFFSETTO:-0400",
+            "TZNAME:EDT",
+            "DTSTART:19700308T020000",
+            "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "TZOFFSETFROM:-0400",
+            "TZOFFSETTO:-0500",
+            "TZNAME:EST",
+            "DTSTART:19701101T020000",
+            "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+            "END:STANDARD",
+        ];
+
+        var calendar = InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=" + Id + ":20240310T013000", "DTEND;TZID=" + Id + ":20240310T033000"));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(Id, @event.TimeZone.Id);
+        Assert.Equal(new DateTime(2024, 03, 10, 06, 30, 00, DateTimeKind.Utc), ToUtc(@event, @event.Start));
+        Assert.Equal(new DateTime(2024, 03, 10, 07, 30, 00, DateTimeKind.Utc), ToUtc(@event, @event.End));
+        Assert.Equal(new DateTime(2024, 11, 03, 06, 30, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 11, 03, 01, 30, 00)));
+        Assert.Equal(new DateTime(2024, 11, 03, 07, 30, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 11, 03, 02, 30, 00)));
+        Assert.Equal(new DateTime(2024, 11, 02, 13, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 11, 02, 09, 00, 00)));
+        Assert.Equal("EST", @event.TimeZone.StandardName);
+        Assert.Equal("EDT", @event.TimeZone.DaylightName);
+
+        Assert.Equal("DTSTART;TZID=" + Id + ":20240310T013000", GetContentLine(calendar.ToIcs(), "DTSTART"));
+    }
+
+    [Fact]
+    public void Parse_BuildsAFixedDateTransitionFromAVTimeZone()
+    {
+        string[] timeZone =
+        [
+            "TZID:Test/Tehran",
+            "BEGIN:STANDARD",
+            "DTSTART:19700922T000000",
+            "TZOFFSETFROM:+0430",
+            "TZOFFSETTO:+0330",
+            "RRULE:FREQ=YEARLY;BYMONTH=9;BYMONTHDAY=22",
+            "END:STANDARD",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:19700322T000000",
+            "TZOFFSETFROM:+0330",
+            "TZOFFSETTO:+0430",
+            "RRULE:FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=22",
+            "END:DAYLIGHT",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Tehran:20210601T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal("Test/Tehran", @event.TimeZone.Id);
+        var rule = Assert.Single(@event.TimeZone.GetAdjustmentRules());
+        Assert.True(rule.DaylightTransitionStart.IsFixedDateRule);
+        Assert.Equal(new DateTime(2021, 06, 01, 07, 30, 00, DateTimeKind.Utc), ToUtc(@event, @event.Start));
+        Assert.Equal(new DateTime(2021, 12, 01, 08, 30, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2021, 12, 01, 12, 00, 00)));
+        Assert.Equal(new DateTime(2021, 03, 21, 08, 30, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2021, 03, 21, 12, 00, 00)));
+        Assert.Equal(new DateTime(2021, 03, 22, 07, 30, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2021, 03, 22, 12, 00, 00)));
+    }
+
+    [Fact]
+    public void Parse_BuildsTheHistoricalTransitionsOfAVTimeZone()
+    {
+        // The rules the United States followed from 1987 to 2006, then the current ones.
+        string[] timeZone =
+        [
+            "TZID:Test/Eastern",
+            "BEGIN:DAYLIGHT",
+            "TZOFFSETFROM:-0500",
+            "RRULE:FREQ=YEARLY;UNTIL=20060402T070000Z;BYMONTH=4;BYDAY=1SU",
+            "DTSTART:20000402T020000",
+            "TZNAME:EDT",
+            "TZOFFSETTO:-0400",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "TZOFFSETFROM:-0400",
+            "RRULE:FREQ=YEARLY;UNTIL=20061029T060000Z;BYMONTH=10;BYDAY=-1SU",
+            "DTSTART:20001029T020000",
+            "TZNAME:EST",
+            "TZOFFSETTO:-0500",
+            "END:STANDARD",
+            "BEGIN:DAYLIGHT",
+            "TZOFFSETFROM:-0500",
+            "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+            "DTSTART:20070311T020000",
+            "TZNAME:EDT",
+            "TZOFFSETTO:-0400",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "TZOFFSETFROM:-0400",
+            "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+            "DTSTART:20071104T020000",
+            "TZNAME:EST",
+            "TZOFFSETTO:-0500",
+            "END:STANDARD",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Eastern:20050320T120000")).Events);
+
+        // In 2005, daylight saving time ran from April 3 to October 30; the current rules would say March 13 to November 6
+        Assert.Equal(new DateTime(2005, 03, 20, 17, 00, 00, DateTimeKind.Utc), ToUtc(@event, @event.Start));
+        Assert.Equal(new DateTime(2005, 04, 10, 16, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2005, 04, 10, 12, 00, 00)));
+        Assert.Equal(new DateTime(2005, 10, 29, 16, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2005, 10, 29, 12, 00, 00)));
+        Assert.Equal(new DateTime(2005, 11, 01, 17, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2005, 11, 01, 12, 00, 00)));
+        Assert.Equal(new DateTime(2024, 03, 20, 16, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 03, 20, 12, 00, 00)));
+        Assert.Equal(new DateTime(2024, 11, 04, 17, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2024, 11, 04, 12, 00, 00)));
+    }
+
+    [Fact]
+    public void Parse_BuildsTheTransitionsOfAVTimeZoneListingTheirDates()
+    {
+        // A zone that stopped observing daylight saving time, described by RDATEs as full time zone databases do.
+        string[] timeZone =
+        [
+            "TZID:Test/Dates",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:20100328T020000",
+            "RDATE:20110327T020000",
+            "TZOFFSETFROM:+0100",
+            "TZOFFSETTO:+0200",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "DTSTART:20101031T030000",
+            "RDATE:20111030T030000",
+            "TZOFFSETFROM:+0200",
+            "TZOFFSETTO:+0100",
+            "END:STANDARD",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Dates:20100701T120000")).Events);
+
+        Assert.Equal(TimeSpan.FromHours(1), @event.TimeZone?.BaseUtcOffset);
+        Assert.Equal(new DateTime(2010, 07, 01, 10, 00, 00, DateTimeKind.Utc), ToUtc(@event, @event.Start));
+        Assert.Equal(new DateTime(2010, 12, 01, 11, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2010, 12, 01, 12, 00, 00)));
+        Assert.Equal(new DateTime(2011, 07, 01, 10, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2011, 07, 01, 12, 00, 00)));
+        Assert.Equal(new DateTime(2012, 07, 01, 11, 00, 00, DateTimeKind.Utc), ToUtc(@event, new DateTime(2012, 07, 01, 12, 00, 00)));
+    }
+
+    [Fact]
+    public void Parse_BuildsAChangeOfTheStandardOffsetFromAVTimeZone()
+    {
+        // Almaty moved from +06 to +05 on 2024-03-01, which is not a daylight saving time transition.
+        string[] timeZone =
+        [
+            "TZID:Test/Almaty",
+            "BEGIN:STANDARD",
+            "DTSTART:20240301T000000",
+            "TZOFFSETFROM:+0600",
+            "TZOFFSETTO:+0500",
+            "END:STANDARD",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Almaty:20240115T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(TimeSpan.FromHours(6), @event.TimeZone.GetUtcOffset(new DateTime(2024, 02, 29, 17, 59, 59, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(5), @event.TimeZone.GetUtcOffset(new DateTime(2024, 02, 29, 18, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(6), @event.TimeZone.GetUtcOffset(new DateTime(2023, 12, 31, 18, 30, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(5), @event.TimeZone.GetUtcOffset(new DateTime(2030, 01, 01, 00, 00, 00, DateTimeKind.Utc)));
+    }
+
+    [Fact]
+    public void Parse_BuildsADaylightSavingPeriodSpanningTheEndOfTheYearFromAVTimeZone()
+    {
+        // As a writer anchoring the sub-components in the year of the events does, the first onset of 2024 ends the daylight
+        // saving period that started in 2023.
+        string[] timeZone =
+        [
+            "TZID:Test/Santiago",
+            "BEGIN:STANDARD",
+            "DTSTART:20240406T235959",
+            "TZOFFSETFROM:-0300",
+            "TZOFFSETTO:-0400",
+            "RDATE:20250405T235959",
+            "END:STANDARD",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:20240907T235959",
+            "TZOFFSETFROM:-0400",
+            "TZOFFSETTO:-0300",
+            "RDATE:20250906T235959",
+            "END:DAYLIGHT",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Santiago:20240115T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        foreach (var (utc, offset) in new[]
+        {
+            (new DateTime(2024, 01, 01, 00, 00, 00, DateTimeKind.Utc), -3),
+            (new DateTime(2024, 01, 01, 03, 30, 00, DateTimeKind.Utc), -3),
+            (new DateTime(2024, 04, 07, 02, 59, 58, DateTimeKind.Utc), -3),
+            (new DateTime(2024, 04, 07, 02, 59, 59, DateTimeKind.Utc), -4),
+            (new DateTime(2024, 09, 08, 03, 59, 58, DateTimeKind.Utc), -4),
+            (new DateTime(2024, 09, 08, 03, 59, 59, DateTimeKind.Utc), -3),
+            (new DateTime(2024, 12, 31, 23, 30, 00, DateTimeKind.Utc), -3),
+            (new DateTime(2025, 01, 01, 02, 30, 00, DateTimeKind.Utc), -3),
+            (new DateTime(2025, 04, 06, 03, 00, 00, DateTimeKind.Utc), -4),
+            (new DateTime(2025, 09, 07, 04, 00, 00, DateTimeKind.Utc), -3),
+            (new DateTime(2026, 06, 01, 00, 00, 00, DateTimeKind.Utc), -3),
+        })
+        {
+            Assert.Equal(TimeSpan.FromHours(offset), @event.TimeZone.GetUtcOffset(utc), $"{utc:O}");
+        }
+    }
+
+    [Fact]
+    public void Parse_ApproximatesAVTimeZoneWhoseOffsetChangesByADay()
+    {
+        // Samoa skipped 2011-12-30 by moving from -10 to +14. An adjustment rule cannot change the offset by 24 hours, so the
+        // year keeps its longest offset rather than the whole time zone being rejected.
+        string[] timeZone =
+        [
+            "TZID:Test/Apia",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:20111229T235959",
+            "TZOFFSETFROM:-1000",
+            "TZOFFSETTO:+1400",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "DTSTART:20120401T040000",
+            "TZOFFSETFROM:+1400",
+            "TZOFFSETTO:+1300",
+            "END:STANDARD",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Apia:20120115T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(TimeSpan.FromHours(-10), @event.TimeZone.GetUtcOffset(new DateTime(2011, 06, 01, 00, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(14), @event.TimeZone.GetUtcOffset(new DateTime(2012, 02, 01, 00, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(13), @event.TimeZone.GetUtcOffset(new DateTime(2012, 06, 01, 00, 00, 00, DateTimeKind.Utc)));
+    }
+
+    [Fact]
+    public void Parse_ReadsAHostileVTimeZoneInBoundedTime()
+    {
+        string[] timeZone =
+        [
+            "TZID:Test/Hostile",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:00010101T020000",
+            "TZOFFSETFROM:+0100",
+            "TZOFFSETTO:+0200",
+            "RRULE:FREQ=YEARLY;BYMONTH=1,2,3,4,5,6,7,8,9,10,11,12;BYMONTHDAY=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15;UNTIL=99991231T000000Z",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "DTSTART:00010101T030000",
+            "TZOFFSETFROM:+0200",
+            "TZOFFSETTO:+0100",
+            "RRULE:FREQ=YEARLY;BYMONTH=1,2,3,4,5,6,7,8,9,10,11,12;BYMONTHDAY=16,17,18,19,20,21,22,23,24,25,26,27,28;COUNT=100000",
+            "END:STANDARD",
+        ];
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.True(InternetCalendar.TryParse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Hostile:20240115T120000"), out _, out var error), error);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(1), stopwatch.Elapsed.ToString());
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Theory]
+    [InlineData("Asia/Almaty", 2024)]
+    [InlineData("America/Santiago", 2026)]
+    [InlineData("Africa/Casablanca", 2024)]
+    [InlineData("America/Scoresbysund", 2024)]
+    [InlineData("America/Sao_Paulo", 2010)]
+    [InlineData("Europe/Moscow", 2010)]
+    [InlineData("Australia/Lord_Howe", 2024)]
+    public void Parse_ReadsTheVTimeZoneWrittenForASystemTimeZone(string id, int year)
+    {
+        // An IANA identifier does not resolve on Windows when globalization is invariant. Renaming the identifier makes the
+        // parser build the time zone from the VTIMEZONE instead of finding the system one.
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(id, out var systemTimeZone))
+        {
+            global::Xunit.Assert.Skip($"The time zone '{id}' is not available on this machine.");
+            return;
+        }
+
+        var start = new DateTime(year, 01, 15, 12, 00, 00);
+        var calendar = CreateCalendarWithEvent(new Event { Start = start, End = start.AddHours(1), TimeZone = systemTimeZone });
+        var ics = calendar.ToIcs()
+            .Replace("\r\n ", "", StringComparison.Ordinal)
+            .Replace("TZID:" + id + "\r\n", "TZID:Test/Renamed\r\n", StringComparison.Ordinal)
+            .Replace("TZID=" + id + ":", "TZID=Test/Renamed:", StringComparison.Ordinal);
+
+        var @event = Assert.Single(InternetCalendar.Parse(ics).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal("Test/Renamed", @event.TimeZone.Id);
+
+        // A year changing its offset more than twice cannot be expressed by an adjustment rule, which the time zone database
+        // of some machines gives Morocco in 2026, so two years are compared.
+        for (var instant = new DateTime(year, 01, 01, 00, 00, 00, DateTimeKind.Utc); instant < new DateTime(year + 2, 01, 01, 00, 00, 00, DateTimeKind.Utc); instant = instant.AddMinutes(30))
+        {
+            Assert.Equal(systemTimeZone.GetUtcOffset(instant), @event.TimeZone.GetUtcOffset(instant), $"{instant:O}");
+        }
+    }
+#endif
+
+    [Fact]
+    public void Parse_BuildsAFixedOffsetTimeZoneFromAVTimeZoneWithoutDaylightSavingTime()
+    {
+        string[] timeZone = ["TZID:Test/Kolkata", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0530", "TZOFFSETTO:+0530", "END:STANDARD"];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Kolkata:20240101T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(TimeSpan.FromMinutes(330), @event.TimeZone.BaseUtcOffset);
+        Assert.Empty(@event.TimeZone.GetAdjustmentRules());
+    }
+
+    [Fact]
+    public void Parse_UsesAVTimeZoneThatFollowsTheEvent()
+    {
+        var ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" +
+            "BEGIN:VEVENT\r\nDTSTART;TZID=Test/Kolkata:20240101T120000\r\nEND:VEVENT\r\n" +
+            "BEGIN:VTIMEZONE\r\nTZID:Test/Kolkata\r\nBEGIN:STANDARD\r\nDTSTART:19700101T000000\r\nTZOFFSETFROM:+0530\r\nTZOFFSETTO:+0530\r\nEND:STANDARD\r\nEND:VTIMEZONE\r\n" +
+            "END:VCALENDAR\r\n";
+
+        var @event = Assert.Single(InternetCalendar.Parse(ics).Events);
+
+        Assert.Equal("Test/Kolkata", @event.TimeZone?.Id);
+    }
+
+    [Fact]
+    public void Parse_PrefersTheSystemTimeZoneToTheVTimeZone()
+    {
+        string[] timeZone = ["TZID:UTC", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0500", "TZOFFSETTO:+0500", "END:STANDARD"];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=UTC:20240101T120000")).Events);
+
+        Assert.Equal(TimeZoneInfo.Utc, @event.TimeZone);
+    }
+
+    [Fact]
+    public void Parse_ReadsAnInvalidVTimeZoneAsAnUnresolvedTimeZone()
+    {
+        string[] timeZone = ["TZID:Test/Invalid", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0500", "TZOFFSETTO:not-an-offset", "END:STANDARD"];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/Invalid:20240101T120000")).Events);
+
+        Assert.Null(@event.TimeZone);
+        Assert.Equal(new DateTime(2024, 01, 01, 12, 00, 00, DateTimeKind.Unspecified), @event.Start);
+    }
+
+    [Fact]
+    public void Parse_ResolvesThePlatformTimeZoneEndingAPrefixedIdentifier()
+    {
+        var @event = ParseSingleEvent("DTSTART;TZID=/softwarestudio.org/Tzfile/UTC:20240102T080000");
+
+        Assert.Equal(TimeZoneInfo.Utc, @event.TimeZone);
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Fact]
+    public void Parse_ResolvesTheIanaTimeZoneEndingAMozillaIdentifier()
+    {
+        // An IANA identifier does not resolve on Windows when globalization is invariant.
+        var @event = ParseSingleEvent("DTSTART;TZID=/mozilla.org/20050126_1/America/New_York:20240102T080000");
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(TimeSpan.FromHours(-5), @event.TimeZone.GetUtcOffset(@event.Start));
+    }
+#endif
+
+    [Fact]
+    public void Parse_ConvertsATimeStampCarryingATzidToUtcWithoutChangingTheEventTimeZone()
+    {
+        string[] timeZone = ["TZID:Test/Tokyo", "BEGIN:STANDARD", "DTSTART:19700101T000000", "TZOFFSETFROM:+0900", "TZOFFSETTO:+0900", "END:STANDARD"];
+
+        var calendar = InternetCalendar.Parse(CreateIcsWithTimeZone(
+            timeZone,
+            "DTSTART:20240102T080000",
+            "DTEND:20240102T090000",
+            "LAST-MODIFIED;TZID=Test/Tokyo:20240102T090000",
+            "CREATED;TZID=Nowhere/Unknown:20240101T090000",
+            "DTSTAMP:20240103T090000"));
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.Null(@event.TimeZone);
+        Assert.Equal(new DateTime(2024, 01, 02, 00, 00, 00, DateTimeKind.Utc), @event.LastModified);
+        Assert.Equal(DateTimeKind.Utc, @event.LastModified.Kind);
+
+        // A floating value, or one whose time zone is unknown, is taken as UTC as RFC 5545 requires these properties to be
+        Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 00, DateTimeKind.Utc), @event.Created);
+        Assert.Equal(DateTimeKind.Utc, @event.Created.Kind);
+        Assert.Equal(new DateTime(2024, 01, 03, 09, 00, 00, DateTimeKind.Utc), @event.DateTimeStamp);
+
+        var ics = calendar.ToIcs();
+        Assert.Equal("DTSTART:20240102T080000", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("LAST-MODIFIED:20240102T000000Z", GetContentLine(ics, "LAST-MODIFIED"));
+    }
+
+    [Fact]
+    public void Parse_DoesNotRejectAnEventWhoseTimeStampUsesAnotherTimeZone()
+    {
+        var @event = ParseSingleEvent("DTSTART;TZID=UTC:20240102T080000", "DTSTAMP;TZID=Nowhere/Unknown:20240102T080000");
+
+        Assert.Equal(TimeZoneInfo.Utc, @event.TimeZone);
     }
 
     [Fact]
@@ -1047,4 +1927,368 @@ public sealed class InternetCalendarTests
         Assert.Null(calendar);
         Assert.NotNull(error);
     }
+
+    private static string WriteVTimeZone(TimeZoneInfo timeZone, DateTime start)
+    {
+        var @event = CreateEvent();
+        @event.Start = start;
+        @event.End = start.AddHours(1);
+        @event.TimeZone = timeZone;
+
+        // The assertions read whole content lines, so the long RRULE and RDATE lines are unfolded first
+        return CreateCalendarWithEvent(@event).ToIcs().Replace("\r\n ", "", StringComparison.Ordinal);
+    }
+
+    private static DateTime GetFirstDayOfWeekOnOrAfter(DateTime date, DayOfWeek dayOfWeek)
+    {
+        return date.AddDays(((int)dayOfWeek - (int)date.DayOfWeek + 7) % 7);
+    }
+
+    // Unix materializes the transitions of each year as fixed-date rules, and Windows does the same for a time zone
+    // whose rule changes every year. The transitions are given as local dates and times.
+    private static TimeZoneInfo CreateTimeZoneWithYearlyRules(string id, TimeSpan baseUtcOffset, int firstYear, int lastYear, Func<int, DateTime> daylightStart, Func<int, DateTime> daylightEnd)
+    {
+        var rules = new List<TimeZoneInfo.AdjustmentRule>();
+        for (var year = firstYear; year <= lastYear; year++)
+        {
+            var start = daylightStart(year);
+            var end = daylightEnd(year);
+            rules.Add(TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                new DateTime(year, 1, 1),
+                new DateTime(year, 12, 31),
+                TimeSpan.FromHours(1),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1) + start.TimeOfDay, start.Month, start.Day),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1) + end.TimeOfDay, end.Month, end.Day)));
+        }
+
+        return TimeZoneInfo.CreateCustomTimeZone(id, baseUtcOffset, id, "STD", "DST", [.. rules]);
+    }
+
+    /// <summary>Expands the transitions of the VTIMEZONE sub-components up to the end of <paramref name="lastYear"/>, as UTC instants.</summary>
+    private static List<(DateTime Utc, TimeSpan From, TimeSpan To)> GetVTimeZoneOnsets(string ics, int lastYear)
+    {
+        var onsets = new List<(DateTime Utc, TimeSpan From, TimeSpan To)>();
+        var inTimeZone = false;
+        var start = DateTime.MinValue;
+        var from = TimeSpan.Zero;
+        var to = TimeSpan.Zero;
+        string? recurrenceRule = null;
+        var recurrenceDates = new List<DateTime>();
+        foreach (var contentLine in ics.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (contentLine is "BEGIN:VTIMEZONE")
+            {
+                inTimeZone = true;
+            }
+            else if (contentLine is "END:VTIMEZONE")
+            {
+                break;
+            }
+            else if (!inTimeZone || contentLine.StartsWith("TZID:", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            else if (contentLine is "BEGIN:STANDARD" or "BEGIN:DAYLIGHT")
+            {
+                recurrenceRule = null;
+                recurrenceDates.Clear();
+            }
+            else if (contentLine.StartsWith("DTSTART:", StringComparison.Ordinal))
+            {
+                start = DateTime.ParseExact(contentLine["DTSTART:".Length..], "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture);
+            }
+            else if (contentLine.StartsWith("RDATE:", StringComparison.Ordinal))
+            {
+                recurrenceDates.Add(DateTime.ParseExact(contentLine["RDATE:".Length..], "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture));
+            }
+            else if (contentLine.StartsWith("TZOFFSETFROM:", StringComparison.Ordinal))
+            {
+                from = ParseUtcOffset(contentLine["TZOFFSETFROM:".Length..]);
+            }
+            else if (contentLine.StartsWith("TZOFFSETTO:", StringComparison.Ordinal))
+            {
+                to = ParseUtcOffset(contentLine["TZOFFSETTO:".Length..]);
+            }
+            else if (contentLine.StartsWith("RRULE:", StringComparison.Ordinal))
+            {
+                recurrenceRule = contentLine["RRULE:".Length..];
+            }
+            else if (contentLine is "END:STANDARD" or "END:DAYLIGHT")
+            {
+                // The DTSTART and RDATE of a sub-component are local times expressed in its TZOFFSETFROM offset.
+                onsets.Add((start - from, from, to));
+                foreach (var date in recurrenceDates)
+                {
+                    onsets.Add((date - from, from, to));
+                }
+
+                if (recurrenceRule is not null)
+                {
+                    foreach (var occurrence in ExpandYearlyRecurrenceRule(recurrenceRule, start, from, lastYear))
+                    {
+                        onsets.Add((occurrence - from, from, to));
+                    }
+                }
+            }
+            else
+            {
+                Assert.Fail($"Unexpected content line '{contentLine}' in the VTIMEZONE:\n{ics}");
+            }
+        }
+
+        onsets.Sort((a, b) => a.Utc.CompareTo(b.Utc));
+        return onsets;
+    }
+
+    private static TimeSpan ParseUtcOffset(string value)
+    {
+        var offset = new TimeSpan(
+            int.Parse(value.AsSpan(1, 2), CultureInfo.InvariantCulture),
+            int.Parse(value.AsSpan(3, 2), CultureInfo.InvariantCulture),
+            value.Length > 5 ? int.Parse(value.AsSpan(5, 2), CultureInfo.InvariantCulture) : 0);
+        return value[0] is '-' ? -offset : offset;
+    }
+
+    // Supports the yearly rules a VTIMEZONE writer produces, by testing every day of the year against each rule part
+    private static IEnumerable<DateTime> ExpandYearlyRecurrenceRule(string recurrenceRule, DateTime start, TimeSpan from, int lastYear)
+    {
+        var parts = recurrenceRule.Split(';').Select(part => part.Split('=')).ToDictionary(part => part[0], part => part[1], StringComparer.Ordinal);
+        Assert.Equal("YEARLY", parts["FREQ"]);
+        foreach (var name in parts.Keys)
+        {
+            Assert.Contains(name, (string[])["FREQ", "BYMONTH", "BYMONTHDAY", "BYYEARDAY", "BYDAY", "UNTIL"]);
+        }
+
+        DateTime? until = parts.TryGetValue("UNTIL", out var untilValue) ? DateTime.ParseExact(untilValue, "yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture) : null;
+        for (var year = start.Year; year <= lastYear; year++)
+        {
+            for (var day = new DateTime(year, 1, 1); day.Year == year; day = day.AddDays(1))
+            {
+                var occurrence = day + start.TimeOfDay;
+                if (occurrence <= start || !IsIncludedByRecurrenceRule(parts, day))
+                    continue;
+
+                if (until is not null && occurrence - from > until.Value)
+                    yield break;
+
+                yield return occurrence;
+            }
+        }
+    }
+
+    private static bool IsIncludedByRecurrenceRule(Dictionary<string, string> parts, DateTime day)
+    {
+        var daysInMonth = DateTime.DaysInMonth(day.Year, day.Month);
+        var daysInYear = DateTime.IsLeapYear(day.Year) ? 366 : 365;
+        if (parts.TryGetValue("BYMONTH", out var months) && !ParseIntegers(months).Contains(day.Month))
+            return false;
+
+        if (parts.TryGetValue("BYMONTHDAY", out var monthDays) && !ParseIntegers(monthDays).Any(value => value > 0 ? value == day.Day : daysInMonth + value + 1 == day.Day))
+            return false;
+
+        if (parts.TryGetValue("BYYEARDAY", out var yearDays) && !ParseIntegers(yearDays).Any(value => value > 0 ? value == day.DayOfYear : daysInYear + value + 1 == day.DayOfYear))
+            return false;
+
+        if (parts.TryGetValue("BYDAY", out var byDay))
+        {
+            // A single day of the week, whose ordinal counts the weeks of the month
+            var dayOfWeek = byDay[^2..] switch
+            {
+                "SU" => DayOfWeek.Sunday,
+                "MO" => DayOfWeek.Monday,
+                "TU" => DayOfWeek.Tuesday,
+                "WE" => DayOfWeek.Wednesday,
+                "TH" => DayOfWeek.Thursday,
+                "FR" => DayOfWeek.Friday,
+                "SA" => DayOfWeek.Saturday,
+                _ => throw new FormatException("Invalid BYDAY: " + byDay),
+            };
+
+            if (day.DayOfWeek != dayOfWeek)
+                return false;
+
+            if (byDay.Length > 2)
+            {
+                var ordinal = int.Parse(byDay.AsSpan(0, byDay.Length - 2), CultureInfo.InvariantCulture);
+                var actualOrdinal = ordinal > 0 ? ((day.Day - 1) / 7) + 1 : -(((daysInMonth - day.Day) / 7) + 1);
+                if (ordinal != actualOrdinal)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int[] ParseIntegers(string value)
+    {
+        return value.Split(',').Select(item => int.Parse(item, CultureInfo.InvariantCulture)).ToArray();
+    }
+
+    private static void AssertVTimeZoneMatchesTimeZone(string ics, TimeZoneInfo timeZone, int firstYear, int lastYear)
+    {
+        var onsets = GetVTimeZoneOnsets(ics, lastYear);
+        Assert.NotEmpty(onsets);
+
+        var index = -1;
+        for (var instant = new DateTime(firstYear, 1, 1, 0, 0, 0, DateTimeKind.Utc); instant.Year <= lastYear; instant = instant.AddMinutes(30))
+        {
+            while (index + 1 < onsets.Count && onsets[index + 1].Utc <= instant)
+            {
+                index++;
+            }
+
+            // Before its first onset, a time zone is at the offset that onset changes from
+            var offset = index >= 0 ? onsets[index].To : onsets[0].From;
+            var expected = timeZone.GetUtcOffset(instant);
+            if (offset != expected)
+            {
+                Assert.Fail($"At {instant:yyyy-MM-ddTHH:mm}Z, the offset of '{timeZone.Id}' is {expected} but the VTIMEZONE describes {offset}:\n{ics}");
+            }
+        }
+    }
+
+    [Fact]
+    public void ToIcs_WritesADaylightSavingTimeTransitionOnADayOfTheWeekWithinAWindowOfTheMonth()
+    {
+        // Israel starts daylight saving time on the Friday before the last Sunday of March, which is not the n-th
+        // Friday of the month: it falls on 2024-03-29 (the fifth Friday) and on 2026-03-27 (the fourth).
+        var timeZone = CreateTimeZoneWithYearlyRules(
+            "Test/Jerusalem",
+            TimeSpan.FromHours(2),
+            firstYear: 2020,
+            lastYear: 2030,
+            year => GetFirstDayOfWeekOnOrAfter(new DateTime(year, 3, 23), DayOfWeek.Friday).AddHours(2),
+            year => GetFirstDayOfWeekOnOrAfter(new DateTime(year, 10, 25), DayOfWeek.Sunday).AddHours(2));
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(2024, 01, 15, 12, 00, 00));
+
+        var expected = string.Join("\r\n",
+            "BEGIN:VTIMEZONE",
+            "TZID:Test/Jerusalem",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:20240329T020000",
+            "TZOFFSETFROM:+0200",
+            "TZOFFSETTO:+0300",
+            "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=FR;BYMONTHDAY=23,24,25,26,27,28,29;UNTIL=20300329T000000Z",
+            "END:DAYLIGHT",
+            "BEGIN:STANDARD",
+            "DTSTART:20241027T020000",
+            "TZOFFSETFROM:+0300",
+            "TZOFFSETTO:+0200",
+            "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU;UNTIL=20301026T230000Z",
+            "END:STANDARD",
+            "END:VTIMEZONE") + "\r\n";
+
+        Assert.Contains(expected, ics);
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, 2024, 2032);
+    }
+
+    [Fact]
+    public void ToIcs_WritesATransitionWhoseWindowSpillsOverTheNextMonthAsDaysOfTheYear()
+    {
+        // Egypt ends daylight saving time at midnight after the last Thursday of October, which is 2024-11-01.
+        var timeZone = CreateTimeZoneWithYearlyRules(
+            "Test/Cairo",
+            TimeSpan.FromHours(2),
+            firstYear: 2023,
+            lastYear: 2030,
+            year => GetFirstDayOfWeekOnOrAfter(new DateTime(year, 4, 24), DayOfWeek.Friday),
+            year => GetFirstDayOfWeekOnOrAfter(new DateTime(year, 10, 26), DayOfWeek.Friday));
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(2024, 01, 15, 12, 00, 00));
+
+        Assert.Contains("DTSTART:20241101T000000\r\n", ics);
+        Assert.Contains("RRULE:FREQ=YEARLY;BYYEARDAY=-67,-66,-65,-64,-63,-62,-61;BYDAY=FR;UNTIL=20301031T210000Z\r\n", ics);
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, 2024, 2032);
+    }
+
+    [Fact]
+    public void ToIcs_DoesNotRepeatAYearSpecificRuleInLaterYears()
+    {
+        var timeZone = CreateTimeZoneWithYearlyRules(
+            "Test/Casablanca",
+            TimeSpan.Zero,
+            firstYear: 2024,
+            lastYear: 2024,
+            _ => new DateTime(2024, 1, 1),
+            _ => new DateTime(2024, 3, 10, 2, 0, 0));
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(2024, 01, 15, 12, 00, 00));
+
+        Assert.DoesNotContain("RRULE:", ics);
+        Assert.DoesNotContain("T235959", ics);
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, 2023, 2027);
+    }
+
+    [Fact]
+    public void ToIcs_WritesAChangeOfTheStandardOffset()
+    {
+        // Kazakhstan moved from +06:00 to +05:00 on 2024-03-01, without daylight saving time on either side. A period
+        // without daylight saving time is a rule with a zero delta, whose transitions are never applied.
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            new DateTime(1992, 1, 1),
+            new DateTime(2024, 2, 29),
+            TimeSpan.Zero,
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), month: 1, day: 1),
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), month: 1, day: 2),
+            baseUtcOffsetDelta: TimeSpan.FromHours(1));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Almaty", TimeSpan.FromHours(5), "Test Almaty", "STD", "DST", [rule]);
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(2024, 01, 15, 12, 00, 00));
+
+        // The runtime ends the rule at midnight in the base offset, which is 01:00 in the +06:00 offset.
+        Assert.Equal(1, CountContentLines(ics, "BEGIN:STANDARD"));
+        Assert.DoesNotContain("BEGIN:DAYLIGHT", ics);
+        Assert.Contains("TZOFFSETFROM:+0600\r\nTZOFFSETTO:+0500\r\n", ics);
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, 2024, 2027);
+    }
+
+    [Fact]
+    public void ToIcs_WritesTheOffsetInEffectBeforeAChangeOfRule()
+    {
+        // Scoresbysund was at -01:00 with daylight saving time until 2024-03-31, when it moved to -02:00. The rule of
+        // the new offset must not describe January 2024.
+        var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 0, 0, 0), month: 3, week: 5, DayOfWeek.Sunday);
+        var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 1, 0, 0), month: 10, week: 5, DayOfWeek.Sunday);
+        var rules = new[]
+        {
+            TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2000, 1, 1), new DateTime(2023, 12, 31), TimeSpan.FromHours(1), daylightStart, daylightEnd, baseUtcOffsetDelta: TimeSpan.FromHours(1)),
+            TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2024, 1, 1), DateTime.MaxValue.Date, TimeSpan.FromHours(1), daylightStart, daylightEnd),
+        };
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Scoresbysund", TimeSpan.FromHours(-2), "Test Scoresbysund", "STD", "DST", rules);
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(2023, 12, 15, 12, 00, 00));
+
+        Assert.Contains("TZOFFSETFROM:-0100\r\n", ics);
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, 2023, 2030);
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    [Theory]
+    [InlineData("Europe/Paris", 2024)]
+    [InlineData("America/New_York", 2024)]
+    [InlineData("Asia/Jerusalem", 2026)]
+    [InlineData("Africa/Casablanca", 2024)]
+    [InlineData("Africa/Cairo", 2024)]
+    [InlineData("Asia/Almaty", 2024)]
+    [InlineData("America/Scoresbysund", 2024)]
+    [InlineData("America/Nuuk", 2026)]
+    [InlineData("America/Santiago", 2026)]
+    [InlineData("America/Asuncion", 2024)]
+    [InlineData("Australia/Sydney", 2010)]
+    public void ToIcs_WritesAVTimeZoneMatchingTheOffsetsOfASystemTimeZone(string id, int year)
+    {
+        // An IANA identifier does not resolve on Windows when globalization is invariant. The time zone database
+        // differs across machines, so the VTIMEZONE is compared with the offsets this machine reports.
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(id, out var timeZone))
+        {
+            global::Xunit.Assert.Skip($"The time zone '{id}' is not available on this machine.");
+            return;
+        }
+
+        var ics = WriteVTimeZone(timeZone, new DateTime(year, 01, 15, 12, 00, 00));
+
+        AssertVTimeZoneMatchesTimeZone(ics, timeZone, year, year + 4);
+    }
+#endif
 }

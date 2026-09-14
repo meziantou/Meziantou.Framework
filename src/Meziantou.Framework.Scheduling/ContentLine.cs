@@ -3,9 +3,9 @@ namespace Meziantou.Framework.Scheduling;
 /// <summary>An iCalendar content line (RFC 5545 section 3.1): a property name, its parameters and its value.</summary>
 internal sealed class ContentLine
 {
-    private readonly List<KeyValuePair<string, string>>? _parameters;
+    private readonly List<(string Name, string Value, string RawValue)>? _parameters;
 
-    private ContentLine(string name, List<KeyValuePair<string, string>>? parameters, string value)
+    private ContentLine(string name, List<(string Name, string Value, string RawValue)>? parameters, string value)
     {
         Name = name;
         _parameters = parameters;
@@ -18,6 +18,9 @@ internal sealed class ContentLine
     /// <summary>The value as written, before the decoding its value type calls for.</summary>
     public string Value { get; }
 
+    /// <summary>Gets a value indicating whether the line carries at least one property parameter.</summary>
+    public bool HasParameters => _parameters is not null;
+
     /// <summary>Gets the value of a property parameter, or <see langword="null"/> when the line does not carry it.</summary>
     public string? GetParameter(string name)
     {
@@ -26,11 +29,26 @@ internal sealed class ContentLine
 
         foreach (var parameter in _parameters)
         {
-            if (string.Equals(parameter.Key, name, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase))
                 return parameter.Value;
         }
 
         return null;
+    }
+
+    /// <summary>Gets the parameters as written, quotes included, so the line can be reproduced verbatim.</summary>
+    public List<KeyValuePair<string, string>> GetRawParameters()
+    {
+        var result = new List<KeyValuePair<string, string>>();
+        if (_parameters is not null)
+        {
+            foreach (var parameter in _parameters)
+            {
+                result.Add(new KeyValuePair<string, string>(parameter.Name, parameter.RawValue));
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Gets the value decoded as an iCalendar TEXT value (RFC 5545 section 3.3.11).</summary>
@@ -75,7 +93,7 @@ internal sealed class ContentLine
             return false;
         }
 
-        List<KeyValuePair<string, string>>? parameters = null;
+        List<(string Name, string Value, string RawValue)>? parameters = null;
         while (index < line.Length && line[index] is ';')
         {
             index++;
@@ -92,6 +110,7 @@ internal sealed class ContentLine
             }
 
             index++;
+            var parameterValueStart = index;
             if (!TryReadParameterValue(line, ref index, out var parameterValue))
             {
                 error = $"The property parameter '{parameterName}' of '{line}' has an unterminated quoted value";
@@ -99,7 +118,7 @@ internal sealed class ContentLine
             }
 
             parameters ??= [];
-            parameters.Add(new KeyValuePair<string, string>(parameterName, parameterValue));
+            parameters.Add((parameterName, parameterValue, line[parameterValueStart..index]));
         }
 
         if (index >= line.Length || line[index] is not ':')

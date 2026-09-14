@@ -80,6 +80,114 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void RevealAndUse_CallbackThrowsAndProtectFails_ReportsBothExceptions()
+    {
+        using var data = SensitiveData.Create("foo");
+        data.FailNextProtectForTesting();
+
+        var exception = Assert.Throws<AggregateException>(() => data.RevealAndUse(arg: "", static (span, arg) => throw new InvalidOperationException()));
+
+        Assert.Collection(exception.InnerExceptions,
+            inner => Assert.IsType<InvalidOperationException>(inner),
+            inner => Assert.IsType<Win32Exception>(inner));
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void RevealToString_Null_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SensitiveData.RevealToString(null!));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reveal_AfterProtectFailed_AppliesTheProtectionAgain(bool xorProtection)
+    {
+        using var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+        data.FailNextProtectForTesting();
+
+        Assert.Throws<Win32Exception>(() => data.RevealToString());
+        Assert.False(data.IsProtected);
+
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+        Assert.Equal("foo", data.RevealToString());
+        Assert.True(data.IsProtected);
+    }
+
+    [Fact]
+    public void XorProtection_AfterProtectFailed_StoresTransformedBytesAtRestAgain()
+    {
+        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        using var data = SensitiveData<byte>.CreateWithXorProtection(plaintext);
+        data.FailNextProtectForTesting();
+
+        Assert.Throws<Win32Exception>(() => data.RevealToArray());
+        Assert.True(data.TryGetBytesAtRest(out var afterFailure));
+        Assert.Equal(plaintext, afterFailure);
+
+        Assert.Equal(plaintext, data.RevealToArray());
+        Assert.True(data.TryGetBytesAtRest(out var atRest));
+        Assert.NotEqual(plaintext, atRest);
+    }
+
+    [Fact]
+    public void UnixErrors_ReportTheErrnoValue()
+    {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+            return;
+
+        const int EINVAL = 22;
+
+        // mprotect requires a page-aligned address.
+        Assert.False(SensitiveData.UnixMemoryProtection.TryProtect(1, (nuint)Environment.SystemPageSize, SensitiveData.UnixMemoryProtection.PROT_NONE));
+        var exception = Assert.Throws<Win32Exception>(SensitiveData.UnixMemoryProtection.ThrowLastError);
+
+        Assert.Equal(EINVAL, exception.NativeErrorCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the callback")]
+    public void RevealAndUse_DisposeInsideCallback_KeepsTheSpanReadableUntilTheRevealEnds(bool xorProtection)
+    {
+        var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+
+        string? revealedAfterDispose = null;
+        data.RevealAndUse(arg: data, (span, secret) =>
+        {
+            secret.Dispose();
+            revealedAfterDispose = new string(span);
+        });
+
+        Assert.Equal("foo", revealedAfterDispose);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The instance is disposed by the callback")]
+    public void RevealAndUse_DisposeInsideNestedCallback_ReleasesOnceTheOutermostRevealEnds(bool xorProtection)
+    {
+        var data = xorProtection ? SensitiveData<char>.CreateWithXorProtection("foo") : SensitiveData.Create("foo");
+
+        string? outerAfterDispose = null;
+        data.RevealAndUse(arg: data, (outerSpan, secret) =>
+        {
+            secret.RevealAndUse(arg: secret, static (innerSpan, inner) => inner.Dispose());
+            Assert.Throws<ObjectDisposedException>(() => secret.RevealToString());
+            outerAfterDispose = new string(outerSpan);
+        });
+
+        Assert.Equal("foo", outerAfterDispose);
+        Assert.Throws<ObjectDisposedException>(() => data.RevealToString());
+    }
+
+    [Fact]
     public void ProtectionIsAppliedAtRestAndLiftedWhileRevealing()
     {
         using var data = SensitiveData.Create("foo");
@@ -258,6 +366,10 @@ public sealed class SensitiveDataTests
     [InlineData(16)]
     [InlineData(17)]
     [InlineData(31)]
+    [InlineData(33)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(1000)]
     public void XorProtection_RoundTripsVariousLengths(int length)
     {
         var expected = new byte[length];
@@ -272,15 +384,33 @@ public sealed class SensitiveDataTests
         Assert.True(data.IsProtected);
     }
 
-    [Fact]
-    public void XorProtection_StoresTransformedBytesAtRest()
+    [Theory]
+    [InlineData(8)]
+    [InlineData(65)]
+    [InlineData(1000)]
+    public void XorProtection_StoresTransformedBytesAtRest(int length)
     {
-        var plaintext = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        var plaintext = new byte[length];
+        for (var i = 0; i < plaintext.Length; i++)
+        {
+            plaintext[i] = (byte)(i + 1);
+        }
 
         using var data = SensitiveData<byte>.CreateWithXorProtection(plaintext);
 
+        // A random key byte leaves about one byte in 256 unchanged, so a byte range the transformation
+        // skipped shows up as a large number of unchanged bytes rather than as any single match.
         Assert.True(data.TryGetBytesAtRest(out var atRest));
-        Assert.NotEqual(plaintext, atRest);
+        var unchanged = 0;
+        for (var i = 0; i < length; i++)
+        {
+            if (atRest[i] == plaintext[i])
+            {
+                unchanged++;
+            }
+        }
+
+        Assert.True(unchanged <= length / 2, $"{unchanged} of {length} bytes are stored unchanged");
         Assert.Equal(plaintext, data.RevealToArray());
     }
 

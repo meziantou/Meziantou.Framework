@@ -15,4 +15,12 @@ public partial class Assert
     {
         throw new AssertionException(XunitDynamicSkipToken + reason);
     }
+
+    // xunit only inspects the message of the exception that escapes the test, whatever its type (Xunit.Assert.Skip
+    // throws its own exception type). Assertions that wrap exceptions thrown by user code must let these propagate
+    // unchanged, otherwise the skip request turns into a test failure.
+    private static bool IsXunitSkipException(Exception exception)
+    {
+        return exception.Message.StartsWith(XunitDynamicSkipToken, StringComparison.Ordinal);
+    }
 }

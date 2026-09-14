@@ -17,7 +17,7 @@ public partial class Assert
             {
                 assertion(actual[i]);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanAllAssertionError<T>(actual, i, exception, actualExpression, assertionExpression, message)), exception);
             }
@@ -37,7 +37,7 @@ public partial class Assert
             {
                 assertion(actual[i], i);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanAllAssertionError<T>(actual, i, exception, actualExpression, assertionExpression, message)), exception);
             }
@@ -77,7 +77,7 @@ public partial class Assert
             {
                 assertion(item);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)), exception);
             }
@@ -99,7 +99,7 @@ public partial class Assert
             {
                 assertion(item, index);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)), exception);
             }
@@ -175,7 +175,7 @@ public partial class Assert
             {
                 await assertion(item, index).ConfigureAwait(false);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(await ErrorFormatter.FormatAsync(new AsyncCollectionAllAssertionError<T>(actualSnapshot, index, exception, actualExpression, assertionExpression, message)).ConfigureAwait(false), exception);
             }

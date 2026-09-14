@@ -29,6 +29,24 @@ internal static class AssertionTestHelpers
     }
 
     /// <summary>
+    /// Validates that a skip request thrown by <see cref="AssertionsAssert.XunitSkip(string)"/> with the reason "n/a"
+    /// escapes the assertion unchanged, as xunit only recognizes the message of the exception that escapes the test.
+    /// </summary>
+    public static void ValidateXunitSkip(Action action)
+    {
+        var exception = AssertionsAssert.Throws<AssertionException>(action);
+        AssertionsAssert.Equal("$XunitDynamicSkip$n/a", exception.Message);
+        AssertionsAssert.Null(exception.InnerException);
+    }
+
+    public static async Task ValidateXunitSkipAsync(Func<Task> action)
+    {
+        var exception = await AssertionsAssert.Throws<AssertionException>(action);
+        AssertionsAssert.Equal("$XunitDynamicSkip$n/a", exception.Message);
+        AssertionsAssert.Null(exception.InnerException);
+    }
+
+    /// <summary>
     /// A sequence that can only be enumerated once, so an assertion that walks it a second time to build its failure
     /// message fails loudly instead of silently reporting different data.
     /// </summary>

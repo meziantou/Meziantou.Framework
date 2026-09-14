@@ -18,7 +18,7 @@ Assertion helpers for .NET tests.
 - `NotEqualUnordered`: Asserts two sequences differ when compared without ordering.
 - `Equivalent`: Asserts two objects are equal by recursively comparing members.
 - `NotEquivalent`: Asserts two objects are structurally different.
-- `IsType`: Asserts a value is exactly of the specified type and returns it.
+- `IsType`: Asserts a value is exactly of the specified type and returns it. A boxed `T` is considered to be exactly of type `Nullable<T>`, as boxing a `Nullable<T>` produces a boxed `T`.
 - `IsNotType`: Asserts a value is not exactly of the specified type.
 - `IsAssignableTo`: Asserts a value is assignable to the specified type and returns it.
 - `IsNotAssignableTo`: Asserts a value is not assignable to the specified type.
@@ -50,18 +50,18 @@ Assertion helpers for .NET tests.
 - `NotProperSubset`: Asserts a set is not a proper subset of another set.
 - `ProperSuperset`: Asserts a set is a proper superset of another set.
 - `NotProperSuperset`: Asserts a set is not a proper superset of another set.
-- `Throws`: Asserts a specific exception type is thrown and returns it.
+- `Throws`: Asserts a specific exception type is thrown and returns it. Delegates returning a `Task`, a `ValueTask` or a `ValueTask<object?>` are awaited, and the assertion must then be awaited. Wrap a method returning another `ValueTask<T>` in an `async` lambda (`async () => await GetAsync()`).
 - `ThrowsAny`: Asserts an exception assignable to the specified type is thrown and returns it.
 - `ThrowsAsync`: Asserts a specific exception type is thrown by an async delegate.
 - `ThrowsAnyAsync`: Asserts an assignable exception type is thrown by an async delegate.
-- `DoesNotThrow`: Asserts a delegate completes without throwing.
+- `DoesNotThrow`: Asserts a delegate completes without throwing. Delegates returning a `Task` or a `ValueTask` are awaited (wrap a method returning a `ValueTask<T>` in an `async` lambda). The unexpected exception is available as the `InnerException` of the assertion failure.
 - `DoesNotThrowAny`: Asserts a delegate completes without throwing any exception type.
-- `Raise`: Asserts a specific event is raised and captures event data.
+- `Raise`: Asserts a specific event is raised and captures event data. When the event is raised several times, the first raised event whose arguments match is returned. Null event arguments match any event args type.
 - `RaiseAny`: Asserts an event with a compatible event args type is raised.
-- `DoesNotRaise`: Asserts a specific event is not raised.
+- `DoesNotRaise`: Asserts a specific event is not raised. It fails if any raised event matches, including an event raised with null arguments.
 - `DoesNotRaiseAny`: Asserts no compatible event is raised.
 - `Fail`: Fails the test with a custom message.
-- `XunitSkip`: Skips the running xunit test with the specified reason.
+- `XunitSkip`: Skips the running xunit test with the specified reason. Only xunit v3 supports dynamically skipping a test; xunit v2 reports it as a failure. Assertions that run user code, such as `All`, `Collection` or `DoesNotThrow`, let the skip request propagate unchanged.
 
 ## Use as the default `Assert` class
 

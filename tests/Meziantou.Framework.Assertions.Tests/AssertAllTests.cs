@@ -126,6 +126,36 @@ public sealed class AssertAllTests
     }
 
     [Fact]
+    public async Task XunitSkip_IsNotWrapped()
+    {
+        IEnumerable<int> actual = [1];
+        System.Collections.IEnumerable nonGenericActual = new object[] { 1 };
+
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.All<int>([1], _ => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.All<int>([1], (_, _) => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.All(actual, _ => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.All(actual, (_, _) => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.All(nonGenericActual, _ => AssertionsAssert.XunitSkip("n/a")));
+        await AssertionTestHelpers.ValidateXunitSkipAsync(() => AssertionsAssert.All(AssertionTestHelpers.ToAsyncEnumerable(actual), _ => AssertionsAssert.XunitSkip("n/a")));
+        await AssertionTestHelpers.ValidateXunitSkipAsync(() => AssertionsAssert.All(AssertionTestHelpers.ToAsyncEnumerable(actual), async (_, _) =>
+        {
+            await Task.Yield();
+            AssertionsAssert.XunitSkip("n/a");
+        }));
+    }
+
+    [Fact]
+    public void XunitAssertSkip_IsNotWrapped()
+    {
+        IEnumerable<int> actual = [1];
+
+        var exception = AssertionsAssert.ThrowsAny<Exception>(() => AssertionsAssert.All(actual, _ => global::Xunit.Assert.Skip("n/a")));
+
+        AssertionsAssert.IsNotType<AssertionException>(exception);
+        AssertionsAssert.Equal("$XunitDynamicSkip$n/a", exception.Message);
+    }
+
+    [Fact]
     public async Task AsyncEnumerableAsyncAssertion_Fails()
     {
         var actual = AssertionTestHelpers.ToAsyncEnumerable([0, 1, 3]);

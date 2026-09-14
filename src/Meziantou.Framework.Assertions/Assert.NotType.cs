@@ -6,7 +6,7 @@ public partial class Assert
 {
     public static void IsNotType<T>(object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        if (actual?.GetType() != typeof(T))
+        if (!IsExactType(typeof(T), actual))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeTypeAssertionError(nameof(IsNotType), "Not expected type", typeof(T), actual, actualExpression, message)));
@@ -14,7 +14,7 @@ public partial class Assert
 
     public static void IsNotType(Type expectedType, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        if (actual?.GetType() != expectedType)
+        if (!IsExactType(expectedType, actual))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeTypeAssertionError(nameof(IsNotType), "Not expected type", expectedType, actual, actualExpression, message)));

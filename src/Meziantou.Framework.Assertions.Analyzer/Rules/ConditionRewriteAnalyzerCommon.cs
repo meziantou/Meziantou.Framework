@@ -573,7 +573,10 @@ internal static class ConditionRewriteAnalyzerCommon
     {
         if (getTypeCandidate is IInvocationOperation { TargetMethod.Name: "GetType", Instance: { } instance } getTypeInvocation &&
             SymbolEqualityComparer.Default.Equals(getTypeInvocation.TargetMethod.OriginalDefinition, symbols.ObjectGetTypeMethod) &&
-            typeOfCandidate is ITypeOfOperation { TypeOperand: { } typeOperand })
+            typeOfCandidate is ITypeOfOperation { TypeOperand: { } typeOperand } &&
+            // GetType() never returns Nullable<T> (a boxed Nullable<T> is a boxed T), but Assert.IsType<Nullable<T>>
+            // accepts a boxed T, so the rewrite would turn an assertion that always fails into one that can pass
+            typeOperand.OriginalDefinition.SpecialType is not SpecialType.System_Nullable_T)
         {
             receiver = instance.UnwrapImplicitConversions();
             type = typeOperand;

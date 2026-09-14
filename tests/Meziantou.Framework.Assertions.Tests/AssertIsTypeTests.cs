@@ -53,6 +53,56 @@ public sealed class AssertIsTypeTests
     }
 
     [Fact]
+    public void NullableValueType_Success()
+    {
+        int? nullableValue = 5;
+        object actual = 5;
+
+        AssertionsAssert.Equal(5, AssertionsAssert.IsType<int?>(actual));
+        AssertionsAssert.Equal(5, AssertionsAssert.IsType<int?>(nullableValue));
+        AssertionsAssert.Equal(5, AssertionsAssert.IsType<Nullable<int>>(actual));
+        AssertionsAssert.Same(actual, AssertionsAssert.IsType(typeof(int?), actual));
+        AssertionsAssert.Equal(5, AssertionsAssert.IsType<int>(nullableValue));
+    }
+
+    // The expected type is not pinned in these messages: generic types are formatted with their assembly-qualified type arguments
+    [Fact]
+    public void NullableValueType_FailsWhenUnderlyingTypeDiffers()
+    {
+        object actual = 5L;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.IsType<int?>(actual));
+
+        AssertionsAssert.Contains("Actual type:   System.Int64", exception.Message);
+    }
+
+    [Fact]
+    public void NullableValueType_FailsWhenNull()
+    {
+        int? actual = null;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.IsType(typeof(int?), actual));
+
+        AssertionsAssert.Contains("Actual type:   <null>", exception.Message);
+    }
+
+    [Fact]
+    public void IsNotType_NullableValueType()
+    {
+        int? nullValue = null;
+
+        AssertionsAssert.IsNotType<int?>(5L);
+        AssertionsAssert.IsNotType<int?>(nullValue);
+        AssertionsAssert.IsNotType(typeof(long?), 5);
+
+        var genericException = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.IsNotType<int?>(5));
+        var typeException = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.IsNotType(typeof(int?), 5));
+
+        AssertionsAssert.StartsWith("Assert.IsNotType() assertion failed.", genericException.Message);
+        AssertionsAssert.StartsWith("Assert.IsNotType() assertion failed.", typeException.Message);
+    }
+
+    [Fact]
     public void IsNotType_Success()
     {
         object actual = "Hello";

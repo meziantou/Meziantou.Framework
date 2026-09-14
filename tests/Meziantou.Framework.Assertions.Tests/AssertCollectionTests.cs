@@ -99,6 +99,17 @@ public sealed class AssertCollectionTests
     }
 
     [Fact]
+    public void XunitSkip_IsNotWrapped()
+    {
+        IEnumerable<int> actual = [1, 2];
+
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.Collection(
+            actual,
+            item => AssertionsAssert.Equal(1, item),
+            _ => AssertionsAssert.XunitSkip("n/a")));
+    }
+
+    [Fact]
     public void FailsWhenInspectorFails()
     {
         IEnumerable<int> actual = [1, 2, 3];

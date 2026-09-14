@@ -1,9 +1,17 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Assertions;
 
 #pragma warning disable CA1822, CA1852 // Formatter methods intentionally share an instance-based overridable shape.
 internal class AssertionFormatter
 {
     private const char CombiningLowLine = '\u0332';
+
+    private static readonly MethodInfo FormatBoxedMemoryValueMethod = typeof(AssertionFormatter).GetMethod(nameof(FormatBoxedMemoryValue), BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    // Exceptions thrown by a lazy sequence while the formatter reads more of it, keyed by the snapshot's item list.
+    private static readonly ConditionalWeakTable<object, Exception> ObservationExceptions = new();
 
     public static AssertionFormatter Default { get; } = new AssertionFormatter();
 
@@ -129,7 +137,7 @@ internal class AssertionFormatter
             .Append("Expression", error.ActualExpression)
             .AppendGroup(
                 ("Not expected", error.NotExpectedText),
-                ("Actual", FormatReadOnlySpanValue(error.ActualValue.Span)))
+                ("Actual", FormatReadOnlySpanValue(error.ActualValue)))
             .ToString();
     }
 
@@ -140,8 +148,8 @@ internal class AssertionFormatter
                 ("Expected expression", error.ExpectedExpression),
                 ("Actual expression", error.ActualExpression))
             .AppendGroup(
-                (error.NotExpectedLabel, FormatReadOnlySpanValue(error.ExpectedValue.Span)),
-                ("Actual", FormatReadOnlySpanValue(error.ActualValue.Span)))
+                (error.NotExpectedLabel, FormatReadOnlySpanValue(error.ExpectedValue)),
+                ("Actual", FormatReadOnlySpanValue(error.ActualValue)))
             .ToString();
     }
 
@@ -153,7 +161,7 @@ internal class AssertionFormatter
                 ("Actual expression", error.ActualExpression))
             .AppendGroup(
                 (error.NotExpectedLabel, FormatValue(error.ExpectedValue)),
-                ("Actual", FormatReadOnlySpanValue(error.ActualValue.Span)))
+                ("Actual", FormatReadOnlySpanValue(error.ActualValue)))
             .ToString();
     }
 
@@ -164,7 +172,7 @@ internal class AssertionFormatter
             .AppendGroup(
                 ("Not expected count", error.NotExpectedCount.ToString(CultureInfo.InvariantCulture)),
                 ("Actual count", error.ActualCount.ToString(CultureInfo.InvariantCulture)))
-            .Append("Actual", FormatReadOnlySpanValue(error.ActualValue.Span))
+            .Append("Actual", FormatReadOnlySpanValue(error.ActualValue))
             .ToString();
     }
 
@@ -484,7 +492,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ValueCollectionStartsWithAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.ActualValue.Items.Count > 0 ? 0 : null));
 
         return CreateMessage("Assert.StartsWith() assertion failed.", error.Message)
             .AppendGroup(
@@ -514,7 +522,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionEmptyAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(error.ActualValue.Items.Count > 0 ? 0 : null));
 
         return CreateMessage("Assert.Empty() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -524,7 +532,7 @@ internal class AssertionFormatter
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionEmptyAssertionError<T> error)
     {
-        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(error.ActualValue.Items.Count > 0 ? 0 : null)).ConfigureAwait(false);
 
         return CreateMessage("Assert.Empty() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -550,7 +558,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionSingleAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count)));
 
         return CreateMessage("Assert.Single() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -560,7 +568,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionSinglePredicateAssertionError<T> error)
     {
-        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+        EnsureObservedItems(error.MatchingValues, GetMaxFormattedIndex(GetSingleFailureHighlightedIndex(error.MatchingValues.Items.Count)));
 
         return CreateMessage("Assert.Single() assertion failed.", error.Message)
             .AppendGroup(
@@ -572,7 +580,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionContainsPredicateAssertionError<T> error)
     {
-        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+        EnsureObservedItems(error.MatchingValues, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.Contains() assertion failed.", error.Message)
             .AppendGroup(
@@ -594,7 +602,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionDoesNotContainPredicateAssertionError<T> error)
     {
-        EnsureObservedItems(error.MatchingValues, MaxFormattedItems - 1);
+        EnsureObservedItems(error.MatchingValues, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.DoesNotContain() assertion failed.", error.Message)
             .AppendGroup(
@@ -608,7 +616,7 @@ internal class AssertionFormatter
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionSingleAssertionError<T> error)
     {
-        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(GetSingleFailureHighlightedIndex(error.ActualValue.Items.Count))).ConfigureAwait(false);
 
         return CreateMessage("Assert.Single() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -618,7 +626,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.Collection() assertion failed: Collection count does not match inspector count.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -665,7 +673,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionDoesNotAllPredicateAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.DoesNotAll() assertion failed: All items satisfy the predicate, but expected at least one that does not.", error.Message)
             .AppendGroup(
@@ -762,7 +770,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(CollectionCountAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage($"Assert.{error.AssertionName}() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -775,7 +783,7 @@ internal class AssertionFormatter
 
     public virtual async Task<string> FormatAsync<T>(AsyncCollectionCountAssertionError<T> error)
     {
-        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null)).ConfigureAwait(false);
 
         return CreateMessage($"Assert.{error.AssertionName}() assertion failed.", error.Message)
             .Append("Expression", error.ActualExpression)
@@ -800,7 +808,7 @@ internal class AssertionFormatter
 
     public virtual string Format<T>(ValueCollectionContainsAssertionError<T> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.Contains() assertion failed.", error.Message)
             .AppendGroup(
@@ -890,7 +898,7 @@ internal class AssertionFormatter
 
     public virtual async Task<string> FormatAsync<TExpected, TActual>(CollectionAsyncCollectionContainsAssertionError<TExpected, TActual> error)
     {
-        await EnsureObservedItemsAsync(error.ActualValue, MaxFormattedItems - 1).ConfigureAwait(false);
+        await EnsureObservedItemsAsync(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null)).ConfigureAwait(false);
 
         return CreateMessage("Assert.Contains() assertion failed.", error.Message)
             .AppendGroup(
@@ -904,7 +912,7 @@ internal class AssertionFormatter
 
     public virtual string Format<TExpected, TActual>(CollectionContainsAssertionError<TExpected, TActual> error)
     {
-        EnsureObservedItems(error.ActualValue, MaxFormattedItems - 1);
+        EnsureObservedItems(error.ActualValue, GetMaxFormattedIndex(highlightedIndex: null));
 
         return CreateMessage("Assert.Contains() assertion failed.", error.Message)
             .AppendGroup(
@@ -1084,7 +1092,10 @@ internal class AssertionFormatter
 
     public virtual string Format<TExpected, TActual>(CollectionEqualAssertionError<TExpected, TActual> error)
     {
-        return CreateMessage("Assert.Equal() assertion failed: Lengths differ.", error.Message)
+        // Both snapshots were read up to the first difference by the assertion, so this does not enumerate further.
+        var itemDiffers = error.ExpectedValue.TryGetItem(error.FirstDifferenceIndex, out _) && error.ActualValue.TryGetItem(error.FirstDifferenceIndex, out _);
+
+        return CreateMessage(GetCollectionEqualHeader(itemDiffers, error.FirstDifferenceIndex), error.Message)
             .AppendGroup(
                 ("Expected expression", error.ExpectedExpression),
                 ("Actual expression", error.ActualExpression))
@@ -1124,8 +1135,9 @@ internal class AssertionFormatter
         var maxIndex = GetMaxFormattedIndex(error.FirstDifferenceIndex);
         await EnsureObservedItemsAsync(error.ExpectedValue, maxIndex).ConfigureAwait(false);
         await EnsureObservedItemsAsync(error.ActualValue, maxIndex).ConfigureAwait(false);
+        var itemDiffers = error.ExpectedValue.Items.Count > error.FirstDifferenceIndex && error.ActualValue.Items.Count > error.FirstDifferenceIndex;
 
-        return CreateMessage("Assert.Equal() assertion failed: Lengths differ.", error.Message)
+        return CreateMessage(GetCollectionEqualHeader(itemDiffers, error.FirstDifferenceIndex), error.Message)
             .AppendGroup(
                 ("Expected expression", error.ExpectedExpression),
                 ("Actual expression", error.ActualExpression))
@@ -1174,17 +1186,164 @@ internal class AssertionFormatter
         if (value is string stringValue)
             return FormatStringValue(stringValue, highlightedIndex);
 
+        if (value is char charValue)
+            return FormatCharValue(charValue);
+
+        if (TryFormatMemoryValue(value, highlightedIndex, visited, out var memoryValue))
+            return memoryValue;
+
         if (value is System.Collections.IEnumerable enumerable)
         {
             return FormatEnumerableValue(enumerable, highlightedIndex, visited);
         }
 
-        if (value is IFormattable formattable)
+        if (TryFormatKeyValuePairOrTupleValue(value, visited, out var structuredValue))
+            return structuredValue;
+
+        return FormatScalarValue(value);
+    }
+
+    private static string FormatScalarValue(object value)
+    {
+        // ToString runs user code, which can use the current culture (records, anonymous types) or throw. Neither may
+        // change or replace the assertion failure, so the culture is pinned and exceptions become part of the message.
+        var previousCulture = CultureInfo.CurrentCulture;
+        var changeCulture = !ReferenceEquals(previousCulture, CultureInfo.InvariantCulture);
+        try
         {
-            return formattable.ToString(format: null, CultureInfo.InvariantCulture) ?? string.Empty;
+            if (changeCulture)
+            {
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            }
+
+            return value switch
+            {
+                // The default formats of these types drop fractional seconds (or seconds for TimeOnly), so two different
+                // values could print identically. The round-trip format is lossless.
+                DateTime dateTime => dateTime.ToString("O", CultureInfo.InvariantCulture),
+                DateTimeOffset dateTimeOffset => dateTimeOffset.ToString("O", CultureInfo.InvariantCulture),
+                DateOnly dateOnly => dateOnly.ToString("O", CultureInfo.InvariantCulture),
+                TimeOnly timeOnly => timeOnly.ToString("O", CultureInfo.InvariantCulture),
+                IFormattable formattable => formattable.ToString(format: null, CultureInfo.InvariantCulture) ?? string.Empty,
+                _ => value.ToString() ?? string.Empty,
+            };
+        }
+        catch (Exception exception)
+        {
+            return FormatUserCodeException("ToString()", exception);
+        }
+        finally
+        {
+            if (changeCulture)
+            {
+                CultureInfo.CurrentCulture = previousCulture;
+            }
+        }
+    }
+
+    private static string FormatUserCodeException(string operation, Exception exception)
+    {
+        string? message;
+        try
+        {
+            message = exception.Message;
+        }
+        catch (Exception)
+        {
+            message = null;
         }
 
-        return value.ToString() ?? string.Empty;
+        var result = new StringBuilder();
+        result.Append('<').Append(operation).Append(" threw ").Append(exception.GetType().FullName);
+        if (!string.IsNullOrEmpty(message))
+        {
+            result.Append(": ");
+            AppendEscapedText(result, message, highlightedIndex: null, quote: null);
+        }
+
+        result.Append('>');
+        return result.ToString();
+    }
+
+    private bool TryFormatMemoryValue(object value, int? highlightedIndex, HashSet<object> visited, [NotNullWhen(true)] out string? result)
+    {
+        result = null;
+        var type = value.GetType();
+        if (!type.IsConstructedGenericType)
+            return false;
+
+        var definition = type.GetGenericTypeDefinition();
+        if (definition != typeof(ReadOnlyMemory<>) && definition != typeof(Memory<>))
+            return false;
+
+        // A boxed memory can be reached again through its own content (object[] holding a boxed memory over itself).
+        if (!visited.Add(value))
+        {
+            result = "<circular reference>";
+            return true;
+        }
+
+        try
+        {
+            var method = FormatBoxedMemoryValueMethod.MakeGenericMethod(type.GetGenericArguments()[0]);
+            result = (string)method.Invoke(this, BindingFlags.DoNotWrapExceptions, binder: null, [value, highlightedIndex, visited], culture: null)!;
+            return true;
+        }
+        finally
+        {
+            visited.Remove(value);
+        }
+    }
+
+    private string FormatBoxedMemoryValue<T>(object value, int? highlightedIndex, HashSet<object> visited)
+    {
+        ReadOnlyMemory<T> memory = value is Memory<T> writableMemory ? writableMemory : (ReadOnlyMemory<T>)value;
+        return FormatReadOnlySpanValue(memory.Span, highlightedIndex, visited);
+    }
+
+    private bool TryFormatKeyValuePairOrTupleValue(object value, HashSet<object> visited, [NotNullWhen(true)] out string? result)
+    {
+        // KeyValuePair and tuples are formatted from their parts, so nested values get the same invariant formatting,
+        // quoting and escaping as top-level values instead of whatever their own ToString produces.
+        var type = value.GetType();
+        if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+        {
+            var key = type.GetProperty(nameof(KeyValuePair<,>.Key))!.GetValue(value);
+            var pairValue = type.GetProperty(nameof(KeyValuePair<,>.Value))!.GetValue(value);
+            result = "[" + FormatValue(key, highlightedIndex: null, visited) + ", " + FormatValue(pairValue, highlightedIndex: null, visited) + "]";
+            return true;
+        }
+
+        if (value is ITuple tuple && IsSystemTupleType(type))
+        {
+            var builder = new StringBuilder();
+            builder.Append('(');
+            for (var i = 0; i < tuple.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(FormatValue(tuple[i], highlightedIndex: null, visited));
+            }
+
+            builder.Append(')');
+            result = builder.ToString();
+            return true;
+        }
+
+        result = null;
+        return false;
+
+        static bool IsSystemTupleType(Type type)
+        {
+            if (!type.IsConstructedGenericType || type.Assembly != typeof(object).Assembly)
+                return false;
+
+            var name = type.GetGenericTypeDefinition().FullName;
+            return name is not null && (name.StartsWith("System.ValueTuple`", StringComparison.Ordinal) || name.StartsWith("System.Tuple`", StringComparison.Ordinal));
+        }
     }
 
     private string FormatStructuralValue(object? value)
@@ -1193,6 +1352,13 @@ internal class AssertionFormatter
             return "<missing>";
 
         return FormatValue(value);
+    }
+
+    private static string GetCollectionEqualHeader(bool itemDiffers, int firstDifferenceIndex)
+    {
+        return itemDiffers
+            ? $"Assert.Equal() assertion failed: Item at index {firstDifferenceIndex.ToString(CultureInfo.InvariantCulture)} differs."
+            : "Assert.Equal() assertion failed: Lengths differ.";
     }
 
     private static string FormatType(Type? type)
@@ -1207,17 +1373,49 @@ internal class AssertionFormatter
 
     protected virtual string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex = null)
     {
+        return FormatReadOnlySpanValue(value, highlightedIndex, new HashSet<object>(ReferenceEqualityComparer.Instance));
+    }
+
+    private string FormatReadOnlySpanValue<T>(ReadOnlySpan<T> value, int? highlightedIndex, HashSet<object> visited)
+    {
         if (typeof(T) == typeof(char))
         {
             var chars = unsafe(System.Runtime.InteropServices.MemoryMarshal.CreateReadOnlySpan(ref System.Runtime.CompilerServices.Unsafe.As<T, char>(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(value)), value.Length));
             return FormatStringValue(chars, highlightedIndex);
         }
 
-        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        var items = new List<string>(value.Length);
-        for (var i = 0; i < value.Length; i++)
+        // Same window as enumerables: a span can be arbitrarily large, and only the items around the highlighted one are useful.
+        var window = GetItemWindow(highlightedIndex);
+        var items = new List<string>();
+        var hasSkippedItems = false;
+        for (var index = 0; index < value.Length; index++)
         {
-            items.Add(FormatHighlightedValue(FormatValue(value[i], highlightedIndex: null, visited), i, highlightedIndex));
+            if (index > window.MaxIndex)
+            {
+                items.Add("...");
+                hasSkippedItems = false;
+                break;
+            }
+
+            if (!window.IsVisible(index))
+            {
+                hasSkippedItems = true;
+                index = window.FocusStartIndex - 1;
+                continue;
+            }
+
+            if (hasSkippedItems)
+            {
+                items.Add("...");
+                hasSkippedItems = false;
+            }
+
+            items.Add(FormatHighlightedValue(FormatValue(value[index], highlightedIndex: null, visited), index, highlightedIndex));
+        }
+
+        if (hasSkippedItems)
+        {
+            items.Add("...");
         }
 
         return $"[{string.Join(", ", items)}]";
@@ -1225,37 +1423,48 @@ internal class AssertionFormatter
 
     private string FormatKeyValuePairs<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> value)
     {
-        var items = new List<string>();
-        var index = 0;
-        foreach (var item in value)
-        {
-            if (index >= MaxFormattedItems)
-            {
-                items.Add("...");
-                break;
-            }
-
-            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
-            index++;
-        }
-
-        return $"[{string.Join(", ", items)}]";
+        return FormatKeyValueEntries(value, useDictionaryEnumerator: false, static item => item is KeyValuePair<TKey, TValue> pair ? (pair.Key, pair.Value) : default);
     }
 
     private string FormatDictionary(System.Collections.IDictionary value)
     {
+        // A dictionary enumerates DictionaryEntry values only through IDictionary.GetEnumerator.
+        return FormatKeyValueEntries(value, useDictionaryEnumerator: true, static item => item is System.Collections.DictionaryEntry entry ? (entry.Key, entry.Value) : default);
+    }
+
+    private string FormatKeyValueEntries(System.Collections.IEnumerable value, bool useDictionaryEnumerator, Func<object?, (object? Key, object? Value)> getEntry)
+    {
         var items = new List<string>();
         var index = 0;
-        foreach (System.Collections.DictionaryEntry item in value)
+        var isTruncated = false;
+        var enumerator = GetEnumerator(value, out var enumerationError, useDictionaryEnumerator);
+        try
         {
-            if (index >= MaxFormattedItems)
+            while (enumerator is not null)
             {
-                items.Add("...");
-                break;
-            }
+                if (!TryMoveNext(enumerator, out var item, out enumerationError))
+                    break;
 
-            items.Add(FormatValue(item.Key) + ": " + FormatValue(item.Value));
-            index++;
+                if (index >= MaxFormattedItems)
+                {
+                    items.Add("...");
+                    isTruncated = true;
+                    break;
+                }
+
+                var (key, entryValue) = getEntry(item);
+                items.Add(FormatValue(key) + ": " + FormatValue(entryValue));
+                index++;
+            }
+        }
+        finally
+        {
+            DisposeEnumerator(enumerator);
+        }
+
+        if (!isTruncated)
+        {
+            AddEnumerationError(items, value, enumerationError);
         }
 
         return $"[{string.Join(", ", items)}]";
@@ -1266,27 +1475,29 @@ internal class AssertionFormatter
         if (!visited.Add(value))
             return "<circular reference>";
 
+        System.Collections.IEnumerator? enumerator = null;
         try
         {
             var items = new List<string>();
-            var shouldFocusHighlightedItem = IsFocusedHighlightedItem(highlightedIndex);
-            var focusStartIndex = shouldFocusHighlightedItem
-                ? Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount)
-                : -1;
-            var prefixItemCount = shouldFocusHighlightedItem ? PrefixItemCount : MaxFormattedItems;
-            var maxIndex = GetMaxFormattedIndex(highlightedIndex);
+            var window = GetItemWindow(highlightedIndex);
             var hasSkippedItems = false;
+            var isTruncated = false;
             var index = 0;
 
-            foreach (var item in value)
+            enumerator = GetEnumerator(value, out var enumerationError);
+            while (enumerator is not null)
             {
-                if (index > maxIndex)
+                if (!TryMoveNext(enumerator, out var item, out enumerationError))
+                    break;
+
+                if (index > window.MaxIndex)
                 {
                     items.Add("...");
+                    isTruncated = true;
                     break;
                 }
 
-                if (index < prefixItemCount || index >= focusStartIndex)
+                if (window.IsVisible(index))
                 {
                     if (hasSkippedItems)
                     {
@@ -1304,11 +1515,77 @@ internal class AssertionFormatter
                 index++;
             }
 
+            if (!isTruncated)
+            {
+                // The sequence ended while items were being skipped: without a marker, the list would look complete.
+                if (hasSkippedItems)
+                {
+                    items.Add("...");
+                }
+
+                AddEnumerationError(items, value, enumerationError);
+            }
+
             return $"[{string.Join(", ", items)}]";
         }
         finally
         {
+            DisposeEnumerator(enumerator);
             visited.Remove(value);
+        }
+    }
+
+    private static System.Collections.IEnumerator? GetEnumerator(System.Collections.IEnumerable value, out Exception? exception, bool useDictionaryEnumerator = false)
+    {
+        try
+        {
+            exception = null;
+            return useDictionaryEnumerator && value is System.Collections.IDictionary dictionary ? dictionary.GetEnumerator() : value.GetEnumerator();
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+            return null;
+        }
+    }
+
+    private static bool TryMoveNext(System.Collections.IEnumerator enumerator, out object? item, out Exception? exception)
+    {
+        try
+        {
+            exception = null;
+            if (enumerator.MoveNext())
+            {
+                item = enumerator.Current;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+        }
+
+        item = null;
+        return false;
+    }
+
+    private static void DisposeEnumerator(System.Collections.IEnumerator? enumerator)
+    {
+        try
+        {
+            (enumerator as IDisposable)?.Dispose();
+        }
+        catch (Exception)
+        {
+            // The failure being reported matters more than an enumerator that cannot clean up.
+        }
+    }
+
+    private static void AddEnumerationError(List<string> items, System.Collections.IEnumerable value, Exception? exception)
+    {
+        if (exception is not null || ObservationExceptions.TryGetValue(value, out exception))
+        {
+            items.Add(FormatUserCodeException("enumeration", exception));
         }
     }
 
@@ -1323,6 +1600,17 @@ internal class AssertionFormatter
             return highlightedIndex.GetValueOrDefault() + HighlightedContextItemCount;
 
         return Math.Max(MaxFormattedItems - 1, highlightedIndex.GetValueOrDefault(-1) + SuffixItemCount);
+    }
+
+    private ItemWindow GetItemWindow(int? highlightedIndex)
+    {
+        if (IsFocusedHighlightedItem(highlightedIndex))
+        {
+            var focusStartIndex = Math.Max(PrefixItemCount, highlightedIndex.GetValueOrDefault() - HighlightedContextItemCount);
+            return new ItemWindow(PrefixItemCount, focusStartIndex, GetMaxFormattedIndex(highlightedIndex));
+        }
+
+        return new ItemWindow(MaxFormattedItems, FocusStartIndex: -1, GetMaxFormattedIndex(highlightedIndex));
     }
 
     private static int? GetActualSuffixIndex(int expectedLength, int actualLength, int firstDifferenceIndex)
@@ -1347,7 +1635,16 @@ internal class AssertionFormatter
         if (exception is null)
             return "<none>";
 
-        var message = exception.Message;
+        string message;
+        try
+        {
+            message = exception.Message;
+        }
+        catch (Exception ex)
+        {
+            return FormatUserCodeException("Message", ex);
+        }
+
         if (string.IsNullOrEmpty(message))
             return exception.GetType().FullName ?? exception.GetType().Name;
 
@@ -1378,8 +1675,17 @@ internal class AssertionFormatter
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
             return;
 
-        for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && snapshot.TryGetItem(index, out _); index++)
+        try
         {
+            for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && snapshot.TryGetItem(index, out _); index++)
+            {
+            }
+        }
+        catch (Exception exception)
+        {
+            // Reading past what the assertion needed is only for the message, so a failing sequence must not replace
+            // the assertion failure. The exception is written after the observed items instead.
+            ObservationExceptions.AddOrUpdate(snapshot.Items, exception);
         }
     }
 
@@ -1388,8 +1694,15 @@ internal class AssertionFormatter
         if (snapshot.IsComplete || snapshot.ObservedCount > maxIndex + 1)
             return;
 
-        for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await snapshot.TryGetItem(index).ConfigureAwait(false) is (true, _); index++)
+        try
         {
+            for (var index = snapshot.ObservedCount; !snapshot.IsComplete && snapshot.ObservedCount <= maxIndex + 1 && await snapshot.TryGetItem(index).ConfigureAwait(false) is (true, _); index++)
+            {
+            }
+        }
+        catch (Exception exception)
+        {
+            ObservationExceptions.AddOrUpdate(snapshot.Items, exception);
         }
     }
 
@@ -1404,9 +1717,18 @@ internal class AssertionFormatter
     private static string Underline(string value)
     {
         var result = new StringBuilder(value.Length * 2);
-        foreach (var c in value)
+        for (var i = 0; i < value.Length; i++)
         {
-            result.Append(c);
+            result.Append(value[i]);
+
+            // The combining mark goes after the whole surrogate pair: inserting it between the two halves would leave
+            // lone surrogates in the message.
+            if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                i++;
+                result.Append(value[i]);
+            }
+
             result.Append(CombiningLowLine);
         }
 
@@ -1415,43 +1737,99 @@ internal class AssertionFormatter
 
     internal static string FormatStringValue(string value, int? highlightedIndex)
     {
-        var result = new StringBuilder(value.Length + 2);
-        result.Append('"');
-
-        for (var i = 0; i < value.Length; i++)
-        {
-            var escapedChar = EscapeChar(value[i]);
-            if (i == highlightedIndex)
-            {
-                result.Append(Underline(escapedChar));
-            }
-            else
-            {
-                result.Append(escapedChar);
-            }
-        }
-
-        result.Append('"');
-        return result.ToString();
-
-        static string EscapeChar(char value)
-        {
-            return value switch
-            {
-                '\r' => "\\r",
-                '\n' => "\\n",
-                '\t' => "\\t",
-                '"' => "\\\"",
-                '\\' => "\\\\",
-                < ' ' => "\\u" + ((int)value).ToString("X4", CultureInfo.InvariantCulture),
-                _ => value.ToString(),
-            };
-        }
+        return FormatStringValue(value.AsSpan(), highlightedIndex);
     }
 
     private static string FormatStringValue(ReadOnlySpan<char> value, int? highlightedIndex)
     {
-        return FormatStringValue(value.ToString(), highlightedIndex);
+        var result = new StringBuilder(value.Length + 2);
+        result.Append('"');
+        AppendEscapedText(result, value, highlightedIndex, quote: '"');
+        result.Append('"');
+        return result.ToString();
+    }
+
+    private static string FormatCharValue(char value)
+    {
+        var result = new StringBuilder(8);
+        result.Append('\'');
+        AppendEscapedText(result, [value], highlightedIndex: null, quote: '\'');
+        result.Append('\'');
+        return result.ToString();
+    }
+
+    private static void AppendEscapedText(StringBuilder result, ReadOnlySpan<char> value, int? highlightedIndex, char? quote)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            var start = result.Length;
+            var isHighlighted = i == highlightedIndex;
+            if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                // A surrogate pair is one character: it is never split, and highlighting either half highlights both.
+                result.Append(value[i]).Append(value[i + 1]);
+                i++;
+                isHighlighted |= i == highlightedIndex;
+            }
+            else
+            {
+                AppendEscapedChar(result, value[i], quote);
+            }
+
+            if (isHighlighted)
+            {
+                var escaped = result.ToString(start, result.Length - start);
+                result.Length = start;
+                result.Append(Underline(escaped));
+            }
+        }
+
+        static void AppendEscapedChar(StringBuilder result, char value, char? quote)
+        {
+            switch (value)
+            {
+                case '\r':
+                    result.Append("\\r");
+                    break;
+                case '\n':
+                    result.Append("\\n");
+                    break;
+                case '\t':
+                    result.Append("\\t");
+                    break;
+                case '\\':
+                    result.Append("\\\\");
+                    break;
+                case var _ when value == quote:
+                    result.Append('\\').Append(value);
+                    break;
+                case var _ when IsInvisibleOrAmbiguous(value):
+                    result.Append("\\u").Append(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+                    break;
+                default:
+                    result.Append(value);
+                    break;
+            }
+        }
+
+        // Characters that render as nothing, as a line break, or as something indistinguishable from a regular space.
+        // Printing them raw would make different values look identical or break the message layout.
+        static bool IsInvisibleOrAmbiguous(char value)
+        {
+            return char.GetUnicodeCategory(value) switch
+            {
+                UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator or UnicodeCategory.Surrogate => true,
+                UnicodeCategory.SpaceSeparator => value != ' ',
+                _ => false,
+            };
+        }
+    }
+
+    /// <summary>The items written for a sequence: a prefix, then everything from <see cref="FocusStartIndex"/> up to <see cref="MaxIndex"/>.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private readonly record struct ItemWindow(int PrefixItemCount, int FocusStartIndex, int MaxIndex)
+    {
+        public bool IsVisible(int index) => index < PrefixItemCount || index >= FocusStartIndex;
     }
 }
 #pragma warning restore CA1822, CA1852

@@ -651,7 +651,7 @@ public sealed class AssertContainsTests
             Expected expression: "a"
             Actual expression:   actual
             Not expected key: "a"
-            Actual:           [[a, 1]]
+            Actual:           [["a", 1]]
             """);
     }
 

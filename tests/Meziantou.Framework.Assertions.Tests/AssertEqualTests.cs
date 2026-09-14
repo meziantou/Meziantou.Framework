@@ -498,7 +498,7 @@ public sealed class AssertEqualTests
         var actual = new List<long> { 1L, 42L, 3L };
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 1 differs.
             Expected expression: expected
             Actual expression:   actual
             Index of first difference: 1
@@ -562,7 +562,7 @@ public sealed class AssertEqualTests
         IEnumerable<int> actualEnumerable = actual;
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal<int>(expected, actualEnumerable), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 12 differs.
             Expected expression: expected
             Actual expression:   actualEnumerable
             Index of first difference: 12
@@ -602,7 +602,7 @@ public sealed class AssertEqualTests
         IEnumerable<string> actual = ["A", "c"];
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase, "custom message"), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 1 differs.
             Message: custom message
             Expected expression: expected
             Actual expression:   actual
@@ -621,7 +621,7 @@ public sealed class AssertEqualTests
         var actualEnumerable = AssertionTestHelpers.ToAsyncEnumerable(actual);
 
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Equal<int>(expectedEnumerable, actualEnumerable), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 12 differs.
             Expected expression: expectedEnumerable
             Actual expression:   actualEnumerable
             Index of first difference: 12
@@ -661,7 +661,7 @@ public sealed class AssertEqualTests
         var actual = AssertionTestHelpers.ToAsyncEnumerable(["A", "c"]);
 
         await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 1 differs.
             Expected expression: expected
             Actual expression:   actual
             Index of first difference: 1
@@ -686,7 +686,7 @@ public sealed class AssertEqualTests
         System.Collections.IEnumerable actual = new object[] { "A", "d", "C" };
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual, StringComparer.OrdinalIgnoreCase), """
-            Assert.Equal() assertion failed: Lengths differ.
+            Assert.Equal() assertion failed: Item at index 1 differs.
             Expected expression: expected
             Actual expression:   actual
             Index of first difference: 1

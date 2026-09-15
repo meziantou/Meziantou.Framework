@@ -8,6 +8,10 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
     {
         ArgumentNullException.ThrowIfNull(rule);
 
+        // COUNT=0 produces no occurrence
+        if (rule.Occurrences is 0)
+            return "jamais";
+
         var sb = new StringBuilder();
         AppendInterval(sb, rule);
         var daySetPositions = GetDaySetPositions(rule);
@@ -21,8 +25,24 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             AppendTimes(sb, rule.ByHours, rule.ByMinutes, rule.BySeconds);
             if (rule.BySetPositions.Count > 0)
             {
+                // BYSETPOS selects among the instances of every period of the frequency, not among all the occurrences
                 sb.Append(", uniquement ");
                 sb.Append(GetOrdinalNounList(rule.BySetPositions, useWords: true, feminine: true, "occurrence", " et "));
+                sb.Append(rule.Frequency switch
+                {
+                    Frequency.Secondly => " de chaque seconde",
+                    Frequency.Minutely => " de chaque minute",
+                    Frequency.Hourly => " de chaque heure",
+                    Frequency.Daily => " de chaque jour",
+                    Frequency.Weekly => " de chaque semaine",
+                    Frequency.Monthly => " de chaque mois",
+                    _ => " de chaque année",
+                });
+
+                if (rule.Occurrences is not null || rule.EndDate is not null)
+                {
+                    sb.Append(',');
+                }
             }
         }
 
@@ -100,7 +120,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
                 }
 
                 sb.Append(' ');
-                sb.Append(GetWeekNumbersText(rule.ByWeekNumbers, withDe: true));
+                sb.Append(GetWeekNumbersText(rule.ByWeekNumbers, withDe: true, isCondition: false));
                 if (hasOrdinalDays)
                 {
                     sb.Append(" si c'est ");
@@ -180,7 +200,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
             if (rule.ByWeekNumbers.Count > 0)
             {
-                conditions.Add("dans " + GetWeekNumbersText(rule.ByWeekNumbers, withDe: false));
+                conditions.Add("dans " + GetWeekNumbersText(rule.ByWeekNumbers, withDe: false, isCondition: true));
             }
 
             if (days.Count > 0 && !isWeekdayOfMonthDay)
@@ -324,18 +344,22 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
     }
 
     /// <summary>Gets the text of week numbers such as "la semaine 20", "des semaines 1 et 2", or "la semaine 1 et la dernière semaine de l'année".</summary>
-    private static string GetWeekNumbersText(IList<int> weekNumbers, bool withDe)
+    /// <param name="weekNumbers">The week numbers.</param>
+    /// <param name="withDe">Whether the text is preceded by "de".</param>
+    /// <param name="isCondition"><see langword="true"/> when a day must be in one of the weeks, which reads "la semaine 1 ou 2".</param>
+    private static string GetWeekNumbersText(IList<int> weekNumbers, bool withDe, bool isCondition)
     {
+        var lastSeparator = isCondition ? " ou " : " et ";
         if (weekNumbers.All(week => week > 0))
         {
-            var numbers = JoinEt([.. weekNumbers.Select(ToInvariantString)]);
-            if (weekNumbers.Count is 1)
+            var numbers = JoinList([.. weekNumbers.Select(ToInvariantString)], ", ", lastSeparator);
+            if (weekNumbers.Count is 1 || isCondition)
                 return (withDe ? "de la semaine " : "la semaine ") + numbers;
 
             return (withDe ? "des semaines " : "les semaines ") + numbers;
         }
 
-        return JoinEt([.. weekNumbers.Select(week =>
+        return JoinList([.. weekNumbers.Select(week =>
         {
             string item;
             if (week > 0)
@@ -349,7 +373,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             }
 
             return withDe ? "de " + item : item;
-        })]) + " de l'année";
+        })], ", ", lastSeparator) + " de l'année";
     }
 
     /// <summary>Gets a list such as "le premier et le dernier lundi", "l'avant-dernier jour", or "le 3e jour en partant de la fin".</summary>

@@ -1538,6 +1538,57 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void Until_DateTime_IsComparedAtSecondPrecisionWithAFractionalStartDate()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240103T100000");
+        var startDate = new DateTime(2024, 01, 01, 10, 00, 00, 123);
+
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 01, 01, 10, 00, 00, 123),
+            new DateTime(2024, 01, 02, 10, 00, 00, 123),
+            new DateTime(2024, 01, 03, 10, 00, 00, 123));
+
+        AssertOccurrences(rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc),
+            new DateTimeOffset(2024, 01, 01, 10, 00, 00, 123, TimeSpan.Zero),
+            new DateTimeOffset(2024, 01, 02, 10, 00, 00, 123, TimeSpan.Zero),
+            new DateTimeOffset(2024, 01, 03, 10, 00, 00, 123, TimeSpan.Zero));
+
+        var offset = TimeSpan.FromHours(2);
+        Assert.Equal(new DateTimeOffset(2024, 01, 03, 10, 00, 00, 123, offset), rrule.GetNextOccurrence(new DateTimeOffset(2024, 01, 03, 10, 00, 00, 123, offset)));
+    }
+
+    [Fact]
+    public void Until_UtcDateTime_IsComparedAtSecondPrecisionWithAFractionalStartDate()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;UNTIL=20240101T100001Z");
+        var startDate = new DateTime(2024, 01, 01, 10, 00, 00, 500, DateTimeKind.Utc);
+
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 01, 01, 10, 00, 00, 500, DateTimeKind.Utc),
+            new DateTime(2024, 01, 01, 10, 00, 01, 500, DateTimeKind.Utc));
+
+        AssertOccurrences(rrule.GetNextOccurrences(new DateTimeOffset(startDate), TimeZoneInfo.Utc),
+            new DateTimeOffset(2024, 01, 01, 10, 00, 00, 500, TimeSpan.Zero),
+            new DateTimeOffset(2024, 01, 01, 10, 00, 01, 500, TimeSpan.Zero));
+
+        var offset = TimeSpan.FromHours(-5);
+        Assert.Equal(new DateTimeOffset(2024, 01, 01, 05, 00, 01, 700, offset), rrule.GetNextOccurrence(new DateTimeOffset(2024, 01, 01, 05, 00, 01, 700, offset)));
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(2024, 01, 01, 05, 00, 02, offset)));
+    }
+
+    [Fact]
+    public void Until_SettingAFractionalEndDate_BoundsTheOccurrencesAtSecondPrecision()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY");
+        rrule.EndDate = new DateTime(2024, 01, 01, 10, 00, 01, 200);
+
+        Assert.Equal("FREQ=SECONDLY;UNTIL=20240101T100001", rrule.Text);
+        AssertOccurrences(rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 10, 00, 00, 500)),
+            new DateTime(2024, 01, 01, 10, 00, 00, 500),
+            new DateTime(2024, 01, 01, 10, 00, 01, 500));
+    }
+
+    [Fact]
     public void Hourly_ByYearDayLimitsTheDays()
     {
         var rrule = RecurrenceRule.Parse("FREQ=HOURLY;BYYEARDAY=-1;BYHOUR=0,12;COUNT=3");
@@ -1803,6 +1854,27 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=DAILY;BYSECOND=0x10")]
     [InlineData("FREQ=YEARLY;BYYEARDAY=1_0")]
     [InlineData("FREQ=YEARLY;BYMONTH=Janvier")]
+    [InlineData("FREQ=YEARLY;BYMONTH=January")]
+    [InlineData("FREQ=YEARLY;BYMONTH=+1")]
+    [InlineData("FREQ=YEARLY;BYMONTH=001")]
+    [InlineData("FREQ=DAILY;BYHOUR=+007")]
+    [InlineData("FREQ=DAILY;BYHOUR=007")]
+    [InlineData("FREQ=DAILY;BYHOUR=+7")]
+    [InlineData("FREQ=DAILY;BYHOUR=-0")]
+    [InlineData("FREQ=DAILY;BYMINUTE=+0")]
+    [InlineData("FREQ=DAILY;BYSECOND=-0")]
+    [InlineData("FREQ=DAILY;COUNT=+5")]
+    [InlineData("FREQ=DAILY;COUNT=-0")]
+    [InlineData("FREQ=DAILY;INTERVAL=+2")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-0")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=+0")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=001")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=0001")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=-001")]
+    [InlineData("FREQ=MONTHLY;BYDAY=+001MO")]
+    [InlineData("FREQ=MONTHLY;BYDAY=-0MO")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-0")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=+0001")]
     [InlineData("FREQ=1")]
     [InlineData("FREQ=DAILY,WEEKLY")]
     [InlineData("FREQ=None")]
@@ -1834,7 +1906,10 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=DAILY;CONUT=3")]
     [InlineData("FREQ=DAILY; COUNT=3")]
     [InlineData("FREQ=DAILY;COUNT =3")]
-    [InlineData("FREQ=DAILY;X-NAME=1")]
+    [InlineData("FREQ=DAILY;X-=1")]
+    [InlineData("FREQ=DAILY;X-NA ME=1")]
+    [InlineData("FREQ=DAILY;X-NAME")]
+    [InlineData("FREQ=DAILY;XNAME=1")]
     [InlineData("FREQ=DAILY;RSCALE=HEBREW")]
     [InlineData("FREQ=DAILY;RSCALE=")]
     [InlineData("FREQ=DAILY;RSCALE=GREGORIAN;SKIP=FORWARD")]
@@ -1854,10 +1929,17 @@ public partial class RecurrenceRuleTests
     }
 
     [Theory]
-    [InlineData("FREQ=daily;COUNT=+5")]
+    [InlineData("FREQ=daily;COUNT=5")]
+    [InlineData("FREQ=DAILY;COUNT=005;INTERVAL=02")]
+    [InlineData("FREQ=DAILY;BYHOUR=07,7;BYMINUTE=00;BYSECOND=09")]
+    [InlineData("FREQ=YEARLY;BYMONTH=01,12")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=+01,-01,31")]
+    [InlineData("FREQ=MONTHLY;BYDAY=+01MO,-05FR,2TU")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=+001,-366;BYWEEKNO=+01,-53;BYSETPOS=+001,-001")]
+    [InlineData("FREQ=DAILY;X-NAME=1")]
     [InlineData("FREQ=MONTHLY;BYDAY=+1MO,-5FR")]
     [InlineData("FREQ=YEARLY;BYDAY=53MO,-53SU")]
-    [InlineData("FREQ=YEARLY;BYMONTH=january,12")]
+    [InlineData("FREQ=YEARLY;BYMONTH=1,12")]
     [InlineData("FREQ=YEARLY;BYWEEKNO=1,53,-1,-53")]
     [InlineData("FREQ=YEARLY;BYDAY=MO;BYSETPOS=1,366,-1,-366")]
     [InlineData("FREQ=SECONDLY;BYYEARDAY=1")]
@@ -1880,6 +1962,63 @@ public partial class RecurrenceRuleTests
     {
         Assert.False(RecurrenceRule.TryParse(rruleText, out _, out var error));
         Assert.Equal($"Unknown rule part: '{name}'.", error);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void TryParse_EmptyValue_ReportsAnError(string rruleText)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out var rrule, out var error));
+        Assert.Null(rrule);
+        Assert.Equal("The recurrence rule is empty.", error);
+        Assert.False(RecurrenceRule.TryParse(rruleText.AsSpan(), out _, out var spanError));
+        Assert.Equal("The recurrence rule is empty.", spanError);
+        Assert.Equal($"RRule value '{rruleText}' is invalid: The recurrence rule is empty.", Assert.Throws<FormatException>(() => RecurrenceRule.Parse(rruleText)).Message);
+    }
+
+    [Fact]
+    public void TryParse_NullValue_ReportsAnError()
+    {
+        Assert.False(RecurrenceRule.TryParse((string?)null, out var rrule, out var error));
+        Assert.Null(rrule);
+        Assert.Equal("The recurrence rule is null.", error);
+        Assert.Throws<ArgumentNullException>(() => RecurrenceRule.Parse((string)null!));
+    }
+
+    [Theory]
+    [InlineData("RRULE:FREQ=DAILY")]
+    [InlineData("rrule:FREQ=DAILY;COUNT=3")]
+    public void TryParse_PropertyName_ReportsThatTheValueMustNotIncludeIt(string rruleText)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out _, out var error));
+        Assert.Equal("The value must not include the property name: remove the 'RRULE:' prefix.", error);
+    }
+
+    [Theory]
+    [InlineData("FREQ=SECONDLY;X-FOO=BAR", "FREQ=SECONDLY;X-FOO=BAR")]
+    [InlineData("FREQ=MINUTELY;X-FOO=BAR;COUNT=3", "FREQ=MINUTELY;COUNT=3;X-FOO=BAR")]
+    [InlineData("FREQ=HOURLY;X-FOO=", "FREQ=HOURLY;X-FOO=")]
+    [InlineData("FREQ=DAILY;x-vendor-name=a:b c;X-FOO=1;X-FOO=2", "FREQ=DAILY;x-vendor-name=a:b c;X-FOO=1;X-FOO=2")]
+    [InlineData("X-FOO=BAR;FREQ=WEEKLY;BYDAY=MO", "FREQ=WEEKLY;BYDAY=MO;X-FOO=BAR")]
+    [InlineData("FREQ=MONTHLY;X-FOO=BAR;BYMONTHDAY=1", "FREQ=MONTHLY;BYMONTHDAY=1;X-FOO=BAR")]
+    [InlineData("FREQ=YEARLY;X-FOO=BAR;BYMONTH=1", "FREQ=YEARLY;BYMONTH=1;X-FOO=BAR")]
+    public void TryParse_ExtensionRulePart_IsWrittenBackAndIgnoredByTheEvaluation(string rruleText, string expectedText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        var withoutExtensions = RecurrenceRule.Parse(string.Join(";", rruleText.Split(';').Where(part => !part.StartsWith("X-", StringComparison.OrdinalIgnoreCase))));
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        Assert.Equal(expectedText, rrule.Text);
+        Assert.Equal(expectedText, RecurrenceRule.Parse(rrule.Text).Text);
+        Assert.Equal(withoutExtensions.GetNextOccurrences(startDate).Take(5).ToArray(), rrule.GetNextOccurrences(startDate).Take(5).ToArray());
+    }
+
+    [Fact]
+    public void TryParse_ExtensionRulePartWithAControlCharacter_IsRejected()
+    {
+        Assert.False(RecurrenceRule.TryParse("FREQ=DAILY;X-FOO=a\r\nDTSTART:20240101", out _, out var error));
+        Assert.Equal("X-FOO value contains a control character.", error);
     }
 
     [Fact]
@@ -2025,6 +2164,32 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void GetNextOccurrences_ModifyingTheCountDoesNotAffectARunningEnumeration()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+        var startDate = new DateTime(2024, 01, 01);
+
+        using var enumerator = rrule.GetNextOccurrences(startDate).GetEnumerator();
+        using var timeZoneEnumerator = rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc).GetEnumerator();
+        Assert.True(enumerator.MoveNext());
+        Assert.True(timeZoneEnumerator.MoveNext());
+
+        rrule.Occurrences = 1;
+        Assert.True(enumerator.MoveNext());
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(new DateTime(2024, 01, 03), enumerator.Current);
+        Assert.False(enumerator.MoveNext());
+
+        rrule.Occurrences = null;
+        Assert.True(timeZoneEnumerator.MoveNext());
+        Assert.True(timeZoneEnumerator.MoveNext());
+        Assert.False(timeZoneEnumerator.MoveNext());
+
+        rrule.Occurrences = 1;
+        AssertOccurrences(rrule.GetNextOccurrences(startDate), startDate);
+    }
+
+    [Fact]
     public void Yearly_ByWeekNumber_IncludesTheDaysOfWeekOneInThePreviousYear()
     {
         var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;BYDAY=MO;COUNT=4");
@@ -2071,6 +2236,113 @@ public partial class RecurrenceRuleTests
                 new DateTime(2026, 01, 04, 09, 00, 00),
             ],
             rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_TheIntervalCountsWeekNumberingYears()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;INTERVAL=2;BYWEEKNO=1;BYDAY=MO;COUNT=5");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        // Week 1 of 2026 starts on Monday, December 29, 2025 and week 1 of 2030 on Monday, December 31, 2029
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 01, 01, 09, 00, 00),
+            new DateTime(2025, 12, 29, 09, 00, 00),
+            new DateTime(2028, 01, 03, 09, 00, 00),
+            new DateTime(2029, 12, 31, 09, 00, 00),
+            new DateTime(2031, 12, 29, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_BySetPositionSelectsWithinTheWeekNumberingYear()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;BYSETPOS=-1;COUNT=4");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        // December 30 and 31, 2024 are in week 1 of 2025, so they do not end week 1 of 2024
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 01, 07, 09, 00, 00),
+            new DateTime(2025, 01, 05, 09, 00, 00),
+            new DateTime(2026, 01, 04, 09, 00, 00),
+            new DateTime(2027, 01, 10, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_BySetPositionHonorsTheWeekStart()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;WKST=SU;BYSETPOS=1;COUNT=3");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        // With weeks starting on Sunday, week 1 of 2024 starts on December 31, 2023, before the start date
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 12, 29, 09, 00, 00),
+            new DateTime(2026, 01, 04, 09, 00, 00),
+            new DateTime(2027, 01, 03, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_TheFirstPeriodIsTheWeekNumberingYearOfTheStartDate()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;INTERVAL=2;BYWEEKNO=1;BYDAY=TU;COUNT=3");
+        var startDate = new DateTime(2024, 12, 31, 09, 00, 00);
+
+        // December 31, 2024 is the Tuesday of week 1 of 2025, so the periods are 2025, 2027 and 2029
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2024, 12, 31, 09, 00, 00),
+            new DateTime(2027, 01, 05, 09, 00, 00),
+            new DateTime(2029, 01, 02, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_Week53EndsInTheNextCalendarYear()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=53;BYDAY=MO,SU;BYSETPOS=-1;COUNT=2");
+        var startDate = new DateTime(2020, 01, 01, 09, 00, 00);
+
+        // Only 2020 and 2026 have a week 53 before 2030, and each one ends on a Sunday in January
+        AssertOccurrences(rrule.GetNextOccurrences(startDate),
+            new DateTime(2021, 01, 03, 09, 00, 00),
+            new DateTime(2027, 01, 03, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_TheOtherDayPartsApplyToTheCalendarDate()
+    {
+        var startDate = new DateTime(2020, 01, 01, 09, 00, 00);
+
+        // The last week of 2020 ends on January 3, 2021, and the last week of 2022 holds January 1, 2023
+        AssertOccurrences(RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=-1;BYMONTH=1;COUNT=6").GetNextOccurrences(startDate),
+            new DateTime(2021, 01, 01, 09, 00, 00),
+            new DateTime(2021, 01, 02, 09, 00, 00),
+            new DateTime(2021, 01, 03, 09, 00, 00),
+            new DateTime(2022, 01, 01, 09, 00, 00),
+            new DateTime(2022, 01, 02, 09, 00, 00),
+            new DateTime(2023, 01, 01, 09, 00, 00));
+
+        // The last day of a calendar year that is in week 1 of the next year
+        AssertOccurrences(RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;BYYEARDAY=-1;COUNT=4").GetNextOccurrences(startDate),
+            new DateTime(2024, 12, 31, 09, 00, 00),
+            new DateTime(2025, 12, 31, 09, 00, 00),
+            new DateTime(2029, 12, 31, 09, 00, 00),
+            new DateTime(2030, 12, 31, 09, 00, 00));
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_AtTheStartOfTheDateRange()
+    {
+        var startDate = new DateTime(0001, 01, 01);
+
+        // January 1, 0001 is a Monday: with weeks starting on Thursday, its first days are in the last week of year 0
+        AssertOccurrences(RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=-1;WKST=TH;COUNT=5").GetNextOccurrences(startDate),
+            new DateTime(0001, 01, 01),
+            new DateTime(0001, 01, 02),
+            new DateTime(0001, 01, 03),
+            new DateTime(0001, 12, 27),
+            new DateTime(0001, 12, 28));
+
+        AssertOccurrences(RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;WKST=TH;COUNT=2").GetNextOccurrences(startDate),
+            new DateTime(0001, 01, 04),
+            new DateTime(0001, 01, 05));
     }
 
     [Fact]
@@ -2338,6 +2610,9 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU", 1)]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1", 1)]
     [InlineData("FREQ=YEARLY;BYYEARDAY=-1", 1)]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=-1", 1)]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=1;WKST=FR", 1)]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=1", 0)]
     public void IteratingPastTheMaximumDate_EndsTheEnumeration(string rruleText, int expectedCount)
     {
         var rrule = RecurrenceRule.Parse(rruleText);

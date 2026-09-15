@@ -6,41 +6,13 @@ internal abstract class RecurrenceRuleHumanizer
     /// <summary>The maximum number of times of day listed explicitly before falling back to a per-component description.</summary>
     private const int MaxListedTimes = 10;
 
-    /// <summary>The English culture information.</summary>
-    protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
+    private static readonly RecurrenceRuleHumanizer EnglishHumanizer = new RecurrenceRuleHumanizerEnglish();
 
-    /// <summary>The French culture information.</summary>
-    protected static readonly CultureInfo FrenchCultureInfo = GetCulture("fr");
-
-    /// <summary>Gets the supported humanizers by culture.</summary>
-    public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
-
-    static RecurrenceRuleHumanizer()
-    {
-        SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
-        {
-            { CultureInfo.InvariantCulture, new RecurrenceRuleHumanizerEnglish() },
-        };
-
-        SupportedHumanizers.TryAdd(EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish());
-        SupportedHumanizers.TryAdd(FrenchCultureInfo, new RecurrenceRuleHumanizerFrench());
-    }
-
-    private static CultureInfo GetCulture(string name)
-    {
-        try
-        {
-            return CultureInfo.GetCultureInfo(name);
-        }
-        catch
-        {
-            return CultureInfo.InvariantCulture;
-        }
-    }
+    private static readonly RecurrenceRuleHumanizer FrenchHumanizer = new RecurrenceRuleHumanizerFrench();
 
     /// <summary>Converts a recurrence rule to human-readable text using the current UI culture.</summary>
     /// <param name="rrule">The recurrence rule to convert.</param>
-    /// <returns>A human-readable string representation of the recurrence rule.</returns>
+    /// <returns>A human-readable string representation of the recurrence rule, or <see langword="null"/> when the culture is not supported or the rule is not one of the types created by <see cref="RecurrenceRule.Parse(string)"/>.</returns>
     public static string? GetText(RecurrenceRule rrule)
     {
         return GetText(rrule, cultureInfo: null);
@@ -49,26 +21,52 @@ internal abstract class RecurrenceRuleHumanizer
     /// <summary>Converts a recurrence rule to human-readable text using the specified culture.</summary>
     /// <param name="rrule">The recurrence rule to convert.</param>
     /// <param name="cultureInfo">The culture to use for formatting, or <see langword="null"/> to use the current UI culture.</param>
-    /// <returns>A human-readable string representation of the recurrence rule.</returns>
+    /// <returns>A human-readable string representation of the recurrence rule, or <see langword="null"/> when the culture is not supported or the rule is not one of the types created by <see cref="RecurrenceRule.Parse(string)"/>.</returns>
     public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(rrule);
 
-        cultureInfo ??= CultureInfo.CurrentUICulture;
+        var humanizer = GetHumanizer(cultureInfo ?? CultureInfo.CurrentUICulture);
+        if (humanizer is null)
+            return null;
 
-        if (!SupportedHumanizers.TryGetValue(cultureInfo, out var humanizer))
-        {
-            if (!cultureInfo.IsNeutralCulture)
-            {
-                return GetText(rrule, cultureInfo.Parent);
-            }
-        }
+        // A class deriving from RecurrenceRule outside of this library defines its own occurrences, which its rule parts may not describe
+        var parts = RuleParts.Create(rrule);
+        if (parts is null)
+            return null;
 
-        if (humanizer is not null)
+        return humanizer.GetText(parts);
+    }
+
+    /// <summary>Gets the humanizer of the language of a culture.</summary>
+    /// <remarks>
+    /// <para>The language is read from the culture names rather than from the culture data, which invariant globalization mode
+    /// does not have: there, <c>fr-FR</c> has no <c>fr</c> parent and its <see cref="CultureInfo.TwoLetterISOLanguageName"/> is
+    /// <c>iv</c>. The parents are still visited for a culture whose name does not start with its language.</para>
+    /// </remarks>
+    private static RecurrenceRuleHumanizer? GetHumanizer(CultureInfo cultureInfo)
+    {
+        // The invariant culture is described in English
+        if (cultureInfo.Name.Length is 0)
+            return EnglishHumanizer;
+
+        var culture = cultureInfo;
+        while (culture.Name.Length > 0)
         {
-            var parts = RuleParts.Create(rrule);
-            if (parts is not null)
-                return humanizer.GetText(parts);
+            var name = culture.Name;
+            var separatorIndex = name.IndexOf('-', StringComparison.Ordinal);
+            var language = separatorIndex < 0 ? name : name.Substring(0, separatorIndex);
+            if (string.Equals(language, "en", StringComparison.OrdinalIgnoreCase))
+                return EnglishHumanizer;
+
+            if (string.Equals(language, "fr", StringComparison.OrdinalIgnoreCase))
+                return FrenchHumanizer;
+
+            var parent = culture.Parent;
+            if (string.Equals(parent.Name, name, StringComparison.Ordinal))
+                break;
+
+            culture = parent;
         }
 
         return null;
@@ -204,10 +202,13 @@ internal abstract class RecurrenceRuleHumanizer
 
     /// <summary>Gets a value indicating whether the week start changes the occurrences in a way the rest of the text does not already convey.</summary>
     /// <remarks>
-    /// <para>The week start numbers the weeks of BYWEEKNO. In a WEEKLY rule, it also decides which of the listed days share a
-    /// week, which matters when weeks are skipped or when BYSETPOS selects among the days of a week. Two week starts that
-    /// begin the week with the same listed day group the days identically, so a week start is only reported when it groups
-    /// them differently from the default one.</para>
+    /// <para>The text does not know the start date, so a week start is reported whenever it changes the occurrences for some
+    /// start date. The week start numbers the weeks of BYWEEKNO. In a WEEKLY rule with BYDAY, it also decides where the weeks
+    /// begin. When weeks are skipped, the week holding the start date is the first one of the recurrence, so a start date
+    /// between the two week starts selects different weeks, whichever days are listed. When BYSETPOS selects among the days of
+    /// every week, two week starts that begin the week with the same listed day group the days identically, so a week start
+    /// is only reported when it groups them differently from the default one. Without BYDAY, a WEEKLY rule repeats the start
+    /// date every week or every few weeks, which the week start does not change.</para>
     /// </remarks>
     protected static bool IsWeekStartSignificant(RuleParts rule)
     {
@@ -217,7 +218,13 @@ internal abstract class RecurrenceRuleHumanizer
         if (rule.ByWeekNumbers.Count > 0)
             return true;
 
-        if (rule.Frequency is not Frequency.Weekly || rule.ByDays.Count < 2 || (rule.Interval is 1 && rule.BySetPositions.Count is 0))
+        if (rule.Frequency is not Frequency.Weekly || rule.ByDays.Count is 0)
+            return false;
+
+        if (rule.Interval > 1)
+            return true;
+
+        if (rule.BySetPositions.Count is 0 || rule.ByDays.Count < 2)
             return false;
 
         var daysOfWeek = rule.DaysOfWeek;
@@ -347,6 +354,7 @@ internal abstract class RecurrenceRuleHumanizer
 
         public List<DayOfWeek> DaysOfWeek => [.. ByDays.Select(day => day.DayOfWeek)];
 
+        /// <summary>Gets the parts of a recurrence rule, or <see langword="null"/> when the rule is a type this library does not define.</summary>
         public static RuleParts? Create(RecurrenceRule rrule)
         {
             return rrule switch

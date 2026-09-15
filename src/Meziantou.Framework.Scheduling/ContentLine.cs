@@ -3,9 +3,9 @@ namespace Meziantou.Framework.Scheduling;
 /// <summary>An iCalendar content line (RFC 5545 section 3.1): a property name, its parameters and its value.</summary>
 internal sealed class ContentLine
 {
-    private readonly List<(string Name, string Value, string RawValue)>? _parameters;
+    private readonly List<KeyValuePair<string, string>>? _parameters;
 
-    private ContentLine(string name, List<(string Name, string Value, string RawValue)>? parameters, string value)
+    private ContentLine(string name, List<KeyValuePair<string, string>>? parameters, string value)
     {
         Name = name;
         _parameters = parameters;
@@ -21,7 +21,8 @@ internal sealed class ContentLine
     /// <summary>Gets a value indicating whether the line carries at least one property parameter.</summary>
     public bool HasParameters => _parameters is not null;
 
-    /// <summary>Gets the value of a property parameter, or <see langword="null"/> when the line does not carry it.</summary>
+    /// <summary>Gets the single value of a property parameter, such as TZID or VALUE, or <see langword="null"/> when the line does not carry it.</summary>
+    /// <remarks>The value is the content of a quoted-string, and its RFC 6868 encoding is decoded.</remarks>
     public string? GetParameter(string name)
     {
         if (_parameters is null)
@@ -29,26 +30,17 @@ internal sealed class ContentLine
 
         foreach (var parameter in _parameters)
         {
-            if (string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase))
-                return parameter.Value;
+            if (string.Equals(parameter.Key, name, StringComparison.OrdinalIgnoreCase))
+                return InternetCalendarProperty.GetSingleParameterValue(parameter.Value);
         }
 
         return null;
     }
 
-    /// <summary>Gets the parameters as written, quotes included, so the line can be reproduced verbatim.</summary>
-    public List<KeyValuePair<string, string>> GetRawParameters()
+    /// <summary>Gets the parameters, each value in the form <see cref="InternetCalendarProperty.Parameters"/> holds.</summary>
+    public List<KeyValuePair<string, string>> GetParameters()
     {
-        var result = new List<KeyValuePair<string, string>>();
-        if (_parameters is not null)
-        {
-            foreach (var parameter in _parameters)
-            {
-                result.Add(new KeyValuePair<string, string>(parameter.Name, parameter.RawValue));
-            }
-        }
-
-        return result;
+        return _parameters is null ? [] : [.. _parameters];
     }
 
     /// <summary>Gets the value decoded as an iCalendar TEXT value (RFC 5545 section 3.3.11).</summary>
@@ -93,7 +85,7 @@ internal sealed class ContentLine
             return false;
         }
 
-        List<(string Name, string Value, string RawValue)>? parameters = null;
+        List<KeyValuePair<string, string>>? parameters = null;
         while (index < line.Length && line[index] is ';')
         {
             index++;
@@ -111,14 +103,14 @@ internal sealed class ContentLine
 
             index++;
             var parameterValueStart = index;
-            if (!TryReadParameterValue(line, ref index, out var parameterValue))
+            if (!TrySkipParameterValue(line, ref index))
             {
                 error = $"The property parameter '{parameterName}' of '{line}' has an unterminated quoted value";
                 return false;
             }
 
             parameters ??= [];
-            parameters.Add((parameterName, parameterValue, line[parameterValueStart..index]));
+            parameters.Add(new KeyValuePair<string, string>(parameterName, InternetCalendarProperty.DecodeParameterValue(line[parameterValueStart..index])));
         }
 
         if (index >= line.Length || line[index] is not ':')
@@ -151,29 +143,23 @@ internal sealed class ContentLine
         return true;
     }
 
-    /// <summary>Reads a param-value list (RFC 5545 section 3.2), which may contain quoted values holding a colon.</summary>
-    private static bool TryReadParameterValue(string line, ref int index, [NotNullWhen(returnValue: true)] out string? value)
+    /// <summary>Finds the end of a param-value list (RFC 5545 section 3.2), which may contain quoted values holding a colon.</summary>
+    private static bool TrySkipParameterValue(string line, ref int index)
     {
-        var sb = new StringBuilder();
         while (index < line.Length)
         {
             var c = line[index];
             if (c is '"')
             {
                 index++;
-                var start = index;
                 while (index < line.Length && line[index] is not '"')
                 {
                     index++;
                 }
 
                 if (index >= line.Length)
-                {
-                    value = null;
                     return false;
-                }
 
-                sb.Append(line, start, index - start);
                 index++;
             }
             else if (c is ';' or ':')
@@ -183,12 +169,10 @@ internal sealed class ContentLine
             }
             else
             {
-                sb.Append(c);
                 index++;
             }
         }
 
-        value = sb.ToString();
         return true;
     }
 }

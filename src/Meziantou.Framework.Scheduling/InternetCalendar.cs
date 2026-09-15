@@ -30,11 +30,14 @@ public sealed class InternetCalendar
         "BEGIN", "END", "UID", "STATUS", "ORGANIZER", "ATTENDEE", "CREATED", "LAST-MODIFIED", "DTSTAMP", "DTSTART", "DTEND", "RRULE", "SUMMARY", "DESCRIPTION",
     };
 
-    /// <summary>Gets additional custom properties for the calendar, whose values are TEXT (RFC 5545 section 3.3.11).</summary>
+    /// <summary>Gets additional custom properties for the calendar, each value written according to the value type of its property.</summary>
     /// <remarks>
-    /// <para>A value is escaped when written, so it cannot hold a structured value such as a list or a parameter; use
-    /// <see cref="RawProperties"/> for those. The parser only stores a property here when this form writes it back
-    /// unchanged.</para>
+    /// <para>A property whose value type is TEXT (RFC 5545 section 3.3.11) — an <c>X-</c> property, a property RFC 5545 does not
+    /// define, or a TEXT property such as METHOD — has its value escaped when written, so it cannot hold a structured value such as
+    /// a list or a parameter; use <see cref="RawProperties"/> for those. The value of a property whose value type is not TEXT, such
+    /// as SOURCE or REFRESH-INTERVAL, is written as is, its control characters dropped.</para>
+    /// <para>The parser stores a property here only when it carries no parameter, occurs once, has a single TEXT value, and that
+    /// value is written back unchanged.</para>
     /// <para>A property whose name is not a valid property name, or is BEGIN, END, VERSION or PRODID, is not written.</para>
     /// </remarks>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -42,8 +45,8 @@ public sealed class InternetCalendar
     /// <summary>Gets the properties of the calendar that are written verbatim, in order, after <see cref="AdditionalProperties"/>.</summary>
     /// <remarks>
     /// <para>The parser stores here, as written, every calendar property the model does not represent and that
-    /// <see cref="AdditionalProperties"/> cannot hold without changing it: a property with parameters, a repeated one, or one
-    /// whose value is not a single TEXT value.</para>
+    /// <see cref="AdditionalProperties"/> does not hold: a property with parameters, a repeated one, one whose value type is not
+    /// TEXT, or a TEXT value TEXT escaping would not write back unchanged.</para>
     /// <para>A property named BEGIN, END, VERSION or PRODID is not written.</para>
     /// </remarks>
     public IList<InternetCalendarProperty> RawProperties { get; } = new List<InternetCalendarProperty>();
@@ -59,22 +62,48 @@ public sealed class InternetCalendar
     /// </remarks>
     public string Version { get; set; } = "2.0";
 
+    /// <summary>Gets or sets the content lines of the VTIMEZONE components the calendar was parsed from, delimiters excluded, by TZID.</summary>
+    internal Dictionary<string, List<ContentLine>>? TimeZoneDefinitions { get; set; }
+
     /// <summary>Writes the calendar to a stream in iCalendar format.</summary>
     /// <param name="stream">The stream to write to.</param>
+    /// <remarks>Nothing is written when the calendar cannot be written: see <see cref="ToIcs(TextWriter)"/>.</remarks>
     public void ToIcs(Stream stream)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        var ics = ToIcs();
         var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         using TextWriter writer = new StreamWriter(stream, encoding, bufferSize: 1024, leaveOpen: true);
-        ToIcs(writer);
+        writer.Write(ics);
     }
 
     /// <summary>Writes the calendar to a text writer in iCalendar format.</summary>
     /// <param name="writer">The text writer to write to.</param>
-    /// <remarks>Content lines longer than 75 octets are folded, as RFC 5545 section 3.1 recommends.</remarks>
+    /// <remarks>
+    /// <para>Content lines longer than 75 octets are folded, as RFC 5545 section 3.1 recommends.</para>
+    /// <para>The calendar is formatted before anything is written, so a value that cannot be written, such as a
+    /// <see cref="Event.Status"/> that is not a member of <see cref="EventStatus"/>, throws an
+    /// <see cref="InvalidOperationException"/> without producing partial output.</para>
+    /// </remarks>
     public void ToIcs(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
 
+        writer.Write(ToIcs());
+    }
+
+    /// <summary>Converts the calendar to an iCalendar format string.</summary>
+    /// <returns>The iCalendar format string representation of this calendar.</returns>
+    public string ToIcs()
+    {
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        Write(writer);
+        return writer.ToString();
+    }
+
+    private void Write(TextWriter writer)
+    {
         /*
         BEGIN:VCALENDAR
 
@@ -101,7 +130,6 @@ public sealed class InternetCalendar
         END:VCALENDAR
         */
 
-        // The identifiers and the version are validated before the first write so an invalid one cannot produce partial output.
         var timeZones = GetTimeZones();
 
         // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", which TEXT escaping would alter, so it is written
@@ -117,12 +145,12 @@ public sealed class InternetCalendar
         // PRODID is REQUIRED in a VCALENDAR (RFC 5545 section 3.6).
         Utilities.WriteLine(writer, "PRODID:" + ProductIdentifier);
 
-        WriteAdditionalProperties(writer, AdditionalProperties, RawProperties, CalendarPropertyNames);
+        WriteAdditionalProperties(writer, AdditionalProperties, RawProperties, CalendarPropertyNames.Contains, CalendarPropertyNames.Contains);
 
         // A VTIMEZONE must precede the components referencing its TZID.
         foreach (var timeZone in timeZones)
         {
-            VTimeZoneWriter.Write(writer, timeZone.TimeZone, timeZone.ReferenceDate);
+            WriteTimeZone(writer, timeZone);
         }
 
         foreach (var @event in Events)
@@ -133,13 +161,13 @@ public sealed class InternetCalendar
 
             Utilities.WriteLine(writer, "BEGIN:VEVENT");
             if (!string.IsNullOrEmpty(@event.Id))
-                WriteTextProperty(writer, "UID", @event.Id);
+                WriteProperty(writer, "UID", @event.IdParameters, skipParameter: null, Utilities.EscapeText(@event.Id));
 
             if (@event.Status is { } status)
-                Utilities.WriteLine(writer, "STATUS:" + Utilities.StatusToString(status));
+                WriteProperty(writer, "STATUS", @event.StatusParameters, skipParameter: null, GetStatusValue(status));
 
             if (@event.Organizer is { Address: { } organizerAddress } organizer)
-                WriteUserAddressProperty(writer, "ORGANIZER", organizer.Parameters, organizerAddress);
+                WriteProperty(writer, "ORGANIZER", organizer.Parameters, skipParameter: null, organizerAddress.GetContentLineValue());
 
             foreach (var attendee in @event.Attendees)
             {
@@ -147,36 +175,47 @@ public sealed class InternetCalendar
                 if (attendee?.Address is null)
                     continue;
 
-                WriteUserAddressProperty(writer, "ATTENDEE", attendee.Parameters, attendee.Address);
+                WriteProperty(writer, "ATTENDEE", attendee.Parameters, skipParameter: null, attendee.Address.GetContentLineValue());
             }
 
             // RFC 5545 sections 3.8.7.1 to 3.8.7.3 require these values in UTC.
             if (@event.Created != default)
-                Utilities.WriteLine(writer, "CREATED:" + Utilities.UtcDateTimeToString(@event.Created));
+                WriteProperty(writer, "CREATED", @event.CreatedParameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, Utilities.UtcDateTimeToString(@event.Created));
 
             if (@event.LastModified != default)
-                Utilities.WriteLine(writer, "LAST-MODIFIED:" + Utilities.UtcDateTimeToString(@event.LastModified));
+                WriteProperty(writer, "LAST-MODIFIED", @event.LastModifiedParameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, Utilities.UtcDateTimeToString(@event.LastModified));
 
             if (@event.DateTimeStamp != default)
-                Utilities.WriteLine(writer, "DTSTAMP:" + Utilities.UtcDateTimeToString(@event.DateTimeStamp));
+                WriteProperty(writer, "DTSTAMP", @event.DateTimeStampParameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, Utilities.UtcDateTimeToString(@event.DateTimeStamp));
 
             var timeZone = @event.IsAllDay ? null : @event.TimeZone;
             if (@event.Start != default)
-                WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.IsAllDay, timeZone);
+                WriteDateTimeProperty(writer, "DTSTART", @event.StartParameters, @event.Start, @event.IsAllDay, timeZone);
 
             if (@event.End != default)
-                WriteDateTimeProperty(writer, "DTEND", @event.End, @event.IsAllDay, timeZone);
+            {
+                // RFC 5545 section 3.6.1: an event has either DTEND or DURATION. The DURATION the end was read from is kept as
+                // long as it still describes the end.
+                if (@event.Duration is { } duration && duration.TryGetEnd(@event.Start, @event.IsAllDay, timeZone, out var end) && end == @event.End && end.Kind == @event.End.Kind)
+                {
+                    WriteProperty(writer, "DURATION", @event.EndParameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, duration.Text);
+                }
+                else
+                {
+                    WriteDateTimeProperty(writer, "DTEND", @event.EndParameters, @event.End, @event.IsAllDay, timeZone);
+                }
+            }
 
             if (@event.RecurrenceRule is not null)
-                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, @event, timeZone));
+                WriteProperty(writer, "RRULE", @event.RecurrenceRuleParameters, skipParameter: null, GetRecurrenceRuleValue(@event.RecurrenceRule, @event, timeZone));
 
             if (!string.IsNullOrEmpty(@event.Summary))
-                WriteTextProperty(writer, "SUMMARY", @event.Summary);
+                WriteProperty(writer, "SUMMARY", @event.SummaryParameters, skipParameter: null, Utilities.EscapeText(@event.Summary));
 
-            WriteAdditionalProperties(writer, @event.AdditionalProperties, @event.RawProperties, EventPropertyNames);
+            WriteAdditionalProperties(writer, @event.AdditionalProperties, @event.RawProperties, name => IsReservedEventPropertyName(@event, name, isRawProperty: false), name => IsReservedEventPropertyName(@event, name, isRawProperty: true));
 
             if (@event.Description is { } description)
-                WriteTextProperty(writer, "DESCRIPTION", description);
+                WriteProperty(writer, "DESCRIPTION", @event.DescriptionParameters, skipParameter: null, Utilities.EscapeText(description));
 
             Utilities.WriteLine(writer, "END:VEVENT");
         }
@@ -184,56 +223,227 @@ public sealed class InternetCalendar
         Utilities.WriteLine(writer, "END:VCALENDAR");
     }
 
-    /// <summary>Collects the distinct time zones referenced by the events, with the earliest start each is used for.</summary>
-    private List<(TimeZoneInfo TimeZone, DateTime ReferenceDate)> GetTimeZones()
+    /// <summary>Gets a value indicating whether a property of <see cref="Event.AdditionalProperties"/> or <see cref="Event.RawProperties"/> is not written, as the event writes a property with that name itself.</summary>
+    /// <remarks>A raw RRULE is written, as the parser keeps there the recurrence rules following the first one.</remarks>
+    private static bool IsReservedEventPropertyName(Event @event, string name, bool isRawProperty)
     {
-        var result = new List<(TimeZoneInfo TimeZone, DateTime ReferenceDate)>();
+        if (string.Equals(name, "DURATION", StringComparison.OrdinalIgnoreCase))
+            return @event.End != default;
+
+        if (isRawProperty && string.Equals(name, "RRULE", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return EventPropertyNames.Contains(name);
+    }
+
+    private static string GetStatusValue(EventStatus status)
+    {
+        if (status is not (EventStatus.Tentative or EventStatus.Confirmed or EventStatus.Cancelled))
+            throw new InvalidOperationException($"The event status '{status}' is not a member of {nameof(EventStatus)}");
+
+        return Utilities.StatusToString(status);
+    }
+
+    /// <summary>Collects the VTIMEZONE components the calendar needs (RFC 5545 section 3.2.19): one for the time zone of each event, and one for each TZID parameter of a written property that resolves.</summary>
+    /// <remarks>
+    /// A TZID that names a VTIMEZONE of the calendar the model was parsed from keeps that component as written. Any other one is
+    /// looked up as the parser resolves it, as a time zone of the platform or as the one ending a prefixed identifier.
+    /// </remarks>
+    private List<TimeZoneComponent> GetTimeZones()
+    {
+        var result = new List<TimeZoneComponent>();
         var indexes = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var property in RawProperties)
+        {
+            if (property is not null && !CalendarPropertyNames.Contains(property.Name))
+            {
+                AddReferencedTimeZones(property.Parameters, property.Value, fallbackReferenceDate: null);
+            }
+        }
+
         foreach (var @event in Events)
         {
-            // An all-day event is written with DATE values, which do not reference its time zone.
-            if (@event?.TimeZone is not { } timeZone || @event.IsAllDay)
+            if (@event is null)
                 continue;
 
-            if (!Utilities.IsValidTimeZoneId(timeZone.Id))
-                throw new InvalidOperationException($"The time zone identifier '{timeZone.Id}' cannot be written as a TZID property parameter");
-
-            var referenceDate = Utilities.ToWallClock(@event.Start, timeZone);
-            if (indexes.TryGetValue(timeZone.Id, out var index))
+            // An all-day event is written with DATE values, which do not reference its time zone.
+            if (@event.TimeZone is { } timeZone && !@event.IsAllDay)
             {
-                if (referenceDate < result[index].ReferenceDate)
+                if (!Utilities.IsValidTimeZoneId(timeZone.Id))
+                    throw new InvalidOperationException($"The time zone identifier '{timeZone.Id}' cannot be written as a TZID property parameter");
+
+                var referenceDate = Utilities.ToWallClock(@event.Start, timeZone);
+                if (indexes.TryGetValue(timeZone.Id, out var index))
                 {
-                    result[index] = (result[index].TimeZone, referenceDate);
+                    // The time zone of an event is described by the component the writer builds for it.
+                    var existing = result[index];
+                    existing.ReferenceDate = Min(existing.ReferenceDate, referenceDate);
+                    existing.TimeZone = timeZone;
+                    existing.Definition = null;
+                }
+                else
+                {
+                    indexes.Add(timeZone.Id, result.Count);
+                    result.Add(new TimeZoneComponent(timeZone.Id) { TimeZone = timeZone, ReferenceDate = referenceDate });
                 }
             }
-            else
+
+            DateTime? eventReferenceDate = @event.Start == default ? null : @event.Start;
+            if (!string.IsNullOrEmpty(@event.Id))
+                AddReferencedTimeZones(@event.IdParameters, value: null, eventReferenceDate);
+
+            if (@event.Status is not null)
+                AddReferencedTimeZones(@event.StatusParameters, value: null, eventReferenceDate);
+
+            if (@event.Organizer is { Address: not null } organizer)
+                AddReferencedTimeZones(organizer.Parameters, value: null, eventReferenceDate);
+
+            foreach (var attendee in @event.Attendees)
             {
-                indexes.Add(timeZone.Id, result.Count);
-                result.Add((timeZone, referenceDate));
+                if (attendee?.Address is not null)
+                    AddReferencedTimeZones(attendee.Parameters, value: null, eventReferenceDate);
+            }
+
+            if (@event.RecurrenceRule is not null)
+                AddReferencedTimeZones(@event.RecurrenceRuleParameters, value: null, eventReferenceDate);
+
+            if (!string.IsNullOrEmpty(@event.Summary))
+                AddReferencedTimeZones(@event.SummaryParameters, value: null, eventReferenceDate);
+
+            if (@event.Description is not null)
+                AddReferencedTimeZones(@event.DescriptionParameters, value: null, eventReferenceDate);
+
+            foreach (var property in @event.RawProperties)
+            {
+                if (property is not null && !IsReservedEventPropertyName(@event, property.Name, isRawProperty: true))
+                {
+                    AddReferencedTimeZones(property.Parameters, property.Value, eventReferenceDate);
+                }
             }
         }
 
         return result;
+
+        void AddReferencedTimeZones(IEnumerable<KeyValuePair<string, string>> parameters, string? value, DateTime? fallbackReferenceDate)
+        {
+            foreach (var parameter in parameters)
+            {
+                if (!string.Equals(parameter.Key, "TZID", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var id = InternetCalendarProperty.GetSingleParameterValue(parameter.Value);
+                var referenceDate = GetReferenceDate(value) ?? fallbackReferenceDate ?? new DateTime(1970, 1, 1);
+                if (indexes.TryGetValue(id, out var index))
+                {
+                    result[index].ReferenceDate = Min(result[index].ReferenceDate, referenceDate);
+                    continue;
+                }
+
+                var component = new TimeZoneComponent(id) { ReferenceDate = referenceDate };
+                if (TimeZoneDefinitions is not null && TimeZoneDefinitions.TryGetValue(id, out var definition))
+                {
+                    component.Definition = definition;
+                }
+                else if (InternetCalendarParser.TimeZoneResolver.ResolveWithoutDefinitions(id) is { } timeZone)
+                {
+                    component.TimeZone = timeZone;
+                }
+                else
+                {
+                    // RFC 5545 section 3.2.19 requires a VTIMEZONE, but nothing describes this time zone.
+                    continue;
+                }
+
+                indexes.Add(id, result.Count);
+                result.Add(component);
+            }
+        }
+
+        static DateTime? GetReferenceDate(string? value)
+        {
+            if (value is null)
+                return null;
+
+            // A DATE, DATE-TIME or PERIOD list, as the value of EXDATE, RDATE or RECURRENCE-ID is.
+            DateTime? result = null;
+            foreach (var item in value.Split(','))
+            {
+                var slash = item.IndexOf('/', StringComparison.Ordinal);
+                var start = slash < 0 ? item : item[..slash];
+                if (InternetCalendarParser.TryParseDateTime(start, out var date))
+                {
+                    result = result is { } current ? Min(current, date) : date;
+                }
+            }
+
+            return result;
+        }
+
+        static DateTime Min(DateTime left, DateTime right) => right.Ticks < left.Ticks ? right : left;
+    }
+
+    private static void WriteTimeZone(TextWriter writer, TimeZoneComponent component)
+    {
+        if (component.Definition is not null)
+        {
+            Utilities.WriteLine(writer, "BEGIN:VTIMEZONE");
+            foreach (var line in component.Definition)
+            {
+                InternetCalendarProperty.FromContentLine(line).Write(writer);
+            }
+
+            Utilities.WriteLine(writer, "END:VTIMEZONE");
+            return;
+        }
+
+        var timeZone = component.TimeZone!;
+        if (string.Equals(timeZone.Id, component.Id, StringComparison.Ordinal))
+        {
+            VTimeZoneWriter.Write(writer, timeZone, component.ReferenceDate);
+            return;
+        }
+
+        // The time zone was resolved from a prefixed identifier, such as /mozilla.org/20050126_1/America/New_York, which the
+        // component has to be named after for the TZID parameter to reference it.
+        using var buffer = new StringWriter(CultureInfo.InvariantCulture);
+        VTimeZoneWriter.Write(buffer, timeZone, component.ReferenceDate);
+        var text = buffer.ToString();
+        var originalLine = FormatLine("TZID:" + Utilities.EscapeText(timeZone.Id));
+        var index = text.IndexOf(originalLine, StringComparison.Ordinal);
+        if (index >= 0)
+        {
+            text = text[..index] + FormatLine("TZID:" + Utilities.EscapeText(component.Id)) + text[(index + originalLine.Length)..];
+        }
+
+        writer.Write(text);
+
+        static string FormatLine(string line)
+        {
+            using var lineWriter = new StringWriter(CultureInfo.InvariantCulture);
+            Utilities.WriteLine(lineWriter, line);
+            return lineWriter.ToString();
+        }
     }
 
     /// <summary>Writes a date-time property, using the TZID form (RFC 5545 section 3.3.5) when the event has a time zone, or a DATE value (section 3.3.4).</summary>
-    private static void WriteDateTimeProperty(TextWriter writer, string name, DateTime value, bool isDate, TimeZoneInfo? timeZone)
+    private static void WriteDateTimeProperty(TextWriter writer, string name, IEnumerable<KeyValuePair<string, string>> parameters, DateTime value, bool isDate, TimeZoneInfo? timeZone)
     {
         if (isDate)
         {
-            Utilities.WriteLine(writer, name + ";VALUE=DATE:" + value.ToString("yyyyMMdd", CultureInfo.InvariantCulture));
+            WriteProperty(writer, name + ";VALUE=DATE", parameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, value.ToString("yyyyMMdd", CultureInfo.InvariantCulture));
             return;
         }
 
         if (timeZone is null)
         {
-            Utilities.WriteLine(writer, name + ':' + Utilities.DateTimeToString(value));
+            WriteProperty(writer, name, parameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, Utilities.DateTimeToString(value));
             return;
         }
 
         // The identifier was validated before any output was written.
         var wallClock = Utilities.ToWallClock(value, timeZone);
-        Utilities.WriteLine(writer, name + ";TZID=" + Utilities.TimeZoneIdToParameterValue(timeZone.Id) + ':' + wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
+        WriteProperty(writer, name + ";TZID=" + Utilities.TimeZoneIdToParameterValue(timeZone.Id), parameters, InternetCalendarParser.IsDateTimeParameterSetByTheWriter, wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
     }
 
     /// <summary>Gets the RRULE value, whose UNTIL has the value type of the DTSTART the event is written with.</summary>
@@ -243,7 +453,8 @@ public sealed class InternetCalendar
     /// <para>A value of another form is converted, keeping the bound it denotes: a wall-clock UNTIL is read in the frame of the
     /// start (its time zone, UTC, or the local time zone); an instant is read as a wall clock in that frame, or by its own
     /// reading for a floating start, as <see cref="RecurrenceRule.GetNextOccurrences(DateTime)"/> compares them; and a DATE
-    /// bounds the occurrences through the end of that day.</para>
+    /// bounds the occurrences through the end of that day. A UTC value outside the range of <see cref="DateTime"/> is clamped
+    /// to that range.</para>
     /// <para>The recurrence rule itself is not modified.</para>
     /// </remarks>
     private static string GetRecurrenceRuleValue(RecurrenceRule recurrenceRule, Event @event, TimeZoneInfo? timeZone)
@@ -284,12 +495,18 @@ public sealed class InternetCalendar
         var utc = endDate.Kind switch
         {
             DateTimeKind.Utc => endDate,
-            DateTimeKind.Local => endDate.ToUniversalTime(),
+            DateTimeKind.Local => Utilities.LocalToUniversalTime(endDate),
 
             // The bound has to be read the same way the occurrences it bounds are, so UNTIL goes through the
             // RFC 5545 section 3.3.5 disambiguation rather than TimeZoneInfo.ConvertTimeToUtc, which throws on a
             // time inside the gap of a forward transition and resolves an ambiguous one to its second occurrence.
-            _ => Utilities.ToDateTimeOffset(isDate ? endDate.Date + endOfDay : endDate, frame).UtcDateTime,
+            // An instant outside the range of DateTime bounds nothing within it, so the bound is clamped to that range.
+            _ => Utilities.TryToDateTimeOffset(isDate ? endDate.Date + endOfDay : endDate, frame, out var instant) switch
+            {
+                InstantConversion.Success => instant.UtcDateTime,
+                InstantConversion.BeforeMinValue => DateTime.MinValue,
+                _ => DateTime.MaxValue,
+            },
         };
 
         return utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture);
@@ -304,58 +521,75 @@ public sealed class InternetCalendar
         static DateTime ToWallClock(DateTime value, TimeZoneInfo? frame) => frame is null ? value : Utilities.ToWallClock(value, frame);
     }
 
-    private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties, HashSet<string> reservedNames)
+    private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties, Func<string, bool> isReservedAdditionalPropertyName, Func<string, bool> isReservedRawPropertyName)
     {
         foreach (var additionalProperty in additionalProperties)
         {
             // A name outside the iCalendar grammar cannot be written as a content line, and a name carrying a line break
             // would start an attacker-chosen property. A reserved name would duplicate a property the model writes, or,
             // for BEGIN and END, open or close a component.
-            if (!InternetCalendarProperty.IsValidName(additionalProperty.Key) || reservedNames.Contains(additionalProperty.Key))
+            if (!InternetCalendarProperty.IsValidName(additionalProperty.Key) || isReservedAdditionalPropertyName(additionalProperty.Key))
                 continue;
 
-            // RFC 5545 section 3.8.8.2: the default value type of a non-standard property is TEXT.
-            WriteTextProperty(writer, additionalProperty.Key, additionalProperty.Value);
+            // RFC 5545 section 3.8.8.2: the default value type of a non-standard property is TEXT. The value of a property
+            // whose value type is not TEXT, such as a URI, has no escaping, so only the characters it cannot hold are dropped.
+            var value = InternetCalendarProperty.IsTextProperty(additionalProperty.Key) ? Utilities.EscapeText(additionalProperty.Value) : RemoveControlCharacters(additionalProperty.Value);
+            Utilities.WriteLine(writer, additionalProperty.Key + ':' + value);
         }
 
         foreach (var rawProperty in rawProperties)
         {
             // The property validated its name, parameters and value when it was created.
-            if (rawProperty is null || reservedNames.Contains(rawProperty.Name))
+            if (rawProperty is null || isReservedRawPropertyName(rawProperty.Name))
                 continue;
 
             rawProperty.Write(writer);
         }
+
+        static string RemoveControlCharacters(string? value)
+        {
+            if (value is null)
+                return "";
+
+            if (InternetCalendarProperty.IsValidValue(value))
+                return value;
+
+            var sb = new StringBuilder(value.Length);
+            foreach (var c in value)
+            {
+                if (c is '\t' || (c >= 0x20 && c != 0x7F))
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
+        }
     }
 
-    /// <summary>Writes an ORGANIZER or an ATTENDEE content line (RFC 5545 sections 3.8.4.3 and 3.8.4.1), whose value is a CAL-ADDRESS.</summary>
-    private static void WriteUserAddressProperty(TextWriter writer, string name, IList<KeyValuePair<string, string>> parameters, InternetCalendarUserAddress address)
+    /// <summary>Writes a content line, whose parameters are encoded and whose value is written as given.</summary>
+    private static void WriteProperty(TextWriter writer, string nameAndParameters, IEnumerable<KeyValuePair<string, string>> parameters, Func<string, bool>? skipParameter, string value)
     {
-        var sb = new StringBuilder(name);
-
-        // The parameters were validated when they were added.
-        foreach (var parameter in parameters)
-        {
-            sb.Append(';').Append(parameter.Key).Append('=').Append(parameter.Value);
-        }
-
-        sb.Append(':').Append(address.GetContentLineValue());
+        var sb = new StringBuilder(nameAndParameters);
+        InternetCalendarProperty.AppendParameters(sb, parameters, skipParameter);
+        sb.Append(':').Append(value);
         Utilities.WriteLine(writer, sb.ToString());
     }
 
-    /// <summary>Writes a content line whose value is escaped as an iCalendar TEXT value.</summary>
-    private static void WriteTextProperty(TextWriter writer, string name, string? value)
+    /// <summary>A VTIMEZONE component to write: the component of a parsed calendar, as written, or the one describing a time zone.</summary>
+    private sealed class TimeZoneComponent(string id)
     {
-        Utilities.WriteLine(writer, name + ':' + Utilities.EscapeText(value));
-    }
+        /// <summary>Gets the TZID the component is written with.</summary>
+        public string Id { get; } = id;
 
-    /// <summary>Converts the calendar to an iCalendar format string.</summary>
-    /// <returns>The iCalendar format string representation of this calendar.</returns>
-    public string ToIcs()
-    {
-        using var writer = new StringWriter();
-        ToIcs(writer);
-        return writer.ToString();
+        /// <summary>Gets or sets the time zone the component describes, when it is not written as parsed.</summary>
+        public TimeZoneInfo? TimeZone { get; set; }
+
+        /// <summary>Gets or sets the content lines of the component as parsed, delimiters excluded.</summary>
+        public List<ContentLine>? Definition { get; set; }
+
+        /// <summary>Gets or sets the earliest date the time zone is used for, which anchors the transitions written.</summary>
+        public DateTime ReferenceDate { get; set; }
     }
 
     /// <summary>Parses an iCalendar object (RFC 5545).</summary>
@@ -387,9 +621,11 @@ public sealed class InternetCalendar
     {
         ArgumentNullException.ThrowIfNull(stream);
 
-        // RFC 5545 section 6 makes UTF-8 the default charset, and StreamReader honours a byte order mark.
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return Parse(reader);
+        // RFC 5545 section 6 makes UTF-8 the default charset; a UTF-16 or UTF-32 byte order mark is honoured.
+        if (!InternetCalendarParser.TryParse(stream, out var calendar, out var error))
+            throw new FormatException("The iCalendar content is invalid: " + error);
+
+        return calendar;
     }
 
     /// <summary>Parses an iCalendar object (RFC 5545).</summary>

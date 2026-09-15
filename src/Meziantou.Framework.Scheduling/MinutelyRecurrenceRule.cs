@@ -105,6 +105,7 @@ internal sealed class MinutelyRecurrenceRule : RecurrenceRule
                 AppendValues(sb, BySetPositions);
             }
 
+            AppendExtensionParts(sb);
             return sb.ToString();
         }
     }

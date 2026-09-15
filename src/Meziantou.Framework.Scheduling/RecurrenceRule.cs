@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Scheduling;
 /// <example>
 /// <code>
 /// var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
-/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).Take(50).ToArray();
+/// var dtStart = new DateTime(2000, 01, 01, 09, 00, 00);
+/// var occurrences = rrule.GetNextOccurrences(dtStart).Take(50).ToArray();
 /// </code>
 /// </example>
 /// <remarks>
@@ -26,7 +27,9 @@ namespace Meziantou.Framework.Scheduling;
 /// <item><description>BYSETPOS - Limits occurrences to specific positions in the recurrence set (1-366, -1 to -366), only with another BYxxx rule part</description></item>
 /// <item><description>RSCALE and SKIP (RFC 7529) - Only their GREGORIAN and OMIT values, which are the default behavior</description></item>
 /// </list>
-/// <para>An unknown rule part makes the rule invalid.</para>
+/// <para>An RFC 2445 extension rule part, whose name starts with <c>X-</c>, is kept in <see cref="Text"/> and ignored by the evaluation.
+/// Any other unknown rule part makes the rule invalid.</para>
+/// <para>The start date of the enumeration is the DTSTART of the recurrence: COUNT and INTERVAL are counted from it.</para>
 /// </remarks>
 public abstract class RecurrenceRule : IRecurrenceRule
 {
@@ -42,6 +45,9 @@ public abstract class RecurrenceRule : IRecurrenceRule
         "FREQ", "UNTIL", "COUNT", "INTERVAL", "BYSECOND", "BYMINUTE", "BYHOUR", "BYDAY", "BYMONTHDAY", "BYYEARDAY", "BYWEEKNO", "BYMONTH", "BYSETPOS", "WKST", "RSCALE", "SKIP",
     };
 
+    /// <summary>Gets the RFC 2445 extension rule parts (<c>X-NAME=value</c>), in the order they were parsed, so <see cref="Text"/> writes them back.</summary>
+    private List<KeyValuePair<string, string>>? _extensionParts;
+
     /// <summary>End date (inclusive)</summary>
     /// <remarks>
     /// <para>A <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/> value denotes an instant, and a
@@ -51,7 +57,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <para>An instant bounds the occurrences generated from a <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/>
     /// start date, or from a <see cref="DateTimeOffset"/>, by instant, and a wall-clock reading bounds every occurrence by wall clock.</para>
     /// <para>A parsed date designates the whole day, so it keeps every occurrence on that day, whatever its time. Setting this
-    /// property stores a date-time: the value is then an exact bound.</para>
+    /// property stores a date-time. UNTIL has a precision of one second, so a date-time bounds the occurrences at that
+    /// precision: an occurrence within the second of the value, such as one taking the fractional second of the start date, is kept.</para>
     /// <para>UNTIL and COUNT cannot be used in the same recurrence rule, so <see cref="Occurrences"/> must be <see langword="null"/> to set a value.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">The value is not <see langword="null"/> and <see cref="Occurrences"/> is set.</exception>
@@ -71,8 +78,14 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>Gets a value indicating whether <see cref="EndDate"/> was parsed from a DATE value, so it is written back as one and includes the whole day.</summary>
     internal bool IsEndDateDate { get; private set; }
 
-    /// <summary>Gets the last value an occurrence can take: <see cref="EndDate"/>, or the last tick of its day when it was parsed from a DATE value.</summary>
-    internal DateTime? EndBound => EndDate is { } endDate && IsEndDateDate ? new DateTime(endDate.Date.Ticks + TimeSpan.TicksPerDay - 1, endDate.Kind) : EndDate;
+    /// <summary>Gets the last value an occurrence can take: the last tick of the second of <see cref="EndDate"/>, or of its day when it was parsed from a DATE value.</summary>
+    /// <remarks>UNTIL is written with a precision of one second, so an occurrence with a fractional second, which it takes from the start date, is compared at that precision.</remarks>
+    internal DateTime? EndBound => EndDate switch
+    {
+        null => null,
+        { } endDate when IsEndDateDate => new DateTime(endDate.Date.Ticks + TimeSpan.TicksPerDay - 1, endDate.Kind),
+        { } endDate => new DateTime(Math.Min(endDate.Ticks - (endDate.Ticks % TimeSpan.TicksPerSecond) + TimeSpan.TicksPerSecond - 1, DateTime.MaxValue.Ticks), endDate.Kind),
+    };
 
     /// <summary>Gets the UNTIL value as written in <see cref="Text"/>.</summary>
     internal string? EndDateText => EndDate is { } endDate ? Utilities.EndDateToString(endDate, IsEndDateDate) : null;
@@ -155,8 +168,11 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <param name="rrule">The recurrence rule string to parse.</param>
     /// <returns>A <see cref="RecurrenceRule"/> instance representing the parsed rule.</returns>
     /// <exception cref="FormatException">Thrown when the recurrence rule format is invalid.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="rrule"/> is <see langword="null"/>.</exception>
     public static RecurrenceRule Parse(string rrule)
     {
+        ArgumentNullException.ThrowIfNull(rrule);
+
         if (!TryParse(rrule, out var recurrenceRule, out var error))
             throw new FormatException($"RRule value '{rrule}' is invalid: " + error);
 
@@ -193,12 +209,23 @@ public abstract class RecurrenceRule : IRecurrenceRule
     {
         recurrenceRule = null;
         error = null;
-        if (rrule.IsEmpty)
+        if (rrule.IsWhiteSpace())
+        {
+            error = "The recurrence rule is empty.";
             return false;
+        }
+
+        // The value of an RRULE property is parsed, not the content line holding it
+        if (rrule.StartsWith("RRULE:".AsSpan(), StringComparison.OrdinalIgnoreCase) || rrule.StartsWith("RRULE;".AsSpan(), StringComparison.OrdinalIgnoreCase))
+        {
+            error = "The value must not include the property name: remove the 'RRULE:' prefix.";
+            return false;
+        }
 
         try
         {
             // Extract parts
+            List<KeyValuePair<string, string>>? extensionParts = null;
             var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var remaining = rrule;
             while (!remaining.IsEmpty)
@@ -212,7 +239,22 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
                 var (name, value) = SplitPart(part);
 
-                // RFC 5545 section 3.3.10 has no extension rule part, so an unknown or misspelled name cannot be ignored
+                // RFC 2445 section 4.3.10 allows extension rule parts (x-name "=" text). They have no meaning to the evaluation,
+                // but are kept so the rule is written back unchanged.
+                if (name.StartsWith("X-", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (GetExtensionPartError(name, value) is { } extensionError)
+                    {
+                        error = extensionError;
+                        return false;
+                    }
+
+                    extensionParts ??= [];
+                    extensionParts.Add(new(name, value));
+                    continue;
+                }
+
+                // RFC 5545 section 3.3.10 has no other extension rule part, so an unknown or misspelled name cannot be ignored
                 if (!RulePartNames.Contains(name))
                 {
                     error = $"Unknown rule part: '{name}'.";
@@ -338,7 +380,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
             // Set general properties
             if (TryGetValue(values, "INTERVAL", out var intervalText))
             {
-                if (!TryParseInt32(intervalText.AsSpan(), out var interval))
+                if (!TryParseInt32(intervalText.AsSpan(), allowSign: false, maxDigits: int.MaxValue, out var interval))
                 {
                     error = $"INTERVAL value '{intervalText}' is invalid.";
                     return false;
@@ -355,7 +397,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
             if (TryGetValue(values, "COUNT", out var countText))
             {
-                if (!TryParseInt32(countText.AsSpan(), out var occurrences))
+                if (!TryParseInt32(countText.AsSpan(), allowSign: false, maxDigits: int.MaxValue, out var occurrences))
                 {
                     error = $"COUNT value '{countText}' is invalid.";
                     return false;
@@ -389,6 +431,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
             result.ByHours = ParseByHours(values);
             result.ByMonths = ParseByMonth(values);
             result.ByMonthDays = ParseByMonthDays(values);
+            result._extensionParts = extensionParts;
 
             error = result.GetValidationError();
             if (error is not null)
@@ -423,7 +466,10 @@ public abstract class RecurrenceRule : IRecurrenceRule
         recurrenceRule = null;
         error = null;
         if (rrule is null)
+        {
+            error = "The recurrence rule is null.";
             return false;
+        }
 
         return TryParse(rrule.AsSpan(), out recurrenceRule, out error);
     }
@@ -475,45 +521,56 @@ public abstract class RecurrenceRule : IRecurrenceRule
         return frequency is not Frequency.None;
     }
 
-    /// <summary>Parses an integer as the RFC 5545 grammar writes it: an optional sign followed by digits.</summary>
-    private static bool TryParseInt32(ReadOnlySpan<char> text, out int value)
+    /// <summary>Parses an integer as the RFC 5545 grammar writes it: at most <paramref name="maxDigits"/> digits, preceded by a sign only when <paramref name="allowSign"/> is set.</summary>
+    private static bool TryParseInt32(ReadOnlySpan<char> text, bool allowSign, int maxDigits, out int value)
     {
         value = 0;
-        if (text.IsEmpty)
-            return false;
-
         var negative = false;
-        var index = 0;
-        if (text[0] is '+' or '-')
+        if (allowSign && !text.IsEmpty && text[0] is '+' or '-')
         {
             negative = text[0] is '-';
-            index = 1;
-            if (text.Length is 1)
-                return false;
+            text = text[1..];
         }
 
+        if (text.IsEmpty || text.Length > maxDigits)
+            return false;
+
         long result = 0;
-        for (; index < text.Length; index++)
+        foreach (var c in text)
         {
-            var c = text[index];
             if (c is < '0' or > '9')
                 return false;
 
             result = (result * 10) + (c - '0');
-            if (result > (long)int.MaxValue + 1)
+            if (result > int.MaxValue)
                 return false;
         }
 
-        if (negative)
+        value = negative ? (int)-result : (int)result;
+        return true;
+    }
+
+    /// <summary>Gets the reason why an RFC 2445 extension rule part (x-name "=" text) is invalid, or <see langword="null"/> when it is valid.</summary>
+    private static string? GetExtensionPartError(string name, string value)
+    {
+        // x-name = "X-" [vendorid "-"] 1*(ALPHA / DIGIT / "-")
+        if (name.Length is 2)
+            return $"Rule part name '{name}' is invalid.";
+
+        for (var i = 2; i < name.Length; i++)
         {
-            result = -result;
+            if (name[i] is not ((>= 'A' and <= 'Z') or (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-'))
+                return $"Rule part name '{name}' is invalid.";
         }
 
-        if (result is < int.MinValue or > int.MaxValue)
-            return false;
+        // A TEXT value cannot contain a control character, which would also let the value start a new content line when written
+        foreach (var c in value)
+        {
+            if (char.IsControl(c) && c is not '\t')
+                return $"{name} value contains a control character.";
+        }
 
-        value = (int)result;
-        return true;
+        return null;
     }
 
     private static List<int>? ParseBySetPos(Dictionary<string, string> values)
@@ -521,7 +578,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYSETPOS", out var str))
             return null;
 
-        return SplitToInt32List(str.AsSpan(), "BYSETPOS");
+        return SplitToInt32List(str.AsSpan(), "BYSETPOS", allowSign: true, maxDigits: 3);
     }
 
     private static List<int> ParseByMonthDays(Dictionary<string, string> values)
@@ -529,7 +586,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMONTHDAY", out var str))
             return [];
 
-        return SplitToInt32List(str.AsSpan(), "BYMONTHDAY");
+        return SplitToInt32List(str.AsSpan(), "BYMONTHDAY", allowSign: true, maxDigits: 2);
     }
 
     private static List<int> ParseByMonth(Dictionary<string, string> values)
@@ -537,7 +594,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMONTH", out var str))
             return [];
 
-        return SplitToMonthList(str.AsSpan());
+        return SplitToInt32List(str.AsSpan(), "BYMONTH", allowSign: false, maxDigits: 2);
     }
 
     private static List<int> ParseByYearDay(Dictionary<string, string> values)
@@ -545,7 +602,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYYEARDAY", out var str))
             return [];
 
-        return SplitToInt32List(str.AsSpan(), "BYYEARDAY");
+        return SplitToInt32List(str.AsSpan(), "BYYEARDAY", allowSign: true, maxDigits: 3);
     }
 
     private static List<int>? ParseByWeekNo(Dictionary<string, string> values)
@@ -553,7 +610,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYWEEKNO", out var str))
             return null;
 
-        return SplitToInt32List(str.AsSpan(), "BYWEEKNO");
+        return SplitToInt32List(str.AsSpan(), "BYWEEKNO", allowSign: true, maxDigits: 2);
     }
 
     private static DayOfWeek ParseWeekStart(Dictionary<string, string> values)
@@ -569,7 +626,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYSECOND", out var str))
             return null;
 
-        var seconds = SplitToInt32List(str.AsSpan(), "BYSECOND");
+        var seconds = SplitToInt32List(str.AsSpan(), "BYSECOND", allowSign: false, maxDigits: 2);
         for (var i = 0; i < seconds.Count; i++)
         {
             // RFC 5545 allows 60 to denote a leap second. DateTime cannot represent one, so it
@@ -588,7 +645,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMINUTE", out var str))
             return null;
 
-        return SplitToInt32List(str.AsSpan(), "BYMINUTE");
+        return SplitToInt32List(str.AsSpan(), "BYMINUTE", allowSign: false, maxDigits: 2);
     }
 
     private static List<int>? ParseByHours(Dictionary<string, string> values)
@@ -596,7 +653,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYHOUR", out var str))
             return null;
 
-        return SplitToInt32List(str.AsSpan(), "BYHOUR");
+        return SplitToInt32List(str.AsSpan(), "BYHOUR", allowSign: false, maxDigits: 2);
     }
 
     private static ByDay[] ParseByDayWithOffset(Dictionary<string, string> values)
@@ -658,8 +715,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (index is 0)
             return new ByDay(ParseDayOfWeek(str));
 
-        // The range of the ordinal is checked by GetValidationError
-        if (!TryParseInt32(str[..index], out var ordinal))
+        // ordwk = 1*2DIGIT; the range of the ordinal is checked by GetValidationError
+        if (!TryParseInt32(str[..index], allowSign: true, maxDigits: 2, out var ordinal))
             throw new FormatException($"Day of week '{str}' is invalid. The ordinal must be between 1 and 53 or between -53 and -1.");
 
         return new ByDay(ParseDayOfWeek(str[index..]), ordinal);
@@ -706,6 +763,21 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
             sb.Append(value.ToString(CultureInfo.InvariantCulture));
             first = false;
+        }
+    }
+
+    /// <summary>Appends the RFC 2445 extension rule parts the rule was parsed with.</summary>
+    private protected void AppendExtensionParts(StringBuilder sb)
+    {
+        if (_extensionParts is null)
+            return;
+
+        foreach (var part in _extensionParts)
+        {
+            sb.Append(';');
+            sb.Append(part.Key);
+            sb.Append('=');
+            sb.Append(part.Value);
         }
     }
 
@@ -818,7 +890,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
         }
     }
 
-    private static List<int> SplitToInt32List(ReadOnlySpan<char> text, string partName)
+    /// <summary>Parses a comma-separated list of integers, each one written as <see cref="TryParseInt32"/> requires.</summary>
+    private static List<int> SplitToInt32List(ReadOnlySpan<char> text, string partName, bool allowSign, int maxDigits)
     {
         var list = new List<int>();
         var remaining = text;
@@ -826,7 +899,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         {
             var commaIndex = remaining.IndexOf(',');
             var part = commaIndex >= 0 ? remaining[..commaIndex] : remaining;
-            if (!TryParseInt32(part, out var value))
+            if (!TryParseInt32(part, allowSign, maxDigits, out var value))
                 throw new FormatException($"{partName} value '{part}' is invalid.");
 
             list.Add(value);
@@ -839,56 +912,16 @@ public abstract class RecurrenceRule : IRecurrenceRule
         return list;
     }
 
-    private static List<int> SplitToMonthList(ReadOnlySpan<char> text)
-    {
-        var list = new List<int>();
-        var remaining = text;
-        while (true)
-        {
-            var commaIndex = remaining.IndexOf(',');
-            var part = commaIndex >= 0 ? remaining[..commaIndex] : remaining;
-            if (TryParseInt32(part, out var monthValue))
-            {
-                list.Add(monthValue);
-            }
-            else if (TryParseMonthName(part, out var month))
-            {
-                list.Add(month);
-            }
-            else
-            {
-                throw new FormatException($"BYMONTH value '{part}' is invalid.");
-            }
-
-            if (commaIndex < 0)
-                break;
-
-            remaining = remaining[(commaIndex + 1)..];
-        }
-
-        return list;
-    }
-
-    private static bool TryParseMonthName(ReadOnlySpan<char> text, out int month)
-    {
-        for (var value = Month.January; value <= Month.December; value++)
-        {
-            if (text.Equals(value.ToString().AsSpan(), StringComparison.OrdinalIgnoreCase))
-            {
-                month = (int)value;
-                return true;
-            }
-        }
-
-        month = 0;
-        return false;
-    }
-
     /// <summary>Gets all occurrences of the recurrence starting from the specified date.</summary>
-    /// <param name="startDate">The date to start generating occurrences from.</param>
+    /// <param name="startDate">The start of the recurrence, as the DTSTART of an iCalendar event.</param>
     /// <returns>An enumerable sequence of occurrence dates.</returns>
-    /// <remarks>A rule cannot express a fraction of a second, so every occurrence takes the fractional second of <paramref name="startDate"/>,
-    /// as it takes the other time components the rule does not specify.</remarks>
+    /// <remarks>
+    /// <para><paramref name="startDate"/> is the start of the recurrence, not the instant to search from: COUNT counts the
+    /// occurrences from it, and INTERVAL is aligned on it. To get the occurrences of a series on or after another date, enumerate
+    /// from the start of the series and skip the earlier occurrences.</para>
+    /// <para>A rule cannot express a fraction of a second, so every occurrence takes the fractional second of <paramref name="startDate"/>,
+    /// as it takes the other time components the rule does not specify.</para>
+    /// </remarks>
     /// <exception cref="InvalidOperationException">A rule part holds a value that RFC 5545 does not allow, such as a <see cref="ByHours"/> value of 24. It is thrown when the enumeration starts.</exception>
     public virtual IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
@@ -900,7 +933,10 @@ public abstract class RecurrenceRule : IRecurrenceRule
     internal IEnumerable<DateTime> GetNextOccurrences(DateTime startDate, TimeSpan? offset)
     {
         EnsureValid();
-        if (Occurrences is 0)
+
+        // The rule parts are read when the enumeration starts, so modifying the rule does not affect a running enumeration
+        var maxCount = Occurrences;
+        if (maxCount is 0)
             yield break;
 
         DateTime? endDate;
@@ -926,7 +962,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
             yield return next;
 
             count++;
-            if (Occurrences.HasValue && count >= Occurrences.Value)
+            if (count >= maxCount)
                 yield break;
         }
 
@@ -973,13 +1009,14 @@ public abstract class RecurrenceRule : IRecurrenceRule
         static IEnumerable<DateTimeOffset> Iterate(RecurrenceRule rule, DateTime wallClockStart, TimeZoneInfo timeZone)
         {
             rule.EnsureValid();
-            if (rule.Occurrences is 0)
+            var maxCount = rule.Occurrences;
+            if (maxCount is 0)
                 yield break;
 
             var endDate = rule.EndBound;
             Func<DateTime, DateTimeOffset, bool>? isAfterEnd = endDate.HasValue ? (wallClock, occurrence) => IsAfterEndDate(wallClock, occurrence, endDate.Value) : null;
             var wallClockOccurrences = rule.GetNextOccurrencesInternal(wallClockStart, GetWallClockEndBound(endDate));
-            foreach (var occurrence in Utilities.ToDateTimeOffsets(wallClockOccurrences, timeZone, rule.Occurrences, isAfterEnd))
+            foreach (var occurrence in Utilities.ToDateTimeOffsets(wallClockOccurrences, timeZone, maxCount, isAfterEnd))
             {
                 yield return occurrence;
             }

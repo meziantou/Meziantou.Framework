@@ -225,15 +225,23 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1,-1", "every month on the first and last Monday")]
     [InlineData("FREQ=MONTHLY;BYDAY=MO,TU;BYSETPOS=1", "every month on the first Monday or Tuesday")]
     [InlineData("FREQ=YEARLY;BYMONTH=3;BYDAY=MO;BYSETPOS=1,-1", "every year on the first and last Monday of March")]
-    [InlineData("FREQ=MONTHLY;BYMONTHDAY=1,15;BYSETPOS=-1", "every month on the 1st and 15th, only the last occurrence")]
-    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;BYSETPOS=1,2", "every week on Monday and Tuesday, only the first and second occurrences")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=1,15;BYSETPOS=-1", "every month on the 1st and 15th, only the last occurrence of each month")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;BYSETPOS=1,2", "every week on Monday and Tuesday, only the first and second occurrences of each week")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,FR;BYSETPOS=1;COUNT=3", "every week on Monday and Friday, only the first occurrence of each week, for 3 times")]
+    [InlineData("FREQ=DAILY;BYHOUR=9,17;BYSETPOS=1", "every day at hours 9 and 17, only the first occurrence of each day")]
+    [InlineData("FREQ=YEARLY;BYDAY=MO;BYMONTH=3,4;BYSETPOS=1", "every year on Mondays in March and April, only the first occurrence of each year")]
+    [InlineData("FREQ=HOURLY;BYMINUTE=0,30;BYSETPOS=-1;UNTIL=20240102", "every hour at minutes 0 and 30, only the last occurrence of each hour, until January 2, 2024")]
+    [InlineData("FREQ=MINUTELY;BYSECOND=0,30;BYSETPOS=1", "every minute at seconds 0 and 30, only the first occurrence of each minute")]
+    [InlineData("FREQ=SECONDLY;BYHOUR=9;BYSETPOS=1", "every second at hour 9, only the first occurrence of each second")]
+    [InlineData("FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=1,15;BYSETPOS=-1", "every other month on the 1st and 15th, only the last occurrence of each month")]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=13;BYDAY=FR", "every month on Friday the 13th")]
     [InlineData("FREQ=YEARLY;BYMONTH=10;BYMONTHDAY=13;BYDAY=FR", "every year on Friday the 13th in October")]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1;BYDAY=MO,TU,WE,TH,FR", "every month on the last day if it is a weekday")]
     [InlineData("FREQ=YEARLY;BYYEARDAY=1;BYDAY=MO,SU", "every year on the 1st day of the year if it is a Monday or a Sunday")]
     [InlineData("FREQ=SECONDLY;INTERVAL=2", "every other second")]
     [InlineData("FREQ=MINUTELY;INTERVAL=2;COUNT=1", "every other minute for 1 time")]
-    [InlineData("FREQ=HOURLY;COUNT=0", "every hour for 0 times")]
+    [InlineData("FREQ=HOURLY;COUNT=0", "never")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO;BYSETPOS=1;COUNT=0", "never")]
     [InlineData("FREQ=WEEKLY;INTERVAL=2", "every other week")]
     [InlineData("FREQ=MONTHLY;INTERVAL=12;COUNT=5", "every 12 months for 5 times")]
     [InlineData("FREQ=YEARLY;INTERVAL=4;UNTIL=20251231", "every 4 years until December 31, 2025")]
@@ -249,14 +257,17 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=YEARLY;BYWEEKNO=-1;BYDAY=SA,SU", "every year on weekend days of the last week of the year")]
     [InlineData("FREQ=YEARLY;BYWEEKNO=1,-1;BYDAY=MO", "every year on Mondays of week 1 and the last week of the year")]
     [InlineData("FREQ=YEARLY;BYWEEKNO=1;BYMONTHDAY=1", "every year on the 1st of every month if it is in week 1")]
+    [InlineData("FREQ=YEARLY;BYMONTHDAY=13;BYWEEKNO=2,20", "every year on the 13th of every month if it is in week 2 or 20")]
+    [InlineData("FREQ=YEARLY;BYMONTHDAY=1;BYWEEKNO=1,-1", "every year on the 1st of every month if it is in week 1 or the last week of the year")]
+    [InlineData("FREQ=YEARLY;BYMONTHDAY=1;BYWEEKNO=1,5,-1;BYDAY=MO", "every year on Monday the 1st if it is in week 1, week 5 or the last week of the year")]
     [InlineData("FREQ=YEARLY;BYWEEKNO=1;BYDAY=MO;WKST=SU", "every year on Monday of week 1, with weeks starting on Sunday")]
-    [InlineData("FREQ=YEARLY;BYMONTH=1,2;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", "every year on weekdays in January and February, only the last occurrence")]
+    [InlineData("FREQ=YEARLY;BYMONTH=1,2;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", "every year on weekdays in January and February, only the last occurrence of each year")]
     [InlineData("FREQ=MONTHLY;BYMONTH=1,2;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", "every month on the last weekday in January and February")]
     [InlineData("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1;BYHOUR=9,17;BYMINUTE=0", "every month on the last weekday at 17:00")]
     [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1;BYHOUR=9,17", "every month on the first Monday at hour 9")]
     [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=2,4;BYHOUR=9,17;BYMINUTE=0", "every month on the first and second Monday at 17:00")]
     [InlineData("FREQ=YEARLY;BYMONTH=3;BYDAY=MO;BYSETPOS=-2;BYHOUR=9,17;BYMINUTE=0", "every year on the last Monday of March at 9:00")]
-    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1,-1;BYHOUR=9,17;BYMINUTE=0", "every month on Mondays at 9:00 and 17:00, only the first and last occurrences")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1,-1;BYHOUR=9,17;BYMINUTE=0", "every month on Mondays at 9:00 and 17:00, only the first and last occurrences of each month")]
     [InlineData("FREQ=YEARLY;BYMONTHDAY=1;BYDAY=1MO", "every year on the 1st of every month if it is the first Monday of the year")]
     [InlineData("FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1;BYDAY=1MO", "every year on January the 1st if it is the first Monday")]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=1;BYDAY=1MO", "every month on the 1st if it is the first Monday")]
@@ -266,9 +277,14 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=HOURLY;BYYEARDAY=1", "every hour on the 1st day of the year")]
     [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,MO;WKST=SU", "every other week on Sunday and Monday, with weeks starting on Sunday")]
     [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,MO;WKST=MO", "every other week on Sunday and Monday")]
-    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;WKST=SU", "every other week on Monday and Wednesday")]
-    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;WKST=SU", "every other week on Monday")]
-    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;WKST=TU;BYSETPOS=1", "every week on Monday and Tuesday, only the first occurrence, with weeks starting on Tuesday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;WKST=SU", "every other week on Monday and Wednesday, with weeks starting on Sunday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;WKST=SU", "every other week on Monday, with weeks starting on Sunday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU;WKST=SU", "every other week on Sunday, with weeks starting on Sunday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;WKST=TU", "every other week on Tuesday and Thursday, with weeks starting on Tuesday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=3;BYDAY=FR;WKST=TH;COUNT=2", "every 3 weeks on Friday for 2 times, with weeks starting on Thursday")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;WKST=SU", "every other week")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;WKST=TU;BYSETPOS=1", "every week on Monday and Tuesday, only the first occurrence of each week, with weeks starting on Tuesday")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;WKST=SU;BYSETPOS=1", "every week on Monday and Tuesday, only the first occurrence of each week")]
     [InlineData("FREQ=WEEKLY;BYDAY=SU,MO;WKST=SU;COUNT=3", "every week on Sunday and Monday for 3 times")]
     [InlineData("FREQ=DAILY;BYHOUR=17,9;BYMINUTE=30,0", "every day at 9:00, 9:30, 17:00 and 17:30")]
     [InlineData("FREQ=DAILY;BYHOUR=9,9,17", "every day at hours 9 and 17")]
@@ -286,5 +302,36 @@ public partial class RecurrenceRuleTests
         rrule.EndDate = new DateTime(2026, 1, 3, 0, 0, 0, DateTimeKind.Utc);
 
         Assert.Equal("every day until January 3, 2026 at 0:00 UTC", rrule.GetHumanText(CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=SU")]
+    [InlineData("FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH")]
+    public void GetHumanText_en_us_WeekStartChangingTheWeeksOfAnInterval(string rrule)
+    {
+        var defaultWeekStart = RecurrenceRule.Parse(rrule);
+        var otherWeekStart = RecurrenceRule.Parse(rrule + ";WKST=" + rrule[^2..]);
+        var startDate = new DateTime(2024, 1, 1);
+
+        Assert.NotEqual(defaultWeekStart.GetNextOccurrences(startDate).Take(4).ToArray(), otherWeekStart.GetNextOccurrences(startDate).Take(4).ToArray());
+        Assert.NotEqual(defaultWeekStart.GetHumanText(CultureInfo.InvariantCulture), otherWeekStart.GetHumanText(CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void GetHumanText_RuleDerivedOutsideOfTheLibrary_ReturnsNull()
+    {
+        var rrule = new CustomRecurrenceRule();
+
+        Assert.Null(rrule.GetHumanText(CultureInfo.InvariantCulture));
+    }
+
+    private sealed class CustomRecurrenceRule : RecurrenceRule
+    {
+        public override string Text => "FREQ=DAILY";
+
+        protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
+        {
+            yield return startDate;
+        }
     }
 }

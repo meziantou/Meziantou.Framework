@@ -14,6 +14,76 @@ internal static class InternetCalendarParser
         return TryParse(lines, out calendar, out error);
     }
 
+    /// <summary>Parses a stream, removing the folds of RFC 5545 section 3.1 before decoding its UTF-8 content.</summary>
+    /// <remarks>
+    /// A producer folding a line by octets can split the UTF-8 sequence of a character, which decoding each physical line
+    /// would turn into replacement characters. A stream starting with a UTF-16 or UTF-32 byte order mark is decoded first,
+    /// as its folds cannot split a UTF-8 sequence.
+    /// </remarks>
+    public static bool TryParse(Stream stream, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar, out string? error)
+    {
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        var bytes = buffer.GetBuffer();
+        var length = (int)buffer.Length;
+
+        if (IsUnicodeByteOrderMark(bytes, length))
+        {
+            buffer.Position = 0;
+            using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return TryParse(reader, out calendar, out error);
+        }
+
+        var start = length >= 3 && bytes[0] is 0xEF && bytes[1] is 0xBB && bytes[2] is 0xBF ? 3 : 0;
+        var unfoldedLength = Unfold(bytes, start, length);
+        return TryParse(Encoding.UTF8.GetString(bytes, start, unfoldedLength - start).AsSpan(), out calendar, out error);
+
+        static bool IsUnicodeByteOrderMark(byte[] bytes, int length)
+        {
+            return (length >= 2 && bytes[0] is 0xFF && bytes[1] is 0xFE) ||
+                (length >= 2 && bytes[0] is 0xFE && bytes[1] is 0xFF) ||
+                (length >= 4 && bytes[0] is 0 && bytes[1] is 0 && bytes[2] is 0xFE && bytes[3] is 0xFF);
+        }
+    }
+
+    /// <summary>Removes, in place, every line break followed by a single white space, returning the new end of the content.</summary>
+    /// <remarks>
+    /// A CRLF, a lone CR and a lone LF each end a line, as the text readers treat them. As for text, a fold only continues a
+    /// non-empty line: one at the start of the content, or after an empty line, is left for the content line reader to report.
+    /// </remarks>
+    private static int Unfold(byte[] bytes, int start, int length)
+    {
+        var written = start;
+        var index = start;
+        while (index < length)
+        {
+            var b = bytes[index];
+            if (b is (byte)'\r' or (byte)'\n')
+            {
+                var breakLength = b is (byte)'\r' && index + 1 < length && bytes[index + 1] is (byte)'\n' ? 2 : 1;
+                var next = index + breakLength;
+                var continuesLine = written > start && bytes[written - 1] is not (byte)'\r' and not (byte)'\n';
+                if (continuesLine && next < length && bytes[next] is (byte)' ' or (byte)'\t')
+                {
+                    index = next + 1;
+                    continue;
+                }
+
+                for (var i = 0; i < breakLength; i++)
+                {
+                    bytes[written++] = bytes[index++];
+                }
+
+                continue;
+            }
+
+            bytes[written++] = b;
+            index++;
+        }
+
+        return written;
+    }
+
     public static bool TryParse(ReadOnlySpan<char> ics, [NotNullWhen(returnValue: true)] out InternetCalendar? calendar, out string? error)
     {
         if (!TryReadContentLines(ics, out var lines, out error))
@@ -82,6 +152,7 @@ internal static class InternetCalendarParser
                 }
 
                 AddUnknownProperties(unknownProperties, result.AdditionalProperties, result.RawProperties);
+                result.TimeZoneDefinitions = timeZones.Definitions;
                 calendar = result;
                 error = null;
                 return true;
@@ -90,9 +161,14 @@ internal static class InternetCalendarParser
             index++;
             switch (line.Name.ToUpperInvariant())
             {
-                // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", not TEXT, so it is kept as written.
+                // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", not TEXT, so it is kept as written. An empty
+                // value, which the writer would omit, leaves the default version so the calendar is written back the same way.
                 case "VERSION":
-                    result.Version = line.Value;
+                    if (line.Value.Length > 0)
+                    {
+                        result.Version = line.Value;
+                    }
+
                     break;
 
                 // PRODID identifies the product that wrote the calendar, which this library sets itself.
@@ -116,6 +192,8 @@ internal static class InternetCalendarParser
 
         var result = new Event();
         string? timeZoneId = null;
+        ContentLine? dtEnd = null;
+        ContentLine? duration = null;
         List<ContentLine>? unknownProperties = null;
         while (index < lines.Count)
         {
@@ -148,6 +226,9 @@ internal static class InternetCalendarParser
                     result.TimeZone = timeZones.Resolve(timeZoneId);
                 }
 
+                if (duration is not null && !TryApplyDuration(result, duration, dtEnd, ref unknownProperties, out error))
+                    return false;
+
                 AddUnknownProperties(unknownProperties, result.AdditionalProperties, result.RawProperties);
                 @event = result;
                 error = null;
@@ -159,14 +240,17 @@ internal static class InternetCalendarParser
             {
                 case "UID":
                     result.Id = line.GetTextValue();
+                    SetParameters(result.IdParameters, line);
                     break;
 
                 case "SUMMARY":
                     result.Summary = line.GetTextValue();
+                    SetParameters(result.SummaryParameters, line);
                     break;
 
                 case "DESCRIPTION":
                     result.Description = line.GetTextValue();
+                    SetParameters(result.DescriptionParameters, line);
                     break;
 
                 case "STATUS":
@@ -174,6 +258,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.Status = status;
+                    SetParameters(result.StatusParameters, line);
                     break;
 
                 case "ORGANIZER":
@@ -181,7 +266,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.Organizer = new Organizer { Address = organizer };
-                    ((InternetCalendarParameterCollection)result.Organizer.Parameters).AddParsed(line.GetRawParameters());
+                    SetParameters(result.Organizer.Parameters, line);
                     break;
 
                 case "ATTENDEE":
@@ -189,7 +274,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     var attendee = new Attendee { Address = attendeeAddress };
-                    ((InternetCalendarParameterCollection)attendee.Parameters).AddParsed(line.GetRawParameters());
+                    SetParameters(attendee.Parameters, line);
                     result.Attendees.Add(attendee);
                     break;
 
@@ -198,6 +283,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.Created = created;
+                    SetParameters(result.CreatedParameters, line, IsDateTimeParameterSetByTheWriter);
                     break;
 
                 case "LAST-MODIFIED":
@@ -205,6 +291,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.LastModified = lastModified;
+                    SetParameters(result.LastModifiedParameters, line, IsDateTimeParameterSetByTheWriter);
                     break;
 
                 case "DTSTAMP":
@@ -212,6 +299,7 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.DateTimeStamp = dateTimeStamp;
+                    SetParameters(result.DateTimeStampParameters, line, IsDateTimeParameterSetByTheWriter);
                     break;
 
                 case "DTSTART":
@@ -220,6 +308,7 @@ internal static class InternetCalendarParser
 
                     result.Start = start;
                     result.IsAllDay = isStartDate;
+                    SetParameters(result.StartParameters, line, IsDateTimeParameterSetByTheWriter);
                     break;
 
                 case "DTEND":
@@ -227,6 +316,13 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.End = end;
+                    dtEnd = line;
+                    SetParameters(result.EndParameters, line, IsDateTimeParameterSetByTheWriter);
+                    break;
+
+                case "DURATION":
+                    // The end is computed once the start and its time zone are known, which may be read later.
+                    duration = line;
                     break;
 
                 case "RRULE":
@@ -236,7 +332,18 @@ internal static class InternetCalendarParser
                         return false;
                     }
 
-                    result.RecurrenceRule = recurrenceRule;
+                    if (result.RecurrenceRule is null)
+                    {
+                        result.RecurrenceRule = recurrenceRule;
+                        SetParameters(result.RecurrenceRuleParameters, line);
+                    }
+                    else
+                    {
+                        // RFC 5545 section 3.6.1 discourages another RRULE, which the model cannot hold, so it is kept as written.
+                        unknownProperties ??= [];
+                        unknownProperties.Add(line);
+                    }
+
                     break;
 
                 default:
@@ -250,12 +357,66 @@ internal static class InternetCalendarParser
         return false;
     }
 
+    /// <summary>The VALUE and TZID parameters of a date-time property are determined by the model, which writes them itself.</summary>
+    internal static bool IsDateTimeParameterSetByTheWriter(string name)
+    {
+        return string.Equals(name, "VALUE", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "TZID", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Replaces the parameters of a modelled property with those of <paramref name="line"/>, as the last occurrence of the property is the one the model holds.</summary>
+    private static void SetParameters(IList<KeyValuePair<string, string>> parameters, ContentLine line, Func<string, bool>? skip = null)
+    {
+        parameters.Clear();
+        ((InternetCalendarParameterCollection)parameters).AddParsed(line.GetParameters(), skip);
+    }
+
+    /// <summary>Computes the end of the event from its DURATION (RFC 5545 section 3.3.6).</summary>
+    private static bool TryApplyDuration(Event result, ContentLine line, ContentLine? dtEnd, ref List<ContentLine>? unknownProperties, out string? error)
+    {
+        // RFC 5545 section 3.6.1: either DTEND or DURATION may appear in a VEVENT, but not both.
+        if (dtEnd is not null)
+        {
+            error = "The VEVENT component has both a DTEND and a DURATION property";
+            return false;
+        }
+
+        if (!InternetCalendarDuration.TryParse(line.Value, out var duration, out error))
+            return false;
+
+        if (result.Start == default)
+        {
+            // Without DTSTART the duration has nothing to apply to, so it is kept as written.
+            unknownProperties ??= [];
+            unknownProperties.Add(line);
+            return true;
+        }
+
+        // RFC 5545 section 3.8.2.5: the duration of an event starting on a date is a number of days or weeks.
+        if (result.IsAllDay && duration.Time != TimeSpan.Zero)
+        {
+            error = $"The DURATION value '{line.Value}' of an event starting on a date is not a number of days or weeks";
+            return false;
+        }
+
+        if (!duration.TryGetEnd(result.Start, result.IsAllDay, result.TimeZone, out var end))
+        {
+            error = $"The end of an event starting at '{result.Start.ToString("s", CultureInfo.InvariantCulture)}' with the DURATION '{line.Value}' is outside the range of DateTime";
+            return false;
+        }
+
+        result.End = end;
+        result.Duration = duration;
+        SetParameters(result.EndParameters, line, IsDateTimeParameterSetByTheWriter);
+        error = null;
+        return true;
+    }
+
     /// <summary>Stores the properties the model does not have.</summary>
     /// <remarks>
-    /// A property goes to <paramref name="additionalProperties"/> only when that TEXT form writes it back unchanged: it
-    /// carries no parameter, its name occurs once, and escaping its unescaped value gives back the value as written.
-    /// Any other property, such as <c>GEO:37.38;-122.08</c>, <c>CATEGORIES:A,B</c>, a repeated <c>EXDATE</c> or one with
-    /// a TZID parameter, is kept verbatim in <paramref name="rawProperties"/>.
+    /// A property goes to <paramref name="additionalProperties"/> only when its value is a single TEXT value, as the value of an
+    /// <c>X-</c> property or of LOCATION is, it carries no parameter, its name occurs once, and escaping its unescaped value gives
+    /// back the value as written. Any other property, such as <c>GEO:37.38;-122.08</c>, <c>URL:https://example.com/</c>,
+    /// <c>CATEGORIES:A</c>, an <c>EXDATE</c> or one with a TZID parameter, is kept verbatim in <paramref name="rawProperties"/>.
     /// </remarks>
     private static void AddUnknownProperties(List<ContentLine>? lines, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties)
     {
@@ -270,7 +431,7 @@ internal static class InternetCalendarParser
 
         foreach (var line in lines)
         {
-            if (occurrences[line.Name] is 1 && !line.HasParameters)
+            if (occurrences[line.Name] is 1 && !line.HasParameters && InternetCalendarProperty.IsSingleTextProperty(line.Name))
             {
                 var text = line.GetTextValue();
                 if (string.Equals(Utilities.EscapeText(text), line.Value, StringComparison.Ordinal))
@@ -388,7 +549,13 @@ internal static class InternetCalendarParser
 
         if (id is not null && timeZones.Resolve(id) is { } timeZone)
         {
-            value = Utilities.ToDateTimeOffset(value, timeZone).UtcDateTime;
+            if (Utilities.TryToDateTimeOffset(value, timeZone, out var instant) is not InstantConversion.Success)
+            {
+                error = $"The {line.Name} value '{line.Value}' in the time zone '{id}' is outside the range of DateTime in UTC";
+                return false;
+            }
+
+            value = instant.UtcDateTime;
             return true;
         }
 
@@ -457,7 +624,7 @@ internal static class InternetCalendarParser
     /// as the IANA identifier ending a prefixed one, such as <c>/mozilla.org/20050126_1/America/New_York</c>. A VTIMEZONE
     /// may follow the components referencing it, so the calendar is scanned for them up front.
     /// </remarks>
-    private sealed class TimeZoneResolver
+    internal sealed class TimeZoneResolver
     {
         private readonly Dictionary<string, TimeZoneInfo?> _cache = new(StringComparer.Ordinal);
         private readonly Dictionary<string, List<ContentLine>> _definitions = new(StringComparer.Ordinal);
@@ -515,6 +682,9 @@ internal static class InternetCalendarParser
             }
         }
 
+        /// <summary>Gets the content lines of the VTIMEZONE components of the calendar, delimiters excluded, by TZID.</summary>
+        public Dictionary<string, List<ContentLine>>? Definitions => _definitions.Count is 0 ? null : _definitions;
+
         public TimeZoneInfo? Resolve(string id)
         {
             if (!_cache.TryGetValue(id, out var timeZone))
@@ -528,12 +698,33 @@ internal static class InternetCalendarParser
 
         private TimeZoneInfo? ResolveCore(string id)
         {
+            // An identifier the writer could not write back, as one holding a line feed encoded as ^n, is not resolved.
+            if (!Utilities.IsValidTimeZoneId(id))
+                return null;
+
             if (TimeZones.TryFindWithoutThrowing(id, out var timeZone))
                 return timeZone;
 
             if (_definitions.TryGetValue(id, out var definition) && VTimeZoneReader.Create(id, definition) is { } custom)
                 return custom;
 
+            return ResolvePrefixedIdentifier(id);
+        }
+
+        /// <summary>Resolves a time zone of the platform, or the one whose identifier ends a prefixed identifier.</summary>
+        public static TimeZoneInfo? ResolveWithoutDefinitions(string id)
+        {
+            if (!Utilities.IsValidTimeZoneId(id))
+                return null;
+
+            if (TimeZones.TryFindWithoutThrowing(id, out var timeZone))
+                return timeZone;
+
+            return ResolvePrefixedIdentifier(id);
+        }
+
+        private static TimeZoneInfo? ResolvePrefixedIdentifier(string id)
+        {
             // A prefixed identifier, as Mozilla and other producers write, usually ends with an IANA identifier. The
             // longest suffix starting with a letter wins, so America/Argentina/Buenos_Aires is preferred to Buenos_Aires.
             var segments = id.Split(['/'], StringSplitOptions.RemoveEmptyEntries);
@@ -544,7 +735,7 @@ internal static class InternetCalendarParser
                     continue;
 
                 var candidate = string.Join("/", segments, first, count);
-                if (TimeZones.TryFindWithoutThrowing(candidate, out timeZone))
+                if (TimeZones.TryFindWithoutThrowing(candidate, out var timeZone))
                     return timeZone;
             }
 
@@ -553,36 +744,38 @@ internal static class InternetCalendarParser
     }
 
     /// <summary>Consumes a component whose content the model does not represent, including the components nested in it.</summary>
+    /// <remarks>Every nested component has to be terminated by an END naming it, as the components the model reads are.</remarks>
     private static bool TrySkipComponent(List<ContentLine> lines, ref int index, string component, out string? error)
     {
-        var depth = 1;
+        var components = new Stack<string>();
+        components.Push(component);
         while (index < lines.Count)
         {
             var line = lines[index];
             index++;
 
-            if (IsBegin(line, out _))
+            if (IsBegin(line, out var begin))
             {
-                depth++;
+                components.Push(begin);
             }
             else if (IsEnd(line, out var end))
             {
-                depth--;
-                if (depth is 0)
+                var current = components.Pop();
+                if (!string.Equals(end, current, StringComparison.Ordinal))
                 {
-                    if (!string.Equals(end, component, StringComparison.Ordinal))
-                    {
-                        error = $"The {component} component is terminated by 'END:{end}'";
-                        return false;
-                    }
+                    error = $"The {current} component is terminated by 'END:{end}'";
+                    return false;
+                }
 
+                if (components.Count is 0)
+                {
                     error = null;
                     return true;
                 }
             }
         }
 
-        error = $"The {component} component is not terminated by 'END:{component}'";
+        error = $"The {components.Peek()} component is not terminated by 'END:{components.Peek()}'";
         return false;
     }
 
@@ -600,7 +793,8 @@ internal static class InternetCalendarParser
     {
         if (string.Equals(line.Name, name, StringComparison.OrdinalIgnoreCase))
         {
-            component = line.Value.ToUpperInvariant();
+            // Trailing white space, which some producers leave, is not part of the component name.
+            component = line.Value.TrimEnd(' ', '\t').ToUpperInvariant();
             return true;
         }
 

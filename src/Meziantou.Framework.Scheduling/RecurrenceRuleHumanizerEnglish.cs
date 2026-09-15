@@ -6,6 +6,10 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
     {
         ArgumentNullException.ThrowIfNull(rule);
 
+        // COUNT=0 produces no occurrence
+        if (rule.Occurrences is 0)
+            return "never";
+
         var sb = new StringBuilder();
         AppendInterval(sb, rule);
         var daySetPositions = GetDaySetPositions(rule);
@@ -19,9 +23,16 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             AppendTimes(sb, rule.ByHours, rule.ByMinutes, rule.BySeconds);
             if (rule.BySetPositions.Count > 0)
             {
+                // BYSETPOS selects among the instances of every period of the frequency, not among all the occurrences
                 sb.Append(", only the ");
                 sb.Append(JoinAnd([.. rule.BySetPositions.Select(GetPositionText)]));
                 sb.Append(rule.BySetPositions.Count is 1 ? " occurrence" : " occurrences");
+                sb.Append(" of each ");
+                sb.Append(GetFrequencyUnit(rule.Frequency));
+                if (rule.Occurrences is not null || rule.EndDate is not null)
+                {
+                    sb.Append(',');
+                }
             }
         }
 
@@ -35,9 +46,9 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
-    private static void AppendInterval(StringBuilder sb, RuleParts rule)
+    private static string GetFrequencyUnit(Frequency frequency)
     {
-        var unit = rule.Frequency switch
+        return frequency switch
         {
             Frequency.Secondly => "second",
             Frequency.Minutely => "minute",
@@ -47,7 +58,11 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             Frequency.Monthly => "month",
             _ => "year",
         };
+    }
 
+    private static void AppendInterval(StringBuilder sb, RuleParts rule)
+    {
+        var unit = GetFrequencyUnit(rule.Frequency);
         sb.Append("every ");
         switch (rule.Interval)
         {
@@ -107,7 +122,7 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 }
 
                 sb.Append(" of ");
-                sb.Append(GetWeekNumbersText(rule.ByWeekNumbers));
+                sb.Append(GetWeekNumbersText(rule.ByWeekNumbers, isCondition: false));
                 if (hasOrdinalDays)
                 {
                     sb.Append(" if it is ");
@@ -185,7 +200,7 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
             if (rule.ByWeekNumbers.Count > 0)
             {
-                conditions.Add("in " + GetWeekNumbersText(rule.ByWeekNumbers));
+                conditions.Add("in " + GetWeekNumbersText(rule.ByWeekNumbers, isCondition: true));
             }
 
             if (days.Count > 0 && !isWeekdayOfMonthDay)
@@ -319,12 +334,21 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
     private static string GetMonthsText(IList<int> months) => JoinAnd([.. months.Select(MonthToString)]);
 
     /// <summary>Gets the text of week numbers such as "week 20", "weeks 1 and 2", or "week 1 and the last week of the year".</summary>
-    private static string GetWeekNumbersText(IList<int> weekNumbers)
+    /// <param name="weekNumbers">The week numbers.</param>
+    /// <param name="isCondition"><see langword="true"/> when a day must be in one of the weeks, which reads "week 1 or 2".</param>
+    private static string GetWeekNumbersText(IList<int> weekNumbers, bool isCondition)
     {
         if (weekNumbers.All(week => week > 0))
-            return (weekNumbers.Count is 1 ? "week " : "weeks ") + JoinAnd([.. weekNumbers.Select(ToInvariantString)]);
+        {
+            var numbers = weekNumbers.Select(ToInvariantString).ToArray();
+            if (isCondition)
+                return "week " + JoinOr(numbers);
 
-        return JoinAnd([.. weekNumbers.Select(week => week > 0 ? "week " + ToInvariantString(week) : "the " + GetPositionText(week) + " week")]) + " of the year";
+            return (weekNumbers.Count is 1 ? "week " : "weeks ") + JoinAnd(numbers);
+        }
+
+        var items = weekNumbers.Select(week => week > 0 ? "week " + ToInvariantString(week) : "the " + GetPositionText(week) + " week").ToArray();
+        return (isCondition ? JoinOr(items) : JoinAnd(items)) + " of the year";
     }
 
     /// <summary>Gets the text of day numbers such as "1st and 15th" or "1st and last day" (without the leading article).</summary>

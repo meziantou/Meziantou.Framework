@@ -96,6 +96,7 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
                 AppendValues(sb, BySetPositions);
             }
 
+            AppendExtensionParts(sb);
             return sb.ToString();
         }
     }

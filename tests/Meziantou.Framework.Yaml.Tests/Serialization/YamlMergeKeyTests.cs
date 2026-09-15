@@ -1,3 +1,4 @@
+#pragma warning disable MA0048 // File name must match type name
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -198,7 +199,12 @@ public sealed class YamlMergeKeyTests
 
     private static YamlSerializerOptions PreserveOptions => new() { ReferenceHandling = YamlReferenceHandling.Preserve };
 
-    private sealed class MergePayload
+    private static T? Deserialize<T>(string yaml, bool useSourceGeneration)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, MergeKeyYamlContext.Default)
+            : YamlSerializer.Deserialize<T>(yaml);
+
+    internal sealed class MergePayload
     {
         public int A { get; set; }
 
@@ -230,12 +236,19 @@ public sealed class YamlMergeKeyTests
 
     private sealed record SectionRecord(int Timeout, int Retries);
 
+    internal sealed record MergeRecord(int B, int A = 0);
+
     private sealed class PopulateConfig
     {
         public Section? Defaults { get; set; }
 
         [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
         public Section Prod { get; } = new() { Name = "initial" };
+    }
+
+    internal sealed class MergeDictionaryHolder
+    {
+        public Dictionary<string, string>? Values { get; set; }
     }
 
     private sealed class DictionaryDefaultsConfig
@@ -304,26 +317,93 @@ public sealed class YamlMergeKeyTests
     }
 
     [Theory]
-    [InlineData("'<<': hello\n")]
-    [InlineData("\"<<\": hello\n")]
-    [InlineData("!!str << : hello\n")]
-    public void Deserialize_Dictionary_QuotedOrTaggedMergeKeyIsAnOrdinaryKey(string yaml)
+    [InlineData(false, "'<<': hello\n")]
+    [InlineData(false, "\"<<\": hello\n")]
+    [InlineData(false, "!!str << : hello\n")]
+    [InlineData(true, "'<<': hello\n")]
+    [InlineData(true, "\"<<\": hello\n")]
+    [InlineData(true, "!!str << : hello\n")]
+    public void Deserialize_Dictionary_QuotedOrTaggedMergeKeyIsAnOrdinaryKey(bool useSourceGeneration, string yaml)
     {
-        var result = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
+        var result = Deserialize<Dictionary<string, string>>(yaml, useSourceGeneration);
 
         Assert.NotNull(result);
         Assert.Equal("hello", result["<<"]);
     }
 
     [Theory]
-    [InlineData("'<<': hello\n")]
-    [InlineData("\"<<\": hello\n")]
-    public void Deserialize_UntypedObject_QuotedMergeKeyIsAnOrdinaryKey(string yaml)
+    [InlineData(false, "'<<': hello\n")]
+    [InlineData(false, "\"<<\": hello\n")]
+    [InlineData(true, "'<<': hello\n")]
+    [InlineData(true, "\"<<\": hello\n")]
+    public void Deserialize_UntypedObject_QuotedMergeKeyIsAnOrdinaryKey(bool useSourceGeneration, string yaml)
     {
-        var result = YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml);
+        var result = Deserialize<Dictionary<string, object?>>(yaml, useSourceGeneration);
 
         Assert.NotNull(result);
         Assert.Equal("hello", result["<<"]);
+    }
+
+    [Theory]
+    [InlineData(false, "'<<': { A: 1 }\nB: 2\n")]
+    [InlineData(false, "\"<<\": { A: 1 }\nB: 2\n")]
+    [InlineData(false, "!!str << : { A: 1 }\nB: 2\n")]
+    [InlineData(false, "<<: { \"<<\": { A: 1 }, B: 2 }\n")]
+    [InlineData(true, "'<<': { A: 1 }\nB: 2\n")]
+    [InlineData(true, "\"<<\": { A: 1 }\nB: 2\n")]
+    [InlineData(true, "!!str << : { A: 1 }\nB: 2\n")]
+    [InlineData(true, "<<: { \"<<\": { A: 1 }, B: 2 }\n")]
+    public void Deserialize_Object_QuotedOrTaggedMergeKeyIsAnOrdinaryKey(bool useSourceGeneration, string yaml)
+    {
+        var result = Deserialize<MergePayload>(yaml, useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result.A);
+        Assert.Equal(2, result.B);
+    }
+
+    [Theory]
+    [InlineData(false, "<<: { A: 1 }\nB: 2\n")]
+    [InlineData(false, "!!merge << : { A: 1 }\nB: 2\n")]
+    [InlineData(false, "<<: { <<: { A: 1 }, B: 2 }\n")]
+    [InlineData(true, "<<: { A: 1 }\nB: 2\n")]
+    [InlineData(true, "!!merge << : { A: 1 }\nB: 2\n")]
+    [InlineData(true, "<<: { <<: { A: 1 }, B: 2 }\n")]
+    public void Deserialize_Object_PlainOrMergeTaggedMergeKeyIsApplied(bool useSourceGeneration, string yaml)
+    {
+        var result = Deserialize<MergePayload>(yaml, useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.A);
+        Assert.Equal(2, result.B);
+    }
+
+    [Theory]
+    [InlineData(false, "\"<<\": { A: 1 }\nB: 2\n", 0)]
+    [InlineData(false, "<<: { '<<': { A: 1 }, B: 2 }\n", 0)]
+    [InlineData(false, "<<: { A: 1 }\nB: 2\n", 1)]
+    [InlineData(true, "\"<<\": { A: 1 }\nB: 2\n", 0)]
+    [InlineData(true, "<<: { '<<': { A: 1 }, B: 2 }\n", 0)]
+    [InlineData(true, "<<: { A: 1 }\nB: 2\n", 1)]
+    public void Deserialize_ObjectWithConstructor_OnlyPlainMergeKeyIsApplied(bool useSourceGeneration, string yaml, int expectedA)
+    {
+        var result = Deserialize<MergeRecord>(yaml, useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedA, result.A);
+        Assert.Equal(2, result.B);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_DictionaryMember_QuotedMergeKeyIsAnOrdinaryKey(bool useSourceGeneration)
+    {
+        var result = Deserialize<MergeDictionaryHolder>("Values:\n  \"<<\": hello\n  other: world\n", useSourceGeneration);
+
+        Assert.NotNull(result?.Values);
+        Assert.Equal("hello", result.Values["<<"]);
+        Assert.Equal("world", result.Values["other"]);
     }
 
     [Fact]
@@ -344,3 +424,11 @@ public sealed class YamlMergeKeyTests
     }
 }
 
+[YamlSerializable(typeof(YamlMergeKeyTests.MergePayload))]
+[YamlSerializable(typeof(YamlMergeKeyTests.MergeRecord))]
+[YamlSerializable(typeof(YamlMergeKeyTests.MergeDictionaryHolder))]
+[YamlSerializable(typeof(Dictionary<string, string>))]
+[YamlSerializable(typeof(Dictionary<string, object?>))]
+internal sealed partial class MergeKeyYamlContext : YamlSerializerContext
+{
+}

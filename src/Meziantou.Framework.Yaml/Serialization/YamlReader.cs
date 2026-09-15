@@ -167,11 +167,11 @@ public sealed class YamlReader : YamlReaderWriterBase
         var comparer = reader.Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         discriminatorValue = null;
 
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var yamlWriter = new YamlWriter(writer, reader.Options);
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
         WriteBufferedNode(reader, yamlWriter, comparer, discriminatorPropertyName, isRootMapping: true, ref discriminatorValue);
-        return writer.ToString();
+        return builder.ToString();
     }
 
     /// <summary>Buffers the current YAML node to a string.</summary>
@@ -185,12 +185,12 @@ public sealed class YamlReader : YamlReaderWriterBase
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        var yamlWriter = new YamlWriter(writer, reader.Options);
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
         string? unused = null;
         WriteBufferedNode(reader, yamlWriter, StringComparer.Ordinal, discriminatorPropertyName: string.Empty, isRootMapping: false, ref unused);
-        return writer.ToString();
+        return builder.ToString();
     }
 
     /// <summary>Advances to the next token.</summary>
@@ -213,6 +213,14 @@ public sealed class YamlReader : YamlReaderWriterBase
         return ScalarValue ?? string.Empty;
     }
 
+    /// <summary>Creates the writer that copies a node, so that every scalar of the copy resolves as it did in the source.</summary>
+    /// <remarks>
+    /// Scalars keep their style, which is what tells a quoted <c>"42"</c> from the number <c>42</c>. The copy is always
+    /// written in the block style, which can keep more scalars plain than the flow style.
+    /// </remarks>
+    private static YamlWriter CreateBufferWriter(StringBuilder builder, YamlSerializerOptions options)
+        => new(builder, options, forceBlockStyle: true);
+
     private static void WriteBufferedNode(
         YamlReader reader,
         YamlWriter writer,
@@ -231,10 +239,10 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 if (reader.Tag is not null)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
-                writer.WriteScalar(reader.ScalarValue);
+                writer.WriteScalar(reader.ScalarValue ?? string.Empty, reader.ScalarStyle);
                 reader.Read();
                 return;
 
@@ -251,7 +259,7 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 if (reader.Tag is not null)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
                 writer.WriteStartSequence();
@@ -272,7 +280,7 @@ public sealed class YamlReader : YamlReaderWriterBase
 
                 if (reader.Tag is not null)
                 {
-                    writer.WriteTag(reader.Tag);
+                    writer.WriteResolvedTag(reader.Tag);
                 }
 
                 writer.WriteStartMapping();
@@ -285,7 +293,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     }
 
                     var key = reader.ScalarValue ?? string.Empty;
-                    writer.WritePropertyName(key);
+                    writer.WritePropertyName(key, reader.ScalarStyle);
                     reader.Read();
 
                     if (isRootMapping && discriminatorValue is null && keyComparer.Equals(key, discriminatorPropertyName))

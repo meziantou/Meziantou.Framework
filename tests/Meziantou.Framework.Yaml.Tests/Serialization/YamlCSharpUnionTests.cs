@@ -286,6 +286,28 @@ public sealed class YamlCSharpUnionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void StructuralClassifierKeepsQuotedScalarsAsText(bool useSourceGeneration)
+    {
+        Assert.Equal("42", Deserialize<TextOrAnyUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("true", Deserialize<TextOrAnyUnion>("'true'\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("42\n", Deserialize<TextOrAnyUnion>("|\n  42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("42", Deserialize<TextOrAnyUnion>("!!str 42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(42L, Deserialize<TextOrAnyUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(true, Deserialize<TextOrAnyUnion>("true\n", useSourceGeneration, StructuralOptions).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StructuralClassifierSelectsTheStringCaseForAQuotedNumberReadableFromString(bool useSourceGeneration)
+    {
+        Assert.Equal("42", Deserialize<StringNumberOrTextUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(42, Deserialize<StringNumberOrTextUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NumberHandlingOnUnionWritesNumbersAsStrings(bool useSourceGeneration)
     {
         var yaml = Serialize(new StringNumberUnion(42), useSourceGeneration);
@@ -393,6 +415,7 @@ public sealed class YamlCSharpUnionTests
     internal union ShapeOrCircleUnion(UnionCircle, UnionRectangle);
     internal union PointOrLabelUnion(UnionPoint, UnionLabel);
     internal union LabelOrAnyUnion(UnionLabel, object);
+    internal union TextOrAnyUnion(string, object);
 
     [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString | YamlNumberHandling.WriteAsString)]
     internal union StringNumberUnion(int, bool);
@@ -479,6 +502,7 @@ public sealed class YamlCSharpUnionTests
 [YamlSerializable(typeof(YamlCSharpUnionTests.ShapeOrCircleUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.PointOrLabelUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.LabelOrAnyUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.TextOrAnyUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.StringNumberUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.StringNullableNumberUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.StringNumberOrTextUnion))]

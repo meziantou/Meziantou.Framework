@@ -13,6 +13,8 @@ internal abstract class ClassifiedShape
 internal sealed class ClassifiedCircle : ClassifiedShape
 {
     public int Radius { get; set; }
+
+    public object? Label { get; set; }
 }
 
 internal sealed class ClassifiedSquare : ClassifiedShape
@@ -123,6 +125,68 @@ public sealed class YamlPolymorphicClassifierTests
         Assert.Equal(
             ["circle", "square"],
             context.DerivedTypes.Select(d => d.Discriminator).Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(false, "Radius: 3\nLabel: \"42\"\n", "42")]
+    [InlineData(false, "$type: circle\nRadius: 3\nLabel: 'true'\n", "true")]
+    [InlineData(true, "Radius: 3\nLabel: \"42\"\n", "42")]
+    [InlineData(true, "$type: circle\nRadius: 3\nLabel: 'true'\n", "true")]
+    public void BufferedValueKeepsQuotedScalarsAsText(bool useSourceGeneration, string yaml, string expectedLabel)
+    {
+        var value = Assert.IsType<ClassifiedCircle>(Deserialize(yaml, useSourceGeneration, ClassifierOptions));
+
+        Assert.Equal(3, value.Radius);
+        Assert.Equal(expectedLabel, Assert.IsType<string>(value.Label));
+    }
+
+    [Theory]
+    [InlineData(false, "Radius: 3\nLabel: !!str 42\n")]
+    [InlineData(false, "$type: circle\nRadius: 3\nLabel: !!str 42\n")]
+    [InlineData(true, "Radius: 3\nLabel: !!str 42\n")]
+    [InlineData(true, "$type: circle\nRadius: 3\nLabel: !!str 42\n")]
+    public void BufferedValueKeepsTags(bool useSourceGeneration, string yaml)
+    {
+        var value = Assert.IsType<ClassifiedCircle>(Deserialize(yaml, useSourceGeneration, ClassifierOptions));
+
+        Assert.Equal(3, value.Radius);
+        Assert.Equal("42", Assert.IsType<string>(value.Label));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BufferedValueKeepsPlainScalarsPlain(bool useSourceGeneration)
+    {
+        var number = Assert.IsType<ClassifiedCircle>(Deserialize("Radius: 3\nLabel: 42\n", useSourceGeneration, ClassifierOptions));
+        var omitted = Assert.IsType<ClassifiedCircle>(Deserialize("$type: circle\nLabel:\n", useSourceGeneration, ClassifierOptions));
+
+        Assert.Equal(42L, number.Label);
+        Assert.Null(omitted.Label);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BufferedValueKeepsTheMergeKey(bool useSourceGeneration)
+    {
+        var value = Assert.IsType<ClassifiedCircle>(Deserialize("$type: circle\n<<: {Radius: 3}\n", useSourceGeneration, ClassifierOptions));
+
+        Assert.Equal(3, value.Radius);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BufferedValueKeepsScalarStylesWhenNotIndented(bool useSourceGeneration)
+    {
+        var options = ClassifierOptions with { WriteIndented = false };
+
+        var omitted = Assert.IsType<ClassifiedCircle>(Deserialize("Radius: 3\nLabel:\n", useSourceGeneration, options));
+        var quoted = Assert.IsType<ClassifiedCircle>(Deserialize("Radius: 3\nLabel: \"42\"\n", useSourceGeneration, options));
+
+        Assert.Null(omitted.Label);
+        Assert.Equal("42", Assert.IsType<string>(quoted.Label));
     }
 
     private static YamlSerializerOptions ClassifierOptions { get; } = new() { TypeClassifiers = [new ShapeByFirstKeyClassifier()] };

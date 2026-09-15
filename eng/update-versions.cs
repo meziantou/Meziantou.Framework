@@ -56,19 +56,20 @@ var changesPerCsproj = new Dictionary<string, CsprojInfo>(StringComparer.Ordinal
 var allCsprojFiles = new List<string>();
 var packableProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-foreach (var file in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
+// Evaluating a project starts a dotnet process, which is by far the slowest step of the script, so evaluate them concurrently
+var projectEvaluations = Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories)
+    .AsParallel()
+    .AsOrdered()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(file => (File: file, IsPackable: IsPackableProject(file)))
+    .ToArray();
+
+foreach (var (file, isPackable) in projectEvaluations)
 {
-    var isPackable = IsPackableProject(file);
-    if (isPackable)
-    {
-        _ = packableProjects.Add(file);
-    }
-
     if (!isPackable)
-    {
         continue;
-    }
 
+    _ = packableProjects.Add(file);
     Console.WriteLine($"Project file detected: {file}");
     allCsprojFiles.Add(file);
     changesPerCsproj[file] = new CsprojInfo();
@@ -102,7 +103,7 @@ foreach (var csproj in allCsprojFiles)
 var shippedByPackages = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 foreach (var csproj in allCsprojFiles)
 {
-    foreach (var dependency in GetProjectReferences(csproj))
+    foreach (var dependency in dependencyGraph[csproj])
     {
         if (packableProjects.Contains(dependency))
             continue;
@@ -134,6 +135,40 @@ foreach (var csproj in dependencyGraph.Keys.OrderBy(k => k, StringComparer.Ordin
 
 Console.WriteLine();
 
+// Load the git data of all commits concurrently. The commits are still processed sequentially below because the
+// processing depends on the order: a version change stops the processing of the older commits of a project.
+// Note that the work must be done in Select: ParallelEnumerable.ToDictionary runs its selectors sequentially.
+var changesPerCommit = commits
+    .Where(commit => !skippedCommits.Contains(commit))
+    .AsParallel()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(commit => (Commit: commit, Changes: RunAndCapture("git", ["diff", "--name-only", commit, $"{commit}~1"])
+        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        .Where(c => c.StartsWith("src/", StringComparison.Ordinal))
+        .ToArray()))
+    .ToDictionary(item => item.Commit, item => item.Changes, StringComparer.Ordinal);
+
+var projectFileContents = changesPerCommit
+    .SelectMany(kv => kv.Value.Where(c => c.EndsWith(".csproj", StringComparison.Ordinal)).Select(change => (Commit: kv.Key, Change: change)))
+    .AsParallel()
+    .WithDegreeOfParallelism(Environment.ProcessorCount)
+    .Select(item =>
+    {
+        string previousContent;
+        try
+        {
+            previousContent = RunAndCapture("git", ["show", $"{item.Commit}~1:{item.Change}"]);
+        }
+        catch
+        {
+            previousContent = "";
+        }
+
+        var currentContent = RunAndCapture("git", ["show", $"{item.Commit}:{item.Change}"]);
+        return (Key: item, Contents: (PreviousContent: previousContent, CurrentContent: currentContent));
+    })
+    .ToDictionary(item => item.Key, item => item.Contents);
+
 // Process commits
 var i2 = 0;
 foreach (var commit in commits)
@@ -147,28 +182,16 @@ foreach (var commit in commits)
     i2++;
     Console.WriteLine($"Processing commit {i2}/{commits.Length}: {commit}");
 
-    var changes = RunAndCapture("git", ["diff", "--name-only", commit, $"{commit}~1"])
-        .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-        .Where(c => c.StartsWith("src/", StringComparison.Ordinal))
-        .ToArray();
+    var changes = changesPerCommit[commit];
 
     // Process csproj files first to check for version changes
     foreach (var change in changes.Where(c => c.EndsWith(".csproj", StringComparison.Ordinal)))
     {
-        string previousContent;
-        try
-        {
-            previousContent = RunAndCapture("git", ["show", $"{commit}~1:{change}"]);
-        }
-        catch
-        {
-            previousContent = "";
-        }
+        var (previousContent, currentContent) = projectFileContents[(commit, change)];
 
         Console.WriteLine($"Getting previous version of {change}");
         var previousVersion = GetVersion(previousContent);
 
-        var currentContent = RunAndCapture("git", ["show", $"{commit}:{change}"]);
         Console.WriteLine($"Getting current version of {change}");
         var currentVersion = GetVersion(currentContent);
 

@@ -1630,22 +1630,33 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     // Whether the number handling declared on the union lets a numeric case read some string scalars, such as "42".
     // Whether a given scalar is readable is only known at runtime.
     private static bool CanCSharpUnionCaseReadStringScalar(CSharpUnionCaseModel unionCase)
+        => GetCSharpUnionCaseStringScalarCondition(unionCase) is not null;
+
+    // Mirrors YamlNumberHandlingConverter.CanReadStringScalar, which is internal to the runtime library.
+    private static string? GetCSharpUnionCaseStringScalarCondition(CSharpUnionCaseModel unionCase)
     {
         const int AllowReadingFromString = 1;
         const int AllowNamedFloatingPointLiterals = 4;
 
         if (unionCase.NumberHandling is not { } numberHandling)
         {
-            return false;
+            return null;
+        }
+
+        string? condition = null;
+        if ((numberHandling & AllowNamedFloatingPointLiterals) != 0 &&
+            (unionCase.RuntimeType.SpecialType is SpecialType.System_Single or SpecialType.System_Double || GetIeee754TypeName(unionCase.RuntimeType) is not null))
+        {
+            condition = "reader.ScalarValue is \"NaN\" or \"Infinity\" or \"+Infinity\" or \"-Infinity\"";
         }
 
         if ((numberHandling & AllowReadingFromString) != 0)
         {
-            return true;
+            const string ParseCondition = "global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseInt64(reader, out _) || global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseDouble(reader, out _)";
+            condition = condition is null ? ParseCondition : condition + " || " + ParseCondition;
         }
 
-        return (numberHandling & AllowNamedFloatingPointLiterals) != 0 &&
-               (unionCase.RuntimeType.SpecialType is SpecialType.System_Single or SpecialType.System_Double || GetIeee754TypeName(unionCase.RuntimeType) is not null);
+        return condition;
     }
 
     private static string GetCSharpUnionKindDescription(CSharpUnionCaseKind kind)

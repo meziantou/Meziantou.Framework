@@ -6173,7 +6173,7 @@ public sealed partial class YamlSerializerContextGenerator
                 continue;
             }
 
-            builder.Append(innerIndent).Append("if (global::Meziantou.Framework.Yaml.Serialization.Converters.YamlNumberHandlingConverter.CanReadStringScalar(reader, typeof(").Append(runtimeTypeName).Append("), (global::Meziantou.Framework.Yaml.YamlNumberHandling)").Append(unionCase.NumberHandling!.Value).AppendLine("))");
+            builder.Append(innerIndent).Append("if (").Append(GetCSharpUnionCaseStringScalarCondition(unionCase)).AppendLine(")");
             builder.Append(innerIndent).AppendLine("{");
             builder.Append(innerIndent).AppendLine("    unionMatchCount++;");
             builder.Append(innerIndent).Append("    unionMatchedCase ??= typeof(").Append(runtimeTypeName).AppendLine(");");

@@ -261,7 +261,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         {
             // Another process created the container between the lookup and the creation, and the runtime refused the
             // name it already uses. Adopting it is the whole point of a reuse identifier.
-            if (await FindReusableContainerAsync(definition.ReuseId, cancellationToken).ConfigureAwait(false) is { } concurrentId)
+            if (await ReuseAdoption.FindAsync(ct => FindReusableContainerAsync(definition.ReuseId, ct), cancellationToken).ConfigureAwait(false) is { } concurrentId)
                 return concurrentId;
 
             throw;

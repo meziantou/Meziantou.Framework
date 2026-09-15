@@ -454,8 +454,9 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             Assert.Equal("linked", await reader.ReadToEndAsync(XunitCancellationToken));
         }
 
-        // apple/container hangs on a copy it cannot complete, so a directory copy is only exercised elsewhere.
-        if (Runtime == ContainerRuntime.AppleContainer)
+        // apple/container hangs on a copy it cannot complete, and wslc has no copy command at all (the adapter streams a
+        // single file), so a directory copy is only exercised elsewhere.
+        if (Runtime == ContainerRuntime.AppleContainer || Runtime == ContainerRuntime.Wslc)
             return;
 
         var downloaded = Path.Combine(Path.GetTempPath(), "MezTC-download-" + Guid.NewGuid().ToString("N"));
@@ -990,7 +991,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         await container.EnsureCreatedAsync(XunitCancellationToken);
 
         string reaperContainerId;
-        await using (var reaper = await Runtime.StartReaperAsync(XunitCancellationToken))
+        await using (var reaper = await StartReaperOrSkipAsync(new ContainerReaperOptions()))
         {
             reaperContainerId = reaper.ContainerId;
             Assert.NotEmpty(reaperContainerId);
@@ -1008,18 +1009,20 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     {
         global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The reaper image only runs on Linux containers.");
 
-        await using var sessionContainer = CreateHttpServerDefinition().CreateContainer();
+        // The watchdog watches a session of its own: watching the session of the test run would have it remove the
+        // containers of every other test running against this daemon.
+        var watchedSessionId = Guid.NewGuid().ToString("N");
+        var watched = CreateHttpServerDefinition();
+        watched.Identity = SessionIdentity.Current with { SessionId = watchedSessionId };
+        await using var sessionContainer = watched.CreateContainer();
         await sessionContainer.EnsureCreatedAsync(XunitCancellationToken);
 
-        // Another session of a live process: a run that is over would be removed by the cleanup tests of the other runtimes
-        // that share this daemon.
-        var otherSession = CreateHttpServerDefinition();
-        otherSession.Identity = SessionIdentity.Current with { SessionId = Guid.NewGuid().ToString("N") };
-        await using var otherContainer = otherSession.CreateContainer();
+        // A container of the test run itself, which the watchdog must leave alone.
+        await using var otherContainer = CreateHttpServerDefinition().CreateContainer();
         await otherContainer.EnsureCreatedAsync(XunitCancellationToken);
 
-        var options = new ContainerReaperOptions { ReconnectionTimeout = TimeSpan.FromSeconds(1) };
-        await using var reaper = await Runtime.StartReaperAsync(options, XunitCancellationToken);
+        var options = new ContainerReaperOptions { ReconnectionTimeout = TimeSpan.FromSeconds(1), SessionId = watchedSessionId };
+        await using var reaper = await StartReaperOrSkipAsync(options);
 
         // What the watchdog sees when this process is killed: the connection goes away and never comes back.
         await reaper.AbandonConnectionAsync();
@@ -1032,6 +1035,20 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         }
 
         Assert.True(await otherContainer.ExistsAsync(XunitCancellationToken), "The reaper removed a container of another session.");
+    }
+
+    /// <summary>Starts the watchdog, skipping the test when the runtime has no socket to drive it with: the podman service is not running on every machine.</summary>
+    private async Task<ContainerReaper> StartReaperOrSkipAsync(ContainerReaperOptions options)
+    {
+        try
+        {
+            return await Runtime.StartReaperAsync(options, XunitCancellationToken);
+        }
+        catch (NotSupportedException ex)
+        {
+            global::Xunit.Assert.Skip("The reaper cannot run with this runtime: " + ex.Message);
+            throw;
+        }
     }
 
     /// <summary>A definition whose container looks like the leftover of a run that is over: the process id is the one of this process, but the start time is not, which is exactly what a reused process id looks like.</summary>

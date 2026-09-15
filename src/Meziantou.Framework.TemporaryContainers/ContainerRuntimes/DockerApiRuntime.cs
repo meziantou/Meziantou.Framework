@@ -65,7 +65,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         {
             // Another process created the container between the lookup and the creation. Adopting it is the whole
             // point of a reuse identifier.
-            return await FindReusableContainerAsync(definition.ReuseId!, cancellationToken).ConfigureAwait(false)
+            return await ReuseAdoption.FindAsync(ct => FindReusableContainerAsync(definition.ReuseId!, ct), cancellationToken).ConfigureAwait(false)
                 ?? throw CreateException($"Unable to create the container: the name '{name}' is already used by a container that does not belong to this library.", HttpStatusCode.Conflict);
         }
 

@@ -62,8 +62,9 @@ public sealed class ContainerReaper : IAsyncDisposable
             await container.StartAsync(cancellationToken).ConfigureAwait(false);
 
             var hostPort = container.GetMappedPort(ReaperPort);
-            var client = await ConnectAsync(hostPort, cancellationToken).ConfigureAwait(false);
-            return new ContainerReaper(container, hostPort, client, SessionIdentity.Current.SessionId);
+            var sessionId = options.SessionId ?? SessionIdentity.Current.SessionId;
+            var client = await ConnectAsync(hostPort, sessionId, cancellationToken).ConfigureAwait(false);
+            return new ContainerReaper(container, hostPort, client, sessionId);
         }
         catch
         {
@@ -74,7 +75,7 @@ public sealed class ContainerReaper : IAsyncDisposable
 
     /// <summary>Connects to the watchdog and registers the session, retrying until it answers.</summary>
     /// <remarks>The port forwarder of the runtime accepts connections as soon as the port is published, and resets them until the container is actually reachable, so a single attempt says nothing about the watchdog being up.</remarks>
-    private static async Task<TcpClient> ConnectAsync(int port, CancellationToken cancellationToken)
+    private static async Task<TcpClient> ConnectAsync(int port, string sessionId, CancellationToken cancellationToken)
     {
         var elapsed = Stopwatch.StartNew();
         while (true)
@@ -83,7 +84,7 @@ public sealed class ContainerReaper : IAsyncDisposable
             try
             {
                 await client.ConnectAsync("127.0.0.1", port, cancellationToken).ConfigureAwait(false);
-                await SendFilterAsync(client, cancellationToken).ConfigureAwait(false);
+                await SendFilterAsync(client, sessionId, cancellationToken).ConfigureAwait(false);
                 return client;
             }
             catch (Exception ex) when (ex is IOException or SocketException or InvalidOperationException && elapsed.Elapsed < HandshakeTimeout)
@@ -100,10 +101,10 @@ public sealed class ContainerReaper : IAsyncDisposable
     }
 
     /// <summary>Registers the resources to remove. The watchdog reads one URL-encoded query string per line and answers each one with an acknowledgement.</summary>
-    internal static async Task SendFilterAsync(TcpClient client, CancellationToken cancellationToken)
+    internal static async Task SendFilterAsync(TcpClient client, string sessionId, CancellationToken cancellationToken)
     {
         var stream = client.GetStream();
-        await stream.WriteAsync(Encoding.UTF8.GetBytes(BuildFilter(SessionIdentity.Current.SessionId)), cancellationToken).ConfigureAwait(false);
+        await stream.WriteAsync(Encoding.UTF8.GetBytes(BuildFilter(sessionId)), cancellationToken).ConfigureAwait(false);
         await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         var buffer = new byte[64];
@@ -142,7 +143,7 @@ public sealed class ContainerReaper : IAsyncDisposable
 
             try
             {
-                var client = await ConnectAsync(_hostPort, cancellationToken).ConfigureAwait(false);
+                var client = await ConnectAsync(_hostPort, SessionId, cancellationToken).ConfigureAwait(false);
                 var previous = _client;
                 _client = client;
                 previous.Dispose();

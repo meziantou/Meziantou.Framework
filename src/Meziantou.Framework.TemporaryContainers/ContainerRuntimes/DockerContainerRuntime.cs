@@ -375,10 +375,13 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     {
         if (_flavor is Flavor.Podman)
         {
-            var info = await Cli.RunBufferedAsync(["info", "--format", "{{.Host.RemoteSocket.Path}}"], cancellationToken).ConfigureAwait(false);
-            var socketPath = StripUnixScheme(info.StandardOutput.Trim());
-            if (string.IsNullOrEmpty(socketPath))
-                throw new NotSupportedException("podman does not report the socket of its service. Start it with 'podman system service', or set ContainerReaperOptions.SocketPath.");
+            // The watchdog drives the socket of the podman service, which is not running on every machine.
+            var info = await Cli.RunBufferedAsync(["info", "--format", "{{.Host.RemoteSocket.Path}} {{.Host.RemoteSocket.Exists}}"], cancellationToken).ConfigureAwait(false);
+            var parts = info.StandardOutput.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var socketPath = parts.Length > 0 ? StripUnixScheme(parts[0]) : "";
+            var exists = parts.Length > 1 && string.Equals(parts[1], "true", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(socketPath) || !exists)
+                throw new NotSupportedException("The socket of the podman service is not available. Start it with 'podman system service', or set ContainerReaperOptions.SocketPath.");
 
             return socketPath;
         }
@@ -447,6 +450,12 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     {
         if (_flavor is Flavor.Wslc)
         {
+            // wslc has no copy command, so the adapter streams the file itself. A directory cannot be streamed, and
+            // reading one reports an error of 'cat' that says nothing about what the runtime cannot do.
+            var isDirectory = await ExecAsync(id, BuildShellCommand("[ -d " + QuoteShellArgument(source) + " ]"), cancellationToken).ConfigureAwait(false);
+            if (isDirectory.ExitCode == 0)
+                throw new NotSupportedException($"The 'wslc' runtime cannot copy the directory '{source}': it has no copy command, and only a single file can be streamed out of a container.");
+
             await using var stream = await OpenReadAsync(id, source, cancellationToken).ConfigureAwait(false);
             await using var fileStream = File.Create(destination);
             await stream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
@@ -468,6 +477,15 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         }
 
         return true;
+    }
+
+    private static ExecOptions BuildShellCommand(string command)
+    {
+        var options = new ExecOptions();
+        options.Command.Add("sh");
+        options.Command.Add("-c");
+        options.Command.Add(command);
+        return options;
     }
 
     private static string QuoteShellArgument(string value)

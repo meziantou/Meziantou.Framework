@@ -14,4 +14,7 @@ public sealed class ContainerReaperOptions
 
     /// <summary>Gets or sets how long the watchdog waits, after this process is gone, before it removes the resources. Defaults to ten seconds.</summary>
     public TimeSpan ReconnectionTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>The session the watchdog removes the resources of. Defaults to the current one; the tests use it to watch a session of their own, so the watchdog cannot remove the containers of the tests that run beside them.</summary>
+    internal string? SessionId { get; set; }
 }

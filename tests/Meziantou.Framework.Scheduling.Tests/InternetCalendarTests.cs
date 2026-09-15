@@ -426,12 +426,21 @@ public sealed class InternetCalendarTests
         Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240310T063000Z", GetContentLine(ics, "RRULE"));
     }
 
+    private static Event CreateFloatingEvent()
+    {
+        return new Event
+        {
+            Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Unspecified),
+            End = new DateTime(2024, 01, 02, 09, 00, 00, DateTimeKind.Unspecified),
+        };
+    }
+
     [Fact]
     public void ToIcs_KeepsTheRecurrenceUntilUnchangedWithoutATimeZone()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY");
         rrule.EndDate = new DateTime(2024, 03, 01, 08, 00, 00, DateTimeKind.Unspecified);
-        var @event = CreateEvent();
+        var @event = CreateFloatingEvent();
         @event.RecurrenceRule = rrule;
 
         var ics = CreateCalendarWithEvent(@event).ToIcs();
@@ -444,7 +453,7 @@ public sealed class InternetCalendarTests
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY");
         rrule.EndDate = new DateTime(2024, 03, 01, 08, 00, 00, DateTimeKind.Unspecified);
-        var @event = CreateEvent();
+        var @event = CreateFloatingEvent();
         @event.RecurrenceRule = rrule;
 
         var parsed = InternetCalendar.Parse(CreateCalendarWithEvent(@event).ToIcs());
@@ -474,8 +483,102 @@ public sealed class InternetCalendarTests
 
         var ics = CreateCalendarWithEvent(@event).ToIcs();
 
-        // Midnight in a -05:00 time zone is 05:00Z
-        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240301T050000Z", GetContentLine(ics, "RRULE"));
+        // A DATE UNTIL includes the whole day, whose last second in a -05:00 time zone is 04:59:59Z the next day
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240302T045959Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesAUtcUntilAsFloatingWhenTheTimeZoneOfTheStartIsUnresolved()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART;TZID=Custom/Unknown:20240101T100000", "RRULE:FREQ=DAILY;UNTIL=20240105T090000Z"));
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("DTSTART:20240101T100000", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240105T090000", GetContentLine(ics, "RRULE"));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
+    }
+
+    [Fact]
+    public void ToIcs_WritesAFloatingUntilInUtcWhenTheStartIsUtc()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240301T080000");
+        var @event = CreateEvent();
+        @event.RecurrenceRule = rrule;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("DTSTART:20240102T080000Z", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240301T080000Z", GetContentLine(ics, "RRULE"));
+
+        // The rule of the event is not modified.
+        Assert.Equal("FREQ=DAILY;UNTIL=20240301T080000", rrule.Text);
+        Assert.Equal(DateTimeKind.Unspecified, rrule.EndDate?.Kind);
+    }
+
+    [Fact]
+    public void ToIcs_WritesAFloatingUntilInUtcWhenTheStartIsLocal()
+    {
+        var until = new DateTime(2024, 03, 01, 08, 00, 00, DateTimeKind.Unspecified);
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = until;
+        var @event = new Event { Start = new DateTime(2024, 01, 02, 08, 00, 00, DateTimeKind.Local), RecurrenceRule = rrule };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // A floating UNTIL bounds the local occurrences by their wall clock, so it is read in the local time zone
+        var expected = TimeZoneInfo.ConvertTimeToUtc(until, TimeZoneInfo.Local).ToString("yyyyMMddTHHmmss", CultureInfo.InvariantCulture) + "Z";
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=" + expected, GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesADateUntilInUtcWhenTheStartIsUtc()
+    {
+        var @event = CreateEvent();
+        @event.RecurrenceRule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240301");
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240301T235959Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesADateUntilAsTheEndOfTheDayWhenTheStartIsFloating()
+    {
+        var @event = CreateFloatingEvent();
+        @event.RecurrenceRule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240301");
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240301T235959", GetContentLine(ics, "RRULE"));
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;UNTIL=20240105T090000", "20240105")]
+    [InlineData("FREQ=DAILY;UNTIL=20240105T000000", "20240105")]
+    [InlineData("FREQ=DAILY;UNTIL=20240105T233000Z", "20240105")]
+    public void ToIcs_WritesTheUntilOfAnAllDayEventAsADate(string rrule, string expected)
+    {
+        var @event = new Event { Start = new DateTime(2024, 01, 01), IsAllDay = true, RecurrenceRule = RecurrenceRule.Parse(rrule) };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("DTSTART;VALUE=DATE:20240101", GetContentLine(ics, "DTSTART"));
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=" + expected, GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_WritesTheUntilOfAnAllDayEventAsADateInTheFrameOfTheStart()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = new DateTime(2024, 01, 05, 23, 30, 00, DateTimeKind.Local);
+        var @event = new Event { Start = new DateTime(2024, 01, 01, 00, 00, 00, DateTimeKind.Utc), IsAllDay = true, RecurrenceRule = rrule };
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // The start is a UTC value, so the date of the local UNTIL is taken in UTC
+        var expected = rrule.EndDate.Value.ToUniversalTime().ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=" + expected, GetContentLine(ics, "RRULE"));
     }
 
     [Fact]
@@ -768,6 +871,212 @@ public sealed class InternetCalendarTests
 
         Assert.Equal(["ATTENDEE:mailto:attendee@meziantou.net"], GetEventContentLines(ics).Where(line => line.StartsWith("ATTENDEE", StringComparison.Ordinal)));
         Assert.Single(InternetCalendar.Parse(ics).Events[0].Attendees);
+    }
+
+    [Fact]
+    public void ToIcs_ACalendarUserAddressDoesNotInjectAComponent()
+    {
+        var address = new InternetCalendarUserAddress("x\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:evil\r\nSUMMARY:Injected\r\nX-A:b@example.com");
+        var @event = CreateEvent();
+        @event.Organizer = new Organizer { Address = address };
+        @event.Attendees.Add(new Attendee { Address = address });
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal(1, CountContentLines(ics, "BEGIN:VEVENT"));
+        Assert.Equal("ORGANIZER:mailto:x%0D%0AEND:VEVENT%0D%0ABEGIN:VEVENT%0D%0AUID:evil%0D%0ASUMMARY:Injected%0D%0AX-A:b@example.com", GetContentLine(ics.Replace("\r\n ", "", StringComparison.Ordinal), "ORGANIZER"));
+        var parsed = Assert.Single(InternetCalendar.Parse(ics).Events);
+        Assert.Null(parsed.Summary);
+        Assert.Equal(address.Uri, parsed.Organizer?.Address?.Uri);
+        Assert.Equal(address.Uri, Assert.Single(parsed.Attendees).Address?.Uri);
+    }
+
+    [Fact]
+    public void ToIcs_EscapesAControlCharacterOfACalendarUserAddress()
+    {
+        var @event = CreateEvent();
+        @event.Attendees.Add(new Attendee { Address = new InternetCalendarUserAddress(new Uri("mailto:a" + (char)0x01 + "b@example.com")) });
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("ATTENDEE:mailto:a%01b@example.com", GetContentLine(ics, "ATTENDEE"));
+        Assert.DoesNotContain((char)0x01, ics);
+    }
+
+    [Theory]
+    [InlineData("ATTENDEE:mailto:john@example.com")]
+    [InlineData("ATTENDEE:mailto:a%2520b@example.com")]
+    [InlineData("ATTENDEE:mailto:a%20b@example.com")]
+    [InlineData("ATTENDEE:urn:uuid:f81d4fae-7dec-11d0-a765-00a0c91e6bf6")]
+    [InlineData("ATTENDEE:https://example.com/users/john?a=1")]
+    public void Parse_WritesACalendarUserAddressBackUnchanged(string contentLine)
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART:20240102T080000Z", contentLine));
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal(contentLine, GetContentLine(ics, "ATTENDEE"));
+        Assert.Equal(ics, InternetCalendar.Parse(ics).ToIcs());
+    }
+
+    [Fact]
+    public void ToIcs_WritesAnAbsoluteFileUriWithItsScheme()
+    {
+        var @event = CreateEvent();
+        @event.Attendees.Add(new Attendee { Address = new InternetCalendarUserAddress(new Uri("file:///home/john")) });
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("ATTENDEE:file:///home/john", GetContentLine(ics, "ATTENDEE"));
+        Assert.NotNull(Assert.Single(Assert.Single(InternetCalendar.Parse(ics).Events).Attendees).Address);
+    }
+
+    [Fact]
+    public void InternetCalendarUserAddress_RejectsARelativeUri()
+    {
+        Assert.Throws<ArgumentException>(() => new InternetCalendarUserAddress(new Uri("foo", UriKind.Relative)));
+    }
+
+    [Fact]
+    public void Parse_ReadsTheParametersOfTheOrganizerAndTheAttendees()
+    {
+        var @event = ParseSingleEvent(
+            "DTSTART:20240102T080000Z",
+            "ORGANIZER;CN=John Doe:mailto:john@example.com",
+            "ATTENDEE;CN=Jane;PARTSTAT=ACCEPTED;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:jane@example.com",
+            "ATTENDEE;CN=\"Doe, Joe\";DELEGATED-FROM=\"mailto:a@example.com\",\"mailto:b@example.com\":mailto:joe@example.com",
+            "ATTENDEE:mailto:bob@example.com");
+
+        Assert.Equal([new("CN", "John Doe")], @event.Organizer?.Parameters);
+        Assert.Equal([new("CN", "Jane"), new("PARTSTAT", "ACCEPTED"), new("ROLE", "REQ-PARTICIPANT"), new("RSVP", "TRUE")], @event.Attendees[0].Parameters);
+        Assert.Equal([new("CN", "\"Doe, Joe\""), new("DELEGATED-FROM", "\"mailto:a@example.com\",\"mailto:b@example.com\"")], @event.Attendees[1].Parameters);
+        Assert.Empty(@event.Attendees[2].Parameters);
+    }
+
+    [Fact]
+    public void Parse_WritesTheParametersOfTheOrganizerAndTheAttendeesBack()
+    {
+        string[] lines =
+        [
+            "ORGANIZER;CN=John Doe:mailto:john@example.com",
+            "ATTENDEE;CN=Jane;PARTSTAT=ACCEPTED;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:jane@example.com",
+            "ATTENDEE;CN=\"Doe, Joe\";DELEGATED-FROM=\"mailto:a@example.com\":mailto:joe@example.com",
+        ];
+        var calendar = InternetCalendar.Parse(CreateIcs(["DTSTART:20240102T080000Z", .. lines]));
+
+        var ics = calendar.ToIcs().Replace("\r\n ", "", StringComparison.Ordinal);
+
+        foreach (var line in lines)
+        {
+            Assert.Equal(1, CountContentLines(ics, line));
+        }
+    }
+
+    [Fact]
+    public void ToIcs_WritesTheParametersOfAnAttendeeInOrder()
+    {
+        var @event = CreateEvent();
+        @event.Attendees.Add(new Attendee
+        {
+            Address = new InternetCalendarUserAddress("jane@example.com"),
+            Parameters = { new("RSVP", "TRUE"), new("CN", "\"Doe, Jane\"") },
+        });
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        Assert.Equal("ATTENDEE;RSVP=TRUE;CN=\"Doe, Jane\":mailto:jane@example.com", GetContentLine(ics, "ATTENDEE"));
+    }
+
+    [Theory]
+    [InlineData("P\r\nX", "a")]
+    [InlineData("", "a")]
+    [InlineData("P", "a;X-EVIL=b")]
+    [InlineData("P", "a:b")]
+    [InlineData("P", "\"unterminated")]
+    [InlineData("P", "a\"b")]
+    [InlineData("P", "\"a\r\nb\"")]
+    [InlineData("P", null)]
+    public void Attendee_RejectsAParameterThatCannotBeWritten(string name, string? value)
+    {
+        var attendee = new Attendee();
+        var organizer = new Organizer { Parameters = { new("CN", "a") } };
+
+        Assert.Throws<ArgumentException>(() => attendee.Parameters.Add(new(name, value!)));
+        Assert.Throws<ArgumentException>(() => organizer.Parameters.Insert(0, new(name, value!)));
+        Assert.Throws<ArgumentException>(() => organizer.Parameters[0] = new(name, value!));
+        Assert.Empty(attendee.Parameters);
+        Assert.Equal([new("CN", "a")], organizer.Parameters);
+    }
+
+    [Fact]
+    public void ToIcs_SkipsANullEvent()
+    {
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(null!);
+        calendar.Events.Add(CreateEvent());
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal(1, CountContentLines(ics, "BEGIN:VEVENT"));
+    }
+
+    [Fact]
+    public void ToIcs_DropsTheControlCharactersOfATextValue()
+    {
+        var value = "a" + (char)0x01 + "b\tc" + (char)0x7F + "d" + (char)0x1B + "\r\ne";
+        var @event = CreateEvent();
+        @event.Summary = value;
+        @event.AdditionalProperties["X-A"] = value;
+        var calendar = CreateCalendarWithEvent(@event);
+        calendar.AdditionalProperties["X-B"] = value;
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("SUMMARY:ab\tcd\\ne", GetContentLine(ics, "SUMMARY"));
+        Assert.Equal("X-A:ab\tcd\\ne", GetContentLine(ics, "X-A"));
+        Assert.Equal(1, CountContentLines(ics, "X-B:ab\tcd\\ne"));
+        Assert.DoesNotContain(ics, c => c < 0x20 && c is not '\t' and not '\r' and not '\n');
+    }
+
+    [Theory]
+    [InlineData("2.0")]
+    [InlineData("2.0;2.0")]
+    [InlineData("1.0;2.0")]
+    public void Parse_WritesTheVersionBackUnchanged(string version)
+    {
+        var calendar = InternetCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:" + version + "\r\nPRODID:-//Test//Test//EN\r\nEND:VCALENDAR\r\n");
+
+        Assert.Equal(version, calendar.Version);
+        Assert.Equal(1, CountContentLines(calendar.ToIcs(), "VERSION:" + version));
+    }
+
+    [Fact]
+    public void ToIcs_ThrowsBeforeWritingAnythingWhenTheVersionContainsALineBreak()
+    {
+        var calendar = new InternetCalendar { Version = "2.0\r\nBEGIN:VEVENT" };
+        using var writer = new StringWriter();
+
+        Assert.Throws<InvalidOperationException>(() => calendar.ToIcs(writer));
+        Assert.Equal("", writer.ToString());
+    }
+
+    [Fact]
+    public void ToIcs_OmitsTheDescriptionWhenItIsNotSet()
+    {
+        var ics = CreateCalendarWithEvent(CreateEvent()).ToIcs();
+
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("DESCRIPTION", StringComparison.Ordinal));
+        Assert.Null(Assert.Single(InternetCalendar.Parse(ics).Events).Description);
+    }
+
+    [Fact]
+    public void ToIcs_OmitsTheStartWhenItIsNotSet()
+    {
+        var ics = CreateCalendarWithEvent(new Event { Summary = "No start" }).ToIcs();
+
+        Assert.DoesNotContain(GetEventContentLines(ics), line => line.StartsWith("DTSTART", StringComparison.Ordinal));
+        Assert.DoesNotContain("00010101", ics);
+        Assert.Equal(default, Assert.Single(InternetCalendar.Parse(ics).Events).Start);
     }
 
     [Fact]
@@ -1328,6 +1637,51 @@ public sealed class InternetCalendarTests
         Assert.Equal("DTSTART;TZID=Customized Time Zone:20240715T090000", GetContentLine(CreateCalendarWithEvent(@event).ToIcs(), "DTSTART"));
     }
 
+    [Theory]
+    [InlineData(1700, 4, 5)]
+    [InlineData(2026, 5, 6)]
+    [InlineData(2029, 8, 2)]
+    [InlineData(2400, 2, 3)]
+    [InlineData(9000, 6, 7)]
+    public void Parse_FollowsAnOpenEndedVTimeZoneRecurrenceWithoutTransitionTimeForAnyYear(int year, int aprilDay, int septemberDay)
+    {
+        // Chile changes on the first Sunday after the first Saturday, which no TimeZoneInfo.TransitionTime expresses, and Outlook
+        // anchors the recurrences in 1601.
+        string[] timeZone =
+        [
+            "TZID:Chile",
+            "BEGIN:STANDARD",
+            "DTSTART:16010101T000000",
+            "TZOFFSETFROM:-0300",
+            "TZOFFSETTO:-0400",
+            "RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+            "END:STANDARD",
+            "BEGIN:DAYLIGHT",
+            "DTSTART:16010101T000000",
+            "TZOFFSETFROM:-0400",
+            "TZOFFSETTO:-0300",
+            "RRULE:FREQ=YEARLY;BYMONTH=9;BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8",
+            "END:DAYLIGHT",
+        ];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Chile:20260715T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        foreach (var (utc, offset) in new[]
+        {
+            (new DateTime(year, 01, 15, 12, 00, 00, DateTimeKind.Utc), -3),
+            (new DateTime(year, 04, aprilDay, 02, 59, 59, DateTimeKind.Utc), -3),
+            (new DateTime(year, 04, aprilDay, 03, 00, 00, DateTimeKind.Utc), -4),
+            (new DateTime(year, 07, 15, 16, 00, 00, DateTimeKind.Utc), -4),
+            (new DateTime(year, 09, septemberDay, 03, 59, 59, DateTimeKind.Utc), -4),
+            (new DateTime(year, 09, septemberDay, 04, 00, 00, DateTimeKind.Utc), -3),
+            (new DateTime(year, 12, 31, 23, 30, 00, DateTimeKind.Utc), -3),
+        })
+        {
+            Assert.Equal(TimeSpan.FromHours(offset), @event.TimeZone.GetUtcOffset(utc), $"{utc:O}");
+        }
+    }
+
     [Fact]
     public void Parse_BuildsTheTimeZoneOfAMozillaVTimeZone()
     {
@@ -1499,6 +1853,46 @@ public sealed class InternetCalendarTests
         Assert.Equal(TimeSpan.FromHours(5), @event.TimeZone.GetUtcOffset(new DateTime(2024, 02, 29, 18, 00, 00, DateTimeKind.Utc)));
         Assert.Equal(TimeSpan.FromHours(6), @event.TimeZone.GetUtcOffset(new DateTime(2023, 12, 31, 18, 30, 00, DateTimeKind.Utc)));
         Assert.Equal(TimeSpan.FromHours(5), @event.TimeZone.GetUtcOffset(new DateTime(2030, 01, 01, 00, 00, 00, DateTimeKind.Utc)));
+    }
+
+    [Theory]
+    [InlineData("+0500", "+0600", 5, 6)]
+    [InlineData("-0500", "-0600", -5, -6)]
+    [InlineData("+0600", "+0500", 6, 5)]
+    [InlineData("-0600", "-0500", -6, -5)]
+    public void Parse_BuildsAChangeOfTheOffsetAtMidnightOnJanuaryFirstFromAVTimeZone(string offsetFrom, string offsetTo, int hoursFrom, int hoursTo)
+    {
+        // The change happens at midnight in the offset in effect before it, as in Asia/Hovd in 1978 or Indian/Chagos in 1996.
+        string[] timeZone = ["TZID:Test/NewYear", "BEGIN:STANDARD", "DTSTART:20270101T000000", "TZOFFSETFROM:" + offsetFrom, "TZOFFSETTO:" + offsetTo, "END:STANDARD"];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/NewYear:20260715T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        var change = new DateTime(2027, 01, 01, 00, 00, 00, DateTimeKind.Utc).AddHours(-hoursFrom);
+        foreach (var delta in new[] { TimeSpan.FromHours(-2), TimeSpan.FromHours(-1), TimeSpan.FromMinutes(-1), TimeSpan.FromSeconds(-1) })
+        {
+            Assert.Equal(TimeSpan.FromHours(hoursFrom), @event.TimeZone.GetUtcOffset(change + delta), $"{change + delta:O}");
+        }
+
+        foreach (var delta in new[] { TimeSpan.Zero, TimeSpan.FromSeconds(1), TimeSpan.FromHours(1), TimeSpan.FromHours(2), TimeSpan.FromDays(400) })
+        {
+            Assert.Equal(TimeSpan.FromHours(hoursTo), @event.TimeZone.GetUtcOffset(change + delta), $"{change + delta:O}");
+        }
+
+        Assert.Equal(TimeSpan.FromHours(hoursFrom), @event.TimeZone.GetUtcOffset(change.AddDays(-400)));
+    }
+
+    [Fact]
+    public void Parse_BuildsAChangeOfTheOffsetAtMidnightOnJanuaryFirstOfTheSecondYearFromAVTimeZone()
+    {
+        // A daylight saving period starting with one of the first years makes some runtimes throw when computing the offsets.
+        string[] timeZone = ["TZID:Test/SecondYear", "BEGIN:STANDARD", "DTSTART:00020101T000000", "TZOFFSETFROM:+0700", "TZOFFSETTO:+0800", "END:STANDARD"];
+
+        var @event = Assert.Single(InternetCalendar.Parse(CreateIcsWithTimeZone(timeZone, "DTSTART;TZID=Test/SecondYear:20260715T120000")).Events);
+
+        Assert.NotNull(@event.TimeZone);
+        Assert.Equal(TimeSpan.FromHours(8), @event.TimeZone.GetUtcOffset(new DateTime(2026, 07, 15, 00, 00, 00, DateTimeKind.Utc)));
+        Assert.Equal(TimeSpan.FromHours(8), @event.TimeZone.GetUtcOffset(new DateTime(0003, 07, 15, 00, 00, 00, DateTimeKind.Utc)));
     }
 
     [Fact]

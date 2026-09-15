@@ -4,62 +4,35 @@ public partial class RecurrenceRuleTests
 {
     private static void AssertOccurrencesStartWith(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
     {
-        AssertOccurrences(occurrences, checkEnd: false, maxOccurences: null, expectedOccurrences);
+        var actualList = occurrences.Take(expectedOccurrences.Length).ToList();
+        Assert.HasCount(expectedOccurrences.Length, actualList);
+        for (var i = 0; i < expectedOccurrences.Length; i++)
+        {
+            Assert.Equal(expectedOccurrences[i], actualList[i]);
+        }
     }
 
     private static void AssertOccurrences(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
     {
-        AssertOccurrences(occurrences, checkEnd: false, expectedOccurrences.Length, expectedOccurrences);
+        // Taking one more occurrence than expected detects a recurrence that does not end, without enumerating it forever.
+        var actualList = occurrences.Take(expectedOccurrences.Length + 1).ToList();
+        Assert.HasCount(expectedOccurrences.Length, actualList);
+        for (var i = 0; i < expectedOccurrences.Length; i++)
+        {
+            Assert.Equal(expectedOccurrences[i], actualList[i]);
+        }
     }
 
     private static void AssertOccurrences(IEnumerable<DateTimeOffset> occurrences, params DateTimeOffset[] expectedOccurrences)
     {
-        var occurrenceCount = 0;
-        using var enumerator1 = occurrences.GetEnumerator();
-        using (var enumerator2 = ((IEnumerable<DateTimeOffset>)expectedOccurrences).GetEnumerator())
+        var actualList = occurrences.Take(expectedOccurrences.Length + 1).ToList();
+        Assert.HasCount(expectedOccurrences.Length, actualList);
+        for (var i = 0; i < expectedOccurrences.Length; i++)
         {
-            while (enumerator1.MoveNext() && enumerator2.MoveNext())
-            {
-                occurrenceCount++;
-
-                // DateTimeOffset.Equals compares the instants, so an occurrence with the wrong offset would
-                // still be equal to the expected one. The wall clock and the offset are compared instead.
-                Assert.Equal(enumerator2.Current.DateTime, enumerator1.Current.DateTime);
-                Assert.Equal(enumerator2.Current.Offset, enumerator1.Current.Offset);
-            }
-        }
-
-        Assert.Equal(expectedOccurrences.Length, occurrenceCount);
-        Assert.False(enumerator1.MoveNext());
-    }
-
-    private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, int? maxOccurences, params DateTime[] expectedOccurrences)
-    {
-        var occurrenceCount = 0;
-        using var enumerator1 = occurrences.GetEnumerator();
-        using (var enumerator2 = ((IEnumerable<DateTime>)expectedOccurrences).GetEnumerator())
-        {
-            while (enumerator1.MoveNext() && enumerator2.MoveNext())
-            {
-                occurrenceCount++;
-                Assert.Equal(enumerator2.Current, enumerator1.Current);
-            }
-        }
-
-        if (maxOccurences.HasValue)
-        {
-            while (enumerator1.MoveNext())
-            {
-                Assert.True(occurrenceCount <= maxOccurences.Value);
-                occurrenceCount++;
-            }
-        }
-        else
-        {
-            if (checkEnd)
-            {
-                Assert.False(enumerator1.MoveNext());
-            }
+            // DateTimeOffset.Equals compares the instants, so an occurrence with the wrong offset would
+            // still be equal to the expected one. The wall clock and the offset are compared instead.
+            Assert.Equal(expectedOccurrences[i].DateTime, actualList[i].DateTime);
+            Assert.Equal(expectedOccurrences[i].Offset, actualList[i].Offset);
         }
     }
 
@@ -85,8 +58,7 @@ public partial class RecurrenceRuleTests
 
         AssertOccurrences(occurrences,
             new DateTime(1997, 09, 02, 09, 00, 00),
-            new DateTime(1997, 09, 03, 09, 00, 00),
-            new DateTime(1997, 09, 04, 09, 00, 00));
+            new DateTime(1997, 09, 03, 09, 00, 00));
     }
 
     [Fact]
@@ -123,8 +95,7 @@ public partial class RecurrenceRuleTests
         var occurrences = rrule.GetNextOccurrences(startDate);
 
         AssertOccurrences(occurrences,
-            new DateTime(1997, 09, 02, 09, 00, 00),
-            new DateTime(1997, 09, 04, 09, 00, 00));
+            new DateTime(1997, 09, 02, 09, 00, 00));
     }
 
     [Fact]

@@ -10,6 +10,7 @@ public sealed class Event
     public string? Summary { get; set; }
 
     /// <summary>Gets or sets the event description.</summary>
+    /// <remarks>The DESCRIPTION property is not written when the value is <see langword="null"/>, which is also what the parser produces for an event without one.</remarks>
     public string? Description { get; set; }
 
     /// <summary>Gets or sets the event organizer.</summary>
@@ -46,6 +47,7 @@ public sealed class Event
     public DateTime DateTimeStamp { get; set; }
 
     /// <summary>Gets or sets the start date and time of the event.</summary>
+    /// <remarks>The DTSTART property is not written when the value is <c>default(DateTime)</c>, which is also what the parser produces for an event without one.</remarks>
     public DateTime Start { get; set; }
 
     /// <summary>Gets or sets the end date and time of the event.</summary>
@@ -76,6 +78,12 @@ public sealed class Event
     public TimeZoneInfo? TimeZone { get; set; }
 
     /// <summary>Gets or sets the recurrence rule for repeating events.</summary>
+    /// <remarks>
+    /// RFC 5545 section 3.3.10 requires UNTIL to have the value type of DTSTART, so the writer converts it, without modifying
+    /// the rule: to a DATE for an all-day event, to a floating date-time for a floating start, and to a UTC date-time for a
+    /// start in UTC, in local time or in <see cref="TimeZone"/>. A floating UNTIL is read in the time zone of the start, a DATE
+    /// bounds the occurrences through the end of that day, and a date-time becomes a DATE by its date in the frame of the start.
+    /// </remarks>
     public RecurrenceRule? RecurrenceRule { get; set; }
 
     /// <summary>Gets or sets the status of the event.</summary>

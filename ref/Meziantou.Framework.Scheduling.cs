@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Scheduling
     public sealed class Attendee
     {
         public Meziantou.Framework.Scheduling.InternetCalendarUserAddress? Address { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> Parameters { get => throw null; }
     }
 
     public sealed class CronExpression : Meziantou.Framework.Scheduling.IRecurrenceRule
@@ -95,6 +96,7 @@ namespace Meziantou.Framework.Scheduling
     public sealed class Organizer
     {
         public Meziantou.Framework.Scheduling.InternetCalendarUserAddress? Address { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> Parameters { get => throw null; }
     }
 
     public abstract class RecurrenceRule : Meziantou.Framework.Scheduling.IRecurrenceRule

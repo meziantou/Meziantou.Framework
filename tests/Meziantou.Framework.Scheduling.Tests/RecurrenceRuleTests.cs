@@ -121,6 +121,56 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void GetNextOccurrence_DateTimeOffset_UtcUntil_IsComparedByInstant()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;UNTIL=20260101T010000Z");
+
+        // 00:30Z is before UNTIL, although its local time is after it
+        Assert.Equal(
+            new DateTimeOffset(2026, 01, 01, 02, 30, 00, TimeSpan.FromHours(2)),
+            rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 02, 30, 00, TimeSpan.FromHours(2))));
+
+        // 05:30Z is after UNTIL, although its local time is before it
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 00, 30, 00, TimeSpan.FromHours(-5))));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffset_LocalUntil_IsComparedByInstant()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY");
+        rrule.EndDate = new DateTime(2026, 01, 01, 01, 00, 00, DateTimeKind.Utc).ToLocalTime();
+
+        Assert.Equal(
+            new DateTimeOffset(2026, 01, 01, 02, 30, 00, TimeSpan.FromHours(2)),
+            rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 02, 30, 00, TimeSpan.FromHours(2))));
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 00, 30, 00, TimeSpan.FromHours(-5))));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffset_FloatingUntil_IsComparedByWallClock()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;UNTIL=20260101T010000");
+
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 02, 30, 00, TimeSpan.FromHours(2))));
+        Assert.Equal(
+            new DateTimeOffset(2026, 01, 01, 00, 30, 00, TimeSpan.FromHours(-5)),
+            rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 01, 00, 30, 00, TimeSpan.FromHours(-5))));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffset_UtcUntilAtTheEndOfTheDateRange()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc);
+        Assert.Equal(
+            new DateTimeOffset(9999, 12, 31, 09, 00, 00, TimeSpan.FromHours(2)),
+            rrule.GetNextOccurrence(new DateTimeOffset(9999, 12, 31, 09, 00, 00, TimeSpan.FromHours(2))));
+
+        rrule.EndDate = new DateTime(1, 1, 1, 1, 0, 0, DateTimeKind.Utc);
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(1, 1, 1, 0, 0, 0, TimeSpan.FromHours(-5))));
+    }
+
+    [Fact]
     public void Weekly_Text01()
     {
         var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");
@@ -883,6 +933,172 @@ public partial class RecurrenceRuleTests
         Assert.Null(rrule.GetNextOccurrence(new DateTime(2024, 01, 01, 09, 00, 00), TimeZoneInfo.Utc));
     }
 
+    // Synthetic time zones work when globalization is invariant, and keep the tests independent of the time zone database.
+    private static TimeZoneInfo CreateTestTimeZone(TimeSpan baseUtcOffset, TimeSpan daylightDelta)
+    {
+        // Daylight saving time starts on the last Sunday of March at 02:00 and ends on the last Sunday of October at 03:00 daylight time
+        var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday);
+        var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday);
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, daylightDelta, daylightStart, daylightEnd);
+        return TimeZoneInfo.CreateCustomTimeZone("Test/Zone", baseUtcOffset, "Test", "Test Standard", "Test Daylight", [rule]);
+    }
+
+    private static TimeZoneInfo TestParis => CreateTestTimeZone(TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+
+    private static TimeZoneInfo TestNewYork
+    {
+        get
+        {
+            var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 2, DayOfWeek.Sunday);
+            var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 11, week: 1, DayOfWeek.Sunday);
+            var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2007, 1, 1), DateTime.MaxValue.Date, TimeSpan.FromHours(1), daylightStart, daylightEnd);
+            return TimeZoneInfo.CreateCustomTimeZone("Test/New_York", TimeSpan.FromHours(-5), "Test Eastern", "EST", "EDT", [rule]);
+        }
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_AcrossSpringForward_KeepsTheOccurrencesAfterAMovedOne()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=40;COUNT=7");
+        var startDate = new DateTime(2026, 03, 29, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TestParis).ToArray();
+
+        // 02:00 and 02:40 do not exist and move forward by the one-hour gap, after 03:20, which is still an occurrence
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 00, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 00, 40, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 01, 20, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 20, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 40, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 04, 00, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_AcrossSpringForward_CountsInTheOrderOfTheWallClockTimes()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=40;COUNT=5");
+        var startDate = new DateTime(2026, 03, 29, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TestParis);
+
+        // The fifth instance is 02:40, read as 03:40; 03:20 is the sixth one
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 00, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 00, 40, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 01, 20, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 40, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_AcrossSpringForward_WithoutCount_IsInIncreasingOrder()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=45");
+        var startDate = new DateTime(2026, 03, 08, 00, 45, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TestNewYork).Take(5);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 08, 00, 45, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2026, 03, 08, 01, 30, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2026, 03, 08, 03, 00, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2026, 03, 08, 03, 15, 00, TimeSpan.FromHours(-4)),
+            new DateTimeOffset(2026, 03, 08, 03, 45, 00, TimeSpan.FromHours(-4)));
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_AcrossALongGap_IsInIncreasingOrder()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=100;COUNT=6");
+        var startDate = new DateTime(2026, 03, 29, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, CreateTestTimeZone(TimeSpan.Zero, TimeSpan.FromHours(3)));
+
+        // The gap skips 02:00 to 05:00, so 03:20 moves to 06:20, after 05:00 but before 06:40
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 00, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2026, 03, 29, 01, 40, 00, TimeSpan.Zero),
+            new DateTimeOffset(2026, 03, 29, 05, 00, 00, TimeSpan.FromHours(3)),
+            new DateTimeOffset(2026, 03, 29, 06, 20, 00, TimeSpan.FromHours(3)),
+            new DateTimeOffset(2026, 03, 29, 06, 40, 00, TimeSpan.FromHours(3)),
+            new DateTimeOffset(2026, 03, 29, 08, 20, 00, TimeSpan.FromHours(3)));
+    }
+
+    [Fact]
+    public void Minutely_TimeZone_UtcUntil_SkipsAMovedOccurrenceButKeepsTheEarlierOnesAfterIt()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=40;UNTIL=20260329T012500Z");
+        var startDate = new DateTime(2026, 03, 29, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TestParis);
+
+        // 02:40 is read as 03:40+02:00, past UNTIL (03:25+02:00), but 03:20 is not
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 00, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 00, 40, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 01, 20, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 20, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_DateTimeOffsetStart_InTheSecondPassOfARepeatedHour_ReturnsNothingBeforeIt()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+
+        // 06:40Z is the second 01:40 of the day, and the wall-clock time 01:40 denotes the first one, 05:40Z
+        var occurrences = rrule.GetNextOccurrences(new DateTimeOffset(2026, 11, 01, 01, 40, 00, TimeSpan.FromHours(-5)), TestNewYork);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 11, 02, 01, 40, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2026, 11, 03, 01, 40, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_DateTimeOffsetStart_InTheSecondPassOfARepeatedHour_ReturnsNothingBeforeIt()
+    {
+        IRecurrenceRule rrule = RecurrenceRule.Parse("FREQ=MINUTELY");
+
+        var occurrence = rrule.GetNextOccurrence(new DateTimeOffset(2026, 11, 01, 01, 40, 00, TimeSpan.FromHours(-5)), TestNewYork);
+
+        Assert.Equal(new DateTimeOffset(2026, 11, 01, 02, 00, 00, TimeSpan.FromHours(-5)), occurrence);
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AfterTheMaximumDate_EndsTheEnumeration()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(9999, 12, 30, 23, 00, 00), TestNewYork).Take(3);
+
+        AssertOccurrences(occurrences, new DateTimeOffset(9999, 12, 30, 23, 00, 00, TimeSpan.FromHours(-5)));
+        Assert.Null(rrule.GetNextOccurrence(new DateTime(9999, 12, 31, 23, 00, 00), TestNewYork));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_BeforeTheMinimumDate_SkipsTheOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+
+        var occurrences = rrule.GetNextOccurrences(DateTime.MinValue, TestParis);
+
+        // January 1 at midnight is December 31 of year 0 in UTC. It is still an instance of the recurrence.
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(0001, 01, 02, 00, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(0001, 01, 03, 00, 00, 00, TimeSpan.FromHours(1)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_DateTimeOffsetStart_AtTheLimits_DoesNotThrow()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.Empty(rrule.GetNextOccurrences(DateTimeOffset.MaxValue, TestParis));
+        AssertOccurrences(rrule.GetNextOccurrences(DateTimeOffset.MinValue, TestNewYork).Take(1), new DateTimeOffset(0001, 01, 01, 00, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     // An IANA identifier does not resolve on Windows when globalization is invariant.
     private static TimeZoneInfo NewYork => TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
@@ -980,8 +1196,7 @@ public partial class RecurrenceRuleTests
         var occurrences = rrule.GetNextOccurrences(startDate, NewYork).ToArray();
 
         // Every local time in the 02:00 gap is read at the -05:00 offset in effect before it, mapping the whole
-        // gap onto the instants of the hour that follows. Those repeats are not adjacent to the instances they
-        // duplicate, so suppressing them keeps the recurrence set increasing.
+        // gap onto the instants of the hour that follows. Each of those instants is returned once, in increasing order.
         AssertOccurrences(occurrences,
             new DateTimeOffset(2024, 03, 10, 01, 20, 00, TimeSpan.FromHours(-5)),
             new DateTimeOffset(2024, 03, 10, 01, 40, 00, TimeSpan.FromHours(-5)),
@@ -1088,6 +1303,20 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void Until_Date_IncludesTheTimedOccurrencesOfItsDayInATimeZone()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240103");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01, 21, 00, 00), NewYork).ToArray();
+
+        Assert.HasCount(3, occurrences);
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 01, 01, 21, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 01, 02, 21, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 01, 03, 21, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
     public void Daily_TimeZone_Count_IsUnaffectedByATransition()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=5");
@@ -1173,6 +1402,32 @@ public partial class RecurrenceRuleTests
         Assert.Equal(new DateTime(2024, 03, 10, 09, 00, 00), occurrence.Value.DateTime);
         Assert.Equal(TimeSpan.FromHours(-4), occurrence.Value.Offset);
     }
+
+    [Fact]
+    public void Minutely_TimeZone_Paris_AcrossSpringForward_KeepsTheOccurrencesAfterAMovedOne()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;INTERVAL=40;COUNT=7");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 03, 29, 00, 00, 00), TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"));
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 00, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 00, 40, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 01, 20, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 20, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 03, 40, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 04, 00, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AtTheLimitsOfTheSystemTimeZones_DoesNotThrow()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+
+        Assert.HasCount(1, rrule.GetNextOccurrences(new DateTime(9999, 12, 30, 23, 00, 00), NewYork).Take(3).ToList());
+        Assert.NotEmpty(rrule.GetNextOccurrences(new DateTime(1, 1, 1), TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris")).Take(1).ToList());
+    }
 #endif
 
     [Fact]
@@ -1219,6 +1474,67 @@ public partial class RecurrenceRuleTests
                 new DateTime(2025, 01, 15, 09, 03, 00),
             ],
             rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=MINUTELY;BYHOUR=9", "FREQ=MINUTELY")]
+    [InlineData("FREQ=SECONDLY;BYHOUR=9", "FREQ=SECONDLY")]
+    [InlineData("FREQ=HOURLY;BYHOUR=9,10", "FREQ=HOURLY")]
+    [InlineData("FREQ=SECONDLY;BYMINUTE=15,17", "FREQ=SECONDLY")]
+    [InlineData("FREQ=MINUTELY;BYMINUTE=15,17", "FREQ=MINUTELY")]
+    [InlineData("FREQ=SECONDLY;BYSECOND=30,45", "FREQ=SECONDLY")]
+    [InlineData("FREQ=HOURLY;INTERVAL=5;BYHOUR=9,14,19", "FREQ=HOURLY;INTERVAL=5")]
+    public void LimitingTimeParts_KeepTheSubSecondPrecisionOfTheStartDate(string limitedRuleText, string ruleText)
+    {
+        var startDate = new DateTime(2026, 09, 14, 09, 15, 30, 500);
+        var limitedRule = RecurrenceRule.Parse(limitedRuleText);
+        var rule = RecurrenceRule.Parse(ruleText);
+
+        var expected = rule.GetNextOccurrences(startDate)
+            .Where(occurrence => IsIncluded(limitedRule.ByHours, occurrence.Hour) && IsIncluded(limitedRule.ByMinutes, occurrence.Minute) && IsIncluded(limitedRule.BySeconds, occurrence.Second))
+            .Take(5)
+            .ToArray();
+
+        Assert.Equal(startDate, expected[0]);
+        Assert.Equal(expected, limitedRule.GetNextOccurrences(startDate).Take(5).ToArray());
+
+        static bool IsIncluded(IList<int>? values, int value) => values is null || values.Count is 0 || values.Contains(value);
+    }
+
+    [Fact]
+    public void ExpandingTimeParts_KeepTheSubSecondPrecisionOfTheStartDate()
+    {
+        var startDate = new DateTime(2026, 09, 14, 09, 15, 30, 500);
+
+        Assert.Equal(
+            [
+                new DateTime(2026, 09, 14, 09, 15, 30, 500),
+                new DateTime(2026, 09, 14, 10, 15, 30, 500),
+                new DateTime(2026, 09, 15, 09, 15, 30, 500),
+            ],
+            RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9,10").GetNextOccurrences(startDate).Take(3).ToArray());
+
+        Assert.Equal(
+            [
+                new DateTime(2026, 09, 14, 09, 15, 30, 500),
+                new DateTime(2026, 09, 14, 09, 16, 00, 500),
+                new DateTime(2026, 09, 14, 09, 16, 30, 500),
+            ],
+            RecurrenceRule.Parse("FREQ=MINUTELY;BYSECOND=0,30").GetNextOccurrences(startDate).Take(3).ToArray());
+
+        Assert.Equal(
+            [
+                new DateTime(2026, 09, 14, 10, 00, 00, 500),
+                new DateTime(2026, 09, 14, 11, 00, 00, 500),
+            ],
+            RecurrenceRule.Parse("FREQ=HOURLY;BYMINUTE=0;BYSECOND=0").GetNextOccurrences(startDate).Take(2).ToArray());
+
+        Assert.Equal(
+            [
+                new DateTime(2026, 09, 14, 09, 15, 30, 500),
+                new DateTime(2026, 09, 15, 09, 15, 30, 500),
+            ],
+            RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9;BYMINUTE=15;BYSECOND=30;BYSETPOS=1").GetNextOccurrences(startDate).Take(2).ToArray());
     }
 
     [Fact]
@@ -1431,7 +1747,6 @@ public partial class RecurrenceRuleTests
 
     [Theory]
     [InlineData("FREQ=DAILY;BYMONTHDAY=-1;COUNT=3")]
-    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU;BYMONTHDAY=-1;COUNT=3")]
     [InlineData("FREQ=HOURLY;BYMONTHDAY=-1;BYHOUR=9;COUNT=3")]
     [InlineData("FREQ=MINUTELY;BYMONTHDAY=-1;BYHOUR=9;BYMINUTE=0;COUNT=3")]
     [InlineData("FREQ=SECONDLY;BYMONTHDAY=-1;BYHOUR=9;BYMINUTE=0;BYSECOND=0;COUNT=3")]
@@ -1505,6 +1820,31 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=DAILY;UNTIL=abc")]
     [InlineData("FREQ=DAILY;UNTIL=20250230T000000Z")]
     [InlineData("FREQ=DAILY;WKST=")]
+    [InlineData("FREQ=DAILY;BYSECOND=61")]
+    [InlineData("FREQ=DAILY;BYSECOND=-1")]
+    [InlineData("FREQ=DAILY;BYMINUTE=60")]
+    [InlineData("FREQ=DAILY;BYHOUR=24")]
+    [InlineData("FREQ=DAILY;BYMONTH=0")]
+    [InlineData("FREQ=DAILY;BYMONTH=13")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=0")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=32")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-32")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=0")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=-367")]
+    [InlineData("FREQ=DAILY;CONUT=3")]
+    [InlineData("FREQ=DAILY; COUNT=3")]
+    [InlineData("FREQ=DAILY;COUNT =3")]
+    [InlineData("FREQ=DAILY;X-NAME=1")]
+    [InlineData("FREQ=DAILY;RSCALE=HEBREW")]
+    [InlineData("FREQ=DAILY;RSCALE=")]
+    [InlineData("FREQ=DAILY;RSCALE=GREGORIAN;SKIP=FORWARD")]
+    [InlineData("FREQ=DAILY;RSCALE=GREGORIAN;SKIP=BACKWARD")]
+    [InlineData("FREQ=DAILY;SKIP=OMIT")]
+    [InlineData("FREQ=WEEKLY;BYMONTHDAY=1")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO;BYMONTHDAY=-1")]
+    [InlineData("FREQ=DAILY;BYSETPOS=1")]
+    [InlineData("FREQ=MONTHLY;BYSETPOS=-1;COUNT=3")]
+    [InlineData("FREQ=YEARLY;BYSETPOS=1")]
     public void TryParse_RejectsInvalidValues(string rruleText)
     {
         Assert.False(RecurrenceRule.TryParse(rruleText, out var rrule, out var error));
@@ -1521,9 +1861,167 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=YEARLY;BYWEEKNO=1,53,-1,-53")]
     [InlineData("FREQ=YEARLY;BYDAY=MO;BYSETPOS=1,366,-1,-366")]
     [InlineData("FREQ=SECONDLY;BYYEARDAY=1")]
+    [InlineData("FREQ=DAILY;BYSECOND=0,60;BYMINUTE=0,59;BYHOUR=0,23")]
+    [InlineData("FREQ=YEARLY;BYMONTH=1,12;BYMONTHDAY=1,31,-1,-31;BYYEARDAY=1,366,-1,-366")]
+    [InlineData("FREQ=DAILY;RSCALE=GREGORIAN")]
+    [InlineData("FREQ=MONTHLY;rscale=gregorian;skip=omit")]
+    [InlineData("FREQ=MONTHLY;BYHOUR=9;BYSETPOS=1")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=1;BYSETPOS=-1")]
     public void TryParse_AcceptsValidValues(string rruleText)
     {
         Assert.True(RecurrenceRule.TryParse(rruleText, out _, out var error), error);
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;CONUT=3", "CONUT")]
+    [InlineData("FREQ=DAILY; COUNT=3", " COUNT")]
+    [InlineData("FREQ=DAILY;COUNT =3", "COUNT ")]
+    public void TryParse_RejectsUnknownRulePartNames(string rruleText, string name)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out _, out var error));
+        Assert.Equal($"Unknown rule part: '{name}'.", error);
+    }
+
+    [Fact]
+    public void TryParse_GregorianScaleAndOmittedDates_AreTheDefaultEvaluation()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;RSCALE=GREGORIAN;SKIP=OMIT;BYMONTHDAY=31;COUNT=3");
+
+        Assert.Equal("FREQ=MONTHLY;COUNT=3;BYMONTHDAY=31", rrule.Text);
+        AssertOccurrences(rrule.GetNextOccurrences(new DateTime(2025, 01, 01)), new DateTime(2025, 01, 31), new DateTime(2025, 03, 31), new DateTime(2025, 05, 31));
+    }
+
+    [Theory]
+    [InlineData("FREQ=SECONDLY;BYYEARDAY=-1;BYMONTHDAY=-1;BYSECOND=0;BYSETPOS=-1")]
+    [InlineData("FREQ=MINUTELY;BYYEARDAY=-1;BYMONTHDAY=-1;BYSETPOS=-1")]
+    [InlineData("FREQ=HOURLY;BYYEARDAY=-1;BYMONTHDAY=-1;BYSETPOS=-1")]
+    [InlineData("FREQ=DAILY;BYMONTHDAY=-1;BYSETPOS=-1")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,FR;BYSETPOS=-1")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1;BYDAY=-1FR;BYSETPOS=-1")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=-1;BYYEARDAY=-1;BYMONTHDAY=-1;BYSETPOS=-1")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=-366;BYDAY=-53MO")]
+    public void Text_IsIndependentOfTheCurrentCulture(string rruleText)
+    {
+        // Cultures such as sv-SE write negative numbers with U+2212 MINUS SIGN, which the RFC 5545 grammar does not accept
+        var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.NumberFormat.NegativeSign = "−";
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = culture;
+            Assert.Equal("−1", (-1).ToString(CultureInfo.CurrentCulture));
+
+            var rrule = RecurrenceRule.Parse(rruleText);
+
+            Assert.Equal(rruleText, rrule.Text);
+            Assert.Equal(rruleText, rrule.ToString());
+            Assert.Equal(rruleText, RecurrenceRule.Parse(rrule.Text).Text);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
+    [Fact]
+    public void EndDate_CannotBeSetWhenOccurrencesIsSet()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
+
+        Assert.Throws<InvalidOperationException>(() => rrule.EndDate = new DateTime(2024, 01, 01));
+        Assert.Null(rrule.EndDate);
+        Assert.Equal("FREQ=DAILY;COUNT=3", rrule.Text);
+
+        rrule.EndDate = null;
+        rrule.Occurrences = null;
+        rrule.EndDate = new DateTime(2024, 01, 01);
+        Assert.Equal("FREQ=DAILY;UNTIL=20240101T000000", rrule.Text);
+    }
+
+    [Fact]
+    public void Occurrences_CannotBeSetWhenEndDateIsSet()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240101");
+
+        Assert.Throws<InvalidOperationException>(() => rrule.Occurrences = 3);
+        Assert.Null(rrule.Occurrences);
+        Assert.Equal("FREQ=DAILY;UNTIL=20240101", rrule.Text);
+
+        rrule.Occurrences = null;
+        rrule.EndDate = null;
+        rrule.Occurrences = 3;
+        Assert.Equal("FREQ=DAILY;COUNT=3", rrule.Text);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(7)]
+    [InlineData(9)]
+    public void WeekStart_SetterRejectsValuesThatAreNotADayOfWeek(int value)
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;WKST=SU");
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => rrule.WeekStart = (DayOfWeek)value);
+        Assert.Equal(DayOfWeek.Sunday, rrule.WeekStart);
+        Assert.Equal("FREQ=WEEKLY;WKST=SU", rrule.ToString());
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY", nameof(RecurrenceRule.BySeconds), 61, "BYSECOND=61", "BYSECOND value '61' is invalid. Must be between 0 and 60.")]
+    [InlineData("FREQ=DAILY", nameof(RecurrenceRule.ByMinutes), 60, "BYMINUTE=60", "BYMINUTE value '60' is invalid. Must be between 0 and 59.")]
+    [InlineData("FREQ=DAILY", nameof(RecurrenceRule.ByHours), 24, "BYHOUR=24", "BYHOUR value '24' is invalid. Must be between 0 and 23.")]
+    [InlineData("FREQ=DAILY", nameof(RecurrenceRule.ByMonths), 13, "BYMONTH=13", "BYMONTH value '13' is invalid. Must be between 1 and 12.")]
+    [InlineData("FREQ=MONTHLY", nameof(RecurrenceRule.ByMonthDays), 0, "BYMONTHDAY=0", "BYMONTHDAY value '0' is invalid. Must be between 1 and 31 or between -31 and -1.")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO", nameof(RecurrenceRule.BySetPositions), -367, "BYSETPOS=-367", "BYSETPOS value '-367' is invalid. Must be between 1 and 366 or between -366 and -1.")]
+    [InlineData("FREQ=WEEKLY", nameof(RecurrenceRule.ByMonthDays), 1, "BYMONTHDAY=1", "BYMONTHDAY cannot be used when FREQ is WEEKLY.")]
+    [InlineData("FREQ=MONTHLY", nameof(RecurrenceRule.BySetPositions), 1, "BYSETPOS=1", "BYSETPOS can only be used in conjunction with another BYxxx rule part.")]
+    public void GetNextOccurrences_RejectsAnInvalidValueSetAfterParsing(string rruleText, string propertyName, int value, string expectedPart, string expectedError)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        IList<int> values = [value];
+        switch (propertyName)
+        {
+            case nameof(RecurrenceRule.BySeconds):
+                rrule.BySeconds = values;
+                break;
+            case nameof(RecurrenceRule.ByMinutes):
+                rrule.ByMinutes = values;
+                break;
+            case nameof(RecurrenceRule.ByHours):
+                rrule.ByHours = values;
+                break;
+            case nameof(RecurrenceRule.ByMonths):
+                rrule.ByMonths = values;
+                break;
+            case nameof(RecurrenceRule.ByMonthDays):
+                rrule.ByMonthDays = values;
+                break;
+            case nameof(RecurrenceRule.BySetPositions):
+                rrule.BySetPositions = values;
+                break;
+        }
+
+        // The text stays available, for instance in a debugger, even though it cannot be parsed back
+        Assert.Contains(expectedPart, rrule.Text);
+        Assert.False(RecurrenceRule.TryParse(rrule.Text, out _, out var parseError));
+        Assert.Equal(expectedError, parseError);
+
+        var startDate = new DateTime(2024, 01, 01);
+        var expectedMessage = "The recurrence rule is invalid: " + expectedError;
+        Assert.Equal(expectedMessage, Assert.Throws<InvalidOperationException>(() => rrule.GetNextOccurrences(startDate).ToArray()).Message);
+        Assert.Equal(expectedMessage, Assert.Throws<InvalidOperationException>(() => rrule.GetNextOccurrence(startDate)).Message);
+        Assert.Equal(expectedMessage, Assert.Throws<InvalidOperationException>(() => rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc).ToArray()).Message);
+    }
+
+    [Fact]
+    public void GetNextOccurrences_ValidatesAListModifiedInPlace()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
+        Assert.NotNull(rrule.ByHours);
+        rrule.ByHours.Add(24);
+
+        Assert.Equal("FREQ=DAILY;BYHOUR=9,24", rrule.Text);
+        Assert.Throws<InvalidOperationException>(() => rrule.GetNextOccurrences(new DateTime(2024, 01, 01)).First());
     }
 
     [Fact]
@@ -1606,9 +2104,9 @@ public partial class RecurrenceRuleTests
     [InlineData("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=-30")]
     [InlineData("FREQ=MINUTELY;INTERVAL=2;BYMINUTE=1")]
     [InlineData("FREQ=HOURLY;INTERVAL=24;BYHOUR=10")]
-    [InlineData("FREQ=SECONDLY;BYSETPOS=2")]
+    [InlineData("FREQ=SECONDLY;BYMONTH=1,2,3,4,5,6,7,8,9,10,11,12;BYSETPOS=2")]
     [InlineData("FREQ=DAILY;INTERVAL=7;BYDAY=TU")]
-    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU;BYMONTH=2;BYMONTHDAY=29;BYSETPOS=2")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO;BYMONTH=2;BYSETPOS=2")]
     [InlineData("FREQ=HOURLY;INTERVAL=168;BYDAY=TU")]
     [InlineData("FREQ=SECONDLY;INTERVAL=604800;BYDAY=TU")]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=1;BYSETPOS=2")]
@@ -1626,7 +2124,7 @@ public partial class RecurrenceRuleTests
     [Theory]
     [InlineData("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29;BYDAY=MO", "2044-02-29T09:00:00", "2072-02-29T09:00:00")]
     [InlineData("FREQ=DAILY;BYMONTH=2;BYMONTHDAY=29;BYDAY=MO", "2044-02-29T09:00:00", "2072-02-29T09:00:00")]
-    [InlineData("FREQ=WEEKLY;BYDAY=MO;BYMONTH=2;BYMONTHDAY=29", "2044-02-29T09:00:00", "2072-02-29T09:00:00")]
+    [InlineData("FREQ=MONTHLY;BYMONTH=2;BYMONTHDAY=29;BYDAY=MO", "2044-02-29T09:00:00", "2072-02-29T09:00:00")]
     public void SparseRule_IsNotEndedBeforeItsNextMatch(string rruleText, string expected1, string expected2)
     {
         var rrule = RecurrenceRule.Parse(rruleText);
@@ -1677,6 +2175,91 @@ public partial class RecurrenceRuleTests
         rrule.EndDate = new DateTime(2024, 01, 06);
 
         Assert.Equal("FREQ=DAILY;UNTIL=20240106T000000", rrule.Text);
+    }
+
+    [Theory]
+    [InlineData(DateTimeKind.Unspecified)]
+    [InlineData(DateTimeKind.Utc)]
+    [InlineData(DateTimeKind.Local)]
+    public void Until_Date_IncludesTheOccurrencesOfItsDay(DateTimeKind kind)
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20260103");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 01, 01, 09, 00, 00, kind)).ToArray();
+
+        Assert.Equal(
+            [
+                new DateTime(2026, 01, 01, 09, 00, 00, kind),
+                new DateTime(2026, 01, 02, 09, 00, 00, kind),
+                new DateTime(2026, 01, 03, 09, 00, 00, kind),
+            ],
+            occurrences);
+        Assert.All(occurrences, occurrence => Assert.Equal(kind, occurrence.Kind));
+    }
+
+    [Fact]
+    public void Until_Date_StopsAtTheEndOfItsDay()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;UNTIL=20260101");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 01, 01, 22, 00, 00));
+
+        Assert.Equal([new DateTime(2026, 01, 01, 22, 00, 00), new DateTime(2026, 01, 01, 23, 00, 00)], occurrences.ToArray());
+    }
+
+    [Fact]
+    public void Until_Date_WithADateStart_IncludesItsDay()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20260103");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 01, 01));
+
+        Assert.Equal([new DateTime(2026, 01, 01), new DateTime(2026, 01, 02), new DateTime(2026, 01, 03)], occurrences.ToArray());
+    }
+
+    [Fact]
+    public void Until_Date_IncludesItsDayForADateTimeOffsetStart()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20260103");
+        var offset = TimeSpan.FromHours(2);
+
+        Assert.Equal(new DateTimeOffset(2026, 01, 03, 09, 00, 00, offset), rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 03, 09, 00, 00, offset)));
+        Assert.Null(rrule.GetNextOccurrence(new DateTimeOffset(2026, 01, 04, 00, 00, 00, offset)));
+    }
+
+    [Fact]
+    public void Until_Date_IncludesItsDayInATimeZone()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20260103");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 01, 01, 09, 00, 00), TimeZoneInfo.Utc).ToArray();
+
+        Assert.HasCount(3, occurrences);
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 01, 01, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2026, 01, 02, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2026, 01, 03, 09, 00, 00, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public void Until_Date_SettingTheEndDateMakesItAnExactBound()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20260103");
+        rrule.EndDate = new DateTime(2026, 01, 03);
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2026, 01, 01, 09, 00, 00));
+
+        Assert.Equal([new DateTime(2026, 01, 01, 09, 00, 00), new DateTime(2026, 01, 02, 09, 00, 00)], occurrences.ToArray());
+    }
+
+    [Fact]
+    public void Until_Date_AtTheEndOfTheDateRange_IncludesItsDay()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;UNTIL=99991231");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(9999, 12, 31, 22, 00, 00));
+
+        Assert.Equal([new DateTime(9999, 12, 31, 22, 00, 00), new DateTime(9999, 12, 31, 23, 00, 00)], occurrences.ToArray());
     }
 
     [Fact]

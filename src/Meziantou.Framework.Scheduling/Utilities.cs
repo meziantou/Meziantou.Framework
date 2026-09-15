@@ -107,6 +107,10 @@ internal static class Utilities
     }
 
     /// <summary>Escapes an iCalendar TEXT value per RFC 5545 section 3.3.11.</summary>
+    /// <remarks>
+    /// A line feed is escaped as <c>\n</c> and a carriage return is dropped, so a CRLF becomes a single <c>\n</c>. TEXT cannot
+    /// hold any other control character but a horizontal tab, so the others are dropped as well.
+    /// </remarks>
     public static string EscapeText(string? value)
     {
         if (value is null)
@@ -126,10 +130,13 @@ internal static class Utilities
                 case ',':
                     sb.Append("\\,");
                     break;
-                case '\r':
-                    break;
                 case '\n':
                     sb.Append("\\n");
+                    break;
+                case '\t':
+                    sb.Append(c);
+                    break;
+                case < (char)0x20 or (char)0x7F:
                     break;
                 default:
                     sb.Append(c);
@@ -193,7 +200,18 @@ internal static class Utilities
     }
 
     /// <summary>Converts a wall-clock date-time to an instant in <paramref name="timeZone"/> using the disambiguation rules of RFC 5545 section 3.3.5.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The instant is outside the range of <see cref="DateTimeOffset"/>.</exception>
     public static DateTimeOffset ToDateTimeOffset(DateTime wallClock, TimeZoneInfo timeZone)
+    {
+        if (TryToDateTimeOffset(wallClock, timeZone, out var result) is not InstantConversion.Success)
+            throw new ArgumentOutOfRangeException(nameof(wallClock), wallClock, "The instant the wall-clock time denotes in the time zone is outside the range of DateTimeOffset.");
+
+        return result;
+    }
+
+    /// <summary>Converts a wall-clock date-time to an instant in <paramref name="timeZone"/> using the disambiguation rules of RFC 5545 section 3.3.5.</summary>
+    /// <returns>Whether the instant, and its reading in <paramref name="timeZone"/>, are within the range of <see cref="DateTimeOffset"/>, and on which side they fall otherwise.</returns>
+    public static InstantConversion TryToDateTimeOffset(DateTime wallClock, TimeZoneInfo timeZone, out DateTimeOffset result)
     {
         var local = DateTime.SpecifyKind(wallClock, DateTimeKind.Unspecified);
 
@@ -212,48 +230,195 @@ internal static class Utilities
                 }
             }
 
-            return new DateTimeOffset(local, offset);
+            return Create(local.Ticks, local.Ticks - offset.Ticks, offset, out result);
         }
 
         if (timeZone.IsInvalidTime(local))
         {
             // The local time is skipped by a forward transition. RFC 5545 reads it with the UTC offset in effect
             // before the gap; rendering that instant in the time zone surfaces 02:30 EST as 03:30 EDT.
-            return TimeZoneInfo.ConvertTime(new DateTimeOffset(local, GetUtcOffsetBeforeGap(local, timeZone)), timeZone);
+            var utcTicks = local.Ticks - GetUtcOffsetBeforeGap(local, timeZone).Ticks;
+            if (!IsInRange(utcTicks))
+                return Fail(utcTicks, out result);
+
+            var offsetAfterGap = timeZone.GetUtcOffset(new DateTime(utcTicks, DateTimeKind.Utc));
+            return Create(utcTicks + offsetAfterGap.Ticks, utcTicks, offsetAfterGap, out result);
         }
 
-        return new DateTimeOffset(local, timeZone.GetUtcOffset(local));
+        var localOffset = timeZone.GetUtcOffset(local);
+        return Create(local.Ticks, local.Ticks - localOffset.Ticks, localOffset, out result);
+
+        static InstantConversion Create(long localTicks, long utcTicks, TimeSpan offset, out DateTimeOffset result)
+        {
+            if (!IsInRange(utcTicks))
+                return Fail(utcTicks, out result);
+
+            if (!IsInRange(localTicks))
+                return Fail(localTicks, out result);
+
+            result = new DateTimeOffset(localTicks, offset);
+            return InstantConversion.Success;
+        }
+
+        static InstantConversion Fail(long ticks, out DateTimeOffset result)
+        {
+            result = default;
+            return ticks < 0 ? InstantConversion.BeforeMinValue : InstantConversion.AfterMaxValue;
+        }
     }
 
-    /// <summary>Converts wall-clock occurrences to instants in <paramref name="timeZone"/>, dropping the duplicates
-    /// that a forward transition creates.</summary>
-    public static IEnumerable<DateTimeOffset> ToDateTimeOffsets(IEnumerable<DateTime> wallClockOccurrences, TimeZoneInfo timeZone)
+    /// <summary>Converts wall-clock occurrences to the instants they denote in <paramref name="timeZone"/>, in increasing order and without duplicates.</summary>
+    /// <param name="wallClockOccurrences">The occurrences as wall-clock times, in increasing order.</param>
+    /// <param name="timeZone">The time zone the occurrences are expressed in.</param>
+    /// <param name="maxCount">The number of instances after which the enumeration ends, as the COUNT rule part does.</param>
+    /// <param name="isAfterEnd">Whether an instance, given as its wall-clock time and its instant, is past the end of the recurrence, as the UNTIL rule part does.</param>
+    /// <remarks>
+    /// <para>A wall-clock time inside the gap of a forward transition is read at the UTC offset in effect before the gap
+    /// (RFC 5545 section 3.3.5), which moves it forward by the length of the gap. Such an instance can therefore denote an
+    /// instant later than the instances of the wall-clock times that follow it, or the very same instant as one of them.
+    /// Only the latter is a duplicate, which RFC 5545 section 3.8.5.3 ignores; the former is a distinct instance.</para>
+    /// <para>A moved instance is held back until it can no longer be preceded. Every other wall-clock time maps to its
+    /// instants in the same order, so an instance can only precede a moved instant when its wall-clock time is before the
+    /// wall-clock reading of that instant, which is later than the time the gap skipped by the length of the gap. Once a
+    /// wall-clock time at or after that reading is produced, the moved instance is released. This bound comes from the
+    /// transition itself, so it holds for a gap of any length, and nothing is held back when no gap is crossed.</para>
+    /// <para>The instances are counted towards <paramref name="maxCount"/> in the order the wall-clock times are generated,
+    /// as RFC 5545 section 3.3.10 counts them. An instance that duplicates an instant already generated is the same member
+    /// of the recurrence set, so it does not count again. An instance past the end is not part of the recurrence set: a
+    /// moved one is skipped, as a later wall-clock time can still denote an earlier instant, and any other one ends the
+    /// enumeration.</para>
+    /// <para>An instant outside the range of <see cref="DateTimeOffset"/> cannot be returned. One before the range is
+    /// skipped, but still counts towards <paramref name="maxCount"/>, and one after the range ends the enumeration.</para>
+    /// </remarks>
+    public static IEnumerable<DateTimeOffset> ToDateTimeOffsets(IEnumerable<DateTime> wallClockOccurrences, TimeZoneInfo timeZone, int? maxCount = null, Func<DateTime, DateTimeOffset, bool>? isAfterEnd = null)
     {
-        DateTime? lastInstant = null;
+        if (maxCount <= 0)
+            yield break;
+
+        // The moved instances not returned yet, in increasing order since they come from increasing wall-clock times
+        Queue<DateTimeOffset>? movedOccurrences = null;
+        long? lastReturnedUtcTicks = null;
+        long? lastMovedUtcTicks = null;
+        var count = 0;
         foreach (var wallClock in wallClockOccurrences)
         {
-            var occurrence = ToDateTimeOffset(wallClock, timeZone);
-            if (IsDuplicate(lastInstant, occurrence))
+            var conversion = TryToDateTimeOffset(wallClock, timeZone, out var occurrence);
+            if (conversion is InstantConversion.AfterMaxValue)
+                break;
+
+            if (conversion is InstantConversion.BeforeMinValue)
+            {
+                count++;
+                if (count >= maxCount)
+                    break;
+
+                continue;
+            }
+
+            // No wall-clock time from this one on can denote an instant before these ones
+            while (movedOccurrences is { Count: > 0 } && movedOccurrences.Peek().DateTime <= wallClock)
+            {
+                var movedOccurrence = movedOccurrences.Dequeue();
+                lastReturnedUtcTicks = movedOccurrence.UtcTicks;
+                yield return movedOccurrence;
+            }
+
+            var isMoved = occurrence.DateTime != wallClock;
+            if (isAfterEnd is not null && isAfterEnd(wallClock, occurrence))
+            {
+                if (isMoved)
+                    continue;
+
+                break;
+            }
+
+            if (occurrence.UtcTicks == lastReturnedUtcTicks || occurrence.UtcTicks == lastMovedUtcTicks)
                 continue;
 
-            lastInstant = occurrence.UtcDateTime;
+            count++;
+            if (isMoved)
+            {
+                movedOccurrences ??= new Queue<DateTimeOffset>();
+                movedOccurrences.Enqueue(occurrence);
+                lastMovedUtcTicks = occurrence.UtcTicks;
+            }
+            else
+            {
+                // A held-back instance was not released, so it is later than this one
+                lastReturnedUtcTicks = occurrence.UtcTicks;
+                yield return occurrence;
+            }
+
+            if (count >= maxCount)
+                break;
+        }
+
+        if (movedOccurrences is not null)
+        {
+            while (movedOccurrences.Count > 0)
+            {
+                yield return movedOccurrences.Dequeue();
+            }
+        }
+    }
+
+    /// <summary>Gets the occurrences that are not before <paramref name="start"/>.</summary>
+    /// <param name="occurrences">The occurrences, in increasing order.</param>
+    /// <param name="start">The first instant to return occurrences from.</param>
+    public static IEnumerable<DateTimeOffset> SkipBefore(IEnumerable<DateTimeOffset> occurrences, DateTimeOffset start)
+    {
+        var isStartReached = false;
+        foreach (var occurrence in occurrences)
+        {
+            if (!isStartReached)
+            {
+                if (occurrence.UtcTicks < start.UtcTicks)
+                    continue;
+
+                isStartReached = true;
+            }
+
             yield return occurrence;
         }
     }
 
-    /// <summary>RFC 5545 section 3.8.5.3: duplicate instances are ignored.</summary>
-    /// <remarks>
-    /// <para>Every local time in the gap of a forward transition is read at the UTC offset in effect before the
-    /// gap, which maps the whole gap onto the instants the hour after it also denotes. A sub-hourly recurrence
-    /// therefore repeats a run of instants, and the repeats are neither adjacent to nor ordered after the
-    /// instances they duplicate.</para>
-    /// <para>Keeping only what is strictly after the last instant produced removes every such repeat, and leaves
-    /// the recurrence set increasing. The duplicate and the instance it repeats convert to the very same value,
-    /// so which of the two is kept does not matter.</para>
-    /// </remarks>
-    public static bool IsDuplicate(DateTime? lastInstant, DateTimeOffset occurrence)
+    /// <summary>Gets the wall-clock reading of <paramref name="instant"/> in <paramref name="timeZone"/>, clamped to the range of <see cref="DateTime"/>.</summary>
+    public static DateTime ToWallClockClamped(DateTimeOffset instant, TimeZoneInfo timeZone)
     {
-        return lastInstant.HasValue && occurrence.UtcDateTime <= lastInstant.Value;
+        var offset = timeZone.GetUtcOffset(instant.UtcDateTime);
+        return new DateTime(ClampTicks(instant.UtcTicks + offset.Ticks), DateTimeKind.Unspecified);
+    }
+
+    /// <summary>Gets the earliest wall-clock time whose occurrence can denote an instant at or after <paramref name="instant"/> in <paramref name="timeZone"/>.</summary>
+    /// <remarks>
+    /// This is the wall-clock reading of <paramref name="instant"/>, unless it follows a forward transition by less than the
+    /// length of the gap. A wall-clock time inside that gap is read at the offset in effect before it (RFC 5545 section 3.3.5),
+    /// so it can denote an instant after <paramref name="instant"/> although it is before its reading. The offset one day
+    /// earlier is the offset before such a gap, as no time zone skips more than a day.
+    /// </remarks>
+    public static DateTime GetEarliestWallClock(DateTimeOffset instant, TimeZoneInfo timeZone)
+    {
+        var offset = timeZone.GetUtcOffset(instant.UtcDateTime);
+        var offsetOneDayEarlier = timeZone.GetUtcOffset(new DateTime(ClampTicks(instant.UtcTicks - TimeSpan.TicksPerDay), DateTimeKind.Utc));
+        if (offsetOneDayEarlier < offset)
+        {
+            offset = offsetOneDayEarlier;
+        }
+
+        return new DateTime(ClampTicks(instant.UtcTicks + offset.Ticks), DateTimeKind.Unspecified);
+    }
+
+    private static bool IsInRange(long ticks) => ticks >= 0 && ticks <= DateTime.MaxValue.Ticks;
+
+    private static long ClampTicks(long ticks)
+    {
+        if (ticks < 0)
+            return 0;
+
+        if (ticks > DateTime.MaxValue.Ticks)
+            return DateTime.MaxValue.Ticks;
+
+        return ticks;
     }
 
     /// <summary>Gets the UTC offset in effect immediately before the forward transition that skips <paramref name="local"/>.</summary>
@@ -263,8 +428,8 @@ internal static class Utilities
         // [T + o1, T + o2). Reading the local time with o1 lands at or after T and so reports o2, and reading it
         // with o2 lands before T and so reports o1. Two probes therefore yield both offsets, and the smaller one
         // is the offset in effect before the gap.
-        var first = timeZone.GetUtcOffset(DateTime.SpecifyKind(local - timeZone.BaseUtcOffset, DateTimeKind.Utc));
-        var second = timeZone.GetUtcOffset(DateTime.SpecifyKind(local - first, DateTimeKind.Utc));
+        var first = timeZone.GetUtcOffset(new DateTime(ClampTicks(local.Ticks - timeZone.BaseUtcOffset.Ticks), DateTimeKind.Utc));
+        var second = timeZone.GetUtcOffset(new DateTime(ClampTicks(local.Ticks - first.Ticks), DateTimeKind.Utc));
         return first < second ? first : second;
     }
 

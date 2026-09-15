@@ -19,12 +19,14 @@ namespace Meziantou.Framework.Scheduling;
 /// <item><description>BYMINUTE - Limits occurrences to specific minutes (0-59)</description></item>
 /// <item><description>BYHOUR - Limits occurrences to specific hours (0-23)</description></item>
 /// <item><description>BYDAY - Limits occurrences to specific days of the week</description></item>
-/// <item><description>BYMONTHDAY - Limits occurrences to specific days of the month (1-31, -1 to -31)</description></item>
-/// <item><description>BYYEARDAY - Limits occurrences to specific days of the year (1-366, -1 to -366)</description></item>
+/// <item><description>BYMONTHDAY - Limits occurrences to specific days of the month (1-31, -1 to -31), not when FREQ is WEEKLY</description></item>
+/// <item><description>BYYEARDAY - Limits occurrences to specific days of the year (1-366, -1 to -366), not when FREQ is DAILY, WEEKLY or MONTHLY</description></item>
 /// <item><description>BYWEEKNO - Limits occurrences to specific weeks of the year (1-53, -1 to -53), only when FREQ is YEARLY</description></item>
 /// <item><description>BYMONTH - Limits occurrences to specific months (1-12)</description></item>
-/// <item><description>BYSETPOS - Limits occurrences to specific positions in the recurrence set</description></item>
+/// <item><description>BYSETPOS - Limits occurrences to specific positions in the recurrence set (1-366, -1 to -366), only with another BYxxx rule part</description></item>
+/// <item><description>RSCALE and SKIP (RFC 7529) - Only their GREGORIAN and OMIT values, which are the default behavior</description></item>
 /// </list>
+/// <para>An unknown rule part makes the rule invalid.</para>
 /// </remarks>
 public abstract class RecurrenceRule : IRecurrenceRule
 {
@@ -34,33 +36,51 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>The string representation of the default first day of the week.</summary>
     public const string DefaultFirstDayOfWeekString = "MO";
 
+    // The rule parts of RFC 5545 section 3.3.10, and the RSCALE and SKIP rule parts of RFC 7529 section 4.1
+    private static readonly HashSet<string> RulePartNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "FREQ", "UNTIL", "COUNT", "INTERVAL", "BYSECOND", "BYMINUTE", "BYHOUR", "BYDAY", "BYMONTHDAY", "BYYEARDAY", "BYWEEKNO", "BYMONTH", "BYSETPOS", "WKST", "RSCALE", "SKIP",
+    };
+
     /// <summary>End date (inclusive)</summary>
     /// <remarks>
     /// <para>A <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/> value denotes an instant, and a
     /// <see cref="DateTimeKind.Unspecified"/> value a wall-clock reading. Parsing a UTC UNTIL, or one carrying an offset,
     /// produces a <see cref="DateTimeKind.Utc"/> value; a floating date-time or a date produces an
-    /// <see cref="DateTimeKind.Unspecified"/> value, a date being read as its first instant.</para>
+    /// <see cref="DateTimeKind.Unspecified"/> value, a date being stored as its first instant.</para>
     /// <para>An instant bounds the occurrences generated from a <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/>
-    /// start date by instant, and a wall-clock reading bounds every occurrence by wall clock.</para>
+    /// start date, or from a <see cref="DateTimeOffset"/>, by instant, and a wall-clock reading bounds every occurrence by wall clock.</para>
+    /// <para>A parsed date designates the whole day, so it keeps every occurrence on that day, whatever its time. Setting this
+    /// property stores a date-time: the value is then an exact bound.</para>
+    /// <para>UNTIL and COUNT cannot be used in the same recurrence rule, so <see cref="Occurrences"/> must be <see langword="null"/> to set a value.</para>
     /// </remarks>
+    /// <exception cref="InvalidOperationException">The value is not <see langword="null"/> and <see cref="Occurrences"/> is set.</exception>
     public DateTime? EndDate
     {
         get => field;
         set
         {
+            if (value.HasValue && Occurrences.HasValue)
+                throw new InvalidOperationException($"Cannot set {nameof(EndDate)} when {nameof(Occurrences)} is set: UNTIL and COUNT cannot be used in the same recurrence rule.");
+
             field = value;
             IsEndDateDate = false;
         }
     }
 
-    /// <summary>Gets a value indicating whether <see cref="EndDate"/> was parsed from a DATE value, so it is written back as one.</summary>
+    /// <summary>Gets a value indicating whether <see cref="EndDate"/> was parsed from a DATE value, so it is written back as one and includes the whole day.</summary>
     internal bool IsEndDateDate { get; private set; }
+
+    /// <summary>Gets the last value an occurrence can take: <see cref="EndDate"/>, or the last tick of its day when it was parsed from a DATE value.</summary>
+    internal DateTime? EndBound => EndDate is { } endDate && IsEndDateDate ? new DateTime(endDate.Date.Ticks + TimeSpan.TicksPerDay - 1, endDate.Kind) : EndDate;
 
     /// <summary>Gets the UNTIL value as written in <see cref="Text"/>.</summary>
     internal string? EndDateText => EndDate is { } endDate ? Utilities.EndDateToString(endDate, IsEndDateDate) : null;
 
     /// <summary>The number of occurrences before the recurrence ends.</summary>
+    /// <remarks>UNTIL and COUNT cannot be used in the same recurrence rule, so <see cref="EndDate"/> must be <see langword="null"/> to set a value.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    /// <exception cref="InvalidOperationException">The value is not <see langword="null"/> and <see cref="EndDate"/> is set.</exception>
     public int? Occurrences
     {
         get => field;
@@ -69,6 +89,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
             if (value.HasValue)
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(value.Value);
+                if (EndDate.HasValue)
+                    throw new InvalidOperationException($"Cannot set {nameof(Occurrences)} when {nameof(EndDate)} is set: UNTIL and COUNT cannot be used in the same recurrence rule.");
             }
 
             field = value;
@@ -88,25 +110,42 @@ public abstract class RecurrenceRule : IRecurrenceRule
     } = 1;
 
     /// <summary>The first day of the week for the recurrence rule.</summary>
-    public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a day of the week.</exception>
+    public DayOfWeek WeekStart
+    {
+        get => field;
+        set
+        {
+            if (value is < DayOfWeek.Sunday or > DayOfWeek.Saturday)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not a day of the week.");
 
-    /// <summary>Limits occurrences to specific seconds (0-59). A parsed BYSECOND value of 60 denotes a
+            field = value;
+        }
+    } = DefaultFirstDayOfWeek;
+
+    /// <summary>Limits occurrences to specific seconds (0-59). A BYSECOND value of 60 denotes a
     /// leap second, which <see cref="DateTime"/> cannot represent, and is normalized to 59.</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int>? BySeconds { get; set; }
 
     /// <summary>Limits occurrences to specific minutes (0-59).</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int>? ByMinutes { get; set; }
 
     /// <summary>Limits occurrences to specific hours (0-23).</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int>? ByHours { get; set; }
 
     /// <summary>Limits occurrences to specific months (1-12).</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int> ByMonths { get; set; } = [];
 
-    /// <summary>Limits occurrences to specific days of the month (1-31, -1 to -31).</summary>
+    /// <summary>Limits occurrences to specific days of the month (1-31, -1 to -31). It cannot be used when the frequency is weekly.</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int> ByMonthDays { get; set; } = [];
 
-    /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
+    /// <summary>Limits occurrences to specific positions in the recurrence set (1-366, -1 to -366). It can only be used with another BYxxx rule part.</summary>
+    /// <remarks>The values are validated when the occurrences are enumerated.</remarks>
     public IList<int>? BySetPositions { get; set; }
 
     /// <summary>Gets a value indicating whether the recurrence rule never ends.</summary>
@@ -172,6 +211,14 @@ public abstract class RecurrenceRule : IRecurrenceRule
                     continue;
 
                 var (name, value) = SplitPart(part);
+
+                // RFC 5545 section 3.3.10 has no extension rule part, so an unknown or misspelled name cannot be ignored
+                if (!RulePartNames.Contains(name))
+                {
+                    error = $"Unknown rule part: '{name}'.";
+                    return false;
+                }
+
                 if (values.ContainsKey(name))
                 {
                     error = $"Duplicate name: '{name}'.";
@@ -199,7 +246,30 @@ public abstract class RecurrenceRule : IRecurrenceRule
                 return false;
             }
 
-            // RFC 5545 section 3.3.10 lists the rule parts that MUST NOT be used with some frequencies
+            // RFC 7529 section 4.1: the rule is evaluated with the Gregorian calendar, and an invalid date is omitted
+            if (TryGetValue(values, "RSCALE", out var calendarScale) && !calendarScale.Equals("GREGORIAN", StringComparison.OrdinalIgnoreCase))
+            {
+                error = $"RSCALE value '{calendarScale}' is not supported. Only GREGORIAN is supported.";
+                return false;
+            }
+
+            if (TryGetValue(values, "SKIP", out var skip))
+            {
+                if (!values.ContainsKey("RSCALE"))
+                {
+                    error = "SKIP can only be used when RSCALE is specified.";
+                    return false;
+                }
+
+                if (!skip.Equals("OMIT", StringComparison.OrdinalIgnoreCase))
+                {
+                    error = $"SKIP value '{skip}' is not supported. Only OMIT is supported.";
+                    return false;
+                }
+            }
+
+            // RFC 5545 section 3.3.10 lists the rule parts that MUST NOT be used with some frequencies. The ones that
+            // the rule can hold are checked by GetValidationError.
             if (values.ContainsKey("BYWEEKNO") && frequency is not Frequency.Yearly)
             {
                 error = "BYWEEKNO can only be used when FREQ is YEARLY.";
@@ -256,20 +326,12 @@ public abstract class RecurrenceRule : IRecurrenceRule
                     };
                     break;
                 default:
-                    var yearlyRecurrence = new YearlyRecurrenceRule
+                    result = new YearlyRecurrenceRule
                     {
                         ByWeekDays = ParseByDayWithOffset(values),
                         ByYearDays = ParseByYearDay(values),
                         ByWeekNumbers = ParseByWeekNo(values),
                     };
-
-                    if (!IsEmpty(yearlyRecurrence.ByWeekNumbers) && yearlyRecurrence.ByWeekDays.Any(day => day.Ordinal.HasValue))
-                    {
-                        error = "BYDAY cannot have a numeric value when BYWEEKNO is specified.";
-                        return false;
-                    }
-
-                    result = yearlyRecurrence;
                     break;
             }
 
@@ -327,6 +389,10 @@ public abstract class RecurrenceRule : IRecurrenceRule
             result.ByHours = ParseByHours(values);
             result.ByMonths = ParseByMonth(values);
             result.ByMonthDays = ParseByMonthDays(values);
+
+            error = result.GetValidationError();
+            if (error is not null)
+                return false;
 
             recurrenceRule = result;
             return true;
@@ -455,16 +521,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYSETPOS", out var str))
             return null;
 
-        var setPositions = SplitToInt32List(str.AsSpan(), "BYSETPOS");
-        foreach (var setPosition in setPositions)
-        {
-            if (setPosition is (>= 1 and <= 366) or (<= -1 and >= -366))
-                continue;
-
-            throw new FormatException($"BYSETPOS value '{setPosition.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 1 and 366 or between -366 and -1.");
-        }
-
-        return setPositions;
+        return SplitToInt32List(str.AsSpan(), "BYSETPOS");
     }
 
     private static List<int> ParseByMonthDays(Dictionary<string, string> values)
@@ -472,16 +529,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMONTHDAY", out var str))
             return [];
 
-        var monthDays = SplitToInt32List(str.AsSpan(), "BYMONTHDAY");
-        foreach (var monthDay in monthDays)
-        {
-            if (monthDay is (>= 1 and <= 31) or (<= -1 and >= -31))
-                continue;
-
-            throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
-        }
-
-        return monthDays;
+        return SplitToInt32List(str.AsSpan(), "BYMONTHDAY");
     }
 
     private static List<int> ParseByMonth(Dictionary<string, string> values)
@@ -489,14 +537,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMONTH", out var str))
             return [];
 
-        var months = SplitToMonthList(str.AsSpan());
-        foreach (var month in months)
-        {
-            if (month is < 1 or > 12)
-                throw new FormatException($"BYMONTH value '{month.ToString(CultureInfo.InvariantCulture)}' is invalid.");
-        }
-
-        return months;
+        return SplitToMonthList(str.AsSpan());
     }
 
     private static List<int> ParseByYearDay(Dictionary<string, string> values)
@@ -504,16 +545,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYYEARDAY", out var str))
             return [];
 
-        var yearDays = SplitToInt32List(str.AsSpan(), "BYYEARDAY");
-        foreach (var yearDay in yearDays)
-        {
-            if (yearDay is (>= 1 and <= 366) or (<= -1 and >= -366))
-                continue;
-
-            throw new FormatException($"Year day '{yearDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
-        }
-
-        return yearDays;
+        return SplitToInt32List(str.AsSpan(), "BYYEARDAY");
     }
 
     private static List<int>? ParseByWeekNo(Dictionary<string, string> values)
@@ -521,16 +553,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYWEEKNO", out var str))
             return null;
 
-        var weekNumbers = SplitToInt32List(str.AsSpan(), "BYWEEKNO");
-        foreach (var weekNumber in weekNumbers)
-        {
-            if (weekNumber is (>= 1 and <= 53) or (<= -1 and >= -53))
-                continue;
-
-            throw new FormatException($"BYWEEKNO value '{weekNumber.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 1 and 53 or between -53 and -1.");
-        }
-
-        return weekNumbers;
+        return SplitToInt32List(str.AsSpan(), "BYWEEKNO");
     }
 
     private static DayOfWeek ParseWeekStart(Dictionary<string, string> values)
@@ -549,13 +572,9 @@ public abstract class RecurrenceRule : IRecurrenceRule
         var seconds = SplitToInt32List(str.AsSpan(), "BYSECOND");
         for (var i = 0; i < seconds.Count; i++)
         {
-            var second = seconds[i];
-            if (second is < 0 or > 60)
-                throw new FormatException($"Second '{second.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 60.");
-
             // RFC 5545 allows 60 to denote a leap second. DateTime cannot represent one, so it
             // is normalized to the last representable second of the minute.
-            if (second is 60)
+            if (seconds[i] is 60)
                 seconds[i] = 59;
         }
 
@@ -569,16 +588,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYMINUTE", out var str))
             return null;
 
-        var minutes = SplitToInt32List(str.AsSpan(), "BYMINUTE");
-        foreach (var minute in minutes)
-        {
-            if (minute is >= 0 and <= 59)
-                continue;
-
-            throw new FormatException($"Minute '{minute.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 59.");
-        }
-
-        return minutes;
+        return SplitToInt32List(str.AsSpan(), "BYMINUTE");
     }
 
     private static List<int>? ParseByHours(Dictionary<string, string> values)
@@ -586,16 +596,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (!TryGetValue(values, "BYHOUR", out var str))
             return null;
 
-        var hours = SplitToInt32List(str.AsSpan(), "BYHOUR");
-        foreach (var hour in hours)
-        {
-            if (hour is >= 0 and <= 23)
-                continue;
-
-            throw new FormatException($"Hour '{hour.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be between 0 and 23.");
-        }
-
-        return hours;
+        return SplitToInt32List(str.AsSpan(), "BYHOUR");
     }
 
     private static ByDay[] ParseByDayWithOffset(Dictionary<string, string> values)
@@ -657,7 +658,8 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (index is 0)
             return new ByDay(ParseDayOfWeek(str));
 
-        if (!TryParseInt32(str[..index], out var ordinal) || ordinal is 0 or > 53 or < -53)
+        // The range of the ordinal is checked by GetValidationError
+        if (!TryParseInt32(str[..index], out var ordinal))
             throw new FormatException($"Day of week '{str}' is invalid. The ordinal must be between 1 and 53 or between -53 and -1.");
 
         return new ByDay(ParseDayOfWeek(str[index..]), ordinal);
@@ -689,6 +691,131 @@ public abstract class RecurrenceRule : IRecurrenceRule
     private protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
     {
         return list is null || list.Count is 0;
+    }
+
+    /// <summary>Appends a comma-separated list of integers as the RFC 5545 grammar writes them, whatever the current culture.</summary>
+    private protected static void AppendValues(StringBuilder sb, IEnumerable<int> values)
+    {
+        var first = true;
+        foreach (var value in values)
+        {
+            if (!first)
+            {
+                sb.Append(',');
+            }
+
+            sb.Append(value.ToString(CultureInfo.InvariantCulture));
+            first = false;
+        }
+    }
+
+    /// <summary>Throws when a value of the rule cannot be written as a valid recurrence rule, which the public mutable lists allow.</summary>
+    private void EnsureValid()
+    {
+        if (GetValidationError() is { } error)
+            throw new InvalidOperationException("The recurrence rule is invalid: " + error);
+    }
+
+    /// <summary>Gets a description of the first value that RFC 5545 section 3.3.10 does not allow, or <see langword="null"/> when the rule is valid.</summary>
+    /// <remarks>It is shared by the parser and the evaluation, so a rule built by setting properties obeys the same rules as a parsed one.</remarks>
+    private string? GetValidationError()
+    {
+        var frequency = Frequency.None;
+        IList<DayOfWeek>? weekDays = null;
+        IList<ByDay>? byDays = null;
+        IList<int>? yearDays = null;
+        IList<int>? weekNumbers = null;
+        switch (this)
+        {
+            case SecondlyRecurrenceRule rule:
+                (frequency, weekDays, yearDays) = (Frequency.Secondly, rule.ByWeekDays, rule.ByYearDays);
+                break;
+            case MinutelyRecurrenceRule rule:
+                (frequency, weekDays, yearDays) = (Frequency.Minutely, rule.ByWeekDays, rule.ByYearDays);
+                break;
+            case HourlyRecurrenceRule rule:
+                (frequency, weekDays, yearDays) = (Frequency.Hourly, rule.ByWeekDays, rule.ByYearDays);
+                break;
+            case DailyRecurrenceRule rule:
+                (frequency, weekDays) = (Frequency.Daily, rule.ByWeekDays);
+                break;
+            case WeeklyRecurrenceRule rule:
+                (frequency, weekDays) = (Frequency.Weekly, rule.ByWeekDays);
+                break;
+            case MonthlyRecurrenceRule rule:
+                (frequency, byDays) = (Frequency.Monthly, rule.ByWeekDays);
+                break;
+            case YearlyRecurrenceRule rule:
+                (frequency, byDays, yearDays, weekNumbers) = (Frequency.Yearly, rule.ByWeekDays, rule.ByYearDays, rule.ByWeekNumbers);
+                break;
+        }
+
+        var error = GetRangeError(BySeconds, "BYSECOND", min: 0, max: 60, allowNegative: false)
+            ?? GetRangeError(ByMinutes, "BYMINUTE", min: 0, max: 59, allowNegative: false)
+            ?? GetRangeError(ByHours, "BYHOUR", min: 0, max: 23, allowNegative: false)
+            ?? GetRangeError(ByMonths, "BYMONTH", min: 1, max: 12, allowNegative: false)
+            ?? GetRangeError(ByMonthDays, "BYMONTHDAY", min: 1, max: 31, allowNegative: true)
+            ?? GetRangeError(yearDays, "BYYEARDAY", min: 1, max: 366, allowNegative: true)
+            ?? GetRangeError(weekNumbers, "BYWEEKNO", min: 1, max: 53, allowNegative: true)
+            ?? GetRangeError(BySetPositions, "BYSETPOS", min: 1, max: 366, allowNegative: true);
+        if (error is not null)
+            return error;
+
+        if (weekDays is not null)
+        {
+            foreach (var weekDay in weekDays)
+            {
+                if (weekDay is < DayOfWeek.Sunday or > DayOfWeek.Saturday)
+                    return $"BYDAY value '{weekDay}' is not a day of the week.";
+            }
+        }
+
+        if (byDays is not null)
+        {
+            foreach (var byDay in byDays)
+            {
+                if (byDay.DayOfWeek is < DayOfWeek.Sunday or > DayOfWeek.Saturday)
+                    return $"BYDAY value '{byDay.DayOfWeek}' is not a day of the week.";
+
+                if (byDay.Ordinal is { } ordinal && ordinal is 0 or > 53 or < -53)
+                    return $"BYDAY value '{byDay}' is invalid. The ordinal must be between 1 and 53 or between -53 and -1.";
+            }
+        }
+
+        if (frequency is Frequency.Weekly && !IsEmpty(ByMonthDays))
+            return "BYMONTHDAY cannot be used when FREQ is WEEKLY.";
+
+        if (!IsEmpty(weekNumbers) && byDays is not null && byDays.Any(day => day.Ordinal.HasValue))
+            return "BYDAY cannot have a numeric value when BYWEEKNO is specified.";
+
+        // The rule parts of an unknown derived type are unknown, so it cannot be told whether BYSETPOS has another rule part to apply to
+        if (frequency is not Frequency.None && !IsEmpty(BySetPositions) &&
+            IsEmpty(BySeconds) && IsEmpty(ByMinutes) && IsEmpty(ByHours) && IsEmpty(ByMonths) && IsEmpty(ByMonthDays) &&
+            IsEmpty(weekDays) && IsEmpty(byDays) && IsEmpty(yearDays) && IsEmpty(weekNumbers))
+        {
+            return "BYSETPOS can only be used in conjunction with another BYxxx rule part.";
+        }
+
+        return null;
+
+        static string? GetRangeError(IList<int>? values, string partName, int min, int max, bool allowNegative)
+        {
+            if (values is null)
+                return null;
+
+            foreach (var value in values)
+            {
+                if ((value >= min && value <= max) || (allowNegative && value <= -min && value >= -max))
+                    continue;
+
+                var range = allowNegative
+                    ? $"between {min.ToString(CultureInfo.InvariantCulture)} and {max.ToString(CultureInfo.InvariantCulture)} or between -{max.ToString(CultureInfo.InvariantCulture)} and -{min.ToString(CultureInfo.InvariantCulture)}"
+                    : $"between {min.ToString(CultureInfo.InvariantCulture)} and {max.ToString(CultureInfo.InvariantCulture)}";
+                return $"{partName} value '{value.ToString(CultureInfo.InvariantCulture)}' is invalid. Must be {range}.";
+            }
+
+            return null;
+        }
     }
 
     private static List<int> SplitToInt32List(ReadOnlySpan<char> text, string partName)
@@ -760,12 +887,36 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <summary>Gets all occurrences of the recurrence starting from the specified date.</summary>
     /// <param name="startDate">The date to start generating occurrences from.</param>
     /// <returns>An enumerable sequence of occurrence dates.</returns>
+    /// <remarks>A rule cannot express a fraction of a second, so every occurrence takes the fractional second of <paramref name="startDate"/>,
+    /// as it takes the other time components the rule does not specify.</remarks>
+    /// <exception cref="InvalidOperationException">A rule part holds a value that RFC 5545 does not allow, such as a <see cref="ByHours"/> value of 24. It is thrown when the enumeration starts.</exception>
     public virtual IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
+        return GetNextOccurrences(startDate, offset: null);
+    }
+
+    /// <summary>Gets all occurrences of the recurrence, reading <paramref name="startDate"/> as a wall-clock time at <paramref name="offset"/> when one is specified.</summary>
+    /// <remarks>A fixed offset turns an instant UNTIL into a wall-clock time at that offset, so the occurrences are bounded by instant.</remarks>
+    internal IEnumerable<DateTime> GetNextOccurrences(DateTime startDate, TimeSpan? offset)
+    {
+        EnsureValid();
         if (Occurrences is 0)
             yield break;
 
-        var endDate = GetEndBound(EndDate, startDate.Kind);
+        DateTime? endDate;
+        if (offset is { } value && EndBound is { Kind: not DateTimeKind.Unspecified } instant)
+        {
+            var ticks = instant.ToUniversalTime().Ticks + value.Ticks;
+            if (ticks < DateTime.MinValue.Ticks)
+                yield break;
+
+            endDate = new DateTime(Math.Min(ticks, DateTime.MaxValue.Ticks), DateTimeKind.Unspecified);
+        }
+        else
+        {
+            endDate = GetEndBound(EndBound, startDate.Kind);
+        }
+
         var count = 0;
         foreach (var next in GetNextOccurrencesInternal(startDate, endDate))
         {
@@ -802,10 +953,17 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <para>The occurrences keep their wall-clock time across a daylight saving transition, so their UTC offset changes.
     /// A local time made invalid or ambiguous by a transition is resolved as RFC 5545 section 3.3.5 requires: an ambiguous
     /// time keeps its first occurrence, and an invalid time is read with the UTC offset in effect before the gap.</para>
-    /// <para>As a consequence, a sub-daily recurrence repeats an instant across a forward transition and skips the instants
-    /// of the repeated hour across a backward one.</para>
+    /// <para>A time inside the gap of a forward transition therefore moves forward by the length of the gap, which can place
+    /// its instance after the instances of the times that follow it: the occurrences are still returned in increasing
+    /// order. An instance that denotes the same instant as another one, as the hour skipped by a forward transition does
+    /// for an hourly recurrence, is ignored as RFC 5545 section 3.8.5.3 requires. COUNT counts the instances in the order
+    /// the recurrence generates their wall-clock times, and a duplicate does not count again. Across a backward transition,
+    /// the instants of the repeated hour are skipped.</para>
+    /// <para>An occurrence outside the range of <see cref="DateTimeOffset"/> is not returned: the enumeration ends at the
+    /// first one after the range.</para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A rule part holds a value that RFC 5545 does not allow, such as a <see cref="ByHours"/> value of 24. It is thrown when the enumeration starts.</exception>
     public virtual IEnumerable<DateTimeOffset> GetNextOccurrences(DateTime startDate, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(timeZone);
@@ -814,30 +972,16 @@ public abstract class RecurrenceRule : IRecurrenceRule
 
         static IEnumerable<DateTimeOffset> Iterate(RecurrenceRule rule, DateTime wallClockStart, TimeZoneInfo timeZone)
         {
+            rule.EnsureValid();
             if (rule.Occurrences is 0)
                 yield break;
 
-            var count = 0;
-            DateTime? lastInstant = null;
-            foreach (var next in rule.GetNextOccurrencesInternal(wallClockStart, GetWallClockEndBound(rule.EndDate)))
+            var endDate = rule.EndBound;
+            Func<DateTime, DateTimeOffset, bool>? isAfterEnd = endDate.HasValue ? (wallClock, occurrence) => IsAfterEndDate(wallClock, occurrence, endDate.Value) : null;
+            var wallClockOccurrences = rule.GetNextOccurrencesInternal(wallClockStart, GetWallClockEndBound(endDate));
+            foreach (var occurrence in Utilities.ToDateTimeOffsets(wallClockOccurrences, timeZone, rule.Occurrences, isAfterEnd))
             {
-                var occurrence = Utilities.ToDateTimeOffset(next, timeZone);
-
-                // A duplicate is not part of the recurrence set, so it does not count towards COUNT either.
-                // Dropping it first also leaves the values below increasing, which is what lets UNTIL stop
-                // the enumeration instead of only filtering it.
-                if (Utilities.IsDuplicate(lastInstant, occurrence))
-                    continue;
-
-                if (rule.EndDate.HasValue && IsAfterEndDate(next, occurrence, rule.EndDate.Value))
-                    yield break;
-
-                lastInstant = occurrence.UtcDateTime;
                 yield return occurrence;
-
-                count++;
-                if (rule.Occurrences.HasValue && count >= rule.Occurrences.Value)
-                    yield break;
             }
         }
 
@@ -867,14 +1011,20 @@ public abstract class RecurrenceRule : IRecurrenceRule
     /// <param name="startDate">The instant to start generating occurrences from. It is reduced to a wall-clock time in <paramref name="timeZone"/>.</param>
     /// <param name="timeZone">The time zone the recurrence is expressed in, as an iCalendar DTSTART;TZID= would.</param>
     /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
-    /// <remarks>Reducing an instant to a wall-clock time is lossy in the hour repeated by a backward transition, where both
-    /// readings denote the same wall clock. Use the <see cref="DateTime"/> overload to control which one is meant.</remarks>
+    /// <remarks>
+    /// <para>The recurrence starts at the wall-clock reading of <paramref name="startDate"/>, as it would with a DTSTART;TZID=
+    /// holding that reading, but no occurrence before <paramref name="startDate"/> is returned.</para>
+    /// <para>Reducing an instant to a wall-clock time is lossy in the hour repeated by a backward transition, where both
+    /// readings denote the same wall clock and RFC 5545 section 3.3.5 means the first one. When <paramref name="startDate"/>
+    /// is the second one, the instances of the repeated hour denote instants before it and are not returned, although they
+    /// still count towards COUNT. Use the <see cref="DateTime"/> overload to start from the first reading.</para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
     public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset startDate, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(timeZone);
 
-        return GetNextOccurrences(TimeZoneInfo.ConvertTime(startDate, timeZone).DateTime, timeZone);
+        return Utilities.SkipBefore(GetNextOccurrences(Utilities.ToWallClockClamped(startDate, timeZone), timeZone), startDate);
     }
 
     /// <summary>When implemented in a derived class, generates the internal sequence of occurrence dates.</summary>

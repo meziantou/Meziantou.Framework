@@ -94,10 +94,12 @@ internal sealed class RecurrenceRuleEvaluator
         var byHours = rule.ByHours;
         var byMinutes = rule.ByMinutes;
         var bySeconds = rule.BySeconds;
-        var hasTimeParts = !IsEmpty(byHours) || !IsEmpty(byMinutes) || !IsEmpty(bySeconds);
 
-        // Sub-second precision cannot be expressed by the rule, so it is kept from the start date only when no time part replaces the time of day
-        _fractionTicks = hasTimeParts ? 0 : startDate.Ticks % TicksPerSecond;
+        // Sub-second precision cannot be expressed by the rule, so every instance takes it from the start date, as it takes
+        // the time parts the rule does not specify (RFC 5545 section 3.3.10). A part that limits the instances, such as
+        // BYHOUR in an HOURLY rule, therefore never moves them, and a part that expands them, such as BYSECOND in a
+        // MINUTELY rule, only replaces the component it names.
+        _fractionTicks = startDate.Ticks % TicksPerSecond;
 
         // BYMONTH
         if (!IsEmpty(months))

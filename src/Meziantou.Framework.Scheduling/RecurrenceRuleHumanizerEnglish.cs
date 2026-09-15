@@ -8,16 +8,30 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
 
         var sb = new StringBuilder();
         AppendInterval(sb, rule);
-        var setPositionsRendered = AppendDays(sb, rule);
-        AppendTimes(sb, rule);
-        if (!setPositionsRendered && rule.BySetPositions.Count > 0)
+        var daySetPositions = GetDaySetPositions(rule);
+        AppendDays(sb, rule, daySetPositions?.DayPositions);
+        if (daySetPositions is not null)
         {
-            sb.Append(", only the ");
-            sb.Append(JoinAnd([.. rule.BySetPositions.Select(GetPositionText)]));
-            sb.Append(rule.BySetPositions.Count is 1 ? " occurrence" : " occurrences");
+            AppendTimes(sb, daySetPositions.Hours, daySetPositions.Minutes, daySetPositions.Seconds);
+        }
+        else
+        {
+            AppendTimes(sb, rule.ByHours, rule.ByMinutes, rule.BySeconds);
+            if (rule.BySetPositions.Count > 0)
+            {
+                sb.Append(", only the ");
+                sb.Append(JoinAnd([.. rule.BySetPositions.Select(GetPositionText)]));
+                sb.Append(rule.BySetPositions.Count is 1 ? " occurrence" : " occurrences");
+            }
         }
 
         AppendEnd(sb, rule);
+        if (IsWeekStartSignificant(rule))
+        {
+            sb.Append(", with weeks starting on ");
+            sb.Append(DayOfWeekToString(rule.WeekStart));
+        }
+
         return sb.ToString();
     }
 
@@ -51,30 +65,58 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         }
     }
 
-    private static bool AppendDays(StringBuilder sb, RuleParts rule)
+    private static void AppendDays(StringBuilder sb, RuleParts rule, IList<int>? daySetPositions)
     {
         var days = rule.ByDays;
         var hasOrdinalDays = rule.HasOrdinalDays;
         var isYearly = rule.Frequency is Frequency.Yearly;
         var monthsRendered = false;
         var positional = false;
-        var setPositionsRendered = false;
 
         if (rule.ByMonthDays.Count is 0 && rule.ByYearDays.Count is 0)
         {
-            if (days.Count > 0)
+            if (daySetPositions is not null)
             {
-                if (rule.BySetPositions.Count > 0 && !hasOrdinalDays && rule.Frequency is Frequency.Monthly or Frequency.Yearly)
+                // "the first and last Monday or Tuesday": BYSETPOS selects among the days matching any of the listed weekdays
+                sb.Append(" on the ");
+                sb.Append(JoinAnd([.. daySetPositions.Select(GetPositionText)]));
+                sb.Append(' ');
+                sb.Append(GetDayNames(rule.DaysOfWeek, " or ", abbreviate: true, plural: false));
+                positional = true;
+            }
+            else if (rule.ByWeekNumbers.Count > 0)
+            {
+                // "Monday of week 20": the week numbers select the weeks, and the week days the days of those weeks
+                var daysOfWeek = rule.DaysOfWeek;
+                sb.Append(" on ");
+                if (days.Count is 0 || hasOrdinalDays || IsFullWeek(daysOfWeek))
                 {
-                    // "the first and last Monday or Tuesday": BYSETPOS selects among the days matching any of the listed weekdays
-                    sb.Append(" on the ");
-                    sb.Append(JoinAnd([.. rule.BySetPositions.Select(GetPositionText)]));
-                    sb.Append(' ');
-                    sb.Append(GetDayNames(rule.DaysOfWeek, " or ", abbreviate: true, plural: false));
-                    positional = true;
-                    setPositionsRendered = true;
+                    sb.Append("every day");
                 }
-                else if (hasOrdinalDays)
+                else if (IsWeekday(daysOfWeek))
+                {
+                    sb.Append("weekdays");
+                }
+                else if (IsWeekendDay(daysOfWeek))
+                {
+                    sb.Append("weekend days");
+                }
+                else
+                {
+                    sb.Append(GetDayNames(daysOfWeek, " and ", abbreviate: false, plural: rule.ByWeekNumbers.Count > 1));
+                }
+
+                sb.Append(" of ");
+                sb.Append(GetWeekNumbersText(rule.ByWeekNumbers));
+                if (hasOrdinalDays)
+                {
+                    sb.Append(" if it is ");
+                    sb.Append(GetDayConditionText(rule));
+                }
+            }
+            else if (days.Count > 0)
+            {
+                if (hasOrdinalDays)
                 {
                     sb.Append(" on ");
                     sb.Append(JoinAnd([.. days.Select(day => day.Ordinal is { } ordinal ? "the " + GetPositionText(ordinal) + " " + DayOfWeekToString(day.DayOfWeek) : "every " + DayOfWeekToString(day.DayOfWeek))]));
@@ -95,56 +137,66 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             // "Friday the 13th"
             var isWeekdayOfMonthDay = days.Count is 1 && !hasOrdinalDays && rule.ByMonthDays.Count > 0 && monthDaysAllPositive && rule.ByYearDays.Count is 0;
 
-            var phrases = new List<string>();
+            // Every day part restricts the days selected by the other ones, so the first one selects the days and the other ones are conditions
+            var conditions = new List<string>();
+            sb.Append(" on ");
             if (rule.ByYearDays.Count > 0)
             {
-                phrases.Add("the " + GetDayNumbersText(rule.ByYearDays) + " day of the year");
+                sb.Append("the ").Append(GetDayNumbersText(rule.ByYearDays, " and ")).Append(" day of the year");
+                if (rule.ByMonthDays.Count > 0)
+                {
+                    conditions.Add("the " + GetDayNumbersText(rule.ByMonthDays, " or ") + (monthDaysAllPositive ? "" : " day") + " of the month");
+                }
             }
-
-            if (rule.ByMonthDays.Count > 0)
+            else
             {
-                var monthDaysText = GetDayNumbersText(rule.ByMonthDays);
+                var monthDaysText = GetDayNumbersText(rule.ByMonthDays, " and ");
                 if (isWeekdayOfMonthDay)
                 {
-                    phrases.Add(DayOfWeekToString(days[0].DayOfWeek) + " the " + monthDaysText);
+                    sb.Append(DayOfWeekToString(days[0].DayOfWeek)).Append(" the ").Append(monthDaysText);
                 }
-                else if (isYearly && rule.ByMonths.Count is 1 && monthDaysAllPositive && rule.ByYearDays.Count is 0)
+                else if (isYearly && rule.ByMonths.Count is 1 && monthDaysAllPositive)
                 {
-                    phrases.Add(MonthToString(rule.ByMonths[0]) + " the " + monthDaysText);
+                    sb.Append(MonthToString(rule.ByMonths[0])).Append(" the ").Append(monthDaysText);
                     monthsRendered = true;
                 }
                 else
                 {
-                    var phrase = "the " + monthDaysText;
+                    sb.Append("the ").Append(monthDaysText);
                     if (!monthDaysAllPositive)
                     {
-                        phrase += " day";
+                        sb.Append(" day");
                     }
 
                     if (isYearly)
                     {
                         if (rule.ByMonths.Count > 0)
                         {
-                            phrase += " of " + GetMonthsText(rule.ByMonths);
+                            sb.Append(" of ").Append(GetMonthsText(rule.ByMonths));
                             monthsRendered = true;
                         }
                         else
                         {
-                            phrase += " of every month";
+                            sb.Append(" of every month");
                         }
                     }
-
-                    phrases.Add(phrase);
                 }
             }
 
-            sb.Append(" on ");
-            sb.Append(string.Join(", on ", phrases));
+            if (rule.ByWeekNumbers.Count > 0)
+            {
+                conditions.Add("in " + GetWeekNumbersText(rule.ByWeekNumbers));
+            }
 
             if (days.Count > 0 && !isWeekdayOfMonthDay)
             {
+                conditions.Add(GetDayConditionText(rule));
+            }
+
+            if (conditions.Count > 0)
+            {
                 sb.Append(" if it is ");
-                sb.Append(GetDayConditionText(rule));
+                sb.Append(JoinAnd(conditions));
             }
         }
 
@@ -153,13 +205,11 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             sb.Append(positional && isYearly ? " of " : " in ");
             sb.Append(GetMonthsText(rule.ByMonths));
         }
-
-        return setPositionsRendered;
     }
 
-    private static void AppendTimes(StringBuilder sb, RuleParts rule)
+    private static void AppendTimes(StringBuilder sb, IList<int> hours, IList<int> minutes, IList<int> seconds)
     {
-        var times = GetListedTimes(rule);
+        var times = GetListedTimes(hours, minutes, seconds);
         if (times is not null)
         {
             sb.Append(" at ");
@@ -168,9 +218,9 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         }
 
         var parts = new List<string>();
-        AddTimeComponent(parts, rule.ByHours, "hour");
-        AddTimeComponent(parts, rule.ByMinutes, "minute");
-        AddTimeComponent(parts, rule.BySeconds, "second");
+        AddTimeComponent(parts, hours, "hour");
+        AddTimeComponent(parts, minutes, "minute");
+        AddTimeComponent(parts, seconds, "second");
         if (parts.Count > 0)
         {
             sb.Append(" at ");
@@ -203,7 +253,9 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             sb.Append(ToInvariantString(endDate.Day));
             sb.Append(", ");
             sb.Append(ToInvariantString(endDate.Year));
-            if (endDate.TimeOfDay != TimeSpan.Zero)
+
+            // A DATE-TIME ends the recurrence at its time of day, midnight included, so only a DATE omits it
+            if (!rule.IsEndDateDate)
             {
                 sb.Append(" at ");
                 sb.Append(FormatTime(endDate.Hour, endDate.Minute, endDate.Second is 0 ? null : endDate.Second));
@@ -259,15 +311,26 @@ internal sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 return "a weekend day";
         }
 
-        return JoinOr([.. rule.ByDays.Select(day => day.Ordinal is { } ordinal ? "the " + GetPositionText(ordinal) + " " + DayOfWeekToString(day.DayOfWeek) : "a " + DayOfWeekToString(day.DayOfWeek))]);
+        // Within a YEARLY rule, a numbered day is counted in the year unless BYMONTH narrows it to the month
+        var scope = rule.Frequency is Frequency.Yearly && rule.ByMonths.Count is 0 ? " of the year" : "";
+        return JoinOr([.. rule.ByDays.Select(day => day.Ordinal is { } ordinal ? "the " + GetPositionText(ordinal) + " " + DayOfWeekToString(day.DayOfWeek) + scope : "a " + DayOfWeekToString(day.DayOfWeek))]);
     }
 
     private static string GetMonthsText(IList<int> months) => JoinAnd([.. months.Select(MonthToString)]);
 
-    /// <summary>Gets the text of day numbers such as "1st and 15th" or "1st and last day" (without the leading article).</summary>
-    private static string GetDayNumbersText(IList<int> values)
+    /// <summary>Gets the text of week numbers such as "week 20", "weeks 1 and 2", or "week 1 and the last week of the year".</summary>
+    private static string GetWeekNumbersText(IList<int> weekNumbers)
     {
-        return JoinAnd([.. values.Select(value => value > 0 ? GetOrdinalNumber(value) : GetPositionText(value))]);
+        if (weekNumbers.All(week => week > 0))
+            return (weekNumbers.Count is 1 ? "week " : "weeks ") + JoinAnd([.. weekNumbers.Select(ToInvariantString)]);
+
+        return JoinAnd([.. weekNumbers.Select(week => week > 0 ? "week " + ToInvariantString(week) : "the " + GetPositionText(week) + " week")]) + " of the year";
+    }
+
+    /// <summary>Gets the text of day numbers such as "1st and 15th" or "1st and last day" (without the leading article).</summary>
+    private static string GetDayNumbersText(IList<int> values, string lastSeparator)
+    {
+        return JoinList([.. values.Select(value => value > 0 ? GetOrdinalNumber(value) : GetPositionText(value))], ", ", lastSeparator);
     }
 
     /// <summary>Gets the position text such as "first", "5th", "last", or "second to last".</summary>

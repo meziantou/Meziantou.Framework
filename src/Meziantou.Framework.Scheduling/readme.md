@@ -17,6 +17,19 @@ if (RecurrenceRule.TryParse(rrule, out var rule, out var error))
 }
 ````
 
+The parser follows RFC 5545 section 3.3.10 strictly: an unknown or misspelled rule part (`CONUT=3`, ` COUNT=3`) makes the
+rule invalid, as do the combinations the RFC forbids, such as `BYMONTHDAY` with `FREQ=WEEKLY` or `BYSETPOS` without
+another `BYxxx` rule part. The RFC 7529 `RSCALE` and `SKIP` rule parts are accepted with their `GREGORIAN` and `OMIT`
+values, which are the evaluation this package implements.
+
+A rule can be modified after parsing. `EndDate` and `Occurrences` cannot both be set, and the values of the `BYxxx` lists
+are validated when the occurrences are enumerated, which throws an `InvalidOperationException` for a value such as
+`ByHours = [24]`. `Text` is always formatted with the invariant culture.
+
+A rule cannot express a fraction of a second, so the occurrences take the fractional second of the start date, as they
+take the other time components the rule does not specify. `FREQ=DAILY;BYHOUR=9,10` from `08:15:30.5` produces
+`09:15:30.5` and `10:15:30.5`.
+
 Convert a recurrence rule to human-readable text:
 
 ````c#
@@ -62,10 +75,18 @@ before the gap, so `02:30` on a spring-forward day surfaces as `03:30` at the ne
 [errata 4271](https://www.rfc-editor.org/errata/eid4271) settles for recurrence instances; only an invalid
 *date*, such as February 30, is dropped from the recurrence set.
 
-Reading a gap that way maps it onto the instants of the hour that follows it, so a sub-hourly recurrence
-would otherwise repeat them. Those duplicates are ignored, per RFC 5545 section 3.8.5.3, and do not count
-towards `COUNT`. Across a backward transition the repeated hour is visited once, so its second pass is not
-produced.
+Reading a gap that way moves each of its times forward by the length of the gap, so an occurrence in the gap
+can denote an instant later than the occurrences that follow it. The occurrences are still returned in
+increasing order: `FREQ=MINUTELY;INTERVAL=40` from `00:00` in Paris on 2026-03-29 produces `01:20+01:00`,
+`03:00+02:00` (from `02:00`), `03:20+02:00`, `03:40+02:00` (from `02:40`), `04:00+02:00`. An occurrence that
+denotes the very same instant as another one, as `02:00` and `03:00` do for an hourly recurrence, is ignored per
+RFC 5545 section 3.8.5.3. `COUNT` counts the occurrences in the order the rule generates their wall-clock
+times, and a duplicate does not count again. Across a backward transition the repeated hour is visited once,
+so its second pass is not produced.
+
+The `DateTimeOffset` overloads never return an occurrence before the start instant, even when it is the second
+pass of the repeated hour, whose wall-clock times RFC 5545 reads as the first pass. An occurrence whose instant
+is outside the range of `DateTimeOffset`, near year 1 or year 9999, is not returned.
 
 `UNTIL` is honoured as an instant when it is a UTC value, and as a wall-clock reading when it is floating.
 
@@ -75,10 +96,14 @@ produced.
 
 A UTC `UNTIL` (`20240110T100000Z`), or one carrying an offset, is parsed as a `Utc` `EndDate` and denotes an instant.
 A floating `UNTIL` (`20240110T100000`) or a date (`20240110`) is parsed as an `Unspecified` `EndDate` and denotes a
-wall-clock reading, a date being its first instant; a date is written back as a date.
+wall-clock reading; a date is stored as its first instant and written back as a date.
 
-Without a time zone, an instant bounds the occurrences of a `Utc` or `Local` start date by instant, and the occurrences
-of an `Unspecified` start date by wall clock. A wall-clock `UNTIL` always bounds them by wall clock.
+A date designates the whole day, so `FREQ=DAILY;UNTIL=20240110` from `2024-01-08 09:00` includes `2024-01-10 09:00`.
+Setting `EndDate` replaces the date with a date-time, which is an exact bound.
+
+Without a time zone, an instant bounds the occurrences of a `Utc` or `Local` start date, or of a `DateTimeOffset` start
+date, by instant, and the occurrences of an `Unspecified` start date by wall clock. A wall-clock `UNTIL` always bounds
+them by wall clock.
 
 ## iCalendar
 
@@ -116,7 +141,9 @@ The identifier of a `TZID` parameter is resolved, in order:
    standard offset and at most one daylight saving period, including a period spanning the new year and a change of
    the standard offset (the latter needs .NET 6 or later). An open-ended `STANDARD`/`DAYLIGHT` pair expressible as a
    floating (`BYDAY=-1SU`) or fixed (`BYMONTHDAY=22`) transition becomes a single open-ended rule; any other
-   open-ended recurrence is expanded for 300 years. A year whose offset changes more often than that, such as a
+   open-ended recurrence, such as `BYDAY=SU;BYMONTHDAY=2,3,4,5,6,7,8`, is expanded for one 400-year cycle of the
+   Gregorian calendar, which is then repeated until year 9998, whatever the year of its `DTSTART` (Outlook writes
+   1601). A year whose offset changes more often than that, such as a
    daylight saving period suspended during Ramadan, cannot be expressed by a `TimeZoneInfo`, so its shortest periods
    take the offset of the one before;
 3. as the IANA identifier ending a prefixed one, such as `/mozilla.org/20050126_1/America/New_York`.
@@ -128,6 +155,11 @@ carry one, and taken as UTC when they are floating.
 
 A `DATE` value, `DTSTART;VALUE=DATE:20240101` (or a date without the parameter), sets `Event.IsAllDay` and is
 read as the first instant of the day, without a time zone. An event without `STATUS` has a `null` `Event.Status`.
+
+The parameters of `ORGANIZER` and `ATTENDEE`, such as `CN`, `ROLE`, `PARTSTAT` or `RSVP`, go to
+`Organizer.Parameters` and `Attendee.Parameters` in order, each value as written, quotes included
+(`CN="Doe, Jane"`), and are written back unchanged. `VERSION` is kept as written, so `VERSION:2.0;2.0` is not
+escaped when written back.
 
 An event property the model does not have, such as `X-MICROSOFT-CDO-BUSYSTATUS:OOF`, goes to
 `Event.AdditionalProperties` when its `TEXT` value writes it back unchanged. Any other one — a property with
@@ -141,11 +173,33 @@ parameters and value verbatim. Calendar properties go to `InternetCalendar.Addit
 
 - Content lines longer than 75 UTF-8 octets are folded, never inside a character.
 - `CREATED`, `LAST-MODIFIED` and `DTSTAMP` are written in UTC (an `Unspecified` value is taken as UTC), and are
-  omitted when not set, as are `DTEND` and `STATUS`. RFC 5545 requires `DTSTAMP`, so set `Event.DateTimeStamp`
+  omitted when not set, as are `DTSTART`, `DTEND`, `STATUS` and `DESCRIPTION`. RFC 5545 requires `DTSTAMP`, so set `Event.DateTimeStamp`
   to produce a conforming event; the library does not use the current time, which keeps the output deterministic.
 - `Event.IsAllDay` writes the date part of `Start` and `End` as `DTSTART;VALUE=DATE:`/`DTEND;VALUE=DATE:`,
   ignoring `Event.TimeZone`.
-- An attendee or an organizer without an address is not written.
+- An attendee or an organizer without an address is not written. The address is written in its escaped form
+  (`Uri.AbsoluteUri`), so a line break or another control character in it is percent-encoded rather than
+  starting a new line, and a relative `Uri` is rejected by the `InternetCalendarUserAddress` constructor.
+  `Organizer.Parameters` and `Attendee.Parameters` validate a parameter when it is added, as
+  `InternetCalendarProperty` does:
+
+  ````c#
+  @event.Attendees.Add(new Attendee
+  {
+      Address = new InternetCalendarUserAddress("jane@example.com"),
+      Parameters = { new("CN", "\"Doe, Jane\""), new("PARTSTAT", "ACCEPTED"), new("RSVP", "TRUE") },
+  });
+  ````
+
+- The `UNTIL` of `Event.RecurrenceRule` is written with the value type of `DTSTART`, as RFC 5545 section 3.3.10
+  requires, without modifying the rule: a `DATE` for an all-day event (the date of `UNTIL` in the frame of the
+  start), a floating date-time for a floating start (a `DATE` becoming the end of that day), and a UTC date-time
+  for a start in UTC, in local time or with `Event.TimeZone` (a floating value or a `DATE` being read in that
+  time zone, the latter through the end of the day).
+- `TEXT` values drop the control characters other than a horizontal tab; a line feed is escaped as `\n` and a
+  carriage return is dropped. `InternetCalendar.Version` is written as is; one containing a control character
+  cannot be written, and `ToIcs` throws an `InvalidOperationException` before writing anything. A `null` event
+  is skipped.
 - A time zone identifier containing `:`, `;` or `,`, such as `(UTC+01:00) Amsterdam, Berlin`, is quoted in the
   `TZID` parameter and escaped in the `VTIMEZONE` `TZID` property. An identifier containing a `"` or a control
   character cannot be written, and `ToIcs` throws an `InvalidOperationException` before writing anything.
@@ -239,7 +293,7 @@ For all fields:
 - `a-b`: range
 - `*/n`: step from field minimum
 - `a-b/n`: stepped range
-- `a/n`: step starting at `a`
+- `a/n`: step starting at `a` up to the field maximum, which is `7` in the day-of-week field, so `1/2` is `1-7/2` and includes Sunday
 
 A range whose start is greater than its end wraps around the end of the field, except in the year field where it is invalid:
 

@@ -1,6 +1,7 @@
 using Meziantou.Framework.DiffEngine;
 using Meziantou.Framework.LLMContext;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
+using Meziantou.Framework.SnapshotTesting.Utils;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
@@ -49,42 +50,106 @@ public abstract class MergeTool
     /// <returns>A <see cref="MergeToolResult"/> that represents the merge tool process, or null if the tool cannot be started.</returns>
     public abstract MergeToolResult? Start(string currentFilePath, string newFilePath);
 
-    private static bool IsDisable()
+    /// <summary>
+    /// Starts the merge tool. <paramref name="waitForMerge" /> asks the tool to keep its process running until the
+    /// developer is done with the merge, for the tools that need an extra argument to do so.
+    /// </summary>
+    internal virtual MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge) => Start(currentFilePath, newFilePath);
+
+    /// <summary>
+    /// Indicates whether merge tools must not be started. <c>DiffEngine_Disabled</c> always wins. The build server,
+    /// continuous testing and LLM detections only apply when <paramref name="autoDetectContinuousEnvironment" /> is
+    /// set, so that turning <see cref="SnapshotSettings.AutoDetectContinuousEnvironment" /> off re-enables them.
+    /// </summary>
+    internal static bool IsDisabled(bool autoDetectContinuousEnvironment)
     {
-        var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled");
-        return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) ||
-               BuildServerDetector.Detected ||
-               ContinuousTestingDetector.Detected ||
-               LLMEnvironmentDetector.Detected;
+        if (IsDisabledByEnvironmentVariable())
+            return true;
+
+        return autoDetectContinuousEnvironment &&
+               (BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected);
     }
 
-    internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath)
+    internal static bool IsDisabledByEnvironmentVariable()
     {
-        if (IsDisable())
+        var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled")?.Trim();
+        return string.Equals(variable, "true", StringComparison.OrdinalIgnoreCase) || variable is "1";
+    }
+
+    /// <summary>
+    /// Starts the first merge tool that can be started. A tool that fails to start - a stale executable, an invalid
+    /// <c>DiffEngine_&lt;Tool&gt;</c> variable, a broken git command - must not prevent the next ones from being
+    /// tried, so its exception is recorded in <paramref name="failures" /> and the search goes on.
+    /// </summary>
+    internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures)
+    {
+        if (mergeTools is null)
             return null;
 
-        if (mergeTools is not null)
+        foreach (var mergeTool in mergeTools)
         {
-            foreach (var mergeTool in mergeTools)
-            {
-                if (mergeTool is null)
-                    continue;
+            if (mergeTool is null)
+                continue;
 
-                var process = mergeTool.Start(currentFilePath, newFilePath);
-                if (process is not null)
-                    return process;
+            try
+            {
+                var result = mergeTool.Start(currentFilePath, newFilePath, waitForMerge);
+                if (result is not null)
+                    return result;
+            }
+            catch (Exception exception)
+            {
+                failures.Add(new MergeToolLaunchFailure(mergeTool, exception));
             }
         }
 
         return null;
     }
 
+    /// <summary>
+    /// Copies a file into a new directory of its own under the temporary directory, so the copy keeps the name - and
+    /// therefore the extension and syntax highlighting - of the original. Remove it with <see cref="DeleteTemporaryCopy" />.
+    /// </summary>
     private protected static FullPath CopyFileToTemp(string path)
     {
         var temp = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(temp);
         var filePath = temp / Path.GetFileName(path);
-        File.Copy(path, filePath, overwrite: false);
+        try
+        {
+            File.Copy(path, filePath, overwrite: false);
+        }
+        catch
+        {
+            DeleteTemporaryCopy(filePath);
+            throw;
+        }
+
         return filePath;
+    }
+
+    /// <summary>Deletes a copy made by <see cref="CopyFileToTemp" />, including the directory created for it.</summary>
+    private protected static void DeleteTemporaryCopy(FullPath path)
+    {
+        try
+        {
+            var fileInfo = new FileInfo(path);
+            if (fileInfo.Exists)
+            {
+                fileInfo.TrySetReadOnly(false);
+            }
+
+            var directory = path.Parent;
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 }

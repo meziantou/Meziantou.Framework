@@ -26,17 +26,33 @@ internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? setting
 
         var threshold = settings?.SimilarityThreshold;
         if (threshold is null)
-            return expectedPixels.SequenceEqual(actualPixels);
+            return ExactEquals(expectedPixels, actualPixels);
 
-        // The bitmaps are allocated here, so their rows are contiguous and the whole image is a single chunk
-        var accumulator = new SsimAccumulator();
-        accumulator.Add(expectedPixels, actualPixels);
-        return accumulator.ComputeMeanSsim() >= threshold.Value;
+        // The bitmaps are allocated here, so their rows are contiguous and tightly packed
+        return SsimAccumulator.Compute(expectedPixels, actualPixels, expectedImage.Width, expectedImage.Height) >= threshold.Value;
+    }
+
+    private static bool ExactEquals(ReadOnlySpan<uint> expected, ReadOnlySpan<uint> actual)
+    {
+        if (expected.SequenceEqual(actual))
+            return true;
+
+        // Encoders store arbitrary color values under a zero alpha, so fully transparent pixels are equal
+        // whatever color they hide. The alpha is the high byte of an RGBA pixel read as a little-endian uint.
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (expected[i] != actual[i] && (expected[i] >> 24 is not 0 || actual[i] >> 24 is not 0))
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
     /// Decodes the image into a tightly packed <see cref="SKColorType.Rgba8888"/> / <see cref="SKAlphaType.Unpremul"/>
-    /// bitmap so both snapshots share the same memory layout regardless of the encoded format.
+    /// bitmap so both snapshots share the same memory layout regardless of the encoded format. Returns
+    /// <see langword="null"/> when the image cannot be decoded, including when its header announces dimensions too
+    /// large to allocate.
     /// </summary>
     private static SKBitmap? Decode(byte[] data)
     {
@@ -46,13 +62,31 @@ internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? setting
             return null;
 
         var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
-        var bitmap = new SKBitmap(info);
-        if (codec.GetPixels(info, bitmap.GetPixels()) is not SKCodecResult.Success)
+
+        // The pixels are exposed as a span, whose length is limited to int.MaxValue
+        if (info.Width <= 0 || info.Height <= 0 || (long)info.Width * info.Height * info.BytesPerPixel > Array.MaxLength)
+            return null;
+
+        SKBitmap? bitmap = null;
+        try
         {
-            bitmap.Dispose();
+            bitmap = new SKBitmap(info);
+
+            // SkiaSharp does not throw when it cannot allocate the pixels; the bitmap has no pixels instead
+            if (bitmap.GetPixels() == IntPtr.Zero || codec.GetPixels(info, bitmap.GetPixels()) is not SKCodecResult.Success)
+                return null;
+
+            var result = bitmap;
+            bitmap = null;
+            return result;
+        }
+        catch (OutOfMemoryException)
+        {
             return null;
         }
-
-        return bitmap;
+        finally
+        {
+            bitmap?.Dispose();
+        }
     }
 }

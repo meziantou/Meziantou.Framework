@@ -3,7 +3,8 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.SnapshotTesting;
 
 /// <summary>
-/// Compares BMP/PNG/JPEG/TIFF snapshots by decoding image pixels and comparing RGB similarity.
+/// Compares BMP/PNG/JPEG/TIFF snapshots by decoding image pixels and comparing them exactly, or by similarity when
+/// <see cref="ImageComparisonSettings"/> configures a threshold.
 /// </summary>
 public sealed class ImageComparer(ImageComparisonSettings? settings = null) : ISnapshotComparer
 {
@@ -20,53 +21,49 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
         if (expected.Data.AsSpan().SequenceEqual(actual.Data))
             return true;
 
+        Image expectedImage;
+        Image actualImage;
         try
         {
-            var expectedImage = Image.Load(expected.Data);
-            var actualImage = Image.Load(actual.Data);
-
-            var similarityThreshold = settings?.SimilarityThreshold;
-            var dHashThreshold = settings?.DHashThreshold;
-            var pHashThreshold = settings?.PHashThreshold;
-            if (similarityThreshold is null && dHashThreshold is null && pHashThreshold is null)
-                return expectedImage.Equals(actualImage);
-
-            if (similarityThreshold is not null)
-            {
-                if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
-                    return false;
-
-                var accumulator = new SsimAccumulator();
-                accumulator.Add(MemoryMarshal.Cast<Argb, uint>(expectedImage.Pixels.Span), MemoryMarshal.Cast<Argb, uint>(actualImage.Pixels.Span));
-                if (accumulator.ComputeMeanSsim() < similarityThreshold.Value)
-                    return false;
-            }
-
-            if (dHashThreshold is not null)
-            {
-                var expectedHash = ImageHash.ComputeDHash(expectedImage);
-                var actualHash = ImageHash.ComputeDHash(actualImage);
-                if (ImageHash.ComputeHammingDistance(expectedHash, actualHash) > dHashThreshold.Value)
-                    return false;
-            }
-
-            if (pHashThreshold is not null)
-            {
-                var expectedHash = ImageHash.ComputePHash(expectedImage);
-                var actualHash = ImageHash.ComputePHash(actualImage);
-                if (ImageHash.ComputeHammingDistance(expectedHash, actualHash) > pHashThreshold.Value)
-                    return false;
-            }
-
-            return true;
+            expectedImage = Image.Load(expected.Data);
+            actualImage = Image.Load(actual.Data);
         }
         catch (InvalidDataException)
         {
+            // The bytes differ and at least one snapshot is not a decodable image, so they do not match
             return false;
         }
         catch (NotSupportedException)
         {
             return false;
         }
+
+        var similarityThreshold = settings?.SimilarityThreshold;
+        var dHashThreshold = settings?.DHashThreshold;
+        var pHashThreshold = settings?.PHashThreshold;
+        if (similarityThreshold is null && dHashThreshold is null && pHashThreshold is null)
+            return expectedImage.Equals(actualImage);
+
+        if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+            return false;
+
+        if (similarityThreshold is not null)
+        {
+            var ssim = SsimAccumulator.Compute(
+                MemoryMarshal.Cast<Argb, uint>(expectedImage.Pixels.Span),
+                MemoryMarshal.Cast<Argb, uint>(actualImage.Pixels.Span),
+                expectedImage.Width,
+                expectedImage.Height);
+            if (ssim < similarityThreshold.Value)
+                return false;
+        }
+
+        if (dHashThreshold is not null && ImageHash.ComputeDHashDistance(expectedImage, actualImage) > dHashThreshold.Value)
+            return false;
+
+        if (pHashThreshold is not null && ImageHash.ComputePHashDistance(expectedImage, actualImage) > pHashThreshold.Value)
+            return false;
+
+        return true;
     }
 }

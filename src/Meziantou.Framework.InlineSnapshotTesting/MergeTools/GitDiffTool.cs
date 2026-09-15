@@ -1,27 +1,27 @@
-using System.Diagnostics;
-
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 internal sealed class GitDiffTool : GitTool
 {
-    public override MergeToolResult? Start(string currentFilePath, string newFilePath)
+    public override MergeToolResult? Start(string currentFilePath, string newFilePath) => Start(currentFilePath, newFilePath, waitForMerge: false);
+
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var workingDirectory = FullPath.FromPath(currentFilePath).Parent;
-        var toolName = GetGitConfiguration(workingDirectory, "diff.tool");
-        if (toolName is not null)
-        {
-            var cmd = GetGitConfiguration(workingDirectory, $"difftool.{toolName}.cmd");
-            if (cmd is not null)
-            {
-                var (filename, args) = ParseCommandFromConfiguration(cmd
-                        .Replace("$LOCAL", currentFilePath, StringComparison.Ordinal)
-                        .Replace("$REMOTE", newFilePath, StringComparison.Ordinal));
+        var workingDirectory = Path.GetDirectoryName(currentFilePath);
+        var command = GetToolCommand(workingDirectory, "diff.tool", "difftool");
+        if (command is null)
+            return null;
 
-                var process = Process.Start(filename, args);
-                return new ProcessMergeToolResult(process);
-            }
-        }
+        // As with git difftool, MERGED is the file being compared and BASE has the same value as MERGED.
+        var startInfo = CreateCommandStartInfo(command, workingDirectory,
+        [
+            new("LOCAL", currentFilePath),
+            new("REMOTE", newFilePath),
+            new("MERGED", currentFilePath),
+            new("BASE", currentFilePath),
+        ]);
 
-        return null;
+        return ProcessMergeToolResult.Start(startInfo, onExited: null);
     }
+
+    public override string ToString() => nameof(MergeTool.GitDiffTool);
 }

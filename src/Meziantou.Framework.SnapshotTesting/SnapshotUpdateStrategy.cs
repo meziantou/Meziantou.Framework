@@ -7,6 +7,7 @@ namespace Meziantou.Framework.SnapshotTesting;
 public abstract class SnapshotUpdateStrategy
 {
     private const string SnapshotUpdateStrategyEnvironmentVariableName = "SNAPSHOTTESTING_STRATEGY";
+    private const int MaxFileOperationAttemptCount = 8;
 
     // Default is excluded on purpose: its getter calls GetStrategyFromEnvironmentVariable, so resolving it from
     // here would re-enter the getter and recurse until the process died with an uncatchable StackOverflowException.
@@ -46,6 +47,10 @@ public abstract class SnapshotUpdateStrategy
         }
     }
 
+    /// <summary>
+    /// Not used by file snapshots: the actual file always lives next to the verified file, and it is removed once it is
+    /// no longer relevant.
+    /// </summary>
     public virtual bool ReuseTemporaryFile => true;
 
     internal bool CanUpdateSnapshotInternal(SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot)
@@ -94,25 +99,144 @@ public abstract class SnapshotUpdateStrategy
         File.Move(source, destination, overwrite: true);
     }
 
-    private protected static void CopyFile(string source, string destination)
+    /// <summary>
+    /// Replaces the verified file with the content of the actual file, and removes the actual file so that a later
+    /// approval cannot promote it again.
+    /// </summary>
+    /// <remarks>
+    /// Several processes can update the same snapshot at the same time: a test project that targets several frameworks
+    /// runs one process per framework. The verified file is replaced atomically, so a reader never sees a partial file,
+    /// a verified file that already has the expected content is left untouched, and an actual file that another process
+    /// already promoted is not an error.
+    /// </remarks>
+    private protected static void PromoteFile(string actualFilePath, string verifiedFilePath)
     {
-        if (source == destination)
+        if (actualFilePath == verifiedFilePath)
             return;
 
-        var sourceInfo = new FileInfo(source);
-        sourceInfo.TrySetReadOnly(false);
-
-        var destinationInfo = new FileInfo(destination);
-        destinationInfo.Directory?.Create();
-        if (destinationInfo.Exists)
+        for (var attempt = 1; ; attempt++)
         {
-            destinationInfo.TrySetReadOnly(false);
+            try
+            {
+                PromoteFileOnce(actualFilePath, verifiedFilePath);
+                return;
+            }
+            catch (IOException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
         }
-
-        File.Copy(source, destination, overwrite: true);
     }
 
-    private protected static void TryDeleteFile(string path)
+    private static void PromoteFileOnce(string actualFilePath, string verifiedFilePath)
+    {
+        byte[] content;
+        try
+        {
+            content = File.ReadAllBytes(actualFilePath);
+        }
+        catch (FileNotFoundException) when (File.Exists(verifiedFilePath))
+        {
+            // Another process validating the same snapshot promoted the actual file first.
+            return;
+        }
+
+        WriteAllBytesAtomically(verifiedFilePath, content);
+        DeleteFileIfContentEquals(actualFilePath, content);
+    }
+
+    /// <summary>
+    /// Writes a file so that a concurrent reader sees either its previous content or the new one, never a partial
+    /// file. A file that already has the content is not rewritten. Sharing violations are retried.
+    /// </summary>
+    internal static void WriteAllBytesWithRetry(FullPath path, byte[] data)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                WriteAllBytesAtomically(path, data);
+                return;
+            }
+            catch (IOException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+        }
+    }
+
+    private static void WriteAllBytesAtomically(string path, byte[] data)
+    {
+        var fileInfo = new FileInfo(path);
+        if (fileInfo.Exists)
+        {
+            if (fileInfo.Length == data.Length && HasContent(path, data))
+                return;
+
+            fileInfo.TrySetReadOnly(false);
+        }
+        else
+        {
+            fileInfo.Directory?.Create();
+        }
+
+        // The temporary file is in the same directory, so the rename cannot cross volumes. Its name matches neither the
+        // verified nor the actual naming pattern, so neither the engine nor the approval tool can mistake a file left
+        // behind by a crashed process for a snapshot.
+        var temporaryPath = Path.Combine(Path.GetDirectoryName(path) ?? "", "." + Guid.NewGuid().ToString("N") + ".snapshot.tmp");
+        try
+        {
+            File.WriteAllBytes(temporaryPath, data);
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteFile(temporaryPath);
+            throw;
+        }
+    }
+
+    private static bool HasContent(string path, byte[] data)
+    {
+        try
+        {
+            return File.ReadAllBytes(path).AsSpan().SequenceEqual(data);
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    private static void DeleteFileIfContentEquals(string path, byte[] data)
+    {
+        // Another process may have written a different result in the meantime; that one is not ours to remove.
+        try
+        {
+            if (HasContent(path, data))
+            {
+                TryDeleteFile(path);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void WaitBeforeRetry(int attempt) => Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+
+    internal static void TryDeleteFile(string path)
     {
         try
         {

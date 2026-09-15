@@ -29,8 +29,14 @@ public sealed record InlineSnapshotSettings
     /// <summary>Gets or sets the file encoding to use when writing snapshots. If null, the encoding is detected from the source file.</summary>
     public Encoding? FileEncoding { get; set; }
 
+    internal const string AutoDetectContinuousEnvironmentVariableName = "INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT";
+
     /// <summary>Gets or sets a value indicating whether to automatically detect continuous integration, continuous testing, and LLM environments and disable snapshot updates.</summary>
-    public bool AutoDetectContinuousEnvironment { get; set; } = true;
+    /// <remarks>
+    /// The default value is <see langword="true" />, unless the <c>INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT</c>
+    /// environment variable is set to <c>false</c>, <c>0</c>, <c>no</c> or <c>off</c>.
+    /// </remarks>
+    public bool AutoDetectContinuousEnvironment { get; set; } = ContinuousEnvironmentDetector.IsAutoDetectionEnabled(AutoDetectContinuousEnvironmentVariableName);
 
     /// <summary>Gets or sets the allowed C# string formats for writing snapshots (quoted, verbatim, raw, etc.).</summary>
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
@@ -163,7 +169,7 @@ public sealed record InlineSnapshotSettings
         }
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected;
+    internal static bool IsRunningOnContinuousIntegration() => ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is not null;
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)
@@ -173,6 +179,13 @@ public sealed record InlineSnapshotSettings
             ErrorMessageFormatter.FormatMessage(expected, actual) +
             "\n\n" +
             GetResolutionGuidanceMessage();
+
+        // Without this, the guidance above suggests a strategy that the environment detection silently ignores.
+        if (AutoDetectContinuousEnvironment && ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is { } environment)
+        {
+            errorMessage += "\n\n" + ContinuousEnvironmentDetector.FormatUpdatesDisabledMessage(environment, AutoDetectContinuousEnvironmentVariableName, nameof(InlineSnapshotSettings));
+        }
+
         throw new InlineSnapshotAssertionException(errorMessage);
     }
 

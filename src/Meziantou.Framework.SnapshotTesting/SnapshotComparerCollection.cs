@@ -39,11 +39,19 @@ public sealed class SnapshotComparerCollection : IEnumerable<KeyValuePair<Snapsh
     /// <summary>Looks up a comparer registered for exactly this type, without falling back to a default.</summary>
     internal bool TryGet(SnapshotType type, [NotNullWhen(true)] out ISnapshotComparer? comparer) => Current.TryGetValue(type, out comparer);
 
+    /// <summary>
+    /// Gets the comparer for a snapshot type. When no comparer is registered for the type itself, a known text format
+    /// (<c>json</c>, <c>yaml</c>, <c>xml</c>, <c>cs</c>, <c>html</c>, <c>md</c>, <c>csv</c>, ...) uses the comparer registered
+    /// for <see cref="SnapshotType.Default" />, and any other format uses the comparer registered for <see cref="SnapshotType.None" />.
+    /// </summary>
     public ISnapshotComparer Get(SnapshotType type)
     {
         var comparers = Current;
         if (comparers.TryGetValue(type, out var comparer))
             return comparer;
+
+        if (SnapshotType.IsKnownTextType(type.Type) && comparers.TryGetValue(SnapshotType.Default, out var textComparer))
+            return textComparer;
 
         if (comparers.TryGetValue(SnapshotType.None, out var defaultComparer))
             return defaultComparer;

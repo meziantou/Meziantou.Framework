@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -12,103 +13,63 @@ namespace Meziantou.Framework.SnapshotTesting.Utils;
 
 internal static partial class ProcessExtensions
 {
+    /// <summary>
+    /// Enumerates the ancestors of <paramref name="process" />, from its parent up. The process itself is not part of the
+    /// result. The caller owns, and must dispose, every returned <see cref="Process" />.
+    /// </summary>
     [SupportedOSPlatform("windows")]
-    public static IEnumerable<int> GetAncestorProcessIds(this Process process)
+    public static IEnumerable<Process> GetAncestorProcesses(this Process process)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
-        return GetAncestorProcessIdsIterator();
+        return GetAncestorProcessesIterator(process.Id, process.StartTime);
 
-        IEnumerable<int> GetAncestorProcessIdsIterator()
+        static IEnumerable<Process> GetAncestorProcessesIterator(int processId, DateTime startTime)
         {
-            var returnedProcesses = new HashSet<int>();
-
-            var processId = process.Id;
-            var processes = GetProcesses().ToList();
-            var found = true;
-            while (found)
+            var parentProcessIds = new Dictionary<int, int>();
+            foreach (var entry in GetProcesses())
             {
-                found = false;
-                foreach (var entry in processes)
-                {
-                    if (entry.ProcessId == processId)
-                    {
-                        if (returnedProcesses.Add(entry.ParentProcessId))
-                        {
-                            yield return entry.ParentProcessId;
-                            processId = entry.ParentProcessId;
-                            found = true;
-                        }
-                    }
-                }
-
-                if (!found)
-                    yield break;
+                parentProcessIds.TryAdd(entry.ProcessId, entry.ParentProcessId);
             }
-        }
-    }
 
-    [SupportedOSPlatform("windows")]
-    public static IEnumerable<Process> GetAncestorProcesses(this Process process)
-    {
-        return GetAncestorProcesses();
-
-        IEnumerable<Process> GetAncestorProcesses()
-        {
-            if (!OperatingSystem.IsWindows())
-                throw new PlatformNotSupportedException("Only supported on Windows");
-
-            foreach (var entry in GetAncestorProcessIdsIterator())
+            var visitedProcessIds = new HashSet<int> { processId };
+            while (parentProcessIds.TryGetValue(processId, out var parentProcessId) && visitedProcessIds.Add(parentProcessId))
             {
-                Process? p = null;
+                Process parent;
                 try
                 {
-                    p = entry.ToProcess();
-                    try
-                    {
-                        if (p is null || p.StartTime > process.StartTime)
-                            continue;
-                    }
-                    catch
-                    {
-                        continue;
-                    }
+                    parent = Process.GetProcessById(parentProcessId);
                 }
                 catch (ArgumentException)
                 {
-                    // process might have exited since the snapshot, ignore it
+                    // The parent exited, so the rest of the chain cannot be found.
+                    yield break;
                 }
 
-                if (p is not null)
-                    yield return p;
-            }
-
-            IEnumerable<ProcessEntry> GetAncestorProcessIdsIterator()
-            {
-                var returnedProcesses = new HashSet<int>();
-                var processId = process.Id;
-                var processes = GetProcesses().ToList();
-                var found = true;
-                while (found)
+                DateTime parentStartTime;
+                try
                 {
-                    found = false;
-                    foreach (var entry in processes)
-                    {
-                        if (entry.ProcessId == processId)
-                        {
-                            if (returnedProcesses.Add(entry.ParentProcessId))
-                            {
-                                yield return entry;
-                                processId = entry.ParentProcessId;
-                                found = true;
-                            }
-                        }
-                    }
-
-                    if (!found)
-                        yield break;
+                    parentStartTime = parent.StartTime;
                 }
+                catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or NotSupportedException)
+                {
+                    parent.Dispose();
+                    yield break;
+                }
+
+                // A parent process id is only a number, and Windows reuses it once the parent exits. A process started
+                // after the child cannot be its parent, and the processes above it belong to an unrelated chain.
+                if (parentStartTime > startTime)
+                {
+                    parent.Dispose();
+                    yield break;
+                }
+
+                yield return parent;
+
+                processId = parentProcessId;
+                startTime = parentStartTime;
             }
         }
     }

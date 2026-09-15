@@ -455,6 +455,161 @@ public sealed partial class SnapshotEndToEndTests
     }
 
     [Fact]
+    public async Task Validate_EndToEnd_Theory_NamesDecimalArgumentsAfterTheMethod_WhenUsingXunitV3Context()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Theory]
+                [InlineData(1.5)]
+                [InlineData(2.5)]
+                public void SampleTheory(double value)
+                {
+                    Snapshot.Validate(value.ToString(System.Globalization.CultureInfo.InvariantCulture), SnapshotTestUtilities.CreateSuccessSettings());
+                }
+
+                [Theory]
+                [InlineData("alpha")]
+                public void StringTheory(string value)
+                {
+                    Snapshot.Validate(value, SnapshotTestUtilities.CreateSuccessSettings());
+                }
+
+                [Fact]
+                public void TwoCalls()
+                {
+                    Snapshot.Validate("first", SnapshotTestUtilities.CreateSuccessSettings());
+                    Snapshot.Validate("second", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_1.5.verified.txt", "1.5"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_2.5.verified.txt", "2.5"),
+            ("__snapshots__/GeneratedSnapshotTests_StringTheory_alpha.verified.txt", "alpha"),
+            ("__snapshots__/GeneratedSnapshotTests_TwoCalls.verified.txt", "first"),
+            ("__snapshots__/GeneratedSnapshotTests_TwoCalls~2.verified.txt", "second"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_UsesTheSnapshotNamedByAnEarlierVersion_WhenUsingXunitV3Context()
+    {
+        // Earlier versions named '[InlineData(1.5)]' after the text following the last '.' of the display name.
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Theory]
+                [InlineData(1.5)]
+                public void SampleTheory(double value)
+                {
+                    Snapshot.Validate(value.ToString(System.Globalization.CultureInfo.InvariantCulture), SnapshotTestUtilities.CreateFailureSettings());
+                }
+            }
+            """,
+            existingFiles:
+            [
+                new SnapshotFile("__snapshots__/GeneratedSnapshotTests_5__1.5_31bc2a9f.verified.txt", "1.5"u8.ToArray()),
+            ]);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_5__1.5_31bc2a9f.verified.txt", "1.5"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Fails_WhenTwoTestsShareADisplayName()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Fact(DisplayName = "Works")]
+                public void First()
+                {
+                    Snapshot.Validate("value", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+
+                [Fact(DisplayName = "Works")]
+                public void Second()
+                {
+                    Snapshot.Validate("value", SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            expectFailure: true);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_Works.verified.txt", "value"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshotsForArgumentsContainingADot_WhenUsingNUnitContext()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            [TestFixture]
+            public sealed class GeneratedSnapshotTests
+            {
+                [TestCase(1.5)]
+                [TestCase(2.5)]
+                public void SampleTheory(double value)
+                {
+                    Snapshot.Validate(value.ToString(System.Globalization.CultureInfo.InvariantCulture), SnapshotTestUtilities.CreateSuccessSettings());
+                }
+
+                [TestCase(1, TestName = "Case 1.0")]
+                [TestCase(2, TestName = "Case 2.0")]
+                public void Named(int value)
+                {
+                    Snapshot.Validate(value.ToString(System.Globalization.CultureInfo.InvariantCulture), SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.NUnit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_Case_1.0_dd400af3.verified.txt", "1"),
+            ("__snapshots__/GeneratedSnapshotTests_Case_2.0_77a8171f.verified.txt", "2"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_1.5.verified.txt", "1.5"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_2.5.verified.txt", "2.5"),
+        ]);
+    }
+
+    [Fact]
+    public async Task Validate_EndToEnd_Theory_CreatesDistinctSnapshotsForArrayArguments_WhenUsingTUnitContext()
+    {
+        var snapshotFiles = await AssertSnapshot(
+            """
+            public sealed class GeneratedSnapshotTests
+            {
+                [Test]
+                [Arguments(new[] { 1, 2 })]
+                [Arguments(new[] { 3 })]
+                public void SampleTheory(int[] value)
+                {
+                    Snapshot.Validate(string.Join(",", value), SnapshotTestUtilities.CreateSuccessSettings());
+                }
+            }
+            """,
+            testFramework: SnapshotTestFramework.TUnit);
+
+        AssertSnapshotContent(snapshotFiles,
+        [
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_1_2_29248347.verified.txt", "1,2"),
+            ("__snapshots__/GeneratedSnapshotTests_SampleTheory_3_0de94de7.verified.txt", "3"),
+        ]);
+    }
+
+    [Fact]
     public async Task Validate_EndToEnd_UsesHashSuffix_WhenSnapshotNameIsTooLong()
     {
         var methodName = "SampleTest" + new string('a', 200);

@@ -15,14 +15,29 @@ internal sealed class VisualStudioMergeTool : MergeTool
         if (!File.Exists(vsdiffmerge))
             return null;
 
-        var originalClone = CopyFileToTemp(currentFilePath);
-        var process = Process.Start(vsdiffmerge, $"""
-            "{newFilePath}" "{originalClone}" "{originalClone}" "{currentFilePath}" /m
-            """);
+        var originalCopy = CopyFileToTemp(currentFilePath);
+        try
+        {
+            var startInfo = new ProcessStartInfo(vsdiffmerge)
+            {
+                UseShellExecute = false,
+            };
 
-        if (process is null)
-            return null;
+            // vsdiffmerge <source> <target> <base> <result> /m
+            startInfo.ArgumentList.Add(newFilePath);
+            startInfo.ArgumentList.Add(originalCopy);
+            startInfo.ArgumentList.Add(originalCopy);
+            startInfo.ArgumentList.Add(currentFilePath);
+            startInfo.ArgumentList.Add("/m");
 
-        return new ProcessMergeToolResult(process);
+            return ProcessMergeToolResult.Start(startInfo, onExited: () => DeleteTemporaryCopy(originalCopy));
+        }
+        catch
+        {
+            DeleteTemporaryCopy(originalCopy);
+            throw;
+        }
     }
+
+    public override string ToString() => nameof(MergeTool.VisualStudioMerge);
 }

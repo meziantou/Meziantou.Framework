@@ -360,7 +360,7 @@ internal static class ImageTestData
         var minimumCodeSize = Math.Max(2, colorBits);
         foreach (var frame in frames)
         {
-            if (frame.PixelIndexes.Count != checked(frame.Width * frame.Height))
+            if (frame.LzwCodes is null && frame.PixelIndexes.Count != checked(frame.Width * frame.Height))
                 throw new ArgumentException("The number of pixels does not match the frame size.", nameof(frames));
 
             var hasTransparency = frame.TransparentColorIndex >= 0;
@@ -380,7 +380,7 @@ internal static class ImageTestData
             stream.WriteByte(0); // No local color table, not interlaced
 
             stream.WriteByte((byte)minimumCodeSize);
-            WriteGifSubBlocks(stream, EncodeGifPixels(frame.PixelIndexes, minimumCodeSize));
+            WriteGifSubBlocks(stream, frame.LzwCodes is null ? EncodeGifPixels(frame.PixelIndexes, minimumCodeSize) : EncodeGifLzwCodes(frame.LzwCodes, minimumCodeSize));
         }
 
         stream.WriteByte(0x3B); // Trailer
@@ -614,6 +614,62 @@ internal static class ImageTestData
         }
     }
 
+    /// <summary>
+    /// Packs LZW codes the way a GIF writer does: least significant bit first, and widening the code as soon as
+    /// the next free entry no longer fits the current size.
+    /// </summary>
+    private static byte[] EncodeGifLzwCodes(IReadOnlyList<int> codes, int minimumCodeSize)
+    {
+        var clearCode = 1 << minimumCodeSize;
+        var endCode = clearCode + 1;
+
+        using var stream = new MemoryStream();
+        var bitBuffer = 0L;
+        var bitCount = 0;
+        var codeSize = minimumCodeSize + 1;
+        var nextCode = endCode + 1;
+        var hasPreviousCode = false;
+
+        foreach (var code in codes)
+        {
+            bitBuffer |= (long)code << bitCount;
+            bitCount += codeSize;
+            while (bitCount >= 8)
+            {
+                stream.WriteByte((byte)(bitBuffer & 0xFF));
+                bitBuffer >>= 8;
+                bitCount -= 8;
+            }
+
+            if (code == clearCode)
+            {
+                codeSize = minimumCodeSize + 1;
+                nextCode = endCode + 1;
+                hasPreviousCode = false;
+            }
+            else if (code != endCode)
+            {
+                if (hasPreviousCode && nextCode < 4096)
+                {
+                    nextCode++;
+                    if (nextCode == (1 << codeSize) && codeSize < 12)
+                    {
+                        codeSize++;
+                    }
+                }
+
+                hasPreviousCode = true;
+            }
+        }
+
+        if (bitCount > 0)
+        {
+            stream.WriteByte((byte)(bitBuffer & 0xFF));
+        }
+
+        return stream.ToArray();
+    }
+
     private static void WriteGifSubBlocks(Stream stream, ReadOnlySpan<byte> data)
     {
         while (!data.IsEmpty)
@@ -688,5 +744,10 @@ internal static class ImageTestData
     {
         public int DisposalMethod { get; init; }
         public int TransparentColorIndex { get; init; } = -1;
+
+        /// <summary>
+        /// The LZW codes of the frame, written as they are instead of encoding <see cref="PixelIndexes" />.
+        /// </summary>
+        public IReadOnlyList<int>? LzwCodes { get; init; }
     }
 }

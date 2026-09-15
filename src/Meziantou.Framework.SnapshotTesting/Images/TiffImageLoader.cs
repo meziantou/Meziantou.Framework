@@ -21,6 +21,8 @@ internal static class TiffImageLoader
     private const ushort TagStripByteCounts = 279;
     private const ushort TagPlanarConfiguration = 284;
     private const ushort TagPredictor = 317;
+    private const ushort TagTileWidth = 322;
+    private const ushort TagTileOffsets = 324;
     private const ushort TagExtraSamples = 338;
 
     private const ushort CompressionNone = 1;
@@ -72,12 +74,23 @@ internal static class TiffImageLoader
         if (firstIfdOffset <= 0)
             throw new InvalidDataException("The TIFF image file directory offset is invalid.");
 
-        var entries = ReadImageFileDirectory(data, firstIfdOffset, isLittleEndian);
+        var entries = ReadImageFileDirectory(data, firstIfdOffset, isLittleEndian, out var nextIfdOffset);
 
-        var width = checked((int)ReadRequiredSingleValue(entries, data, TagImageWidth, isLittleEndian));
-        var height = checked((int)ReadRequiredSingleValue(entries, data, TagImageLength, isLittleEndian));
-        if (width <= 0 || height <= 0)
+        // An image holds a single page. Decoding only the first one would make two files that differ on a
+        // later page compare equal, so a multi-page file is left to the byte comparison.
+        if (nextIfdOffset != 0)
+            throw new NotSupportedException("Multi-page TIFF is not supported.");
+
+        if (entries.ContainsKey(TagTileWidth) || entries.ContainsKey(TagTileOffsets))
+            throw new NotSupportedException("Tiled TIFF is not supported.");
+
+        var rawWidth = ReadRequiredSingleValue(entries, data, TagImageWidth, isLittleEndian);
+        var rawHeight = ReadRequiredSingleValue(entries, data, TagImageLength, isLittleEndian);
+        if (!ImageLimits.IsValidSize(rawWidth, rawHeight))
             throw new NotSupportedException("Unsupported TIFF dimensions.");
+
+        var width = (int)rawWidth;
+        var height = (int)rawHeight;
 
         var photometric = checked((ushort)ReadRequiredSingleValue(entries, data, TagPhotometricInterpretation, isLittleEndian));
         var compression = checked((ushort)ReadOptionalSingleValue(entries, data, TagCompression, isLittleEndian, CompressionNone));
@@ -89,9 +102,12 @@ internal static class TiffImageLoader
         if (planarConfiguration != PlanarConfigurationChunky)
             throw new NotSupportedException("Only chunky TIFF planar configuration is supported.");
 
-        var samplesPerPixel = checked((int)ReadOptionalSingleValue(entries, data, TagSamplesPerPixel, isLittleEndian, defaultValue: 1));
-        if (samplesPerPixel <= 0)
+        // Grayscale, RGB and RGBA use at most 4 samples
+        var rawSamplesPerPixel = ReadOptionalSingleValue(entries, data, TagSamplesPerPixel, isLittleEndian, defaultValue: 1);
+        if (rawSamplesPerPixel is 0 or > 4)
             throw new NotSupportedException("Unsupported TIFF samples per pixel.");
+
+        var samplesPerPixel = (int)rawSamplesPerPixel;
 
         var predictor = checked((ushort)ReadOptionalSingleValue(entries, data, TagPredictor, isLittleEndian, PredictorNone));
         if (predictor is not PredictorNone and not PredictorHorizontalDifferencing)
@@ -105,13 +121,21 @@ internal static class TiffImageLoader
                 throw new NotSupportedException("Only 8-bit TIFF samples are supported.");
         }
 
+        if (compression is not (CompressionNone or CompressionPackBits or CompressionLzw))
+            throw new NotSupportedException("Unsupported TIFF compression.");
+
         var strips = ReadStripData(entries, data, isLittleEndian);
-        var rowsPerStrip = checked((int)ReadOptionalSingleValue(entries, data, TagRowsPerStrip, isLittleEndian, (uint)height));
-        if (rowsPerStrip <= 0)
+
+        // The default, 2^32-1, means the whole image is a single strip
+        var rawRowsPerStrip = ReadOptionalSingleValue(entries, data, TagRowsPerStrip, isLittleEndian, uint.MaxValue);
+        if (rawRowsPerStrip == 0)
             throw new NotSupportedException("Unsupported TIFF rows per strip.");
 
+        var rowsPerStrip = (int)Math.Min(rawRowsPerStrip, (uint)height);
         var bytesPerRow = checked(width * samplesPerPixel);
-        var pixels = new Argb[checked(width * height)];
+        ValidateStrips(strips, height, rowsPerStrip, bytesPerRow, compression);
+
+        var pixels = new Argb[width * height];
         var rowIndex = 0;
         for (var stripIndex = 0; stripIndex < strips.Length && rowIndex < height; stripIndex++)
         {
@@ -150,10 +174,10 @@ internal static class TiffImageLoader
     {
         if (!entries.TryGetValue(TagBitsPerSample, out var bitsPerSampleEntry))
         {
-            if (samplesPerPixel == 1)
-                return [8];
-
-            throw new InvalidDataException("Missing TIFF BitsPerSample tag.");
+            // The specification defaults every sample to 1 bit
+            var defaultBitsPerSample = new ushort[samplesPerPixel];
+            Array.Fill(defaultBitsPerSample, (ushort)1);
+            return defaultBitsPerSample;
         }
 
         var values = ReadEntryValues(bitsPerSampleEntry, data, isLittleEndian);
@@ -196,10 +220,45 @@ internal static class TiffImageLoader
             if (offset < 0 || byteCount <= 0)
                 throw new InvalidDataException("Invalid TIFF strip metadata.");
 
+            if (offset > data.Length - byteCount)
+                throw new InvalidDataException("The TIFF strip data is truncated.");
+
             strips[i] = (offset, byteCount);
         }
 
         return strips;
+    }
+
+    /// <summary>
+    /// Checks that the strips can hold the image before any buffer sized from the header is allocated, so a
+    /// small malformed file cannot request an allocation out of proportion with its own size.
+    /// </summary>
+    private static void ValidateStrips((int Offset, int ByteCount)[] strips, int height, int rowsPerStrip, int bytesPerRow, ushort compression)
+    {
+        if ((long)strips.Length * rowsPerStrip < height)
+            throw new InvalidDataException("The TIFF data is truncated.");
+
+        // The largest number of bytes a strip can decode to: PackBits repeats a byte at most 128 times for 2
+        // bytes of input, and an LZW code is at least 9 bits long and never stands for more than 4096 bytes.
+        var maximumExpansion = compression switch
+        {
+            CompressionNone => 1L,
+            CompressionPackBits => 64L,
+            _ => 4096L,
+        };
+
+        var rowIndex = 0;
+        foreach (var strip in strips)
+        {
+            if (rowIndex >= height)
+                break;
+
+            var rowsInStrip = Math.Min(rowsPerStrip, height - rowIndex);
+            if ((long)rowsInStrip * bytesPerRow > strip.ByteCount * maximumExpansion)
+                throw new InvalidDataException("The TIFF strip data is truncated.");
+
+            rowIndex += rowsInStrip;
+        }
     }
 
     private static byte[] ExtractStrip(
@@ -526,7 +585,7 @@ internal static class TiffImageLoader
         }
     }
 
-    private static Dictionary<ushort, (ushort Type, uint Count, uint ValueOffset)> ReadImageFileDirectory(ReadOnlySpan<byte> data, int offset, bool isLittleEndian)
+    private static Dictionary<ushort, (ushort Type, uint Count, uint ValueOffset)> ReadImageFileDirectory(ReadOnlySpan<byte> data, int offset, bool isLittleEndian, out uint nextIfdOffset)
     {
         if (offset > data.Length - 2)
             throw new InvalidDataException("The TIFF image file directory is truncated.");
@@ -548,6 +607,7 @@ internal static class TiffImageLoader
             entries[tag] = (type, count, valueOffset);
         }
 
+        nextIfdOffset = ReadUInt32(data, entriesOffset + entryCount * 12, isLittleEndian);
         return entries;
     }
 

@@ -17,17 +17,16 @@ internal static class IcoImageLoader
             return false;
         }
 
-        var directorySize = checked(6 + count * 16);
+        var directorySize = 6 + count * 16;
         if (directorySize > data.Length)
             return false;
 
         var extractedImages = new List<Image>(count);
         for (var i = 0; i < count; i++)
         {
+            // The width and height of the directory entry are only hints: like Windows and Pillow, the image
+            // takes its size from the header of the embedded PNG or bitmap.
             var entryOffset = 6 + i * 16;
-            var width = data[entryOffset] == 0 ? 256 : data[entryOffset];
-            var height = data[entryOffset + 1] == 0 ? 256 : data[entryOffset + 1];
-
             if (!TryReadUInt32(data, entryOffset + 8, out var imageSize) ||
                 !TryReadUInt32(data, entryOffset + 12, out var imageOffset))
             {
@@ -45,11 +44,14 @@ internal static class IcoImageLoader
             var imageData = data.Slice(imageStart, imageLength);
             if (PngImageLoader.IsPng(imageData))
             {
-                extractedImages.Add(PngImageLoader.Load(imageData));
+                if (!TryLoadPngImage(imageData, out var pngImage))
+                    return false;
+
+                extractedImages.Add(pngImage);
                 continue;
             }
 
-            if (!TryLoadBitmapImage(imageData, width, height, out var image))
+            if (!TryLoadBitmapImage(imageData, out var image))
                 return false;
 
             extractedImages.Add(image);
@@ -62,7 +64,26 @@ internal static class IcoImageLoader
         return true;
     }
 
-    private static bool TryLoadBitmapImage(ReadOnlySpan<byte> data, int expectedWidth, int expectedHeight, [NotNullWhen(true)] out Image? image)
+    private static bool TryLoadPngImage(ReadOnlySpan<byte> data, [NotNullWhen(true)] out Image? image)
+    {
+        // Image.Load reports every way a malformed image can fail as one of these two exceptions
+        try
+        {
+            image = Image.Load(data);
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+        }
+        catch (NotSupportedException)
+        {
+        }
+
+        image = null;
+        return false;
+    }
+
+    private static bool TryLoadBitmapImage(ReadOnlySpan<byte> data, [NotNullWhen(true)] out Image? image)
     {
         image = null;
         if (!TryReadInt32(data, 0, out var headerSize) ||
@@ -88,22 +109,20 @@ internal static class IcoImageLoader
         }
 
         var height = combinedHeight / 2;
-        if (expectedWidth != width || expectedHeight != height)
+        if (!ImageLimits.IsValidSize(width, height))
             return false;
 
-        if (!TryReadUInt32(data, 32, out var colorsUsedRaw))
-            return false;
-
-        var colorsUsed = checked((int)colorsUsedRaw);
-        var paletteEntryCount = bitsPerPixel <= 8
-            ? colorsUsed == 0 ? 1 << bitsPerPixel : colorsUsed
-            : 0;
-        if (paletteEntryCount < 0)
+        if (!TryReadUInt32(data, 32, out var colorsUsed))
             return false;
 
         var offset = headerSize;
-        if (offset + paletteEntryCount * 4 > data.Length)
+        var paletteEntryCountLong = bitsPerPixel <= 8
+            ? colorsUsed == 0 ? 1L << bitsPerPixel : colorsUsed
+            : 0L;
+        if (paletteEntryCountLong > (data.Length - offset) / 4)
             return false;
+
+        var paletteEntryCount = (int)paletteEntryCountLong;
 
         Argb[]? palette = null;
         if (paletteEntryCount > 0)
@@ -119,37 +138,54 @@ internal static class IcoImageLoader
             }
         }
 
-        offset += checked(paletteEntryCount * 4);
+        offset += paletteEntryCount * 4;
 
-        var xorRowStride = checked(((width * bitsPerPixel + 31) / 32) * 4);
-        var xorDataSize = checked(xorRowStride * height);
-        if (offset + xorDataSize > data.Length)
+        // The sizes are computed in 64 bits and checked against the data before they are narrowed
+        var xorRowStrideLong = ((width * (long)bitsPerPixel + 31) / 32) * 4;
+        if (xorRowStrideLong * height > data.Length - offset)
             return false;
 
+        var xorRowStride = (int)xorRowStrideLong;
+        var xorDataSize = xorRowStride * height;
         var xorData = data.Slice(offset, xorDataSize);
         offset += xorDataSize;
 
-        var andRowStride = checked(((width + 31) / 32) * 4);
-        var andDataSize = checked(andRowStride * height);
-        var hasAndMask = offset + andDataSize <= data.Length;
-        var andMaskData = hasAndMask ? data.Slice(offset, andDataSize) : ReadOnlySpan<byte>.Empty;
+        var andRowStride = (int)(((width + 31L) / 32) * 4);
+        var hasAndMask = (long)andRowStride * height <= data.Length - offset;
+        var andMaskData = hasAndMask ? data.Slice(offset, andRowStride * height) : ReadOnlySpan<byte>.Empty;
         if (!hasAndMask && bitsPerPixel < 32)
             return false;
 
-        var pixels = new Argb[checked(width * height)];
+        // A 32-bit entry carries its own alpha channel, which Windows and Pillow use instead of the AND mask.
+        // Only an entry whose alpha bytes are all zero was written without one and takes its opacity from the
+        // mask; with no mask either, nothing says any pixel is transparent.
+        var useAndMask = hasAndMask;
+        var forceOpaque = false;
+        if (bitsPerPixel == 32)
+        {
+            var hasAlpha = HasNonZeroAlpha(xorData, xorRowStride, width, height);
+            useAndMask = hasAndMask && !hasAlpha;
+            forceOpaque = !hasAlpha;
+        }
+
+        var pixels = new Argb[width * height];
         for (var y = 0; y < height; y++)
         {
             var sourceRow = height - y - 1;
             var xorRow = xorData.Slice(sourceRow * xorRowStride, xorRowStride);
-            var andRow = hasAndMask ? andMaskData.Slice(sourceRow * andRowStride, andRowStride) : ReadOnlySpan<byte>.Empty;
+            var andRow = useAndMask ? andMaskData.Slice(sourceRow * andRowStride, andRowStride) : ReadOnlySpan<byte>.Empty;
             for (var x = 0; x < width; x++)
             {
                 if (!TryReadPixel(xorRow, palette, bitsPerPixel, x, out var pixel))
                     return false;
 
-                if (hasAndMask && IsAndMaskTransparent(andRow, x))
+                if (useAndMask && IsAndMaskTransparent(andRow, x))
                 {
                     pixel = new Argb(0, 0, 0, 0);
+                }
+                else if (forceOpaque)
+                {
+                    pixel = new Argb(0xFF, pixel.R, pixel.G, pixel.B);
                 }
 
                 pixels[y * width + x] = pixel;
@@ -241,6 +277,21 @@ internal static class IcoImageLoader
 
         pixel = palette[index];
         return true;
+    }
+
+    private static bool HasNonZeroAlpha(ReadOnlySpan<byte> xorData, int rowStride, int width, int height)
+    {
+        for (var y = 0; y < height; y++)
+        {
+            var row = xorData.Slice(y * rowStride, rowStride);
+            for (var x = 0; x < width; x++)
+            {
+                if (row[x * 4 + 3] != 0)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsAndMaskTransparent(ReadOnlySpan<byte> andRow, int x)

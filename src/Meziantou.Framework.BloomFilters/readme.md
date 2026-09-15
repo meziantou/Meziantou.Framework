@@ -42,7 +42,9 @@ filter.Remove("alice@example.com");
 
 Available factory methods:
 
-- `BloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`
-- `CountingBloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`
+- `BloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`
+- `CountingBloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`
+
+Adler32 distributes short inputs poorly: many small integers or short strings share the same checksum, which raises the false positive rate well above the configured probability. Prefer another algorithm unless you need Adler32 specifically.
 
 Supported value types include `int`, `uint`, `long`, `ulong`, `Guid`, `string`, `Int128`, `UInt128`, and `ReadOnlySpan<byte>`.

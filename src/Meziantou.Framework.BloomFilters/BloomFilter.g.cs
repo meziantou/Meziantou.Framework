@@ -79,6 +79,7 @@ partial class BloomFilter
     public static BloomFilterXXHash3 CreateXXHash3(BloomFilterSize size) => new(size.BitCount, size.HashCount);
     public static BloomFilterCrc64 CreateCrc64(BloomFilterSize size) => new(size.BitCount, size.HashCount);
     public static BloomFilterCrc32 CreateCrc32(BloomFilterSize size) => new(size.BitCount, size.HashCount);
+    public static BloomFilterAdler32 CreateAdler32(BloomFilterSize size) => new(size.BitCount, size.HashCount);
 }
 
 partial class CountingBloomFilter
@@ -89,6 +90,7 @@ partial class CountingBloomFilter
     public static CountingBloomFilterXXHash3 CreateXXHash3(CountingBloomFilterSize size) => new(size.CounterCount, size.HashCount);
     public static CountingBloomFilterCrc64 CreateCrc64(CountingBloomFilterSize size) => new(size.CounterCount, size.HashCount);
     public static CountingBloomFilterCrc32 CreateCrc32(CountingBloomFilterSize size) => new(size.CounterCount, size.HashCount);
+    public static CountingBloomFilterAdler32 CreateAdler32(CountingBloomFilterSize size) => new(size.CounterCount, size.HashCount);
 }
 
 partial class BloomFilterXXHash128 : IBloomFilter
@@ -310,6 +312,48 @@ partial class BloomFilterCrc64 : IBloomFilter
 partial class BloomFilterCrc32 : IBloomFilter
 {
     internal BloomFilterCrc32(long bitCount, int hashCount)
+        : base(bitCount, hashCount)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        return Hash(bytes);
+    }
+
+    public void Add(int value) => AddHash(Hash(value));
+    public bool MayContain(int value) => MayContainHash(Hash(value));
+    public void Add(uint value) => AddHash(Hash(value));
+    public bool MayContain(uint value) => MayContainHash(Hash(value));
+    public void Add(long value) => AddHash(Hash(value));
+    public bool MayContain(long value) => MayContainHash(Hash(value));
+    public void Add(ulong value) => AddHash(Hash(value));
+    public bool MayContain(ulong value) => MayContainHash(Hash(value));
+    public void Add(global::System.Guid value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value));
+    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(global::System.UInt128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
+    public void Add(global::System.Int128 value) => AddHash(Hash(value));
+    public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+}
+
+partial class BloomFilterAdler32 : IBloomFilter
+{
+    internal BloomFilterAdler32(long bitCount, int hashCount)
         : base(bitCount, hashCount)
     {
     }
@@ -664,6 +708,66 @@ partial class CountingBloomFilterCrc64 : ICountingBloomFilter
 partial class CountingBloomFilterCrc32 : ICountingBloomFilter
 {
     internal CountingBloomFilterCrc32(long counterCount, int hashCount)
+        : base(counterCount, hashCount)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Hash32 Hash(string value)
+    {
+        var chars = value.AsSpan();
+        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        return Hash(bytes);
+    }
+
+    public void Add(int value) => AddHash(Hash(value));
+    public void Remove(int value) => RemoveHash(Hash(value));
+    public bool MayContain(int value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(int value) => GetEstimatedCountHash(Hash(value));
+    public void Add(uint value) => AddHash(Hash(value));
+    public void Remove(uint value) => RemoveHash(Hash(value));
+    public bool MayContain(uint value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(uint value) => GetEstimatedCountHash(Hash(value));
+    public void Add(long value) => AddHash(Hash(value));
+    public void Remove(long value) => RemoveHash(Hash(value));
+    public bool MayContain(long value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(long value) => GetEstimatedCountHash(Hash(value));
+    public void Add(ulong value) => AddHash(Hash(value));
+    public void Remove(ulong value) => RemoveHash(Hash(value));
+    public bool MayContain(ulong value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(ulong value) => GetEstimatedCountHash(Hash(value));
+    public void Add(global::System.Guid value) => AddHash(Hash(value));
+    public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
+    public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value));
+    public void Remove(string value) => RemoveHash(Hash(value));
+    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(global::System.UInt128 value) => AddHash(Hash(value));
+    public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
+    public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(global::System.UInt128 value) => GetEstimatedCountHash(Hash(value));
+    public void Add(global::System.Int128 value) => AddHash(Hash(value));
+    public void Remove(global::System.Int128 value) => RemoveHash(Hash(value));
+    public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(global::System.Int128 value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+}
+
+partial class CountingBloomFilterAdler32 : ICountingBloomFilter
+{
+    internal CountingBloomFilterAdler32(long counterCount, int hashCount)
         : base(counterCount, hashCount)
     {
     }

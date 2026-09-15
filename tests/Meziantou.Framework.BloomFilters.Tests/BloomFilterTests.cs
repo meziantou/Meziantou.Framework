@@ -352,6 +352,7 @@ public sealed class BloomFilterTests
     [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
     [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
     [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    [InlineData(nameof(CountingBloomFilter.CreateAdler32))]
     public void CountingBloomFilter_MayContain_MatchesGetEstimatedCount(string createMethodName)
     {
         const int ItemCount = 1_000;

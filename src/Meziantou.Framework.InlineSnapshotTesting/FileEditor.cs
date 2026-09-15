@@ -1,30 +1,32 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
-using Meziantou.Framework.InlineSnapshotTesting.Utils;
 using System.Diagnostics;
+using System.Security.Cryptography;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal static class FileEditor
 {
+    // A merge tool can keep the lock of another process while the user resolves the merge.
+    private static readonly TimeSpan InterProcessLockTimeout = TimeSpan.FromMinutes(10);
+
     private static readonly ConcurrentDictionary<FullPath, Lock> FileLocks = new();
     private static readonly ConcurrentDictionary<FullPath, FullPath> TempFiles = new();
 
     // Concurrent because the lock above is per file: two threads updating snapshots in two different files
-    // hold two different locks and would otherwise mutate these two collections at the same time.
+    // hold two different locks and would otherwise mutate this collection at the same time.
     // The List<FileEdit> of a given file is only ever touched under that file's lock, so it stays a plain list.
     private static readonly ConcurrentDictionary<FullPath, List<FileEdit>> Changes = new();
-    private static readonly ConcurrentDictionary<FullPath, byte> Errors = new();
 
     private static int GetActualLine(FullPath fullPath, int startLine)
     {
         if (Changes.TryGetValue(fullPath, out var edits))
         {
             var diff = 0;
-            // Edits are ordered by BeforeLine
             foreach (var edit in edits)
             {
                 if (edit.StartLine < startLine)
@@ -70,52 +72,22 @@ internal static class FileEditor
         var lockObject = FileLocks.GetOrAdd(context.FilePath, _ => new());
         lock (lockObject)
         {
-            if (Errors.ContainsKey(context.FilePath))
-                throw new InlineSnapshotException("The previous merged cannot be resolved. Restart the tests to update this snapshot.");
+            // The lock above only covers this process, while the test processes of the other target frameworks run
+            // the same tests at the same time and edit the same files.
+            using var interProcessLock = AcquireInterProcessLock(context.FilePath);
 
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => FullPath.GetTempPath() / (Guid.NewGuid().ToString("N") + ".cs"));
             var preprocessorSymbols = context.GetCompilationDefines();
 
             // Find node to update
             var options = new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols);
-            var filePath = settings.SnapshotUpdateStrategy.ReuseTemporaryFile && File.Exists(tempPath) ? tempPath : context.FilePath;
+            var reuseTemporaryFile = settings.SnapshotUpdateStrategy.ReuseTemporaryFile;
+            var filePath = reuseTemporaryFile && File.Exists(tempPath) ? tempPath : context.FilePath;
             var sourceText = GetSourceText(settings, filePath);
             var tree = CSharpSyntaxTree.ParseText(sourceText, options, filePath, cancellationToken);
             var root = tree.GetRoot(cancellationToken);
 
-            var actualLine = GetActualLine(context.FilePath, context.LineNumber);
-            var span = sourceText.Lines[actualLine - 1].Span;
-            if (context.ColumnNumber > 0)
-            {
-                span = new TextSpan(span.Start + context.ColumnNumber, 1);
-            }
-
-            var nodes = FindInvocations(root, span).Where(invocation =>
-            {
-                // Dummy.MethodName()
-                if (invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: string memberName } && memberName == context.MethodName)
-                    return true;
-
-                // Dummy.MethodName<T>()
-                if (invocation.Expression is GenericNameSyntax { Identifier.Text: string memberName2 } && memberName2 == context.MethodName)
-                    return true;
-
-                // MethodName()
-                if (invocation.Expression is IdentifierNameSyntax { Identifier.Text: string identifierName } && identifierName == context.MethodName)
-                    return true;
-
-                return false;
-            })
-            .ToArray();
-
-            if (nodes.Length == 0)
-                throw new InlineSnapshotException("Cannot find the SyntaxNode to update");
-
-            if (nodes.Length > 1)
-                throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
-
-            var invocationExpression = nodes[0];
-            var argumentExpression = FindArgumentExpression(context, invocationExpression.ArgumentList.Arguments, existingValue);
+            var (invocationExpression, argumentExpression) = FindInvocationToUpdate(context, sourceText, root, existingValue);
 
             // Update node
             var indentation = settings.Indentation ?? DetectIndentation(sourceText);
@@ -133,34 +105,31 @@ internal static class FileEditor
                 newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue));
             }
 
-            SyntaxNode newRoot;
+            SyntaxNode oldNode;
+            SyntaxNode newNode;
             if (argumentExpression is not null)
             {
-                newArgumentExpression = newArgumentExpression
+                oldNode = argumentExpression;
+                newNode = newArgumentExpression
                         .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
                         .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
-
-                newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
-
-                if (settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
-                {
-                    AddFileEdit(context, argumentExpression, newArgumentExpression);
-                }
             }
             else
             {
-                var newInvocation = invocationExpression.AddArgumentListArguments(SyntaxFactory.Argument(newArgumentExpression).WithLeadingTrivia(SyntaxFactory.Space));
-                newRoot = root.ReplaceNode(invocationExpression, newInvocation);
+                oldNode = invocationExpression;
+                newNode = invocationExpression.AddArgumentListArguments(CreateArgument(context, invocationExpression, newArgumentExpression));
+            }
 
-                if (settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
-                {
-                    AddFileEdit(context, invocationExpression, newInvocation);
-                }
+            var newRoot = root.ReplaceNode(oldNode, newNode);
+
+            if (reuseTemporaryFile)
+            {
+                AddFileEdit(context, oldNode, newNode);
             }
 
             // Save the file
             // Create a temp file, show diff if needed, Move or let the tool update the file
-            var encoding = settings.FileEncoding ?? sourceText.Encoding ?? DetectEncoding(context) ?? Encoding.UTF8;
+            var encoding = settings.FileEncoding ?? sourceText.Encoding ?? Encoding.UTF8;
 
             tempPath.CreateParentDirectory();
             var tempFileInfo = new FileInfo(tempPath);
@@ -179,66 +148,316 @@ internal static class FileEditor
 
             settings.SnapshotUpdateStrategy.UpdateFile(settings, context.FilePath, tempPath);
 
-            // Track the changes
-            // note: Diff tools allow partial merge or custom edits => we need to reload the document to find the new expression
-            if (!settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
+            if (reuseTemporaryFile)
             {
-                var mergedSourceText = GetSourceText(settings, filePath);
-                var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText, options, filePath, cancellationToken);
-                var mergedRoot = mergedTree.GetRoot(cancellationToken);
-
-                var textSpan = new TextSpan(invocationExpression.SpanStart, 1);
-                var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();
-                if (potentialMergedExpressions.Length == 0)
+                // The strategy discarded the temporary file (for instance, because no merge tool could be started), so
+                // the next update reads the source file again, which contains none of the edits tracked so far.
+                if (!File.Exists(tempPath))
                 {
-                    Errors.TryAdd(context.FilePath, value: default);
-                    return;
+                    Changes.TryRemove(context.FilePath, out _);
                 }
 
-                var newNode = potentialMergedExpressions.MaxBy(e => e.Span.Length);
-                Debug.Assert(newNode is not null);
-                AddFileEdit(context, invocationExpression, newNode);
+                return;
+            }
+
+            // Track the changes
+            // note: Diff tools allow partial merge or custom edits => we need to reload the document to find the new expression
+            var mergedSourceText = GetSourceText(settings, filePath);
+            var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText, options, filePath, cancellationToken);
+            var mergedRoot = mergedTree.GetRoot(cancellationToken);
+
+            // Only the argument list is edited, so the updated call still has its argument list where it was. Looking for
+            // the largest call around that position instead would find the enclosing call when the snapshot is validated
+            // inside a lambda, and record a line shift that is much too large.
+            var argumentListStart = invocationExpression.ArgumentList.SpanStart;
+            var mergedInvocation = mergedRoot.DescendantNodes(new TextSpan(argumentListStart, 1))
+                .OfType<InvocationExpressionSyntax>()
+                .FirstOrDefault(invocation => invocation.ArgumentList.SpanStart == argumentListStart && IsInvocationOf(invocation, context.MethodName));
+
+            if (mergedInvocation is null)
+            {
+                // The merge changed the file in a way that cannot be tracked. The line of the next snapshots cannot be
+                // predicted anymore, so they are searched in the whole file.
+                Changes.TryRemove(context.FilePath, out _);
+                return;
+            }
+
+            AddFileEdit(context, invocationExpression, mergedInvocation);
+        }
+    }
+
+    private static FileStream AcquireInterProcessLock(FullPath filePath)
+    {
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filePath.Value)));
+        var lockPath = FullPath.GetTempPath() / "Meziantou.Framework.InlineSnapshotTesting" / (hash + ".lock");
+        lockPath.CreateParentDirectory();
+
+        // The lock file is never deleted: deleting it while another process waits for it would let that process lock a
+        // new file while a third one still holds the deleted one.
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (stopwatch.Elapsed < InterProcessLockTimeout)
+            {
+                Thread.Sleep(50);
             }
         }
     }
 
     private static void AddFileEdit(CallerContext context, SyntaxNode oldNode, SyntaxNode newNode)
     {
-        var invocationSpan = oldNode.GetLocation().GetMappedLineSpan();
-        var newInvocationSpan = newNode.GetLocation().GetMappedLineSpan();
+        var oldSpan = oldNode.GetLocation().GetLineSpan();
+        var newSpan = newNode.GetLocation().GetLineSpan();
 
         var fileEdit = new FileEdit(
             context.LineNumber,
-            invocationSpan.EndLinePosition.Line - invocationSpan.StartLinePosition.Line,
-            newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
+            oldSpan.EndLinePosition.Line - oldSpan.StartLinePosition.Line,
+            newSpan.EndLinePosition.Line - newSpan.StartLinePosition.Line);
         var fileEdits = Changes.GetOrAdd(context.FilePath, _ => []);
 
         fileEdits.Add(fileEdit);
-        fileEdits.Sort((a, b) => a.StartLine - b.StartLine);
     }
 
-    private static HashSet<InvocationExpressionSyntax> FindInvocations(SyntaxNode root, TextSpan span)
+    private static (InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument) FindInvocationToUpdate(CallerContext context, SourceText sourceText, SyntaxNode root, string? existingValue)
     {
-        var result = new HashSet<InvocationExpressionSyntax>();
-        var nodes = root.DescendantNodesAndSelf(span);
-        foreach (var node in nodes)
+        var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>().Where(invocation => IsInvocationOf(invocation, context.MethodName)).ToArray();
+
+        // [CallerLineNumber] reports the line of the method name, which is not the first line of a multi-line call
+        var lineIndex = GetActualLine(context.FilePath, context.LineNumber) - 1;
+        List<InvocationExpressionSyntax> candidates = [];
+        if (lineIndex >= 0 && lineIndex < sourceText.Lines.Count)
         {
-            FindInvocation(node, result);
+            candidates.AddRange(invocations.Where(invocation => sourceText.Lines.GetLineFromPosition(GetMethodNameToken(invocation).SpanStart).LineNumber == lineIndex));
+        }
+
+        // Several calls on the same line: keep the ones in the statement the PDB attributes the call to
+        if (candidates.Count > 1 && TryGetSequencePointNode(context, sourceText, root) is { } sequencePointNode)
+        {
+            var inStatement = candidates.Where(candidate => sequencePointNode.Span.Contains(candidate.Span)).ToList();
+            if (inStatement.Count > 0)
+            {
+                candidates = inStatement;
+            }
+        }
+
+        var matches = new List<(InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument)>();
+        string? firstActualValue = null;
+        foreach (var candidate in candidates)
+        {
+            if (TryMatchArgument(context, candidate, existingValue, out var argument, out var actualValue))
+            {
+                matches.Add((candidate, argument));
+            }
+            else if (matches.Count == 0)
+            {
+                firstActualValue ??= actualValue;
+            }
+        }
+
+        if (matches.Count == 1)
+            return matches[0];
+
+        if (matches.Count > 1)
+            throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
+
+        // The call is not where it is expected. The file may have been edited since the build, by the user, by another
+        // test process, or by a merge tool. Search the whole member for a unique call whose snapshot is the expected one.
+        foreach (var invocation in invocations)
+        {
+            if (candidates.Contains(invocation) || !IsInCallerMember(context, invocation))
+                continue;
+
+            if (TryMatchArgument(context, invocation, existingValue, out var argument, out _))
+            {
+                matches.Add((invocation, argument));
+            }
+        }
+
+        if (matches.Count == 1)
+            return matches[0];
+
+        if (matches.Count > 1)
+            throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
+
+        if (candidates.Count > 0)
+            throw new InlineSnapshotException($"Cannot find the argument to update. The current value doesn't match the expected value.\nExpected: <{existingValue}>\nActual: <{firstActualValue}>");
+
+        throw new InlineSnapshotException("Cannot find the SyntaxNode to update");
+    }
+
+    /// <summary>Returns the outermost node starting where the PDB sequence point of the call starts, typically the statement.</summary>
+    private static SyntaxNode? TryGetSequencePointNode(CallerContext context, SourceText sourceText, SyntaxNode root)
+    {
+        if (context.SequencePointLineNumber <= 0 || context.SequencePointColumnNumber <= 0)
+            return null;
+
+        var lineIndex = GetActualLine(context.FilePath, context.SequencePointLineNumber) - 1;
+        if (lineIndex < 0 || lineIndex >= sourceText.Lines.Count)
+            return null;
+
+        var line = sourceText.Lines[lineIndex];
+        var position = line.Start + context.SequencePointColumnNumber - 1;
+        if (position >= line.End)
+            return null;
+
+        var token = root.FindToken(position);
+        if (token.SpanStart != position)
+            return null;
+
+        SyntaxNode? result = null;
+        for (var node = token.Parent; node is not null && node.SpanStart == position && node is not CompilationUnitSyntax; node = node.Parent)
+        {
+            result = node;
         }
 
         return result;
+    }
 
-        static void FindInvocation(SyntaxNode node, HashSet<InvocationExpressionSyntax> nodes)
+    private static bool IsInCallerMember(CallerContext context, SyntaxNode node)
+    {
+        if (context.CallerMemberName is null)
+            return true;
+
+        foreach (var ancestor in node.Ancestors())
         {
-            if (node is InvocationExpressionSyntax invocation)
+            var isCallerMember = ancestor switch
             {
-                nodes.Add(invocation);
-            }
-            else if (node is AwaitExpressionSyntax awaitExpression)
+                MethodDeclarationSyntax method => method.Identifier.ValueText == context.CallerMemberName,
+                LocalFunctionStatementSyntax localFunction => localFunction.Identifier.ValueText == context.CallerMemberName,
+                PropertyDeclarationSyntax property => IsAccessorOf(property.Identifier.ValueText, context.CallerMemberName),
+                EventDeclarationSyntax @event => IsAccessorOf(@event.Identifier.ValueText, context.CallerMemberName),
+                _ => false,
+            };
+
+            if (isCallerMember)
+                return true;
+        }
+
+        return false;
+
+        static bool IsAccessorOf(string memberName, string methodName)
+        {
+            var separator = methodName.IndexOf('_', StringComparison.Ordinal);
+            return separator > 0 && methodName.AsSpan(separator + 1).SequenceEqual(memberName);
+        }
+    }
+
+    private static bool IsInvocationOf(InvocationExpressionSyntax invocation, string methodName)
+    {
+        var token = GetMethodNameToken(invocation);
+        return token.ValueText == methodName;
+    }
+
+    private static SyntaxToken GetMethodNameToken(InvocationExpressionSyntax invocation)
+    {
+        return invocation.Expression switch
+        {
+            // Dummy.MethodName(), Dummy.MethodName<T>()
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier,
+
+            // Dummy?.MethodName()
+            MemberBindingExpressionSyntax memberBinding => memberBinding.Name.Identifier,
+
+            // MethodName(), MethodName<T>()
+            SimpleNameSyntax name => name.Identifier,
+            _ => default,
+        };
+    }
+
+    /// <summary>
+    /// Returns the argument indexes that may hold the snapshot, the most likely first. An extension method called with
+    /// the extension syntax does not receive its first parameter as an argument. Whether the receiver is a value or the
+    /// type declaring the method cannot be told without a semantic model, so both indexes are tried.
+    /// </summary>
+    private static int[] GetArgumentIndexes(CallerContext context, InvocationExpressionSyntax invocation)
+    {
+        if (!context.IsExtensionMethod || context.ParameterIndex == 0)
+            return [context.ParameterIndex];
+
+        var isExtensionSyntax = invocation.Expression switch
+        {
+            MemberBindingExpressionSyntax => true,
+            MemberAccessExpressionSyntax memberAccess => !IsReferenceToDeclaringType(memberAccess.Expression, context.DeclaringTypeName),
+            _ => false,
+        };
+
+        return isExtensionSyntax ? [context.ParameterIndex - 1, context.ParameterIndex] : [context.ParameterIndex, context.ParameterIndex - 1];
+
+        static bool IsReferenceToDeclaringType(ExpressionSyntax expression, string? typeName)
+        {
+            return expression switch
             {
-                FindInvocation(awaitExpression.Expression, nodes);
+                IdentifierNameSyntax identifier => identifier.Identifier.ValueText == typeName,
+                MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.ValueText == typeName,
+                AliasQualifiedNameSyntax aliasQualified => aliasQualified.Name.Identifier.ValueText == typeName,
+                _ => false,
+            };
+        }
+    }
+
+    /// <summary>Finds the argument holding the snapshot and reports whether it matches the value the method received.</summary>
+    /// <param name="argumentExpression">The argument holding the snapshot, or <see langword="null"/> when the argument is omitted.</param>
+    private static bool TryMatchArgument(CallerContext context, InvocationExpressionSyntax invocation, string? existingValue, out ExpressionSyntax? argumentExpression, out string? actualValue)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        foreach (var argument in arguments)
+        {
+            if (argument.NameColon is { Name.Identifier.ValueText: var name } && name == context.ParameterName)
+            {
+                argumentExpression = argument.Expression;
+                return ExpressionSyntaxMatchesValue(argument.Expression, existingValue, out actualValue);
             }
         }
+
+        argumentExpression = null;
+        actualValue = null;
+        var isMostLikelyIndex = true;
+        foreach (var index in GetArgumentIndexes(context, invocation))
+        {
+            if (index < arguments.Count && arguments[index].NameColon is null)
+            {
+                if (ExpressionSyntaxMatchesValue(arguments[index].Expression, existingValue, out var value))
+                {
+                    argumentExpression = arguments[index].Expression;
+                    actualValue = value;
+                    return true;
+                }
+
+                if (isMostLikelyIndex)
+                {
+                    actualValue = value;
+                }
+            }
+            else if (existingValue is null || existingValue == context.ParameterDefaultValue)
+            {
+                // The argument is omitted, so the method received the default value of the parameter
+                actualValue = existingValue;
+                return true;
+            }
+
+            isMostLikelyIndex = false;
+        }
+
+        return false;
+    }
+
+    private static ArgumentSyntax CreateArgument(CallerContext context, InvocationExpressionSyntax invocation, ExpressionSyntax expression)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        var argument = SyntaxFactory.Argument(expression);
+
+        // A positional argument only binds to the snapshot parameter when every parameter before it has an argument.
+        // Otherwise, it would silently bind to another optional parameter.
+        if (GetArgumentIndexes(context, invocation)[0] != arguments.Count || arguments.Any(existingArgument => existingArgument.NameColon is not null))
+        {
+            argument = argument.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(context.ParameterName)).WithTrailingTrivia(SyntaxFactory.Space));
+        }
+
+        return arguments.Count > 0 ? argument.WithLeadingTrivia(SyntaxFactory.Space) : argument;
     }
 
     private static int GetStartPosition(InvocationExpressionSyntax invocationExpression)
@@ -246,55 +465,6 @@ internal static class FileEditor
         var line = invocationExpression.Expression.GetLocation().GetLineSpan().EndLinePosition.Line;
         var lineText = invocationExpression.SyntaxTree.GetText().Lines[line].ToString();
         return lineText.Length - lineText.AsSpan().TrimStart().Length;
-    }
-
-    private static ExpressionSyntax? FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string? existingValue)
-    {
-        // Try find by name
-        ExpressionSyntax? argumentExpression = null;
-        if (context.ParameterName is not null)
-        {
-            foreach (var argument in arguments)
-            {
-                if (argument.NameColon is { Name.Identifier.Text: var identifier } && identifier == context.ParameterName)
-                {
-                    argumentExpression = argument.Expression;
-                    break;
-                }
-            }
-        }
-
-        // Try find by index
-        if (argumentExpression is null && context.ParameterIndex >= 0 && context.ParameterIndex < arguments.Count)
-        {
-            argumentExpression = arguments[context.ParameterIndex].Expression;
-        }
-
-        // Try find by value
-        argumentExpression ??= FindSingleArgumentMatchingValue(arguments, existingValue);
-        if (argumentExpression is null)
-        {
-            if (arguments.Count == 1)
-                return null;
-
-            throw new InlineSnapshotException("Cannot find the argument to update");
-        }
-
-        if (!ExpressionSyntaxMatchesValue(argumentExpression, existingValue, out var actualValue))
-            throw new InlineSnapshotException($"Cannot find the argument to update. The current value doesn't match the expected value.\nExpected: <{existingValue}>\nActual: <{actualValue}>");
-
-        return argumentExpression;
-    }
-
-    private static ExpressionSyntax? FindSingleArgumentMatchingValue(SeparatedSyntaxList<ArgumentSyntax> arguments, string? value)
-    {
-        foreach (var argument in arguments)
-        {
-            if (ExpressionSyntaxMatchesValue(argument.Expression, value, out _))
-                return argument.Expression;
-        }
-
-        return null;
     }
 
     private static bool ExpressionSyntaxMatchesValue(ExpressionSyntax? expression, string? value, out string? actualValue)
@@ -316,45 +486,6 @@ internal static class FileEditor
 
         actualValue = null;
         return false;
-    }
-
-    internal static Encoding? DetectEncoding(CallerContext context)
-    {
-        using var fs = File.OpenRead(context.FilePath);
-        var data = new byte[4];
-        var count = fs.ReadAtLeast(data, minimumBytes: 4, throwOnEndOfStream: false);
-        var readData = data.AsSpan()[..count];
-
-        if (readData.Length < 2)
-            return null;
-
-        if (readData[0] == 0xff && readData[1] == 0xfe && (readData.Length < 4 || readData[2] != 0 || readData[3] != 0))
-            return Encoding.Unicode;
-
-        if (readData[0] == 0xfe && readData[1] == 0xff)
-            return Encoding.BigEndianUnicode;
-
-        if (readData.Length < 3)
-            return null;
-
-        if (readData[0] == 0xef && readData[1] == 0xbb && readData[2] == 0xbf)
-            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
-
-#pragma warning disable SYSLIB0001 // Type or member is obsolete
-        if (readData[0] == 0x2b && readData[1] == 0x2f && readData[2] == 0x76)
-            return Encoding.UTF7;
-#pragma warning restore SYSLIB0001
-
-        if (readData.Length < 4)
-            return null;
-
-        if (readData[0] == 0xff && readData[1] == 0xfe && readData[2] == 0 && readData[3] == 0)
-            return Encoding.UTF32;
-
-        if (readData[0] == 0 && readData[1] == 0 && readData[2] == 0xfe && readData[3] == 0xff)
-            return Encoding.GetEncoding(12001);
-
-        return null;
     }
 
     internal static string DetectIndentation(SourceText sourceText)

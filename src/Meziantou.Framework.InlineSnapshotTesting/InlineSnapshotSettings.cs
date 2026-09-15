@@ -20,7 +20,7 @@ public sealed record InlineSnapshotSettings
     /// <summary>Gets or sets the default settings used for snapshot validation.</summary>
     public static InlineSnapshotSettings Default { get; set; } = new();
 
-    /// <summary>Gets or sets the indentation string to use when writing snapshots. If null, the indentation is detected from the PDB file.</summary>
+    /// <summary>Gets or sets the indentation string to use when writing snapshots. If null, the indentation is detected from the source file.</summary>
     public string? Indentation { get; set; }
 
     /// <summary>Gets or sets the end-of-line string to use when writing snapshots. If null, the end-of-line is detected from the source file.</summary>
@@ -124,14 +124,14 @@ public sealed record InlineSnapshotSettings
         SnapshotComparer = {SnapshotComparer},
         ErrorMessageFormatter = {ErrorMessageFormatter},
         AllowedStringFormats = {AllowedStringFormats},
-        MergeTools = {MergeTools},
+        MergeTools = {(MergeTools is null ? "" : string.Join(", ", MergeTools))},
         ValidateSourceFilePathUsingPdbInfoWhenAvailable = {ValidateSourceFilePathUsingPdbInfoWhenAvailable},
         ValidateLineNumberUsingPdbInfoWhenAvailable = {ValidateLineNumberUsingPdbInfoWhenAvailable},
         ForceUpdateSnapshots = {ForceUpdateSnapshots},
-        Scrubbers = {Scrubbers}
-        IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()}
-        BuildServerDetector = {BuildServerDetector.Detected}
-        ContinuousTestingDetector = {ContinuousTestingDetector.Detected}
+        Scrubbers = {string.Join(", ", Scrubbers)},
+        IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()},
+        BuildServerDetector = {BuildServerDetector.Detected},
+        ContinuousTestingDetector = {ContinuousTestingDetector.Detected},
         LLMContextDetector = {LLMEnvironmentDetector.Detected}
         """;
 

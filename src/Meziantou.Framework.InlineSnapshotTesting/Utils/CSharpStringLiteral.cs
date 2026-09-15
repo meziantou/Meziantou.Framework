@@ -9,12 +9,18 @@ internal static class CSharpStringLiteral
             return "null";
 
         var isMultiline = IsMultiline(value);
+        var hasCharactersRequiringEscaping = HasCharactersRequiringEscaping(value);
 
         if (formats.HasFlag(CSharpStringFormats.Quoted) && !isMultiline && !HasQuotedStringEscapableCharacters(value))
             return CreateQuotedString(value);
 
-        if (formats.HasFlag(CSharpStringFormats.Verbatim) && !isMultiline && !HasVerbatimStringEscapableCharacters(value))
+        if (formats.HasFlag(CSharpStringFormats.Verbatim) && !isMultiline && !HasVerbatimStringEscapableCharacters(value) && !hasCharactersRequiringEscaping)
             return CreateVerbatimString(value);
+
+        // Only a quoted string can escape invisible characters. Verbatim and raw strings would write them as-is, and a
+        // raw string would also turn the newline characters other than CR and LF into the end-of-line of the file.
+        if (hasCharactersRequiringEscaping && formats.HasFlag(CSharpStringFormats.Quoted))
+            return CreateQuotedString(value);
 
         if (formats.HasFlag(CSharpStringFormats.LeftAlignedRaw))
             return CreateRawString(value, "", startPosition: -1, eol);
@@ -35,8 +41,9 @@ internal static class CSharpStringLiteral
     {
         var sb = new StringBuilder();
         sb.Append('"');
-        foreach (var c in value)
+        for (var i = 0; i < value.Length; i++)
         {
+            var c = value[i];
             switch (c)
             {
                 case '"':
@@ -94,7 +101,15 @@ internal static class CSharpStringLiteral
                     break;
 
                 default:
-                    sb.Append(c);
+                    if (RequiresEscaping(value, i))
+                    {
+                        sb.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+
                     break;
             }
         }
@@ -187,7 +202,38 @@ internal static class CSharpStringLiteral
                 return true;
         }
 
+        return HasCharactersRequiringEscaping(value);
+    }
+
+    /// <summary>
+    /// Reports whether the value contains characters that cannot be written literally in a source file without being
+    /// invisible or altered: control characters other than tab, CR and LF, format characters such as zero-width
+    /// characters or the byte order mark, the Unicode newline characters, and unpaired surrogates that no encoding can store.
+    /// </summary>
+    private static bool HasCharactersRequiringEscaping(string value)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (RequiresEscaping(value, i))
+                return true;
+        }
+
         return false;
+    }
+
+    private static bool RequiresEscaping(string value, int index)
+    {
+        var c = value[index];
+        if (c is '\t' or '\r' or '\n')
+            return false;
+
+        if (char.IsHighSurrogate(c))
+            return index + 1 >= value.Length || !char.IsLowSurrogate(value[index + 1]);
+
+        if (char.IsLowSurrogate(c))
+            return index == 0 || !char.IsHighSurrogate(value[index - 1]);
+
+        return char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator;
     }
 
     private static bool HasVerbatimStringEscapableCharacters(string value)

@@ -307,7 +307,10 @@ public static class HumanReadableSerializerScrubExtensions
 
             var document = XDocument.Parse(value);
             var result = document.XPathEvaluate(_xpath, _nsResolver);
-            var navigator = (IEnumerable<object>)result;
+
+            // XPathEvaluate is lazy, and removing an attribute detaches it from the element the navigator walks, which
+            // ends the enumeration of the remaining attributes of that element.
+            var navigator = ((IEnumerable<object>)result).ToArray();
             foreach (var item in navigator)
             {
                 if (item is XAttribute attribute)

@@ -21,7 +21,7 @@ namespace Meziantou.Framework.HumanReadable
         public abstract void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, object? value, System.Type valueType, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options);
     }
 
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class HumanReadableConverterAttribute : Meziantou.Framework.HumanReadable.HumanReadableAttribute
     {
         public System.Type ConverterType { get => throw null; }
@@ -199,14 +199,14 @@ namespace Meziantou.Framework.HumanReadable.Converters
         public System.Collections.Generic.ISet<string> ExcludedHeaderNames { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.Converters.HttpHeaderValueFormatter> HeaderValueTransformer { get => throw null; }
         public bool OmitProtocolVersion { get => throw null; set { } }
+        protected HumanReadableHttpMessageOptions(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions original) { }
+        public virtual bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? other) => throw null;
+        public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
         protected virtual bool PrintMembers(System.Text.StringBuilder builder) => throw null;
         public static bool operator !=(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
         public static bool operator ==(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? left, Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? right) => throw null;
-        public override int GetHashCode() => throw null;
         public override bool Equals(object? obj) => throw null;
-        public virtual bool Equals(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions? other) => throw null;
-        protected HumanReadableHttpMessageOptions(Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions original) { }
     }
 
     public sealed class HumanReadableHttpOptions : System.IEquatable<Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions>

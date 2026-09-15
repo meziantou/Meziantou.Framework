@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable;
@@ -15,6 +16,8 @@ public sealed class HumanReadableTextWriter
 
     private int _indentation;
     private int _depth;
+    private int _valueDepth;
+    private string? _pendingArrayItemSeparator;
 
     private WriterContext _context;
 
@@ -25,15 +28,21 @@ public sealed class HumanReadableTextWriter
         _options = options;
     }
 
-    private void WritePendingText(bool indent = true)
+    // The separator after a property name or an array item marker is only written when content follows on the same line,
+    // so an empty value does not leave trailing whitespace
+    private void WritePendingText(bool indent, bool hasContent)
     {
         if (_context is WriterContext.NewLine)
         {
             _text.Append(_options.NewLine);
         }
-        else if (_context is WriterContext.PropertyName)
+        else if (_context is WriterContext.PropertyName && hasContent)
         {
             _text.Append(' ');
+        }
+        else if (_context is WriterContext.ArrayItemStart && hasContent)
+        {
+            _text.Append(_pendingArrayItemSeparator);
         }
 
         if (indent && _context is WriterContext.NewLine)
@@ -44,6 +53,7 @@ public sealed class HumanReadableTextWriter
             }
         }
 
+        _pendingArrayItemSeparator = null;
         _context = WriterContext.None;
     }
 
@@ -71,13 +81,14 @@ public sealed class HumanReadableTextWriter
             {
                 // The control pictures record the original end of line, so the actual line break
                 // is normalized and indented the same way as when the option is disabled.
-                WritePendingText(indent: !line.IsEmpty || !eol.IsEmpty);
+                var hasContent = !line.IsEmpty || !eol.IsEmpty;
+                WritePendingText(indent: hasContent, hasContent);
                 ReplaceInvisibleCharacters(_text, line);
                 ReplaceInvisibleCharacters(_text, eol);
             }
             else
             {
-                WritePendingText(indent: !line.IsEmpty);
+                WritePendingText(indent: !line.IsEmpty, hasContent: !line.IsEmpty);
                 _text.Append(line);
             }
 
@@ -125,9 +136,11 @@ public sealed class HumanReadableTextWriter
             {
                 sb.Append(c);
             }
-            else if (IsSpaceOrZeroWidth(c))
+            else if (IsSpaceOrZeroWidth(c) || char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format)
             {
-                // Other spaces look like a regular space or like nothing at all, and have no control picture
+                // Other spaces look like a regular space or like nothing at all, and have no control picture.
+                // Format characters (e.g. soft hyphen, bidirectional marks and overrides) and C1 control characters are invisible too,
+                // and a bidirectional override would even reorder the rest of the line when displayed.
                 sb.Append(CultureInfo.InvariantCulture, $"<U+{(int)c:X4}>");
             }
             else
@@ -227,6 +240,18 @@ public sealed class HumanReadableTextWriter
         _context = WriterContext.PropertyName;
     }
 
+    internal void EnterValue()
+    {
+        // A value usually nests a few converter calls per object or array level, hence the margin over MaxDepth
+        var maxValueDepth = (_options.MaxDepth * 4L) + 16;
+        if (_valueDepth >= maxValueDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw new HumanReadableSerializerException($"Current value depth ({_valueDepth + 1}) is larger than the maximum allowed value depth of {maxValueDepth} (derived from MaxDepth {_options.MaxDepth}). The object graph may contain a cycle.");
+
+        _valueDepth++;
+    }
+
+    internal void ExitValue() => _valueDepth--;
+
     private void IncrementDepth()
     {
         // Only increment once the limit is known to be respected. Incrementing first would leave
@@ -299,9 +324,12 @@ public sealed class HumanReadableTextWriter
     /// <param name="index">An optional index or label for the array item.</param>
     public void StartArrayItem(string? index = null)
     {
-        Write("- " + index);
+        var marker = "- " + index;
+        var trimmedMarker = marker.TrimEnd(' ');
+        Write(trimmedMarker);
         Indent(); // "- " is the same length as one indentation
         _context = WriterContext.ArrayItemStart;
+        _pendingArrayItemSeparator = marker[trimmedMarker.Length..];
         _scopes.Push(new Scope(this, unindent: true));
     }
 

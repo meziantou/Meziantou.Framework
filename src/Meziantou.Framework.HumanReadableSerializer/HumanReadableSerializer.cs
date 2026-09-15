@@ -60,8 +60,18 @@ public static class HumanReadableSerializer
     {
         using (options.BeginScope())
         {
-            var converter = options.GetConverter(type);
-            converter.WriteValue(writer, value, type, options);
+            // Converters can recurse without writing an object or an array (e.g. a converter forwarding to an inner value),
+            // which MaxDepth does not detect. A cycle would then end with a StackOverflowException, which kills the process.
+            writer.EnterValue();
+            try
+            {
+                var converter = options.GetConverter(type);
+                converter.WriteValue(writer, value, type, options);
+            }
+            finally
+            {
+                writer.ExitValue();
+            }
         }
     }
 

@@ -1492,7 +1492,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         };
         AssertSerialization(message, """
             Headers:
-              Content-Type: multipart/mixed; boundary="23f7d466-b54f-4db9-9a4b-8d26ea978125"
+              Content-Type: multipart/mixed
             Value:
               - Headers:
                   Content-Type: text/plain; charset=utf-8
@@ -2979,5 +2979,724 @@ public sealed partial class SerializerTests : SerializerTestsBase
         public void ValueTupleNestedDynamic((dynamic A, (int B, dynamic C) D) value) => throw new NotSupportedException();
 
         public void ByRefParameters(ref int a, out List<int>[] b, ref dynamic c) => throw new NotSupportedException();
+
+        public void LongValueTuple((dynamic a, int b, int c, int d, int e, int f, int g, dynamic h, (int x, dynamic y) i) value) => throw new NotSupportedException();
+
+        public void NestedValueTupleFirst(((int x, int y) p, int q) value) => throw new NotSupportedException();
+
+        public void InParameters(in int a, ref readonly int b, out int c) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public void Component_IsSerializedAsObject()
+    {
+        using var component = new SampleComponent();
+
+        AssertSerialization(component, new HumanReadableSerializerOptions { PropertyOrder = StringComparer.Ordinal }, """
+            Container: <null>
+            Site: <null>
+            Value: 1
+            """);
+    }
+
+    [Fact]
+    public void DataTable_IsSerializedAsObject()
+    {
+        using var table = new DataTable("Sample");
+
+        var text = HumanReadableSerializer.Serialize(new ValueHolder { Value = table });
+
+        Assert.Contains("TableName: Sample", text);
+    }
+
+    [Fact]
+    public void Serialize_AsInterfaceType()
+    {
+        AssertSerialization(new ImplementsDerivedInterface(), options: null, typeof(IDerivedInterface), """
+            B: 2
+            A: 1
+            """);
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_OverriddenProperty()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<BaseWithVirtualProperty>(x => x.Name);
+
+        AssertSerialization(new DerivedWithOverriddenProperty(), options, "Id: 1");
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_OverriddenPropertyOfBaseClassLibraryType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<ObjectDisposedException>(e => e.Message);
+
+        // ObjectDisposedException overrides Exception.Message, and derives from InvalidOperationException
+        Assert.DoesNotContain("Message:", HumanReadableSerializer.Serialize(new ObjectDisposedException("Sample"), options));
+        Assert.Contains("Message: msg", HumanReadableSerializer.Serialize(new InvalidOperationException("msg"), options));
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_OnlyAppliesToTheConfiguredGenericInstantiation()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<GenericBox<int>>(x => x.Value);
+
+        AssertSerialization(new GenericBox<int> { Value = 2, Id = 1 }, options, "Id: 1");
+        AssertSerialization(new GenericBox<string> { Value = "a", Id = 1 }, options, """
+            Value: a
+            Id: 1
+            """);
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_DerivedType_DoesNotApplyToBaseType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<DerivedWithOverriddenProperty>(x => x.Id);
+
+        AssertSerialization(new DerivedWithOverriddenProperty(), options, "Name: derived");
+        AssertSerialization(new BaseWithVirtualProperty(), options, """
+            Name: base
+            Id: 1
+            """);
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_InterfaceProperty()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<IBaseInterface>(x => x.A);
+
+        AssertSerialization(new ImplementsDerivedInterface(), options, "B: 2");
+    }
+
+    [Fact]
+    public void IgnoreMember_Name_PrivateMemberOfBaseType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<ChildOfRootWithPrivateMember>("PrivateRoot");
+
+        AssertSerialization(new ChildOfRootWithPrivateMember(), options, "PropChild: 3");
+    }
+
+    [Fact]
+    public void AddAttribute_Field()
+    {
+        var options = new HumanReadableSerializerOptions { IncludeFields = true };
+        options.AddAttribute(typeof(ClassWithFields).GetField(nameof(ClassWithFields.A))!, new HumanReadablePropertyNameAttribute("Renamed"));
+        options.AddFieldAttribute(field => field.Name == nameof(ClassWithFields.B), new HumanReadableIgnoreAttribute());
+
+        AssertSerialization(new ClassWithFields(), options, "Renamed: 1");
+    }
+
+    [Fact]
+    public void IgnoreMembersWithType_Field()
+    {
+        var options = new HumanReadableSerializerOptions { IncludeFields = true };
+        options.IgnoreMembersWithType<string>();
+
+        AssertSerialization(new ClassWithFields(), options, "A: 1");
+    }
+
+    [Fact]
+    public void AddAttribute_Type_AppliesToDerivedTypes()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.AddAttribute(typeof(BaseWithVirtualProperty), new HumanReadableConverterAttribute(new ConstantConverter()));
+
+        AssertSerialization(new DerivedWithOverriddenProperty(), options, "custom");
+    }
+
+    [Fact]
+    public void ConverterAttribute_Factory_Type()
+    {
+        AssertSerialization(new TypeWithConverterFactory(), "custom");
+    }
+
+    [Fact]
+    public void ConverterAttribute_Factory_Member()
+    {
+        AssertSerialization(new MemberWithConverterFactory(), "Value: custom");
+    }
+
+    [Fact]
+    public void ConverterAttribute_Factory_ReturnsNull()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.AddAttribute(typeof(ClassWithFields), new HumanReadableConverterAttribute(new NullConverterFactory()));
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(new ClassWithFields(), options));
+    }
+
+    [Fact]
+    public void ConverterAttribute_Interface()
+    {
+        AssertSerialization(new ImplementsInterfaceWithConverter(), "custom");
+        AssertSerialization(new ValueHolder<IInterfaceWithConverter> { Value = new ImplementsInterfaceWithConverter() }, "Value: custom");
+    }
+
+    [Fact]
+    public void ConverterAttribute_Interface_MostSpecificInterfaceWins()
+    {
+        AssertSerialization(new ImplementsDerivedInterfaceWithConverter(), "derived");
+    }
+
+    [Fact]
+    public void ConverterAttribute_Interface_Ambiguous()
+    {
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(new ImplementsTwoInterfacesWithConverter()));
+    }
+
+    [Fact]
+    public void ConverterAttribute_Struct()
+    {
+        AssertSerialization(new StructWithConverter(), "custom");
+    }
+
+    [Fact]
+    public void DefaultIgnoreCondition_Always_MemberCanOptIn()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.Always };
+
+        AssertSerialization(new OptInMembers(), options, "A: 1");
+    }
+
+    [Fact]
+    public void WhenWritingDefault_SpanProperty()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+        options.IgnoreMembersThatThrow();
+
+        AssertSerialization(new WithSpanProperty(), options, "Value: 1");
+    }
+
+    [Fact]
+    public void RefReturningProperty()
+    {
+        AssertSerialization(new WithRefProperties(), """
+            Reference: <null>
+            Value: 0
+            """);
+    }
+
+    [Fact]
+    public void RefReturningProperty_WhenWritingDefault()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+
+        AssertSerialization(new WithRefProperties(), options, "{}");
+    }
+
+    [Fact]
+    public void DefaultValueAttribute_IsConvertedToTheMemberType()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+
+        AssertSerialization(new WithConvertibleDefaultValues(), options, "Other: 1");
+    }
+
+    [Fact]
+    public void DefaultValueAttribute_InvalidValue()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(new WithInvalidDefaultValue(), options));
+    }
+
+    [Fact]
+    public void String_InvisibleChar_FormatAndC1ControlCharacters()
+    {
+        var options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true };
+
+        AssertSerialization("a­b‎c‮de⁦f", options, "a<U+00AD>b<U+200E>c<U+202E>d<U+0081>e<U+2066>f");
+    }
+
+    [Fact]
+    public void Array_EmptyStringItem_NoTrailingWhitespace()
+    {
+        AssertSerialization(new[] { "", "a" }, "-\n- a");
+    }
+
+    [Fact]
+    public void Array_ItemStartingWithNewLine_NoTrailingWhitespace()
+    {
+        AssertSerialization(new[] { "\na" }, "-\n  a");
+    }
+
+    [Fact]
+    public void MultiDimensionalArray_EmptyStringItem_NoTrailingWhitespace()
+    {
+        AssertSerialization(new string[,] { { "", "a" } }, "- [0, 0]:\n- [0, 1]: a");
+    }
+
+    [Fact]
+    public void ConverterRecursion_RespectsMaxDepth()
+    {
+        var box = new SelfReferencingBox();
+        box.Inner = box;
+        var options = new HumanReadableSerializerOptions();
+        options.Converters.Add(new SelfReferencingBoxConverter());
+
+        Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(box, options));
+    }
+
+    [Fact]
+    public void StringDictionary_DefaultOrder()
+    {
+        var value = new StringDictionary();
+        for (var i = 19; i >= 0; i--)
+        {
+            value["key" + i.ToString("D2", CultureInfo.InvariantCulture)] = "v" + i.ToString(CultureInfo.InvariantCulture);
+        }
+
+        value["null"] = null;
+
+        var expected = string.Join('\n', Enumerable.Range(0, 20).Select(i => FormattableString.Invariant($"key{i:D2}: v{i}"))) + "\nnull: <null>";
+        AssertSerialization(value, expected);
+    }
+
+    [Fact]
+    public void Hashtable_DefaultOrder()
+    {
+        var value = new Hashtable();
+        for (var i = 19; i >= 0; i--)
+        {
+            value["key" + i.ToString("D2", CultureInfo.InvariantCulture)] = i;
+        }
+
+        var expected = string.Join('\n', Enumerable.Range(0, 20).Select(i => FormattableString.Invariant($"- Key: key{i:D2}\n  Value: {i}")));
+        AssertSerialization(value, expected);
+    }
+
+    [Fact]
+    public void Hashtable_Empty()
+    {
+        AssertSerialization(new Hashtable(), "[]");
+    }
+
+    [Fact]
+    public void ListDictionary_KeepsInsertionOrder()
+    {
+        var value = new ListDictionary { ["b"] = 1, ["a"] = 2 };
+
+        AssertSerialization(value, """
+            - Key: b
+              Value: 1
+            - Key: a
+              Value: 2
+            """);
+    }
+
+    [Fact]
+    public void ListDictionary_DictionaryKeyOrder()
+    {
+        var value = new ListDictionary { ["b"] = 1, ["a"] = 2 };
+
+        AssertSerialization(value, new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal }, """
+            - Key: a
+              Value: 2
+            - Key: b
+              Value: 1
+            """);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Expression_ConstantsUseInvariantCulture()
+    {
+        Expression<Func<double, bool>> expression = x => x > 1.5;
+
+        var text = UseCulture("fr-FR", () => HumanReadableSerializer.Serialize(expression));
+
+        Assert.Equal("x => (x > 1.5)", text);
+    }
+
+    [Fact]
+    public void Enum_UndefinedNegativeValue()
+    {
+        AssertSerialization((DayOfWeek)(-1), "-1");
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Enum_UndefinedNegativeValue_UsesInvariantCulture()
+    {
+        var text = UseCulture("sv-SE", () => HumanReadableSerializer.Serialize((DayOfWeek)(-1)));
+
+        Assert.Equal("-1", text);
+    }
+
+    [Fact]
+    public void JsonElement_Default()
+    {
+        AssertSerialization(new ValueHolder<System.Text.Json.JsonElement>(), "Value: <undefined>");
+    }
+
+    [Fact]
+    public void JsonElement_DoesNotEscapeNonAsciiCharacters()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse("""{"Name":"café <b>"}""");
+
+        AssertSerialization(document.RootElement, """
+            {
+              "Name": "café <b>"
+            }
+            """);
+    }
+
+    [Fact]
+    public void SByteArray_IsNotSerializedAsBase64()
+    {
+        AssertSerialization(new sbyte[] { -1, 2 }, "- -1\n- 2");
+    }
+
+    [Fact]
+    public void ByteEnumArray_IsNotSerializedAsBase64()
+    {
+        AssertSerialization(new[] { ByteEnum.A }, "- A");
+    }
+
+    [Fact]
+    public void Grouping()
+    {
+        AssertSerialization(new[] { 1, 2, 3 }.GroupBy(x => x % 2), """
+            - Key: 1
+              Values:
+                - 1
+                - 3
+            - Key: 0
+              Values:
+                - 2
+            """);
+    }
+
+    [Fact]
+    public void Type_NestedTypeOfGenericType() => AssertSerialization(typeof(List<int>.Enumerator), "System.Collections.Generic.List<System.Int32>+Enumerator, System.Private.CoreLib");
+
+    [Fact]
+    public void Type_NestedTypeOfOpenGenericType() => AssertSerialization(typeof(Dictionary<,>.KeyCollection), "System.Collections.Generic.Dictionary<TKey, TValue>+KeyCollection, System.Private.CoreLib");
+
+    [Fact]
+    public void Type_GenericNestedTypeOfGenericType() => AssertSerialization(typeof(GenericBox<int>.Nested<string>), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+GenericBox<System.Int32>+Nested<System.String>, Meziantou.Framework.HumanReadableSerializer.Tests");
+
+    [Fact]
+    public void MethodInfo_LongValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.LongValueTuple))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.LongValueTuple((dynamic a, System.Int32 b, System.Int32 c, System.Int32 d, System.Int32 e, System.Int32 f, System.Int32 g, dynamic h, (System.Int32 x, dynamic y) i) value)");
+
+    [Fact]
+    public void MethodInfo_NestedValueTuple_FirstElement_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NestedValueTupleFirst))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NestedValueTupleFirst(((System.Int32 x, System.Int32 y) p, System.Int32 q) value)");
+
+    [Fact]
+    public void MethodInfo_InAndRefReadOnlyParameters() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.InParameters))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.InParameters(in System.Int32 a,ref readonly System.Int32 b,out System.Int32 c)");
+
+    [Fact]
+    public void SingleDimensionArray_NonZeroLowerBound()
+    {
+        var data = Array.CreateInstance(typeof(int), lengths: [3], lowerBounds: [5]);
+        data.SetValue(1, 5);
+        data.SetValue(2, 6);
+        data.SetValue(3, 7);
+
+        AssertSerialization(data, """
+            - [5]: 1
+            - [6]: 2
+            - [7]: 3
+            """);
+    }
+
+    [Fact]
+    public void CultureInfo_InvariantInstance()
+        => AssertSerialization((CultureInfo)CultureInfo.InvariantCulture.Clone(), "Invariant Language (Invariant Country)");
+
+    [Fact]
+    public void FSharp_DiscriminatedUnion_WhenWritingDefault()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+
+        AssertSerialization(Shape.NewRectangle(0, 2), options, """
+            Tag: Rectangle
+            length: 2
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_MultiPartContent_RandomBoundary()
+    {
+        static string Serialize()
+        {
+            using var part = new StringContent("a");
+            using var content = new MultipartFormDataContent { { part, "field" } };
+            return HumanReadableSerializer.Serialize(content);
+        }
+
+        Assert.Equal(Serialize(), Serialize());
+    }
+
+    [Fact]
+    public void HttpContent_UnsupportedCharset()
+    {
+        using var content = new ByteArrayContent([0x63, 0x61, 0x66, 0xE9]);
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("text/plain; charset=x-unknown");
+
+        AssertSerialization(content, """
+            Headers:
+              Content-Type: text/plain; charset=x-unknown
+            Value: Y2Fm6Q==
+            """);
+    }
+
+    [Theory]
+    [InlineData("gzip")]
+    [InlineData("deflate")]
+    [InlineData("br")]
+    public void HttpContent_CompressedContent(string encoding)
+    {
+        using var output = new MemoryStream();
+        using (Stream compressionStream = encoding switch
+        {
+            "gzip" => new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true),
+            "deflate" => new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true),
+            _ => new System.IO.Compression.BrotliStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true),
+        })
+        {
+            compressionStream.Write("{\"a\":1}"u8);
+        }
+
+        using var content = new ByteArrayContent(output.ToArray());
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json; charset=utf-8");
+        content.Headers.ContentEncoding.Add(encoding);
+
+        AssertSerialization(content, $$"""
+            Headers:
+              Content-Type: application/json; charset=utf-8
+              Content-Encoding: {{encoding}}
+            Value: {"a":1}
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_UnknownContentEncoding()
+    {
+        using var content = new ByteArrayContent([1, 2, 3]);
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("text/plain");
+        content.Headers.ContentEncoding.Add("zstd");
+
+        AssertSerialization(content, """
+            Headers:
+              Content-Type: text/plain
+              Content-Encoding: zstd
+            Value: AQID
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_StringContentWithContentEncodingHeader()
+    {
+        using var content = new StringContent("text");
+        content.Headers.ContentEncoding.Add("gzip");
+
+        AssertSerialization(content, """
+            Headers:
+              Content-Type: text/plain; charset=utf-8
+              Content-Encoding: gzip
+            Value: text
+            """);
+    }
+
+    private static string UseCulture(string cultureName, Func<string> func)
+    {
+        var previousCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+            return func();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
+    private sealed class SampleComponent : Component
+    {
+        public int Value => 1;
+    }
+
+    private sealed class ValueHolder
+    {
+        public object? Value { get; set; }
+    }
+
+    private sealed class ValueHolder<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    private interface IBaseInterface
+    {
+        int A { get; }
+    }
+
+    private interface IDerivedInterface : IBaseInterface
+    {
+        int B { get; }
+    }
+
+    private sealed class ImplementsDerivedInterface : IDerivedInterface
+    {
+        public int A => 1;
+        public int B => 2;
+    }
+
+    private class BaseWithVirtualProperty
+    {
+        public virtual string Name => "base";
+        public int Id => 1;
+    }
+
+    private sealed class DerivedWithOverriddenProperty : BaseWithVirtualProperty
+    {
+        public override string Name => "derived";
+    }
+
+    private sealed class GenericBox<T>
+    {
+        public T? Value { get; set; }
+        public int Id { get; set; }
+
+        [SuppressMessage("Performance", "CA1812", Justification = "Used through typeof")]
+        public sealed class Nested<TNested>;
+    }
+
+    private sealed class ClassWithFields
+    {
+        public int A = 1;
+        public string B = "b";
+    }
+
+    private sealed class ConstantConverter : HumanReadableConverter
+    {
+        public override bool CanConvert(Type type) => true;
+        public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => writer.WriteValue("custom");
+    }
+
+    private sealed class ConstantConverterFactory : HumanReadableConverterFactory
+    {
+        public override bool CanConvert(Type type) => true;
+        public override HumanReadableConverter CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options) => new ConstantConverter();
+    }
+
+    private sealed class NullConverterFactory : HumanReadableConverterFactory
+    {
+        public override bool CanConvert(Type type) => true;
+        public override HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options) => null;
+    }
+
+    private sealed class DerivedConverter : HumanReadableConverter
+    {
+        public override bool CanConvert(Type type) => true;
+        public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => writer.WriteValue("derived");
+    }
+
+    [HumanReadableConverter(typeof(ConstantConverterFactory))]
+    private sealed class TypeWithConverterFactory
+    {
+        public int A => 1;
+    }
+
+    private sealed class MemberWithConverterFactory
+    {
+        [HumanReadableConverter(typeof(ConstantConverterFactory))]
+        public int Value => 1;
+    }
+
+    [HumanReadableConverter(typeof(ConstantConverter))]
+    private interface IInterfaceWithConverter;
+
+    [HumanReadableConverter(typeof(DerivedConverter))]
+    private interface IDerivedInterfaceWithConverter : IInterfaceWithConverter;
+
+    [HumanReadableConverter(typeof(DerivedConverter))]
+    private interface IOtherInterfaceWithConverter;
+
+    private sealed class ImplementsInterfaceWithConverter : IInterfaceWithConverter
+    {
+        public int A => 1;
+    }
+
+    private sealed class ImplementsDerivedInterfaceWithConverter : IDerivedInterfaceWithConverter
+    {
+        public int A => 1;
+    }
+
+    private sealed class ImplementsTwoInterfacesWithConverter : IInterfaceWithConverter, IOtherInterfaceWithConverter
+    {
+        public int A => 1;
+    }
+
+    [HumanReadableConverter(typeof(ConstantConverter))]
+    private readonly struct StructWithConverter
+    {
+        public int A => 1;
+    }
+
+    private sealed class OptInMembers
+    {
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Never)]
+        public int A => 1;
+
+        public int B => 2;
+    }
+
+    private sealed class WithSpanProperty
+    {
+        public Span<byte> Buffer => new byte[1];
+        public int Value => 1;
+    }
+
+    private sealed class WithRefProperties
+    {
+        private string? _reference;
+        private int _value;
+
+        public ref string? Reference => ref _reference;
+        public ref int Value => ref _value;
+    }
+
+    private sealed class WithConvertibleDefaultValues
+    {
+        [HumanReadableDefaultValue(10)]
+        public long Timeout => 10;
+
+        [HumanReadableDefaultValue(1)]
+        public double? Ratio => 1d;
+
+        [HumanReadableDefaultValue(1)]
+        public ByteEnum Enum => ByteEnum.A;
+
+        public int Other => 1;
+    }
+
+    private sealed class WithInvalidDefaultValue
+    {
+        [HumanReadableDefaultValue("abc")]
+        public int Value => 1;
+    }
+
+    private enum ByteEnum : byte
+    {
+        A = 1,
+    }
+
+    private sealed class SelfReferencingBox
+    {
+        public SelfReferencingBox? Inner { get; set; }
+    }
+
+    private sealed class SelfReferencingBoxConverter : HumanReadableConverter<SelfReferencingBox>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, SelfReferencingBox? value, HumanReadableSerializerOptions options)
+            => HumanReadableSerializer.Serialize(writer, value!.Inner, options);
     }
 }
+

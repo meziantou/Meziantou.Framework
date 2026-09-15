@@ -6,7 +6,6 @@ namespace Meziantou.Framework.HumanReadable;
 public sealed class HumanReadableTextWriter
 {
     private const string Indentation = "  ";
-    private static readonly string NewLine = Environment.NewLine;
 
     private readonly StringBuilder _text = new();
     private readonly HumanReadableSerializerOptions _options;
@@ -28,7 +27,7 @@ public sealed class HumanReadableTextWriter
     {
         if (_context is WriterContext.NewLine)
         {
-            _text.Append(NewLine);
+            _text.Append(_options.NewLine);
         }
         else if (_context is WriterContext.PropertyName)
         {
@@ -59,8 +58,8 @@ public sealed class HumanReadableTextWriter
             foreach (var (line, eol) in StringUtils.EnumerateLines(value))
             {
                 WritePendingText(indent: !line.IsEmpty);
-                ReplaceInvisibleCharacters(_text, line);
-                ReplaceInvisibleCharacters(_text, eol);
+                ReplaceInvisibleCharacters(_text, line, _options.NewLine);
+                ReplaceInvisibleCharacters(_text, eol, _options.NewLine);
             }
         }
         else
@@ -77,8 +76,8 @@ public sealed class HumanReadableTextWriter
                     WritePendingText(indent: !line.IsEmpty);
                     if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues)
                     {
-                        ReplaceInvisibleCharacters(_text, line);
-                        ReplaceInvisibleCharacters(_text, eol);
+                        ReplaceInvisibleCharacters(_text, line, _options.NewLine);
+                        ReplaceInvisibleCharacters(_text, eol, _options.NewLine);
                     }
                     else
                     {
@@ -96,7 +95,7 @@ public sealed class HumanReadableTextWriter
         _context = WriterContext.NewLine;
     }
 
-    private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value)
+    private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value, string newLine)
     {
         for (var i = 0; i < value.Length; i++)
         {
@@ -106,17 +105,17 @@ public sealed class HumanReadableTextWriter
             {
                 if (i + 1 < value.Length && value[i + 1] is '\n')
                 {
-                    sb.Append("\u240D\u240A\r\n");
+                    sb.Append("\u240D\u240A").Append(newLine);
                     i++;
                 }
                 else
                 {
-                    sb.Append("\u240D\r");
+                    sb.Append('\u240D').Append(newLine);
                 }
             }
             else if (c is '\n')
             {
-                sb.Append("\u240A\n");
+                sb.Append('\u240A').Append(newLine);
             }
             else if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
             {

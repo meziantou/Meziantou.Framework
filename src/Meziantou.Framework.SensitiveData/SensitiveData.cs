@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
@@ -59,6 +60,7 @@ public static partial class SensitiveData
     /// <exception cref="ObjectDisposedException">The instance has already been disposed.</exception>
     public static string RevealToString(this SensitiveData<char> secret)
     {
+        ArgumentNullException.ThrowIfNull(secret);
         return string.Create(secret.GetLength(), secret, (span, buffer) => buffer.RevealInto(span));
     }
 
@@ -71,6 +73,7 @@ public static partial class SensitiveData
         private const int MAP_PRIVATE = 0x02;
         private const int MAP_ANON_LINUX = 0x20;
         private const int MAP_ANON_MACOS = 0x1000;
+        private const int MADV_DONTDUMP_LINUX = 16;
         private static readonly IntPtr MmapFailed = new(-1);
 
         [SupportedOSPlatform("linux")]
@@ -80,10 +83,26 @@ public static partial class SensitiveData
             var handle = Interop.mmap(IntPtr.Zero, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | GetMapAnonymousFlag(), -1, 0);
             if (handle == MmapFailed)
             {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                ThrowLastError();
+            }
+
+            // Keep the pages out of core dumps, which would otherwise capture the contents in clear
+            // whenever a dump is taken during a reveal. Best effort: macOS has no equivalent, and an old
+            // kernel rejecting the advice is no reason to refuse to store the data.
+            if (OperatingSystem.IsLinux())
+            {
+                _ = Interop.madvise(handle, length, MADV_DONTDUMP_LINUX);
             }
 
             return handle;
+        }
+
+        // errno values are not Win32 error codes, so Marshal.GetHRForLastWin32Error turns them into unrelated
+        // HRESULTs (ENOMEM becomes "The access code is invalid."). Win32Exception formats errno with strerror on Unix.
+        [DoesNotReturn]
+        public static void ThrowLastError()
+        {
+            throw new Win32Exception(Marshal.GetLastPInvokeError());
         }
 
         [SupportedOSPlatform("linux")]
@@ -96,7 +115,7 @@ public static partial class SensitiveData
         public static nuint GetAlignedSize(nuint size)
         {
             var pageSize = checked((nuint)Environment.SystemPageSize);
-            return (size + pageSize - 1) / pageSize * pageSize;
+            return checked(size + pageSize - 1) / pageSize * pageSize;
         }
 
         [SupportedOSPlatform("linux")]
@@ -138,6 +157,10 @@ public static partial class SensitiveData
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
             internal static partial int mlock(IntPtr addr, nuint len);
 
+            [LibraryImport(Libc, EntryPoint = "madvise", SetLastError = true)]
+            [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+            internal static partial int madvise(IntPtr addr, nuint len, int advice);
+
             [LibraryImport(Libc, EntryPoint = "mmap", SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
             internal static partial IntPtr mmap(IntPtr addr, nuint len, int prot, int flags, int fd, nint offset);
@@ -173,8 +196,11 @@ public static partial class SensitiveData
 /// Linux and macOS: the buffer is mapped with <c>mmap</c> and made inaccessible with <c>mprotect(PROT_NONE)</c>.
 /// It is also locked into physical memory with <c>mlock</c> on a best-effort basis. Locking commonly fails when
 /// <c>RLIMIT_MEMLOCK</c> is low, which is the default in many container images; that failure is not reported, and
-/// the contents may then be written to swap. The contents are never encrypted on these platforms, so a core dump
-/// taken while the buffer is unprotected contains them in clear.
+/// the contents may then be written to swap. The contents are never encrypted on these platforms. On Linux the pages
+/// are excluded from core dumps with <c>madvise(MADV_DONTDUMP)</c>; macOS has no equivalent, so a core dump taken while
+/// the buffer is unprotected contains them in clear. Each instance maps at least one whole page, and each reveal
+/// changes the page protection twice, so these platforms suit a moderate number of long-lived secrets rather than
+/// many small or frequently revealed ones.
 /// </description></item>
 /// <item><description>
 /// Every other platform, which includes Android, iOS, tvOS, Mac Catalyst, FreeBSD and WebAssembly: the buffer
@@ -235,11 +261,26 @@ public sealed class SensitiveData<T> : IDisposable
     {
         // Use unmanaged memory so the data remains at a stable address
         // and can be cleared during Dispose.
-        _data = new NativeMemorySafeHandle();
-        _data.Allocate(contents.Length, forceXorProtection);
-        contents.CopyTo(_data.GetSpan());
-        _data.Protect();
+        var data = new NativeMemorySafeHandle();
+        try
+        {
+            data.Allocate(contents.Length, forceXorProtection);
+            contents.CopyTo(data.GetSpan());
+            data.Protect();
+        }
+        catch
+        {
+            // Release the buffer now: when Protect fails it holds a copy of the contents in clear, which would
+            // otherwise stay in memory until the finalizer runs.
+            data.Dispose();
+            throw;
+        }
+
+        _data = data;
     }
+
+    private delegate TResult RevealFunc<TState, TResult>(ReadOnlySpan<T> contents, TState state)
+        where TState : allows ref struct;
 
     /// <summary>
     /// Creates an instance that uses the XOR fallback protection whatever the platform.
@@ -256,11 +297,25 @@ public sealed class SensitiveData<T> : IDisposable
     /// </summary>
     internal bool TryGetBytesAtRest(out byte[] bytes)
     {
-        var data = _data;
-        ObjectDisposedException.ThrowIf(data is null, this);
+        var data = GetHandle();
         lock (data.SyncLock)
         {
+            ThrowIfReleased(data);
             return data.TryCopyBytesAtRest(out bytes);
+        }
+    }
+
+    /// <summary>
+    /// Makes the next attempt to apply the protection throw as if the platform call had failed.
+    /// Those calls do not fail on demand, so without this the recovery from a failed re-protect
+    /// is executed by no test.
+    /// </summary>
+    internal void FailNextProtectForTesting()
+    {
+        var data = GetHandle();
+        lock (data.SyncLock)
+        {
+            data.FailNextProtect = true;
         }
     }
 
@@ -292,22 +347,11 @@ public sealed class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public int RevealInto(Span<T> destination)
     {
-        var data = GetHandle();
-        lock (data.SyncLock)
+        return Reveal(destination, (contents, buffer) =>
         {
-            ThrowIfReleased(data);
-            data.Unprotect();
-            try
-            {
-                var span = data.GetSpan();
-                span.CopyTo(destination);
-                return span.Length;
-            }
-            finally
-            {
-                data.Protect();
-            }
-        }
+            contents.CopyTo(buffer);
+            return contents.Length;
+        });
     }
 
     /// <summary>
@@ -316,20 +360,7 @@ public sealed class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public T[] RevealToArray()
     {
-        var data = GetHandle();
-        lock (data.SyncLock)
-        {
-            ThrowIfReleased(data);
-            data.Unprotect();
-            try
-            {
-                return data.GetSpan().ToArray();
-            }
-            finally
-            {
-                data.Protect();
-            }
-        }
+        return Reveal(state: 0, (contents, _) => contents.ToArray());
     }
 
     /// <summary>Reveals the contents and invokes a callback action with the data.</summary>
@@ -341,21 +372,11 @@ public sealed class SensitiveData<T> : IDisposable
     public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction)
     {
         ArgumentNullException.ThrowIfNull(spanAction);
-        var data = GetHandle();
-        lock (data.SyncLock)
+        Reveal((arg, spanAction), (contents, state) =>
         {
-            ThrowIfReleased(data);
-            data.Unprotect();
-            try
-            {
-                var span = data.GetSpan();
-                spanAction(span, arg);
-            }
-            finally
-            {
-                data.Protect();
-            }
-        }
+            state.spanAction(contents, state.arg);
+            return true;
+        });
     }
 
     /// <summary>Creates a new copy of this <see cref="SensitiveData{T}"/> instance.</summary>
@@ -363,21 +384,7 @@ public sealed class SensitiveData<T> : IDisposable
     /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public SensitiveData<T> Clone()
     {
-        var data = GetHandle();
-        lock (data.SyncLock)
-        {
-            ThrowIfReleased(data);
-            data.Unprotect();
-            try
-            {
-                var span = data.GetSpan();
-                return new(span);
-            }
-            finally
-            {
-                data.Protect();
-            }
-        }
+        return Reveal(state: 0, (contents, _) => new SensitiveData<T>(contents));
     }
 
     /// <summary>
@@ -392,13 +399,68 @@ public sealed class SensitiveData<T> : IDisposable
         if (data is null)
             return;
 
-        // Wait for a reveal in progress on another thread before releasing the memory. Without this,
-        // the buffer is unmapped while that thread still holds a span over it, which is an
-        // AccessViolationException the caller cannot catch rather than an ObjectDisposedException.
-        // Taking the lock also means that once Dispose returns, the contents really have been cleared.
+        // Wait for a reveal in progress on another thread, so that once Dispose returns the contents
+        // really have been cleared. A reveal in progress on this thread - Dispose called from a
+        // RevealAndUse callback - does not block, because the lock is reentrant; the reference that
+        // reveal holds on the handle defers the release until it has finished.
         lock (data.SyncLock)
         {
             data.Dispose();
+        }
+    }
+
+    private TResult Reveal<TState, TResult>(TState state, RevealFunc<TState, TResult> func)
+        where TState : allows ref struct
+    {
+        var data = GetHandle();
+        lock (data.SyncLock)
+        {
+            ThrowIfReleased(data);
+
+            // The callback can dispose this instance, and the reentrant lock lets that Dispose release the
+            // handle immediately. Holding a reference defers the release until the contents have been
+            // protected again below; otherwise that would operate on memory that was already freed.
+            var addedRef = false;
+            try
+            {
+                data.DangerousAddRef(ref addedRef);
+                data.Unprotect();
+
+                TResult result;
+                try
+                {
+                    result = func(data.GetSpan(), state);
+                }
+                catch (Exception ex)
+                {
+                    ProtectAfterFailure(data, ex);
+                    throw;
+                }
+
+                data.Protect();
+                return result;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    data.DangerousRelease();
+                }
+            }
+        }
+    }
+
+    // A failure to protect the contents again must not replace the exception that ended the reveal,
+    // which is the one the caller can act on, but it must not go unreported either.
+    private static void ProtectAfterFailure(NativeMemorySafeHandle data, Exception exception)
+    {
+        try
+        {
+            data.Protect();
+        }
+        catch (Exception protectException)
+        {
+            throw new AggregateException(exception, protectException);
         }
     }
 
@@ -427,7 +489,11 @@ public sealed class SensitiveData<T> : IDisposable
         private IntPtr _xorKey;
         private ProtectionMode _protectionMode;
         private bool _unixMemoryLocked;
-        private bool _unixMemoryProtected;
+        private long _memoryPressure;
+
+        // Whether the platform transformation is currently applied: encrypted on Windows, PROT_NONE on Unix,
+        // combined with the key on the fallback path. Undoing it is only valid while it is set, so a Protect
+        // that failed must leave it clear rather than let the next reveal undo a transformation never applied.
         private bool _isProtected;
 
         // Number of reveals currently in progress. Reveals nest: a callback passed to RevealAndUse can
@@ -446,6 +512,8 @@ public sealed class SensitiveData<T> : IDisposable
 
         public Lock SyncLock { get; } = new();
 
+        public bool FailNextProtect { get; set; }
+
         // A zero-length buffer holds no contents, so there is nothing to protect and nothing to disclose.
         public bool IsProtected => _allocatedBytes == 0 || _isProtected;
 
@@ -454,7 +522,10 @@ public sealed class SensitiveData<T> : IDisposable
         public void Allocate(int count, bool forceXorProtection)
         {
             Length = count;
-            var byteCount = (nuint)count * (nuint)sizeof(T);
+
+            // Unchecked, this wraps on 32-bit for a large element type, and copying the contents into the
+            // smaller buffer that results would overrun it.
+            var byteCount = checked((nuint)count * (nuint)sizeof(T));
             _byteCount = byteCount;
 
             if (byteCount == 0)
@@ -485,7 +556,14 @@ public sealed class SensitiveData<T> : IDisposable
                 FillRandom((byte*)_xorKey, byteCount);
             }
 
-            NativeMemory.Clear((void*)handle, _allocatedBytes);
+            // The caller overwrites the first byteCount bytes with the contents, so only the alignment padding
+            // needs clearing.
+            NativeMemory.Clear((byte*)handle + byteCount, _allocatedBytes - byteCount);
+
+            // The GC cannot see native memory, so without this an instance nobody disposes holds its pages
+            // until an unrelated collection happens to run the finalizer.
+            _memoryPressure = checked((long)(_protectionMode is ProtectionMode.Xor ? _allocatedBytes + byteCount : _allocatedBytes));
+            GC.AddMemoryPressure(_memoryPressure);
         }
 
         public Span<T> GetSpan()
@@ -512,39 +590,43 @@ public sealed class SensitiveData<T> : IDisposable
                 return;
 
             // An outer reveal is still in progress, so the contents must stay accessible.
-            // The count is only decremented once the platform call below has succeeded, so a
-            // failure to re-protect leaves the count untouched rather than losing a level.
             if (_revealCount > 1)
             {
                 _revealCount--;
                 return;
             }
 
-            if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
-            {
-                WindowsHeap.ProtectMemory(handle, _allocatedBytes);
-                _isProtected = true;
-            }
-            else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
-            {
-                // Ignoring a failure here would leave the contents readable for the rest of the instance's
-                // life with nothing to indicate the protection is not applied, so report it like Unprotect
-                // and the Windows path already do.
-                if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, SensitiveData.UnixMemoryProtection.PROT_NONE))
-                {
-                    ThrowLastPInvokeError();
-                }
-
-                _unixMemoryProtected = true;
-                _isProtected = true;
-            }
-            else if (_protectionMode is ProtectionMode.Xor)
-            {
-                XorWithKey();
-                _isProtected = true;
-            }
-
+            // This ends the outermost reveal whether or not the protection is applied below. Leaving the
+            // count at 1 on failure would make every later reveal look nested, so none of them would ever
+            // apply the protection again. _isProtected stays clear instead, and the next reveal retries.
             _revealCount = 0;
+
+            if (FailNextProtect)
+            {
+                FailNextProtect = false;
+                throw new Win32Exception("Simulated failure to protect the contents.");
+            }
+
+            switch (_protectionMode)
+            {
+                case ProtectionMode.Windows when OperatingSystem.IsWindows():
+                    WindowsHeap.ProtectMemory(handle, _allocatedBytes);
+                    break;
+
+                case ProtectionMode.Unix when OperatingSystem.IsLinux() || OperatingSystem.IsMacOS():
+                    if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, SensitiveData.UnixMemoryProtection.PROT_NONE))
+                    {
+                        SensitiveData.UnixMemoryProtection.ThrowLastError();
+                    }
+
+                    break;
+
+                case ProtectionMode.Xor:
+                    XorWithKey();
+                    break;
+            }
+
+            _isProtected = true;
         }
 
         public void Unprotect()
@@ -561,30 +643,28 @@ public sealed class SensitiveData<T> : IDisposable
                 return;
             }
 
-            if (OperatingSystem.IsWindows() && _protectionMode is ProtectionMode.Windows)
+            // Skipped when a previous Protect failed and left the contents accessible, for the same reason.
+            if (_isProtected)
             {
-                WindowsHeap.UnprotectMemory(handle, _allocatedBytes);
-                _isProtected = false;
-            }
-            else if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) && _protectionMode is ProtectionMode.Unix)
-            {
-                // Skip the syscall when a previous Protect failed and left the pages readable,
-                // but still count the reveal so the matching Protect re-applies the protection.
-                if (_unixMemoryProtected)
+                switch (_protectionMode)
                 {
-                    if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
-                    {
-                        ThrowLastPInvokeError();
-                    }
+                    case ProtectionMode.Windows when OperatingSystem.IsWindows():
+                        WindowsHeap.UnprotectMemory(handle, _allocatedBytes);
+                        break;
 
-                    _unixMemoryProtected = false;
+                    case ProtectionMode.Unix when OperatingSystem.IsLinux() || OperatingSystem.IsMacOS():
+                        if (!SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite))
+                        {
+                            SensitiveData.UnixMemoryProtection.ThrowLastError();
+                        }
+
+                        break;
+
+                    case ProtectionMode.Xor:
+                        XorWithKey();
+                        break;
                 }
 
-                _isProtected = false;
-            }
-            else if (_protectionMode is ProtectionMode.Xor)
-            {
-                XorWithKey();
                 _isProtected = false;
             }
 
@@ -596,6 +676,12 @@ public sealed class SensitiveData<T> : IDisposable
             if (_allocatedBytes == 0)
                 return true;
 
+            if (_memoryPressure > 0)
+            {
+                GC.RemoveMemoryPressure(_memoryPressure);
+                _memoryPressure = 0;
+            }
+
             switch (_protectionMode)
             {
                 case ProtectionMode.Windows when OperatingSystem.IsWindows():
@@ -603,12 +689,12 @@ public sealed class SensitiveData<T> : IDisposable
                     return WindowsHeap.Free(handle);
 
                 case ProtectionMode.Unix when OperatingSystem.IsLinux() || OperatingSystem.IsMacOS():
-                    if (_unixMemoryProtected)
+                    if (_isProtected)
                     {
-                        _unixMemoryProtected = !SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite);
+                        _isProtected = !SensitiveData.UnixMemoryProtection.TryProtect(handle, _allocatedBytes, MemoryProtectionReadWrite);
                     }
 
-                    if (!_unixMemoryProtected)
+                    if (!_isProtected)
                     {
                         NativeMemory.Clear((void*)handle, _allocatedBytes);
 
@@ -643,7 +729,18 @@ public sealed class SensitiveData<T> : IDisposable
         {
             var data = (byte*)handle;
             var key = (byte*)_xorKey;
-            for (nuint i = 0; i < _allocatedBytes; i++)
+            nuint i = 0;
+
+            if (Vector.IsHardwareAccelerated)
+            {
+                var width = (nuint)Vector<byte>.Count;
+                for (; _allocatedBytes - i >= width; i += width)
+                {
+                    Vector.Store(Vector.Load(data + i) ^ Vector.Load(key + i), data + i);
+                }
+            }
+
+            for (; i < _allocatedBytes; i++)
             {
                 data[i] ^= key[i];
             }
@@ -660,11 +757,6 @@ public sealed class SensitiveData<T> : IDisposable
                 destination += chunk;
                 byteCount -= (nuint)chunk;
             }
-        }
-
-        private static void ThrowLastPInvokeError()
-        {
-            Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
         }
 
         private static void ThrowOutOfMemory()

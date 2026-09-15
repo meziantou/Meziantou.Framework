@@ -12,6 +12,7 @@ internal static partial class WindowsHeap
 {
     private const uint CRYPTPROTECTMEMORY_BLOCK_SIZE = 16;
     private const uint CRYPTPROTECTMEMORY_SAME_PROCESS = 0x00;
+    private const uint MaxChunkSize = uint.MaxValue / CRYPTPROTECTMEMORY_BLOCK_SIZE * CRYPTPROTECTMEMORY_BLOCK_SIZE;
 
     private static readonly HANDLE Heap = GetOrCreateHeap();
 
@@ -36,34 +37,47 @@ internal static partial class WindowsHeap
         if (size == 0)
             return 0;
 
-        return (size + CRYPTPROTECTMEMORY_BLOCK_SIZE - 1) / CRYPTPROTECTMEMORY_BLOCK_SIZE * CRYPTPROTECTMEMORY_BLOCK_SIZE;
+        return checked(size + CRYPTPROTECTMEMORY_BLOCK_SIZE - 1) / CRYPTPROTECTMEMORY_BLOCK_SIZE * CRYPTPROTECTMEMORY_BLOCK_SIZE;
     }
 
     public static unsafe void ProtectMemory(IntPtr pData, nuint cbData)
     {
-        if (cbData == 0)
-            return;
-
         if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
             throw new PlatformNotSupportedException();
 
-        if (!PInvoke.CryptProtectMemory((void*)pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
+        // CryptProtectMemory takes a 32-bit size. Narrowing a larger one would silently leave everything past
+        // the first 4 GB in clear, so the buffer is processed in chunks that are each a whole number of blocks.
+        var data = (byte*)pData;
+        while (cbData > 0)
         {
-            Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            var chunk = (uint)Math.Min(cbData, MaxChunkSize);
+            if (!PInvoke.CryptProtectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
+
+            data += chunk;
+            cbData -= chunk;
         }
     }
 
     public static unsafe void UnprotectMemory(IntPtr pData, nuint cbData)
     {
-        if (cbData == 0)
-            return;
-
         if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
             throw new PlatformNotSupportedException();
 
-        if (!PInvoke.CryptUnprotectMemory((void*)pData, (uint)cbData, CRYPTPROTECTMEMORY_SAME_PROCESS))
+        // Uses the same chunk boundaries as ProtectMemory.
+        var data = (byte*)pData;
+        while (cbData > 0)
         {
-            Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            var chunk = (uint)Math.Min(cbData, MaxChunkSize);
+            if (!PInvoke.CryptUnprotectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
+            {
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+            }
+
+            data += chunk;
+            cbData -= chunk;
         }
     }
 

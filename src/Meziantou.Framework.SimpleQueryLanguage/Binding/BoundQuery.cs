@@ -60,27 +60,41 @@ public abstract class BoundQuery
     {
         RuntimeHelpers.EnsureSufficientExecutionStack();
 
-        if (node is BoundNegatedQuery negatedQuery)
-            return MeasureDisjunctiveNormalForm(negatedQuery.Query, !isNegated);
-
-        if (!TryGetOperands(node, isNegated, out var left, out var right, out var isAnd))
-            return (1, 1);
-
-        var (leftDisjunctions, leftTerms) = MeasureDisjunctiveNormalForm(left, isNegated);
-        var (rightDisjunctions, rightTerms) = MeasureDisjunctiveNormalForm(right, isNegated);
-
-        // Saturating arithmetic: the exact sizes can overflow an int, and anything past the limit is equally rejected.
-        // AND pairs every left disjunction with every right one, so each side's terms are repeated once per disjunction of the other side.
-        if (isAnd)
+        while (node is BoundNegatedQuery negatedQuery)
         {
-            return (
-                Saturate((long)leftDisjunctions * rightDisjunctions, MaxDisjunctions),
-                Saturate(((long)leftTerms * rightDisjunctions) + ((long)rightTerms * leftDisjunctions), MaxTerms));
+            node = negatedQuery.Query;
+            isNegated = !isNegated;
         }
 
-        return (
-            Saturate((long)leftDisjunctions + rightDisjunctions, MaxDisjunctions),
-            Saturate((long)leftTerms + rightTerms, MaxTerms));
+        if (!TryGetOperands(node, isNegated, out _, out _, out var isAnd))
+            return (1, 1);
+
+        // Measure the operands of the whole chain in a loop, as a long chain is a tree as deep as its term count
+        var (disjunctions, terms) = (0, 0);
+        foreach (var (operand, operandIsNegated) in GetChainOperands(node, isNegated, isAnd))
+        {
+            var (operandDisjunctions, operandTerms) = MeasureDisjunctiveNormalForm(operand, operandIsNegated);
+            if (disjunctions is 0)
+            {
+                (disjunctions, terms) = (operandDisjunctions, operandTerms);
+            }
+            else if (isAnd)
+            {
+                // Saturating arithmetic: the exact sizes can overflow an int, and anything past the limit is equally rejected.
+                // AND pairs every disjunction with every disjunction of the operand, so each side's terms are repeated once per disjunction of the other side.
+                (disjunctions, terms) = (
+                    Saturate((long)disjunctions * operandDisjunctions, MaxDisjunctions),
+                    Saturate(((long)terms * operandDisjunctions) + ((long)operandTerms * disjunctions), MaxTerms));
+            }
+            else
+            {
+                (disjunctions, terms) = (
+                    Saturate((long)disjunctions + operandDisjunctions, MaxDisjunctions),
+                    Saturate((long)terms + operandTerms, MaxTerms));
+            }
+        }
+
+        return (disjunctions, terms);
 
         static int Saturate(long value, int max) => (int)Math.Min(value, max + 1L);
     }
@@ -93,8 +107,7 @@ public abstract class BoundQuery
         {
             QuerySyntaxKind.TextQuery => CreateTextExpression((TextQuerySyntax)syntax),
             QuerySyntaxKind.KeyValueQuery => CreateKeyValueExpression((KeyValueQuerySyntax)syntax),
-            QuerySyntaxKind.OrQuery => CreateOrExpression((OrQuerySyntax)syntax),
-            QuerySyntaxKind.AndQuery => CreateAndExpression((AndQuerySyntax)syntax),
+            QuerySyntaxKind.OrQuery or QuerySyntaxKind.AndQuery => CreateChainExpression(syntax),
             QuerySyntaxKind.NegatedQuery => CreateNegatedExpression((NegatedQuerySyntax)syntax),
             QuerySyntaxKind.ParenthesizedQuery => CreateParenthesizedExpression((ParenthesizedQuerySyntax)syntax),
             _ => throw new ArgumentOutOfRangeException(nameof(syntax), $"Unexpected node {syntax.Kind}"),
@@ -130,14 +143,34 @@ public abstract class BoundQuery
         return new BoundKeyValueQuery(isNegated: false, key, value, op);
     }
 
-    private static BoundOrQuery CreateOrExpression(OrQuerySyntax node)
+    /// <summary>
+    /// Binds a chain of AND (or OR) nodes. The parser builds a chain as a left-leaning tree as deep as its term count,
+    /// so the left spine is walked with a loop: a long query is limited by <see cref="MaxTerms"/>, not by the stack size.
+    /// </summary>
+    private static BoundQuery CreateChainExpression(QuerySyntax syntax)
     {
-        return new BoundOrQuery(CreateInternal(node.Left), CreateInternal(node.Right));
-    }
+        var rightOperands = new Stack<QuerySyntax>();
+        var node = syntax;
+        while (node.Kind == syntax.Kind)
+        {
+            (node, var right) = node switch
+            {
+                AndQuerySyntax andQuery => (andQuery.Left, andQuery.Right),
+                OrQuerySyntax orQuery => (orQuery.Left, orQuery.Right),
+                _ => throw new InvalidOperationException($"Unexpected node {node.Kind}"),
+            };
 
-    private static BoundAndQuery CreateAndExpression(AndQuerySyntax node)
-    {
-        return new BoundAndQuery(CreateInternal(node.Left), CreateInternal(node.Right));
+            rightOperands.Push(right);
+        }
+
+        var result = CreateInternal(node);
+        while (rightOperands.TryPop(out var right))
+        {
+            var operand = CreateInternal(right);
+            result = syntax.Kind is QuerySyntaxKind.AndQuery ? new BoundAndQuery(result, operand) : new BoundOrQuery(result, operand);
+        }
+
+        return result;
     }
 
     private static BoundNegatedQuery CreateNegatedExpression(NegatedQuerySyntax node)
@@ -185,6 +218,21 @@ public abstract class BoundQuery
         // Collect the operands of the whole AND (or OR) chain before combining them. Distributing one binary node
         // at a time would copy the conjunctions built so far again at every level of a long chain.
         var operands = new List<BoundQuery[][]>();
+        foreach (var (operand, operandIsNegated) in GetChainOperands(node, isNegated, isAnd))
+        {
+            operands.Add(ToDisjunctiveNormalForm(operand, operandIsNegated));
+        }
+
+        return isAnd ? Distribute(operands) : [.. operands.SelectMany(operand => operand)];
+    }
+
+    /// <summary>
+    /// Gets, in order, the operands of the AND (or OR) chain rooted at <paramref name="node"/>, with negations moved
+    /// onto the operands. An operand is any node that does not continue the chain.
+    /// </summary>
+    private static List<(BoundQuery Node, bool IsNegated)> GetChainOperands(BoundQuery node, bool isNegated, bool isAnd)
+    {
+        var operands = new List<(BoundQuery Node, bool IsNegated)>();
         var stack = new Stack<(BoundQuery Node, bool IsNegated)>();
         stack.Push((node, isNegated));
         while (stack.TryPop(out var item))
@@ -203,11 +251,11 @@ public abstract class BoundQuery
             }
             else
             {
-                operands.Add(ToDisjunctiveNormalForm(current, currentIsNegated));
+                operands.Add((current, currentIsNegated));
             }
         }
 
-        return isAnd ? Distribute(operands) : [.. operands.SelectMany(operand => operand)];
+        return operands;
     }
 
     /// <summary>

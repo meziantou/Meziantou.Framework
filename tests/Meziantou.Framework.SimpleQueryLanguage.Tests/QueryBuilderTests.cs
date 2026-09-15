@@ -1090,9 +1090,37 @@ public sealed class QueryBuilderTests
     }
 
     [Fact]
-    public void VeryLongConjunction_ThrowsQueryTooComplex()
+    public void VeryLongConjunction_IsSupported()
     {
+        // A chain of terms is bound and evaluated with loops, so its length does not depend on the stack size
         var query = string.Join(' ', Enumerable.Range(0, 100_000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => value.StartsWith("term", StringComparison.Ordinal));
+
+        var result = false;
+        var thread = new Thread(() => result = queryBuilder.Build(query).Evaluate(new Sample()), maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void VeryLongDisjunction_IsSupported()
+    {
+        var query = string.Join(" OR ", Enumerable.Range(0, 8000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
+
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) => value == "term7999");
+
+        Assert.True(queryBuilder.Build(query).Evaluate(new Sample()));
+    }
+
+    [Fact]
+    public void ConjunctionOverTermLimit_ThrowsQueryTooComplex()
+    {
+        var query = string.Join(' ', Enumerable.Range(0, 300_000).Select(i => "term" + i.ToString(CultureInfo.InvariantCulture)));
 
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.SetTextFilterHandler((obj, value) => true);

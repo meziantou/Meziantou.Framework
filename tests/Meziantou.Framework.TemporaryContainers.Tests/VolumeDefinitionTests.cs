@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -23,7 +24,37 @@ public sealed class VolumeDefinitionTests
         var name = definition.CreateVolume().Name;
 
         Assert.Equal(name, definition.CreateVolume().Name);
-        Assert.Equal("meziantou-tc-my-reuse-id", name);
+        Assert.StartsWith("meziantou-tc-my-reuse-id-", name);
+        Assert.All(name, c => Assert.True(char.IsAsciiLetterOrDigit(c) || c is '_' or '.' or '-', $"'{c}' is not accepted in a volume name."));
+    }
+
+    [Fact]
+    public void CreateVolume_KeepsTheNameOfAReuseIdThatIsAlreadyAValidName()
+    {
+        // The volumes created by an earlier version of the library are still found.
+        Assert.Equal("meziantou-tc-my-reuse-id", new VolumeDefinition { ReuseId = "my-reuse-id" }.CreateVolume().Name);
+    }
+
+    [Fact]
+    public void CreateVolume_DifferentReuseIdsNeverShareAName()
+    {
+        // Replacing the characters a runtime rejects maps several identifiers to one name, which would silently share data.
+        string[] reuseIds = ["db:pg", "db/pg", "db-pg", "db pg"];
+
+        var names = reuseIds.Select(reuseId => new VolumeDefinition { ReuseId = reuseId }.CreateVolume().Name).ToArray();
+
+        Assert.HasCount(reuseIds.Length, names.Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task CreateVolume_TheDefinitionOfTheVolumeCannotBeChanged()
+    {
+        await using var volume = new VolumeDefinition().CreateVolume();
+
+        Assert.True(volume.Definition.IsReadOnly);
+        Assert.Throws<InvalidOperationException>(() => volume.Definition.ReuseId = "reuse");
+        Assert.Throws<InvalidOperationException>(() => volume.Definition.Labels.Add("a", "1"));
+        Assert.Throws<InvalidOperationException>(() => volume.Definition.DriverOptions.Add("size", "10m"));
     }
 
     [Fact]
@@ -99,7 +130,7 @@ public sealed class VolumeDefinitionTests
     public async Task DisposeAsync_KeepsAVolumeThatAlreadyExisted()
     {
         var runtime = new RecordingRuntime();
-        runtime.Volumes.Add("my-volume");
+        runtime.Volumes.TryAdd("my-volume", "another-instance");
         var volume = new VolumeDefinition { Runtime = runtime, Name = "my-volume" }.CreateVolume();
 
         await volume.EnsureCreatedAsync(XunitCancellationToken);
@@ -119,6 +150,45 @@ public sealed class VolumeDefinitionTests
         await volume.DisposeAsync();
 
         Assert.Equal([volume.Name], runtime.Created);
+        Assert.Empty(runtime.Deleted);
+    }
+
+    [Fact]
+    public async Task EnsureCreatedAsync_CreatesTheVolumeOnceWhenCalledConcurrently()
+    {
+        // Several containers mounting the volume start at the same time, and would otherwise all see it missing.
+        var runtime = new RecordingRuntime { CreationDelay = TimeSpan.FromMilliseconds(50) };
+        await using var volume = new VolumeDefinition { Runtime = runtime }.CreateVolume();
+
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => volume.EnsureCreatedAsync(XunitCancellationToken)));
+
+        Assert.Equal([volume.Name], runtime.Created);
+    }
+
+    [Fact]
+    public async Task EnsureCreatedAsync_AdoptsAVolumeAnotherProcessCreatedInTheMeantime()
+    {
+        // A runtime that rejects an existing name fails the creation: the volume that won the race is used, not removed.
+        var runtime = new RecordingRuntime { CreatedConcurrently = true, RejectExistingNames = true };
+        var volume = new VolumeDefinition { Runtime = runtime }.CreateVolume();
+
+        await volume.EnsureCreatedAsync(XunitCancellationToken);
+        await volume.DisposeAsync();
+
+        Assert.Empty(runtime.Deleted);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_KeepsAVolumeAnotherProcessCreatedWhenTheRuntimeAcceptsTheExistingName()
+    {
+        // Docker answers the creation of an existing volume with a success and leaves its labels alone, so the labels
+        // are what tell that another instance created it.
+        var runtime = new RecordingRuntime { CreatedConcurrently = true };
+        var volume = new VolumeDefinition { Runtime = runtime }.CreateVolume();
+
+        await volume.EnsureCreatedAsync(XunitCancellationToken);
+        await volume.DisposeAsync();
+
         Assert.Empty(runtime.Deleted);
     }
 
@@ -169,9 +239,17 @@ public sealed class VolumeDefinitionTests
         {
         }
 
-        public HashSet<string> Volumes { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, string> Volumes { get; } = new(StringComparer.Ordinal);
 
-        public List<string> Created { get; } = [];
+        public TimeSpan CreationDelay { get; init; }
+
+        /// <summary>Mimics another process that creates the volume between the probe and the creation.</summary>
+        public bool CreatedConcurrently { get; init; }
+
+        /// <summary>Mimics a runtime that fails the creation of a volume whose name exists, as podman does.</summary>
+        public bool RejectExistingNames { get; init; }
+
+        public ConcurrentQueue<string> Created { get; } = new();
 
         public List<string> Deleted { get; } = [];
 
@@ -180,23 +258,37 @@ public sealed class VolumeDefinitionTests
 
         public override Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
-        internal override Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+        internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
         {
-            Created.Add(name);
-            Volumes.Add(name);
-            return Task.CompletedTask;
+            await Task.Delay(CreationDelay, cancellationToken);
+            if (CreatedConcurrently)
+                Volumes.TryAdd(name, "another-instance");
+
+            if (!Volumes.TryAdd(name, instanceId) && RejectExistingNames)
+                throw new ContainerRuntimeException("volume already exists");
+
+            Created.Enqueue(name);
+        }
+
+        internal override Task<IReadOnlyDictionary<string, string>?> GetVolumeLabelsAsync(string name, CancellationToken cancellationToken)
+        {
+            IReadOnlyDictionary<string, string>? labels = Volumes.TryGetValue(name, out var instanceId)
+                ? new Dictionary<string, string>(StringComparer.Ordinal) { [ResourceLabels.Instance] = instanceId }
+                : null;
+
+            return Task.FromResult(labels);
         }
 
         internal override Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)
         {
             Deleted.Add(name);
             if (!IgnoreDeletions)
-                Volumes.Remove(name);
+                Volumes.TryRemove(name, out _);
 
             return Task.CompletedTask;
         }
 
-        internal override Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken) => Task.FromResult(Volumes.Contains(name));
+        internal override Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken) => Task.FromResult(Volumes.ContainsKey(name));
 
         internal override Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken) => Task.FromResult("id");
 
@@ -207,7 +299,7 @@ public sealed class VolumeDefinitionTests
         internal override Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
             => Task.FromResult(new ContainerInfo { Id = id, Name = "name", State = ContainerState.Running });
 
-        internal override IAsyncEnumerable<LogEntry> GetLogsAsync(string id, CancellationToken cancellationToken) => AsyncEnumerable.Empty<LogEntry>();
+        internal override IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, CancellationToken cancellationToken) => AsyncEnumerable.Empty<LogEntry>();
 
         internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition) => new Dictionary<int, int>();
     }

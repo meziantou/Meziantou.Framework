@@ -8,6 +8,7 @@ internal static class DockerApiModels
     {
         public string? ApiVersion { get; set; }
         public string? MinAPIVersion { get; set; }
+        public string? Os { get; set; }
     }
 
     internal sealed class ErrorResponse
@@ -26,8 +27,15 @@ internal static class DockerApiModels
         public Dictionary<string, string>? Labels { get; set; }
     }
 
+    internal sealed class VolumeInspectResponse
+    {
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
     internal sealed class PullProgress
     {
+        public string? Stream { get; set; }
         public string? Error { get; set; }
         public ErrorDetail? ErrorDetail { get; set; }
     }
@@ -44,7 +52,10 @@ internal static class DockerApiModels
 
     internal sealed class ExecInspectResponse
     {
-        public int ExitCode { get; set; }
+        public bool Running { get; set; }
+
+        /// <summary>The exit code, which the daemon only records once it has processed the exit of the process.</summary>
+        public int? ExitCode { get; set; }
     }
 
     internal sealed class ExecCreateRequest
@@ -176,5 +187,9 @@ internal static class DockerApiModels
         /// <summary>The mode is a Go <c>os.FileMode</c>, whose highest bit marks a directory.</summary>
         [JsonIgnore]
         public bool IsDirectory => (Mode & 0x8000_0000) != 0;
+
+        /// <summary>The <c>os.ModeSymlink</c> bit of the Go <c>os.FileMode</c>.</summary>
+        [JsonIgnore]
+        public bool IsSymbolicLink => (Mode & 0x0800_0000) != 0;
     }
 }

@@ -5,7 +5,9 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal sealed class AutoContainerRuntime : ContainerRuntime
 {
-    private ContainerRuntime? _resolvedRuntime;
+    private readonly Lock _resolutionLock = new();
+    private volatile ContainerRuntime? _resolvedRuntime;
+    private Task<ContainerRuntime?>? _resolution;
 
     public AutoContainerRuntime()
         : base(nameof(Auto))
@@ -19,17 +21,35 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
 
     internal async Task<ContainerRuntime?> GetResolvedRuntimeOrNullAsync(CancellationToken cancellationToken)
     {
-        // Only a success is cached, so a runtime that becomes available later is still detected.
         if (_resolvedRuntime is { } runtime)
             return runtime;
 
+        Task<ContainerRuntime?> resolution;
+        lock (_resolutionLock)
+        {
+            if (_resolvedRuntime is { } publishedRuntime)
+                return publishedRuntime;
+
+            // Concurrent callers share the resolution in flight: they would otherwise probe the candidates at the same
+            // time, and a probe slowed down by that burst could make one of them settle on a different runtime. Only a
+            // success is cached, so a runtime that becomes available later is still detected.
+            if (_resolution is null || _resolution.IsCompleted)
+                _resolution = ResolveAsync();
+
+            resolution = _resolution;
+        }
+
+        return await resolution.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<ContainerRuntime?> ResolveAsync()
+    {
         foreach (var candidate in GetAllCandidates())
         {
-            if (await candidate.IsSupportedAsync(cancellationToken).ConfigureAwait(false))
+            if (await candidate.IsSupportedAsync(CancellationToken.None).ConfigureAwait(false))
             {
-                // Concurrent callers probe the candidates in the same order, so they resolve the same runtime; the
-                // exchange only makes sure they all report the one that was published.
-                return Interlocked.CompareExchange(ref _resolvedRuntime, candidate, comparand: null) ?? candidate;
+                _resolvedRuntime = candidate;
+                return candidate;
             }
         }
 
@@ -76,9 +96,23 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.ListManagedVolumesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    internal override bool SupportsPause => ResolvedRuntime.SupportsPause;
+    internal override bool SupportsImageCleanup => ResolvedRuntime.SupportsImageCleanup;
 
-    internal override bool SupportsRestart => ResolvedRuntime.SupportsRestart;
+    internal override bool LogsIncludeTimestamps => ResolvedRuntime.LogsIncludeTimestamps;
+
+    internal override bool IsHostPortConflict(Exception exception) => ResolvedRuntime.IsHostPortConflict(exception);
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedImagesAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ListManagedImagesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<string> GetReaperSocketPathAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.GetReaperSocketPathAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     internal override async Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
@@ -140,10 +174,10 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        await foreach (var entry in runtime.GetLogsAsync(id, cancellationToken).ConfigureAwait(false))
+        await foreach (var entry in runtime.GetLogsAsync(id, follow, cancellationToken).ConfigureAwait(false))
             yield return entry;
     }
 
@@ -180,10 +214,22 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => ResolvedRuntime.ResolvePortMap(info, definition);
 
-    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        await runtime.CreateVolumeAsync(definition, name, cancellationToken).ConfigureAwait(false);
+        await runtime.CreateVolumeAsync(definition, name, instanceId, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyDictionary<string, string>?> GetVolumeLabelsAsync(string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.GetVolumeLabelsAsync(name, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteImageAsync(string image, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.DeleteImageAsync(image, cancellationToken).ConfigureAwait(false);
     }
 
     internal override async Task DeleteVolumeAsync(string name, CancellationToken cancellationToken)

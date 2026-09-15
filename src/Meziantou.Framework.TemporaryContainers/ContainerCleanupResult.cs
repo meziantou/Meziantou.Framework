@@ -3,15 +3,19 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// <summary>What a cleanup removed, and what it could not remove.</summary>
 public sealed class ContainerCleanupResult
 {
-    internal ContainerCleanupResult(IReadOnlyList<string> removedContainers, IReadOnlyList<string> removedVolumes, IReadOnlyList<Exception> errors)
+    internal ContainerCleanupResult(IReadOnlyList<string> removedContainers, IReadOnlyList<string> removedImages, IReadOnlyList<string> removedVolumes, IReadOnlyList<Exception> errors)
     {
         RemovedContainers = removedContainers;
+        RemovedImages = removedImages;
         RemovedVolumes = removedVolumes;
         Errors = errors;
     }
 
     /// <summary>Gets the ids of the removed containers.</summary>
     public IReadOnlyList<string> RemovedContainers { get; }
+
+    /// <summary>Gets the ids of the removed images: the images built from a Dockerfile.</summary>
+    public IReadOnlyList<string> RemovedImages { get; }
 
     /// <summary>Gets the names of the removed volumes.</summary>
     public IReadOnlyList<string> RemovedVolumes { get; }
@@ -20,5 +24,5 @@ public sealed class ContainerCleanupResult
     public IReadOnlyList<Exception> Errors { get; }
 
     /// <summary>Gets the total number of removed resources.</summary>
-    public int RemovedCount => RemovedContainers.Count + RemovedVolumes.Count;
+    public int RemovedCount => RemovedContainers.Count + RemovedImages.Count + RemovedVolumes.Count;
 }

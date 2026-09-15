@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class ContainerCommandCollection : IEnumerable<string>
 {
     private readonly List<string> _values;
+    private bool _isReadOnly;
 
     internal ContainerCommandCollection()
     {
@@ -25,6 +27,7 @@ public sealed class ContainerCommandCollection : IEnumerable<string>
     public void Add(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _values.Add(value);
     }
 
@@ -33,15 +36,22 @@ public sealed class ContainerCommandCollection : IEnumerable<string>
     public void AddRange(IEnumerable<string> values)
     {
         ArgumentNullException.ThrowIfNull(values);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _values.AddRange(values);
     }
 
     /// <summary>Removes all tokens.</summary>
-    public void Clear() => _values.Clear();
+    public void Clear()
+    {
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
+        _values.Clear();
+    }
 
     /// <summary>Returns an enumerator over the tokens.</summary>
     /// <returns>An enumerator.</returns>
     public IEnumerator<string> GetEnumerator() => _values.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
 }

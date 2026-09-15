@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class VolumeDriverOptionCollection : IEnumerable<KeyValuePair<string, string>>
 {
     private readonly Dictionary<string, string> _options;
+    private bool _isReadOnly;
 
     internal VolumeDriverOptionCollection()
     {
@@ -27,6 +29,7 @@ public sealed class VolumeDriverOptionCollection : IEnumerable<KeyValuePair<stri
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _options[name] = value;
     }
 
@@ -36,6 +39,7 @@ public sealed class VolumeDriverOptionCollection : IEnumerable<KeyValuePair<stri
     public bool Remove(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         return _options.Remove(name);
     }
 
@@ -53,4 +57,6 @@ public sealed class VolumeDriverOptionCollection : IEnumerable<KeyValuePair<stri
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _options.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
 }

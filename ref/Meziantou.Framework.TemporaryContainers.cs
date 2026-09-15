@@ -24,6 +24,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public Meziantou.Framework.TemporaryContainers.ContainerCleanupScope Scope { get => throw null; set { } }
         public System.TimeSpan MinimumAge { get => throw null; set { } }
         public bool IncludeContainers { get => throw null; set { } }
+        public bool IncludeImages { get => throw null; set { } }
         public bool IncludeVolumes { get => throw null; set { } }
         public bool IncludeReusedResources { get => throw null; set { } }
     }
@@ -31,6 +32,7 @@ namespace Meziantou.Framework.TemporaryContainers
     public sealed class ContainerCleanupResult
     {
         public System.Collections.Generic.IReadOnlyList<string> RemovedContainers { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> RemovedImages { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> RemovedVolumes { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<System.Exception> Errors { get => throw null; }
         public int RemovedCount { get => throw null; }
@@ -73,6 +75,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public Meziantou.Framework.TemporaryContainers.ContainerNetworkOptions Network { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerResourceOptions Resources { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.ContainerLoggingOptions Logging { get => throw null; }
+        public bool IsReadOnly { get => throw null; }
         public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ImageSource image) { }
         public ContainerDefinition(Meziantou.Framework.TemporaryContainers.ContainerDefinition other) { }
         public virtual Meziantou.Framework.TemporaryContainers.TemporaryContainer CreateContainer() => throw null;
@@ -172,8 +175,10 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class ContainerPort : System.IEquatable<Meziantou.Framework.TemporaryContainers.ContainerPort>
     {
+        public const string DefaultHostIp = "127.0.0.1";
         public int? HostPort { get => throw null; init { } }
         public int Port { get => throw null; init { } }
+        public string HostIp { get => throw null; init { } }
         public ContainerPort(int? HostPort, int Port) { }
         public ContainerPort(int containerPort) { }
         public override string ToString() => throw null;
@@ -241,6 +246,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public int ExitCode { get => throw null; }
         public string? StandardOutput { get => throw null; }
         public string? StandardError { get => throw null; }
+        public System.Net.HttpStatusCode? StatusCode { get => throw null; }
         public ContainerRuntimeException(string message) { }
         public ContainerRuntimeException(string message, System.Exception innerException) { }
     }
@@ -355,6 +361,7 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public sealed class PostgreSqlContainerDefinition : Meziantou.Framework.TemporaryContainers.ContainerDefinition
     {
+        public string Password { get => throw null; set { } }
         [System.Runtime.CompilerServices.PreserveBaseOverrides]
         public virtual Meziantou.Framework.TemporaryContainers.PostgreSqlContainer CreateContainer() => throw null;
     }
@@ -448,6 +455,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public string? ReuseId { get => throw null; set { } }
         public Meziantou.Framework.TemporaryContainers.ContainerLabelCollection Labels { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.VolumeDriverOptionCollection DriverOptions { get => throw null; }
+        public bool IsReadOnly { get => throw null; }
         public VolumeDefinition(Meziantou.Framework.TemporaryContainers.VolumeDefinition other) { }
         public Meziantou.Framework.TemporaryContainers.TemporaryVolume CreateVolume() => throw null;
     }

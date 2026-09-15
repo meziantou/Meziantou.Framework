@@ -31,4 +31,7 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
 
     [Fact]
     public Task Reaper_WatchesTheSessionAndStopsWithIt() => AssertReaperLifecycleAsync();
+
+    [Fact]
+    public Task Reaper_RemovesTheSessionWhenTheProcessIsGone() => AssertReaperRemovesTheSessionWhenTheProcessIsGoneAsync();
 }

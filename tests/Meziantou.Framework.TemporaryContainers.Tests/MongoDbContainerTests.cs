@@ -48,20 +48,33 @@ public sealed class MongoDbContainerTests
     [Fact]
     public async Task GetConnectionString_JournalingDisabledByDefault()
     {
-        SkipOnNonCompatibleEnvironments();
-        await using var container = await StartWithRetryAsync(ContainerDefinition.CreateMongoDb());
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
 
-        Assert.Contains("j=false", container.GetConnectionString());
+        Assert.Contains("j=false", container.BuildConnectionString(27017, enableJournaling: false));
     }
 
     [Fact]
     public async Task GetConnectionString_JournalingCanBeEnabled()
     {
-        SkipOnNonCompatibleEnvironments();
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
 
-        await using var container = await StartWithRetryAsync(ContainerDefinition.CreateMongoDb());
+        Assert.Contains("j=true", container.BuildConnectionString(27017, enableJournaling: true));
+    }
 
-        Assert.Contains("j=true", container.GetConnectionString(enableJournaling: true));
+    [Fact]
+    public async Task GetConnectionString_EscapesTheCredentials()
+    {
+        var definition = ContainerDefinition.CreateMongoDb();
+        definition.RootUsername = "ro:ot";
+        definition.RootPassword = "p@ss%w+rd?/";
+        await using var container = definition.CreateContainer();
+
+        var connectionString = container.BuildConnectionString(27017, enableJournaling: false);
+
+        Assert.Equal("mongodb://ro%3Aot:p%40ss%25w%2Brd%3F%2F@127.0.0.1:27017/?authSource=admin&j=false", connectionString);
+        var url = MongoUrl.Create(connectionString);
+        Assert.Equal("ro:ot", url.Username);
+        Assert.Equal("p@ss%w+rd?/", url.Password);
     }
 
     [Fact]

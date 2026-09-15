@@ -65,6 +65,10 @@ internal sealed class ContainerCli
             .ExecuteAsync(cancellationToken);
     }
 
+    /// <summary>Builds the exception that reports a command that failed.</summary>
+    public ContainerRuntimeException CreateFailure(IReadOnlyList<string> args, CliResult result)
+        => CreateFailure(args, result.ExitCode, result.StandardOutput, result.StandardError);
+
     private ContainerRuntimeException CreateFailure(IReadOnlyList<string> args, int exitCode, string standardOutput, string standardError)
     {
         var command = FormatCommand(_executable, args);
@@ -93,8 +97,9 @@ internal sealed class ContainerCli
         {
             result.Append(' ').Append(CommandLineBuilder.WindowsQuotedArgument(redactNextValue ? Redact(arg) : arg));
 
-            // Environment variables are the one place where the caller routinely passes secrets to the runtime.
-            redactNextValue = arg is "--env" or "-e";
+            // Environment variables and volume driver options (a CIFS password, for instance) are where the caller
+            // passes secrets to the runtime.
+            redactNextValue = arg is "--env" or "-e" or "--opt" or "-o";
         }
 
         return result.ToString();

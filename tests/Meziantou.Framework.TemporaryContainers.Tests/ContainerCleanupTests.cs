@@ -1,10 +1,11 @@
+using System.Diagnostics;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
 
 public sealed class ContainerCleanupTests
 {
-    private static readonly SessionIdentity DeadRun = SessionIdentity.Current with { SessionId = "dead-session", ProcessStartTime = "0" };
+    private static readonly SessionIdentity DeadRun = SessionIdentity.Current with { SessionId = "dead-session", ProcessStartTime = "0", ProcessStartTicks = OperatingSystem.IsLinux() ? "0" : "" };
 
     [Fact]
     public void ShouldRemove_IgnoresAResourceThisLibraryDidNotCreate()
@@ -48,6 +49,74 @@ public sealed class ContainerCleanupTests
         var resource = CreateResource(SessionIdentity.Current with { SessionId = "another-session" });
 
         Assert.False(ShouldRemove(resource, new ContainerCleanupOptions { Scope = ContainerCleanupScope.Orphaned }));
+    }
+
+    [Fact]
+    public void ShouldRemove_NeverRemovesTheResourcesOfTheCurrentProcessThatBelongToNoSession()
+    {
+        // The reaper of the current run and its reused containers carry no session, and a sweep of every resource must
+        // still spare them.
+        var reaper = new ManagedResource("reaper", ResourceLabels.Build([], reuseId: null, sessionOwned: false));
+        var reused = new ManagedResource("reused", ResourceLabels.Build([], reuseId: "shared-database"));
+
+        var everything = new ContainerCleanupOptions { Scope = ContainerCleanupScope.All, IncludeReusedResources = true };
+        Assert.False(ShouldRemove(reaper, everything));
+        Assert.False(ShouldRemove(reused, everything));
+    }
+
+    [Fact]
+    public void ShouldRemove_KeepsTheResourcesOfAnotherMachineThatSharesTheHostName()
+    {
+        // A container that runs with the network of its host, or WSL next to Windows, has the host name of the machine
+        // and process ids of its own.
+        var resource = CreateResource(DeadRun with { MachineId = "another-pid-namespace" });
+
+        Assert.False(ShouldRemove(resource, new ContainerCleanupOptions { Scope = ContainerCleanupScope.Orphaned }));
+    }
+
+    [Fact]
+    public void ShouldRemove_RemovesTheResourcesOfAProcessThatIsGone()
+    {
+        using var process = Process.Start(new ProcessStartInfo(OperatingSystem.IsWindows() ? "cmd.exe" : "sh") { ArgumentList = { OperatingSystem.IsWindows() ? "/c" : "-c", "exit 0" } })!;
+        process.WaitForExit();
+        var resource = CreateResource(SessionIdentity.Current with
+        {
+            SessionId = "gone",
+            ProcessId = process.Id.ToString(CultureInfo.InvariantCulture),
+            ProcessStartTicks = OperatingSystem.IsLinux() ? "1" : "",
+        });
+
+        Assert.True(ShouldRemove(resource, new ContainerCleanupOptions()));
+    }
+
+    [Fact]
+    public void ShouldRemove_KeepsAResourceWhoseOwnerCannotBeIdentified()
+    {
+        var labels = CreateResource(DeadRun).Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+        labels[ResourceLabels.ProcessId] = "not-a-number";
+
+        Assert.False(ShouldRemove(new ManagedResource("id", labels), new ContainerCleanupOptions()));
+    }
+
+    [Fact]
+    public void ShouldRemove_KeepsTheResourcesOfARunningProcessWhoseStartTimeIsUnknown()
+    {
+        // Without a start time, a running process with the owner's id may well be the owner.
+        var labels = CreateResource(SessionIdentity.Current with { SessionId = "another-session" }).Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+        labels[ResourceLabels.ProcessStartTime] = "";
+        labels.Remove(ResourceLabels.ProcessStartTicks);
+
+        Assert.False(ShouldRemove(new ManagedResource("id", labels), new ContainerCleanupOptions()));
+    }
+
+    [Fact]
+    public void ShouldRemove_KeepsTheResourcesOfARunningProcessWhoseStartTimeIsWithinTheTolerance()
+    {
+        var startTime = long.Parse(SessionIdentity.Current.ProcessStartTime, CultureInfo.InvariantCulture) + 2000;
+        var labels = CreateResource(SessionIdentity.Current with { SessionId = "another-session", ProcessStartTime = startTime.ToString(CultureInfo.InvariantCulture) }).Labels.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+        labels.Remove(ResourceLabels.ProcessStartTicks);
+
+        Assert.False(ShouldRemove(new ManagedResource("id", labels), new ContainerCleanupOptions()));
     }
 
     [Fact]

@@ -4,9 +4,12 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerApiCreateRequestBuilder
 {
-    public static DockerApiModels.CreateContainerRequest Build(ContainerDefinition definition, string imageRef)
+    /// <param name="definition">The container definition.</param>
+    /// <param name="imageRef">The image to create the container from.</param>
+    /// <param name="hostIpSupported">Whether the daemon can publish a port on a specific host address, which a daemon running Windows containers cannot.</param>
+    public static DockerApiModels.CreateContainerRequest Build(ContainerDefinition definition, string imageRef, bool hostIpSupported = true)
     {
-        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, definition.SessionOwned, definition.Identity);
+        var labels = ResourceLabels.Build(definition);
 
         var hostConfig = new DockerApiModels.HostConfig
         {
@@ -30,6 +33,7 @@ internal static class DockerApiCreateRequestBuilder
                 [
                     new DockerPortBindingDto
                     {
+                        HostIp = hostIpSupported ? port.HostIp : null,
                         HostPort = port.HostPort?.ToString(CultureInfo.InvariantCulture) ?? "",
                     },
                 ];

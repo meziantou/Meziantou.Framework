@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class ContainerWaitStrategyCollection : IEnumerable<IWaitStrategy>
 {
     private readonly List<IWaitStrategy> _strategies;
+    private bool _isReadOnly;
 
     internal ContainerWaitStrategyCollection()
     {
@@ -25,6 +27,7 @@ public sealed class ContainerWaitStrategyCollection : IEnumerable<IWaitStrategy>
     public void Add(IWaitStrategy strategy)
     {
         ArgumentNullException.ThrowIfNull(strategy);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _strategies.Add(strategy);
     }
 
@@ -33,4 +36,6 @@ public sealed class ContainerWaitStrategyCollection : IEnumerable<IWaitStrategy>
     public IEnumerator<IWaitStrategy> GetEnumerator() => _strategies.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
 }

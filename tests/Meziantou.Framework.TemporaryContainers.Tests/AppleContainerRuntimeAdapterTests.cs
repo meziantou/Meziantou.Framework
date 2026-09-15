@@ -34,7 +34,9 @@ public sealed class AppleContainerRuntimeAdapterTests
 
         Assert.Equal("create", args[0]);
         Assert.Contains("--publish", args);
-        Assert.Contains("9090:8080", args);
+
+        // The runtime publishes on every interface unless it is told otherwise.
+        Assert.Contains("127.0.0.1:9090:8080", args);
         Assert.Contains("A=1", args);
         Assert.Contains("nginx", args);
     }
@@ -97,6 +99,77 @@ public sealed class AppleContainerRuntimeAdapterTests
         Assert.Throws<NotSupportedException>(() => runtime.BuildCreateVolumeArguments(new VolumeDefinition { Driver = "local" }, "my-volume"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildPauseArguments("abc"));
         Assert.Throws<NotSupportedException>(() => runtime.BuildRestartArguments("abc"));
+
+        // The runtime names the container after its id and has no hostname option: ignoring it would give the service a
+        // different hostname than on the other runtimes.
+        var hostname = new ContainerDefinition(new RegistryImage("nginx")) { Hostname = "db" };
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(hostname, "nginx"));
+    }
+
+    [Fact]
+    public void BuildCreateUsesTheNameBeforeTheReuseIdentifier()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx")) { Name = "my-name", ReuseId = "my-reuse-id" };
+
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        Assert.Equal("my-name", args[args.ToList().IndexOf("--name") + 1]);
+    }
+
+    [Fact]
+    public void BuildCreatePublishesTheAllocatedHostPorts()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Ports.Add(8080);
+        definition.Ports.Add(15432, 5432);
+
+        runtime.PrepareDefinitionForCreate(definition);
+        var args = runtime.BuildCreateArguments(definition, "nginx");
+
+        // The random port is picked by the library, and the definition keeps asking for a random one.
+        var allocated = definition.AllocatedHostPorts[8080];
+        Assert.Contains($"127.0.0.1:{allocated}:8080", args);
+        Assert.Contains("127.0.0.1:15432:5432", args);
+        Assert.Null(definition.Ports.First(port => port.Port == 8080).HostPort);
+        Assert.Equal(allocated, runtime.ResolvePortMap(new ContainerInfo { Id = "id", Name = "id" }, definition)[8080]);
+    }
+
+    [Fact]
+    public void BuildLogsArgumentsCanStopAtTheCurrentEnd()
+    {
+        Assert.Equal("logs abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", follow: false)));
+    }
+
+    [Fact]
+    public void ParseInspectReadsTheEnvironment()
+    {
+        var info = CreateRuntime().ParseInspect("""
+            [{
+              "id": "meziantou-tc-app",
+              "status": { "state": "running" },
+              "configuration": { "id": "meziantou-tc-app", "initProcess": { "environment": ["PATH=/bin", "PASSWORD=a=b"] } }
+            }]
+            """);
+
+        Assert.Equal("a=b", info.Environment["PASSWORD"]);
+    }
+
+    [Fact]
+    public void ParseManagedImagesOnlyReportsTheImagesThisLibraryBuilt()
+    {
+        var output = """
+            [
+              {"configuration":{"name":"docker.io/library/busybox:1.37"},"id":"1","variants":[{"config":{"config":{"Cmd":["sh"]}}}]},
+              {"configuration":{"name":"meziantou-tc/abc:latest"},"id":"2","variants":[{"config":{"config":{"Labels":{"meziantou.tc.managed":"1","meziantou.tc.session":"s"}}}}]}
+            ]
+            """;
+
+        var image = Assert.Single(AppleContainerRuntime.ParseManagedImages(output));
+
+        Assert.Equal("meziantou-tc/abc:latest", image.Id);
+        Assert.Equal("s", image.Labels[ResourceLabels.SessionId]);
     }
 
     [Fact]

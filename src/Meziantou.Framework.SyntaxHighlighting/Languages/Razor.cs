@@ -1,4 +1,5 @@
 using Meziantou.Framework.SyntaxHighlighting.Engine;
+using Meziantou.Framework.SyntaxHighlighting.Languages.Common;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
@@ -9,13 +10,15 @@ internal static class Razor
     private static Mode CreateMode()
     {
         var root = new Mode { };
-        var razorDirective = new Mode { Begin = "^\\s*@(page|model|using|inherits|inject|layout)[^\\r\\n{\\(]*$", End = "$", ReturnBegin = true, ReturnEnd = true };
-        var directiveKeyword = new Mode { Scope = "built_in", Begin = "^\\s*@(page|model|using|inherits|inject|layout)" };
+        var razorDirective = new Mode { Begin = CommonModes.IndentedLineStartRe + "@(page|model|using|inherits|inject|layout)[^\\r\\n{\\(]*$", End = "$", ReturnBegin = true, ReturnEnd = true };
+        var directiveKeyword = new Mode { Scope = "built_in", Begin = CommonModes.IndentedLineStartRe + "@(page|model|using|inherits|inject|layout)" };
         var directiveType = new Mode { Scope = "type", EndsParent = true };
         var directiveNewline = new Mode { Begin = "\\r|\\n", EndsParent = true };
         var directiveValue = new Mode { Begin = "\\s[^\\r\\n]+", End = "$" };
         var directiveLineEnd = new Mode { Begin = "$" };
-        var helperBlock = new Mode { Begin = "^\\s*@helper\\s+[^{\\s]+(?:\\s+[^{\\s]+)*\\s*{", End = "}", ReturnBegin = true, ReturnEnd = true, SubLanguage = "cshtml-razor" };
+        // The header runs up to the first `{`. A header preceded by an earlier one with no `{` in between
+        // can never be the leftmost match, so it is skipped instead of rescanning up to that `{`.
+        var helperBlock = new Mode { Begin = CommonModes.IndentedLineStartRe + "(?=@helper\\s)(?:\\G|(?<!^\\s*@helper\\s+[^{\\s](?:(?!\\G)[^{])*?))@helper\\s+[^{\\s][^{]*{", End = "}", ReturnBegin = true, ReturnEnd = true, SubLanguage = "cshtml-razor" };
         var helperKeyword = new Mode { Scope = "built_in", Begin = "@helper" };
         var helperOpenBrace = new Mode { Scope = "built_in", Begin = "{" };
         var helperCloseBrace = new Mode { Scope = "built_in", Begin = "}", EndsParent = true };

@@ -464,7 +464,7 @@ second line
 """
 """",
 """
-desc = &quot;&quot;&quot;
+<span class="hljs-attr">desc</span> = &quot;&quot;&quot;
 first line
 second line
 &quot;&quot;&quot;
@@ -482,7 +482,7 @@ stays on one line\
 """
 """",
 """
-desc = &quot;&quot;&quot;\
+<span class="hljs-attr">desc</span> = &quot;&quot;&quot;\
 first line \
 stays on one line\
 &quot;&quot;&quot;
@@ -499,7 +499,7 @@ line with \"quote\"\nand newline
 """
 """",
 """
-msg = &quot;&quot;&quot;
+<span class="hljs-attr">msg</span> = &quot;&quot;&quot;
 line with \&quot;quote\&quot;\nand newline
 &quot;&quot;&quot;
 """);
@@ -515,7 +515,7 @@ regex = '''
 '''
 """,
 """
-regex = &#x27;&#x27;&#x27;
+<span class="hljs-attr">regex</span> = &#x27;&#x27;&#x27;
 \d{3}-\d{4}
 &#x27;&#x27;&#x27;
 """);
@@ -531,7 +531,7 @@ She said "hi"
 '''
 """,
 """
-msg = &#x27;&#x27;&#x27;
+<span class="hljs-attr">msg</span> = &#x27;&#x27;&#x27;
 She said &quot;hi&quot;
 &#x27;&#x27;&#x27;
 """);
@@ -1053,7 +1053,7 @@ list = [
 ]
 """,
 """
-list = [
+<span class="hljs-attr">list</span> = [
   1,
   2,
   3,
@@ -1073,10 +1073,10 @@ list = [
 ]
 """,
 """
-list = [
-  1,  # first
-  2,  # second
-  3,  # third
+<span class="hljs-attr">list</span> = [
+  1,  <span class="hljs-comment"># first</span>
+  2,  <span class="hljs-comment"># second</span>
+  3,  <span class="hljs-comment"># third</span>
 ]
 """);
     }
@@ -1325,23 +1325,23 @@ Homepage = "https://example.com"
 Issues = "https://github.com/example/demo/issues"
 """,
 """
-[build-system]
-requires = [&quot;setuptools&gt;=64&quot;]
-build-backend = &quot;setuptools.build_meta&quot;
+<span class="hljs-section">[build-system]</span>
+<span class="hljs-attr">requires</span> = [&quot;setuptools&gt;=64&quot;]
+<span class="hljs-attr">build-backend</span> = &quot;setuptools.build_meta&quot;
 
-[project]
-name = &quot;demo&quot;
-version = &quot;1.0.0&quot;
-description = &quot;A demo project&quot;
-requires-python = &quot;&gt;=3.10&quot;
-dependencies = [
+<span class="hljs-section">[project]</span>
+<span class="hljs-attr">name</span> = &quot;demo&quot;
+<span class="hljs-attr">version</span> = &quot;1.0.0&quot;
+<span class="hljs-attr">description</span> = &quot;A demo project&quot;
+<span class="hljs-attr">requires-python</span> = &quot;&gt;=3.10&quot;
+<span class="hljs-attr">dependencies</span> = [
   &quot;requests&gt;=2.31&quot;,
   &quot;pydantic&gt;=2.0&quot;,
 ]
 
-[project.urls]
-Homepage = &quot;https://example.com&quot;
-Issues = &quot;https://github.com/example/demo/issues&quot;
+<span class="hljs-section">[project.urls]</span>
+<span class="hljs-attr">Homepage</span> = &quot;https://example.com&quot;
+<span class="hljs-attr">Issues</span> = &quot;https://github.com/example/demo/issues&quot;
 """);
     }
 

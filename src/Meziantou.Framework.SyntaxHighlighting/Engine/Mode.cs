@@ -45,106 +45,43 @@ internal sealed class Mode
 
     public static readonly Mode Self = new();
 
-    internal Mode With(Action<Builder> configure)
+    public Mode()
     {
-        var b = new Builder(this);
-        configure(b);
-        return b.Build();
     }
 
-    internal sealed class Builder
+    /// <summary>
+    /// Copies every member of <paramref name="source"/>, so that an object initializer can then
+    /// override the members that differ (used to expand <see cref="Variants"/>).
+    /// </summary>
+    public Mode(Mode source)
     {
-        public string? Scope;
-        public string? Match;
-        public string? Begin;
-        public string? End;
-        public string? EndScope;
-        public string? BeginGuard;
-        public string? SubLanguage;
-        public IReadOnlyList<string>? BeginParts;
-        public IReadOnlyDictionary<int, string>? BeginScope;
-        public IList<string>? BeginKeywords;
-        public string? Illegal;
-        public Keywords? Keywords;
-        public string? KeywordPattern;
-        public KeywordValidator? KeywordValidator;
-        public IList<Mode> Contains;
-        public IReadOnlyList<Mode>? Variants;
-        public Mode? Starts;
-        public bool ExcludeBegin;
-        public bool ExcludeEnd;
-        public bool ReturnBegin;
-        public bool ReturnEnd;
-        public bool EndsWithParent;
-        public bool EndsParent;
-        public bool EndSameAsBegin;
-        public bool CaseInsensitive;
-        public bool Skip;
-        public bool ClearScope;
-        public IReadOnlyDictionary<string, string>? ClassNameAliases;
-
-        public Builder(Mode src)
-        {
-            Scope = src.Scope;
-            Match = src.Match;
-            Begin = src.Begin;
-            End = src.End;
-            EndScope = src.EndScope;
-            BeginGuard = src.BeginGuard;
-            SubLanguage = src.SubLanguage;
-            BeginParts = src.BeginParts;
-            BeginScope = src.BeginScope;
-            BeginKeywords = src.BeginKeywords;
-            Illegal = src.Illegal;
-            Keywords = src.Keywords;
-            KeywordPattern = src.KeywordPattern;
-            KeywordValidator = src.KeywordValidator;
-            Contains = src.Contains;
-            Variants = src.Variants;
-            Starts = src.Starts;
-            ExcludeBegin = src.ExcludeBegin;
-            ExcludeEnd = src.ExcludeEnd;
-            ReturnBegin = src.ReturnBegin;
-            ReturnEnd = src.ReturnEnd;
-            EndsWithParent = src.EndsWithParent;
-            EndsParent = src.EndsParent;
-            EndSameAsBegin = src.EndSameAsBegin;
-            CaseInsensitive = src.CaseInsensitive;
-            Skip = src.Skip;
-            ClearScope = src.ClearScope;
-            ClassNameAliases = src.ClassNameAliases;
-        }
-
-        public Mode Build() => new()
-        {
-            Scope = Scope,
-            Match = Match,
-            Begin = Begin,
-            End = End,
-            EndScope = EndScope,
-            BeginGuard = BeginGuard,
-            SubLanguage = SubLanguage,
-            BeginParts = BeginParts,
-            BeginScope = BeginScope,
-            BeginKeywords = BeginKeywords,
-            Illegal = Illegal,
-            Keywords = Keywords,
-            KeywordPattern = KeywordPattern,
-            KeywordValidator = KeywordValidator,
-            Contains = Contains,
-            Variants = Variants,
-            Starts = Starts,
-            ExcludeBegin = ExcludeBegin,
-            ExcludeEnd = ExcludeEnd,
-            ReturnBegin = ReturnBegin,
-            ReturnEnd = ReturnEnd,
-            EndsWithParent = EndsWithParent,
-            EndsParent = EndsParent,
-            EndSameAsBegin = EndSameAsBegin,
-            CaseInsensitive = CaseInsensitive,
-            Skip = Skip,
-            ClearScope = ClearScope,
-            ClassNameAliases = ClassNameAliases,
-        };
+        Scope = source.Scope;
+        Match = source.Match;
+        Begin = source.Begin;
+        End = source.End;
+        BeginParts = source.BeginParts;
+        BeginScope = source.BeginScope;
+        EndScope = source.EndScope;
+        BeginGuard = source.BeginGuard;
+        SubLanguage = source.SubLanguage;
+        BeginKeywords = source.BeginKeywords;
+        Illegal = source.Illegal;
+        Keywords = source.Keywords;
+        KeywordPattern = source.KeywordPattern;
+        KeywordValidator = source.KeywordValidator;
+        Contains = source.Contains;
+        Variants = source.Variants;
+        Starts = source.Starts;
+        ExcludeBegin = source.ExcludeBegin;
+        ExcludeEnd = source.ExcludeEnd;
+        ReturnBegin = source.ReturnBegin;
+        ReturnEnd = source.ReturnEnd;
+        EndsWithParent = source.EndsWithParent;
+        EndsParent = source.EndsParent;
+        EndSameAsBegin = source.EndSameAsBegin;
+        CaseInsensitive = source.CaseInsensitive;
+        Skip = source.Skip;
+        ClearScope = source.ClearScope;
+        ClassNameAliases = source.ClassNameAliases;
     }
 }

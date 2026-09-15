@@ -57,7 +57,8 @@ internal static class Nginx
                     new Mode { Begin = @"\s\^", End = @"\s|\{|;", ReturnEnd = true },
                     new Mode { Begin = @"~\*?\s+", End = @"\s|\{|;", ReturnEnd = true },
                     new Mode { Begin = @"\*(\.[a-z\-]+)+" },
-                    new Mode { Begin = @"([a-z\-]+\.)+\*" },
+                    // Skip starts that continue a `name.` chain begun earlier: they would end on the same `*`.
+                    new Mode { Begin = @"(?:\G|(?<![a-z\-]|[a-z\-](?!\G)\.))([a-z\-]+\.)+\*" },
                 ],
             },
             new() { Scope = "number", Begin = @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d{1,5})?\b" },
@@ -87,10 +88,10 @@ internal static class Nginx
                     Contains = defaultContains,
                     Keywords = Keywords.FromMap(new Dictionary<string, string>(StringComparer.Ordinal) { ["section"] = "upstream location" }),
                 },
-                new() { Scope = "section", Begin = CommonModes.UnderscoreIdentRe + @"(?=\s+\{)" },
+                new() { Scope = "section", Begin = CommonModes.RunStart(@"\w", "a-zA-Z_") + CommonModes.UnderscoreIdentRe + @"(?=\s+\{)" },
                 new()
                 {
-                    Begin = @"(?=" + CommonModes.UnderscoreIdentRe + @"\s)",
+                    Begin = CommonModes.RunStart(@"\w", "a-zA-Z_") + @"(?=" + CommonModes.UnderscoreIdentRe + @"\s)",
                     End = @";|\{",
                     Contains =
                     [

@@ -1,5 +1,5 @@
-using System.Collections;
-using System.Reflection;
+using Meziantou.Framework.SyntaxHighlighting.Engine;
+using Meziantou.Framework.SyntaxHighlighting.Languages;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Tests;
 
@@ -79,44 +79,27 @@ public class KeywordGroupsTests
 
     private static string[] FindCrossGroupDuplicates()
     {
-        string[] languages =
-        [
-            "bash", "bnf", "cpp", "csharp", "css", "dockerfile", "dos", "fsharp", "graphql",
-            "html", "http", "ini", "javascript", "json", "less", "markdown", "msil", "nginx",
-            "php", "powershell", "razor", "scss", "sql", "typescript", "urlencoded", "vbnet",
-            "x86asm", "xml", "yaml",
-        ];
-
-        var assembly = typeof(SyntaxHighlighter).Assembly;
-        var registry = assembly.GetType("Meziantou.Framework.SyntaxHighlighting.Languages.LanguageRegistry", throwOnError: true)!;
-        var get = registry.GetMethod("Get", BindingFlags.Public | BindingFlags.Static)!;
-
         var result = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var language in languages)
+        foreach (var language in GetGrammarIdentifiers())
         {
-            var root = get.Invoke(null, [language])!;
-            CollectDuplicates(language, root, new HashSet<object>(ReferenceEqualityComparer.Instance), result);
+            var root = LanguageRegistry.Get(language);
+            CollectDuplicates(language, root, new HashSet<CompiledMode>(ReferenceEqualityComparer.Instance), result);
         }
 
         return [.. result];
     }
 
-    private static void CollectDuplicates(string language, object? compiledMode, HashSet<object> visited, SortedSet<string> result)
+    private static void CollectDuplicates(string language, CompiledMode? compiledMode, HashSet<CompiledMode> visited, SortedSet<string> result)
     {
         if (compiledMode is null || !visited.Add(compiledMode))
             return;
 
-        var type = compiledMode.GetType();
-        var source = type.GetField("Source")!.GetValue(compiledMode)!;
-        if (source.GetType().GetProperty("Keywords")!.GetValue(source) is { } keywords)
+        if (compiledMode.Source.Keywords is { } keywords)
         {
-            var groups = (IEnumerable)keywords.GetType().GetProperty("Groups")!.GetValue(keywords)!;
             var scopesByWord = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-            foreach (var group in groups)
+            foreach (var (scope, words) in keywords.Groups)
             {
-                var groupType = group.GetType();
-                var scope = (string)groupType.GetProperty("Key")!.GetValue(group)!;
-                foreach (var raw in (string[])groupType.GetProperty("Value")!.GetValue(group)!)
+                foreach (var raw in words)
                 {
                     var word = raw.Split('|')[0];
                     if (!scopesByWord.TryGetValue(word, out var scopes))
@@ -140,12 +123,12 @@ public class KeywordGroupsTests
             }
         }
 
-        foreach (var child in (IEnumerable)type.GetField("Contains")!.GetValue(compiledMode)!)
+        foreach (var child in compiledMode.Contains)
         {
             CollectDuplicates(language, child, visited, result);
         }
 
-        CollectDuplicates(language, type.GetField("Starts")!.GetValue(compiledMode), visited, result);
+        CollectDuplicates(language, compiledMode.Starts, visited, result);
     }
 
     // The pinned list above records *which* words are declared in two groups. These record what

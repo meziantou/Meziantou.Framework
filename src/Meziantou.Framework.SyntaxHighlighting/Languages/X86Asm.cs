@@ -91,13 +91,13 @@ internal static class X86Asm
                 Scope = "symbol",
                 Variants =
                 [
-                    new Mode { Begin = @"^\s*[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\s+label)" },
-                    new Mode { Begin = @"^\s*%%[A-Za-z0-9_$#@~.?]*:" },
+                    new Mode { Begin = CommonModes.IndentedLineStartRe + @"[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\s+label)" },
+                    new Mode { Begin = CommonModes.IndentedLineStartRe + @"%%[A-Za-z0-9_$#@~.?]*:" },
                 ],
             },
             new() { Scope = "subst", Begin = "%[0-9]+" },
             new() { Scope = "subst", Begin = @"%!\S+" },
-            new() { Scope = "meta", Begin = @"^\s*\.[\w_-]+" },
+            new() { Scope = "meta", Begin = CommonModes.IndentedLineStartRe + @"\.[\w_-]+" },
         ],
     };
 }

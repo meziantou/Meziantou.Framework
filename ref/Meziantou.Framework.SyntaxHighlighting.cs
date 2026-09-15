@@ -7,6 +7,8 @@ namespace Meziantou.Framework.SyntaxHighlighting
     public sealed class HighlightOptions
     {
         public string ClassPrefix { get => throw null; init { } }
+        public bool IgnoreIllegals { get => throw null; init { } }
+        public System.TimeSpan MatchTimeout { get => throw null; init { } }
     }
 
     public static class SyntaxHighlighter

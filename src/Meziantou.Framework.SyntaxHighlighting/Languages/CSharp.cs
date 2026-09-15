@@ -128,15 +128,20 @@ internal static partial class CSharp
             Variants =
             [
                 new Mode { Begin = @"\b(0b[01']+)" },
-                new Mode { Begin = @"(-?)\b([\d']+(\.[\d']*)?|\.[\d']+)(u|U|l|L|ul|UL|f|F|b|B)" },
+                // A number that starts inside a run of digits and separators can also be matched from the
+                // first boundary of the run, so only that one is tried: otherwise, each position of a long run
+                // would rescan it.
+                new Mode { Begin = @"(-?)\b(?=[\d'.])(?:\G|(?<!\b[\d'](?:(?!\G)[\d'])*?))([\d']+(\.[\d']*)?|\.[\d']+)(u|U|l|L|ul|UL|f|F|b|B)" },
                 new Mode { Begin = @"(-?)(\b0[xX][a-fA-F0-9']+|(\b[\d']+(\.[\d']*)?|\.[\d']+)([eE][-+]?[\d']+)?)" },
             ],
         };
 
+        // The delimiter is limited to 64 quotes: from each position of a longer run of quotes, the
+        // unbounded `"*` would rescan the rest of the run.
         var rawString = new Mode
         {
             Scope = "string",
-            Begin = "\"\"\"(\"*)(?!\")(.|\\n)*?\"\"\"\\1",
+            Begin = "\"\"\"((?>\"{0,61}))(?!\")(.|\\n)*?\"\"\"\\1",
         };
 
         var verbatimStringEscape = new Mode { Begin = "\"\"" };
@@ -332,6 +337,44 @@ internal static partial class CSharp
             ],
         };
         var typeIdentRe = CommonModes.IdentRe + @"(<" + CommonModes.IdentRe + @"(\s*,\s*" + CommonModes.IdentRe + @")*>)?(\[\])?";
+
+        // Generic arguments before a parameter list: `<T>`, `<Dictionary<string, List<int>>>`. They may be
+        // nested up to three levels, and cannot contain `=` (which would be an assignment or a lambda).
+        // Unlike a plain `<[^=]+>`, they cannot run past an unbalanced `<` or `>`, so a text full of `<`
+        // is not rescanned up to the next `=` from each identifier.
+        const string GenericArgumentsRe = @"<(?:[^<>=]|<(?:[^<>=]|<[^<>=]*>)*>)+>";
+
+        // An identifier followed by its parameter list, optionally with generic arguments. The function
+        // modes only need the position of the match (they return to it), so the generic arguments can be
+        // balanced.
+        var identifierWithParametersRe = CommonModes.RunStart(@"\w", "a-zA-Z") + CommonModes.IdentRe + @"\s*(" + GenericArgumentsRe + @"\s*)?\(";
+
+        // A declaration is a sequence of types followed by that identifier. A type that follows another
+        // type of the sequence can also be matched from the start of the sequence, so it can never be the
+        // leftmost match and is skipped: otherwise, each type of a long sequence would rescan it. The
+        // previous type does not count when the scan starts after it (e.g. after a preprocessor directive).
+        var typeIdentNoCaptureRe = CommonModes.IdentRe + @"(?:<" + CommonModes.IdentRe + @"(?:\s*,\s*" + CommonModes.IdentRe + @")*>)?(?:\[\])?";
+        var functionDeclarationRe = CommonModes.RunStart(@"\w", "a-zA-Z") + @"(?:\G|(?<!" + typeIdentNoCaptureRe + @"(?:(?!\G)\s)+))(" + typeIdentRe + @"\s+)+" + identifierWithParametersRe;
+
+        // A class, struct or record with a parameter list (`class Foo<T>(T value)`, `record Person(string Name)`,
+        // `record struct Point(int X, int Y)`) declares a primary constructor. The class and record modes do not
+        // support parameter lists, so they give way to the function mode, which highlights these declarations the
+        // same way as when they have modifiers (`public record Person(string Name)`).
+        var notPrimaryConstructorRe = @"(?!\s+(?:(?:class|struct)\s+)?" + CommonModes.IdentRe + @"\s*(?:" + GenericArgumentsRe + @"\s*)?\()";
+
+        // Parentheses inside a parameter list, e.g. the arguments of an attribute
+        // (`record Person([property: JsonPropertyName("name")] string Name)`): the list does not end there.
+        var nestedParameterParentheses = new Mode
+        {
+            Begin = @"\(",
+            End = @"\)",
+            Keywords = keywords,
+            KeywordValidator = ValidateKeyword,
+        };
+        nestedParameterParentheses.Contains = [stringMode, numbers, CommonModes.CBlockCommentMode, nestedParameterParentheses];
+
+        // The `new()` generic constraint (`class Foo<T> where T : new()`): its parentheses are not illegal.
+        var newConstraint = new Mode { Begin = @"\bnew\s*\(\s*\)", Keywords = Keywords.FromWords(["new"]) };
         var atIdentifier = new Mode { Begin = "@" + CommonModes.IdentRe };
 
         var xmlDocComment = CommonModes.Comment("///", "$",
@@ -373,12 +416,14 @@ internal static partial class CSharp
                 numbers,
                 new()
                 {
-                    BeginKeywords = ["class", "interface"],
+                    Begin = @"(?<!\.)\b(class|interface)(?!\.)(?=\b|\s)" + notPrimaryConstructorRe,
+                    Keywords = Keywords.FromWords(["class", "interface"]),
                     End = "[{;=]",
                     Illegal = @"[^\s:,]",
                     Contains =
                     [
                         new() { BeginKeywords = ["where", "class"] },
+                        newConstraint,
                         titleMode,
                         genericModifier,
                         CommonModes.CLineCommentMode,
@@ -399,11 +444,14 @@ internal static partial class CSharp
                 },
                 new()
                 {
-                    BeginKeywords = ["record"],
+                    Begin = @"(?<!\.)\b(record)(?!\.)(?=\b|\s)" + notPrimaryConstructorRe,
+                    Keywords = Keywords.FromWords(["record"]),
                     End = "[{;=]",
-                    Illegal = @"[^\s:]",
+                    Illegal = @"[^\s:,]",
                     Contains =
                     [
+                        new() { BeginKeywords = ["where", "class", "struct"] },
+                        newConstraint,
                         titleMode,
                         genericModifier,
                         CommonModes.CLineCommentMode,
@@ -413,7 +461,7 @@ internal static partial class CSharp
                 new()
                 {
                     Scope = "meta",
-                    Begin = @"^\s*\[(?=[\w])",
+                    Begin = CommonModes.IndentedLineStartRe + @"\[(?=[\w])",
                     ExcludeBegin = true,
                     End = @"\]",
                     ExcludeEnd = true,
@@ -426,7 +474,7 @@ internal static partial class CSharp
                 new()
                 {
                     Scope = "function",
-                    Begin = "(" + typeIdentRe + @"\s+)+" + CommonModes.IdentRe + @"\s*(<[^=]+>\s*)?\(",
+                    Begin = functionDeclarationRe,
                     ReturnBegin = true,
                     End = @"\s*[{;=]",
                     ExcludeEnd = true,
@@ -437,7 +485,7 @@ internal static partial class CSharp
                         new() { BeginKeywords = FunctionModifiers },
                         new()
                         {
-                            Begin = CommonModes.IdentRe + @"\s*(<[^=]+>\s*)?\(",
+                            Begin = identifierWithParametersRe,
                             ReturnBegin = true,
                             Contains =
                             [
@@ -460,6 +508,7 @@ internal static partial class CSharp
                                 stringMode,
                                 numbers,
                                 CommonModes.CBlockCommentMode,
+                                nestedParameterParentheses,
                             ],
                         },
                         CommonModes.CLineCommentMode,

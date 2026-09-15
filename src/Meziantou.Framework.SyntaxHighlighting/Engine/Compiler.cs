@@ -4,26 +4,50 @@ namespace Meziantou.Framework.SyntaxHighlighting.Engine;
 
 internal static class Compiler
 {
-    private static readonly TimeSpan RegexTimeout = Timeout.InfiniteTimeSpan;
+    /// <summary>
+    /// The default upper bound for a single regex match: none. A finite timeout makes every match about twice as slow,
+    /// and a fixed bound would also cut off legitimately long scans of large documents on a busy machine, so it is
+    /// opt-in (<see cref="HighlightOptions.MatchTimeout"/>). <see cref="Tokenizer"/> turns a timeout into the plain-text fallback.
+    /// </summary>
+    internal static readonly TimeSpan DefaultMatchTimeout = Timeout.InfiniteTimeSpan;
 
-    private static readonly HashSet<string> CommonKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "of", "and", "for", "in", "not", "or", "if", "then",
-        "parent", "list", "value",
-    };
+    private const string UseCompiledRegexSwitchName = "Meziantou.Framework.SyntaxHighlighting.UseCompiledRegex";
 
-    public static CompiledMode Compile(Mode language)
+    public static CompiledMode Compile(Mode language) => Compile(language, DefaultMatchTimeout);
+
+    public static CompiledMode Compile(Mode language, TimeSpan matchTimeout)
     {
-        var caseInsensitive = language.CaseInsensitive;
-        var memo = new Dictionary<Mode, CompiledMode>(ReferenceEqualityComparer.Instance);
-        var expandCache = new Dictionary<Mode, IReadOnlyList<Mode>>(ReferenceEqualityComparer.Instance);
-        return CompileMode(language, parent: null, caseInsensitive, language.ClassNameAliases, memo, expandCache);
+        var context = new CompilationContext(language.CaseInsensitive, language.ClassNameAliases, GetRegexOptions(language.CaseInsensitive), matchTimeout);
+        var root = CompileMode(language, isRoot: true, context);
+        root.RegexSlotCount = context.SlotCount;
+        root.MatchTimeout = matchTimeout;
+        return root;
     }
 
-    private static CompiledMode CompileMode(Mode mode, CompiledMode? parent, bool caseInsensitive, IReadOnlyDictionary<string, string>? aliases, Dictionary<Mode, CompiledMode> memo, Dictionary<Mode, IReadOnlyList<Mode>> expandCache)
+    private static RegexOptions GetRegexOptions(bool caseInsensitive)
     {
-        if (memo.TryGetValue(mode, out var existing))
+        var options = RegexOptions.Multiline | RegexOptions.CultureInvariant;
+        if (caseInsensitive)
+        {
+            options |= RegexOptions.IgnoreCase;
+        }
+
+        // Compiled regexes cost ~100 ms per grammar to build but scan several times faster, which
+        // pays off in long-running processes that highlight a lot of code.
+        if (AppContext.TryGetSwitch(UseCompiledRegexSwitchName, out var useCompiled) && useCompiled)
+        {
+            options |= RegexOptions.Compiled;
+        }
+
+        return options;
+    }
+
+    private static CompiledMode CompileMode(Mode mode, bool isRoot, CompilationContext context)
+    {
+        if (context.Memo.TryGetValue(mode, out var existing))
             return existing;
+
+        Validate(mode);
 
         var cmode = new CompiledMode
         {
@@ -35,8 +59,7 @@ internal static class Compiler
             ReturnEnd = mode.ReturnEnd,
             EndsWithParent = mode.EndsWithParent,
             EndsParent = mode.EndsParent,
-            Parent = parent,
-            ClassNameAliases = aliases,
+            ClassNameAliases = context.Aliases,
             SubLanguage = mode.SubLanguage,
             EndSameAsBegin = mode.EndSameAsBegin,
             BeginGuard = mode.BeginGuard,
@@ -44,7 +67,7 @@ internal static class Compiler
             KeywordValidator = mode.KeywordValidator,
             Skip = mode.Skip,
         };
-        memo[mode] = cmode;
+        context.Memo[mode] = cmode;
 
         // match → begin alias; handle multi-part begin arrays
         string? begin;
@@ -59,6 +82,7 @@ internal static class Compiler
                 order.Add(groupIndex);
                 groupIndex += 1 + CountCapturingGroups(part);
             }
+
             begin = sb.ToString();
             cmode.BeginGroupOrder = order;
 
@@ -70,6 +94,7 @@ internal static class Compiler
                     if (partIndex >= 1 && partIndex <= order.Count)
                         remapped[order[partIndex - 1]] = scope;
                 }
+
                 cmode.BeginGroupScopes = remapped;
             }
         }
@@ -80,7 +105,6 @@ internal static class Compiler
 
         var end = mode.End;
         var keywords = mode.Keywords;
-        var relevanceZero = false;
 
         // beginKeywords sugar — `(?<!\.)` mirrors hljs's skipIfHasPrecedingDot,
         // which prevents matches like `foo.catch(` from being treated as a keyword.
@@ -88,11 +112,10 @@ internal static class Compiler
         {
             begin = @"(?<!\.)\b(" + string.Join('|', beginKeywords.Select(Regex.Escape)) + @")(?!\.)(?=\b|\s)";
             keywords ??= Keywords.FromWords(beginKeywords);
-            relevanceZero = true;
         }
 
         // Defaults for child modes when neither begin nor end is set
-        if (parent is not null)
+        if (!isRoot)
         {
             if (string.IsNullOrEmpty(begin))
                 begin = @"\B|\b";
@@ -100,41 +123,69 @@ internal static class Compiler
                 end = @"\B|\b";
         }
 
-        var options = RegexOptions.Multiline | RegexOptions.CultureInvariant;
-        if (caseInsensitive)
-            options |= RegexOptions.IgnoreCase;
-
         if (!string.IsNullOrEmpty(begin))
-            cmode.BeginRe = new Regex(begin, options, RegexTimeout);
+        {
+            cmode.BeginRe = CreateRegex(begin, context);
+            cmode.BeginSlot = context.SlotCount++;
+        }
+
         if (!string.IsNullOrEmpty(end))
-            cmode.EndRe = new Regex(end, options, RegexTimeout);
+        {
+            cmode.EndRe = CreateRegex(end, context);
+            cmode.EndSlot = context.SlotCount++;
+        }
+
         if (!string.IsNullOrEmpty(mode.Illegal))
-            cmode.IllegalRe = new Regex(mode.Illegal, options, RegexTimeout);
+        {
+            cmode.IllegalRe = CreateRegex(mode.Illegal, context);
+            cmode.IllegalSlot = context.SlotCount++;
+        }
 
         if (keywords is not null)
         {
-            cmode.KeywordPatternRe = new Regex(mode.KeywordPattern ?? @"\w+", options, RegexTimeout);
-            cmode.KeywordMap = BuildKeywordMap(keywords, caseInsensitive);
+            cmode.KeywordPatternRe = CreateRegex(mode.KeywordPattern ?? @"\w+", context);
+            cmode.KeywordMap = BuildKeywordMap(keywords, context.CaseInsensitive);
         }
 
         // Compile children, expanding 'self' and 'variants' as we go
         foreach (var raw in mode.Contains)
         {
-            foreach (var expanded in Expand(raw, mode, expandCache))
+            foreach (var expanded in Expand(raw, mode, context))
             {
-                var child = CompileMode(expanded, cmode, caseInsensitive, aliases, memo, expandCache);
+                var child = CompileMode(expanded, isRoot: false, context);
                 cmode.Contains.Add(child);
             }
         }
 
         if (mode.Starts is not null)
-            cmode.Starts = CompileMode(mode.Starts, parent, caseInsensitive, aliases, memo, expandCache);
+            cmode.Starts = CompileMode(mode.Starts, isRoot, context);
 
-        _ = relevanceZero; // relevance is not used; we don't emit relevance information
         return cmode;
     }
 
-    private static IReadOnlyList<Mode> Expand(Mode mode, Mode enclosing, Dictionary<Mode, IReadOnlyList<Mode>> expandCache)
+    /// <summary>
+    /// Rejects flag combinations that would make the tokenizer emit a lexeme and then scan it again.
+    /// highlight.js rejects most of them too; the tokenizer relies on it (its mode buffer is always a
+    /// contiguous range of the input).
+    /// </summary>
+    private static void Validate(Mode mode)
+    {
+        if (mode.ExcludeBegin && mode.ReturnBegin)
+            throw new InvalidOperationException("A mode cannot combine ExcludeBegin and ReturnBegin.");
+
+        if (mode.ExcludeEnd && mode.ReturnEnd)
+            throw new InvalidOperationException("A mode cannot combine ExcludeEnd and ReturnEnd.");
+
+        if (mode.BeginScope is not null && (mode.ExcludeBegin || mode.ReturnBegin || mode.Skip))
+            throw new InvalidOperationException("A mode with BeginScope cannot use ExcludeBegin, ReturnBegin or Skip.");
+
+        if (mode.EndScope is not null && (mode.ExcludeEnd || mode.ReturnEnd))
+            throw new InvalidOperationException("A mode with EndScope cannot use ExcludeEnd or ReturnEnd.");
+    }
+
+    private static Regex CreateRegex(string pattern, CompilationContext context) => new(pattern, context.RegexOptions, context.MatchTimeout);
+
+    private static IReadOnlyList<Mode> Expand(Mode mode, Mode enclosing, CompilationContext context)
     {
         if (ReferenceEquals(mode, Mode.Self))
             return [enclosing];
@@ -143,57 +194,45 @@ internal static class Compiler
         // (e.g. Razor, where `m13` and `m11` reference each other) produce the
         // same expanded instances on every visit, allowing the CompileMode memo
         // to short-circuit cycles.
-        if (expandCache.TryGetValue(mode, out var cached))
+        if (context.ExpandCache.TryGetValue(mode, out var cached))
             return cached;
 
         IReadOnlyList<Mode> result;
         if (mode.Variants is { Count: > 0 } variants)
         {
             var list = new List<Mode>(variants.Count);
-            foreach (var v in variants)
+            foreach (var variant in variants)
             {
-                list.Add(mode.With(b =>
+                list.Add(new Mode(mode)
                 {
-                    b.Variants = null;
-                    if (v.ClearScope)
-                        b.Scope = null;
-                    else
-                        b.Scope = v.Scope ?? b.Scope;
-                    b.Match = v.Match ?? b.Match;
-                    b.Begin = v.Begin ?? b.Begin;
-                    b.End = v.End ?? b.End;
-                    b.EndScope = v.EndScope ?? b.EndScope;
-                    b.BeginParts = v.BeginParts ?? b.BeginParts;
-                    b.BeginScope = v.BeginScope ?? b.BeginScope;
-                    b.BeginGuard = v.BeginGuard ?? b.BeginGuard;
-                    b.SubLanguage = v.SubLanguage ?? b.SubLanguage;
-                    b.BeginKeywords = v.BeginKeywords ?? b.BeginKeywords;
-                    b.Illegal = v.Illegal ?? b.Illegal;
-                    b.Keywords = v.Keywords ?? b.Keywords;
-                    b.KeywordPattern = v.KeywordPattern ?? b.KeywordPattern;
-                    b.KeywordValidator = v.KeywordValidator ?? b.KeywordValidator;
-                    if (v.Contains.Count > 0)
-                        b.Contains = v.Contains;
-                    if (v.Starts is not null)
-                        b.Starts = v.Starts;
-                    if (v.ExcludeBegin)
-                        b.ExcludeBegin = true;
-                    if (v.ExcludeEnd)
-                        b.ExcludeEnd = true;
-                    if (v.ReturnBegin)
-                        b.ReturnBegin = true;
-                    if (v.ReturnEnd)
-                        b.ReturnEnd = true;
-                    if (v.EndsWithParent)
-                        b.EndsWithParent = true;
-                    if (v.EndsParent)
-                        b.EndsParent = true;
-                    if (v.EndSameAsBegin)
-                        b.EndSameAsBegin = true;
-                    if (v.Skip)
-                        b.Skip = true;
-                }));
+                    Variants = null,
+                    Scope = variant.ClearScope ? null : variant.Scope ?? mode.Scope,
+                    Match = variant.Match ?? mode.Match,
+                    Begin = variant.Begin ?? mode.Begin,
+                    End = variant.End ?? mode.End,
+                    EndScope = variant.EndScope ?? mode.EndScope,
+                    BeginParts = variant.BeginParts ?? mode.BeginParts,
+                    BeginScope = variant.BeginScope ?? mode.BeginScope,
+                    BeginGuard = variant.BeginGuard ?? mode.BeginGuard,
+                    SubLanguage = variant.SubLanguage ?? mode.SubLanguage,
+                    BeginKeywords = variant.BeginKeywords ?? mode.BeginKeywords,
+                    Illegal = variant.Illegal ?? mode.Illegal,
+                    Keywords = variant.Keywords ?? mode.Keywords,
+                    KeywordPattern = variant.KeywordPattern ?? mode.KeywordPattern,
+                    KeywordValidator = variant.KeywordValidator ?? mode.KeywordValidator,
+                    Contains = variant.Contains.Count > 0 ? variant.Contains : mode.Contains,
+                    Starts = variant.Starts ?? mode.Starts,
+                    ExcludeBegin = variant.ExcludeBegin || mode.ExcludeBegin,
+                    ExcludeEnd = variant.ExcludeEnd || mode.ExcludeEnd,
+                    ReturnBegin = variant.ReturnBegin || mode.ReturnBegin,
+                    ReturnEnd = variant.ReturnEnd || mode.ReturnEnd,
+                    EndsWithParent = variant.EndsWithParent || mode.EndsWithParent,
+                    EndsParent = variant.EndsParent || mode.EndsParent,
+                    EndSameAsBegin = variant.EndSameAsBegin || mode.EndSameAsBegin,
+                    Skip = variant.Skip || mode.Skip,
+                });
             }
+
             result = list;
         }
         else
@@ -201,47 +240,67 @@ internal static class Compiler
             result = [mode];
         }
 
-        expandCache[mode] = result;
+        context.ExpandCache[mode] = result;
         return result;
     }
 
+    /// <summary>
+    /// Counts the numbered capturing groups of one <see cref="Mode.BeginParts"/> entry, so the
+    /// group numbers of the concatenated pattern can be mapped back to parts.
+    /// </summary>
+    /// <remarks>
+    /// .NET numbers named groups after every unnamed group of the whole pattern, which would break
+    /// that mapping, so named groups are rejected rather than silently mis-assigned.
+    /// </remarks>
     private static int CountCapturingGroups(string pattern)
     {
-        try
-        {
-            var re = new Regex(pattern, RegexOptions.None, RegexTimeout);
-            // GetGroupNumbers returns all group numbers including 0; subtract 1 for the implicit whole-match group.
-            // Then subtract named groups (these are also counted but they have explicit names).
-            var total = re.GetGroupNumbers().Length - 1;
-            var names = re.GetGroupNames().Count(n => !int.TryParse(n, CultureInfo.InvariantCulture, out _));
-            return Math.Max(0, total - names);
-        }
-        catch
-        {
-            return 0;
-        }
+        var regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+        var names = regex.GetGroupNames();
+        if (names.Any(name => !int.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
+            throw new InvalidOperationException($"BeginParts entries cannot contain named groups: '{pattern}'");
+
+        return regex.GetGroupNumbers().Length - 1;
     }
 
-    private static Dictionary<string, KeywordHit> BuildKeywordMap(Keywords keywords, bool caseInsensitive)
+    private static Dictionary<string, string?> BuildKeywordMap(Keywords keywords, bool caseInsensitive)
     {
-        var map = new Dictionary<string, KeywordHit>(caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        var map = new Dictionary<string, string?>(caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
         // Groups are processed in declaration order and a later group intentionally overrides an
         // earlier one for the same word, so a specific scope (type/literal/built_in) can take
         // precedence over the generic `keyword` group. See Keywords for the full contract.
         foreach (var (scope, words) in keywords.Groups)
         {
+            // `_` is highlight.js's sentinel for "a word of the language, but not highlighted".
             var keywordScope = scope is "_" ? null : scope;
 
             foreach (var raw in words)
             {
-                var split = raw.Split('|');
-                var word = split[0];
-                var relevance = split.Length > 1 && int.TryParse(split[1], CultureInfo.InvariantCulture, out var r) ? r : (CommonKeywords.Contains(word) ? 0 : 1);
-                map[word] = new KeywordHit(keywordScope, relevance);
+                // highlight.js keyword entries may carry a relevance suffix (`const_cast|10`). The
+                // relevance only matters for language auto-detection, which is not supported.
+                var separator = raw.IndexOf('|', StringComparison.Ordinal);
+                var word = separator < 0 ? raw : raw[..separator];
+                map[word] = keywordScope;
             }
         }
 
         return map;
+    }
+
+    private sealed class CompilationContext(bool caseInsensitive, IReadOnlyDictionary<string, string>? aliases, RegexOptions regexOptions, TimeSpan matchTimeout)
+    {
+        public TimeSpan MatchTimeout { get; } = matchTimeout;
+
+        public bool CaseInsensitive { get; } = caseInsensitive;
+
+        public IReadOnlyDictionary<string, string>? Aliases { get; } = aliases;
+
+        public RegexOptions RegexOptions { get; } = regexOptions;
+
+        public Dictionary<Mode, CompiledMode> Memo { get; } = new(ReferenceEqualityComparer.Instance);
+
+        public Dictionary<Mode, IReadOnlyList<Mode>> ExpandCache { get; } = new(ReferenceEqualityComparer.Instance);
+
+        public int SlotCount { get; set; }
     }
 }

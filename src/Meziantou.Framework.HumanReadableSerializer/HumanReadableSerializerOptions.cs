@@ -61,7 +61,10 @@ public sealed record HumanReadableSerializerOptions
             ShowInvisibleCharactersInValues = options.ShowInvisibleCharactersInValues;
             NewLine = options.NewLine;
             IncludeFields = options.IncludeFields;
+            IncludeObsoleteMembers = options.IncludeObsoleteMembers;
             DefaultIgnoreCondition = options.DefaultIgnoreCondition;
+            PropertyOrder = options.PropertyOrder;
+            DictionaryKeyOrder = options.DictionaryKeyOrder;
             foreach (var converter in options.Converters)
             {
                 Converters.Add(converter);
@@ -102,10 +105,27 @@ public sealed record HumanReadableSerializerOptions
     public bool IsReadOnly { get; private set; }
 
     /// <summary>Gets or sets the maximum depth allowed when serializing nested objects.</summary>
-    public int MaxDepth { get; set; } = 64;
+    public int MaxDepth
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = 64;
 
     /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
-    public bool ShowInvisibleCharactersInValues { get; set; }
+    /// <remarks>Only values and property names that span multiple lines are affected.</remarks>
+    public bool ShowInvisibleCharactersInValues
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the line terminator written between lines, either <c>"\n"</c> or <c>"\r\n"</c>. The default is <c>"\n"</c> on every platform, so the output does not depend on the operating system.</summary>
     /// <remarks>Line breaks inside serialized values are rewritten with this terminator too.</remarks>

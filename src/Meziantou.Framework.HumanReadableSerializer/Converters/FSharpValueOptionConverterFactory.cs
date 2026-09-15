@@ -22,7 +22,6 @@ internal sealed class FSharpValueOptionConverterFactory : HumanReadableConverter
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class FSharpValueOptionConverter<T, TValueOption> : HumanReadableConverter<T>
-        where TValueOption : struct, IEquatable<TValueOption>
     {
         private readonly PropertyInfo _valueProperty;
 
@@ -42,7 +41,7 @@ internal sealed class FSharpValueOptionConverterFactory : HumanReadableConverter
             }
             else
             {
-                var propertyValue = (TValueOption)_valueProperty.GetValue(value)!;
+                var propertyValue = (TValueOption?)_valueProperty.GetValue(value);
                 HumanReadableSerializer.Serialize(writer, propertyValue, options);
             }
         }

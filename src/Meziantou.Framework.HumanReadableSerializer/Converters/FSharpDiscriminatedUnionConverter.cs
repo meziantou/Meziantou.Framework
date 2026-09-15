@@ -34,7 +34,7 @@ internal sealed class FSharpDiscriminatedUnionConverter : HumanReadableConverter
             writer.WritePropertyName(field.Name);
 
             var propertyValue = field.GetValue(value);
-            HumanReadableSerializer.Serialize(writer, propertyValue, field.PropertyType, options);
+            HumanReadableSerializer.Serialize(writer, propertyValue, propertyValue?.GetType() ?? field.PropertyType, options);
         }
 
         writer.EndObject();

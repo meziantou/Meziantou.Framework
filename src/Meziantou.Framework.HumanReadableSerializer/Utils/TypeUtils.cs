@@ -30,6 +30,37 @@ internal static class TypeUtils
             return;
         }
 
+        // The name of these types is based on the name of the element type (e.g. "List`1[]"), so they must be built from it
+        if (type.HasElementType)
+        {
+            GetHumanDisplayName(sb, type.GetElementType());
+            if (type.IsArray)
+            {
+                sb.Append('[');
+                var rank = type.GetArrayRank();
+                if (rank > 1)
+                {
+                    sb.Append(',', rank - 1);
+                }
+                else if (!type.IsSZArray)
+                {
+                    sb.Append('*');
+                }
+
+                sb.Append(']');
+            }
+            else if (type.IsByRef)
+            {
+                sb.Append('&');
+            }
+            else if (type.IsPointer)
+            {
+                sb.Append('*');
+            }
+
+            return;
+        }
+
         if (!type.IsGenericParameter)
         {
             if (type.DeclaringType != null)
@@ -45,11 +76,13 @@ internal static class TypeUtils
         }
         else
         {
-            if (type.GenericParameterAttributes is GenericParameterAttributes.Covariant)
+            // GenericParameterAttributes also contains the constraints (e.g. "where T : class")
+            var variance = type.GenericParameterAttributes & GenericParameterAttributes.VarianceMask;
+            if (variance is GenericParameterAttributes.Covariant)
             {
                 sb.Append("out ");
             }
-            else if (type.GenericParameterAttributes is GenericParameterAttributes.Contravariant)
+            else if (variance is GenericParameterAttributes.Contravariant)
             {
                 sb.Append("in ");
             }
@@ -86,28 +119,33 @@ internal static class TypeUtils
 
     public static void GetHumanDisplayName(StringBuilder sb, ParameterInfo parameter)
     {
-        if (parameter.ParameterType.IsByRef && parameter.IsOut)
+        var parameterType = parameter.ParameterType;
+        var dynamicAttribute = parameter.GetCustomAttribute<DynamicAttribute>();
+        var dynamicFlags = dynamicAttribute?.TransformFlags;
+        if (parameterType.IsByRef)
         {
-            sb.Append("out ");
-        }
-        else if (parameter.ParameterType.IsByRef && !parameter.IsOut)
-        {
-            sb.Append("ref ");
+            sb.Append(parameter.IsOut ? "out " : "ref ");
+            parameterType = parameterType.GetElementType()!;
+
+            // The by-ref type has its own entry in the dynamic flags
+            if (dynamicFlags is { Count: > 0 })
+            {
+                dynamicFlags = dynamicFlags.Skip(1).ToArray();
+            }
         }
 
-        var dynamics = parameter.GetCustomAttribute<DynamicAttribute>();
-        if (IsValueTuple(parameter.ParameterType))
+        if (IsValueTuple(parameterType))
         {
             var names = GetTupleElementNames(parameter);
-            WriteValueTupleType(sb, parameter.ParameterType, names, dynamics?.TransformFlags);
+            WriteValueTupleType(sb, parameterType, names, dynamicFlags);
         }
-        else if (dynamics is { TransformFlags: null or [] or [true] })
+        else if (dynamicAttribute is not null && dynamicFlags is null or [] or [true])
         {
             sb.Append("dynamic");
         }
         else
         {
-            GetHumanDisplayName(sb, parameter.ParameterType);
+            GetHumanDisplayName(sb, parameterType);
         }
 
         if (parameter.Name is not null)

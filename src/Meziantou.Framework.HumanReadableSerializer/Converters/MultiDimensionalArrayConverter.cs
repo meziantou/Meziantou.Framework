@@ -35,7 +35,7 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
                 var rankIndex = index2 % length;
                 index2 /= length;
 
-                indexStr = rankIndex.ToString(CultureInfo.InvariantCulture) + indexStr;
+                indexStr = (rankIndex + array.GetLowerBound(rank)).ToString(CultureInfo.InvariantCulture) + indexStr;
             }
 
             indexStr = "[" + indexStr + "]: ";

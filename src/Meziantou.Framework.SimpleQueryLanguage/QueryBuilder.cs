@@ -23,7 +23,10 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
     private readonly TimeProvider _timeProvider;
-    private readonly Dictionary<FilterKeyValue, Func<T, KeyValueOperator, string, bool>> _filters = [];
+
+    // Each handler turns the operator and value of a query term into a predicate when the query is built,
+    // so values are parsed once per term instead of once per evaluated object.
+    private readonly Dictionary<FilterKeyValue, Func<KeyValueOperator, string, Predicate<T>>> _filters = [];
     private Func<T, string, bool>? _freeTextFilter;
     private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter;
 
@@ -40,7 +43,7 @@ public sealed class QueryBuilder<T>
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
-    private void AddHandler(string key, string? value, Func<T, KeyValueOperator, string, bool> handler)
+    private void RegisterHandler(string key, string? value, Func<KeyValueOperator, string, Predicate<T>> handler)
     {
         _filters.Add(new FilterKeyValue(key.ToLowerInvariant(), value?.ToLowerInvariant()), handler);
     }
@@ -51,7 +54,7 @@ public sealed class QueryBuilder<T>
     /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, string? value, Func<T, KeyValueOperator, bool> predicate)
     {
-        AddHandler(key, value, (T obj, KeyValueOperator op, string value) => predicate(obj, op));
+        RegisterHandler(key, value, (op, _) => obj => predicate(obj, op));
     }
 
     /// <summary>Registers a handler for a property key.</summary>
@@ -59,7 +62,7 @@ public sealed class QueryBuilder<T>
     /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, Func<T, KeyValueOperator, string, bool> predicate)
     {
-        AddHandler(key, value: null, predicate);
+        RegisterHandler(key, value: null, (op, value) => obj => predicate(obj, op, value));
     }
 
     /// <summary>Registers a handler for a property key with automatic value parsing.</summary>
@@ -78,16 +81,14 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        bool CreatePredicate(T obj, KeyValueOperator op, string value)
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        RegisterHandler(key, value: null, (op, value) =>
         {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
-            if (tryParse(value, out var parsedValue))
-                return predicate(obj, op, parsedValue);
+            if (!tryParse(value, out var parsedValue))
+                return AlwaysFalsePredicate;
 
-            return false;
-        }
-
-        AddHandler(key, value: null, CreatePredicate);
+            return obj => predicate(obj, op, parsedValue);
+        });
     }
 
     /// <summary>Registers a handler for a specific key-value pair.</summary>
@@ -96,7 +97,7 @@ public sealed class QueryBuilder<T>
     /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, string? value, Func<T, bool> predicate)
     {
-        AddHandler(key, value, ApplyEqualOperator((T obj, string value) => predicate(obj)));
+        RegisterHandler(key, value, (op, _) => ApplyEqualOperator(op, obj => predicate(obj)));
     }
 
     /// <summary>Registers a handler for a property key with string value.</summary>
@@ -104,7 +105,7 @@ public sealed class QueryBuilder<T>
     /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, Func<T, string, bool> predicate)
     {
-        AddHandler(key, value: null, ApplyEqualOperator((T obj, string value) => predicate(obj, value)));
+        RegisterHandler(key, value: null, (op, value) => ApplyEqualOperator(op, obj => predicate(obj, value)));
     }
 
     /// <summary>Registers a handler for a property key with automatic value parsing.</summary>
@@ -123,16 +124,15 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        bool CreatePredicate(T obj, KeyValueOperator op, string value)
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        RegisterHandler(key, value: null, (op, value) =>
         {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
-            if (tryParse(value, out var parsedValue))
-                return predicate(obj, parsedValue);
+            // The predicate only tests for a match, so only the equality operators have a meaning
+            if (op is not (KeyValueOperator.EqualTo or KeyValueOperator.NotEqualTo) || !tryParse(value, out var parsedValue))
+                return AlwaysFalsePredicate;
 
-            return false;
-        }
-
-        AddHandler(key, value: null, CreatePredicate);
+            return ApplyEqualOperator(op, obj => predicate(obj, parsedValue));
+        });
     }
 
     /// <summary>Registers a range handler for a property key with custom value parsing.</summary>
@@ -142,13 +142,8 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        bool CreatePredicate(T obj, KeyValueOperator op, string value)
-        {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
-            return ConvertRangePredicate(obj, op, value, predicate, tryParse);
-        }
-
-        AddHandler(key, value: null, CreatePredicate);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        RegisterHandler(key, value: null, (op, value) => CreateRangePredicate(op, value, predicate, tryParse));
     }
 
     /// <summary>Registers a range handler for a property key with automatic value parsing.</summary>
@@ -161,48 +156,49 @@ public sealed class QueryBuilder<T>
     }
 
     // Ranges
-    private bool ConvertRangePredicate<TValue>(T obj, KeyValueOperator op, string value, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue> tryParseValue)
+    private Predicate<T> CreateRangePredicate<TValue>(KeyValueOperator op, string value, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue> tryParseValue)
     {
         // field:1..10
         // field=1..10
-        if (op == KeyValueOperator.EqualTo)
+        // field<>1..10
+        if (op is KeyValueOperator.EqualTo or KeyValueOperator.NotEqualTo)
         {
             var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
-            if (range is not null)
-                return predicate(obj, range);
-        }
-        else if (op == KeyValueOperator.NotEqualTo)
-        {
-            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
-            if (range is not null)
-                return !predicate(obj, range);
-        }
-        else
-        {
-            // field>=1
-            if (tryParseValue(value, out var parsedValue))
-            {
-                var range = new UnaryRangeSyntax<TValue>(op, parsedValue);
-                return predicate(obj, range);
-            }
+            if (range is null)
+                return AlwaysFalsePredicate;
+
+            return ApplyEqualOperator(op, obj => predicate(obj, range));
         }
 
-        return false;
+        // field>=1
+        if (tryParseValue(value, out var parsedValue))
+        {
+            var range = new UnaryRangeSyntax<TValue>(op, parsedValue);
+            return obj => predicate(obj, range);
+        }
+
+        return AlwaysFalsePredicate;
     }
 
-    private static Func<T, KeyValueOperator, string, bool> ApplyEqualOperator(Func<T, string, bool> predicate)
+    private static Predicate<T> ApplyEqualOperator(KeyValueOperator op, Predicate<T> predicate)
     {
-        return new Func<T, KeyValueOperator, string, bool>((obj, op, value) =>
+        return op switch
         {
-            if (op is KeyValueOperator.EqualTo)
-                return predicate(obj, value);
+            KeyValueOperator.EqualTo => predicate,
+            KeyValueOperator.NotEqualTo => Negate(predicate),
+            _ => AlwaysFalsePredicate, // Not supported
+        };
+    }
 
-            if (op is KeyValueOperator.NotEqualTo)
-                return !predicate(obj, value);
+    private static Predicate<T> Negate(Predicate<T> predicate)
+    {
+        if (predicate == AlwaysFalsePredicate)
+            return AlwaysTruePredicate;
 
-            // Not supported
-            return false;
-        });
+        if (predicate == AlwaysTruePredicate)
+            return AlwaysFalsePredicate;
+
+        return obj => !predicate(obj);
     }
 
     /// <summary>Sets the handler for free-text search terms without a property key.</summary>
@@ -222,6 +218,10 @@ public sealed class QueryBuilder<T>
     /// <summary>Builds a query from a query string.</summary>
     /// <param name="query">The query string to parse.</param>
     /// <returns>A compiled query that can be evaluated against objects.</returns>
+    /// <remarks>
+    /// Values, including date keywords such as <c>today</c>, are parsed when the query is built. Handlers registered
+    /// or changed afterward do not affect the returned query.
+    /// </remarks>
     public Query<T> Build(string query)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -232,84 +232,119 @@ public sealed class QueryBuilder<T>
 
     private Predicate<T> CreatePredicate(string query)
     {
-        if (query.Length == 0)
+        if (string.IsNullOrWhiteSpace(query))
             return AlwaysTruePredicate;
 
         var syntax = QuerySyntax.Parse(query);
         var boundQuery = BoundQuery.Create(syntax);
 
-        Predicate<T>? predicate = null;
-
-        foreach (var disjunction in boundQuery)
+        var context = new BuildContext(_freeTextFilter, _unhandledPropertyFilter);
+        var disjunctions = new Predicate<T>[boundQuery.Count][];
+        for (var i = 0; i < boundQuery.Count; i++)
         {
-            Predicate<T>? disjunctionPredicate = null;
-
-            foreach (var conjunction in disjunction)
+            var disjunction = boundQuery[i];
+            var conjunctions = new Predicate<T>[disjunction.Count];
+            for (var j = 0; j < disjunction.Count; j++)
             {
-                var next = CreatePredicate(conjunction);
-                var current = disjunctionPredicate;
-                disjunctionPredicate = current is null
-                    ? next
-                    : new Predicate<T>(v => current(v) && next(v));
+                // Distributing AND over OR repeats the same term in many disjunctions, so create its predicate once
+                var node = disjunction[j];
+                if (!context.Predicates.TryGetValue(node, out var predicate))
+                {
+                    predicate = CreatePredicate(node, context);
+                    context.Predicates.Add(node, predicate);
+                }
+
+                conjunctions[j] = predicate;
             }
 
-            if (disjunctionPredicate is not null)
-            {
-                var next = disjunctionPredicate;
-                var current = predicate;
-                predicate = current is null
-                    ? next
-                    : new Predicate<T>(v => current(v) || next(v));
-            }
+            disjunctions[i] = conjunctions;
         }
 
-        return predicate ?? AlwaysTruePredicate;
+        if (disjunctions is [[var single]])
+            return single;
+
+        // Evaluate with loops rather than nested delegates: a query can have thousands of disjunctions,
+        // and a chain of delegates that deep overflows the stack.
+        return obj => Evaluate(disjunctions, obj);
     }
 
-    private Predicate<T> CreatePredicate(BoundQuery node)
+    private static bool Evaluate(Predicate<T>[][] disjunctions, T value)
+    {
+        foreach (var conjunctions in disjunctions)
+        {
+            if (MatchesAll(conjunctions, value))
+                return true;
+        }
+
+        return false;
+
+        static bool MatchesAll(Predicate<T>[] predicates, T value)
+        {
+            foreach (var predicate in predicates)
+            {
+                if (!predicate(value))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    private Predicate<T> CreatePredicate(BoundQuery node, BuildContext context)
     {
         return node switch
         {
-            BoundTextQuery textQuery => CreatePredicate(textQuery),
-            BoundKeyValueQuery keyValueQuery => CreatePredicate(keyValueQuery),
+            BoundTextQuery textQuery => CreatePredicate(textQuery, context),
+            BoundKeyValueQuery keyValueQuery => CreatePredicate(keyValueQuery, context),
             _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node: {node.GetType()}"),
         };
     }
 
-    private Predicate<T> CreatePredicate(BoundTextQuery node)
+    private static Predicate<T> CreatePredicate(BoundTextQuery node, BuildContext context)
     {
-        if (_freeTextFilter is null)
-            return AlwaysFalsePredicate;
+        var freeTextFilter = context.FreeTextFilter;
+        if (freeTextFilter is null)
+        {
+            // Free text is not supported, so it never matches, and its negation always does
+            return node.IsNegated ? AlwaysTruePredicate : AlwaysFalsePredicate;
+        }
 
+        var text = node.Text;
         return node.IsNegated
-                ? wi => !_freeTextFilter(wi, node.Text)
-                : wi => _freeTextFilter(wi, node.Text);
+                ? obj => !freeTextFilter(obj, text)
+                : obj => freeTextFilter(obj, text);
     }
 
-    private Predicate<T> CreatePredicate(BoundKeyValueQuery node)
+    private Predicate<T> CreatePredicate(BoundKeyValueQuery node, BuildContext context)
     {
         var key = node.Key.ToLowerInvariant();
         var value = node.Value.ToLowerInvariant();
-        var op = node.Operator;
 
-        var handlers = _filters;
-
-        if (handlers.TryGetValue(new FilterKeyValue(key, value), out var predicateHandler) ||
-            handlers.TryGetValue(new FilterKeyValue(key, value: null), out predicateHandler))
+        if (_filters.TryGetValue(new FilterKeyValue(key, value), out var handler) ||
+            _filters.TryGetValue(new FilterKeyValue(key, value: null), out handler))
         {
-            return node.IsNegated
-                    ? v => !predicateHandler(v, op, node.Value)
-                    : v => predicateHandler(v, op, node.Value);
+            var predicate = handler(node.Operator, node.Value);
+            return node.IsNegated ? Negate(predicate) : predicate;
         }
 
-        if (_unhandledPropertyFilter is not null)
+        var unhandledPropertyFilter = context.UnhandledPropertyFilter;
+        if (unhandledPropertyFilter is not null)
         {
+            var (propertyName, op, propertyValue) = (node.Key, node.Operator, node.Value);
             return node.IsNegated
-                    ? v => !_unhandledPropertyFilter(v, node.Key, op, node.Value)
-                    : v => _unhandledPropertyFilter(v, node.Key, op, node.Value);
+                    ? obj => !unhandledPropertyFilter(obj, propertyName, op, propertyValue)
+                    : obj => unhandledPropertyFilter(obj, propertyName, op, propertyValue);
         }
 
-        return CreatePredicate(new BoundTextQuery(node.IsNegated, $"{node.Key}:{node.Value}"));
+        return CreatePredicate(new BoundTextQuery(node.IsNegated, $"{node.Key}{node.Operator.ToQueryText()}{node.Value}"), context);
+    }
+
+    /// <summary>The handlers as they were when the query was built, and the predicates created so far.</summary>
+    private sealed class BuildContext(Func<T, string, bool>? freeTextFilter, UnhandledPropertyDelegate<T>? unhandledPropertyFilter)
+    {
+        public Func<T, string, bool>? FreeTextFilter { get; } = freeTextFilter;
+        public UnhandledPropertyDelegate<T>? UnhandledPropertyFilter { get; } = unhandledPropertyFilter;
+        public Dictionary<BoundQuery, Predicate<T>> Predicates { get; } = [];
     }
 
     private readonly record struct FilterKeyValue

@@ -22,17 +22,21 @@ record Person(string FullName, DateTime DateOfBirth);
 - Logical operators `NOT`, `AND`, `OR`
 - Priority using `(`, `)`
 - `AddHandler`: supported operators: `:`
-- `AddRangeHandler`: supported operators: `:`, `<`, `<=`, `>`, `>=`, `..` (range)
+- `AddRangeHandler`: supported operators: `:`, `<`, `<=`, `>`, `>=`, `..` (range). Use `*` for an open bound: `10..*` is `>=10` and `*..10` is `<=10`
 - `SetTextFilterHandler` matches all non-bound filters
-- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`
+- Special values: `today`, `yesterday`, `this week`, `this month`, `last month`, `this year`, `last year`. The two-word values also accept an underscore, which needs no quotes: `this_week`, `this_month`, `last_month`, `this_year`, `last_year`.
+- Relative dates: `@today`, optionally followed by an offset in days (`d`) or weeks (`w`): `@today-1w`, `@today+3d`. The value is the start of that day in UTC and can be used wherever a date is expected, including range bounds.
+- Special values and relative dates are resolved when the query is built, so rebuild a query that is kept across days.
 
 Examples:
 - `name:john` or `name=john`
 - `name:"john doe"`
 - `name<>john` or `-name:john` or `NOT name:john`
 - `(name:"john doe" OR name:jane) AND age>21`
-- `created:"this week"`
+- `created:"this week"` or `created:this_week`
 - `age:13..19` (lower and upper bound are included)
+- `stars:10..*` or `created:*..2024-12-31` (open bound)
+- `created>@today-1w` or `created:@today-2w..@today`
 - `age>=21`
 - `is_open:true free form text`
 - `is_open:true AND NOT "free form text"`

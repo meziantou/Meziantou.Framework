@@ -12,13 +12,16 @@ public sealed class OrQuerySyntax : QuerySyntax
         Left = left;
         OperatorToken = operatorToken;
         Right = right;
+
+        // Computed once: reading Left.Span lazily recurses through every term of a long disjunction
+        Span = TextSpan.FromBounds(left.Span.Start, right.Span.End);
     }
 
     /// <summary>Gets the kind of this syntax node.</summary>
     public override QuerySyntaxKind Kind => QuerySyntaxKind.OrQuery;
 
     /// <summary>Gets the text span covered by this syntax node.</summary>
-    public override TextSpan Span => TextSpan.FromBounds(Left.Span.Start, Right.Span.End);
+    public override TextSpan Span { get; }
 
     /// <summary>Gets the left operand.</summary>
     public QuerySyntax Left { get; }

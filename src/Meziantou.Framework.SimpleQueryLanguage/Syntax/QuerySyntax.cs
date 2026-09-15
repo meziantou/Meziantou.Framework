@@ -28,91 +28,61 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
     public override string ToString()
     {
         using var stringWriter = new StringWriter();
-        using (var indentedTextWriter = new IndentedTextWriter(stringWriter))
+        using (var writer = new IndentedTextWriter(stringWriter))
         {
-            Walk(indentedTextWriter, this);
-        }
+            // Walk with an explicit stack: a long conjunction is a left-leaning tree as deep as its term count,
+            // so recursing would overflow the stack. An entry holds either a node to write or a closing parenthesis.
+            var stack = new Stack<(QuerySyntax? Node, int Indent)>();
+            stack.Push((this, 0));
 
-        return stringWriter.ToString();
-
-        static void Walk(IndentedTextWriter writer, QuerySyntax node)
-        {
-            switch (node.Kind)
+            while (stack.TryPop(out var item))
             {
-                case QuerySyntaxKind.TextQuery:
-                    WalkTextExpression(writer, (TextQuerySyntax)node);
-                    break;
-                case QuerySyntaxKind.KeyValueQuery:
-                    WalkKeyValueExpression(writer, (KeyValueQuerySyntax)node);
-                    break;
-                case QuerySyntaxKind.OrQuery:
-                    WalkOrExpression(writer, (OrQuerySyntax)node);
-                    break;
-                case QuerySyntaxKind.AndQuery:
-                    WalkAndExpression(writer, (AndQuerySyntax)node);
-                    break;
-                case QuerySyntaxKind.NegatedQuery:
-                    WalkNegatedExpression(writer, (NegatedQuerySyntax)node);
-                    break;
-                case QuerySyntaxKind.ParenthesizedQuery:
-                    WalkParenthesizedExpression(writer, (ParenthesizedQuerySyntax)node);
-                    break;
+                writer.Indent = item.Indent;
+                switch (item.Node)
+                {
+                    case null:
+                        writer.WriteLine(")");
+                        break;
+
+                    case TextQuerySyntax node:
+                        writer.WriteLine(node.TextToken);
+                        break;
+
+                    case KeyValueQuerySyntax node:
+                        writer.Write(node.KeyToken);
+                        writer.Write(" ");
+                        writer.Write(node.OperatorToken);
+                        writer.Write(" ");
+                        writer.Write(node.ValueToken);
+                        writer.WriteLine();
+                        break;
+
+                    case OrQuerySyntax node:
+                        writer.WriteLine("OR");
+                        stack.Push((node.Right, item.Indent + 1));
+                        stack.Push((node.Left, item.Indent + 1));
+                        break;
+
+                    case AndQuerySyntax node:
+                        writer.WriteLine("AND");
+                        stack.Push((node.Right, item.Indent + 1));
+                        stack.Push((node.Left, item.Indent + 1));
+                        break;
+
+                    case NegatedQuerySyntax node:
+                        writer.WriteLine("NOT");
+                        stack.Push((node.Query, item.Indent + 1));
+                        break;
+
+                    case ParenthesizedQuerySyntax node:
+                        writer.WriteLine("(");
+                        stack.Push((null, item.Indent));
+                        stack.Push((node.Query, item.Indent + 1));
+                        break;
+                }
             }
         }
 
-        static void WalkTextExpression(IndentedTextWriter writer, TextQuerySyntax node)
-        {
-            writer.WriteLine(node.TextToken);
-        }
-
-        static void WalkKeyValueExpression(IndentedTextWriter writer, KeyValueQuerySyntax node)
-        {
-            writer.Write(node.KeyToken);
-            writer.Write(" ");
-            writer.Write(node.OperatorToken);
-            writer.Write(" ");
-            writer.Write(node.ValueToken);
-            writer.WriteLine();
-        }
-
-        static void WalkOrExpression(IndentedTextWriter writer, OrQuerySyntax node)
-        {
-            writer.WriteLine("OR");
-
-            writer.Indent++;
-            Walk(writer, node.Left);
-            Walk(writer, node.Right);
-            writer.Indent--;
-        }
-
-        static void WalkAndExpression(IndentedTextWriter writer, AndQuerySyntax node)
-        {
-            writer.WriteLine("AND");
-
-            writer.Indent++;
-            Walk(writer, node.Left);
-            Walk(writer, node.Right);
-            writer.Indent--;
-        }
-
-        static void WalkNegatedExpression(IndentedTextWriter writer, NegatedQuerySyntax node)
-        {
-            writer.WriteLine("NOT");
-
-            writer.Indent++;
-            Walk(writer, node.Query);
-            writer.Indent--;
-        }
-
-        static void WalkParenthesizedExpression(IndentedTextWriter writer, ParenthesizedQuerySyntax node)
-        {
-            writer.WriteLine("(");
-
-            writer.Indent++;
-            Walk(writer, node.Query);
-            writer.Indent--;
-
-            writer.WriteLine(")");
-        }
+        return stringWriter.ToString();
     }
 }

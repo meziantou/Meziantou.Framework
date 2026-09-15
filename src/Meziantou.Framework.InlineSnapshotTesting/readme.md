@@ -363,13 +363,13 @@ InlineSnapshot
 
 ## Invisible characters
 
-If spaces or new lines are important, you can display them as visible characters. Line endings are shown as control pictures (`␍`, `␊`), followed by a normalized line break.
+If spaces or new lines are important, you can display them as visible characters. Line endings are shown as control pictures (`␍`, `␊`), followed by a normalized line break. A space is only shown as `␠` at the start or the end of a line, and other space characters are shown as their code point (e.g. `<U+00A0>`).
 
 ````c#
 InlineSnapshot
     .WithSerializer(options => options.ShowInvisibleCharactersInValues = true)
-    .Validate("line 1\r\nline\t2", """
-        line␠1␍␊
+    .Validate("line 1 \r\nline\t2", """
+        line 1␠␍␊
         line␉2
         """);
 ````

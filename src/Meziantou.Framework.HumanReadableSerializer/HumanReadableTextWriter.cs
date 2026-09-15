@@ -90,9 +90,27 @@ public sealed class HumanReadableTextWriter
 
     private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value)
     {
-        foreach (var c in value)
+        // A space is only visible between other characters, so leading and trailing whitespace is always encoded
+        var start = 0;
+        while (start < value.Length && IsWhiteSpace(value[start]))
         {
-            if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
+            start++;
+        }
+
+        var end = value.Length;
+        while (end > start && IsWhiteSpace(value[end - 1]))
+        {
+            end--;
+        }
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c is ' ' && i >= start && i < end)
+            {
+                sb.Append(c);
+            }
+            else if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
             {
                 sb.Append((char)((short)'\u2400' + (short)c));
             }
@@ -100,11 +118,19 @@ public sealed class HumanReadableTextWriter
             {
                 sb.Append('\u2421');
             }
+            else if (IsWhiteSpace(c))
+            {
+                // Other spaces look like a regular space or like nothing at all, and have no control picture
+                sb.Append(CultureInfo.InvariantCulture, $"<U+{(int)c:X4}>");
+            }
             else
             {
                 sb.Append(c);
             }
         }
+
+        // U+200C and U+200D are not encoded: they are part of many emoji sequences
+        static bool IsWhiteSpace(char c) => char.IsWhiteSpace(c) || c is '\u200B' or '\u2060' or '\uFEFF';
     }
 
     /// <summary>Writes a value to the output.</summary>

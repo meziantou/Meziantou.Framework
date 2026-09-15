@@ -1812,7 +1812,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Subject = "a b\tc\r\nd\ne\0",
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
             Expected = """
-            a␠b␉c␍␊
+            a b␉c␍␊
             d␊
             e␀
             """,
@@ -1826,7 +1826,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         var text = HumanReadableSerializer.Serialize(new { Multiline = "line 1\r\nline\t2", Empty = "a\r\n\rb\n" }, options);
 
         // Line endings are normalized to options.NewLine: the control pictures already record the original ones
-        var expected = string.Join(options.NewLine, "Multiline:", "  line␠1␍␊", "  line␉2", "Empty:", "  a␍␊", "  ␍", "  b␊", "");
+        var expected = string.Join(options.NewLine, "Multiline:", "  line 1␍␊", "  line␉2", "Empty:", "  a␍␊", "  ␍", "  b␊", "");
         Assert.Equal(expected, text);
     }
 
@@ -1884,7 +1884,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
             Expected = """
             A:
-              a␠b␊
+              a b␊
               c
             B: d
             """,
@@ -1898,7 +1898,70 @@ public sealed partial class SerializerTests : SerializerTestsBase
         {
             Subject = "a\tb\0c d\u007F",
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
-            Expected = "a␉b␀c␠d␡",
+            Expected = "a␉b␀c d␡",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_LeadingAndTrailingWhitespace()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "  a  b  \n c \t\n   ",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            ␠␠a  b␠␠␊
+            ␠c␠␉␊
+            ␠␠␠
+            """,
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_OtherSpaces()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\u00A0b\u2009c\u3000d\u200Be\u2060f\uFEFFg\u1680h",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a<U+00A0>b<U+2009>c<U+3000>d<U+200B>e<U+2060>f<U+FEFF>g<U+1680>h",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_OtherSpaces_AtTheEdges()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "\u00A0 a \u00A0",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "<U+00A0>␠a␠<U+00A0>",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_ZeroWidthJoinerIsKept()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\u200Cb\u200Dc",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a\u200Cb\u200Dc",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_UnicodeLineSeparators()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\u2028b\u0085c",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            a<U+2028>
+            b<U+0085>
+            c
+            """,
         });
     }
 
@@ -1907,9 +1970,9 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new Dictionary<string, string> { ["a b\t"] = "c d" },
+            Subject = new Dictionary<string, string> { ["a b "] = " c d" },
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
-            Expected = "a␠b␉: c␠d",
+            Expected = "a b␠: ␠c d",
         });
     }
 

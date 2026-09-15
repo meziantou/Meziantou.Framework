@@ -40,6 +40,40 @@ public sealed class CSharpStringLiteralTests
         Assert.Equal(value, literal.Token.ValueText);
     }
 
+    [Theory]
+    [InlineData("\u001b[31mred", "\"\\u001B[31mred\"")]
+    [InlineData("a\u200Bb", "\"a\\u200Bb\"")]
+    [InlineData("a\uFEFFb", "\"a\\uFEFFb\"")]
+    [InlineData("a\uD83D\uDE00b", "\"a\uD83D\uDE00b\"")]
+    [InlineData("line1\nline2\u0001", "\"line1\\nline2\\u0001\"")]
+    [InlineData("line1\fline2", "\"line1\\fline2\"")]
+    [InlineData("line1\nline2\u2028", "\"line1\\nline2\\u2028\"")]
+    public void Create_InvisibleCharacters_UsesEscapedQuotedString(string value, string expected)
+    {
+        AssertEscapedQuotedString(value, expected);
+    }
+
+    // Attribute arguments are stored as UTF-8, which cannot represent an unpaired surrogate, so these cannot be InlineData.
+    [Fact]
+    public void Create_UnpairedSurrogates_UsesEscapedQuotedString()
+    {
+        AssertEscapedQuotedString("a\uD800b", "\"a\\uD800b\"");
+        AssertEscapedQuotedString("a\uDC00b", "\"a\\uDC00b\"");
+        AssertEscapedQuotedString("a\uD800", "\"a\\uD800\"");
+    }
+
+    private static void AssertEscapedQuotedString(string value, string expected)
+    {
+        var result = CSharpStringLiteral.Create(value, CSharpStringFormats.Default, "    ", 0, "\n");
+        Assert.Equal(expected, result);
+
+        var tree = CSharpSyntaxTree.ParseText("_ = " + result + ";");
+        Assert.Empty(tree.GetDiagnostics());
+
+        var literal = Assert.IsType<LiteralExpressionSyntax>(tree.GetRoot().DescendantNodes().Single(node => node is LiteralExpressionSyntax));
+        Assert.Equal(value, literal.Token.ValueText);
+    }
+
     [Fact]
     public void CreateRawString()
     {

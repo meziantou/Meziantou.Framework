@@ -695,6 +695,294 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public async Task UpdateMultipleSnapshots_InsideLambda()
+    {
+        // After the first update, the updated call used to be searched as the largest call around its position, which is
+        // the enclosing Invoke call. The line shift was then wrong and the second snapshot could not be found.
+        await AssertSnapshot(
+            """"
+            Invoke(() =>
+            {
+                InlineSnapshot.Validate(new { A = 1, B = 2 }, "");
+                InlineSnapshot.Validate(new { A = 3, B = 4 }, "");
+            });
+
+            static void Invoke(Action action) => action();
+            """",
+            """"
+            Invoke(() =>
+            {
+                InlineSnapshot.Validate(new { A = 1, B = 2 }, """
+                    A: 1
+                    B: 2
+                    """);
+                InlineSnapshot.Validate(new { A = 3, B = 4 }, """
+                    A: 3
+                    B: 4
+                    """);
+            });
+
+            static void Invoke(Action action) => action();
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateMultipleSnapshots_SameLine()
+    {
+        await AssertSnapshot(
+            """"
+            InlineSnapshot.Validate(1, ""); InlineSnapshot.Validate(2, "");
+            """",
+            """"
+            InlineSnapshot.Validate(1, "1"); InlineSnapshot.Validate(2, "2");
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_FileEditedSinceBuild()
+    {
+        // The call is no longer on the line reported by the compiler, as it happens when another test process edits the file
+        await AssertSnapshot(
+            """"
+            System.IO.File.WriteAllText(GetPath(), "// Inserted line\n" + System.IO.File.ReadAllText(GetPath()));
+            InlineSnapshot.Validate(new { A = 1 }, "");
+
+            static string GetPath([CallerFilePath] string path = null) => path;
+            """",
+            """"
+            // Inserted line
+            System.IO.File.WriteAllText(GetPath(), "// Inserted line\n" + System.IO.File.ReadAllText(GetPath()));
+            InlineSnapshot.Validate(new { A = 1 }, "A: 1");
+
+            static string GetPath([CallerFilePath] string path = null) => path;
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_HelperResultAssignedToVariable()
+    {
+        // The PDB reports the column of the statement. Only a call starting the statement used to be found.
+        await AssertSnapshot(
+            """"
+            var result = Helper(new { A = 1 }, "");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static int Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return 0;
+            }
+            """",
+            """"
+            var result = Helper(new { A = 1 }, "A: 1");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static int Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return 0;
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_HelperNestedInAnotherCall()
+    {
+        await AssertSnapshot(
+            """"
+            GC.KeepAlive(Helper(new { A = 1 },
+                ""));
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static int Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return 0;
+            }
+            """",
+            """"
+            GC.KeepAlive(Helper(new { A = 1 },
+                "A: 1"));
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static int Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return 0;
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_AwaitWithConfigureAwait()
+    {
+        await AssertSnapshot(
+            """"
+            await Helper(new { A = 1 }, "").ConfigureAwait(false);
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+            """",
+            """"
+            await Helper(new { A = 1 }, "A: 1").ConfigureAwait(false);
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_NullConditionalInvocation()
+    {
+        await AssertSnapshot(
+            """"
+            var checker = new Checker();
+            checker?.Check(new { A = 1 }, "");
+
+            sealed class Checker
+            {
+                [InlineSnapshotAssertion("expected")]
+                public void Check(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            }
+            """",
+            """"
+            var checker = new Checker();
+            checker?.Check(new { A = 1 }, "A: 1");
+
+            sealed class Checker
+            {
+                [InlineSnapshotAssertion("expected")]
+                public void Check(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task SupportExtensionHelperMethods()
+    {
+        // The snapshot parameter index counts the receiver, which is not an argument when using the extension syntax
+        await AssertSnapshot(
+            """"
+            new { A = 1 }.Check();
+            new { A = 2 }.CheckWithMessage("", "message");
+            HelperExtensions.Check(new { A = 3 });
+
+            static class HelperExtensions
+            {
+                [InlineSnapshotAssertion("expected")]
+                public static void Check(this object data, string expected = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+
+                [InlineSnapshotAssertion("expected")]
+                public static void CheckWithMessage(this object data, string expected, string message, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            }
+            """",
+            """"
+            new { A = 1 }.Check("A: 1");
+            new { A = 2 }.CheckWithMessage("A: 2", "message");
+            HelperExtensions.Check(new { A = 3 }, "A: 3");
+
+            static class HelperExtensions
+            {
+                [InlineSnapshotAssertion("expected")]
+                public static void Check(this object data, string expected = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+
+                [InlineSnapshotAssertion("expected")]
+                public static void CheckWithMessage(this object data, string expected, string message, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                    => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_AddParameter_AfterOmittedOptionalParameter()
+    {
+        // A positional argument would bind to the message parameter
+        await AssertSnapshot(
+            """"
+            Helper(new { A = 1 });
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper(object data, string message = null, string expected = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            """",
+            """"
+            Helper(new { A = 1 }, expected: "A: 1");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper(object data, string message = null, string expected = null, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+                => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+            """");
+    }
+
+    [Fact]
+    public async Task MergeToolStrategy_WhenDiffToolsAreDisabled_UpdatesTheNextSnapshotsOfTheFile()
+    {
+        // The strategy deletes the temporary file when no merge tool starts, but the line shifts of the edits it contained
+        // were kept. The next snapshots of the file were then searched on the wrong lines.
+        // The last snapshot is only updated when the merge-tool snapshots report a plain snapshot difference.
+        await AssertSnapshot(
+            """"
+            var settings = InlineSnapshotSettings.Default with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool };
+            try { InlineSnapshot.Validate(new { A = 1, B = 2 }, settings, ""); } catch (InlineSnapshotAssertionException) { }
+            try { InlineSnapshot.Validate(new { A = 3, B = 4 }, settings, ""); } catch (InlineSnapshotAssertionException) { }
+            InlineSnapshot.Validate(new { A = 5, B = 6 }, "");
+            """",
+            """"
+            var settings = InlineSnapshotSettings.Default with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool };
+            try { InlineSnapshot.Validate(new { A = 1, B = 2 }, settings, ""); } catch (InlineSnapshotAssertionException) { }
+            try { InlineSnapshot.Validate(new { A = 3, B = 4 }, settings, ""); } catch (InlineSnapshotAssertionException) { }
+            InlineSnapshot.Validate(new { A = 5, B = 6 }, """
+                A: 5
+                B: 6
+                """);
+            """");
+    }
+
+    [Fact]
+    public void Validate_HelperNotForwardingCallerInformation_ReportsTheMissingParameters()
+    {
+        var settings = InlineSnapshotSettings.Default with
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = new NoOpUpdateStrategy(),
+        };
+
+        var exception = Assert.Throws<InlineSnapshotException>(() => HelperNotForwardingCallerInformation(settings, "not the snapshot"));
+        Assert.Contains("[CallerFilePath] and [CallerLineNumber]", exception.Message);
+    }
+
+    [InlineSnapshotAssertion(nameof(expected))]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    private static void HelperNotForwardingCallerInformation(InlineSnapshotSettings settings, string expected)
+    {
+        InlineSnapshot.Validate(new object(), settings, expected);
+    }
+
+    private sealed class NoOpUpdateStrategy : SnapshotUpdateStrategy
+    {
+        public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot) => true;
+
+        public override bool MustReportError(InlineSnapshotSettings settings, string path) => true;
+
+        public override void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile)
+        {
+        }
+    }
+
+    [Fact]
     public async Task UpdateSnapshotWhenForceUpdateSnapshotsIsEnabled()
     {
         await AssertSnapshot(forceUpdateSnapshots: true,
@@ -829,6 +1117,19 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         InlineSnapshot
             .WithSettings(settings => settings.ScrubLinesWithReplace(line => line == "Line2" ? null : line))
             .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Theory]
+    [InlineData("Line1\nLine2\nLine3", "Line1\nLine2")]
+    [InlineData("Line1\r\nLine2\r\nLine3", "Line1\r\nLine2")]
+    [InlineData("Line1\nLine2\nLine3\n", "Line1\nLine2\n")]
+    [InlineData("Line3", "")]
+    public void ScrubLines_RemoveLastLine_DoesNotLeaveTrailingLineBreak(string text, string expected)
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "Line3");
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
     }
 
     [Fact]
@@ -1254,6 +1555,26 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
                 <root>
                   <item>test1</item>
                   <item>test2</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlAttribute_RemoveSeveralAttributesOfTheSameElement()
+    {
+        // Removing an attribute during the lazy XPath enumeration used to stop the enumeration of the element's other attributes
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlAttribute("//@*", attribute => null);
+            })
+            .Validate(XDocument.Parse("""
+                <root a="1" b="2" c="3">
+                  <item d="4" e="5">test</item>
+                </root>
+                """), """
+                <root>
+                  <item>test</item>
                 </root>
                 """);
     }

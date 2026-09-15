@@ -283,6 +283,28 @@ public sealed class YamlCSharpUnionTests
         Assert.Equal(3, mapping["Depth"]);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StructuralClassifierKeepsQuotedScalarsAsText(bool useSourceGeneration)
+    {
+        Assert.Equal("42", Deserialize<TextOrAnyUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("true", Deserialize<TextOrAnyUnion>("'true'\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("42\n", Deserialize<TextOrAnyUnion>("|\n  42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("42", Deserialize<TextOrAnyUnion>("!!str 42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(42L, Deserialize<TextOrAnyUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(true, Deserialize<TextOrAnyUnion>("true\n", useSourceGeneration, StructuralOptions).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StructuralClassifierSelectsTheStringCaseForAQuotedNumberReadableFromString(bool useSourceGeneration)
+    {
+        Assert.Equal("42", Deserialize<IdOrNameUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(42, Deserialize<IdOrNameUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+    }
+
     private static YamlSerializerOptions StructuralOptions { get; } = new() { TypeClassifiers = [new YamlUnionTypeStructuralClassifier()] };
 
     private static string Serialize<T>(T value, bool useSourceGeneration)
@@ -326,6 +348,10 @@ public sealed class YamlCSharpUnionTests
     internal union ShapeOrCircleUnion(UnionCircle, UnionRectangle);
     internal union PointOrLabelUnion(UnionPoint, UnionLabel);
     internal union LabelOrAnyUnion(UnionLabel, object);
+    internal union TextOrAnyUnion(string, object);
+
+    [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString)]
+    internal union IdOrNameUnion(int, string);
 
     internal sealed class UnionPoint
     {
@@ -388,6 +414,8 @@ public sealed class YamlCSharpUnionTests
 [YamlSerializable(typeof(YamlCSharpUnionTests.ShapeOrCircleUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.PointOrLabelUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.LabelOrAnyUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.TextOrAnyUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.IdOrNameUnion))]
 internal sealed partial class CSharpUnionYamlContext : YamlSerializerContext
 {
     public CSharpUnionYamlContext()

@@ -6,12 +6,12 @@ namespace Meziantou.Framework.Yaml.SourceGeneration;
 
 public sealed partial class YamlSerializerContextGenerator
 {
-    private static string GetThrowHelperContent()
+    private static string GetEmbeddedSource(string resourceName)
     {
-        using var stream = typeof(YamlSerializerContextGenerator).Assembly.GetManifestResourceStream("Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs");
+        using var stream = typeof(YamlSerializerContextGenerator).Assembly.GetManifestResourceStream(resourceName);
         if (stream is null)
         {
-            throw new InvalidOperationException("Could not find embedded resource 'Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs'");
+            throw new InvalidOperationException($"Could not find embedded resource '{resourceName}'");
         }
 
         using var reader = new StreamReader(stream);
@@ -1759,9 +1759,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("                {");
         builder.AppendLine("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("                }");
+        builder.AppendLine("                var isNestedMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("                var mergeKey = reader.ScalarValue ?? string.Empty;");
         builder.AppendLine("                reader.Read();");
-        builder.AppendLine("                if (mergeEnabled && global::System.String.Equals(mergeKey, \"<<\", global::System.StringComparison.Ordinal))");
+        builder.AppendLine("                if (isNestedMergeKey)");
         builder.AppendLine("                {");
         builder.AppendLine("                    ReadAndApplyMerge();");
         builder.AppendLine("                    continue;");
@@ -1827,10 +1828,11 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            {");
         builder.AppendLine("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("            }");
+        builder.AppendLine("            var isMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("            var key = reader.ScalarValue ?? string.Empty;");
         builder.AppendLine("            reader.Read();");
         builder.AppendLine();
-        builder.AppendLine("            if (mergeEnabled && global::System.String.Equals(key, \"<<\", global::System.StringComparison.Ordinal))");
+        builder.AppendLine("            if (isMergeKey)");
         builder.AppendLine("            {");
         builder.AppendLine("                ReadAndApplyMerge();");
         builder.AppendLine("                continue;");
@@ -2144,9 +2146,10 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("                {");
         builder.AppendLine("                    throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("                }");
+        builder.AppendLine("                var isNestedMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("                var mergeKey = reader.ScalarValue ?? string.Empty;");
         builder.AppendLine("                reader.Read();");
-        builder.AppendLine("                if (mergeEnabled && global::System.String.Equals(mergeKey, \"<<\", global::System.StringComparison.Ordinal))");
+        builder.AppendLine("                if (isNestedMergeKey)");
         builder.AppendLine("                {");
         builder.AppendLine("                    ReadAndApplyMerge();");
         builder.AppendLine("                    continue;");
@@ -2305,10 +2308,11 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("            {");
         builder.AppendLine("                throw global::Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.ThrowExpectedScalarKey(reader);");
         builder.AppendLine("            }");
+        builder.AppendLine("            var isMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
         builder.AppendLine("            var key = reader.ScalarValue ?? string.Empty;");
         builder.AppendLine("            reader.Read();");
         builder.AppendLine();
-        builder.AppendLine("            if (mergeEnabled && global::System.String.Equals(key, \"<<\", global::System.StringComparison.Ordinal))");
+        builder.AppendLine("            if (isMergeKey)");
         builder.AppendLine("            {");
         builder.AppendLine("                ReadAndApplyMerge();");
         builder.AppendLine("                continue;");
@@ -3128,6 +3132,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             if (dictionaryKeyIsString)
             {
+                builder.AppendLine("            var isMergeKey = mergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
                 builder.AppendLine("            var key = reader.ScalarValue ?? string.Empty;");
             }
             else
@@ -3141,7 +3146,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             if (dictionaryKeyIsString)
             {
-                builder.AppendLine("            if (mergeEnabled && global::System.String.Equals(key, \"<<\", global::System.StringComparison.Ordinal))");
+                builder.AppendLine("            if (isMergeKey)");
                 builder.AppendLine("            {");
                 builder.AppendLine("                if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
                 builder.AppendLine("                {");
@@ -4783,6 +4788,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
+                builder.AppendLine("                        var entryIsMergeKey = dictionaryMergeEnabled && global::Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.IsMergeKeyScalar(reader);");
                 builder.AppendLine("                        var entryKey = reader.ScalarValue ?? string.Empty;");
             }
             else
@@ -4796,7 +4802,7 @@ public sealed partial class YamlSerializerContextGenerator
 
             if (dictionaryKeyType.SpecialType == SpecialType.System_String)
             {
-                builder.AppendLine("                        if (dictionaryMergeEnabled && global::System.String.Equals(entryKey, \"<<\", global::System.StringComparison.Ordinal))");
+                builder.AppendLine("                        if (entryIsMergeKey)");
                 builder.AppendLine("                        {");
                 builder.AppendLine("                            if (reader.TokenType == global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.Scalar && global::Meziantou.Framework.Yaml.Serialization.YamlScalar.IsNull(reader))");
                 builder.AppendLine("                            {");

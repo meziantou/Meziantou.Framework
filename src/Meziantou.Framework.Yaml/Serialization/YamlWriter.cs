@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.Yaml.Serialization.References;
 
 namespace Meziantou.Framework.Yaml.Serialization;
@@ -21,6 +22,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private YamlSequenceItemStyle _blockSequenceSequenceStyle;
     private ScalarStyle _stringStyle;
     private bool _suppressNextNewLine;
+    private readonly bool _forceBlockStyle;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="YamlWriter"/> class.
@@ -60,6 +62,17 @@ public sealed class YamlWriter : YamlReaderWriterBase
         InitializeFormattingState();
     }
 
+    /// <summary>Initializes a new instance of the <see cref="YamlWriter"/> class that writes block collections regardless of <see cref="YamlSerializerOptions.WriteIndented"/>.</summary>
+    /// <remarks>
+    /// The block style lets more scalars be written plain than the flow style does, which is what keeps a copy of a
+    /// node resolving the same way as the source it was read from.
+    /// </remarks>
+    internal YamlWriter(StringBuilder stringBuilder, YamlSerializerOptions options, bool forceBlockStyle)
+        : this(stringBuilder, options)
+    {
+        _forceBlockStyle = forceBlockStyle;
+    }
+
     internal YamlReferenceWriter? ReferenceWriter => _referenceWriter;
 
     internal bool EndsWithNewLine => _hasWrittenChar && _lastWrittenChar == '\n';
@@ -71,7 +84,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <summary>
     /// Gets a value indicating whether collections are written using the flow style, which keeps the document on a single line.
     /// </summary>
-    private bool IsFlow => !Options.WriteIndented;
+    private bool IsFlow => !_forceBlockStyle && !Options.WriteIndented;
 
     /// <summary>Temporarily overrides how nested block collections are emitted when they appear as items in block sequences.</summary>
     /// <param name="mappingStyle">The mapping style override, or <see cref="YamlSequenceItemStyle.Default"/> to keep the current mapping style.</param>
@@ -169,6 +182,92 @@ public sealed class YamlWriter : YamlReaderWriterBase
         _pendingTag = tag;
     }
 
+    /// <summary>Writes a tag, as the parser resolves it, for the next value.</summary>
+    /// <param name="tag">The resolved tag, such as <c>tag:yaml.org,2002:str</c> or <c>!dog</c>.</param>
+    /// <remarks>
+    /// The parser expands a tag handle into its prefix, so <c>!!str</c> is read as <c>tag:yaml.org,2002:str</c>,
+    /// which is not valid YAML syntax on its own. The tag is written back in a form that reads as the same resolved
+    /// tag: the <c>!!</c> shorthand for a core tag, the <c>!</c> shorthand for a local tag, and the verbatim
+    /// <c>!&lt;...&gt;</c> form for any other tag. Characters a tag cannot contain are written as URI escapes.
+    /// </remarks>
+    internal void WriteResolvedTag(string tag)
+    {
+        _pendingTag = FormatResolvedTag(tag);
+    }
+
+    private static string FormatResolvedTag(string tag)
+    {
+        const string CoreTagPrefix = "tag:yaml.org,2002:";
+
+        // The non-specific tag has no suffix to escape.
+        if (tag == "!")
+        {
+            return tag;
+        }
+
+        var builder = new StringBuilder(tag.Length + 4);
+        if (tag.Length > CoreTagPrefix.Length && tag.StartsWith(CoreTagPrefix, StringComparison.Ordinal))
+        {
+            builder.Append("!!");
+            AppendTagUri(builder, tag.AsSpan(CoreTagPrefix.Length), allowFlowIndicators: false);
+        }
+        else if (tag.Length > 1 && tag[0] == '!')
+        {
+            // An escaped '!' cannot end a tag handle, so a local tag such as "!a!b" is not read as the handle "!a!".
+            builder.Append('!');
+            AppendTagUri(builder, tag.AsSpan(1), allowFlowIndicators: false);
+        }
+        else
+        {
+            builder.Append("!<");
+            AppendTagUri(builder, tag, allowFlowIndicators: true);
+            builder.Append('>');
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>Appends <paramref name="value"/> to <paramref name="builder"/>, escaping each character a tag cannot contain as its UTF-8 octets.</summary>
+    /// <param name="builder">The destination builder.</param>
+    /// <param name="value">The tag text.</param>
+    /// <param name="allowFlowIndicators">
+    /// Whether <c>,</c>, <c>!</c>, <c>[</c>, and <c>]</c> are written as is, which a verbatim tag allows and a tag
+    /// shorthand does not.
+    /// </param>
+    private static void AppendTagUri(StringBuilder builder, ReadOnlySpan<char> value, bool allowFlowIndicators)
+    {
+        Span<byte> utf8 = stackalloc byte[4];
+        var index = 0;
+        while (index < value.Length)
+        {
+            var c = value[index];
+            if (IsTagUriChar(c, allowFlowIndicators))
+            {
+                builder.Append(c);
+                index++;
+                continue;
+            }
+
+            if (Rune.DecodeFromUtf16(value[index..], out var rune, out var consumed) != OperationStatus.Done)
+            {
+                throw new YamlException("A tag contains an unpaired UTF-16 surrogate.");
+            }
+
+            var written = rune.EncodeToUtf8(utf8);
+            foreach (var octet in utf8[..written])
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"%{octet:X2}");
+            }
+
+            index += consumed;
+        }
+    }
+
+    private static bool IsTagUriChar(char c, bool allowFlowIndicators)
+        => char.IsAsciiLetterOrDigit(c) ||
+           c is '_' or '-' or ';' or '/' or '?' or ':' or '@' or '&' or '=' or '+' or '$' or '.' or '~' or '*' or '\'' or '(' or ')' ||
+           (allowFlowIndicators && c is ',' or '!' or '[' or ']');
+
     /// <summary>Writes a YAML anchor for the next value.</summary>
     public void WriteAnchor(string anchor)
     {
@@ -248,6 +347,25 @@ public sealed class YamlWriter : YamlReaderWriterBase
     public void WritePropertyName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
+        WritePropertyNameCore(name, ScalarStyle.Any);
+    }
+
+    /// <summary>Writes a mapping key that keeps the style it was read with.</summary>
+    /// <param name="name">The key name.</param>
+    /// <param name="style">The style of the key in the source document.</param>
+    /// <remarks>
+    /// A plain key is written plain, including the <c>&lt;&lt;</c> merge key, whenever it can be, so that it resolves
+    /// the same way when it is read back. Any other key is written quoted: single-quoted when the source used that
+    /// style and the key can be represented in it, double-quoted otherwise.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The writer is not positioned within a mapping key.</exception>
+    internal void WritePropertyName(string name, ScalarStyle style)
+    {
+        WritePropertyNameCore(name, style);
+    }
+
+    private void WritePropertyNameCore(string name, ScalarStyle style)
+    {
         if (_depth == 0 || _frames[_depth - 1].Kind != ContainerKind.Mapping)
         {
             throw new InvalidOperationException("Property names can only be written inside a mapping.");
@@ -266,12 +384,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 Write(", ");
             }
 
-            if (RequiresExplicitKey(name))
+            if (RequiresExplicitKey(name, style))
             {
                 Write("? ");
             }
 
-            WriteScalarCore(name, isKey: true);
+            WriteKeyScalar(name, style);
             Write(':');
 
             frame.HasContent = true;
@@ -291,13 +409,13 @@ public sealed class YamlWriter : YamlReaderWriterBase
             WriteIndent(frame.Indent);
         }
 
-        var explicitKey = RequiresExplicitKey(name);
+        var explicitKey = RequiresExplicitKey(name, style);
         if (explicitKey)
         {
             Write("? ");
         }
 
-        WriteScalarCore(name, isKey: true);
+        WriteKeyScalar(name, style);
         if (explicitKey)
         {
             WriteNewLine();
@@ -325,6 +443,66 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         WriteScalarCore(value, isKey: false);
         CompleteValueAfterScalar();
+    }
+
+    /// <summary>Writes a scalar value that keeps the style it was read with.</summary>
+    /// <param name="value">The scalar text.</param>
+    /// <param name="style">The style of the scalar in the source document.</param>
+    /// <remarks>
+    /// The value resolves the same way when it is read back: a plain scalar stays plain, so it can still resolve to
+    /// a null, a boolean, or a number, and any other scalar stays non-plain, so it is still read as a string. The
+    /// requested style is used when it can represent the value in the current context, and the double-quoted style
+    /// otherwise.
+    /// </remarks>
+    internal void WriteScalar(string value, ScalarStyle style)
+    {
+        WriteValuePrefixForScalar();
+
+        if (value.Length == 0 && style is ScalarStyle.Any or ScalarStyle.Plain)
+        {
+            WriteEmptyPlainScalar();
+            CompleteValueAfterScalar();
+            return;
+        }
+
+        WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
+        switch (style)
+        {
+            case ScalarStyle.Any or ScalarStyle.Plain when IsPlainSafe(value, isKey: false):
+                Write(value);
+                break;
+
+            case ScalarStyle.SingleQuoted when TryWriteSingleQuotedScalar(value):
+                break;
+
+            case ScalarStyle.Literal or ScalarStyle.Folded when TryWriteBlockScalar(value, style):
+                break;
+
+            default:
+                Write('"');
+                WriteEscaped(value);
+                Write('"');
+                break;
+        }
+
+        CompleteValueAfterScalar();
+    }
+
+    /// <summary>Writes an empty plain scalar, which is how an omitted value such as <c>key:</c> is read.</summary>
+    /// <remarks>
+    /// Quoting it would turn a null into an empty string. The node properties alone denote the empty scalar; a
+    /// document without them is marked by its start marker, because an empty stream has no document at all.
+    /// </remarks>
+    private void WriteEmptyPlainScalar()
+    {
+        if (_pendingAnchor is not null || _pendingTag is not null)
+        {
+            WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: false);
+        }
+        else if (_depth == 0)
+        {
+            Write("---");
+        }
     }
 
     /// <summary>Writes a CLR string value, quoting ambiguous YAML scalars when configured.</summary>
@@ -1144,6 +1322,48 @@ public sealed class YamlWriter : YamlReaderWriterBase
         Write('"');
     }
 
+    /// <summary>Selects the style a mapping key is written with.</summary>
+    /// <param name="value">The key name.</param>
+    /// <param name="style">The requested style, or <see cref="ScalarStyle.Any"/> to let the writer choose.</param>
+    /// <returns><see cref="ScalarStyle.Plain"/>, <see cref="ScalarStyle.SingleQuoted"/>, or <see cref="ScalarStyle.DoubleQuoted"/>.</returns>
+    private ScalarStyle GetKeyStyle(ReadOnlySpan<char> value, ScalarStyle style)
+    {
+        // An empty key has no plain form that reads back as a key, so it is always written as ''.
+        if (value.Length == 0)
+        {
+            return ScalarStyle.SingleQuoted;
+        }
+
+        return style switch
+        {
+            // A plain "<<" key was read as the merge key, so it is only quoted when the writer picks the style.
+            ScalarStyle.Plain when IsPlainSafe(value, isKey: false) => ScalarStyle.Plain,
+            ScalarStyle.SingleQuoted when CanWriteSingleQuotedScalar(value) => ScalarStyle.SingleQuoted,
+            ScalarStyle.Any when IsPlainSafe(value, isKey: true) => ScalarStyle.Plain,
+            _ => ScalarStyle.DoubleQuoted,
+        };
+    }
+
+    private void WriteKeyScalar(ReadOnlySpan<char> value, ScalarStyle style)
+    {
+        switch (GetKeyStyle(value, style))
+        {
+            case ScalarStyle.Plain:
+                Write(value);
+                break;
+
+            case ScalarStyle.SingleQuoted:
+                WriteSingleQuotedScalar(value);
+                break;
+
+            default:
+                Write('"');
+                WriteEscaped(value);
+                Write('"');
+                break;
+        }
+    }
+
     private void WriteStringCore(ReadOnlySpan<char> value, bool isKey)
     {
         if (value.Length == 0)
@@ -1201,6 +1421,17 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private bool TryWriteSingleQuotedScalar(ReadOnlySpan<char> value)
     {
+        if (!CanWriteSingleQuotedScalar(value))
+        {
+            return false;
+        }
+
+        WriteSingleQuotedScalar(value);
+        return true;
+    }
+
+    private static bool CanWriteSingleQuotedScalar(ReadOnlySpan<char> value)
+    {
         foreach (var c in value)
         {
             // A line break inside a single-quoted scalar is folded when it is read back, and a control character
@@ -1211,6 +1442,11 @@ public sealed class YamlWriter : YamlReaderWriterBase
             }
         }
 
+        return true;
+    }
+
+    private void WriteSingleQuotedScalar(ReadOnlySpan<char> value)
+    {
         Write('\'');
         foreach (var c in value)
         {
@@ -1225,7 +1461,6 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
 
         Write('\'');
-        return true;
     }
 
     /// <summary>Writes <paramref name="value"/> using the literal (<c>|</c>) or folded (<c>&gt;</c>) block style.</summary>
@@ -1408,12 +1643,16 @@ public sealed class YamlWriter : YamlReaderWriterBase
                YamlScalar.TryParseDouble(value, out _);
     }
 
-    private bool RequiresExplicitKey(ReadOnlySpan<char> value)
+    private bool RequiresExplicitKey(ReadOnlySpan<char> value, ScalarStyle style)
     {
         // An implicit key may span at most 1024 characters of YAML, including quotes and escapes.
-        if (IsPlainSafe(value, isKey: true))
+        switch (GetKeyStyle(value, style))
         {
-            return value.Length > 1024;
+            case ScalarStyle.Plain:
+                return value.Length > 1024;
+
+            case ScalarStyle.SingleQuoted:
+                return value.Length + value.Count('\'') + 2 > 1024;
         }
 
         var length = 2;

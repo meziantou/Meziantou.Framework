@@ -224,3 +224,31 @@ var now = DateTime.UtcNow;
 var settings = SnapshotSettings.Default with { };
 settings.ConfigureHumanReadableSerializer(options => options.UseRelativeDateTime(now));
 ```
+
+## Invisible characters
+
+When spaces, tabs, or line endings matter, a snapshot that looks correct can still hide a difference.
+Set `ShowInvisibleCharactersInValues` to write them as Unicode control pictures (`␠` for a space, `␉` for a
+tab, `␍` and `␊` for line endings, `␀` for U+0000, and so on):
+
+```csharp
+var settings = SnapshotSettings.Default with { };
+settings.ConfigureHumanReadableSerializer(options => options.ShowInvisibleCharactersInValues = true);
+
+Snapshot.Validate("line 1\r\nline\t2", settings);
+```
+
+The verified snapshot contains:
+
+```text
+line␠1␍␊
+line␉2
+```
+
+Notes:
+
+- The original line ending is still written after its control pictures, so each value keeps its lines.
+- Only multi-line values and property names are converted. A single-line value such as `"a b\tc"` is written as-is.
+- `ConfigureHumanReadableSerializer` only affects the settings instance it is called on. Use
+  `SnapshotSettings.Default with { }` to get a copy, or call it on `SnapshotSettings.Default` to enable the option
+  for every snapshot.

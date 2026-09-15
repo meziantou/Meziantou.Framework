@@ -61,11 +61,32 @@ internal static class TypeUtils
             return;
         }
 
+        // A nested type receives the generic arguments of its declaring types too (e.g. List<int>.Enumerator has one generic argument),
+        // but its DeclaringType is always the generic type definition (List<T>)
+        var genericArguments = type.IsGenericType ? type.GetGenericArguments() : [];
+        var declaringTypeGenericArgumentCount = 0;
         if (!type.IsGenericParameter)
         {
             if (type.DeclaringType != null)
             {
-                GetHumanDisplayName(sb, type.DeclaringType);
+                var declaringType = type.DeclaringType;
+                if (declaringType.IsGenericTypeDefinition)
+                {
+                    declaringTypeGenericArgumentCount = declaringType.GetGenericArguments().Length;
+                    if (!type.IsGenericTypeDefinition && genericArguments.Length >= declaringTypeGenericArgumentCount)
+                    {
+                        try
+                        {
+                            declaringType = declaringType.MakeGenericType(genericArguments[..declaringTypeGenericArgumentCount]);
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Keep the generic type definition when the arguments do not satisfy the constraints
+                        }
+                    }
+                }
+
+                GetHumanDisplayName(sb, declaringType);
                 sb.Append('+');
             }
             else if (type.Namespace is not null)
@@ -98,11 +119,11 @@ internal static class TypeUtils
             sb.Append(type.Name);
         }
 
-        if (type.IsGenericType)
+        if (genericArguments.Length > declaringTypeGenericArgumentCount)
         {
             sb.Append('<');
             var first = true;
-            foreach (var genericType in type.GetGenericArguments())
+            foreach (var genericType in genericArguments.AsSpan(declaringTypeGenericArgumentCount))
             {
                 if (!first)
                 {
@@ -124,7 +145,23 @@ internal static class TypeUtils
         var dynamicFlags = dynamicAttribute?.TransformFlags;
         if (parameterType.IsByRef)
         {
-            sb.Append(parameter.IsOut ? "out " : "ref ");
+            if (parameter.IsOut)
+            {
+                sb.Append("out ");
+            }
+            else if (HasAttribute(parameter, "System.Runtime.CompilerServices.IsReadOnlyAttribute"))
+            {
+                sb.Append("in ");
+            }
+            else if (HasAttribute(parameter, "System.Runtime.CompilerServices.RequiresLocationAttribute"))
+            {
+                sb.Append("ref readonly ");
+            }
+            else
+            {
+                sb.Append("ref ");
+            }
+
             parameterType = parameterType.GetElementType()!;
 
             // The by-ref type has its own entry in the dynamic flags
@@ -155,25 +192,44 @@ internal static class TypeUtils
         }
     }
 
+    // Both attributes encode the type tree in pre-order. TupleElementNamesAttribute lists the names of all the elements of a tuple
+    // (including the ones stored in its Rest field) before the names of the nested tuples, and the Rest field of a long tuple
+    // has its own unused names. DynamicAttribute has one flag per type of the underlying tree, including the Rest type.
     private static void WriteValueTupleType(StringBuilder sb, Type type, string?[]? tupleNames, IList<bool>? dynamicFlags)
     {
         var nameIndex = 0;
         var dynamicIndex = 1;
-        WriteValueTupleType(sb, type, tupleNames, ref nameIndex, dynamicFlags, ref dynamicIndex);
+        WriteTuple(sb, type, tupleNames, ref nameIndex, dynamicFlags, ref dynamicIndex);
 
-        static void WriteValueTupleType(StringBuilder sb, Type type, string?[]? tupleNames, ref int tupleNameIndex, IList<bool>? dynamicFlags, ref int dynamicFlagIndex)
+        static void WriteTuple(StringBuilder sb, Type type, string?[]? tupleNames, ref int tupleNameIndex, IList<bool>? dynamicFlags, ref int dynamicFlagIndex)
         {
+            var elementNamesIndex = tupleNameIndex;
+            tupleNameIndex += GetTupleElementCount(type);
+
             sb.Append('(');
-            var index = 0;
-            foreach (var genericType in type.GenericTypeArguments)
+            var elementIndex = 0;
+            WriteElements(sb, type, tupleNames, elementNamesIndex, ref elementIndex, ref tupleNameIndex, dynamicFlags, ref dynamicFlagIndex);
+            sb.Append(')');
+        }
+
+        static void WriteElements(StringBuilder sb, Type type, string?[]? tupleNames, int elementNamesIndex, ref int elementIndex, ref int tupleNameIndex, IList<bool>? dynamicFlags, ref int dynamicFlagIndex)
+        {
+            var genericTypes = type.GenericTypeArguments;
+            for (var i = 0; i < genericTypes.Length; i++)
             {
-                var currentName = tupleNames is not null && tupleNameIndex < tupleNames.Length ? tupleNames[tupleNameIndex] : null;
+                var genericType = genericTypes[i];
                 var isDynamic = dynamicFlags is not null && dynamicFlagIndex < dynamicFlags.Count && dynamicFlags[dynamicFlagIndex];
-
                 dynamicFlagIndex += 1;
-                tupleNameIndex += 1;
 
-                if (index > 0)
+                if (IsRestField(type, i))
+                {
+                    // The elements of the Rest field are written inline, as they are part of the same tuple in the source code
+                    tupleNameIndex += GetTupleElementCount(genericType);
+                    WriteElements(sb, genericType, tupleNames, elementNamesIndex, ref elementIndex, ref tupleNameIndex, dynamicFlags, ref dynamicFlagIndex);
+                    continue;
+                }
+
+                if (elementIndex > 0)
                 {
                     sb.Append(", ");
                 }
@@ -182,34 +238,49 @@ internal static class TypeUtils
                 {
                     sb.Append("dynamic");
                 }
+                else if (IsValueTuple(genericType))
+                {
+                    WriteTuple(sb, genericType, tupleNames, ref tupleNameIndex, dynamicFlags, ref dynamicFlagIndex);
+                }
                 else
                 {
-                    if (IsValueTuple(genericType))
-                    {
-                        WriteValueTupleType(sb, genericType, tupleNames, ref tupleNameIndex, dynamicFlags, ref dynamicFlagIndex);
-                    }
-                    else
-                    {
-                        GetHumanDisplayName(sb, genericType);
-                    }
+                    GetHumanDisplayName(sb, genericType);
                 }
 
-                if (currentName is not null)
+                var nameIndex = elementNamesIndex + elementIndex;
+                if (tupleNames is not null && nameIndex < tupleNames.Length && tupleNames[nameIndex] is { } name)
                 {
                     sb.Append(' ');
-                    sb.Append(currentName);
+                    sb.Append(name);
                 }
 
-                index++;
+                elementIndex++;
             }
-
-            sb.Append(')');
         }
+
+        static int GetTupleElementCount(Type type)
+        {
+            var genericTypes = type.GenericTypeArguments;
+            return IsRestField(type, genericTypes.Length - 1) ? genericTypes.Length - 1 + GetTupleElementCount(genericTypes[^1]) : genericTypes.Length;
+        }
+
+        static bool IsRestField(Type type, int index) => index is 7 && type.GetGenericTypeDefinition() == typeof(ValueTuple<,,,,,,,>) && IsValueTuple(type.GenericTypeArguments[7]);
     }
 
     private static bool IsValueTuple(Type type)
     {
         return type.Namespace == "System" && type.Name.StartsWith("ValueTuple`", StringComparison.Ordinal);
+    }
+
+    private static bool HasAttribute(ParameterInfo parameter, string attributeFullName)
+    {
+        foreach (var attribute in parameter.GetCustomAttributesData())
+        {
+            if (attribute.AttributeType.FullName == attributeFullName)
+                return true;
+        }
+
+        return false;
     }
 
     private static string?[]? GetTupleElementNames(ParameterInfo parameter)

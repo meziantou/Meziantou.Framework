@@ -9,5 +9,6 @@ public abstract class HumanReadableConverterFactory : HumanReadableConverter
     /// <returns>A converter for the type, or <see langword="null"/> if no converter could be created.</returns>
     public abstract HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options);
 
-    public sealed override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => throw new InvalidOperationException();
+    public sealed override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
+        => throw new InvalidOperationException($"A converter factory cannot write values. Use the converter returned by '{nameof(CreateConverter)}' instead.");
 }

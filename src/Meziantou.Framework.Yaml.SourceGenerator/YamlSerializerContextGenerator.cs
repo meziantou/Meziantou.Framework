@@ -1348,6 +1348,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             return false;
         }
 
+        var numberHandling = TryGetNumberHandlingFromAttributes(type.GetAttributes());
+        if (numberHandling is 0)
+        {
+            numberHandling = null;
+        }
+
         var builder = ImmutableArray.CreateBuilder<CSharpUnionCaseModel>();
         foreach (var constructor in type.InstanceConstructors)
         {
@@ -1373,7 +1379,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 caseType,
                 runtimeType,
                 GetCSharpUnionCaseKind(runtimeType),
-                IsCSharpUnionNullableCase(parameter)));
+                IsCSharpUnionNullableCase(parameter),
+                IsSupportedNumberHandlingType(caseType) ? numberHandling : null));
         }
 
         if (builder.Count == 0)
@@ -1604,7 +1611,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         for (var i = 0; i < cases.Length; i++)
         {
             var unionCase = cases[i];
-            if (unionCase.Kind == kind || unionCase.Kind == CSharpUnionCaseKind.Any)
+            if (IsCSharpUnionCaseCandidate(unionCase, kind))
             {
                 match ??= unionCase;
                 matchCount++;
@@ -1613,6 +1620,43 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         ambiguous = matchCount > 1;
         return matchCount == 1 ? match : null;
+    }
+
+    private static bool IsCSharpUnionCaseCandidate(CSharpUnionCaseModel unionCase, CSharpUnionCaseKind kind)
+        => unionCase.Kind == kind ||
+           unionCase.Kind == CSharpUnionCaseKind.Any ||
+           (kind == CSharpUnionCaseKind.String && CanCSharpUnionCaseReadStringScalar(unionCase));
+
+    // Whether the number handling declared on the union lets a numeric case read some string scalars, such as "42".
+    // Whether a given scalar is readable is only known at runtime.
+    private static bool CanCSharpUnionCaseReadStringScalar(CSharpUnionCaseModel unionCase)
+        => GetCSharpUnionCaseStringScalarCondition(unionCase) is not null;
+
+    // Mirrors YamlNumberHandlingConverter.CanReadStringScalar, which is internal to the runtime library.
+    private static string? GetCSharpUnionCaseStringScalarCondition(CSharpUnionCaseModel unionCase)
+    {
+        const int AllowReadingFromString = 1;
+        const int AllowNamedFloatingPointLiterals = 4;
+
+        if (unionCase.NumberHandling is not { } numberHandling)
+        {
+            return null;
+        }
+
+        string? condition = null;
+        if ((numberHandling & AllowNamedFloatingPointLiterals) != 0 &&
+            (unionCase.RuntimeType.SpecialType is SpecialType.System_Single or SpecialType.System_Double || GetIeee754TypeName(unionCase.RuntimeType) is not null))
+        {
+            condition = "reader.ScalarValue is \"NaN\" or \"Infinity\" or \"+Infinity\" or \"-Infinity\"";
+        }
+
+        if ((numberHandling & AllowReadingFromString) != 0)
+        {
+            const string ParseCondition = "global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseInt64(reader, out _) || global::Meziantou.Framework.Yaml.Serialization.YamlScalar.TryParseDouble(reader, out _)";
+            condition = condition is null ? ParseCondition : condition + " || " + ParseCondition;
+        }
+
+        return condition;
     }
 
     private static string GetCSharpUnionKindDescription(CSharpUnionCaseKind kind)

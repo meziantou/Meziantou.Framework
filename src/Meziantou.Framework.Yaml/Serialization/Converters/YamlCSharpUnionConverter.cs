@@ -85,9 +85,9 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         }
 
         var kind = GetCurrentKind(reader);
-        if (TryGetSingleCaseForKind(kind, out var unionCase, out var ambiguous))
+        if (TryGetSingleCaseForKind(reader, kind, out var unionCase, out var ambiguous))
         {
-            var converter = reader.GetConverter(unionCase.Type);
+            var converter = GetCaseConverter(reader, unionCase);
             var caseValue = converter.Read(reader, unionCase.Type);
             return CreateValue(reader, unionCase, caseValue);
         }
@@ -123,7 +123,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             throw new NotSupportedException($"Union type '{_unionType}' does not define a case that can represent '{caseValue.GetType()}'.");
         }
 
-        var converter = writer.GetConverter(unionCase.Value.Type);
+        var converter = GetCaseConverter(writer, unionCase.Value);
         converter.Write(writer, caseValue);
     }
 
@@ -157,6 +157,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             return false;
         }
 
+        var numberHandling = unionType.GetCustomAttribute<YamlNumberHandlingAttribute>(inherit: true)?.Handling ?? YamlNumberHandling.None;
         var nullabilityInfoContext = new NullabilityInfoContext();
         var builder = ImmutableArray.CreateBuilder<UnionCase>();
         foreach (var constructor in constructors)
@@ -171,7 +172,8 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
             var caseType = parameter.ParameterType;
             var runtimeType = Nullable.GetUnderlyingType(caseType) ?? caseType;
             var acceptsNull = IsNullableParameter(nullabilityInfoContext, parameter);
-            builder.Add(new UnionCase(caseType, runtimeType, constructor, GetKind(caseType), acceptsNull));
+            var caseNumberHandling = YamlNumberHandlingConverter.IsSupportedType(caseType) ? numberHandling : YamlNumberHandling.None;
+            builder.Add(new UnionCase(caseType, runtimeType, constructor, GetKind(caseType), acceptsNull, caseNumberHandling));
         }
 
         if (builder.Count == 0)
@@ -410,14 +412,14 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         return null;
     }
 
-    private bool TryGetSingleCaseForKind(UnionCaseKind kind, out UnionCase unionCase, out bool ambiguous)
+    private bool TryGetSingleCaseForKind(YamlReader reader, UnionCaseKind kind, out UnionCase unionCase, out bool ambiguous)
     {
         UnionCase? match = null;
         var matchCount = 0;
         for (var i = 0; i < _readCases.Length; i++)
         {
             var candidate = _readCases[i];
-            if (candidate.Kind == kind || candidate.Kind == UnionCaseKind.Any)
+            if (candidate.Kind == kind || candidate.Kind == UnionCaseKind.Any || CanReadStringScalar(reader, kind, candidate))
             {
                 match ??= candidate;
                 matchCount++;
@@ -427,6 +429,24 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         ambiguous = matchCount > 1;
         unionCase = match.GetValueOrDefault();
         return matchCount == 1;
+    }
+
+    // A numeric case whose number handling reads strings also matches a string scalar holding a number, such as "42".
+    // When a string case also matches, the scalar is ambiguous and requires a type classifier.
+    private static bool CanReadStringScalar(YamlReader reader, UnionCaseKind kind, UnionCase unionCase)
+        => kind == UnionCaseKind.String &&
+           unionCase.NumberHandling != YamlNumberHandling.None &&
+           YamlNumberHandlingConverter.CanReadStringScalar(reader, unionCase.Type, unionCase.NumberHandling);
+
+    private static YamlConverter GetCaseConverter(YamlReaderWriterBase readerWriter, UnionCase unionCase)
+    {
+        var converter = readerWriter.GetConverter(unionCase.Type);
+        if (unionCase.NumberHandling == YamlNumberHandling.None)
+        {
+            return converter;
+        }
+
+        return new YamlNumberHandlingConverter(converter, unionCase.Type, unionCase.NumberHandling);
     }
 
     private T? ReadClassifiedValue(YamlReader reader, UnionCaseKind kind)
@@ -452,7 +472,7 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
                 return default;
             }
 
-            var converter = caseReader.GetConverter(unionCase.Type);
+            var converter = GetCaseConverter(caseReader, unionCase);
             return CreateValue(reader, unionCase, converter.Read(caseReader, unionCase.Type));
         }
 
@@ -566,5 +586,6 @@ internal sealed class YamlCSharpUnionConverter<T> : YamlConverter<T?>
         Type RuntimeType,
         ConstructorInfo Constructor,
         UnionCaseKind Kind,
-        bool AcceptsNull);
+        bool AcceptsNull,
+        YamlNumberHandling NumberHandling);
 }

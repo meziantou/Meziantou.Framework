@@ -717,6 +717,8 @@ public sealed class QueryBuilderTests
     [InlineData("this year")]
     [InlineData("last year")]
     [InlineData("this_week")]
+    [InlineData("@today")]
+    [InlineData("@today-1d")]
     public void DateKeyword_OnNonDateHandler_DoesNotMatch(string keyword)
     {
         var queryBuilder = new QueryBuilder<Sample>();
@@ -768,6 +770,121 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build($"date:{keyword}");
 
         Assert.Equal(expectedResult, query.Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
+    }
+
+    // Now is 2026-03-15 12:00 UTC, so @today is 2026-03-15 00:00 and @today-1w is 2026-03-08 00:00
+    [Theory]
+    [InlineData("date>@today-1w", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-1w", "2026-03-07T23:00:00Z", false)]
+    [InlineData("date>=@today-7d", "2026-03-08T00:00:00Z", true)]
+    [InlineData("date>@today-7d", "2026-03-08T00:00:00Z", false)]
+    [InlineData("date<@today", "2026-03-14T23:00:00Z", true)]
+    [InlineData("date<@today", "2026-03-15T01:00:00Z", false)]
+    [InlineData("date>=@today+1d", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date>=@today+2w", "2026-03-16T08:00:00Z", false)]
+    [InlineData("date:@today", "2026-03-15T00:00:00Z", true)]
+    [InlineData("date<>@today", "2026-03-15T00:00:00Z", false)]
+    [InlineData("date:@today-1w..@today", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date:@today-1w..@today", "2026-03-15T08:00:00Z", false)]
+    [InlineData("date:@today-1w..*", "2026-03-15T08:00:00Z", true)]
+    [InlineData("date>@TODAY-1W", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-10d", "2026-03-10T00:00:00Z", true)]
+    [InlineData("date>@today-1m", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today-w", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today1d", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today--1d", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@yesterday", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date>@today-2147483647w", "2026-03-10T00:00:00Z", false)]
+    [InlineData("date<@today+2147483647d", "2026-03-10T00:00:00Z", false)]
+    public void RelativeDate_OnDateTimeHandler(string query, string date, bool expectedResult)
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Fact]
+    public void RelativeDate_SupportsEveryDateType()
+    {
+        var timeProvider = new FakeTimeProvider();
+        timeProvider.SetUtcNow(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero));
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider);
+        queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        queryBuilder.AddRangeHandler<DateTime?>("nullable", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        queryBuilder.AddHandler<DateTime>("equals", (obj, value) => obj.DateTimeValue == value);
+
+        var sample = new Sample
+        {
+            DateOnlyValue = new DateOnly(2026, 3, 14),
+            DateTimeOffsetValue = new DateTimeOffset(2026, 3, 14, 23, 0, 0, TimeSpan.Zero),
+            NullableDateTimeValue = new DateTime(2026, 3, 14, 23, 0, 0, DateTimeKind.Utc),
+            DateTimeValue = new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc),
+        };
+
+        Assert.True(queryBuilder.Build("dateonly:@today-1d").Evaluate(sample));
+        Assert.False(queryBuilder.Build("dateonly>@today-1d").Evaluate(sample));
+        Assert.True(queryBuilder.Build("offset:@today-1d..@today").Evaluate(sample));
+        Assert.True(queryBuilder.Build("nullable>=@today-1d").Evaluate(sample));
+        Assert.True(queryBuilder.Build("equals:@today-1d").Evaluate(sample));
+    }
+
+    [Theory]
+    [InlineData("stars:10..*", true)]
+    [InlineData("stars:11..*", false)]
+    [InlineData("stars:*..10", true)]
+    [InlineData("stars:*..9", false)]
+    [InlineData("stars:\"* .. 10\"", true)]
+    [InlineData("stars<>10..*", false)]
+    [InlineData("stars<>11..*", true)]
+    [InlineData("-stars:11..*", true)]
+    [InlineData("stars:*..*", false)]
+    [InlineData("stars:abc..*", false)]
+    [InlineData("stars:*..abc", false)]
+    public void Range_Unbounded(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("stars", (obj, range) => range.IsInRange(obj.Int32Value));
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { Int32Value = 10 }));
+    }
+
+    [Theory]
+    [InlineData("stars:10..*", KeyValueOperator.GreaterThanOrEqual)]
+    [InlineData("stars:*..10", KeyValueOperator.LessThanOrEqual)]
+    public void Range_Unbounded_IsEquivalentToComparison(string query, KeyValueOperator expectedOperator)
+    {
+        UnaryRangeSyntax<int>? capturedRange = null;
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("stars", (obj, range) =>
+        {
+            capturedRange = Assert.IsType<UnaryRangeSyntax<int>>(range);
+            return true;
+        });
+
+        queryBuilder.Build(query).Evaluate(new Sample());
+
+        Assert.NotNull(capturedRange);
+        Assert.Equal(expectedOperator, capturedRange.Operator);
+        Assert.Equal(10, capturedRange.Operand);
+    }
+
+    [Theory]
+    [InlineData("date:2026-03-01..*", true)]
+    [InlineData("date:2026-03-16..*", false)]
+    [InlineData("date:*..2026-03-16", true)]
+    public void Range_Unbounded_Date(string query, bool expectedResult)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = new DateTime(2026, 3, 15, 8, 0, 0, DateTimeKind.Utc) }));
     }
 
     [Fact]

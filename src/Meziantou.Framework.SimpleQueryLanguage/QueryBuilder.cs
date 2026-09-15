@@ -81,7 +81,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
         RegisterHandler(key, value: null, (op, value) =>
         {
             if (!tryParse(value, out var parsedValue))
@@ -124,7 +124,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
         RegisterHandler(key, value: null, (op, value) =>
         {
             // The predicate only tests for a match, so only the equality operators have a meaning
@@ -142,7 +142,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
         RegisterHandler(key, value: null, (op, value) => CreateRangePredicate(op, value, predicate, tryParse));
     }
 

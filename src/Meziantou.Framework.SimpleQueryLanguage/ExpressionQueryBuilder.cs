@@ -92,21 +92,22 @@ public sealed class ExpressionQueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Expression<Func<T, TValue>> selector, ScalarParser<TValue>? tryParseValue = null)
     {
+        var parser = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
         if (IsComparisonType<TValue>())
         {
             // Register range handler for equality (handles both simple equality and range syntax)
-            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, tryParseValue, _timeProvider));
+            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, parser, _timeProvider));
 
             // Register comparison operators
-            AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, Expression.LessThan, tryParseValue));
-            AddHandlerCore(key, KeyValueOperator.LessThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.LessThanOrEqual, tryParseValue));
-            AddHandlerCore(key, KeyValueOperator.GreaterThan, value => CreateComparisonExpression(value, selector, Expression.GreaterThan, tryParseValue));
-            AddHandlerCore(key, KeyValueOperator.GreaterThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.GreaterThanOrEqual, tryParseValue));
+            AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, Expression.LessThan, parser));
+            AddHandlerCore(key, KeyValueOperator.LessThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.LessThanOrEqual, parser));
+            AddHandlerCore(key, KeyValueOperator.GreaterThan, value => CreateComparisonExpression(value, selector, Expression.GreaterThan, parser));
+            AddHandlerCore(key, KeyValueOperator.GreaterThanOrEqual, value => CreateComparisonExpression(value, selector, Expression.GreaterThanOrEqual, parser));
         }
         else
         {
             // Just register equality
-            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateComparisonExpression(value, selector, Expression.Equal, tryParseValue));
+            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateComparisonExpression(value, selector, Expression.Equal, parser));
         }
     }
 
@@ -289,9 +290,8 @@ public sealed class ExpressionQueryBuilder<T>
         string value,
         Expression<Func<T, TValue>> selector,
         Func<Expression, Expression, Expression> comparisonFactory,
-        ScalarParser<TValue>? tryParseValue)
+        ScalarParser<TValue> parser)
     {
-        var parser = tryParseValue ?? ValueConverter.TryParseValue;
         if (!parser(value, out var parsedValue))
             return CreateFalseExpression();
 
@@ -313,10 +313,9 @@ public sealed class ExpressionQueryBuilder<T>
     private static Expression<Func<T, bool>> CreateRangeExpression<TValue>(
         string value,
         Expression<Func<T, TValue>> selector,
-        ScalarParser<TValue>? tryParseValue,
+        ScalarParser<TValue> parser,
         TimeProvider timeProvider)
     {
-        var parser = tryParseValue ?? ValueConverter.TryParseValue;
 
         // Try to parse as range
         var range = RangeSyntax.TryParse(value, parser, timeProvider);

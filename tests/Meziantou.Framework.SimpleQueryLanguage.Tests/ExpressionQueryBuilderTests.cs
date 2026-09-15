@@ -279,6 +279,39 @@ public sealed class ExpressionQueryBuilderTests
     }
 
     [Theory]
+    [InlineData("id:5..*", 5, 7, 10, 12)]
+    [InlineData("id:*..5", 3, 5)]
+    [InlineData("id<>5..*", 3)]
+    public void FieldEquals_UnboundedRange(string query, params int[] expectedValues)
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler("id", item => item.Int32Value);
+
+        var items = new[] { 3, 5, 7, 10, 12 }.Select(value => new Sample { Int32Value = value }).AsQueryable();
+
+        Assert.Equal(expectedValues, queryBuilder.Build(query).Apply(items).Select(item => item.Int32Value));
+    }
+
+    [Theory]
+    [InlineData("date>@today-1w", "2026-03-14")]
+    [InlineData("date:@today-1w..*", "2026-03-14")]
+    [InlineData("date<@today-1w", "2026-03-01")]
+    [InlineData("date:@today-2w..@today", "2026-03-01", "2026-03-14")]
+    [InlineData("date:*..@today-1d", "2026-03-01", "2026-03-14")]
+    public void RelativeDate_IsSupported(string query, params string[] expectedDates)
+    {
+        var items = new[]
+        {
+            new Sample { DateTimeValue = new DateTime(2026, 3, 1, 8, 0, 0, DateTimeKind.Utc) },
+            new Sample { DateTimeValue = new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc) },
+        }.AsQueryable();
+
+        var result = CreateDateQueryBuilder(new DateTimeOffset(2026, 3, 15, 12, 0, 0, TimeSpan.Zero)).Build(query).Apply(items);
+
+        Assert.Equal(expectedDates, result.Select(item => item.DateTimeValue.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+    }
+
+    [Theory]
     [InlineData("date:last_month", "2026-02-20")]
     [InlineData("date:\"last month\"", "2026-02-20")]
     [InlineData("date:this_year", "2026-02-20", "2026-03-15")]
@@ -303,6 +336,9 @@ public sealed class ExpressionQueryBuilderTests
     [InlineData("id<5", 1)]
     [InlineData("id>=10", 1)]
     [InlineData("id:5..15", 1)]
+    [InlineData("id:5..*", 1)]
+    [InlineData("id:*..5", 1)]
+    [InlineData("id:*..*", 0)]
     public void NullableInt32(string query, int expectedCount)
     {
         var queryBuilder = new ExpressionQueryBuilder<Sample>();

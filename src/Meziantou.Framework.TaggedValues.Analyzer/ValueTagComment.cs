@@ -36,7 +36,12 @@ internal static class ValueTagComment
         if (rest.Length > 0 && (char.IsLetterOrDigit(rest[0]) || rest[0] is '_'))
             return ValueTagCommentKind.NotValueTag;
 
-        rest = rest.TrimStart();
+        rest = rest.Trim();
+
+        // Prose such as "// ValueTag is not used here" is not an annotation, but "/* ValueTag OrderId */" is a malformed one
+        if (rest.IndexOf("=", StringComparison.Ordinal) < 0 && rest.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length > 1)
+            return ValueTagCommentKind.NotValueTag;
+
         if (rest.StartsWith("=", StringComparison.Ordinal))
         {
             var tags = new List<string>();
@@ -117,6 +122,18 @@ internal static class ValueTagComment
 
         tagInfo = TagInfo.Create([], key is null ? [] : [key], value is null ? [] : [value], isExplicit: true);
         return ValueTagCommentKind.Valid;
+    }
+
+    /// <summary>
+    /// Returns whether <see cref="Format"/> can write the tags as a comment that parses back to the same tags:
+    /// every tag is valid in a comment, and a dictionary has at most one key tag and one value tag.
+    /// </summary>
+    public static bool CanFormat(TagInfo tagInfo)
+    {
+        if (tagInfo.HasKeyOrValue)
+            return tagInfo.Tags.IsEmpty && tagInfo.Key.Length <= 1 && tagInfo.Value.Length <= 1 && tagInfo.Key.All(IsValidTag) && tagInfo.Value.All(IsValidTag);
+
+        return !tagInfo.Tags.IsEmpty && tagInfo.Tags.All(IsValidTag);
     }
 
     /// <summary>

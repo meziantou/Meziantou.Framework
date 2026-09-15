@@ -87,7 +87,7 @@ if (TryGetId(out var /* ValueTag=OrderId */ id)) { }
 if (value is Guid /* ValueTag=OrderId */ id) { }
 ````
 
-A local without a comment takes the tag of its initializer, of the collection of a `foreach`, of the parameter of an `out var`, or of the value matched by a pattern:
+A local without a comment takes the tag of its initializer, of the collection of a `foreach`, of the parameter of an `out var`, or of the value matched by a pattern. In a property pattern, a list pattern, or a deconstruction, it takes the tag of the part it matches: `order is { Id: var id }` is an OrderId, and so is `id` in `foreach (var (id, projectId) in projectIdByOrderId)` or in `var (id, projectId) = (order.Id, order.ProjectId)`:
 
 ````c#
 var id = order.Id;    // id is an OrderId
@@ -95,7 +95,7 @@ Load(id);             // ok
 id = order.ProjectId; // MFTV0002
 ````
 
-When the comment disagrees with the initializer, or with the parameter of an `out var`, the comment wins and the value is reported (MFTV0002). The code fix changes the tag in the comment.
+When the comment disagrees with the initializer, the collection of a `foreach`, the parameter of an `out var`, or the value matched by a pattern, the comment wins and the value is reported (MFTV0002). The code fix changes the tag in the comment.
 
 ### Tagging type arguments
 
@@ -114,7 +114,7 @@ Dictionary</* ValueTag=OrderId */ Guid, /* ValueTag=ProjectId */ Guid> map = Get
 - The elements of a collection initializer and the arguments of the constructor are checked: `new List</* ValueTag=OrderId */ Guid> { projectId }` is reported (MFTV0002).
 - A comment on the variable itself wins over the comments in the type arguments of its declared type.
 
-Comments that do not start with `ValueTag`, and `///` documentation comments, are ignored. A `ValueTag` comment that cannot be parsed, or that does not tag a local variable, is reported (MFTV0005) and does not tag anything. This includes a comment on a field, inside an initializer, at the end of a line, before a statement that declares no variable, in the type arguments of a field, a parameter, or a generic method, and in the type arguments of a type that is neither a collection, a dictionary, nor a wrapper, such as `Tuple<Guid, Guid>`. The code fix removes it.
+Comments that do not start with `ValueTag`, prose that starts with `ValueTag` but contains several words and no `=`, such as `// ValueTag is not used here`, and `///` documentation comments, are ignored. A `ValueTag` comment that cannot be parsed, or that does not tag a local variable, is reported (MFTV0005) and does not tag anything. This includes a comment on a field, inside an initializer, at the end of a line, before a statement that declares no variable, in the type arguments of a field, a parameter, or a generic method, and in the type arguments of a type that is neither a collection, a dictionary, nor a wrapper, such as `Tuple<Guid, Guid>`. The code fix removes it.
 
 ## Collections, dictionaries, and wrappers
 
@@ -135,7 +135,7 @@ Use `Key` and `Value` for dictionaries:
 public Dictionary<Guid, Guid> ProjectIdByOrderId { get; }
 ````
 
-Anonymous type properties take the tag of their initializer, so projections keep their tags.
+Anonymous type properties take the tag of their initializer, so projections keep their tags. A collection initializer takes the tags of the elements it adds: `new List<Guid> { order.Id }` holds OrderIds, and `new Dictionary<Guid, Guid> { [order.Id] = order.ProjectId }` maps OrderIds to ProjectIds.
 
 ## Arithmetic and operators
 
@@ -189,7 +189,7 @@ _ = order.Id == Guid.Empty; // ok
 ````
 
 - Default values, `null`, constants, and `Guid.Empty` are always allowed.
-- New values, such as `Guid.NewGuid()`, `new Guid(bytes)`, or `Guid.Parse(text)`, can flow to a tagged declaration. Values read from an untagged field, property, parameter, or local, or returned by an untagged method of your code, cannot.
+- New values, such as `Guid.NewGuid()`, `new Guid(bytes)`, or `Guid.Parse(text)`, can flow to a tagged declaration. Values read from an untagged field, property, parameter, local, or array element, or returned by an untagged method of your code, cannot. A `?:`, `??`, or switch expression is a new value only when each of its branches is a new value or an allowed value.
 - A tagged value can flow to a declaration of a referenced assembly, or typed `object`, `dynamic`, or a type parameter, as they cannot be tagged. A local initialized with a tagged value takes its tag, so it is not reported.
 - The code fix adds the tag to the untagged declaration.
 
@@ -197,11 +197,11 @@ _ = order.Id == Guid.Empty; // ok
 
 - Comparisons: `==`, `!=`, `<`, `<=`, `>`, `>=`, tuple equality, `Equals`, `CompareTo`, `EqualityComparer<T>.Equals`, `Comparer<T>.Compare`, `string.Equals(a, b, comparison)`
 - Flows: assignments, object initializers, `with` expressions, field and property initializers, arguments (including `ref`, `out`, and generic arguments that must share a type), `return` and `yield return`
-- Combined values: operands of `+` and `-`, branches of `?:`, `??`, and switch expressions, and the elements of arrays and collection expressions
+- Combined values: operands of `+` and `-`, branches of `?:`, `??`, and switch expressions, and the elements of arrays, collection expressions, and collection initializers
 - Overrides and interface implementations whose tags differ from the base member
 - In strict mode, tagged values mixed with untagged values
 - Suggestions to tag a return value: when every value returned by a method, a local function, or a property getter has the same tag, but the return value is not tagged, so the callers lose the tag (only for tags written by the user, not inferred from a naming convention)
-- Invalid annotations: empty tags, malformed comments, comments on something other than a local variable, `Key` and `Value` on something other than a dictionary, and assembly attributes that name a missing member
+- Invalid annotations: empty tags, malformed comments, comments on something other than a local variable, `Key` and `Value` on something other than a dictionary, `[field: ValueTag]` on a property, whose backing field is not analyzed, and assembly attributes that name a missing member
 
 Every message names both declarations and their tags, so a build log is enough to act on. Code fixes change the tag of the target of a flow or of an override, add the suggested tag to a return value, and remove invalid or redundant annotations.
 

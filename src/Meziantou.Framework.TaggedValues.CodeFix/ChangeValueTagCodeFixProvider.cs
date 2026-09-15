@@ -47,7 +47,8 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
             var token = root.FindToken(targetLocation.SourceSpan.Start);
             if (targetKind is ValueTagTargetKind.Local)
             {
-                if (FindLocalComment(token) is not { } comment)
+                // A comment cannot declare every tag an attribute can, e.g. a tag that contains a space
+                if (FindLocalComment(token) is not { } comment || !ValueTagComment.CanFormat(tags))
                     continue;
 
                 var newComment = ValueTagComment.Format(tags, isLineComment: comment.IsKind(SyntaxKind.SingleLineCommentTrivia));
@@ -66,7 +67,7 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
                     ? "Add " + tags.ToAttributeString(isReturnValue) + " to '" + token.ValueText + "'"
                     : "Change the tag of '" + token.ValueText + "' to " + tags.ToAttributeString();
                 context.RegisterCodeFix(
-                    CodeAction.Create(title, cancellationToken => ChangeAttributeAsync(document, targetLocation.SourceSpan.Start, tags, isReturnValue, cancellationToken), equivalenceKey: title),
+                    CodeAction.Create(title, cancellationToken => ChangeAttributeAsync(document, targetLocation.SourceSpan.Start, tags, targetKind, cancellationToken), equivalenceKey: title),
                     diagnostic);
             }
         }
@@ -106,12 +107,20 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         return null;
     }
 
-    private static async Task<Document> ChangeAttributeAsync(Document document, int position, TagInfo tags, bool isReturnValue, CancellationToken cancellationToken)
+    private static async Task<Document> ChangeAttributeAsync(Document document, int position, TagInfo tags, string targetKind, CancellationToken cancellationToken)
     {
         var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
         var declaration = GetDeclaration(editor.OriginalRoot.FindToken(position));
         if (declaration is null)
             return document;
+
+        // The attributes of a record primary constructor parameter tag its property, unless the property has its own [property: ValueTag]
+        SyntaxKind? targetKeyword = targetKind switch
+        {
+            ValueTagTargetKind.ReturnValue => SyntaxKind.ReturnKeyword,
+            ValueTagTargetKind.RecordProperty when GetAttributeLists(declaration).Any(list => list.Target?.Identifier.IsKind(SyntaxKind.PropertyKeyword) is true && list.Attributes.Any(attribute => IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))) => SyntaxKind.PropertyKeyword,
+            _ => null,
+        };
 
         var generator = editor.Generator;
         var arguments = new List<SyntaxNode>();
@@ -132,17 +141,16 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
 
         var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
         var newAttributeList = (AttributeListSyntax)generator.Attribute(attributeName, arguments);
-        if (isReturnValue)
+        if (targetKeyword is { } keyword)
         {
-            newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(SyntaxKind.ReturnKeyword)));
+            newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(keyword)));
         }
 
         var lists = new List<AttributeListSyntax>();
         var insertIndex = -1;
         foreach (var attributeList in GetAttributeLists(declaration))
         {
-            var isReturnList = attributeList.Target?.Identifier.IsKind(SyntaxKind.ReturnKeyword) is true;
-            var isTargetList = isReturnValue ? isReturnList : attributeList.Target is null;
+            var isTargetList = targetKeyword is { } targetListKeyword ? attributeList.Target?.Identifier.IsKind(targetListKeyword) is true : attributeList.Target is null;
             var attributes = attributeList.Attributes
                 .Where(attribute => !isTargetList || !IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))
                 .ToList();

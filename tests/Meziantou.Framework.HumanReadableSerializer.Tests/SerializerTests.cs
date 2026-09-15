@@ -1939,15 +1939,22 @@ public sealed partial class SerializerTests : SerializerTestsBase
         });
     }
 
-    [Fact]
-    public void String_InvisibleChar_ZeroWidthJoinerIsKept()
+    [Theory]
+    [InlineData("\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67", "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67")] // Family
+    [InlineData("\u2764\uFE0F\u200D\uD83D\uDD25", "\u2764\uFE0F\u200D\uD83D\uDD25")] // Heart on fire (variation selector)
+    [InlineData("\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDCBB", "\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDCBB")] // Technologist (skin tone)
+    [InlineData("\uD83D\uDC68\u200D\uD83D\uDC69 a\u200Db", "\uD83D\uDC68\u200D\uD83D\uDC69 a<U+200D>b")]
+    [InlineData("a\u200Db", "a<U+200D>b")]
+    [InlineData("\uD83D\uDC68\u200Db", "\uD83D\uDC68<U+200D>b")]
+    [InlineData("a\u200D\uD83D\uDC69", "a<U+200D>\uD83D\uDC69")]
+    [InlineData("\uD83D\uDC68\u200D", "\uD83D\uDC68<U+200D>")]
+    [InlineData("\u200D\uD83D\uDC69", "<U+200D>\uD83D\uDC69")]
+    [InlineData("\u0915\u094D\u200D\u0937", "\u0915\u094D<U+200D>\u0937")] // Devanagari conjunct
+    [InlineData("a\u200Cb", "a<U+200C>b")]
+    [InlineData("\uD83D\uDC68\u200C\uD83D\uDC69", "\uD83D\uDC68<U+200C>\uD83D\uDC69")]
+    public void String_InvisibleChar_ZeroWidthJoiner_OnlyKeptInEmojiSequences(string value, string expected)
     {
-        AssertSerialization(new Validation
-        {
-            Subject = "a\u200Cb\u200Dc",
-            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
-            Expected = "a\u200Cb\u200Dc",
-        });
+        AssertSerialization(value, new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true }, expected);
     }
 
     [Fact]

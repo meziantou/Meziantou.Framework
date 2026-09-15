@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable;
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.HumanReadable;
 public sealed class HumanReadableTextWriter
 {
     private const string Indentation = "  ";
+    private const char ZeroWidthJoiner = '\u200D';
 
     private readonly StringBuilder _text = new();
     private readonly HumanReadableSerializerOptions _options;
@@ -92,17 +94,18 @@ public sealed class HumanReadableTextWriter
     {
         // A space is only visible between other characters, so leading and trailing whitespace is always encoded
         var start = 0;
-        while (start < value.Length && IsWhiteSpace(value[start]))
+        while (start < value.Length && IsSpaceOrZeroWidth(value[start]))
         {
             start++;
         }
 
         var end = value.Length;
-        while (end > start && IsWhiteSpace(value[end - 1]))
+        while (end > start && IsSpaceOrZeroWidth(value[end - 1]))
         {
             end--;
         }
 
+        var graphemeClusterEnd = 0;
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
@@ -118,7 +121,11 @@ public sealed class HumanReadableTextWriter
             {
                 sb.Append('\u2421');
             }
-            else if (IsWhiteSpace(c))
+            else if (c is ZeroWidthJoiner && IsInEmojiSequence(value, i, ref graphemeClusterEnd))
+            {
+                sb.Append(c);
+            }
+            else if (IsSpaceOrZeroWidth(c))
             {
                 // Other spaces look like a regular space or like nothing at all, and have no control picture
                 sb.Append(CultureInfo.InvariantCulture, $"<U+{(int)c:X4}>");
@@ -129,8 +136,25 @@ public sealed class HumanReadableTextWriter
             }
         }
 
-        // U+200C and U+200D are not encoded: they are part of many emoji sequences
-        static bool IsWhiteSpace(char c) => char.IsWhiteSpace(c) || c is '\u200B' or '\u2060' or '\uFEFF';
+        static bool IsSpaceOrZeroWidth(char c) => char.IsWhiteSpace(c) || c is '\u200B' or '\u200C' or ZeroWidthJoiner or '\u2060' or '\uFEFF';
+    }
+
+    // A zero-width joiner combines emoji into a single one (e.g. a family), so it must be kept there.
+    // Grapheme cluster rule GB11 only continues a cluster after a joiner that sits between two pictographic characters;
+    // everywhere else, the joiner is the last character of its cluster. Indic conjuncts can also continue the cluster
+    // (rule GB9c), but with a letter, which is why the next character must also be a symbol.
+    private static bool IsInEmojiSequence(ReadOnlySpan<char> value, int index, ref int graphemeClusterEnd)
+    {
+        while (graphemeClusterEnd <= index)
+        {
+            graphemeClusterEnd += StringInfo.GetNextTextElementLength(value[graphemeClusterEnd..]);
+        }
+
+        if (index + 1 >= graphemeClusterEnd)
+            return false;
+
+        return Rune.DecodeFromUtf16(value[(index + 1)..], out var next, out _) is OperationStatus.Done
+            && Rune.GetUnicodeCategory(next) is UnicodeCategory.OtherSymbol;
     }
 
     /// <summary>Writes a value to the output.</summary>

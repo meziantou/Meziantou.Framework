@@ -264,7 +264,8 @@ Notes:
 - A space is kept between other characters, but written as `␠` at the start or the end of a line, where it would be
   invisible (and where editors often remove it).
 - The other space characters have no control picture and are written as their code point, for example `<U+00A0>`
-  for a no-break space. This also applies to the zero-width characters U+200B, U+2060 and U+FEFF.
+  for a no-break space. This also applies to the zero-width characters U+200B, U+200C, U+2060 and U+FEFF, and to
+  U+200D (zero-width joiner), except when it joins emoji into a single one (for example a family emoji).
 - The control pictures of a line ending are followed by a real line break, written with `NewLine` (`\n` by default,
   see [Line endings](#line-endings)), so each value keeps its lines.
 - Every value and property name is converted, including single-line ones.

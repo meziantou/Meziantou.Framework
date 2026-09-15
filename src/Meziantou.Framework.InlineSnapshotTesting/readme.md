@@ -363,7 +363,7 @@ InlineSnapshot
 
 ## Invisible characters
 
-If spaces or new lines are important, you can display them as visible characters.
+If spaces or new lines are important, you can display them as visible characters. Line endings are shown as control pictures (`␍`, `␊`), followed by a normalized line break.
 
 ````c#
 InlineSnapshot

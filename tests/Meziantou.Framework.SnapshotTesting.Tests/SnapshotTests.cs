@@ -1517,6 +1517,20 @@ public sealed partial class SnapshotTests
     }
 
     [Theory]
+    [InlineData("line 1\r\nline\t2", "line␠1␍␊\nline␉2")]
+    [InlineData("a b\tc", "a b\tc")]
+    public void ShowInvisibleCharactersInValues(string value, string expected)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ConfigureHumanReadableSerializer(options => options.ShowInvisibleCharactersInValues = true);
+
+        Snapshot.Validate(value, settings);
+
+        Assert.Equal(expected, File.ReadAllText(directory / "snapshot.verified.txt"));
+    }
+
+    [Theory]
     [InlineData("ping", "ping", "")]
     [InlineData("ping ", "ping", "")]
     [InlineData("ping a b", "ping", "a b")]

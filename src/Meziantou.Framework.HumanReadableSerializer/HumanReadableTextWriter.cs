@@ -52,35 +52,35 @@ public sealed class HumanReadableTextWriter
 
     private void Write(ReadOnlySpan<char> value, bool showInvisibleCharacters = false)
     {
-        // Like values, invisible characters are only revealed in text that spans multiple lines
-        if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues && StringUtils.IsMultiLines(value))
-        {
-            foreach (var (line, eol) in StringUtils.EnumerateLines(value))
-            {
-                WritePendingText(indent: !line.IsEmpty);
-                ReplaceInvisibleCharacters(_text, line);
-                if (!eol.IsEmpty)
-                {
-                    // Break the line through the pending state, so the next line is indented like the first one
-                    ReplaceInvisibleCharacters(_text, eol);
-                    WriteNewLine();
-                }
-            }
-        }
-        else if (!value.IsEmpty)
-        {
-            var first = true;
-            foreach (var (line, _) in StringUtils.EnumerateLines(value))
-            {
-                if (!first)
-                {
-                    WriteNewLine();
-                }
+        if (value.IsEmpty)
+            return;
 
+        // Like values, invisible characters are only revealed in text that spans multiple lines
+        showInvisibleCharacters &= _options.ShowInvisibleCharactersInValues && StringUtils.IsMultiLines(value);
+
+        var first = true;
+        foreach (var (line, eol) in StringUtils.EnumerateLines(value))
+        {
+            if (!first)
+            {
+                WriteNewLine();
+            }
+
+            if (showInvisibleCharacters)
+            {
+                // The control pictures record the original end of line, so the actual line break
+                // is normalized and indented the same way as when the option is disabled.
+                WritePendingText(indent: !line.IsEmpty || !eol.IsEmpty);
+                ReplaceInvisibleCharacters(_text, line);
+                ReplaceInvisibleCharacters(_text, eol);
+            }
+            else
+            {
                 WritePendingText(indent: !line.IsEmpty);
                 _text.Append(line);
-                first = false;
             }
+
+            first = false;
         }
     }
 

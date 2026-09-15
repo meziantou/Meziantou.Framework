@@ -26,6 +26,18 @@ public sealed class CronExpressionTests
     [InlineData("0 0 * * 8")]
     [InlineData("0 0 * * 8L")]
     [InlineData("0 0 * * 8#1")]
+    [InlineData("0 0 0 1 1 * 1969")]
+    [InlineData("0 0 0 1 1 * 10000")]
+    [InlineData("0 0 0 1 1 * 2150-2100")]
+    [InlineData("0 0 * * *\n")]
+    [InlineData("\r\n0 0 * * *")]
+    [InlineData("0\n0 * * * *")]
+    [InlineData("0 0 * * * ")]
+    [InlineData(" 0 0 * * *")]
+    [InlineData("0 0 * * * *")]
+    [InlineData("0 0 * * * *")]
+    [InlineData("@daily\n")]
+    [InlineData("\v@daily")]
     public void CronExpression_Parse_InvalidExpression(string expression)
     {
         Assert.Throws<FormatException>(() => CronExpression.Parse(expression));
@@ -33,6 +45,27 @@ public sealed class CronExpressionTests
 
         Assert.False(CronExpression.TryParse(expression, out _));
         Assert.False(CronExpression.TryParse(expression.AsSpan(), out _));
+    }
+
+    // Only ASCII letters are folded: characters whose Unicode case mapping is an ASCII letter are not names
+    [Theory]
+    [InlineData("0 0 * ſep *")]
+    [InlineData("0 0 * ſEP *")]
+    [InlineData("0 0 * * ſun")]
+    [InlineData("0 0 * * ſAT")]
+    [InlineData("0 0 * * FRı")]
+    [InlineData("0 0 * * frıL")]
+    [InlineData("0 0 * * ſun#1")]
+    [InlineData("0 0 * * MON-FRİ")]
+    [InlineData("0 0 * JΑN *")]
+    [InlineData("@daıly")]
+    [InlineData("@mıdnight")]
+    [InlineData("@weeKly")]
+    [InlineData("@ｄaily")]
+    public void CronExpression_Parse_NonAsciiLookAlikeLetters_AreRejected(string expression)
+    {
+        Assert.False(CronExpression.TryParse(expression, out _));
+        Assert.Throws<FormatException>(() => CronExpression.Parse(expression));
     }
 
     [Fact]
@@ -165,6 +198,8 @@ public sealed class CronExpressionTests
     [InlineData("0 0 12 1 1 * 2025", "2025-01-01T12:00:00")]
     [InlineData("0 0 12 * * * 2024", "2024-01-01T12:00:00", "2024-01-02T12:00:00", "2024-01-03T12:00:00")]
     [InlineData("0 0 12 * * * 2025,2026", "2025-01-01T12:00:00", "2025-01-02T12:00:00", "2025-01-03T12:00:00")]
+    [InlineData("0 0 12 1 1 * 2098/50", "2098-01-01T12:00:00", "2148-01-01T12:00:00", "2198-01-01T12:00:00")]
+    [InlineData("0 0 12 1 1 * 2100-2500/100", "2100-01-01T12:00:00", "2200-01-01T12:00:00", "2300-01-01T12:00:00", "2400-01-01T12:00:00", "2500-01-01T12:00:00")]
     public void EvaluateCronExpression_WithYear(string expression, params string[] expectedOccurrences)
     {
         var cron = CronExpression.Parse(expression);
@@ -300,10 +335,109 @@ public sealed class CronExpressionTests
     [InlineData("0\t0\t*\t*\t*")]
     [InlineData("0 \t 0\t\t* * *")]
     [InlineData("\t0 0 * * *\t")]
+    [InlineData(" \t@daily \t")]
     public void EvaluateCronExpression_TabSeparatedFields(string expression)
     {
         var cron = CronExpression.Parse(expression);
         AssertOccurrencesStartWith(cron.GetNextOccurrences(new DateTime(2024, 1, 1, 0, 0, 0)), new DateTime(2024, 1, 1), new DateTime(2024, 1, 2));
+    }
+
+    [Theory]
+    [InlineData("0 */15 * * * *", "0 */15 * * * *")]
+    [InlineData(" \t0  0\t* * *\t ", "0  0\t* * *")]
+    [InlineData("@Daily", "@Daily")]
+    [InlineData(" @hourly ", "@hourly")]
+    [InlineData("0 0 * jan mon-fri", "0 0 * jan mon-fri")]
+    public void CronExpression_ToString_ReturnsTheParsedText(string expression, string expected)
+    {
+        var cron = CronExpression.Parse(expression);
+
+        Assert.Equal(expected, cron.ToString());
+        Assert.Equal(cron, CronExpression.Parse(cron.ToString()));
+    }
+
+    [Theory]
+    [InlineData("0 0 * * *", "0 0 * * *")]
+    [InlineData("*/15 * * * *", "0,15,30,45 * * * *")]
+    [InlineData("*/15 * * * *", "0-59/15 * * * *")]
+    [InlineData("@daily", "0 0 * * *")]
+    [InlineData("@midnight", "@DAILY")]
+    [InlineData("@yearly", "0 0 1 JAN ?")]
+    [InlineData("0 0 * * *", "0 0 0 * * *")]
+    [InlineData("0 0 * * *", "0 0 0 * * * *")]
+    [InlineData("0 0 * * *", "0 0 0 ? * ? ?")]
+    [InlineData("0-59 0 * * *", "* 0 * * *")]
+    [InlineData("0 0 1-31 1-12 0-6", "0 0 * * *")]
+    [InlineData("0 0 * * 1-7", "0 0 * * *")]
+    [InlineData("0 0 * * 7", "0 0 * * SUN")]
+    [InlineData("0 0 * * 0L", "0 0 * * 7L")]
+    [InlineData("0 0 * * MON", "0 0 * * 1#1,1#2,1#3,1#4,1#5")]
+    [InlineData("0 0 * * MON", "0 0 * * 1,1L,1#3")]
+    [InlineData("0 0 L * *", "0 0 L-0,l * *")]
+    [InlineData("0 0 15W,LW * *", "0 0 LW,15w,15W * *")]
+    [InlineData("0 0 0 1 1 * 2024", "0 0 0 1 1 * 2024,2024-2024")]
+    [InlineData("0 0 0 1 1 * 2098-2102", "0 0 0 1 1 * 2098,2099,2100,2101,2102")]
+    public void CronExpression_Equals_SameFields(string left, string right)
+    {
+        var leftExpression = CronExpression.Parse(left);
+        var rightExpression = CronExpression.Parse(right);
+
+        Assert.Equal(leftExpression, rightExpression);
+        Assert.True(rightExpression.Equals((object)leftExpression));
+        Assert.True(leftExpression == rightExpression);
+        Assert.False(leftExpression != rightExpression);
+        Assert.Equal(leftExpression.GetHashCode(), rightExpression.GetHashCode());
+    }
+
+    [Theory]
+    [InlineData("0 0 * * *", "0 0 * * 1")]
+    [InlineData("0 0 * * *", "0 0 * * * *")]
+    [InlineData("0 0 * * *", "1 0 0 * * *")]
+    [InlineData("0 0 1 * *", "0 0 1W * *")]
+    [InlineData("0 0 29 2 *", "0 0 L 2 *")]
+    [InlineData("0 0 L * *", "0 0 LW * *")]
+    [InlineData("0 0 L-1 * *", "0 0 L-2 * *")]
+    [InlineData("0 0 * * 1L", "0 0 * * 1#5")]
+    [InlineData("0 0 * * 1#1", "0 0 * * 2#1")]
+    [InlineData("0 0 * * 1#1,1#2,1#3,1#4", "0 0 * * 1")]
+    [InlineData("0 0 0 1 1 * *", "0 0 0 1 1 * 1970-9999")]
+    [InlineData("0 0 0 1 1 * 2024", "0 0 0 1 1 * 2150")]
+    [InlineData("0 0 0 1 1 * 2024", "0 0 0 1 1 * 2024,9999")]
+    public void CronExpression_Equals_DifferentFields(string left, string right)
+    {
+        var leftExpression = CronExpression.Parse(left);
+        var rightExpression = CronExpression.Parse(right);
+
+        Assert.NotEqual(leftExpression, rightExpression);
+        Assert.False(rightExpression.Equals((object)leftExpression));
+        Assert.False(leftExpression == rightExpression);
+        Assert.True(leftExpression != rightExpression);
+    }
+
+    [Fact]
+    public void CronExpression_Equals_Null()
+    {
+        var cron = CronExpression.Parse("0 0 * * *");
+
+        Assert.NotEqual(null, cron);
+        Assert.False(cron.Equals((object?)null));
+        Assert.False(cron.Equals("0 0 * * *"));
+        Assert.False(cron == null);
+        Assert.True(cron != null);
+        Assert.True((CronExpression?)null == null);
+    }
+
+    [Fact]
+    public void CronExpression_RepeatedSpecialValues_AreStoredOnce()
+    {
+        const int Count = 10_000;
+        var expression = "0 0 " + string.Join(',', Enumerable.Repeat("L-30", Count)) + " * " + string.Join(',', Enumerable.Repeat("1#5", Count));
+
+        var cron = CronExpression.Parse(expression);
+
+        // The fifth Monday is never the first day of a month, so the enumeration scans every month until year 9999
+        Assert.Equal(CronExpression.Parse("0 0 L-30 * 1#5"), cron);
+        Assert.Empty(cron.GetNextOccurrences(new DateTime(2024, 1, 1)));
     }
 
     [Theory]
@@ -377,12 +511,28 @@ public sealed class CronExpressionTests
     [Fact]
     public void GetNextOccurrences_YearField_EndsAfterItsLastYear()
     {
-        var cron = CronExpression.Parse("0 0 0 1 1 * 2044/6,2098-2099");
+        var cron = CronExpression.Parse("0 0 0 1 1 * 2044-2096/6,2098-2099");
 
         var occurrences = cron.GetNextOccurrences(new DateTime(2090, 1, 1)).ToArray();
 
         Assert.HasCount(3, occurrences);
         AssertOccurrencesStartWith(occurrences, new DateTime(2092, 1, 1), new DateTime(2098, 1, 1), new DateTime(2099, 1, 1));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_YearField_AcceptsYearsUntil9999()
+    {
+        AssertOccurrencesStartWith(CronExpression.Parse("0 0 12 1 1 * 2150").GetNextOccurrences(new DateTime(2024, 1, 1)), new DateTime(2150, 1, 1, 12, 0, 0));
+        AssertOccurrencesStartWith(CronExpression.Parse("0 0 0 1 1 * 2044/6").GetNextOccurrences(new DateTime(2097, 1, 1)), new DateTime(2098, 1, 1), new DateTime(2104, 1, 1), new DateTime(2110, 1, 1));
+        AssertOccurrencesStartWith(CronExpression.Parse("0 0 0 1 1 * 2099-2101,5000").GetNextOccurrences(new DateTime(2024, 1, 1)), new DateTime(2099, 1, 1), new DateTime(2100, 1, 1), new DateTime(2101, 1, 1), new DateTime(5000, 1, 1));
+
+        var everyThousandYears = CronExpression.Parse("0 0 0 1 1 * */2000").GetNextOccurrences(new DateTime(1900, 1, 1)).ToArray();
+        Assert.HasCount(5, everyThousandYears);
+        AssertOccurrencesStartWith(everyThousandYears, new DateTime(1970, 1, 1), new DateTime(3970, 1, 1), new DateTime(5970, 1, 1), new DateTime(7970, 1, 1), new DateTime(9970, 1, 1));
+
+        var lastYears = CronExpression.Parse("59 59 23 31 12 * 9998-9999").GetNextOccurrences(new DateTime(2024, 1, 1)).ToArray();
+        Assert.HasCount(2, lastYears);
+        AssertOccurrencesStartWith(lastYears, new DateTime(9998, 12, 31, 23, 59, 59), new DateTime(9999, 12, 31, 23, 59, 59));
     }
 
     [Fact]

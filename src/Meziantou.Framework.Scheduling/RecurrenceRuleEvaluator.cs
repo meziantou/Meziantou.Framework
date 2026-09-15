@@ -6,6 +6,9 @@ namespace Meziantou.Framework.Scheduling;
 /// grid defined by the start date and the interval. For each period, the days are selected by BYMONTH, BYWEEKNO,
 /// BYYEARDAY, BYMONTHDAY and BYDAY, then expanded by BYHOUR, BYMINUTE and BYSECOND. The resulting set is sorted,
 /// BYSETPOS is applied to it, and only then are the instances before the start date removed.</para>
+/// <para>When BYWEEKNO is specified, a YEARLY period is a week-numbering year: its weeks are numbered with WKST, and its
+/// days can start in December of the previous calendar year and end in January of the next one. The other day parts still
+/// apply to the calendar date of each day.</para>
 /// <para>Dates are handled as day numbers (days since 0001-01-01) so a period never materializes a
 /// <see cref="DateTime"/> per candidate day.</para>
 /// </remarks>
@@ -16,6 +19,7 @@ internal sealed class RecurrenceRuleEvaluator
     private const int SecondsPerHour = 3600;
     private const int SecondsPerDay = 86400;
     private const int MaxYear = 9999;
+    private const int MaxDaysPerWeekNumberingYear = 53 * 7;
     private const long DaysPer400Years = 146097;
     private const long MonthsPer400Years = 4800;
     private const long SecondsPer400Years = DaysPer400Years * SecondsPerDay;
@@ -33,6 +37,7 @@ internal sealed class RecurrenceRuleEvaluator
     private readonly long _startDayNumber;
     private readonly int _startYear;
     private readonly int _startMonth;
+    private readonly long _startWeekNumberingYear;
     private readonly long _endTicks;
     private readonly long _fractionTicks;
     private readonly long _periodsPerCycle;
@@ -129,6 +134,12 @@ internal sealed class RecurrenceRuleEvaluator
                     _negativeWeekNumbers |= 1UL << -weekNumber;
                 }
             }
+
+            // RFC 5545 section 3.3.10: BYWEEKNO selects the weeks of the year, numbered from the first week holding at least
+            // 4 days of that year. A YEARLY period is then the week-numbering year, whose first days can be in December of
+            // the previous calendar year and whose last days in January of the next one, and it starts with the
+            // week-numbering year holding the start date, so a start date in week 1 of the next year is in the first period.
+            _startWeekNumberingYear = GetWeekNumberingYear(_startDayNumber, _startYear);
         }
 
         // BYYEARDAY
@@ -289,7 +300,7 @@ internal sealed class RecurrenceRuleEvaluator
 
         var days = new int[_frequency switch
         {
-            Frequency.Yearly => 366,
+            Frequency.Yearly => _hasWeekNumberFilter ? MaxDaysPerWeekNumberingYear : 366,
             Frequency.Monthly => 31,
             Frequency.Weekly => 7,
             _ => 1,
@@ -409,7 +420,7 @@ internal sealed class RecurrenceRuleEvaluator
             // A period never holds more instances than this, so a position beyond it never selects anything
             long maxDays = _frequency switch
             {
-                Frequency.Yearly => 366,
+                Frequency.Yearly => _hasWeekNumberFilter ? MaxDaysPerWeekNumberingYear : 366,
                 Frequency.Monthly => 31,
                 Frequency.Weekly => CountBits((ulong)_weekDayMask),
                 _ => 1,
@@ -520,6 +531,49 @@ internal sealed class RecurrenceRuleEvaluator
             var dayCount = 0;
             switch (_frequency)
             {
+                case Frequency.Yearly when _hasWeekNumberFilter:
+                    {
+                        // The period is a week-numbering year, which can start before January 1 and end after December 31
+                        var year = _startWeekNumberingYear + (periodIndex * _interval);
+                        if (year > MaxYear + 1)
+                            return 0;
+
+                        var firstDayNumber = Math.Max(GetStartOfFirstWeek(year), 0);
+                        var nextFirstDayNumber = Math.Min(GetStartOfFirstWeek(year + 1), MaxDayNumber + 1);
+                        if (firstDayNumber > MaxDayNumber || IsAfterEnd(firstDayNumber * TicksPerDay))
+                            return 0;
+
+                        periodIndex++;
+                        GetDate(firstDayNumber, out var dayYear, out var month, out var day, out var dayOfYear);
+                        var daysInMonth = DaysInMonth(dayYear, month);
+                        for (var dayNumber = firstDayNumber; dayNumber < nextFirstDayNumber; dayNumber++)
+                        {
+                            if (IsDayIncluded(dayYear, month, day, dayOfYear, dayNumber))
+                            {
+                                days[dayCount++] = (int)dayNumber;
+                            }
+
+                            // Move to the next calendar day without converting the day number again
+                            day++;
+                            dayOfYear++;
+                            if (day > daysInMonth)
+                            {
+                                day = 1;
+                                month++;
+                                if (month > 12)
+                                {
+                                    month = 1;
+                                    dayYear++;
+                                    dayOfYear = 1;
+                                }
+
+                                daysInMonth = DaysInMonth(dayYear, month);
+                            }
+                        }
+
+                        break;
+                    }
+
                 case Frequency.Yearly:
                     {
                         var year = _startYear + (periodIndex * _interval);
@@ -828,6 +882,18 @@ internal sealed class RecurrenceRuleEvaluator
         var weekNumber = (int)((dayNumber - weekYearStart) / 7) + 1;
         var numberOfWeeks = (int)((nextWeekYearStart - weekYearStart) / 7);
         return HasBit(_positiveWeekNumbers, weekNumber) || HasBit(_negativeWeekNumbers, numberOfWeeks - weekNumber + 1);
+    }
+
+    /// <summary>Gets the week-numbering year holding <paramref name="dayNumber"/>, which is in the calendar year <paramref name="year"/>.</summary>
+    private long GetWeekNumberingYear(long dayNumber, long year)
+    {
+        if (dayNumber < GetStartOfFirstWeek(year))
+            return year - 1;
+
+        if (dayNumber >= GetStartOfFirstWeek(year + 1))
+            return year + 1;
+
+        return year;
     }
 
     private long GetStartOfFirstWeek(long year)

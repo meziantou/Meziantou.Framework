@@ -2,20 +2,23 @@ using System.Collections.ObjectModel;
 
 namespace Meziantou.Framework.Scheduling;
 
-/// <summary>The property parameters of a content line, each value as it is written, validated as they are added.</summary>
+/// <summary>The property parameters of a content line, in the form <see cref="InternetCalendarProperty.Parameters"/> describes, validated as they are added.</summary>
 /// <remarks>
 /// Validating on insertion, as <see cref="InternetCalendarProperty"/> does on creation, reports an invalid parameter where it
-/// is added rather than when the calendar is written, and keeps every parameter writable: a line break or an unquoted
-/// separator in a value would otherwise let it start a property, or a component, of its own.
+/// is added rather than when the calendar is written. A value is encoded when it is written, so a separator or a line feed in it
+/// cannot start a property, or a component, of its own; only a control character that the encoding cannot represent is rejected.
 /// </remarks>
 internal sealed class InternetCalendarParameterCollection : Collection<KeyValuePair<string, string>>
 {
-    /// <summary>Adds the parameters of a parsed content line, which are well formed by construction and kept as written.</summary>
-    internal void AddParsed(IEnumerable<KeyValuePair<string, string>> parameters)
+    /// <summary>Adds the parameters of a parsed content line, which the parser decoded into values this collection accepts.</summary>
+    internal void AddParsed(IEnumerable<KeyValuePair<string, string>> parameters, Func<string, bool>? skip = null)
     {
         foreach (var parameter in parameters)
         {
-            Items.Add(parameter);
+            if (skip is not null && skip(parameter.Key))
+                continue;
+
+            Add(parameter);
         }
     }
 
@@ -37,6 +40,6 @@ internal sealed class InternetCalendarParameterCollection : Collection<KeyValueP
             throw new ArgumentException($"'{item.Key}' is not a valid iCalendar parameter name", nameof(item));
 
         if (item.Value is null || !InternetCalendarProperty.IsValidParameterValue(item.Value))
-            throw new ArgumentException($"The value of the parameter '{item.Key}' is neither a paramtext nor a quoted string", nameof(item));
+            throw new ArgumentException($"The value of the parameter '{item.Key}' contains a control character", nameof(item));
     }
 }

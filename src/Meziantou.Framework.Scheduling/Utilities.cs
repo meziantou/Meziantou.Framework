@@ -192,7 +192,7 @@ internal static class Utilities
 
             // A local time is only meaningful to a reader that also knows the offset, and the
             // output carries no TZID parameter to convey it, so it is written as UTC.
-            DateTimeKind.Local => dt.ToUniversalTime().ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture),
+            DateTimeKind.Local => LocalToUniversalTime(dt).ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture),
 
             // Form 1: a floating date-time, interpreted in the reader's own time zone.
             _ => dt.ToString(FloatingDateTimeFormat, CultureInfo.InvariantCulture),
@@ -439,8 +439,29 @@ internal static class Utilities
         return value.Kind switch
         {
             DateTimeKind.Utc => TimeZoneInfo.ConvertTimeFromUtc(value, timeZone),
-            DateTimeKind.Local => TimeZoneInfo.ConvertTime(value, TimeZoneInfo.Local, timeZone),
+            DateTimeKind.Local => TimeZoneInfo.ConvertTimeFromUtc(LocalToUniversalTime(value), timeZone),
             _ => value,
+        };
+    }
+
+    /// <summary>Converts a <see cref="DateTimeKind.Local"/> value to UTC, clamped to the range of <see cref="DateTime"/>.</summary>
+    /// <remarks>
+    /// A local time skipped by a forward transition is read with the UTC offset in effect before the transition, as RFC 5545
+    /// section 3.3.5 reads a wall clock: <see cref="TimeZoneInfo.ConvertTime(DateTime, TimeZoneInfo, TimeZoneInfo)"/> throws for
+    /// it, and <see cref="DateTime.ToUniversalTime"/> does not apply that offset on every platform. Any other value keeps the
+    /// conversion of <see cref="DateTime.ToUniversalTime"/>, which knows which occurrence an ambiguous local time is.
+    /// </remarks>
+    public static DateTime LocalToUniversalTime(DateTime value)
+    {
+        var local = TimeZoneInfo.Local;
+        if (!local.IsInvalidTime(DateTime.SpecifyKind(value, DateTimeKind.Unspecified)))
+            return value.ToUniversalTime();
+
+        return TryToDateTimeOffset(value, local, out var instant) switch
+        {
+            InstantConversion.Success => instant.UtcDateTime,
+            InstantConversion.BeforeMinValue => DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc),
+            _ => DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc),
         };
     }
 
@@ -467,15 +488,13 @@ internal static class Utilities
     /// <remarks>A <see cref="DateTimeKind.Local"/> value is converted to UTC, and a <see cref="DateTimeKind.Unspecified"/> one is taken as UTC.</remarks>
     public static string UtcDateTimeToString(DateTime value)
     {
-        var utc = value.Kind is DateTimeKind.Local ? value.ToUniversalTime() : value;
+        var utc = value.Kind is DateTimeKind.Local ? LocalToUniversalTime(value) : value;
         return utc.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
     }
 
-    private static readonly char[] ParameterSeparators = [';', ':', ','];
-
-    /// <summary>A TZID is written as a property parameter value, a paramtext or a quoted-string (RFC 5545 section 3.1), and as a
-    /// TEXT property value in the VTIMEZONE component. Neither can hold a DQUOTE or a control character other than a tab, so an
-    /// identifier containing one is rejected rather than altered.</summary>
+    /// <summary>A TZID is written as a property parameter value, a paramtext or a quoted-string (RFC 5545 section 3.1) whose DQUOTE
+    /// characters are encoded as RFC 6868 requires, and as a TEXT property value in the VTIMEZONE component. Neither can hold a
+    /// control character other than a tab, so an identifier containing one is rejected rather than altered.</summary>
     public static bool IsValidTimeZoneId([NotNullWhen(returnValue: true)] string? id)
     {
         if (string.IsNullOrEmpty(id))
@@ -483,7 +502,7 @@ internal static class Utilities
 
         foreach (var c in id)
         {
-            if (c is '"' || (c < 0x20 && c is not '\t') || c == 0x7F)
+            if ((c < 0x20 && c is not '\t') || c == 0x7F)
                 return false;
         }
 
@@ -491,10 +510,10 @@ internal static class Utilities
     }
 
     /// <summary>Formats a TZID as a property parameter value, quoting it when it contains a separator, as a Windows display
-    /// name such as <c>(UTC+01:00) Amsterdam, Berlin</c> does.</summary>
+    /// name such as <c>(UTC+01:00) Amsterdam, Berlin</c> does, and applying the RFC 6868 encoding.</summary>
     public static string TimeZoneIdToParameterValue(string id)
     {
-        return id.IndexOfAny(ParameterSeparators) >= 0 ? '"' + id + '"' : id;
+        return InternetCalendarProperty.EncodeSingleParameterValue(id);
     }
 
     public static string StatusToString(EventStatus status)

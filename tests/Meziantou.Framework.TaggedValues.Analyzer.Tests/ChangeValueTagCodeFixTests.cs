@@ -280,4 +280,72 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task KeepsTagsThatContainTheSerializationSeparators()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("Order|Id", "Project\\Id")] Guid projectId) => Load({|MFTV0002:projectId|});
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load([ValueTag("Order|Id", "Project\\Id")] Guid id) { }
+
+                void M([ValueTag("Order|Id", "Project\\Id")] Guid projectId) => Load(projectId);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_WhenTheTagCannotBeWrittenInAComment()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                void M([ValueTag("Order Id")] Guid orderId)
+                {
+                    var /* ValueTag=ProjectId */ id = {|MFTV0002:orderId|};
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                void M([ValueTag("Order Id")] Guid orderId)
+                {
+                    var /* ValueTag=ProjectId */ id = {|MFTV0002:orderId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ChangesThePropertyTargetOfARecordParameter()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            record Order([ValueTag("OrderIdParameter")][property: ValueTag("OrderId")] Guid Id);
+
+            class Sample
+            {
+                Order M(Order order, [ValueTag("ProjectId")] Guid projectId) => order with { Id = {|MFTV0002:projectId|} };
+            }
+            """,
+            """
+            record Order([ValueTag("OrderIdParameter")][property: ValueTag("ProjectId")] Guid Id);
+
+            class Sample
+            {
+                Order M(Order order, [ValueTag("ProjectId")] Guid projectId) => order with { Id = projectId };
+            }
+            """);
+    }
 }

@@ -569,4 +569,91 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task CommentOnForEachAndPatternVariables_IsCheckedAgainstTheMatchedValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] List<Guid> projectIds, [ValueTag("ProjectId")] Guid? projectId, [ValueTag("OrderId")] Guid orderId)
+                {
+                    foreach (var /* ValueTag=OrderId */ id in {|MFTV0002:projectIds|}) { }
+                    foreach (var /* ValueTag=ProjectId */ id in projectIds) { }
+                    if ({|MFTV0002:projectId|} is Guid /* ValueTag=OrderId */ a) { }
+                    if ({|MFTV0002:projectId|} is { } b /* ValueTag=OrderId */) { }
+                    if (orderId is Guid /* ValueTag=OrderId */ c) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task PatternVariable_TakesTheTagOfTheMatchedValue()
+    {
+        await VerifyAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                static void LoadProject([ValueTag("ProjectId")] Guid projectId) { }
+
+                void M(Order order, [ValueTag("OrderId")] Guid? orderId, [ValueTag("ProjectId")] Guid projectId, [ValueTag("OrderId")] Guid[] orderIds, [ValueTag(Key = "OrderId", Value = "CustomerId")] KeyValuePair<Guid, Guid> pair)
+                {
+                    if (orderId is { } a) LoadProject({|MFTV0002:a|});
+                    if (order is { Id: var b }) LoadProject({|MFTV0002:b|});
+                    if (orderIds is [var c, .. var rest]) LoadProject({|MFTV0002:c|});
+                    if (pair is { Key: var key, Value: var value }) { LoadProject({|MFTV0002:key|}); LoadProject({|MFTV0002:value|}); }
+                    if (pair is (var d, var e)) { LoadProject({|MFTV0002:d|}); LoadProject({|MFTV0002:e|}); }
+                    _ = (order.Id, projectId) switch { (var f, var g) => {|MFTV0001:f == g|}, };
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task VariableOfASubpattern_DoesNotTakeTheTagOfTheOuterValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] public Guid[] OrderIds = [];
+                [ValueTag("Count")] public int Expected;
+
+                bool M() => OrderIds is { Length: var length } && length == Expected;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task DeconstructedVariables_TakeTheTagsOfTheDeconstructedValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void LoadProject([ValueTag("ProjectId")] Guid projectId) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, [ValueTag(Key = "OrderId", Value = "CustomerId")] Dictionary<Guid, Guid> map)
+                {
+                    var (a, b) = (orderId, projectId);
+                    LoadProject({|MFTV0002:a|});
+                    LoadProject(b);
+
+                    (var c, (Guid d, var e)) = (projectId, (orderId, projectId));
+                    LoadProject(c);
+                    LoadProject({|MFTV0002:d|});
+                    LoadProject(e);
+
+                    foreach (var (key, value) in map)
+                    {
+                        LoadProject({|MFTV0002:key|});
+                        LoadProject({|MFTV0002:value|});
+                    }
+                }
+            }
+            """);
+    }
 }

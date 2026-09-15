@@ -376,4 +376,50 @@ public sealed class StrictModeTests : TaggedValuesAnalyzerTestBase
             """,
             strict: true);
     }
+
+    [Fact]
+    public async Task ExistingValuesInBranchesAndArrayElements_AreReported()
+    {
+        await VerifyStrictAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                Guid _first;
+                Guid _second;
+                Guid[] _ids = [];
+
+                void M(Order order, bool flag, int value)
+                {
+                    order.Id = {|MFTV0009:flag ? _first : _second|};
+                    order.Id = {|MFTV0009:flag ? _first : Guid.Empty|};
+                    order.Id = {|MFTV0009:value switch { 0 => Guid.NewGuid(), _ => _first }|};
+                    order.Id = {|MFTV0009:_ids[0]|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NewValuesInBranches_AreNotReported()
+    {
+        await VerifyStrictAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Order order, bool flag, string text)
+                {
+                    order.Id = flag ? Guid.NewGuid() : Guid.Empty;
+                    order.Id = Guid.TryParse(text, out var parsed) ? Guid.Parse(text) : default;
+                }
+            }
+            """);
+    }
 }

@@ -126,17 +126,34 @@ public static class InlineSnapshot
 
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {
-            var context = GetCallerContext();
-            if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
+            // Locating the call can fail, for instance without a PDB. That must not hide the snapshot difference when
+            // the environment does not allow updating the snapshot anyway.
+            if (SnapshotUpdateStrategy.IsUpdateDisabledByEnvironment(settings))
             {
-                FileEditor.UpdateFile(context, settings, expected, actual);
+                settings.AssertSnapshot(normalizedExpected, normalizedActual);
+            }
 
-                if (settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath))
+            bool mustReportError;
+            try
+            {
+                var context = GetCallerContext();
+                if (settings.SnapshotUpdateStrategy.CanUpdateSnapshotInternal(settings, context.FilePath, expected, actual))
                 {
-                    settings.AssertSnapshot(normalizedExpected, normalizedActual);
+                    FileEditor.UpdateFile(context, settings, expected, actual);
+                    mustReportError = settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath);
+                }
+                else
+                {
+                    mustReportError = true;
                 }
             }
-            else
+            catch (InlineSnapshotException ex) when (ex is not InlineSnapshotAssertionException)
+            {
+                // The reason the snapshot could not be updated is useless without the difference that required the update
+                throw new InlineSnapshotException(ex.Message + "\n\n" + settings.FormatSnapshotDifference(normalizedExpected, normalizedActual), ex);
+            }
+
+            if (mustReportError)
             {
                 settings.AssertSnapshot(normalizedExpected, normalizedActual);
             }

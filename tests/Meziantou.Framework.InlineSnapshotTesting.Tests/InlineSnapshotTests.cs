@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Microsoft.CodeAnalysis;
 using TestUtilities;
@@ -96,7 +97,8 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     [Fact]
     public void Validate_ComputesCallerContextWhenSnapshotDiffers()
     {
-        Assert.Throws<ArgumentException>(() => InlineSnapshot.Validate(new object(), InlineSnapshotSettings.Default, "invalid snapshot", "invalid\0path", 1));
+        var settings = InlineSnapshotSettings.Default with { AutoDetectContinuousEnvironment = false };
+        Assert.Throws<ArgumentException>(() => InlineSnapshot.Validate(new object(), settings, "invalid snapshot", "invalid\0path", 1));
     }
 
     [Fact]
@@ -376,7 +378,11 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
 
     [InlineSnapshotAssertion("thisParameterDoesNotExist")]
     private static void HelperWithUnknownParameterName(object data, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
-        => InlineSnapshot.Validate(data, expected, filePath, lineNumber);
+    {
+        // The call is only located when the environment allows updating the snapshot
+        var settings = InlineSnapshotSettings.Default with { AutoDetectContinuousEnvironment = false };
+        InlineSnapshot.Validate(data, settings, expected, filePath, lineNumber);
+    }
 
     [Fact]
     public async Task SupportAsyncHelperMethods()
@@ -739,6 +745,51 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public async Task UpdateSnapshot_SameCallExecutedTwice()
+    {
+        // The second execution was compiled with the previous snapshot, but the file already holds the new one. It used to
+        // throw, which is also what happened to the test process of another target framework updating the same file.
+        await AssertSnapshot(
+            """"
+            for (var i = 0; i < 2; i++)
+            {
+                InlineSnapshot.Validate(new { A = 1 }, "");
+            }
+            """",
+            """"
+            for (var i = 0; i < 2; i++)
+            {
+                InlineSnapshot.Validate(new { A = 1 }, "A: 1");
+            }
+            """");
+    }
+
+    [Fact]
+    public void Overwrite_WritesThroughSymbolicLink()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var target = directory.CreateTextFile("Target.cs", "old");
+        var link = directory.GetFullPath("Link.cs");
+        try
+        {
+            File.CreateSymbolicLink(link, target);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            global::Xunit.Assert.Skip("Creating a symbolic link requires a privilege: " + ex.Message);
+        }
+
+        var newFile = directory.CreateTextFile("New.cs", "new");
+        new FileInfo(newFile).IsReadOnly = true;
+
+        SnapshotUpdateStrategy.Overwrite.UpdateFile(InlineSnapshotSettings.Default, link, newFile);
+
+        Assert.NotNull(new FileInfo(link).LinkTarget);
+        Assert.Equal("new", File.ReadAllText(target));
+        Assert.False(File.Exists(newFile));
+    }
+
+    [Fact]
     public async Task UpdateSnapshot_FileEditedSinceBuild()
     {
         // The call is no longer on the line reported by the compiler, as it happens when another test process edits the file
@@ -962,6 +1013,10 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
 
         var exception = Assert.Throws<InlineSnapshotException>(() => HelperNotForwardingCallerInformation(settings, "not the snapshot"));
         Assert.Contains("[CallerFilePath] and [CallerLineNumber]", exception.Message);
+
+        // The snapshot difference is reported along with the reason the snapshot cannot be updated
+        Assert.Contains("- not the snapshot", exception.Message);
+        Assert.Contains("+ {}", exception.Message);
     }
 
     [InlineSnapshotAssertion(nameof(expected))]
@@ -1076,6 +1131,13 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         InlineSnapshot
             .WithSettings(settings => settings.ScrubLinesMatching("Line[2]"))
             .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_InvalidPattern_ThrowsWhenConfigured()
+    {
+        var settings = new InlineSnapshotSettings();
+        Assert.ThrowsAny<ArgumentException>(() => settings.ScrubLinesMatching("Line["));
     }
 
     [Fact]
@@ -1312,6 +1374,64 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
                   "other": "dummy"
                 }
                 """);
+    }
+
+    [Theory]
+    [InlineData("application/json", "")]
+    [InlineData("application/json", "not json")]
+    [InlineData("application/xml", "")]
+    [InlineData("application/xml", "not xml")]
+    public void Scrub_ValueThatCannotBeParsed_IsFormattedAsWithoutScrubber(string mediaType, string body)
+    {
+        // The formatters write a value they cannot parse as-is, while the scrubbers used to throw
+        // Serializing a content computes its Content-Length header, so each serialization gets its own content
+        using var unscrubbedContent = new StringContent(body, Encoding.UTF8, mediaType);
+        using var content = new StringContent(body, Encoding.UTF8, mediaType);
+        var expected = HumanReadableSerializer.Serialize(unscrubbedContent, CreateOptions(scrub: false));
+        var actual = HumanReadableSerializer.Serialize(content, CreateOptions(scrub: true));
+
+        Assert.Equal(expected, actual);
+
+        static HumanReadableSerializerOptions CreateOptions(bool scrub)
+        {
+            var options = new HumanReadableSerializerOptions();
+            options.AddHttpConverters(new HumanReadableHttpOptions());
+            options.AddJsonFormatter(new JsonFormatterOptions { WriteIndented = true });
+            options.AddXmlFormatter(new XmlFormatterOptions { WriteIndented = true });
+            if (scrub)
+            {
+                options.ScrubJsonValue("$.a", _ => "[redacted]");
+                options.ScrubXmlAttribute("//@a", _ => "[redacted]");
+                options.ScrubXmlNode("//a", node => node);
+            }
+
+            return options;
+        }
+    }
+
+    [Fact]
+    public void ScrubXml_InnerFormatterNotIndented_IsNotIndented()
+    {
+        // The scrubbers used to indent the document before handing it to a formatter configured not to indent
+        using var scrubbedContent = new StringContent("""<root><item a="[redacted]" /></root>""", Encoding.UTF8, "application/xml");
+        using var content = new StringContent("""<root><item a="1" /></root>""", Encoding.UTF8, "application/xml");
+        var expected = HumanReadableSerializer.Serialize(scrubbedContent, CreateOptions(scrub: false));
+        var actual = HumanReadableSerializer.Serialize(content, CreateOptions(scrub: true));
+
+        Assert.Equal(expected, actual);
+
+        static HumanReadableSerializerOptions CreateOptions(bool scrub)
+        {
+            var options = new HumanReadableSerializerOptions();
+            options.AddHttpConverters(new HumanReadableHttpOptions());
+            options.AddXmlFormatter(new XmlFormatterOptions { WriteIndented = false });
+            if (scrub)
+            {
+                options.ScrubXmlAttribute("//@a", _ => "[redacted]");
+            }
+
+            return options;
+        }
     }
 
     [Fact]

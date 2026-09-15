@@ -102,6 +102,83 @@ public sealed class InlineSnapshotSettingsTests
         }
     }
 
+    [Fact]
+    public void Validate_WhenTheEnvironmentDisablesUpdates_ReportsTheDifferenceWithoutLocatingTheCall()
+    {
+        // Locating the call used to run first, and its failure (here, an invalid path) replaced the snapshot difference
+        var settings = InlineSnapshotSettings.Default with
+        {
+            AutoDetectContinuousEnvironment = true,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite,
+        };
+
+        ContinuousEnvironmentDetector.DescriptionOverride = () => "a build server (CI)";
+        try
+        {
+            var exception = Assert.Throws<InlineSnapshotAssertionException>(() => InlineSnapshot.Validate(new object(), settings, "invalid snapshot", "invalid\0path", 1));
+            Assert.Contains("- invalid snapshot", exception.Message);
+        }
+        finally
+        {
+            ContinuousEnvironmentDetector.DescriptionOverride = null;
+        }
+    }
+
+    [Fact]
+    public void AssertSnapshot_ReportsAnUnknownStrategyInTheEnvironmentVariable()
+    {
+        using var _ = new EnvironmentVariableScope(SnapshotUpdateStrategyEnvironmentVariableName, "Overwirte");
+
+        var exception = Assert.Throws<InlineSnapshotAssertionException>(() => new InlineSnapshotSettings().AssertSnapshot("old", "new"));
+        Assert.Contains("The INLINESNAPSHOTTESTING_STRATEGY environment variable is ignored: 'Overwirte' is not a known strategy.", exception.Message);
+        Assert.Contains("Disallow, MergeTool, MergeToolSync, Overwrite, OverwriteWithoutFailure", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" overwrite ")]
+    [InlineData("MergeToolSync")]
+    public void GetUnknownStrategyMessage_KnownOrMissingStrategy_ReturnsNull(string? value)
+    {
+        Assert.Null(SnapshotUpdateStrategy.GetUnknownStrategyMessage(value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MergeToolStrategy_WithoutMergeTools_ReportsTheSnapshotDifference(bool empty)
+    {
+        // The documentation said that no merge tools meant the default ones, but no merge tool could be started instead
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-inline-snapshot", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var filePath = Path.Combine(directory, "Snapshot.cs");
+            File.WriteAllText(filePath, "InlineSnapshot.Validate(new object(), settings, \"not the snapshot\");" + Environment.NewLine);
+
+            var settings = InlineSnapshotSettings.Default with
+            {
+                SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+                MergeTools = empty ? [] : null,
+                AutoDetectContinuousEnvironment = false,
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+
+            var exception = Assert.Throws<InlineSnapshotAssertionException>(() => InlineSnapshot.Validate(new object(), settings, "not the snapshot", filePath, lineNumber: 1));
+
+            Assert.StartsWith("Snapshots do not match:\n", exception.Message);
+            Assert.Contains("\"not the snapshot\"", File.ReadAllText(filePath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(null, true)]
     [InlineData("true", true)]

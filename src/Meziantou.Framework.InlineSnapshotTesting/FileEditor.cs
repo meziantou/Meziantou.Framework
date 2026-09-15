@@ -13,6 +13,9 @@ internal static class FileEditor
 {
     // A merge tool can keep the lock of another process while the user resolves the merge.
     private static readonly TimeSpan InterProcessLockTimeout = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan StaleTemporaryFileAge = TimeSpan.FromDays(1);
+    private static readonly FullPath TemporaryDirectoryRoot = FullPath.GetTempPath() / "Meziantou.Framework.InlineSnapshotTesting";
+    private static int s_staleTemporaryFilesDeleted;
 
     private static readonly ConcurrentDictionary<FullPath, Lock> FileLocks = new();
     private static readonly ConcurrentDictionary<FullPath, FullPath> TempFiles = new();
@@ -76,7 +79,7 @@ internal static class FileEditor
             // the same tests at the same time and edit the same files.
             using var interProcessLock = AcquireInterProcessLock(context.FilePath);
 
-            var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => FullPath.GetTempPath() / (Guid.NewGuid().ToString("N") + ".cs"));
+            var tempPath = TempFiles.GetOrAdd(context.FilePath, CreateTemporaryFilePath);
             var preprocessorSymbols = context.GetCompilationDefines();
 
             // Find node to update
@@ -87,7 +90,13 @@ internal static class FileEditor
             var tree = CSharpSyntaxTree.ParseText(sourceText, options, filePath, cancellationToken);
             var root = tree.GetRoot(cancellationToken);
 
-            var (invocationExpression, argumentExpression) = FindInvocationToUpdate(context, sourceText, root, existingValue);
+            var (invocationExpression, argumentExpression, isUpToDate) = FindInvocationToUpdate(context, sourceText, root, existingValue, newValue);
+
+            // The call was compiled with the previous snapshot, but the file already holds the new one. Another test
+            // process, such as the one of another target framework, or a previous execution of the same call in a loop
+            // or a theory already updated it.
+            if (isUpToDate)
+                return;
 
             // Update node
             var indentation = settings.Indentation ?? DetectIndentation(sourceText);
@@ -119,6 +128,11 @@ internal static class FileEditor
                 oldNode = invocationExpression;
                 newNode = invocationExpression.AddArgumentListArguments(CreateArgument(context, invocationExpression, newArgumentExpression));
             }
+
+            // Reformatting a snapshot that is already written the preferred way changes nothing. Rewriting the file would
+            // still trigger a rebuild and the file watchers, and a merge tool strategy would open a diff with no difference.
+            if (oldNode.ToFullString() == newNode.ToFullString())
+                return;
 
             var newRoot = root.ReplaceNode(oldNode, newNode);
 
@@ -177,7 +191,7 @@ internal static class FileEditor
             if (mergedInvocation is null)
             {
                 // The merge changed the file in a way that cannot be tracked. The line of the next snapshots cannot be
-                // predicted anymore, so they are searched in the whole file.
+                // predicted anymore, so they are searched in the member containing the call.
                 Changes.TryRemove(context.FilePath, out _);
                 return;
             }
@@ -186,10 +200,70 @@ internal static class FileEditor
         }
     }
 
+    /// <summary>
+    /// Returns a path in a directory of its own, so the temporary file keeps the name of the source file, which is what a
+    /// merge tool shows. The files a merge tool strategy leaves behind are deleted once they are old enough.
+    /// </summary>
+    private static FullPath CreateTemporaryFilePath(FullPath sourceFilePath)
+    {
+        var root = TemporaryDirectoryRoot / "files";
+        if (Interlocked.Exchange(ref s_staleTemporaryFilesDeleted, 1) == 0)
+        {
+            DeleteStaleTemporaryFiles(root);
+        }
+
+        return root / Guid.NewGuid().ToString("N") / sourceFilePath.Name;
+    }
+
+    /// <summary>
+    /// A merge tool that does not block the test can still show a temporary file after the test process exits, so these
+    /// files cannot be deleted when the process exits. The ones that have not been written for a day are deleted instead.
+    /// </summary>
+    internal static void DeleteStaleTemporaryFiles(FullPath root)
+    {
+        try
+        {
+            var directory = new DirectoryInfo(root);
+            if (!directory.Exists)
+                return;
+
+            var threshold = DateTime.UtcNow - StaleTemporaryFileAge;
+            foreach (var subdirectory in directory.EnumerateDirectories())
+            {
+                try
+                {
+                    var files = subdirectory.GetFiles();
+                    var lastWriteTime = files.Select(file => file.LastWriteTimeUtc).Append(subdirectory.LastWriteTimeUtc).Max();
+                    if (lastWriteTime >= threshold)
+                        continue;
+
+                    foreach (var file in files)
+                    {
+                        file.TrySetReadOnly(false);
+                    }
+
+                    subdirectory.Delete(recursive: true);
+                }
+                catch (IOException)
+                {
+                }
+                catch (UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
     private static FileStream AcquireInterProcessLock(FullPath filePath)
     {
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(filePath.Value)));
-        var lockPath = FullPath.GetTempPath() / "Meziantou.Framework.InlineSnapshotTesting" / (hash + ".lock");
+        var lockPath = TemporaryDirectoryRoot / (hash + ".lock");
         lockPath.CreateParentDirectory();
 
         // The lock file is never deleted: deleting it while another process waits for it would let that process lock a
@@ -201,8 +275,17 @@ internal static class FileEditor
             {
                 return new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (IOException) when (stopwatch.Elapsed < InterProcessLockTimeout)
+            catch (IOException ex)
             {
+                if (stopwatch.Elapsed >= InterProcessLockTimeout)
+                {
+                    throw new InlineSnapshotException($"""
+                        Cannot update '{filePath}': another process has been updating it for more than {InterProcessLockTimeout.TotalMinutes} minutes.
+                        It may be another test process waiting for a merge tool started with '{nameof(SnapshotUpdateStrategy)}.{nameof(SnapshotUpdateStrategy.MergeToolSync)}' to close.
+                        Lock file: {lockPath}
+                        """, ex);
+                }
+
                 Thread.Sleep(50);
             }
         }
@@ -222,7 +305,8 @@ internal static class FileEditor
         fileEdits.Add(fileEdit);
     }
 
-    private static (InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument) FindInvocationToUpdate(CallerContext context, SourceText sourceText, SyntaxNode root, string? existingValue)
+    /// <summary>Finds the call to update, and reports whether its snapshot already holds <paramref name="newValue"/>.</summary>
+    private static (InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument, bool IsUpToDate) FindInvocationToUpdate(CallerContext context, SourceText sourceText, SyntaxNode root, string? existingValue, string? newValue)
     {
         var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>().Where(invocation => IsInvocationOf(invocation, context.MethodName)).ToArray();
 
@@ -244,49 +328,52 @@ internal static class FileEditor
             }
         }
 
-        var matches = new List<(InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument)>();
-        string? firstActualValue = null;
-        foreach (var candidate in candidates)
-        {
-            if (TryMatchArgument(context, candidate, existingValue, out var argument, out var actualValue))
-            {
-                matches.Add((candidate, argument));
-            }
-            else if (matches.Count == 0)
-            {
-                firstActualValue ??= actualValue;
-            }
-        }
+        if (TryFindUniqueMatch(context, candidates, existingValue, out var match, out var firstActualValue))
+            return (match.Invocation, match.Argument, IsUpToDate: false);
 
-        if (matches.Count == 1)
-            return matches[0];
-
-        if (matches.Count > 1)
-            throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
+        // The snapshot on the expected line already holds the new value. It is checked before searching the member for
+        // the previous value, which could belong to another call that still has to be updated.
+        if (TryFindUniqueMatch(context, candidates, newValue, out match, out _))
+            return (match.Invocation, match.Argument, IsUpToDate: true);
 
         // The call is not where it is expected. The file may have been edited since the build, by the user, by another
         // test process, or by a merge tool. Search the whole member for a unique call whose snapshot is the expected one.
-        foreach (var invocation in invocations)
-        {
-            if (candidates.Contains(invocation) || !IsInCallerMember(context, invocation))
-                continue;
+        var memberInvocations = invocations.Where(invocation => !candidates.Contains(invocation) && IsInCallerMember(context, invocation)).ToList();
+        if (TryFindUniqueMatch(context, memberInvocations, existingValue, out match, out _))
+            return (match.Invocation, match.Argument, IsUpToDate: false);
 
-            if (TryMatchArgument(context, invocation, existingValue, out var argument, out _))
-            {
-                matches.Add((invocation, argument));
-            }
-        }
-
-        if (matches.Count == 1)
-            return matches[0];
-
-        if (matches.Count > 1)
-            throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
+        if (TryFindUniqueMatch(context, memberInvocations, newValue, out match, out _))
+            return (match.Invocation, match.Argument, IsUpToDate: true);
 
         if (candidates.Count > 0)
             throw new InlineSnapshotException($"Cannot find the argument to update. The current value doesn't match the expected value.\nExpected: <{existingValue}>\nActual: <{firstActualValue}>");
 
         throw new InlineSnapshotException("Cannot find the SyntaxNode to update");
+    }
+
+    /// <param name="firstActualValue">The value of the snapshot of the first invocation, when none of them matches.</param>
+    private static bool TryFindUniqueMatch(CallerContext context, IEnumerable<InvocationExpressionSyntax> invocations, string? value, out (InvocationExpressionSyntax Invocation, ExpressionSyntax? Argument) match, out string? firstActualValue)
+    {
+        match = default;
+        firstActualValue = null;
+        var found = false;
+        foreach (var invocation in invocations)
+        {
+            if (TryMatchArgument(context, invocation, value, out var argument, out var actualValue))
+            {
+                if (found)
+                    throw new InlineSnapshotException("The SyntaxNode to update is ambiguous");
+
+                match = (invocation, argument);
+                found = true;
+            }
+            else if (!found)
+            {
+                firstActualValue ??= actualValue;
+            }
+        }
+
+        return found;
     }
 
     /// <summary>Returns the outermost node starting where the PDB sequence point of the call starts, typically the statement.</summary>

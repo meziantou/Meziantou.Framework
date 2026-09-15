@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;
@@ -187,6 +188,20 @@ public static class HumanReadableSerializerScrubExtensions
         }
     }
 
+    private static bool TryParseXml(string value, [NotNullWhen(true)] out XDocument? document)
+    {
+        try
+        {
+            document = XDocument.Parse(value);
+            return true;
+        }
+        catch (XmlException)
+        {
+            document = null;
+            return false;
+        }
+    }
+
     private sealed class ScrubJsonFormatter : ValueFormatter
     {
         private static readonly JsonFormatter DefaultJsonFormatter = new();
@@ -210,7 +225,19 @@ public static class HumanReadableSerializerScrubExtensions
                 return;
             }
 
-            var node = JsonNode.Parse(value);
+            JsonNode? node;
+            try
+            {
+                node = JsonNode.Parse(value);
+            }
+            catch (JsonException)
+            {
+                // Nothing to scrub in a value that is not JSON, such as the empty body of an HTTP response. The inner
+                // formatter writes it the way it writes any invalid JSON value.
+                _innerFormatter.Format(writer, value, options);
+                return;
+            }
+
             if (node is null)
             {
                 writer.WriteValue(value);
@@ -305,7 +332,14 @@ public static class HumanReadableSerializerScrubExtensions
                 return;
             }
 
-            var document = XDocument.Parse(value);
+            if (!TryParseXml(value, out var document))
+            {
+                // Nothing to scrub in a value that is not XML, such as the empty body of an HTTP response. The inner
+                // formatter writes it the way it writes any invalid XML value.
+                _innerFormatter.Format(writer, value, options);
+                return;
+            }
+
             var result = document.XPathEvaluate(_xpath, _nsResolver);
 
             // XPathEvaluate is lazy, and removing an attribute detaches it from the element the navigator walks, which
@@ -327,7 +361,8 @@ public static class HumanReadableSerializerScrubExtensions
                 }
             }
 
-            var xml = document.ToString();
+            // Indenting is the job of the inner formatter, which may be configured not to indent
+            var xml = document.ToString(SaveOptions.DisableFormatting);
             _innerFormatter.Format(writer, xml, options);
         }
     }
@@ -357,7 +392,14 @@ public static class HumanReadableSerializerScrubExtensions
                 return;
             }
 
-            var document = XDocument.Parse(value);
+            if (!TryParseXml(value, out var document))
+            {
+                // Nothing to scrub in a value that is not XML, such as the empty body of an HTTP response. The inner
+                // formatter writes it the way it writes any invalid XML value.
+                _innerFormatter.Format(writer, value, options);
+                return;
+            }
+
             var result = document.XPathEvaluate(_xpath, _nsResolver);
 
             // XPathEvaluate is lazy, and replacing a node detaches the subtree the navigator walks.
@@ -386,7 +428,8 @@ public static class HumanReadableSerializerScrubExtensions
                 }
             }
 
-            var xml = document.ToString();
+            // Indenting is the job of the inner formatter, which may be configured not to indent
+            var xml = document.ToString(SaveOptions.DisableFormatting);
             _innerFormatter.Format(writer, xml, options);
         }
     }

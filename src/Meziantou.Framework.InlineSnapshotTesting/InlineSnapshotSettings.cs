@@ -93,14 +93,17 @@ public sealed record InlineSnapshotSettings
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
-    /// Set the ordered list of tools to diff snapshots.
-    /// If null or empty, the diff tool is determined by
-    /// <list type="bullet">
-    ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
-    ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
-    /// </list>
+    /// Gets or sets the ordered list of merge tools tried by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
+    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first one that starts is used. By default: the tool named by
+    /// the <c>DiffEngine_Tool</c> environment variable, the merge tool and the diff tool of the git configuration, the
+    /// current IDE (Visual Studio, Visual Studio Code, Rider) when the tests run from it, and then the tools detected by DiffEngine.
+    /// If <see langword="null" /> or empty, no merge tool is launched and the snapshot difference is reported as an assertion failure.
     /// </summary>
-    /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
+    /// <remarks>
+    /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools
+    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent while
+    /// <see cref="AutoDetectContinuousEnvironment" /> is enabled.
+    /// </remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; } = DefaultMergeTools;
 
     /// <summary>Before editing a file, use the PDB to validate the file path containing the snapshot.</summary>
@@ -175,10 +178,14 @@ public sealed record InlineSnapshotSettings
     internal void AssertSnapshot(string? expected, string? actual)
     {
         var errorMessage =
-            "Snapshots do not match:\n" +
-            ErrorMessageFormatter.FormatMessage(expected, actual) +
+            FormatSnapshotDifference(expected, actual) +
             "\n\n" +
             GetResolutionGuidanceMessage();
+
+        if (SnapshotUpdateStrategy.GetUnknownStrategyEnvironmentVariableMessage() is { } unknownStrategyMessage)
+        {
+            errorMessage += "\n\n" + unknownStrategyMessage;
+        }
 
         // Without this, the guidance above suggests a strategy that the environment detection silently ignores.
         if (AutoDetectContinuousEnvironment && ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is { } environment)
@@ -188,6 +195,8 @@ public sealed record InlineSnapshotSettings
 
         throw new InlineSnapshotAssertionException(errorMessage);
     }
+
+    internal string FormatSnapshotDifference(string? expected, string? actual) => "Snapshots do not match:\n" + ErrorMessageFormatter.FormatMessage(expected, actual);
 
     private static string GetResolutionGuidanceMessage() =>
         """

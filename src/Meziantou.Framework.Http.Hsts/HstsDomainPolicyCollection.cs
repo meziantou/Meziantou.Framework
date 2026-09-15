@@ -323,9 +323,13 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
     {
         var learned = _learned;
         HstsDomainPolicy? learnedPolicy = null;
-        if (partCount <= learned.Buckets.Length)
+        if (partCount <= learned.Buckets.Length
+            && learned.Buckets[partCount - 1].TryGetValue(canonicalHost, out var policy)
+            && policy.ExpiresAt >= _timeProvider.GetUtcNow())
         {
-            learned.Buckets[partCount - 1].TryGetValue(canonicalHost, out learnedPolicy);
+            // An expired policy no longer protects the host, as MustUpgradeRequest agrees, so it is neither
+            // reported nor allowed to widen a preload entry
+            learnedPolicy = policy;
         }
 
         var preloadIncludeSubdomains = false;
@@ -415,7 +419,7 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
     {
         var learned = _learned;
         var now = _timeProvider.GetUtcNow();
-        List<HstsDomainPolicy>? live = null;
+        var remaining = 0;
 
         foreach (var bucket in learned.Buckets)
         {
@@ -427,34 +431,47 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
                 }
                 else
                 {
-                    (live ??= []).Add(entry.Value);
+                    remaining++;
                 }
             }
         }
 
-        var remaining = live?.Count ?? 0;
-        var overflow = remaining - _maxLearnedPolicies;
-        if (overflow > 0)
+        if (remaining > _maxLearnedPolicies)
         {
-            // Drop the policies closest to expiring first: they protect the fewest future requests
-            live!.Sort((x, y) => x.ExpiresAt.CompareTo(y.ExpiresAt));
-            foreach (var policy in live)
-            {
-                if (overflow == 0)
-                    break;
-
-                var index = CountSegments(policy.Host) - 1;
-                if (index < learned.Buckets.Length && learned.Buckets[index].TryRemove(new KeyValuePair<string, HstsDomainPolicy>(policy.Host, policy)))
-                {
-                    overflow--;
-                    remaining--;
-                }
-            }
+            // Evicting down to the limit itself would leave the store full, so the very next new host would pay
+            // for another sweep of the whole store. Going a tenth below it spreads that cost over many adds.
+            remaining -= EvictLearnedPolicies(learned, now, _maxLearnedPolicies - (_maxLearnedPolicies / 10));
         }
 
         // Concurrent writers may have changed the store while it was walked, so the count is an estimate
         // corrected on every sweep rather than a running total that can drift for good.
         Volatile.Write(ref _learnedCount, remaining);
+    }
+
+    // Any server can add a policy, and it chooses its max-age, so neither the expiration date nor the order in
+    // which policies were learned can decide what goes: a peer that makes the process visit thousands of hosts it
+    // controls would push every other policy out, and the hosts those protected could then be reached in
+    // cleartext. Instead, the policies are arranged in a tree of labels read from the top-level domain down, and
+    // each node shares what it may keep evenly between its own policy and the subtrees below it. Thousands of
+    // subdomains of one domain then only compete with each other, and flooding the store requires as many
+    // distinct domains as the policies it means to displace.
+    private static int EvictLearnedPolicies(LearnedPolicies learned, DateTimeOffset now, int target)
+    {
+        var root = new EvictionNode();
+        foreach (var bucket in learned.Buckets)
+        {
+            foreach (var entry in bucket)
+            {
+                if (entry.Value.ExpiresAt >= now)
+                {
+                    root.Add(entry.Value);
+                }
+            }
+        }
+
+        var evicted = 0;
+        root.Keep(target, learned, ref evicted);
+        return evicted;
     }
 
     // https://datatracker.ietf.org/doc/html/rfc6797#section-10
@@ -484,10 +501,12 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
     // lookup can produce and would silently never match.
     private static bool TryCanonicalize(string host, [NotNullWhen(true)] out string? canonical)
     {
+        // Host names are case-insensitive, and the lower-case form is the one Uri.IdnHost and the preload list use.
+        // ToLowerInvariant returns the same instance when there is nothing to fold.
         var trimmed = TrimTrailingDots(host);
         if (Ascii.IsValid(trimmed))
         {
-            canonical = trimmed;
+            canonical = trimmed.ToLowerInvariant();
             return true;
         }
 
@@ -497,7 +516,7 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
             // The instance is tiny and only allocated for a non-ASCII name, which never happens on the
             // HstsClientHandler path because Uri.IdnHost is already ASCII.
             // Mapping can also turn a full-width or ideographic full stop into a '.', so trim again afterwards.
-            canonical = TrimTrailingDots(new IdnMapping().GetAscii(trimmed));
+            canonical = TrimTrailingDots(new IdnMapping().GetAscii(trimmed)).ToLowerInvariant();
             return true;
         }
         catch (ArgumentException)
@@ -570,6 +589,98 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
         public ConcurrentDictionary<string, HstsDomainPolicy>[] Buckets { get; }
 
         public ConcurrentDictionary<string, HstsDomainPolicy>.AlternateLookup<ReadOnlySpan<char>>[] Lookups { get; }
+    }
+
+    // One label of the tree EvictLearnedPolicies arranges the policies in
+    private sealed class EvictionNode
+    {
+        private Dictionary<string, EvictionNode>? _children;
+        private HstsDomainPolicy? _policy;
+
+        // The number of policies in this subtree, this node's own included
+        private int _count;
+
+        public void Add(HstsDomainPolicy policy)
+        {
+            var node = this;
+            node._count++;
+
+            // foo.example.com is stored under com, then example, then foo
+            var remaining = policy.Host.AsSpan();
+            while (true)
+            {
+                var separator = remaining.LastIndexOf('.');
+                node = node.GetOrAddChild(remaining[(separator + 1)..]);
+                node._count++;
+                if (separator < 0)
+                    break;
+
+                remaining = remaining[..separator];
+            }
+
+            node._policy = policy;
+        }
+
+        // Keeps at most budget policies of this subtree and evicts the others
+        public void Keep(int budget, LearnedPolicies learned, ref int evicted)
+        {
+            if (budget >= _count)
+                return;
+
+            var units = new (int Count, EvictionNode? Child)[(_children?.Count ?? 0) + (_policy is null ? 0 : 1)];
+            var index = 0;
+            if (_children is not null)
+            {
+                foreach (var child in _children.Values)
+                {
+                    units[index++] = (child._count, child);
+                }
+            }
+
+            if (_policy is not null)
+            {
+                units[index] = (1, null);
+            }
+
+            // Max-min fairness: the smallest units are served first and each gets at most an even share of the
+            // budget still left, so a unit only loses policies when it holds more than its share, and what a small
+            // unit does not need goes to the larger ones after it. The node's own policy comes last among equals,
+            // so it is the one kept when the budget runs out: its includeSubdomains may cover the subtrees.
+            Array.Sort(units, (x, y) => x.Count != y.Count ? x.Count.CompareTo(y.Count) : (x.Child is null).CompareTo(y.Child is null));
+            for (var i = 0; i < units.Length; i++)
+            {
+                var keep = Math.Min(units[i].Count, budget / (units.Length - i));
+                budget -= keep;
+
+                if (units[i].Child is { } child)
+                {
+                    child.Keep(keep, learned, ref evicted);
+                }
+                else if (keep == 0 && Remove(_policy!, learned))
+                {
+                    evicted++;
+                }
+            }
+        }
+
+        private EvictionNode GetOrAddChild(ReadOnlySpan<char> label)
+        {
+            var lookup = (_children ??= new Dictionary<string, EvictionNode>(StringComparer.OrdinalIgnoreCase)).GetAlternateLookup<ReadOnlySpan<char>>();
+            if (!lookup.TryGetValue(label, out var child))
+            {
+                child = new EvictionNode();
+                lookup[label] = child;
+            }
+
+            return child;
+        }
+
+        // The compare-and-remove leaves a policy updated concurrently for the same host in place
+        private static bool Remove(HstsDomainPolicy policy, LearnedPolicies learned)
+        {
+            var index = CountSegments(policy.Host) - 1;
+            return index < learned.Buckets.Length && learned.Buckets[index].TryRemove(new KeyValuePair<string, HstsDomainPolicy>(policy.Host, policy));
+        }
     }
 
     [StructLayout(LayoutKind.Auto)]

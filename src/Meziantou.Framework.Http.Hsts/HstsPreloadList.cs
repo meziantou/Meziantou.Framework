@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Text;
 
@@ -19,6 +20,8 @@ internal sealed partial class HstsPreloadList
     // A host name is at most 253 bytes, so the probe a lookup folds onto the stack is bounded by it and a
     // resource claiming to hold anything longer is rejected rather than trusted.
     private const int MaxHostNameLength = 253;
+
+    private const string IncludePreloadListSwitchName = "Meziantou.Framework.Http.Hsts.IncludePreloadList";
 
     // The resources are committed in two compressed forms and each target framework embeds only the one it can
     // read, so neither the assembly nor the package carries the other's copy. Zstandard arrived in the BCL with
@@ -47,9 +50,12 @@ internal sealed partial class HstsPreloadList
     /// <c>Meziantou.Framework.Http.Hsts.IncludePreloadList</c> feature switch to <see langword="false"/>, which
     /// saves the memory and the startup cost of materializing it. The embedded resources still ship in the
     /// assembly either way. See readme.md.
+    /// <see cref="FeatureSwitchDefinitionAttribute"/> lets the trimmer substitute the value when the switch is set
+    /// with <c>Trim="true"</c>, and drop the code that loads the list.
     /// </remarks>
+    [FeatureSwitchDefinition(IncludePreloadListSwitchName)]
     public static bool IsSupported
-        => !AppContext.TryGetSwitch("Meziantou.Framework.Http.Hsts.IncludePreloadList", out var enabled) || enabled;
+        => AppContext.TryGetSwitch(IncludePreloadListSwitchName, out var enabled) ? enabled : true;
 
     /// <summary>Gets the highest number of labels any preloaded host name has.</summary>
     public int MaxLabelCount => _buckets.Length;

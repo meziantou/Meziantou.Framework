@@ -55,7 +55,9 @@ public sealed class HstsClientHandlerTests
     [InlineData("max-age=abc")]
     [InlineData("max-age=")]
     [InlineData("max-age=-1")]
-    [InlineData("max-age=99999999999999999999999")]
+    [InlineData("max-age=\" 60\"")]
+    [InlineData("max-age=\"\"")]
+    [InlineData("max-age=99999999999999999999999a")]
     [InlineData("includeSubDomains")]
     [InlineData("")]
     public async Task MalformedHeader_IsIgnored(string headerResponse)
@@ -580,6 +582,22 @@ public sealed class HstsClientHandlerTests
         using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
 
         // The expiry is asserted, not just the boolean: without the clamp the TimeSpan conversion overflows
+        Assert.True(hsts.TryGetPolicy("example.com", out var policy));
+        Assert.Equal(timeProvider.GetUtcNow().AddDays(365 * 100), policy.ExpiresAt);
+    }
+
+    [Theory]
+    [InlineData("max-age=99999999999999999999999")]
+    [InlineData("max-age=\"99999999999999999999999\"")]
+    public async Task MaxAgeTooLargeForALong_IsClampedToOneHundredYears(string headerResponse)
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(new MockHttpMessageHandler(headerResponse), hsts), disposeHandler: true);
+
+        using var response = await client.GetAsync("https://example.com", XunitCancellationToken);
+
+        // delta-seconds has no upper bound, so a value that overflows is still a valid, very long max-age
         Assert.True(hsts.TryGetPolicy("example.com", out var policy));
         Assert.Equal(timeProvider.GetUtcNow().AddDays(365 * 100), policy.ExpiresAt);
     }

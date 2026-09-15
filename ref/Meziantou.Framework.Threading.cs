@@ -201,7 +201,9 @@ namespace Meziantou.Framework.Threading
 
     public static class SemaphoreSlimExtensions
     {
+        [System.Obsolete("Use DisposableWaitUnsafe instead.")]
         public static SemaphoreDisposer DisposableUnsafeWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
+        public static SemaphoreDisposer DisposableWaitUnsafe(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.Threading.Tasks.Task<SemaphoreDisposer> DisposableWaitUnsafeAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.IDisposable DisposableWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
         public static System.Threading.Tasks.Task<System.IDisposable> DisposableWaitAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = null) => throw null;
@@ -215,12 +217,13 @@ namespace Meziantou.Framework.Threading
     public static class SynchronizationContextExtensions
     {
         public static SynchronizationContextAwaiter GetAwaiter(this System.Threading.SynchronizationContext synchronizationContext) => throw null;
-        public readonly struct SynchronizationContextAwaiter : System.Runtime.CompilerServices.INotifyCompletion
+        public readonly struct SynchronizationContextAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
         {
             public bool IsCompleted { get => throw null; }
             public SynchronizationContextAwaiter(System.Threading.SynchronizationContext synchronizationContext) { }
             public void GetResult() { }
             public void OnCompleted(System.Action continuation) { }
+            public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
 }

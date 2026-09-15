@@ -11,26 +11,9 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     private protected List<T> Items { get; }
 
-    protected ObservableCollectionBase()
-    {
-        Items = [];
-    }
-
     protected ObservableCollectionBase(IEnumerable<T> items)
     {
-        if (items is null)
-        {
-            Items = [];
-        }
-        else
-        {
-            Items = new List<T>(items);
-        }
-    }
-
-    public void EnsureCapacity(int capacity)
-    {
-        Items.EnsureCapacity(capacity);
+        Items = [.. items];
     }
 
     protected void ReplaceItem(int index, T item)

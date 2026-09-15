@@ -146,6 +146,41 @@ public sealed class KeyedLockTests
     }
 
     [Fact]
+    public void Lock_InterruptedWhileWaiting_ReleasesTheReservation()
+    {
+        var locks = new KeyedLock<int>();
+        var lease = locks.Lock(1);
+
+        Exception? captured = null;
+        var waiter = new Thread(() =>
+        {
+            try
+            {
+                using (locks.Lock(1))
+                {
+                }
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+        });
+
+        waiter.Start();
+
+        // An interrupt requested before the thread blocks is delivered when it does, and the only blocking call
+        // the waiter makes is the acquisition of the held lock.
+        waiter.Interrupt();
+        Assert.True(waiter.Join(TimeSpan.FromMinutes(1)));
+
+        Assert.IsType<ThreadInterruptedException>(captured);
+        Assert.Equal(1, locks.EntryCount);
+
+        lease.Dispose();
+        Assert.Equal(0, locks.EntryCount);
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent()
     {
         var locks = new KeyedLock<int>();
@@ -154,5 +189,21 @@ public sealed class KeyedLockTests
         lease.Dispose(); // must not double-release or corrupt the ref count
 
         Assert.Equal(0, locks.EntryCount);
+    }
+
+    [Fact]
+    public void KeysDifferingOnlyInTheirHighBits_AreSpreadAcrossShards()
+    {
+        // The shard index used to come from the low bits of the mixed hash code, which bits 21 to 31 of the hash code
+        // never reach: every one of these keys landed in the same shard.
+        var table = new KeyedEntryTable<int, TestEntry>(comparer: null, () => new TestEntry());
+
+        var shards = Enumerable.Range(0, 1000).Select(i => table.GetShardIndex(i << 21)).Distinct().Count();
+
+        Assert.Equal(table.ShardCount, shards);
+    }
+
+    private sealed class TestEntry : KeyedEntry
+    {
     }
 }

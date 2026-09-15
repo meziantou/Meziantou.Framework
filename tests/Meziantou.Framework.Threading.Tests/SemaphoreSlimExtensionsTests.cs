@@ -12,6 +12,20 @@ public class SemaphoreSlimExtensionsTests
     }
 
     [Fact]
+    public void DisposableWaitUnsafe_ReleasesOnDispose()
+    {
+        using var semaphore = new SemaphoreSlim(1, 1);
+
+        using (semaphore.DisposableWaitUnsafe())
+        {
+            Assert.Equal(0, semaphore.CurrentCount);
+        }
+
+        Assert.Equal(1, semaphore.CurrentCount);
+    }
+
+    [Fact]
+    [Obsolete("Covers the obsolete alias of DisposableWaitUnsafe")]
     public void DisposableUnsafeWait_ReleasesOnDispose()
     {
         using var semaphore = new SemaphoreSlim(1, 1);

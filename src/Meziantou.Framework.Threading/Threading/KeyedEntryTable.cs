@@ -25,7 +25,10 @@ internal sealed class KeyedEntryTable<TKey, TEntry>
     private readonly Dictionary<TKey, TEntry>[] _shards;
     private readonly IEqualityComparer<TKey>? _comparer;
     private readonly Func<TEntry> _entryFactory;
-    private readonly uint _shardMask;
+
+    // 32 - log2(shard count): shifting the mixed hash by this amount keeps its top bits as the shard index. It is 32
+    // for a single shard, which is why the shift is applied to a 64-bit value: a 32-bit shift by 32 is a no-op.
+    private readonly int _shardShift;
 
     public KeyedEntryTable(IEqualityComparer<TKey>? comparer, Func<TEntry> entryFactory)
     {
@@ -33,13 +36,16 @@ internal sealed class KeyedEntryTable<TKey, TEntry>
         _entryFactory = entryFactory;
 
         var shardCount = (int)BitOperations.RoundUpToPowerOf2((uint)Math.Min(Environment.ProcessorCount, MaxShardCount));
-        _shardMask = (uint)(shardCount - 1);
+        _shardShift = 32 - BitOperations.Log2((uint)shardCount);
         _shards = new Dictionary<TKey, TEntry>[shardCount];
         for (var i = 0; i < _shards.Length; i++)
         {
             _shards[i] = new Dictionary<TKey, TEntry>(comparer);
         }
     }
+
+    /// <summary>Gets the number of shards the keys are spread across.</summary>
+    internal int ShardCount => _shards.Length;
 
     /// <summary>Gets the number of keys currently tracked.</summary>
     /// <remarks>The count is a snapshot: shards are sampled one after another, not atomically.</remarks>
@@ -100,14 +106,19 @@ internal sealed class KeyedEntryTable<TKey, TEntry>
 
     private Dictionary<TKey, TEntry> GetShard(TKey key)
     {
+        return _shards[GetShardIndex(key)];
+    }
+
+    /// <summary>Gets the index of the shard that tracks <paramref name="key"/>.</summary>
+    internal int GetShardIndex(TKey key)
+    {
         // A null comparer means the shards use EqualityComparer<TKey>.Default, whose hash code is the key's own;
         // calling it directly lets the JIT devirtualize it instead of going through an interface call.
         var hash = (uint)(_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key));
 
-        // The shard index comes from the low bits of the hash code, and those are often poorly distributed
-        // (sequential integers being the obvious case), so mix the high bits down before masking.
-        hash *= 2654435769u;
-        hash ^= hash >> 16;
-        return _shards[hash & _shardMask];
+        // Fibonacci hashing. The low bits of a product only depend on the low bits of its operands, so the index
+        // must come from the top bits, which every bit of the hash code contributes to. Keys whose hash codes only
+        // differ in their high bits would otherwise all share a shard.
+        return (int)((ulong)(hash * 2654435769u) >> _shardShift);
     }
 }

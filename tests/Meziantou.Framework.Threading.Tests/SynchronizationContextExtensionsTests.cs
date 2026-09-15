@@ -76,6 +76,20 @@ public sealed class SynchronizationContextExtensionsTests
         Assert.IsType<Action>(synchronizationContext.LastPostedState);
     }
 
+    [Fact]
+    public async Task GetAwaiter_UnsafeOnCompleted_PostsContinuationToSynchronizationContext()
+    {
+        // The compiler calls UnsafeOnCompleted rather than OnCompleted when the awaiter implements ICriticalNotifyCompletion.
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+        var resumedOn = new TaskCompletionSource<SynchronizationContext?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var awaiter = synchronizationContext.GetAwaiter();
+        awaiter.UnsafeOnCompleted(() => resumedOn.SetResult(SynchronizationContext.Current));
+
+        Assert.Same(synchronizationContext, await resumedOn.Task.WaitAsync(Timeout));
+        Assert.Equal(1, synchronizationContext.PostCount);
+    }
+
     private readonly record struct AwaitResult(int BeforeAwaitThreadId, int AfterAwaitThreadId, SynchronizationContext? CurrentSynchronizationContext, int PostCount);
 
     private sealed class DedicatedThreadSynchronizationContext : SynchronizationContext, IDisposable

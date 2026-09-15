@@ -228,8 +228,9 @@ Snapshots are never updated on a continuous integration server, in a continuous 
 when the tests are run by an LLM agent (Claude Code, Codex, GitHub Copilot, Cursor, ...), even when the update strategy
 is `Overwrite` or is set using `SNAPSHOTTESTING_STRATEGY`. The failure message says which environment was detected.
 
-- A continuous integration server is detected by the variables the major build servers set: `CI` set to `true`, `1` or `yes`
-  (`CI=false` is not a build server), `TF_BUILD`, `GITHUB_ACTION`, `GITLAB_CI`, `JENKINS_URL`, `TEAMCITY_VERSION`, etc.
+- A continuous integration server is detected by the variables the major build servers set (`CI`, `TF_BUILD`,
+  `GITHUB_ACTION`, `GITLAB_CI`, `JENKINS_URL`, `TEAMCITY_VERSION`, etc.). Containers (`DOTNET_RUNNING_IN_CONTAINER`) and
+  WSL (`WSL_DISTRO_NAME`) are treated the same way, as no diff tool is expected to show up there.
 - LLM agents are detected by [`Meziantou.Framework.LLMContext`](https://www.nuget.org/packages/Meziantou.Framework.LLMContext).
 
 To allow updates in such an environment, set the `SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` environment variable
@@ -362,7 +363,7 @@ With `SnapshotUpdateStrategy.MergeTool` or `SnapshotUpdateStrategy.MergeToolSync
 - The diff tool from the git configuration (`diff.tool` and `difftool.<tool>.cmd`)
 - The current IDE (Visual Studio, VS Code, Rider). This relies on inspecting the ancestor processes, which is only supported on Windows.
 
-Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, on a build server, under a continuous test runner (Visual Studio Live Unit Testing, NCrunch background runs), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
+Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
 
 `DiffEngine_Tool` is the case-insensitive name of a `MergeTool` property, for example `VisualStudioCode` or `rider`.
 

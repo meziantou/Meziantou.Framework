@@ -14,9 +14,6 @@ public enum LLMContextKind
     QwenCode,
     Droid,
     OpenCode,
-
-    /// <summary>The Zed agent. It is never detected: it runs commands with the same environment as the terminal a developer uses in Zed.</summary>
-    ZedAI,
     KimiCLI,
     OpenHands,
     Goose,

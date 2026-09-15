@@ -3703,19 +3703,18 @@ public sealed partial class SnapshotTests
         Assert.Equal(strategyName, GetSnapshotUpdateStrategy(strategyName).ToString());
     }
 
+    // The detection targets every environment where the developer does not expect a diff tool, not only build servers
     [Theory]
     [InlineData("CI", "true", "CI")]
-    [InlineData("CI", "1", "CI")]
-    [InlineData("CI", "YES", "CI")]
-    [InlineData("CI", "false", null)]
-    [InlineData("CI", "0", null)]
-    [InlineData("CI", "", null)]
+    [InlineData("CI", "false", "CI")]
     [InlineData("TF_BUILD", "True", "TF_BUILD")]
+    [InlineData("TF_BUILD", "False", null)]
     [InlineData("GITHUB_ACTION", "__run", "GITHUB_ACTION")]
     [InlineData("BuildRunner", "MyGet", "BuildRunner")]
-    [InlineData("WSL_DISTRO_NAME", "Ubuntu", null)]
-    [InlineData("DOTNET_RUNNING_IN_CONTAINER", "true", null)]
-    public void BuildServerDetector_OnlyDetectsBuildServers(string name, string value, string? expectedVariable)
+    [InlineData("WSL_DISTRO_NAME", "Ubuntu", "WSL_DISTRO_NAME")]
+    [InlineData("DOTNET_RUNNING_IN_CONTAINER", "true", "DOTNET_RUNNING_IN_CONTAINER")]
+    [InlineData("PATH", "/usr/bin", null)]
+    public void BuildServerDetector_DetectsNonInteractiveEnvironments(string name, string value, string? expectedVariable)
     {
         Assert.Equal(expectedVariable, BuildServerDetector.Detect(variable => variable == name ? value : null));
     }
@@ -3753,11 +3752,11 @@ public sealed partial class SnapshotTests
         var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
         File.WriteAllText(verifiedPath, "old");
 
-        ContinuousEnvironmentDetector.DescriptionOverride = () => "a continuous integration server (CI)";
+        ContinuousEnvironmentDetector.DescriptionOverride = () => "an LLM agent (ClaudeCode)";
         try
         {
             var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
-            Assert.Contains("Snapshot updates are disabled because a continuous integration server (CI) was detected.", exception.Message);
+            Assert.Contains("Snapshot updates are disabled because an LLM agent (ClaudeCode) was detected.", exception.Message);
             Assert.Contains("set the SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT environment variable to false, or set SnapshotSettings.AutoDetectContinuousEnvironment to false", exception.Message);
             Assert.Equal("old", File.ReadAllText(verifiedPath));
 

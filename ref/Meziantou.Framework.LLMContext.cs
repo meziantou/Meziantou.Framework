@@ -23,13 +23,12 @@ namespace Meziantou.Framework.LLMContext
         QwenCode = 8,
         Droid = 9,
         OpenCode = 10,
-        ZedAI = 11,
-        KimiCLI = 12,
-        OpenHands = 13,
-        Goose = 14,
-        Cline = 15,
-        RooCode = 16,
-        Windsurf = 17,
-        GenericAgent = 18
+        KimiCLI = 11,
+        OpenHands = 12,
+        Goose = 13,
+        Cline = 14,
+        RooCode = 15,
+        Windsurf = 16,
+        GenericAgent = 17
     }
 }

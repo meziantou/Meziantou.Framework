@@ -236,7 +236,7 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is only supported on Windows.
 - The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
 
-Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, on a build server, under a continuous test runner (Visual Studio Live Unit Testing, NCrunch background runs), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
+Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
 
 `DiffEngine_Tool` is the case-insensitive name of a `MergeTool` property, for example `VisualStudioCode` or `rider`.
 
@@ -426,7 +426,7 @@ InlineSnapshot
 ## CI environment
 
 When running in a CI environment, in a continuous testing runner (NCrunch, ReSharper), or when the tests are run by an LLM agent (Claude Code, Codex, GitHub Copilot, Cursor, etc.), the snapshot is never updated, whatever the update strategy. The failure message says which environment was detected.
-To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.). `CI` must be set to `true`, `1` or `yes`: `CI=false` is not a CI environment.
+To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.). Containers and WSL are treated the same way, as no diff tool is expected to show up there.
 You can disable this behavior by setting the `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` environment variable to `false`, or by setting `AutoDetectContinuousEnvironment` to `false`.
 
 ````c#

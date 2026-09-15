@@ -35,8 +35,6 @@ public static class LLMContextDetector
         AddIf(LLMContextKind.QwenCode, IsAnyPresent("QWEN_CODE"));
         AddIf(LLMContextKind.Droid, IsBoolean("DROID_CLI"));
         AddIf(LLMContextKind.OpenCode, IsAnyPresent("OPENCODE_AI"));
-        // ZedAI is not detected: ZED_TERM and ZED_ENVIRONMENT are set in the terminal a developer uses in Zed, and the Zed
-        // agent runs its commands with that same environment, so no variable tells the two apart.
         AddIf(LLMContextKind.KimiCLI, IsBoolean("KIMI_CLI"));
         AddIf(LLMContextKind.OpenHands, HasValue("OR_APP_NAME", "OpenHands"));
         AddIf(LLMContextKind.Goose, IsAnyPresent("GOOSE_TERMINAL"));

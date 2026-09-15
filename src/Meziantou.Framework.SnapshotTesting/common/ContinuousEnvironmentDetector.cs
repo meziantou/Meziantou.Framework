@@ -1,8 +1,8 @@
 namespace Meziantou.Framework;
 
 /// <summary>
-/// Combines the detection of the environments where a snapshot must not be updated: a continuous integration server,
-/// a continuous testing runner, and an LLM agent.
+/// Combines the detection of the environments where the developer does not expect a snapshot update or a diff tool:
+/// a build server, a container or WSL, a continuous testing runner, and an LLM agent.
 /// </summary>
 internal static class ContinuousEnvironmentDetector
 {
@@ -10,7 +10,7 @@ internal static class ContinuousEnvironmentDetector
     internal static Func<string?>? DescriptionOverride { get; set; }
 
     /// <summary>
-    /// Describes the environment that was detected, such as <c>a continuous integration server (CI)</c>, or
+    /// Describes the environment that was detected, such as <c>an LLM agent (ClaudeCode)</c>, or
     /// returns <see langword="null" /> when the process does not run in such an environment.
     /// </summary>
     public static string? GetDetectedEnvironmentDescription()
@@ -21,12 +21,12 @@ internal static class ContinuousEnvironmentDetector
         List<string>? parts = null;
         if (BuildServerDetector.DetectedVariable is { } variable)
         {
-            (parts ??= []).Add($"a continuous integration server ({variable})");
+            (parts ??= []).Add($"a non-interactive environment (the {variable} environment variable is set)");
         }
 
         if (ContinuousTestingDetector.Detected)
         {
-            (parts ??= []).Add("a continuous testing runner (NCrunch or ReSharper)");
+            (parts ??= []).Add("a continuous testing runner (NCrunch, ReSharper or Live Unit Testing)");
         }
 
         if (LLMEnvironmentDetector.Detected)

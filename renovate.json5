@@ -50,6 +50,8 @@
         "src/Meziantou.Framework.Roslyn/Meziantou.Framework.Roslyn.csproj",
         "src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj",
         "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj",
+        "src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj",
+        "src/Meziantou.Framework.TaggedValues.CodeFix/Meziantou.Framework.TaggedValues.CodeFix.csproj",
         "src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj",
         "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn4_8.csproj",
         "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_0.csproj",

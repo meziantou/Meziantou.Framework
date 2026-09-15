@@ -13,8 +13,8 @@ public sealed class DisplayInvisibleCharacters
         };
 
         // Invisible characters are visible in the snapshot
-        InlineSnapshot.WithSettings(settings).Validate("line 1\r\nline\t2", """
-            line␠1␍␊
+        InlineSnapshot.WithSettings(settings).Validate("line 1 \r\nline\t2", """
+            line 1␠␍␊
             line␉2
             """);
     }

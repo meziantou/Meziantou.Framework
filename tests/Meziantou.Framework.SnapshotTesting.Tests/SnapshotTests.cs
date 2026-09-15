@@ -1517,8 +1517,9 @@ public sealed partial class SnapshotTests
     }
 
     [Theory]
-    [InlineData("line 1\r\nline\t2", "line␠1␍␊\nline␉2")]
-    [InlineData("a b\tc", "a b\tc")]
+    [InlineData("line 1\r\nline\t2", "line 1␍␊\nline␉2")]
+    [InlineData("a b\tc ", "a b␉c␠")]
+    [InlineData("a\u00A0b", "a<U+00A0>b")]
     public void ShowInvisibleCharactersInValues(string value, string expected)
     {
         using var directory = TemporaryDirectory.Create();

@@ -95,10 +95,31 @@ public sealed record HumanReadableSerializerOptions
     public bool IsReadOnly { get; private set; }
 
     /// <summary>Gets or sets the maximum depth allowed when serializing nested objects.</summary>
-    public int MaxDepth { get; set; } = 64;
+    public int MaxDepth
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    } = 64;
 
     /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
-    public bool ShowInvisibleCharactersInValues { get; set; }
+    /// <remarks>
+    /// Every value and property name is affected, including single-line ones. A space is kept between other characters,
+    /// but written as <c>␠</c> at the start or the end of a line. The other space characters, which have no control picture,
+    /// are written as their code point, for example <c>&lt;U+00A0&gt;</c> for a no-break space.
+    /// </remarks>
+    public bool ShowInvisibleCharactersInValues
+    {
+        get;
+        set
+        {
+            VerifyMutable();
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the line terminator written between lines, either <c>"\n"</c> or <c>"\r\n"</c>. The default is <c>"\n"</c> on every platform, so the output does not depend on the operating system.</summary>
     /// <remarks>Line breaks inside serialized values are rewritten with this terminator too.</remarks>

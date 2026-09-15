@@ -37,17 +37,59 @@ internal sealed class HumanReadableMemberInfo
 
     public static HumanReadableMemberInfo[] Get(Type type, HumanReadableSerializerOptions options)
     {
-        var members = new List<HumanReadableMemberInfo>();
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        foreach (var member in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        // Walk the hierarchy explicitly: Type.GetFields/GetProperties never return the private members of the base types
+        // (so [HumanReadableInclude] on them would be ignored), and they return both members when one hides the other with `new`.
+        var fields = new List<(FieldInfo Member, int Depth)>();
+        var properties = new List<(PropertyInfo Member, int Depth)>();
+        var depth = 0;
+        for (var current = type; current is not null; current = current.BaseType)
         {
+            foreach (var field in current.GetFields(Flags))
+            {
+                if (IsSerializable(field, options))
+                    fields.Add((field, depth));
+            }
+
+            foreach (var property in current.GetProperties(Flags))
+            {
+                if (IsSerializable(property, options))
+                    properties.Add((property, depth));
+            }
+
+            depth++;
+        }
+
+        // A member hides the members with the same name declared in its base types, as it does in C#.
+        // This includes ignored members, so ignoring a `new` member does not reveal the hidden one.
+        var visibleDepths = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (member, memberDepth) in fields)
+        {
+            UpdateVisibleDepth(member.Name, memberDepth);
+        }
+
+        foreach (var (member, memberDepth) in properties)
+        {
+            UpdateVisibleDepth(member.Name, memberDepth);
+        }
+
+        var members = new List<HumanReadableMemberInfo>();
+        foreach (var (member, memberDepth) in fields)
+        {
+            if (visibleDepths[member.Name] != memberDepth)
+                continue;
+
             var data = Get(member, options);
             if (data is not null)
                 members.Add(data);
         }
 
-        foreach (var member in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        foreach (var (member, memberDepth) in properties)
         {
+            if (visibleDepths[member.Name] != memberDepth)
+                continue;
+
             var data = Get(member, options);
             if (data is not null)
                 members.Add(data);
@@ -55,43 +97,38 @@ internal sealed class HumanReadableMemberInfo
 
         var result = members.Order(new MemberComparer(options)).ToArray();
         return result;
+
+        void UpdateVisibleDepth(string name, int memberDepth)
+        {
+            if (!visibleDepths.TryGetValue(name, out var existingDepth) || memberDepth < existingDepth)
+            {
+                visibleDepths[name] = memberDepth;
+            }
+        }
     }
 
-    public static HumanReadableMemberInfo? Get(PropertyInfo member, HumanReadableSerializerOptions options)
+    private static bool IsSerializable(PropertyInfo member, HumanReadableSerializerOptions options)
     {
         if (!member.CanRead)
-            return null;
+            return false;
 
         // Do not serializer indexer (e.g. this[int index])
         if (member.GetIndexParameters().Length > 0)
+            return false;
+
+        return (member.GetGetMethod()?.IsPublic ?? false) || options.GetCustomAttribute<HumanReadableIncludeAttribute>(member) is not null;
+    }
+
+    private static bool IsSerializable(FieldInfo member, HumanReadableSerializerOptions options)
+    {
+        return (member.IsPublic && options.IncludeFields) || options.GetCustomAttribute<HumanReadableIncludeAttribute>(member) is not null;
+    }
+
+    private static HumanReadableMemberInfo? Get(PropertyInfo member, HumanReadableSerializerOptions options)
+    {
+        var ignoreAttributes = GetIgnoreAttributes(member, options);
+        if (ignoreAttributes is null)
             return null;
-
-        var hasInclude = options.GetCustomAttribute<HumanReadableIncludeAttribute>(member) is not null;
-        if (!hasInclude && !(member.GetGetMethod()?.IsPublic ?? false))
-            return null;
-
-        if (!options.IncludeObsoleteMembers)
-        {
-            var obsoleteAttribute = member.GetCustomAttribute<ObsoleteAttribute>();
-            if (obsoleteAttribute is not null)
-                return null;
-        }
-
-        var ignoreAttributes = options.GetCustomAttributes<HumanReadableIgnoreAttribute>(member).ToArray();
-        if (options.DefaultIgnoreCondition is HumanReadableIgnoreCondition.Always || ignoreAttributes.Any(attr => attr.Condition is HumanReadableIgnoreCondition.Always))
-            return null;
-
-        if (ignoreAttributes.Length == 0)
-        {
-            ignoreAttributes = [new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition }];
-        }
-
-        var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
-        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
-        var converter = GetConverter(member, member.PropertyType, options);
-
-        var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
-        var defaultValue = defaultValueAttribute is not null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignoreAttributes, member.PropertyType);
 
         object? GetValue(object? instance)
         {
@@ -110,29 +147,47 @@ internal sealed class HumanReadableMemberInfo
             }
         }
 
-        return new HumanReadableMemberInfo(member.PropertyType, GetValue, ignoreAttributes, propertyName, converter, order, defaultValue);
+        return Create(member, member.PropertyType, GetValue, ignoreAttributes, options);
     }
 
-    public static HumanReadableMemberInfo? Get(FieldInfo member, HumanReadableSerializerOptions options)
+    private static HumanReadableMemberInfo? Get(FieldInfo member, HumanReadableSerializerOptions options)
     {
-        var hasInclude = options.GetCustomAttribute<HumanReadableIncludeAttribute>(member) is not null;
-        if (!hasInclude && !(member.IsPublic && options.IncludeFields))
+        var ignoreAttributes = GetIgnoreAttributes(member, options);
+        if (ignoreAttributes is null)
+            return null;
+
+        return Create(member, member.FieldType, member.GetValue, ignoreAttributes, options);
+    }
+
+    private static HumanReadableMemberInfo Create(MemberInfo member, Type memberType, Func<object, object?> getValue, HumanReadableIgnoreAttribute[] ignoreAttributes, HumanReadableSerializerOptions options)
+    {
+        var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
+        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
+        var converter = GetConverter(member, memberType, options);
+
+        var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
+        var defaultValue = defaultValueAttribute is not null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignoreAttributes, memberType);
+        return new HumanReadableMemberInfo(memberType, getValue, ignoreAttributes, propertyName, converter, order, defaultValue);
+    }
+
+    // Returns the conditions to evaluate, or null when the member is always ignored
+    private static HumanReadableIgnoreAttribute[]? GetIgnoreAttributes(MemberInfo member, HumanReadableSerializerOptions options)
+    {
+        if (!options.IncludeObsoleteMembers && member.GetCustomAttribute<ObsoleteAttribute>() is not null)
             return null;
 
         var ignoreAttributes = options.GetCustomAttributes<HumanReadableIgnoreAttribute>(member).ToArray();
         if (options.DefaultIgnoreCondition is HumanReadableIgnoreCondition.Always || ignoreAttributes.Any(attr => attr.Condition is HumanReadableIgnoreCondition.Always))
             return null;
 
-        if (ignoreAttributes.Length == 0)
+        // A condition set on the member replaces the default condition. Custom conditions are added on top of it instead,
+        // as they are often set on every member at once (e.g. IgnoreMembersThatThrow) and only handle specific cases.
+        if (ignoreAttributes.All(attr => attr.Condition is HumanReadableIgnoreCondition.Custom))
         {
-            ignoreAttributes = [new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition }];
+            ignoreAttributes = [.. ignoreAttributes, new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition }];
         }
 
-        var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
-        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
-        var converter = GetConverter(member, member.FieldType, options);
-        var defaultValue = GetDefaultValue(ignoreAttributes, member.FieldType);
-        return new HumanReadableMemberInfo(member.FieldType, member.GetValue, ignoreAttributes, propertyName, converter, order, defaultValue);
+        return ignoreAttributes;
     }
 
     private static HumanReadableConverter? GetConverter(MemberInfo member, Type memberType, HumanReadableSerializerOptions options)
@@ -167,8 +222,8 @@ internal sealed class HumanReadableMemberInfo
         {
             foreach (var ignoreAttribute in IgnoreAttributes)
             {
-                if (ignoreAttribute.Condition is HumanReadableIgnoreCondition.Custom && ignoreAttribute.CustomCondition is not null)
-                    return ignoreAttribute.CustomCondition(data);
+                if (ignoreAttribute.Condition is HumanReadableIgnoreCondition.Custom && ignoreAttribute.CustomCondition is not null && ignoreAttribute.CustomCondition(data))
+                    return true;
             }
 
             return false;

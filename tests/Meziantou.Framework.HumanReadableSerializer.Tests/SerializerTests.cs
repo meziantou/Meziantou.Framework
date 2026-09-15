@@ -46,6 +46,15 @@ public sealed partial class SerializerTests : SerializerTestsBase
             """);
     }
 
+    [Fact]
+    public void FSharp_DiscriminatedUnion_ObjectField_UsesRuntimeType()
+    {
+        AssertSerialization(Boxed.NewBoxed(new Version(1, 2)), """
+            Tag: Boxed
+            value: 1.2
+            """);
+    }
+
 #if NET11_0_OR_GREATER
     [Fact]
     public void CSharp_Union()
@@ -326,6 +335,23 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 - [0, 1, 2]: 6
                 """,
         });
+    }
+
+    [Fact]
+    public void MultiDimensionalArrayInt32_NonZeroLowerBounds()
+    {
+        var data = Array.CreateInstance(typeof(int), lengths: [2, 2], lowerBounds: [1, -1]);
+        data.SetValue(1, 1, -1);
+        data.SetValue(2, 1, 0);
+        data.SetValue(3, 2, -1);
+        data.SetValue(4, 2, 0);
+
+        AssertSerialization(data, """
+            - [1, -1]: 1
+            - [1, 0]: 2
+            - [2, -1]: 3
+            - [2, 0]: 4
+            """);
     }
 
     [Fact]
@@ -692,6 +718,12 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void FSharpValueOptionSome() => AssertSerialization(Factory.create_valueoption_some, "1");
 
     [Fact]
+    public void FSharpValueOptionNone_ReferenceType() => AssertSerialization(Factory.create_valueoption_none<string>(), "<null>");
+
+    [Fact]
+    public void FSharpValueOptionSome_ReferenceType() => AssertSerialization(Microsoft.FSharp.Core.FSharpValueOption<string>.NewValueSome("test"), "test");
+
+    [Fact]
     public void FSharpArray()
     {
         var collection = Factory.create_array;
@@ -1047,6 +1079,12 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void ReadOnlyMemoryChar() => AssertSerialization("test".AsMemory(), "test");
 
     [Fact]
+    public void ReadOnlyMemoryObject_UsesRuntimeType() => AssertSerialization((ReadOnlyMemory<object>)new object[] { new Version(1, 2), new List<int> { 1 } }.AsMemory(), """
+        - 1.2
+        - - 1
+        """);
+
+    [Fact]
     public void StringWriter()
     {
         using var value = new StringWriter();
@@ -1065,6 +1103,15 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     [Fact]
     public void Type_List_Int32() => AssertSerialization(typeof(List<int>), "System.Collections.Generic.List<System.Int32>, System.Private.CoreLib");
+
+    [Fact]
+    public void Type_Array_GenericElementType() => AssertSerialization(typeof(List<int>[,]), "System.Collections.Generic.List<System.Int32>[,], System.Private.CoreLib");
+
+    [Fact]
+    public void Type_Covariant_WithConstraint() => AssertSerialization(typeof(ICovariantWithConstraintInterface<>), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+ICovariantWithConstraintInterface<out T>, Meziantou.Framework.HumanReadableSerializer.Tests");
+
+    [Fact]
+    public void MethodInfo_ByRefParameters() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ByRefParameters))!, "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ByRefParameters(ref System.Int32 a,out System.Collections.Generic.List<System.Int32>[] b,ref dynamic c)");
 
     [Fact]
     public void Type_AnonymType() => AssertSerialization(new { }.GetType(), "<>f__AnonymousType4, Meziantou.Framework.HumanReadableSerializer.Tests");
@@ -1562,6 +1609,26 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void NameValueCollection_DictionaryKeyOrder()
+    {
+        var value = new NameValueCollection
+        {
+            { "key2", "value2" },
+            { null, "value0" },
+            { "key1", "value1a" },
+            { "key1", "value1b" },
+        };
+
+        AssertSerialization(value, new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal }, """
+            : value0
+            key1:
+              - value1a
+              - value1b
+            key2: value2
+            """);
+    }
+
+    [Fact]
     public void BitVector32()
     {
         var value = new BitVector32();
@@ -1745,7 +1812,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Subject = "a b\tc\r\nd\ne\0",
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
             Expected = """
-            a␠b␉c␍␊
+            a b␉c␍␊
             d␊
             e␀
             """,
@@ -1759,7 +1826,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         var text = HumanReadableSerializer.Serialize(new { Multiline = "line 1\r\nline\t2", Empty = "a\r\n\rb\n" }, options);
 
         // Line endings are normalized to options.NewLine: the control pictures already record the original ones
-        var expected = string.Join(options.NewLine, "Multiline:", "  line␠1␍␊", "  line␉2", "Empty:", "  a␍␊", "  ␍", "  b␊", "");
+        var expected = string.Join(options.NewLine, "Multiline:", "  line 1␍␊", "  line␉2", "Empty:", "  a␍␊", "  ␍", "  b␊", "");
         Assert.Equal(expected, text);
     }
 
@@ -1805,6 +1872,114 @@ public sealed partial class SerializerTests : SerializerTestsBase
             b: 1
             z: 2
             """,
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_Nested()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, string> { ["A"] = "a b\nc", ["B"] = "d" },
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            A:
+              a b␊
+              c
+            B: d
+            """,
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_SingleLine()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\tb\0c d\u007F",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a␉b␀c d␡",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_LeadingAndTrailingWhitespace()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "  a  b  \n c \t\n   ",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            ␠␠a  b␠␠␊
+            ␠c␠␉␊
+            ␠␠␠
+            """,
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_OtherSpaces()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\u00A0b\u2009c\u3000d\u200Be\u2060f\uFEFFg\u1680h",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a<U+00A0>b<U+2009>c<U+3000>d<U+200B>e<U+2060>f<U+FEFF>g<U+1680>h",
+        });
+    }
+
+    [Fact]
+    public void String_InvisibleChar_OtherSpaces_AtTheEdges()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "\u00A0 a \u00A0",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "<U+00A0>␠a␠<U+00A0>",
+        });
+    }
+
+    [Theory]
+    [InlineData("\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67", "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67")] // Family
+    [InlineData("\u2764\uFE0F\u200D\uD83D\uDD25", "\u2764\uFE0F\u200D\uD83D\uDD25")] // Heart on fire (variation selector)
+    [InlineData("\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDCBB", "\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83D\uDCBB")] // Technologist (skin tone)
+    [InlineData("\uD83D\uDC68\u200D\uD83D\uDC69 a\u200Db", "\uD83D\uDC68\u200D\uD83D\uDC69 a<U+200D>b")]
+    [InlineData("a\u200Db", "a<U+200D>b")]
+    [InlineData("\uD83D\uDC68\u200Db", "\uD83D\uDC68<U+200D>b")]
+    [InlineData("a\u200D\uD83D\uDC69", "a<U+200D>\uD83D\uDC69")]
+    [InlineData("\uD83D\uDC68\u200D", "\uD83D\uDC68<U+200D>")]
+    [InlineData("\u200D\uD83D\uDC69", "<U+200D>\uD83D\uDC69")]
+    [InlineData("\u0915\u094D\u200D\u0937", "\u0915\u094D<U+200D>\u0937")] // Devanagari conjunct
+    [InlineData("a\u200Cb", "a<U+200C>b")]
+    [InlineData("\uD83D\uDC68\u200C\uD83D\uDC69", "\uD83D\uDC68<U+200C>\uD83D\uDC69")]
+    public void String_InvisibleChar_ZeroWidthJoiner_OnlyKeptInEmojiSequences(string value, string expected)
+    {
+        AssertSerialization(value, new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true }, expected);
+    }
+
+    [Fact]
+    public void String_InvisibleChar_UnicodeLineSeparators()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\u2028b\u0085c",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            a<U+2028>
+            b<U+0085>
+            c
+            """,
+        });
+    }
+
+    [Fact]
+    public void PropertyName_InvisibleChar_SingleLine()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, string> { ["a b "] = " c d" },
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a b␠: ␠c d",
         });
     }
 
@@ -2277,6 +2452,88 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void IgnoreException_MultipleExceptionTypes()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersThatThrow<NotSupportedException>();
+        options.IgnoreMembersThatThrow<NotImplementedException>();
+
+        AssertSerialization(new PropThrowAnException(), options, "B: 1");
+    }
+
+    [Fact]
+    public void IgnoreException_KeepsDefaultIgnoreCondition()
+    {
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull };
+        options.IgnoreMembersThatThrow<NotSupportedException>();
+
+        AssertSerialization(new PropThrowAnExceptionAndNull(), options, "B: 1");
+    }
+
+    [Fact]
+    public void Fields_DefaultValueAttribute()
+    {
+        var options = new HumanReadableSerializerOptions { IncludeFields = true, DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+
+        AssertSerialization(new FieldsWithAttributes(), options, "Other: 2");
+    }
+
+    [Fact]
+    public void Fields_Obsolete()
+    {
+        AssertSerialization(new FieldsWithAttributes(), new HumanReadableSerializerOptions { IncludeFields = true }, """
+            WithDefaultValue: 1
+            Other: 2
+            """);
+    }
+
+    [Fact]
+    public void Fields_Obsolete_IncludeObsoleteMembers()
+    {
+        AssertSerialization(new FieldsWithAttributes(), new HumanReadableSerializerOptions { IncludeFields = true, IncludeObsoleteMembers = true }, """
+            WithDefaultValue: 1
+            ObsoleteField: 3
+            Other: 2
+            """);
+    }
+
+    [Fact]
+    public void Inheritance_NewMemberWithDifferentType()
+    {
+        AssertSerialization(new ChildWithNewMemberType(), """
+            PropRoot: child
+            PropChild: 3
+            """);
+    }
+
+    [Fact]
+    public void Inheritance_IgnoredNewMemberHidesBaseMember()
+    {
+        AssertSerialization(new ChildWithIgnoredNewMember(), "PropChild: 3");
+    }
+
+    [Fact]
+    public void Inheritance_IncludedPrivateMemberOfBaseType()
+    {
+        AssertSerialization(new ChildOfRootWithPrivateMember(), """
+            PropChild: 3
+            PrivateRoot: 1
+            """);
+    }
+
+    [Fact]
+    public void Serialize_NullAsValueType_Throws()
+    {
+        Assert.Throws<ArgumentException>(() => HumanReadableSerializer.Serialize(value: null, typeof(int)));
+    }
+
+    [Fact]
+    public void Serialize_NullAsNullableValueType()
+    {
+        AssertSerialization(obj: null, options: null, typeof(int?), "<null>");
+    }
+
+    [Fact]
     public void IgnoreMember_Expression_SingleMember()
     {
         var options = new HumanReadableSerializerOptions();
@@ -2446,6 +2703,24 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         public int A => throw new NotSupportedException();
         public int B => 1;
+    }
+
+    private sealed class PropThrowAnExceptionAndNull
+    {
+        public int A => throw new NotSupportedException();
+        public int B => 1;
+        public string? C => null;
+    }
+
+    private sealed class FieldsWithAttributes
+    {
+        [HumanReadableDefaultValue(1)]
+        public int WithDefaultValue = 1;
+
+        [Obsolete("For tests")]
+        public int ObsoleteField = 3;
+
+        public int Other = 2;
     }
 
     private abstract class BasePersonWithFirstName(string firstName)
@@ -2645,6 +2920,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     private interface ICovariantContravariantInterface<in T1, out T2> { }
 
+    private interface ICovariantWithConstraintInterface<out T> where T : class { }
+
     private class Root
     {
         public int PropRoot { get; set; } = 1;
@@ -2653,6 +2930,31 @@ public sealed partial class SerializerTests : SerializerTestsBase
     private sealed class Child : Root
     {
         public new int PropRoot { get; set; } = 2;
+        public int PropChild { get; set; } = 3;
+    }
+
+    private sealed class ChildWithNewMemberType : Root
+    {
+        public new string PropRoot { get; set; } = "child";
+        public int PropChild { get; set; } = 3;
+    }
+
+    private sealed class ChildWithIgnoredNewMember : Root
+    {
+        [HumanReadableIgnore]
+        public new string PropRoot { get; set; } = "child";
+        public int PropChild { get; set; } = 3;
+    }
+
+    private class RootWithPrivateMember
+    {
+        [HumanReadableInclude]
+        [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Read by the serializer")]
+        private int PrivateRoot { get; } = 1;
+    }
+
+    private sealed class ChildOfRootWithPrivateMember : RootWithPrivateMember
+    {
         public int PropChild { get; set; } = 3;
     }
 
@@ -2675,5 +2977,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         public void ValueTupleDynamic((dynamic, int) value) => throw new NotSupportedException();
 
         public void ValueTupleNestedDynamic((dynamic A, (int B, dynamic C) D) value) => throw new NotSupportedException();
+
+        public void ByRefParameters(ref int a, out List<int>[] b, ref dynamic c) => throw new NotSupportedException();
     }
 }

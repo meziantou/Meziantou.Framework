@@ -101,6 +101,44 @@ public sealed class HumanReadableSerializerOptionsTests
     }
 
     [Fact]
+    public void CloneShouldCopyAllSettings()
+    {
+        var options = new HumanReadableSerializerOptions
+        {
+            DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
+            DictionaryKeyOrder = StringComparer.Ordinal,
+            IncludeFields = true,
+            IncludeObsoleteMembers = true,
+            MaxDepth = 12,
+            NewLine = "\r\n",
+            PropertyOrder = StringComparer.OrdinalIgnoreCase,
+            ShowInvisibleCharactersInValues = true,
+        };
+
+        var clone = options with { };
+
+        Assert.Equal(HumanReadableIgnoreCondition.WhenWritingNull, clone.DefaultIgnoreCondition);
+        Assert.Equal(StringComparer.Ordinal, clone.DictionaryKeyOrder);
+        Assert.Equal(true, clone.IncludeFields);
+        Assert.Equal(true, clone.IncludeObsoleteMembers);
+        Assert.Equal(12, clone.MaxDepth);
+        Assert.Equal("\r\n", clone.NewLine);
+        Assert.Equal(StringComparer.OrdinalIgnoreCase, clone.PropertyOrder);
+        Assert.Equal(true, clone.ShowInvisibleCharactersInValues);
+    }
+
+    [Fact]
+    public void ReadOnly_SettingsCannotBeChanged()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.MakeReadOnly();
+
+        Assert.Throws<InvalidOperationException>(() => options.MaxDepth = 1);
+        Assert.Throws<InvalidOperationException>(() => options.ShowInvisibleCharactersInValues = true);
+        Assert.Throws<InvalidOperationException>(() => options.IncludeFields = true);
+    }
+
+    [Fact]
     public void NewLine_DefaultsToLineFeed()
     {
         var text = HumanReadableSerializer.Serialize(new MultiLinePayload { Value = "line1\r\nline2" });

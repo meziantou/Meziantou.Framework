@@ -6,7 +6,6 @@ namespace Meziantou.Framework.HumanReadable;
 public sealed class HumanReadableTextWriter
 {
     private const string Indentation = "  ";
-    private static readonly string NewLine = Environment.NewLine;
 
     private readonly StringBuilder _text = new();
     private readonly HumanReadableSerializerOptions _options;
@@ -28,7 +27,7 @@ public sealed class HumanReadableTextWriter
     {
         if (_context is WriterContext.NewLine)
         {
-            _text.Append(NewLine);
+            _text.Append(_options.NewLine);
         }
         else if (_context is WriterContext.PropertyName)
         {

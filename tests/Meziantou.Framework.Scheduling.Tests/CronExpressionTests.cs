@@ -23,6 +23,9 @@ public sealed class CronExpressionTests
     [InlineData("0 0 1, * *")]
     [InlineData("0 0 ,1 * *")]
     [InlineData("0 0 * * ?,1")]
+    [InlineData("0 0 * * 8")]
+    [InlineData("0 0 * * 8L")]
+    [InlineData("0 0 * * 8#1")]
     public void CronExpression_Parse_InvalidExpression(string expression)
     {
         Assert.Throws<FormatException>(() => CronExpression.Parse(expression));
@@ -128,6 +131,12 @@ public sealed class CronExpressionTests
     [InlineData("0 0 12 * * SUN", "2024-01-07T12:00:00", "2024-01-14T12:00:00", "2024-01-21T12:00:00")]
     [InlineData("0 0 12 * * SAT", "2024-01-06T12:00:00", "2024-01-13T12:00:00", "2024-01-20T12:00:00")]
     [InlineData("0 0 12 * * MON-FRI", "2024-01-01T12:00:00", "2024-01-02T12:00:00", "2024-01-03T12:00:00")]
+    [InlineData("0 0 12 * * 7", "2024-01-07T12:00:00", "2024-01-14T12:00:00", "2024-01-21T12:00:00")]
+    [InlineData("0 0 12 * * 5-7", "2024-01-05T12:00:00", "2024-01-06T12:00:00", "2024-01-07T12:00:00", "2024-01-12T12:00:00")]
+    [InlineData("0 0 12 * * 7-1", "2024-01-01T12:00:00", "2024-01-07T12:00:00", "2024-01-08T12:00:00")]
+    [InlineData("0 0 12 * * 0-7/2", "2024-01-02T12:00:00", "2024-01-04T12:00:00", "2024-01-06T12:00:00", "2024-01-07T12:00:00")]
+    [InlineData("0 0 12 * * 7L", "2024-01-28T12:00:00", "2024-02-25T12:00:00", "2024-03-31T12:00:00")]
+    [InlineData("0 0 12 * * 7#2", "2024-01-14T12:00:00", "2024-02-11T12:00:00", "2024-03-10T12:00:00")]
     public void EvaluateCronExpression_DayOfWeek(string expression, params string[] expectedOccurrences)
     {
         var cron = CronExpression.Parse(expression);

@@ -72,6 +72,20 @@ and fail for everyone else. PNG files fail to decode outright rather than mis-co
 PNG signature contains a `CR LF` pair specifically to catch this, but the reported error
 ("Unsupported image format") does not point at the cause.
 
+## Line endings
+
+The default serializer writes `\n` line endings on every platform, so a snapshot produced on Windows is
+identical to one produced on Linux or macOS. Use `HumanReadableSerializerOptions.NewLine` to write `\r\n`
+instead:
+
+```csharp
+settings.ConfigureHumanReadableSerializer(options => options.NewLine = "\r\n");
+```
+
+Text snapshots (`.txt` and `.svg`) are compared without regard to line endings: `\r\n`, `\r` and `\n` are
+equivalent. A verified file whose line endings were changed by an editor, a merge tool or git's
+`core.autocrlf` still matches. Other formats are compared byte for byte.
+
 ## Snapshot naming
 
 You can choose how snapshot names are generated using `SnapshotSettings.SnapshotNamingStrategy`:

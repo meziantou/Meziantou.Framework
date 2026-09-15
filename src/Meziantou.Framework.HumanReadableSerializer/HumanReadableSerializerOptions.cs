@@ -19,6 +19,8 @@ namespace Meziantou.Framework.HumanReadable;
 /// </example>
 public sealed record HumanReadableSerializerOptions
 {
+    private const string DefaultNewLine = "\n";
+
     // Cache
     private readonly ConcurrentDictionary<Type, HumanReadableConverter> _convertersCache;
     private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfoCache;
@@ -26,6 +28,7 @@ public sealed record HumanReadableSerializerOptions
     private readonly List<(Func<Type, bool> Condition, HumanReadableAttribute Attribute)> _typeAttributes;
     private readonly List<(Func<MemberInfo, bool> Condition, HumanReadableAttribute Attribute)> _memberAttributes;
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
+    private string _newLine = DefaultNewLine;
 
     [ThreadStatic]
     private static SerializationContext? s_currentContext;
@@ -49,12 +52,14 @@ public sealed record HumanReadableSerializerOptions
         _memberInfoCache = new();
         _convertersCache = new();
         _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
+        _newLine = DefaultNewLine;
 
         Converters = new ConverterList(this);
         if (options != null)
         {
             MaxDepth = options.MaxDepth;
             ShowInvisibleCharactersInValues = options.ShowInvisibleCharactersInValues;
+            NewLine = options.NewLine;
             IncludeFields = options.IncludeFields;
             DefaultIgnoreCondition = options.DefaultIgnoreCondition;
             foreach (var converter in options.Converters)
@@ -101,6 +106,23 @@ public sealed record HumanReadableSerializerOptions
 
     /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
     public bool ShowInvisibleCharactersInValues { get; set; }
+
+    /// <summary>Gets or sets the line terminator written between lines, either <c>"\n"</c> or <c>"\r\n"</c>. The default is <c>"\n"</c> on every platform, so the output does not depend on the operating system.</summary>
+    /// <remarks>Line breaks inside serialized values are rewritten with this terminator too.</remarks>
+    /// <exception cref="ArgumentException">The value is neither <c>"\n"</c> nor <c>"\r\n"</c>.</exception>
+    public string NewLine
+    {
+        get => _newLine;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value is not ("\n" or "\r\n"))
+                throw new ArgumentException("The new line must be either \"\\n\" or \"\\r\\n\".", nameof(value));
+
+            VerifyMutable();
+            _newLine = value;
+        }
+    }
 
     /// <summary>Gets the list of converters used for serialization.</summary>
     public IList<HumanReadableConverter> Converters { get; }

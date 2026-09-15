@@ -35,7 +35,29 @@ public abstract class RecurrenceRule : IRecurrenceRule
     public const string DefaultFirstDayOfWeekString = "MO";
 
     /// <summary>End date (inclusive)</summary>
-    public DateTime? EndDate { get; set; }
+    /// <remarks>
+    /// <para>A <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/> value denotes an instant, and a
+    /// <see cref="DateTimeKind.Unspecified"/> value a wall-clock reading. Parsing a UTC UNTIL, or one carrying an offset,
+    /// produces a <see cref="DateTimeKind.Utc"/> value; a floating date-time or a date produces an
+    /// <see cref="DateTimeKind.Unspecified"/> value, a date being read as its first instant.</para>
+    /// <para>An instant bounds the occurrences generated from a <see cref="DateTimeKind.Utc"/> or <see cref="DateTimeKind.Local"/>
+    /// start date by instant, and a wall-clock reading bounds every occurrence by wall clock.</para>
+    /// </remarks>
+    public DateTime? EndDate
+    {
+        get => field;
+        set
+        {
+            field = value;
+            IsEndDateDate = false;
+        }
+    }
+
+    /// <summary>Gets a value indicating whether <see cref="EndDate"/> was parsed from a DATE value, so it is written back as one.</summary>
+    internal bool IsEndDateDate { get; private set; }
+
+    /// <summary>Gets the UNTIL value as written in <see cref="Text"/>.</summary>
+    internal string? EndDateText => EndDate is { } endDate ? Utilities.EndDateToString(endDate, IsEndDateDate) : null;
 
     /// <summary>The number of occurrences before the recurrence ends.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
@@ -237,9 +259,6 @@ public abstract class RecurrenceRule : IRecurrenceRule
                     var yearlyRecurrence = new YearlyRecurrenceRule
                     {
                         ByWeekDays = ParseByDayWithOffset(values),
-                        ByMonthDays = ParseByMonthDays(values),
-                        BySetPositions = ParseBySetPos(values),
-                        ByMonths = ParseByMonth(values),
                         ByYearDays = ParseByYearDay(values),
                         ByWeekNumbers = ParseByWeekNo(values),
                     };
@@ -298,6 +317,7 @@ public abstract class RecurrenceRule : IRecurrenceRule
                 }
 
                 result.EndDate = endDate;
+                result.IsEndDateDate = until.Length is 8;
             }
 
             result.BySetPositions = ParseBySetPos(values);
@@ -745,10 +765,11 @@ public abstract class RecurrenceRule : IRecurrenceRule
         if (Occurrences is 0)
             yield break;
 
+        var endDate = GetEndBound(EndDate, startDate.Kind);
         var count = 0;
-        foreach (var next in GetNextOccurrencesInternal(startDate, EndDate))
+        foreach (var next in GetNextOccurrencesInternal(startDate, endDate))
         {
-            if (EndDate.HasValue && next > EndDate.Value)
+            if (endDate.HasValue && next > endDate.Value)
                 yield break;
 
             yield return next;
@@ -756,6 +777,20 @@ public abstract class RecurrenceRule : IRecurrenceRule
             count++;
             if (Occurrences.HasValue && count >= Occurrences.Value)
                 yield break;
+        }
+
+        // The occurrences have the kind of the start date. When both values denote instants, the bound is expressed in that
+        // kind so the comparison is between instants; a wall-clock value on either side leaves nothing to convert.
+        static DateTime? GetEndBound(DateTime? endDate, DateTimeKind startKind)
+        {
+            return endDate switch
+            {
+                null => null,
+                { Kind: DateTimeKind.Unspecified } => endDate,
+                { } value when startKind is DateTimeKind.Utc => value.ToUniversalTime(),
+                { } value when startKind is DateTimeKind.Local => value.ToLocalTime(),
+                _ => endDate,
+            };
         }
     }
 

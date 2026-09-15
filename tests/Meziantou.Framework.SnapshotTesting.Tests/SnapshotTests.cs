@@ -71,6 +71,57 @@ public sealed partial class SnapshotTests
         Assert.Equal(originalSerializerCount, original.Serializers.Count);
     }
 
+    [Theory]
+    [InlineData("a\nb", "a\r\nb")]
+    [InlineData("a\r\nb", "a\nb")]
+    [InlineData("a\rb", "a\nb")]
+    [InlineData("a\r\nb\n", "a\nb\r\n")]
+    [InlineData("\r\n\r\n", "\n\r")]
+    [InlineData("é\r\n€", "é\n€")]
+    public void TextComparer_IgnoresLineEndingDifferences(string expected, string actual)
+    {
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Default);
+
+        Assert.True(comparer.Equals(new SnapshotData("txt", Encoding.UTF8.GetBytes(expected)), new SnapshotData("txt", Encoding.UTF8.GetBytes(actual))));
+    }
+
+    [Theory]
+    [InlineData("a\nb", "a\n\nb")]
+    [InlineData("a\r\nb", "a\r\rb")]
+    [InlineData("a\nb", "ab")]
+    [InlineData("a\n", "a")]
+    [InlineData("a", "a\r\n")]
+    [InlineData("a\nb", "a\nc")]
+    [InlineData("ab\n", "a\nb")]
+    public void TextComparer_DetectsDifferences(string expected, string actual)
+    {
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Svg);
+
+        Assert.False(comparer.Equals(new SnapshotData("svg", Encoding.UTF8.GetBytes(expected)), new SnapshotData("svg", Encoding.UTF8.GetBytes(actual))));
+        Assert.False(comparer.Equals(new SnapshotData("svg", Encoding.UTF8.GetBytes(actual)), new SnapshotData("svg", Encoding.UTF8.GetBytes(expected))));
+    }
+
+    [Fact]
+    public void Validate_WritesLineFeedsAndAcceptsVerifiedFileWithCarriageReturns()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.txt";
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = _ => path,
+        };
+        var value = new { A = 1, B = "line1\r\nline2" };
+
+        Snapshot.Validate(value, settings);
+        Assert.Equal("A: 1\nB:\n  line1\n  line2", File.ReadAllText(path));
+
+        File.WriteAllText(path, "A: 1\r\nB:\r\n  line1\r\n  line2");
+        Snapshot.Validate(value, settings with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow });
+        Assert.False(File.Exists(directory / "snapshot.actual.txt"));
+    }
+
     [Fact]
     public void ResolveSourceFilePath_ThrowsWhenSourceFilePathIsNotFound()
     {

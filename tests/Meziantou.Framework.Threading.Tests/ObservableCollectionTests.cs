@@ -452,6 +452,15 @@ public sealed partial class ObservableCollectionTests : IDisposable
         Assert.Throws<ArgumentException>(() => collection.Add(10));
     }
 
+    [Fact]
+    public void SyncRoot_Throws()
+    {
+        // It used to return the SyncRoot of the current immutable snapshot, a different object after every modification.
+        var collection = (ICollection)CreateCollection<int>();
+
+        Assert.Throws<NotSupportedException>(() => _ = collection.SyncRoot);
+    }
+
     [Theory]
     [MemberData(nameof(GetCollections))]
     public void Contains_Struct_Null(CollectionKind kind)

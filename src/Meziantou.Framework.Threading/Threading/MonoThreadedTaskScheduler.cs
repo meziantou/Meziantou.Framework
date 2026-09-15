@@ -243,6 +243,10 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 
     protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
     {
-        return false;
+        // Inlining on the worker thread keeps every task on the same thread, and it is required: a task running on
+        // the worker that waits for another task of this scheduler (Wait, Result) blocks the only thread that could
+        // run it. A task inlined after being queued is skipped when the worker dequeues it, as TryExecuteTask then
+        // returns false. Any other thread must leave the task to the worker.
+        return Thread.CurrentThread == _thread && TryExecuteTask(task);
     }
 }

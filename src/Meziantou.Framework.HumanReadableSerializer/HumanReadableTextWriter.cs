@@ -55,8 +55,7 @@ public sealed class HumanReadableTextWriter
         if (value.IsEmpty)
             return;
 
-        // Like values, invisible characters are only revealed in text that spans multiple lines
-        showInvisibleCharacters &= _options.ShowInvisibleCharactersInValues && StringUtils.IsMultiLines(value);
+        showInvisibleCharacters &= _options.ShowInvisibleCharactersInValues;
 
         var first = true;
         foreach (var (line, eol) in StringUtils.EnumerateLines(value))
@@ -133,7 +132,7 @@ public sealed class HumanReadableTextWriter
         }
         else
         {
-            Write(value);
+            Write(value, showInvisibleCharacters: true);
             WriteNewLine();
         }
     }

@@ -263,7 +263,7 @@ Notes:
 
 - The control pictures of a line ending are followed by a real line break, written with `NewLine` (`\n` by default,
   see [Line endings](#line-endings)), so each value keeps its lines.
-- Only multi-line values and property names are converted. A single-line value such as `"a b\tc"` is written as-is.
+- Every value and property name is converted, including single-line ones: `"a b\tc"` is written as `a␠b␉c`.
 - `ConfigureHumanReadableSerializer` only affects the settings instance it is called on. Use
   `SnapshotSettings.Default with { }` to get a copy, or call it on `SnapshotSettings.Default` to enable the option
   for every snapshot.

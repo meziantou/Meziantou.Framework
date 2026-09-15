@@ -106,7 +106,7 @@ public sealed record HumanReadableSerializerOptions
     } = 64;
 
     /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
-    /// <remarks>Only values and property names that span multiple lines are affected.</remarks>
+    /// <remarks>Every value and property name is affected, including single-line ones, so a space is written as <c>␠</c>.</remarks>
     public bool ShowInvisibleCharactersInValues
     {
         get;

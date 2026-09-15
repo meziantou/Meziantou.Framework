@@ -1892,13 +1892,24 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void String_InvisibleChar_SingleLine()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = "a\tb\0c d\u007F",
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = "a␉b␀c␠d␡",
+        });
+    }
+
+    [Fact]
     public void PropertyName_InvisibleChar_SingleLine()
     {
         AssertSerialization(new Validation
         {
-            Subject = new Dictionary<string, string> { ["a b"] = "c d" },
+            Subject = new Dictionary<string, string> { ["a b\t"] = "c d" },
             Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
-            Expected = "a b: c d",
+            Expected = "a␠b␉: c␠d",
         });
     }
 

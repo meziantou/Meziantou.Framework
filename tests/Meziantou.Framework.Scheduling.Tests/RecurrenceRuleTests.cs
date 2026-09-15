@@ -1148,6 +1148,475 @@ public partial class RecurrenceRuleTests
     }
 #endif
 
+    [Fact]
+    public void Hourly_ByHourLimitsTheHours()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;BYHOUR=9,10;COUNT=4");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 00, 00),
+                new DateTime(2025, 01, 15, 10, 00, 00),
+                new DateTime(2025, 01, 16, 09, 00, 00),
+                new DateTime(2025, 01, 16, 10, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Minutely_ByMinuteLimitsTheMinutes()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MINUTELY;BYMINUTE=0,30;COUNT=3");
+        var startDate = new DateTime(2025, 01, 15, 09, 10, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 30, 00),
+                new DateTime(2025, 01, 15, 10, 00, 00),
+                new DateTime(2025, 01, 15, 10, 30, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Secondly_BySecondLimitsTheSeconds()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;BYSECOND=0;COUNT=3");
+        var startDate = new DateTime(2025, 01, 15, 09, 00, 30);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 01, 00),
+                new DateTime(2025, 01, 15, 09, 02, 00),
+                new DateTime(2025, 01, 15, 09, 03, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Hourly_ByYearDayLimitsTheDays()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;BYYEARDAY=-1;BYHOUR=0,12;COUNT=3");
+        var startDate = new DateTime(2025, 01, 01, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 12, 31, 00, 00, 00),
+                new DateTime(2025, 12, 31, 12, 00, 00),
+                new DateTime(2026, 12, 31, 00, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=SECONDLY;BYYEARDAY=1,-1;BYSECOND=0,30")]
+    [InlineData("FREQ=MINUTELY;BYYEARDAY=100;BYMINUTE=0,30")]
+    [InlineData("FREQ=HOURLY;BYYEARDAY=-100;BYHOUR=9,10")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=20,-1;BYDAY=MO")]
+    public void Text_RoundTripsTheLimitingParts(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+
+        Assert.Equal(rruleText, rrule.Text);
+    }
+
+    [Fact]
+    public void Daily_UnsortedByHourProducesIncreasingOccurrences()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=17,9;COUNT=3");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        Assert.Equal("FREQ=DAILY;COUNT=3;BYHOUR=17,9", rrule.Text);
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 00, 00),
+                new DateTime(2025, 01, 15, 17, 00, 00),
+                new DateTime(2025, 01, 16, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Daily_UnsortedByHourDoesNotStopBeforeUntil()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=17,9;BYMINUTE=30,0;UNTIL=20250116T100000Z");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 00, 00),
+                new DateTime(2025, 01, 15, 09, 30, 00),
+                new DateTime(2025, 01, 15, 17, 00, 00),
+                new DateTime(2025, 01, 15, 17, 30, 00),
+                new DateTime(2025, 01, 16, 09, 00, 00),
+                new DateTime(2025, 01, 16, 09, 30, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Daily_TimeZone_UnsortedByHourKeepsEveryOccurrence()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=17,9;COUNT=4");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2025, 01, 15, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2025, 01, 15, 17, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2025, 01, 16, 09, 00, 00, TimeSpan.Zero),
+            new DateTimeOffset(2025, 01, 16, 17, 00, 00, TimeSpan.Zero));
+    }
+
+    [Fact]
+    public void Daily_DuplicateByHourProducesDistinctOccurrences()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9,9;COUNT=2");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 00, 00),
+                new DateTime(2025, 01, 16, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Monthly_SkipsTheMonthsWithoutTheStartDay()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=4");
+        var startDate = new DateTime(2025, 01, 31, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 31, 09, 00, 00),
+                new DateTime(2025, 03, 31, 09, 00, 00),
+                new DateTime(2025, 05, 31, 09, 00, 00),
+                new DateTime(2025, 07, 31, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Yearly_SkipsTheYearsWithoutTheStartDay()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;COUNT=3");
+        var startDate = new DateTime(2024, 02, 29, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2024, 02, 29, 09, 00, 00),
+                new DateTime(2028, 02, 29, 09, 00, 00),
+                new DateTime(2032, 02, 29, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Monthly_ByMonthWithoutADayPartKeepsOnlyTheListedMonths()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTH=1,6;COUNT=3");
+        var startDate = new DateTime(2025, 01, 10, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 10, 09, 00, 00),
+                new DateTime(2025, 06, 10, 09, 00, 00),
+                new DateTime(2026, 01, 10, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Weekly_BySetPosition()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1;COUNT=3");
+        var startDate = new DateTime(2025, 01, 13, 09, 00, 00); // Monday
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 17, 09, 00, 00),
+                new DateTime(2025, 01, 24, 09, 00, 00),
+                new DateTime(2025, 01, 31, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Weekly_BySetPosition_CountsThePositionInTheWholeWeek()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;BYDAY=MO,FR;BYSETPOS=1;COUNT=2");
+        var startDate = new DateTime(2025, 01, 15, 09, 00, 00); // Wednesday
+
+        // The first instance of the week is Monday 13, which is before the start date, so the week produces nothing
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 20, 09, 00, 00),
+                new DateTime(2025, 01, 27, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Daily_BySetPosition_SelectsAmongTheExpandedTimes()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9,17;BYSETPOS=1;COUNT=2");
+        var startDate = new DateTime(2025, 01, 15, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 00, 00),
+                new DateTime(2025, 01, 16, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Hourly_BySetPosition_SelectsWithinTheHour()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=HOURLY;BYMINUTE=0,20,40;BYSETPOS=-1;COUNT=2");
+        var startDate = new DateTime(2025, 01, 15, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 15, 09, 40, 00),
+                new DateTime(2025, 01, 15, 10, 40, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Monthly_BySetPosition_IsAppliedAfterTheTimeExpansion()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=MO;BYHOUR=9,17;BYSETPOS=-1;COUNT=2");
+        var startDate = new DateTime(2025, 01, 01, 00, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 27, 17, 00, 00),
+                new DateTime(2025, 02, 24, 17, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY;BYMONTHDAY=-1;COUNT=3")]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU;BYMONTHDAY=-1;COUNT=3")]
+    [InlineData("FREQ=HOURLY;BYMONTHDAY=-1;BYHOUR=9;COUNT=3")]
+    [InlineData("FREQ=MINUTELY;BYMONTHDAY=-1;BYHOUR=9;BYMINUTE=0;COUNT=3")]
+    [InlineData("FREQ=SECONDLY;BYMONTHDAY=-1;BYHOUR=9;BYMINUTE=0;BYSECOND=0;COUNT=3")]
+    public void NegativeByMonthDay_CountsFromTheEndOfTheMonth(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        var startDate = new DateTime(2025, 01, 15, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 31, 09, 00, 00),
+                new DateTime(2025, 02, 28, 09, 00, 00),
+                new DateTime(2025, 03, 31, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO,MO;COUNT=2")]
+    [InlineData("FREQ=YEARLY;BYDAY=MO,MO;COUNT=2")]
+    [InlineData("FREQ=MONTHLY;BYDAY=2MO,2MO,MO;COUNT=2")]
+    public void DuplicateByDay_IsTolerated(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        var startDate = new DateTime(2025, 01, 01, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 06, 09, 00, 00),
+                new DateTime(2025, 01, 13, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=MONTHLY;BYDAY=99999999999MO")]
+    [InlineData("FREQ=MONTHLY;BYDAY=0MO")]
+    [InlineData("FREQ=MONTHLY;BYDAY=54MO")]
+    [InlineData("FREQ=YEARLY;BYDAY=-99MO")]
+    [InlineData("FREQ=YEARLY;BYDAY=+MO")]
+    [InlineData("FREQ=DAILY;COUNT=abc")]
+    [InlineData("FREQ=DAILY;COUNT=1.5")]
+    [InlineData("FREQ=DAILY;COUNT=")]
+    [InlineData("FREQ=DAILY;INTERVAL=abc")]
+    [InlineData("FREQ=DAILY;INTERVAL=99999999999")]
+    [InlineData("FREQ=DAILY;INTERVAL=1e1")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=abc")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=1,,2")]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=")]
+    [InlineData("FREQ=DAILY;BYHOUR=1,x")]
+    [InlineData("FREQ=DAILY;BYHOUR=(5)")]
+    [InlineData("FREQ=DAILY;BYHOUR= 5")]
+    [InlineData("FREQ=DAILY;BYMINUTE=1,")]
+    [InlineData("FREQ=DAILY;BYSECOND=0x10")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=1_0")]
+    [InlineData("FREQ=YEARLY;BYMONTH=Janvier")]
+    [InlineData("FREQ=1")]
+    [InlineData("FREQ=DAILY,WEEKLY")]
+    [InlineData("FREQ=None")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=0")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=367")]
+    [InlineData("FREQ=MONTHLY;BYDAY=MO;BYSETPOS=-367")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=0")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=54")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=1;BYDAY=1MO")]
+    [InlineData("FREQ=MONTHLY;BYWEEKNO=1")]
+    [InlineData("FREQ=DAILY;BYWEEKNO=1")]
+    [InlineData("FREQ=DAILY;BYYEARDAY=1")]
+    [InlineData("FREQ=WEEKLY;BYYEARDAY=1")]
+    [InlineData("FREQ=MONTHLY;BYYEARDAY=1")]
+    [InlineData("FREQ=DAILY;UNTIL=abc")]
+    [InlineData("FREQ=DAILY;UNTIL=20250230T000000Z")]
+    [InlineData("FREQ=DAILY;WKST=")]
+    public void TryParse_RejectsInvalidValues(string rruleText)
+    {
+        Assert.False(RecurrenceRule.TryParse(rruleText, out var rrule, out var error));
+        Assert.Null(rrule);
+        Assert.NotNull(error);
+        Assert.Throws<FormatException>(() => RecurrenceRule.Parse(rruleText));
+    }
+
+    [Theory]
+    [InlineData("FREQ=daily;COUNT=+5")]
+    [InlineData("FREQ=MONTHLY;BYDAY=+1MO,-5FR")]
+    [InlineData("FREQ=YEARLY;BYDAY=53MO,-53SU")]
+    [InlineData("FREQ=YEARLY;BYMONTH=january,12")]
+    [InlineData("FREQ=YEARLY;BYWEEKNO=1,53,-1,-53")]
+    [InlineData("FREQ=YEARLY;BYDAY=MO;BYSETPOS=1,366,-1,-366")]
+    [InlineData("FREQ=SECONDLY;BYYEARDAY=1")]
+    public void TryParse_AcceptsValidValues(string rruleText)
+    {
+        Assert.True(RecurrenceRule.TryParse(rruleText, out _, out var error), error);
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_IncludesTheDaysOfWeekOneInThePreviousYear()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;BYDAY=MO;COUNT=4");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        // Week 1 of 2025 starts on Monday, December 30, 2024 and week 1 of 2026 on Monday, December 29, 2025
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 01, 09, 00, 00),
+                new DateTime(2024, 12, 30, 09, 00, 00),
+                new DateTime(2025, 12, 29, 09, 00, 00),
+                new DateTime(2027, 01, 04, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumber_HonorsTheWeekStart()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=-1;BYDAY=SU;WKST=SU;COUNT=3");
+        var startDate = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2024, 12, 22, 09, 00, 00),
+                new DateTime(2025, 12, 28, 09, 00, 00),
+                new DateTime(2026, 12, 27, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Yearly_ByWeekNumberWithoutByDayExpandsToTheWholeWeek()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=1;WKST=SU;COUNT=5");
+        var startDate = new DateTime(2025, 01, 01, 09, 00, 00);
+
+        Assert.Equal(
+            [
+                new DateTime(2025, 01, 01, 09, 00, 00),
+                new DateTime(2025, 01, 02, 09, 00, 00),
+                new DateTime(2025, 01, 03, 09, 00, 00),
+                new DateTime(2025, 01, 04, 09, 00, 00),
+                new DateTime(2026, 01, 04, 09, 00, 00),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Secondly_ByMonthSkipsTheOtherMonths()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;BYMONTH=12;COUNT=1");
+        var startDate = new DateTime(2025, 01, 01, 00, 00, 00);
+
+        Assert.Equal([new DateTime(2025, 12, 01, 00, 00, 00)], rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Fact]
+    public void Secondly_ByMonthStaysOnTheIntervalGrid()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;INTERVAL=7;BYMONTH=2;COUNT=2");
+        var startDate = new DateTime(2025, 01, 01, 00, 00, 00);
+
+        // 2678400 seconds separate January 1 from February 1; the first multiple of 7 at or after it is 2678403
+        Assert.Equal(
+            [
+                new DateTime(2025, 02, 01, 00, 00, 03),
+                new DateTime(2025, 02, 01, 00, 00, 10),
+            ],
+            rrule.GetNextOccurrences(startDate).ToArray());
+    }
+
+    [Theory]
+    [InlineData("FREQ=SECONDLY;BYMONTH=2;BYMONTHDAY=30")]
+    [InlineData("FREQ=MINUTELY;BYMONTH=2;BYMONTHDAY=30")]
+    [InlineData("FREQ=DAILY;BYMONTH=4,6;BYMONTHDAY=31")]
+    [InlineData("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=-30")]
+    [InlineData("FREQ=MINUTELY;INTERVAL=2;BYMINUTE=1")]
+    [InlineData("FREQ=HOURLY;INTERVAL=24;BYHOUR=10")]
+    [InlineData("FREQ=SECONDLY;BYSETPOS=2")]
+    [InlineData("FREQ=DAILY;INTERVAL=7;BYDAY=TU")]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=366;BYMONTH=1")]
+    [InlineData("FREQ=MONTHLY;BYDAY=5MO;BYMONTHDAY=1")]
+    public void UnsatisfiableRule_EndsTheEnumeration(string rruleText)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        var startDate = new DateTime(2025, 01, 06, 09, 00, 00); // Monday
+
+        Assert.Empty(rrule.GetNextOccurrences(startDate));
+    }
+
+    [Fact]
+    public void Until_EndsTheEnumerationWhenNoPeriodMatches()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=SECONDLY;BYDAY=TU;BYMONTHDAY=1;BYMONTH=2;UNTIL=20250301T000000Z");
+        var startDate = new DateTime(2025, 01, 01, 00, 00, 00);
+
+        Assert.Empty(rrule.GetNextOccurrences(startDate));
+        Assert.Empty(rrule.GetNextOccurrences(startDate, TimeZoneInfo.Utc));
+    }
+
+    [Theory]
+    [InlineData("FREQ=SECONDLY", 2)]
+    [InlineData("FREQ=MINUTELY", 1)]
+    [InlineData("FREQ=HOURLY;BYMINUTE=59;BYSECOND=58,59", 2)]
+    [InlineData("FREQ=DAILY;BYHOUR=23;BYMINUTE=59;BYSECOND=58,59", 2)]
+    [InlineData("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU", 1)]
+    [InlineData("FREQ=MONTHLY;BYMONTHDAY=-1", 1)]
+    [InlineData("FREQ=YEARLY;BYYEARDAY=-1", 1)]
+    public void IteratingPastTheMaximumDate_EndsTheEnumeration(string rruleText, int expectedCount)
+    {
+        var rrule = RecurrenceRule.Parse(rruleText);
+        var startDate = new DateTime(9999, 12, 31, 23, 59, 58);
+
+        Assert.HasCount(expectedCount, rrule.GetNextOccurrences(startDate));
+    }
+
     private static void TestGetHumanText(string rruleText, string cultureInfo, string expectedText)
     {
 #if INVARIANT_GLOBALIZATION_MODE_ENABLED

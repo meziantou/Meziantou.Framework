@@ -9,44 +9,135 @@ internal static class Utilities
     /// <see cref="TextWriter.WriteLine()"/> does not guarantee: it emits <see cref="Environment.NewLine"/>.</summary>
     public const string CrLf = "\r\n";
 
+    /// <summary>The length a content line should not exceed, excluding the line break (RFC 5545 section 3.1).</summary>
+    public const int MaxContentLineOctets = 75;
+
+    private static readonly string[] DateTimeFormats =
+    [
+        // Basic formats
+        "yyyyMMddTHHmmsszzz",
+        "yyyyMMddTHHmmsszz",
+        "yyyyMMddTHHmmssZ",
+        // Extended formats
+        "yyyy-MM-ddTHH:mm:sszzz",
+        "yyyy-MM-ddTHH:mm:sszz",
+        "yyyy-MM-ddTHH:mm:ssZ",
+        // All of the above with reduced accuracy
+        "yyyyMMddTHHmmzzz",
+        "yyyyMMddTHHmmzz",
+        "yyyyMMddTHHmmZ",
+        "yyyy-MM-ddTHH:mmzzz",
+        "yyyy-MM-ddTHH:mmzz",
+        "yyyy-MM-ddTHH:mmZ",
+        // Accuracy reduced to hours
+        "yyyyMMddTHHzzz",
+        "yyyyMMddTHHzz",
+        "yyyyMMddTHHZ",
+        "yyyy-MM-ddTHHzzz",
+        "yyyy-MM-ddTHHzz",
+        "yyyy-MM-ddTHHZ",
+        // Accuracy reduced to date
+        "yyyyMMdd",
+    ];
+
+    /// <summary>Writes a content line, folding it so no physical line exceeds <see cref="MaxContentLineOctets"/> UTF-8 octets.</summary>
+    /// <remarks>
+    /// A fold is a CRLF followed by a single space, which the reader removes. It is only inserted between two characters, so it
+    /// never splits the UTF-8 sequence of a character, nor a surrogate pair.
+    /// </remarks>
     public static void WriteLine(TextWriter writer, string value)
     {
-        writer.Write(value);
+        if (Encoding.UTF8.GetByteCount(value) <= MaxContentLineOctets)
+        {
+            writer.Write(value);
+            writer.Write(CrLf);
+            return;
+        }
+
+        var octets = 0;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var c = value[i];
+            var isSurrogatePair = char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]);
+            var size = GetUtf8Length(c, isSurrogatePair);
+            if (octets + size > MaxContentLineOctets)
+            {
+                writer.Write(CrLf);
+                writer.Write(' ');
+                octets = 1;
+            }
+
+            writer.Write(c);
+            if (isSurrogatePair)
+            {
+                i++;
+                writer.Write(value[i]);
+            }
+
+            octets += size;
+        }
+
         writer.Write(CrLf);
+    }
+
+    private static int GetUtf8Length(char c, bool isSurrogatePair)
+    {
+        if (isSurrogatePair)
+            return 4;
+
+        return c switch
+        {
+            < (char)0x80 => 1,
+            < (char)0x800 => 2,
+
+            // A lone surrogate is encoded as the 3-octet replacement character.
+            _ => 3,
+        };
+    }
+
+    /// <summary>Escapes an iCalendar TEXT value per RFC 5545 section 3.3.11.</summary>
+    public static string EscapeText(string? value)
+    {
+        if (value is null)
+            return "";
+
+        var sb = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\':
+                    sb.Append("\\\\");
+                    break;
+                case ';':
+                    sb.Append("\\;");
+                    break;
+                case ',':
+                    sb.Append("\\,");
+                    break;
+                case '\r':
+                    break;
+                case '\n':
+                    sb.Append("\\n");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        return sb.ToString();
     }
 
     public static DateTime ParseDateTime(string str)
     {
-        string[] formats =
-        [
-            // Basic formats
-            "yyyyMMddTHHmmsszzz",
-            "yyyyMMddTHHmmsszz",
-            "yyyyMMddTHHmmssZ",
-            // Extended formats
-            "yyyy-MM-ddTHH:mm:sszzz",
-            "yyyy-MM-ddTHH:mm:sszz",
-            "yyyy-MM-ddTHH:mm:ssZ",
-            // All of the above with reduced accuracy
-            "yyyyMMddTHHmmzzz",
-            "yyyyMMddTHHmmzz",
-            "yyyyMMddTHHmmZ",
-            "yyyy-MM-ddTHH:mmzzz",
-            "yyyy-MM-ddTHH:mmzz",
-            "yyyy-MM-ddTHH:mmZ",
-            // Accuracy reduced to hours
-            "yyyyMMddTHHzzz",
-            "yyyyMMddTHHzz",
-            "yyyyMMddTHHZ",
-            "yyyy-MM-ddTHHzzz",
-            "yyyy-MM-ddTHHzz",
-            "yyyy-MM-ddTHHZ",
-            // Accuracy reduced to date
-            "yyyyMMdd",
-        ];
-
-        var dateTime = DateTime.ParseExact(str, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+        var dateTime = DateTime.ParseExact(str, DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
         return dateTime;
+    }
+
+    public static bool TryParseDateTime(string str, out DateTime result)
+    {
+        return DateTime.TryParseExact(str, DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out result);
     }
 
     public static string DayOfWeekToString(DayOfWeek dayOfWeek)
@@ -187,21 +278,38 @@ internal static class Utilities
         return sb.ToString();
     }
 
-    /// <summary>A TZID written as a property parameter must be a paramtext that needs no DQUOTE
-    /// (RFC 5545 section 3.2); rather than quote or escape, an identifier outside this set is rejected.</summary>
+    /// <summary>Formats a date-time property that RFC 5545 requires in UTC, such as DTSTAMP (section 3.8.7.2).</summary>
+    /// <remarks>A <see cref="DateTimeKind.Local"/> value is converted to UTC, and a <see cref="DateTimeKind.Unspecified"/> one is taken as UTC.</remarks>
+    public static string UtcDateTimeToString(DateTime value)
+    {
+        var utc = value.Kind is DateTimeKind.Local ? value.ToUniversalTime() : value;
+        return utc.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
+    }
+
+    private static readonly char[] ParameterSeparators = [';', ':', ','];
+
+    /// <summary>A TZID is written as a property parameter value, a paramtext or a quoted-string (RFC 5545 section 3.1), and as a
+    /// TEXT property value in the VTIMEZONE component. Neither can hold a DQUOTE or a control character other than a tab, so an
+    /// identifier containing one is rejected rather than altered.</summary>
     public static bool IsValidTimeZoneId([NotNullWhen(returnValue: true)] string? id)
     {
-        if (string.IsNullOrEmpty(id) || id.Length > 100)
+        if (string.IsNullOrEmpty(id))
             return false;
 
         foreach (var c in id)
         {
-            // Covers IANA identifiers (America/Argentina/Buenos_Aires, Etc/GMT+5) and Windows ones (Romance Standard Time).
-            if (!char.IsAsciiLetterOrDigit(c) && c is not ('/' or '_' or '-' or '+' or '.' or ' '))
+            if (c is '"' || (c < 0x20 && c is not '\t') || c == 0x7F)
                 return false;
         }
 
         return true;
+    }
+
+    /// <summary>Formats a TZID as a property parameter value, quoting it when it contains a separator, as a Windows display
+    /// name such as <c>(UTC+01:00) Amsterdam, Berlin</c> does.</summary>
+    public static string TimeZoneIdToParameterValue(string id)
+    {
+        return id.IndexOfAny(ParameterSeparators) >= 0 ? '"' + id + '"' : id;
     }
 
     public static string StatusToString(EventStatus status)

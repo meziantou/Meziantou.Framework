@@ -14,83 +14,12 @@ internal sealed class WeeklyRecurrenceRule : RecurrenceRule
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-        var byWeekDays = ByWeekDays?.ToList();
-        if (IsEmpty(byWeekDays))
-        {
-            byWeekDays = [startDate.DayOfWeek];
-        }
-
-        var dayOffsets = byWeekDays.Select(day => (day - WeekStart + 7) % 7).Distinct().Order().ToArray();
-        var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
-
-        while (true)
-        {
-            foreach (var dayOffset in dayOffsets)
-            {
-                var next = startOfWeek.AddDays(dayOffset);
-                if (next >= startDate)
-                {
-                    var b = true;
-
-                    if (!IsEmpty(ByMonths))
-                    {
-                        if (!ByMonths.Contains(next.Month))
-                        {
-                            b = false;
-                        }
-                    }
-
-                    if (!IsEmpty(ByMonthDays))
-                    {
-                        if (!ByMonthDays.Contains(next.Day))
-                        {
-                            b = false;
-                        }
-                    }
-
-                    if (b)
-                    {
-                        if (hasTimeFilters)
-                        {
-                            foreach (var occurrence in ExpandByTime(next, startDate))
-                            {
-                                yield return occurrence;
-                            }
-                        }
-                        else
-                        {
-                            yield return next;
-                        }
-                    }
-                }
-            }
-
-            startOfWeek = startOfWeek.AddDays(7 * Interval);
-        }
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= lowerBound)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Weekly, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays);
     }
 
     /// <inheritdoc />

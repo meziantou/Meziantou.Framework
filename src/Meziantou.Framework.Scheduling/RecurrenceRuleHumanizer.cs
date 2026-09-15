@@ -3,6 +3,9 @@ namespace Meziantou.Framework.Scheduling;
 /// <summary>Provides functionality to convert recurrence rules to human-readable text.</summary>
 internal abstract class RecurrenceRuleHumanizer
 {
+    /// <summary>The maximum number of times of day listed explicitly before falling back to a per-component description.</summary>
+    private const int MaxListedTimes = 10;
+
     /// <summary>The English culture information.</summary>
     protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
 
@@ -63,101 +66,74 @@ internal abstract class RecurrenceRuleHumanizer
 
         if (humanizer is not null)
         {
-            if (rrule is SecondlyRecurrenceRule secondlyRecurrenceRule)
-                return humanizer.GetText(secondlyRecurrenceRule, cultureInfo);
-
-            if (rrule is MinutelyRecurrenceRule minutelyRecurrenceRule)
-                return humanizer.GetText(minutelyRecurrenceRule, cultureInfo);
-
-            if (rrule is HourlyRecurrenceRule hourlyRecurrenceRule)
-                return humanizer.GetText(hourlyRecurrenceRule, cultureInfo);
-
-            if (rrule is DailyRecurrenceRule dailyRecurrenceRule)
-                return humanizer.GetText(dailyRecurrenceRule, cultureInfo);
-
-            if (rrule is WeeklyRecurrenceRule weeklyRecurrenceRule)
-                return humanizer.GetText(weeklyRecurrenceRule, cultureInfo);
-
-            if (rrule is MonthlyRecurrenceRule monthlyRecurrenceRule)
-                return humanizer.GetText(monthlyRecurrenceRule, cultureInfo);
-
-            if (rrule is YearlyRecurrenceRule yearlyRecurrenceRule)
-                return humanizer.GetText(yearlyRecurrenceRule, cultureInfo);
+            var parts = RuleParts.Create(rrule);
+            if (parts is not null)
+                return humanizer.GetText(parts);
         }
 
         return null;
     }
 
-    /// <summary>Converts a secondly recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The secondly recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <summary>Converts the parts of a recurrence rule to human-readable text.</summary>
+    /// <param name="rule">The parts of the recurrence rule.</param>
     /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(SecondlyRecurrenceRule rrule, CultureInfo cultureInfo);
+    protected abstract string GetText(RuleParts rule);
 
-    /// <summary>Converts a minutely recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The minutely recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(MinutelyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    /// <summary>Converts an hourly recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The hourly recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(HourlyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    /// <summary>Converts a daily recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The daily recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    /// <summary>Converts a weekly recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The weekly recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    /// <summary>Converts a monthly recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The monthly recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    /// <summary>Converts a yearly recurrence rule to human-readable text.</summary>
-    /// <param name="rrule">The yearly recurrence rule.</param>
-    /// <param name="cultureInfo">The culture to use for formatting.</param>
-    /// <returns>A human-readable string representation.</returns>
-    protected abstract string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo);
-
-    protected static void ListToHumanText<T>(StringBuilder sb, CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
+    protected static string JoinList(IList<string> items, string separator, string lastSeparator)
     {
-        if (list is null)
-            return;
-
-        for (var i = 0; i < list.Count; i++)
+        var sb = new StringBuilder();
+        for (var i = 0; i < items.Count; i++)
         {
             if (i > 0)
             {
-                if (i < list.Count - 1)
+                sb.Append(i < items.Count - 1 ? separator : lastSeparator);
+            }
+
+            sb.Append(items[i]);
+        }
+
+        return sb.ToString();
+    }
+
+    protected static string ToInvariantString(int value)
+    {
+        return value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    protected static string ToTwoDigitString(int value)
+    {
+        return value.ToString("00", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Gets the times of day described by BYHOUR, BYMINUTE and BYSECOND when they are fully specified and few enough to be listed.</summary>
+    protected static List<(int Hour, int Minute, int? Second)>? GetListedTimes(RuleParts rule)
+    {
+        if (rule.ByHours.Count is 0 || rule.ByMinutes.Count is 0)
+            return null;
+
+        if ((long)rule.ByHours.Count * rule.ByMinutes.Count * Math.Max(1, rule.BySeconds.Count) > MaxListedTimes)
+            return null;
+
+        var result = new List<(int Hour, int Minute, int? Second)>();
+        foreach (var hour in rule.ByHours)
+        {
+            foreach (var minute in rule.ByMinutes)
+            {
+                if (rule.BySeconds.Count is 0)
                 {
-                    sb.Append(separator);
+                    result.Add((hour, minute, null));
                 }
                 else
                 {
-                    sb.Append(lastSeparator);
+                    foreach (var second in rule.BySeconds)
+                    {
+                        result.Add((hour, minute, second));
+                    }
                 }
             }
-
-            sb.AppendFormat(cultureInfo, "{0}", list[i]);
         }
-    }
 
-    protected static string ListToHumanText<T>(CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
-    {
-        var sb = new StringBuilder();
-        ListToHumanText(sb, cultureInfo, list, separator, lastSeparator);
-        return sb.ToString();
+        return result;
     }
 
     protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
@@ -187,5 +163,73 @@ internal abstract class RecurrenceRuleHumanizer
                daysOfWeek.Contains(DayOfWeek.Friday) &&
                daysOfWeek.Contains(DayOfWeek.Saturday) &&
                daysOfWeek.Contains(DayOfWeek.Sunday);
+    }
+
+    /// <summary>A frequency-independent view of the parts of a recurrence rule.</summary>
+    protected sealed class RuleParts
+    {
+        private RuleParts(Frequency frequency, RecurrenceRule rrule, IEnumerable<ByDay>? byDays, IList<int>? byMonthDays, IList<int>? byMonths, IList<int>? byYearDays)
+        {
+            Frequency = frequency;
+            Interval = rrule.Interval;
+            Occurrences = rrule.Occurrences;
+            EndDate = rrule.EndDate;
+            ByDays = byDays is null ? [] : [.. byDays];
+            ByMonthDays = byMonthDays ?? [];
+            ByMonths = byMonths ?? [];
+            ByYearDays = byYearDays ?? [];
+            BySetPositions = rrule.BySetPositions ?? [];
+            ByHours = rrule.ByHours ?? [];
+            ByMinutes = rrule.ByMinutes ?? [];
+            BySeconds = rrule.BySeconds ?? [];
+        }
+
+        public Frequency Frequency { get; }
+
+        public int Interval { get; }
+
+        public int? Occurrences { get; }
+
+        public DateTime? EndDate { get; }
+
+        public IList<ByDay> ByDays { get; }
+
+        public IList<int> ByMonthDays { get; }
+
+        public IList<int> ByMonths { get; }
+
+        public IList<int> ByYearDays { get; }
+
+        public IList<int> BySetPositions { get; }
+
+        public IList<int> ByHours { get; }
+
+        public IList<int> ByMinutes { get; }
+
+        public IList<int> BySeconds { get; }
+
+        public bool HasOrdinalDays => ByDays.Any(day => day.Ordinal.HasValue);
+
+        public List<DayOfWeek> DaysOfWeek => [.. ByDays.Select(day => day.DayOfWeek)];
+
+        public static RuleParts? Create(RecurrenceRule rrule)
+        {
+            return rrule switch
+            {
+                SecondlyRecurrenceRule rule => new RuleParts(Frequency.Secondly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                MinutelyRecurrenceRule rule => new RuleParts(Frequency.Minutely, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                HourlyRecurrenceRule rule => new RuleParts(Frequency.Hourly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                DailyRecurrenceRule rule => new RuleParts(Frequency.Daily, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                WeeklyRecurrenceRule rule => new RuleParts(Frequency.Weekly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                MonthlyRecurrenceRule rule => new RuleParts(Frequency.Monthly, rrule, rule.ByWeekDays, rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
+                YearlyRecurrenceRule rule => new RuleParts(Frequency.Yearly, rrule, rule.ByWeekDays, rule.ByMonthDays, rule.ByMonths, rule.ByYearDays),
+                _ => null,
+            };
+        }
+
+        private static IEnumerable<ByDay>? ToByDays(IList<DayOfWeek>? daysOfWeek)
+        {
+            return daysOfWeek?.Select(day => new ByDay(day));
+        }
     }
 }

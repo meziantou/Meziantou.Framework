@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace Meziantou.Framework.Scheduling;
 
 /// <summary>Represents a minutely recurrence rule.</summary>
@@ -14,49 +12,17 @@ internal sealed class MinutelyRecurrenceRule : RecurrenceRule
     /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = [];
 
+    /// <summary>Limits occurrences to specific days of the year (1-366, -1 to -366).</summary>
+    public IList<int> ByYearDays { get; set; } = [];
+
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasSecondsFilter = !IsEmpty(BySeconds);
-        var current = startDate;
+        return GetNextOccurrencesInternal(startDate, endBound: null);
+    }
 
-        while (true)
-        {
-            var matches = true;
-
-            if (!IsEmpty(ByMonths) && !ByMonths.Contains(current.Month))
-                matches = false;
-
-            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
-                matches = false;
-
-            if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
-                matches = false;
-
-            if (!IsEmpty(ByHours) && !ByHours.Contains(current.Hour))
-                matches = false;
-
-            if (matches)
-            {
-                if (hasSecondsFilter)
-                {
-                    Debug.Assert(BySeconds is not null);
-                    foreach (var second in BySeconds)
-                    {
-                        var result = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, second, current.Kind);
-                        if (result >= startDate)
-                        {
-                            yield return result;
-                        }
-                    }
-                }
-                else
-                {
-                    yield return current;
-                }
-            }
-
-            current = current.AddMinutes(Interval);
-        }
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
+    {
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Minutely, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays, yearDays: ByYearDays);
     }
 
     /// <inheritdoc />
@@ -97,6 +63,12 @@ internal sealed class MinutelyRecurrenceRule : RecurrenceRule
                 sb.AppendJoin(',', ByMonths);
             }
 
+            if (!IsEmpty(ByYearDays))
+            {
+                sb.Append(";BYYEARDAY=");
+                sb.AppendJoin(',', ByYearDays);
+            }
+
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
@@ -113,6 +85,12 @@ internal sealed class MinutelyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYHOUR=");
                 sb.AppendJoin(',', ByHours);
+            }
+
+            if (!IsEmpty(ByMinutes))
+            {
+                sb.Append(";BYMINUTE=");
+                sb.AppendJoin(',', ByMinutes);
             }
 
             if (!IsEmpty(BySeconds))

@@ -2,323 +2,320 @@ namespace Meziantou.Framework.Scheduling;
 
 internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 {
-    private static readonly char[] PrecededByApostropheChars = ['a', 'e', 'i', 'o', 'u', 'y', 'h'];
+    private const string FromEndSuffix = " en partant de la fin";
 
-    protected override string GetText(DailyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    protected override string GetText(RuleParts rule)
     {
-        ArgumentNullException.ThrowIfNull(rrule);
+        ArgumentNullException.ThrowIfNull(rule);
 
         var sb = new StringBuilder();
-        sb.Append("tous les");
-        if (rrule.Interval is 1)
+        AppendInterval(sb, rule);
+        var setPositionsRendered = AppendDays(sb, rule);
+        AppendTimes(sb, rule);
+        if (!setPositionsRendered && rule.BySetPositions.Count > 0)
         {
-            sb.Append(" jours");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" jours");
+            sb.Append(", uniquement ");
+            sb.Append(GetOrdinalNounList(rule.BySetPositions, useWords: true, feminine: true, "occurrence"));
         }
 
-        GetHumanEnd(rrule, sb);
+        AppendEnd(sb, rule);
         return sb.ToString();
     }
 
-    protected override string GetText(SecondlyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    private static void AppendInterval(StringBuilder sb, RuleParts rule)
     {
-        ArgumentNullException.ThrowIfNull(rrule);
-
-        var sb = new StringBuilder();
-        sb.Append("toutes les");
-        if (rrule.Interval is 1)
+        var (prefix, unit) = rule.Frequency switch
         {
-            sb.Append(" secondes");
-        }
-        else
+            Frequency.Secondly => ("toutes les", "secondes"),
+            Frequency.Minutely => ("toutes les", "minutes"),
+            Frequency.Hourly => ("toutes les", "heures"),
+            Frequency.Daily => ("tous les", "jours"),
+            Frequency.Weekly => ("toutes les", "semaines"),
+            Frequency.Monthly => ("tous les", "mois"),
+            _ => ("tous les", "ans"),
+        };
+
+        sb.Append(prefix);
+        if (rule.Interval is not 1)
         {
             sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" secondes");
+            sb.Append(ToInvariantString(rule.Interval));
         }
 
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
+        sb.Append(' ');
+        sb.Append(unit);
     }
 
-    protected override string GetText(MinutelyRecurrenceRule rrule, CultureInfo? cultureInfo)
+    private static bool AppendDays(StringBuilder sb, RuleParts rule)
     {
-        ArgumentNullException.ThrowIfNull(rrule);
+        var days = rule.ByDays;
+        var hasOrdinalDays = rule.HasOrdinalDays;
+        var isYearly = rule.Frequency is Frequency.Yearly;
+        var monthsRendered = false;
+        var positional = false;
+        var setPositionsRendered = false;
 
-        var sb = new StringBuilder();
-        sb.Append("toutes les");
-        if (rrule.Interval is 1)
+        if (rule.ByMonthDays.Count is 0 && rule.ByYearDays.Count is 0)
         {
-            sb.Append(" minutes");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" minutes");
-        }
-
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
-    }
-
-    protected override string GetText(HourlyRecurrenceRule rrule, CultureInfo? cultureInfo)
-    {
-        ArgumentNullException.ThrowIfNull(rrule);
-
-        var sb = new StringBuilder();
-        sb.Append("toutes les");
-        if (rrule.Interval is 1)
-        {
-            sb.Append(" heures");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" heures");
-        }
-
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
-    }
-
-    protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
-    {
-        ArgumentNullException.ThrowIfNull(rrule);
-
-        var sb = new StringBuilder();
-        sb.Append("toutes les");
-        if (rrule.Interval is 1)
-        {
-            sb.Append(" semaines");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" semaines");
-        }
-
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
-        {
-            sb.Append(" le ");
-            sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.None));
-        }
-
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
-    }
-
-    protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo? cultureInfo)
-    {
-        ArgumentNullException.ThrowIfNull(rrule);
-        var sb = new StringBuilder();
-        sb.Append("tous les");
-        if (rrule.Interval is 1)
-        {
-            sb.Append(" mois");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" mois");
-        }
-
-        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Count != 0)
-        {
-            sb.Append(" le ");
-            ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
-            sb.Append(" jour");
-        }
-
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
-        {
-            if (rrule.BySetPositions is not null && rrule.BySetPositions.Count != 0)
+            if (days.Count > 0)
             {
-                sb.Append(" le ");
-                sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
-            }
-
-            sb.Append(' ');
-            sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
-        }
-
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
-    }
-
-    protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo? cultureInfo)
-    {
-        ArgumentNullException.ThrowIfNull(rrule);
-
-        var sb = new StringBuilder();
-        sb.Append("tous les");
-        if (rrule.Interval is 1)
-        {
-            sb.Append(" ans");
-        }
-        else
-        {
-            sb.Append(' ');
-            sb.Append(rrule.Interval);
-            sb.Append(" ans");
-        }
-
-        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Count != 0)
-        {
-            if (rrule.ByMonthDays.Any(day => day < 0))
-            {
-                sb.Append(" le ");
-                ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
-                sb.Append(" jour");
-                if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
+                if (rule.BySetPositions.Count > 0 && !hasOrdinalDays && rule.Frequency is Frequency.Monthly or Frequency.Yearly)
                 {
-                    var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
-                    if (MustPrecedeByApostrophe(monthsList))
-                    {
-                        sb.Append(" d'");
-                    }
-                    else
-                    {
-                        sb.Append(" de ");
-                    }
-
-                    sb.Append(monthsList);
+                    // "le premier et le dernier lundi ou mardi": BYSETPOS selects among the days matching any of the listed weekdays
+                    sb.Append(' ');
+                    sb.Append(GetOrdinalNounList(rule.BySetPositions, useWords: true, feminine: false, GetSetPositionDayNames(rule.DaysOfWeek)));
+                    positional = true;
+                    setPositionsRendered = true;
                 }
-            }
-            else
-            {
-                sb.Append(" le ");
-                ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(md => md.ToString(cultureInfo)).ToList(), ", ", " et ");
-                if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
+                else if (hasOrdinalDays)
                 {
                     sb.Append(' ');
-                    ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
-                }
-            }
-        }
-
-        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Count != 0)
-        {
-            if (rrule.BySetPositions is not null && rrule.BySetPositions.Count != 0)
-            {
-                sb.Append(" le ");
-                sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
-            }
-
-            sb.Append(' ');
-            sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
-            if (rrule.ByMonths is not null && rrule.ByMonths.Count != 0)
-            {
-                var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
-                if (MustPrecedeByApostrophe(monthsList))
-                {
-                    sb.Append(" d'");
+                    sb.Append(JoinEt([.. days.Select(day => day.Ordinal is { } ordinal ? GetOrdinalNounList([ordinal], useWords: true, feminine: false, DayOfWeekToString(day.DayOfWeek)) : "tous les " + DayOfWeekToString(day.DayOfWeek) + "s")]));
+                    positional = true;
                 }
                 else
                 {
-                    sb.Append(" de ");
+                    var daysOfWeek = rule.DaysOfWeek;
+                    if (rule.Frequency is Frequency.Monthly or Frequency.Yearly && IsWeekday(daysOfWeek))
+                    {
+                        sb.Append(" en semaine");
+                    }
+                    else if (rule.Frequency is Frequency.Monthly or Frequency.Yearly && IsWeekendDay(daysOfWeek))
+                    {
+                        sb.Append(" le weekend");
+                    }
+                    else
+                    {
+                        sb.Append(" le ");
+                        sb.Append(JoinEt([.. daysOfWeek.Select(DayOfWeekToString)]));
+                    }
                 }
+            }
+        }
+        else
+        {
+            var monthDaysAllPositive = rule.ByMonthDays.All(day => day > 0);
 
-                sb.Append(monthsList);
+            // "le vendredi 13"
+            var isWeekdayOfMonthDay = days.Count is 1 && !hasOrdinalDays && rule.ByMonthDays.Count > 0 && monthDaysAllPositive && rule.ByYearDays.Count is 0;
+
+            var phrases = new List<string>();
+            if (rule.ByYearDays.Count > 0)
+            {
+                phrases.Add(GetOrdinalNounList(rule.ByYearDays, useWords: false, feminine: false, "jour") + " de l'année");
+            }
+
+            if (rule.ByMonthDays.Count > 0)
+            {
+                if (isWeekdayOfMonthDay)
+                {
+                    phrases.Add(JoinEt([.. rule.ByMonthDays.Select(day => "le " + DayOfWeekToString(days[0].DayOfWeek) + " " + GetDateDayText(day))]));
+                }
+                else if (isYearly && rule.ByMonths.Count is 1 && monthDaysAllPositive && rule.ByYearDays.Count is 0)
+                {
+                    phrases.Add(JoinEt([.. rule.ByMonthDays.Select(day => "le " + GetDateDayText(day))]) + " " + MonthToString(rule.ByMonths[0]));
+                    monthsRendered = true;
+                }
+                else
+                {
+                    var phrase = GetOrdinalNounList(rule.ByMonthDays, useWords: false, feminine: false, "jour");
+                    if (isYearly)
+                    {
+                        if (rule.ByMonths.Count > 0)
+                        {
+                            phrase += " " + GetMonthsTextWithDe(rule.ByMonths);
+                            monthsRendered = true;
+                        }
+                        else
+                        {
+                            phrase += " de chaque mois";
+                        }
+                    }
+
+                    phrases.Add(phrase);
+                }
+            }
+
+            sb.Append(' ');
+            sb.Append(string.Join(", ", phrases));
+
+            if (days.Count > 0 && !isWeekdayOfMonthDay)
+            {
+                sb.Append(" si c'est ");
+                sb.Append(GetDayConditionText(rule));
             }
         }
 
-        GetHumanEnd(rrule, sb);
-        return sb.ToString();
-    }
-
-    private static bool MustPrecedeByApostrophe(string str)
-    {
-        if (string.IsNullOrEmpty(str))
-            return false;
-
-        return PrecededByApostropheChars.Contains(str[0]);
-    }
-
-    private static string? GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
-    {
-        if (daysOfWeek.Count is 0)
-            return null;
-
-        return GetWeekdayHumanText([.. daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek)], ", ", " et ", options);
-    }
-
-    private static string GetBySetPosHumanText(int setPosition)
-    {
-        return setPosition switch
+        if (!monthsRendered && rule.ByMonths.Count > 0)
         {
-            -1 => "dernier",
-            1 => "premier",
-            2 => "deuxième",
-            3 => "troisième",
-            4 => "quatrième",
-            _ => Extensions.ToFrenchOrdinal(setPosition),
-        };
+            if (positional && isYearly)
+            {
+                sb.Append(' ');
+                sb.Append(GetMonthsTextWithDe(rule.ByMonths));
+            }
+            else
+            {
+                sb.Append(" en ");
+                sb.Append(JoinEt([.. rule.ByMonths.Select(MonthToString)]));
+            }
+        }
+
+        return setPositionsRendered;
     }
 
-    private static void GetHumanEnd(RecurrenceRule rrule, StringBuilder sb)
+    private static void AppendTimes(StringBuilder sb, RuleParts rule)
     {
-        if (rrule.Occurrences.HasValue)
+        var times = GetListedTimes(rule);
+        if (times is not null)
+        {
+            sb.Append(" à ");
+            sb.Append(JoinEt([.. times.Select(time => FormatTime(time.Hour, time.Minute, time.Second))]));
+            return;
+        }
+
+        var parts = new List<string>();
+        AddTimeComponent(parts, rule.ByHours, "à l'heure ", "aux heures ");
+        AddTimeComponent(parts, rule.ByMinutes, "à la minute ", "aux minutes ");
+        AddTimeComponent(parts, rule.BySeconds, "à la seconde ", "aux secondes ");
+        if (parts.Count > 0)
+        {
+            sb.Append(' ');
+            sb.Append(string.Join(", ", parts));
+        }
+
+        static void AddTimeComponent(List<string> parts, IList<int> values, string singular, string plural)
+        {
+            if (values.Count is 0)
+                return;
+
+            parts.Add((values.Count is 1 ? singular : plural) + JoinEt([.. values.Select(ToInvariantString)]));
+        }
+    }
+
+    private static void AppendEnd(StringBuilder sb, RuleParts rule)
+    {
+        if (rule.Occurrences is { } occurrences)
         {
             sb.Append(" pour ");
-            sb.Append(rrule.Occurrences.Value);
+            sb.Append(ToInvariantString(occurrences));
             sb.Append(" fois");
         }
 
-        if (rrule.EndDate.HasValue)
+        if (rule.EndDate is { } endDate)
         {
             sb.Append(" jusqu'au ");
-            sb.AppendFormat(FrenchCultureInfo, "{0:d MMMM yyyy}", rrule.EndDate.Value);
+            sb.Append(GetDateDayText(endDate.Day));
+            sb.Append(' ');
+            sb.Append(MonthToString(endDate.Month));
+            sb.Append(' ');
+            sb.Append(ToInvariantString(endDate.Year));
+            if (endDate.TimeOfDay != TimeSpan.Zero)
+            {
+                sb.Append(" à ");
+                sb.Append(FormatTime(endDate.Hour, endDate.Minute, endDate.Second is 0 ? null : endDate.Second));
+                if (endDate.Kind is DateTimeKind.Utc)
+                {
+                    sb.Append(" UTC");
+                }
+            }
         }
     }
 
-    private static string? GetByMonthdayOrdinalHumanText(int monthday)
+    private static string JoinEt(IList<string> items) => JoinList(items, ", ", " et ");
+
+    private static string FormatTime(int hour, int minute, int? second)
     {
-        if (monthday > 0)
+        var result = ToInvariantString(hour) + "h" + ToTwoDigitString(minute);
+        if (second is { } s)
         {
-            return Extensions.ToFrenchOrdinal(monthday);
+            result += "m" + ToTwoDigitString(s) + "s";
         }
 
-        if (monthday == -1)
-        {
-            return "dernier";
-        }
-
-        return null;
+        return result;
     }
 
-    private static string GetWeekdayHumanText(ICollection<DayOfWeek> daysOfWeek, string separator = ", ", string lastSeparator = " et ", WeekdayHumanTextOptions options = WeekdayHumanTextOptions.None)
+    private static string GetSetPositionDayNames(List<DayOfWeek> daysOfWeek)
     {
-        if (options.HasFlag(WeekdayHumanTextOptions.AbbrWeekdays) && IsWeekday(daysOfWeek))
-        {
-            if (options.HasFlag(WeekdayHumanTextOptions.Plural))
-                return "jours de semaine";
+        if (IsWeekday(daysOfWeek))
             return "jour de semaine";
-        }
 
-        if (options.HasFlag(WeekdayHumanTextOptions.AbbrDays) && IsFullWeek(daysOfWeek))
-        {
-            if (options.HasFlag(WeekdayHumanTextOptions.Plural))
-                return "jours";
-            return "jour";
-        }
-
-        if (options.HasFlag(WeekdayHumanTextOptions.AbbrWeekendDays) && IsWeekendDay(daysOfWeek))
-        {
-            if (options.HasFlag(WeekdayHumanTextOptions.Plural))
-                return "jours de weekend";
+        if (IsWeekendDay(daysOfWeek))
             return "jour de weekend";
+
+        if (IsFullWeek(daysOfWeek))
+            return "jour";
+
+        return JoinList([.. daysOfWeek.Select(DayOfWeekToString)], ", ", " ou ");
+    }
+
+    private static string GetDayConditionText(RuleParts rule)
+    {
+        if (!rule.HasOrdinalDays)
+        {
+            var daysOfWeek = rule.DaysOfWeek;
+            if (IsWeekday(daysOfWeek))
+                return "un jour de semaine";
+
+            if (IsWeekendDay(daysOfWeek))
+                return "un jour de weekend";
         }
 
-        return ListToHumanText(FrenchCultureInfo, daysOfWeek.Select(DayOfWeekToString).ToList(), separator, lastSeparator);
+        return JoinList([.. rule.ByDays.Select(day => day.Ordinal is { } ordinal ? GetOrdinalNounList([ordinal], useWords: true, feminine: false, DayOfWeekToString(day.DayOfWeek)) : "un " + DayOfWeekToString(day.DayOfWeek))], ", ", " ou ");
+    }
+
+    private static string GetMonthsTextWithDe(IList<int> months)
+    {
+        return JoinEt([.. months.Select(month =>
+        {
+            var name = MonthToString(month);
+            return (StartsWithVowel(name) ? "d'" : "de ") + name;
+        })]);
+    }
+
+    /// <summary>Gets a list such as "le premier et le dernier lundi", "l'avant-dernier jour", or "le 3e jour en partant de la fin".</summary>
+    private static string GetOrdinalNounList(IList<int> values, bool useWords, bool feminine, string noun)
+    {
+        var items = values.Select(value => GetOrdinal(value, useWords, feminine)).ToList();
+        if (items.TrueForAll(item => !item.FromEnd))
+            return JoinEt([.. items.Select(item => GetArticle(item.Text, feminine) + item.Text)]) + " " + noun;
+
+        return JoinEt([.. items.Select(item => GetArticle(item.Text, feminine) + item.Text + " " + noun + (item.FromEnd ? FromEndSuffix : ""))]);
+    }
+
+    private static (string Text, bool FromEnd) GetOrdinal(int value, bool useWords, bool feminine)
+    {
+        return value switch
+        {
+            1 when useWords => (feminine ? "première" : "premier", false),
+            2 when useWords => ("deuxième", false),
+            3 when useWords => ("troisième", false),
+            4 when useWords => ("quatrième", false),
+            1 => (feminine ? "1re" : "1er", false),
+            -1 => (feminine ? "dernière" : "dernier", false),
+            -2 => (feminine ? "avant-dernière" : "avant-dernier", false),
+            int.MinValue => (ToInvariantString(value), false),
+            < 0 => (GetOrdinal(-value, useWords, feminine).Text, true),
+            _ => (ToInvariantString(value) + "e", false),
+        };
+    }
+
+    private static string GetArticle(string word, bool feminine)
+    {
+        if (StartsWithVowel(word))
+            return "l'";
+
+        return feminine ? "la " : "le ";
+    }
+
+    private static bool StartsWithVowel(string str)
+    {
+        return str.Length > 0 && str[0] is 'a' or 'â' or 'e' or 'é' or 'è' or 'ê' or 'i' or 'î' or 'o' or 'ô' or 'u' or 'û' or 'y';
+    }
+
+    /// <summary>Gets the day number as written in a French date ("1er", "2", "31").</summary>
+    private static string GetDateDayText(int day)
+    {
+        return day is 1 ? "1er" : ToInvariantString(day);
     }
 
     private static string DayOfWeekToString(DayOfWeek dayOfWeek)
@@ -332,7 +329,7 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             DayOfWeek.Thursday => "jeudi",
             DayOfWeek.Friday => "vendredi",
             DayOfWeek.Saturday => "samedi",
-            _ => throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null),
+            _ => ToInvariantString((int)dayOfWeek),
         };
     }
 
@@ -347,22 +344,12 @@ internal sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             5 => "mai",
             6 => "juin",
             7 => "juillet",
-            8 => "aout",
+            8 => "août",
             9 => "septembre",
             10 => "octobre",
             11 => "novembre",
             12 => "décembre",
-            _ => throw new ArgumentOutOfRangeException(nameof(month), month, message: null),
+            _ => ToInvariantString(month),
         };
-    }
-
-    [Flags]
-    private enum WeekdayHumanTextOptions
-    {
-        None = 0,
-        AbbrDays = 1,
-        AbbrWeekdays = 2,
-        AbbrWeekendDays = 4,
-        Plural = 8,
     }
 }

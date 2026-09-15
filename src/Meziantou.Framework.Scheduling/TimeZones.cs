@@ -53,4 +53,26 @@ internal static class TimeZones
         }
 #endif
     }
+
+    /// <summary>Attempts to find the time zone with the specified identifier, reporting any failure to read the time zone database as not found.</summary>
+    /// <param name="timeZoneId">The time zone identifier, as written in a TZID property parameter.</param>
+    /// <param name="timeZone">When successful, contains the time zone matching <paramref name="timeZoneId"/>.</param>
+    /// <returns><see langword="true"/> if the time zone was found; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Parsing a calendar must not throw from a Try method: on .NET Framework, reading the registry can fail with a
+    /// <see cref="System.Security.SecurityException"/>, an <see cref="UnauthorizedAccessException"/> or an <see cref="IOException"/>,
+    /// and an identifier the platform cannot even look up fails with an <see cref="ArgumentException"/>.
+    /// </remarks>
+    public static bool TryFindWithoutThrowing(string timeZoneId, [NotNullWhen(returnValue: true)] out TimeZoneInfo? timeZone)
+    {
+        try
+        {
+            return TryFind(timeZoneId, out timeZone);
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException or ArgumentException or InvalidTimeZoneException or TimeZoneNotFoundException)
+        {
+            timeZone = null;
+            return false;
+        }
+    }
 }

@@ -38,6 +38,8 @@ internal static class InternetCalendarParser
 
         index++;
         var result = new InternetCalendar();
+        var timeZones = new TimeZoneResolver(lines);
+        List<ContentLine>? unknownProperties = null;
         while (index < lines.Count)
         {
             var line = lines[index];
@@ -46,15 +48,15 @@ internal static class InternetCalendarParser
                 index++;
                 if (component is "VEVENT")
                 {
-                    if (!TryParseEvent(lines, ref index, out var @event, out error))
+                    if (!TryParseEvent(lines, ref index, timeZones, out var @event, out error))
                         return false;
 
                     result.Events.Add(@event);
                 }
                 else
                 {
-                    // VTIMEZONE, VTODO, VJOURNAL and VFREEBUSY have no counterpart in the model. The time zone
-                    // of an event is resolved from the TZID parameter of its DTSTART rather than from VTIMEZONE.
+                    // VTODO, VJOURNAL and VFREEBUSY have no counterpart in the model, and the time zone resolver
+                    // reads the VTIMEZONE components on its own.
                     if (!TrySkipComponent(lines, ref index, component, out error))
                         return false;
                 }
@@ -79,6 +81,7 @@ internal static class InternetCalendarParser
                     return false;
                 }
 
+                AddUnknownProperties(unknownProperties, result.AdditionalProperties, result.RawProperties);
                 calendar = result;
                 error = null;
                 return true;
@@ -96,7 +99,8 @@ internal static class InternetCalendarParser
                     break;
 
                 default:
-                    result.AdditionalProperties[line.Name] = line.GetTextValue();
+                    unknownProperties ??= [];
+                    unknownProperties.Add(line);
                     break;
             }
         }
@@ -105,12 +109,13 @@ internal static class InternetCalendarParser
         return false;
     }
 
-    private static bool TryParseEvent(List<ContentLine> lines, ref int index, [NotNullWhen(returnValue: true)] out Event? @event, out string? error)
+    private static bool TryParseEvent(List<ContentLine> lines, ref int index, TimeZoneResolver timeZones, [NotNullWhen(returnValue: true)] out Event? @event, out string? error)
     {
         @event = null;
 
         var result = new Event();
         string? timeZoneId = null;
+        List<ContentLine>? unknownProperties = null;
         while (index < lines.Count)
         {
             var line = lines[index];
@@ -133,17 +138,16 @@ internal static class InternetCalendarParser
                 }
 
                 index++;
-                if (timeZoneId is not null)
-                {
-                    if (!TimeZones.TryFind(timeZoneId, out var timeZone))
-                    {
-                        error = $"The time zone '{timeZoneId}' referenced by a TZID property parameter was not found";
-                        return false;
-                    }
 
-                    result.TimeZone = timeZone;
+                // A DATE value denotes a day wherever the reader is, so no time zone applies to it (RFC 5545 section 3.3.4).
+                if (timeZoneId is not null && !result.IsAllDay)
+                {
+                    // An identifier that cannot be resolved leaves the start and the end floating, which keeps their
+                    // wall-clock reading rather than rejecting the whole calendar.
+                    result.TimeZone = timeZones.Resolve(timeZoneId);
                 }
 
+                AddUnknownProperties(unknownProperties, result.AdditionalProperties, result.RawProperties);
                 @event = result;
                 error = null;
                 return true;
@@ -186,35 +190,36 @@ internal static class InternetCalendarParser
                     break;
 
                 case "CREATED":
-                    if (!TryParseDateTimeProperty(line, ref timeZoneId, out var created, out error))
+                    if (!TryParseUtcDateTimeProperty(line, timeZones, out var created, out error))
                         return false;
 
                     result.Created = created;
                     break;
 
                 case "LAST-MODIFIED":
-                    if (!TryParseDateTimeProperty(line, ref timeZoneId, out var lastModified, out error))
+                    if (!TryParseUtcDateTimeProperty(line, timeZones, out var lastModified, out error))
                         return false;
 
                     result.LastModified = lastModified;
                     break;
 
                 case "DTSTAMP":
-                    if (!TryParseDateTimeProperty(line, ref timeZoneId, out var dateTimeStamp, out error))
+                    if (!TryParseUtcDateTimeProperty(line, timeZones, out var dateTimeStamp, out error))
                         return false;
 
                     result.DateTimeStamp = dateTimeStamp;
                     break;
 
                 case "DTSTART":
-                    if (!TryParseDateTimeProperty(line, ref timeZoneId, out var start, out error))
+                    if (!TryParseDateOrDateTimeProperty(line, ref timeZoneId, out var start, out var isStartDate, out error))
                         return false;
 
                     result.Start = start;
+                    result.IsAllDay = isStartDate;
                     break;
 
                 case "DTEND":
-                    if (!TryParseDateTimeProperty(line, ref timeZoneId, out var end, out error))
+                    if (!TryParseDateOrDateTimeProperty(line, ref timeZoneId, out var end, out _, out error))
                         return false;
 
                     result.End = end;
@@ -231,13 +236,48 @@ internal static class InternetCalendarParser
                     break;
 
                 default:
-                    result.AdditionalProperties[line.Name] = line.GetTextValue();
+                    unknownProperties ??= [];
+                    unknownProperties.Add(line);
                     break;
             }
         }
 
         error = "The VEVENT component is not terminated by END:VEVENT";
         return false;
+    }
+
+    /// <summary>Stores the properties the model does not have.</summary>
+    /// <remarks>
+    /// A property goes to <paramref name="additionalProperties"/> only when that TEXT form writes it back unchanged: it
+    /// carries no parameter, its name occurs once, and escaping its unescaped value gives back the value as written.
+    /// Any other property, such as <c>GEO:37.38;-122.08</c>, <c>CATEGORIES:A,B</c>, a repeated <c>EXDATE</c> or one with
+    /// a TZID parameter, is kept verbatim in <paramref name="rawProperties"/>.
+    /// </remarks>
+    private static void AddUnknownProperties(List<ContentLine>? lines, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties)
+    {
+        if (lines is null)
+            return;
+
+        var occurrences = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in lines)
+        {
+            occurrences[line.Name] = occurrences.TryGetValue(line.Name, out var count) ? count + 1 : 1;
+        }
+
+        foreach (var line in lines)
+        {
+            if (occurrences[line.Name] is 1 && !line.HasParameters)
+            {
+                var text = line.GetTextValue();
+                if (string.Equals(Utilities.EscapeText(text), line.Value, StringComparison.Ordinal))
+                {
+                    additionalProperties[line.Name] = text;
+                    continue;
+                }
+            }
+
+            rawProperties.Add(InternetCalendarProperty.FromContentLine(line));
+        }
     }
 
     private static bool TryParseStatus(string value, out EventStatus status, out string? error)
@@ -269,8 +309,9 @@ internal static class InternetCalendarParser
 
     private static bool TryParseUserAddress(ContentLine line, out InternetCalendarUserAddress? address, out string? error)
     {
-        // RFC 5545 section 3.3.3: a CAL-ADDRESS is a URI, usually a mailto one.
-        if (!Uri.TryCreate(line.Value, UriKind.Absolute, out var uri))
+        // RFC 5545 section 3.3.3: a CAL-ADDRESS is a URI, usually a mailto one. Uri also accepts an absolute path, as a
+        // file URI on Unix, and a Windows path, so the value itself has to start with the scheme the URI reports.
+        if (!Uri.TryCreate(line.Value, UriKind.Absolute, out var uri) || !StartsWithScheme(line.Value, uri.Scheme))
         {
             address = null;
             error = $"The {line.Name} value '{line.Value}' is not a calendar user address";
@@ -282,9 +323,78 @@ internal static class InternetCalendarParser
         return true;
     }
 
-    /// <summary>Parses a DATE-TIME or DATE value (RFC 5545 sections 3.3.4 and 3.3.5), recording the time zone it names.</summary>
-    private static bool TryParseDateTimeProperty(ContentLine line, ref string? timeZoneId, out DateTime value, out string? error)
+    /// <summary>Checks the value starts with <c>scheme ":"</c>, where a scheme starts with a letter (RFC 3986 section 3.1).</summary>
+    private static bool StartsWithScheme(string value, string scheme)
     {
+        if (value.Length <= scheme.Length || value[scheme.Length] is not ':' || !char.IsAsciiLetter(value[0]))
+            return false;
+
+        return string.Compare(value, 0, scheme, 0, scheme.Length, StringComparison.OrdinalIgnoreCase) is 0;
+    }
+
+    /// <summary>Parses a DTSTART or a DTEND: a DATE-TIME value (RFC 5545 section 3.3.5), recording the time zone it names, or a DATE value (section 3.3.4).</summary>
+    private static bool TryParseDateOrDateTimeProperty(ContentLine line, ref string? timeZoneId, out DateTime value, out bool isDate, out string? error)
+    {
+        var valueType = line.GetParameter("VALUE");
+        isDate = string.Equals(valueType, "DATE", StringComparison.OrdinalIgnoreCase) || (valueType is null && line.Value.Length is 8);
+        if (isDate)
+        {
+            // A DATE value denotes the whole day and is read as its first instant. A date without VALUE=DATE is
+            // tolerated, as some producers omit the parameter.
+            value = default;
+            if (line.Value.Length is not 8 || !TryParseDateTime(line.Value, out value))
+            {
+                error = $"The {line.Name} value '{line.Value}' is not a date";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        if (!TryParseDateTimeWithTimeZoneId(line, out value, out var id, out error))
+            return false;
+
+        if (id is null)
+            return true;
+
+        if (timeZoneId is not null && !string.Equals(timeZoneId, id, StringComparison.Ordinal))
+        {
+            // An Event holds a single time zone, so it cannot describe a start and an end expressed in different ones.
+            error = $"The properties of the event reference two different time zones, '{timeZoneId}' and '{id}'";
+            return false;
+        }
+
+        timeZoneId = id;
+        return true;
+    }
+
+    /// <summary>Parses a property RFC 5545 requires in UTC, such as DTSTAMP (section 3.8.7.2), as a <see cref="DateTimeKind.Utc"/> value.</summary>
+    /// <remarks>
+    /// A value carrying a TZID is converted from that time zone, and a floating value, or one whose time zone cannot be
+    /// resolved, is taken as UTC. The time zone of such a property does not affect the time zone of the event.
+    /// </remarks>
+    private static bool TryParseUtcDateTimeProperty(ContentLine line, TimeZoneResolver timeZones, out DateTime value, out string? error)
+    {
+        if (!TryParseDateTimeWithTimeZoneId(line, out value, out var id, out error))
+            return false;
+
+        if (value.Kind is DateTimeKind.Utc)
+            return true;
+
+        if (id is not null && timeZones.Resolve(id) is { } timeZone)
+        {
+            value = Utilities.ToDateTimeOffset(value, timeZone).UtcDateTime;
+            return true;
+        }
+
+        value = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        return true;
+    }
+
+    private static bool TryParseDateTimeWithTimeZoneId(ContentLine line, out DateTime value, out string? timeZoneId, out string? error)
+    {
+        timeZoneId = null;
         if (!TryParseDateTime(line.Value, out value))
         {
             error = $"The {line.Name} value '{line.Value}' is not a date-time";
@@ -304,23 +414,24 @@ internal static class InternetCalendarParser
             return false;
         }
 
-        if (timeZoneId is not null && !string.Equals(timeZoneId, id, StringComparison.Ordinal))
-        {
-            // An Event holds a single time zone, so it cannot describe properties expressed in different ones.
-            error = $"The properties of the event reference two different time zones, '{timeZoneId}' and '{id}'";
-            return false;
-        }
-
         timeZoneId = id;
         error = null;
         return true;
     }
 
-    private static bool TryParseDateTime(string value, out DateTime result)
+    /// <summary>Parses a DATE (RFC 5545 section 3.3.4) or a DATE-TIME (section 3.3.5) value.</summary>
+    internal static bool TryParseDateTime(string value, out DateTime result)
     {
-        // A DATE value, which VALUE=DATE marks, denotes the whole day and is read as its first instant.
+        // A DATE value denotes the whole day and is read as its first instant.
         if (value.Length is 8)
             return DateTime.TryParseExact(value, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+
+        // RFC 5545 section 3.3.12 allows a second of 60 for a leap second. DateTime cannot represent one, so it is read
+        // as 59, as a BYSECOND=60 in a recurrence rule is.
+        if (value.Length is 15 or 16 && value[13] is '6' && value[14] is '0')
+        {
+            value = value[..13] + "59" + value[15..];
+        }
 
         // Form 2: a date-time in UTC.
         if (value.Length > 0 && value[^1] is 'Z')
@@ -334,6 +445,107 @@ internal static class InternetCalendarParser
 
         // Form 1 and form 3: a floating date-time, or a date-time in the time zone the TZID parameter names.
         return DateTime.TryParseExact(value, "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+    }
+
+    /// <summary>Resolves the time zones the TZID parameters of a calendar name.</summary>
+    /// <remarks>
+    /// An identifier is looked up, in order, as a time zone of the platform, as a VTIMEZONE component of the calendar, and
+    /// as the IANA identifier ending a prefixed one, such as <c>/mozilla.org/20050126_1/America/New_York</c>. A VTIMEZONE
+    /// may follow the components referencing it, so the calendar is scanned for them up front.
+    /// </remarks>
+    private sealed class TimeZoneResolver
+    {
+        private readonly Dictionary<string, TimeZoneInfo?> _cache = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, List<ContentLine>> _definitions = new(StringComparer.Ordinal);
+
+        public TimeZoneResolver(List<ContentLine> lines)
+        {
+            var depth = 0;
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (IsEnd(lines[i], out _))
+                {
+                    depth--;
+                    continue;
+                }
+
+                if (!IsBegin(lines[i], out var component))
+                    continue;
+
+                depth++;
+                if (depth is not 2 || component is not "VTIMEZONE")
+                    continue;
+
+                var body = new List<ContentLine>();
+                string? id = null;
+                var nesting = 0;
+                for (i++; i < lines.Count; i++)
+                {
+                    var line = lines[i];
+                    if (IsBegin(line, out _))
+                    {
+                        nesting++;
+                    }
+                    else if (IsEnd(line, out _))
+                    {
+                        if (nesting is 0)
+                            break;
+
+                        nesting--;
+                    }
+                    else if (nesting is 0 && string.Equals(line.Name, "TZID", StringComparison.OrdinalIgnoreCase))
+                    {
+                        id = line.GetTextValue();
+                    }
+
+                    body.Add(line);
+                }
+
+                depth--;
+
+                // The first definition of an identifier wins.
+                if (id is not null && !_definitions.ContainsKey(id))
+                {
+                    _definitions.Add(id, body);
+                }
+            }
+        }
+
+        public TimeZoneInfo? Resolve(string id)
+        {
+            if (!_cache.TryGetValue(id, out var timeZone))
+            {
+                timeZone = ResolveCore(id);
+                _cache.Add(id, timeZone);
+            }
+
+            return timeZone;
+        }
+
+        private TimeZoneInfo? ResolveCore(string id)
+        {
+            if (TimeZones.TryFindWithoutThrowing(id, out var timeZone))
+                return timeZone;
+
+            if (_definitions.TryGetValue(id, out var definition) && VTimeZoneReader.Create(id, definition) is { } custom)
+                return custom;
+
+            // A prefixed identifier, as Mozilla and other producers write, usually ends with an IANA identifier. The
+            // longest suffix starting with a letter wins, so America/Argentina/Buenos_Aires is preferred to Buenos_Aires.
+            var segments = id.Split(['/'], StringSplitOptions.RemoveEmptyEntries);
+            for (var count = segments.Length - 1; count >= 1; count--)
+            {
+                var first = segments.Length - count;
+                if (!char.IsAsciiLetter(segments[first][0]))
+                    continue;
+
+                var candidate = string.Join("/", segments, first, count);
+                if (TimeZones.TryFindWithoutThrowing(candidate, out timeZone))
+                    return timeZone;
+            }
+
+            return null;
+        }
     }
 
     /// <summary>Consumes a component whose content the model does not represent, including the components nested in it.</summary>

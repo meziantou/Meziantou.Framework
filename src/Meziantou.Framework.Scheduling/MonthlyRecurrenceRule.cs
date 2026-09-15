@@ -14,91 +14,12 @@ internal sealed class MonthlyRecurrenceRule : RecurrenceRule
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var hasTimeFilters = !IsEmpty(ByHours) || !IsEmpty(ByMinutes) || !IsEmpty(BySeconds);
-
-        if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays))
-        {
-            var current = startDate;
-            while (true)
-            {
-                if (hasTimeFilters)
-                {
-                    foreach (var occurrence in ExpandByTime(current, startDate))
-                    {
-                        yield return occurrence;
-                    }
-                }
-                else
-                {
-                    yield return current;
-                }
-                current = current.AddMonths(Interval);
-            }
-        }
-
-        var startOfMonth = Extensions.StartOfMonth(startDate, keepTime: true);
-        while (true)
-        {
-            var b = true;
-            if (!IsEmpty(ByMonths))
-            {
-                if (!ByMonths.Contains(startOfMonth.Month))
-                {
-                    b = false;
-                }
-            }
-
-            if (b)
-            {
-                var resultByMonthDays = ResultByMonthDays(startOfMonth, ByMonthDays);
-                var resultByDays = ResultByWeekDaysInMonth(startOfMonth, ByWeekDays);
-
-                var result = Intersect(resultByMonthDays, resultByDays);
-                result = FilterBySetPosition(result.Distinct().Order().ToArray(), BySetPositions);
-
-                foreach (var date in result.Where(d => d >= startDate))
-                {
-                    if (hasTimeFilters)
-                    {
-                        foreach (var occurrence in ExpandByTime(date, startDate))
-                        {
-                            yield return occurrence;
-                        }
-                    }
-                    else
-                    {
-                        yield return date;
-                    }
-                }
-            }
-
-            startOfMonth = startOfMonth.AddMonths(Interval);
-        }
-
-        // ReSharper disable once IteratorNeverReturns
+        return GetNextOccurrencesInternal(startDate, endBound: null);
     }
 
-    private IEnumerable<DateTime> ExpandByTime(DateTime date, DateTime lowerBound)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
     {
-        var hours = IsEmpty(ByHours) ? [date.Hour] : ByHours;
-        var minutes = IsEmpty(ByMinutes) ? [date.Minute] : ByMinutes;
-        var seconds = IsEmpty(BySeconds) ? [date.Second] : BySeconds;
-
-        var dateOnly = date.Date;
-        foreach (var hour in hours)
-        {
-            foreach (var minute in minutes)
-            {
-                foreach (var second in seconds)
-                {
-                    var result = dateOnly.AddHours(hour).AddMinutes(minute).AddSeconds(second);
-                    if (result >= lowerBound)
-                    {
-                        yield return result;
-                    }
-                }
-            }
-        }
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Monthly, this, startDate, endBound, byDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays);
     }
 
     /// <inheritdoc />

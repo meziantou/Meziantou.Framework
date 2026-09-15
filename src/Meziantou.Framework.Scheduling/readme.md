@@ -95,14 +95,63 @@ if (!InternetCalendar.TryParse(content, out var parsed, out var error))
 
 The parser unfolds content lines, decodes `TEXT` values and reads the three date-time forms of RFC 5545
 section 3.3.5: `20240102T080000Z` becomes a `Utc` value, `20240102T080000` a floating (`Unspecified`) one,
-and `DTSTART;TZID=America/New_York:20240102T080000` a wall-clock value together with `Event.TimeZone`,
-which `TimeZoneInfo.FindSystemTimeZoneById` resolves from the identifier. A `VTIMEZONE` component is not
-used to build the time zone, so an identifier the platform does not know is reported as an error rather
-than silently dropped.
+and `DTSTART;TZID=America/New_York:20240102T080000` a wall-clock value together with `Event.TimeZone`.
+A leap second (`235960`) is read as the 59th second.
 
-An event property the model does not have, such as `X-MICROSOFT-CDO-BUSYSTATUS`, goes to
-`Event.AdditionalProperties`; the components the model does not represent — `VTODO`, `VJOURNAL`,
-`VFREEBUSY`, `VALARM` and `VTIMEZONE` — are skipped.
+The identifier of a `TZID` parameter is resolved, in order:
+
+1. as a time zone of the platform (`TimeZoneInfo.FindSystemTimeZoneById`);
+2. from the `VTIMEZONE` component of the calendar with that `TZID`, which builds a custom `TimeZoneInfo` whose
+   `Id` is the identifier, so the event is written back with it. Every onset of the sub-components (`DTSTART`,
+   `RDATE`, bounded or open-ended `RRULE`) is expanded, and each year becomes one adjustment rule holding its
+   standard offset and at most one daylight saving period, including a period spanning the new year and a change of
+   the standard offset (the latter needs .NET 6 or later). An open-ended `STANDARD`/`DAYLIGHT` pair expressible as a
+   floating (`BYDAY=-1SU`) or fixed (`BYMONTHDAY=22`) transition becomes a single open-ended rule; any other
+   open-ended recurrence is expanded for 300 years. A year whose offset changes more often than that, such as a
+   daylight saving period suspended during Ramadan, cannot be expressed by a `TimeZoneInfo`, so its shortest periods
+   take the offset of the one before;
+3. as the IANA identifier ending a prefixed one, such as `/mozilla.org/20050126_1/America/New_York`.
+
+An identifier that still cannot be resolved does not reject the calendar: `DTSTART` and `DTEND` are read as
+floating values and `Event.TimeZone` stays `null`. Only `DTSTART` and `DTEND` determine `Event.TimeZone`;
+`CREATED`, `LAST-MODIFIED` and `DTSTAMP` are always read as `Utc` values, converted from their `TZID` when they
+carry one, and taken as UTC when they are floating.
+
+A `DATE` value, `DTSTART;VALUE=DATE:20240101` (or a date without the parameter), sets `Event.IsAllDay` and is
+read as the first instant of the day, without a time zone. An event without `STATUS` has a `null` `Event.Status`.
+
+An event property the model does not have, such as `X-MICROSOFT-CDO-BUSYSTATUS:OOF`, goes to
+`Event.AdditionalProperties` when its `TEXT` value writes it back unchanged. Any other one — a property with
+parameters (`EXDATE;TZID=Europe/Paris:20240104T100000`), a repeated one, or a structured value
+(`GEO:37.38;-122.08`, `CATEGORIES:WORK,MEETING`) — goes to `Event.RawProperties`, which keeps its name,
+parameters and value verbatim. Calendar properties go to `InternetCalendar.AdditionalProperties` and
+`InternetCalendar.RawProperties` the same way. The components the model does not represent — `VTODO`,
+`VJOURNAL`, `VFREEBUSY` and `VALARM` — are skipped.
+
+### Properties written
+
+- Content lines longer than 75 UTF-8 octets are folded, never inside a character.
+- `CREATED`, `LAST-MODIFIED` and `DTSTAMP` are written in UTC (an `Unspecified` value is taken as UTC), and are
+  omitted when not set, as are `DTEND` and `STATUS`. RFC 5545 requires `DTSTAMP`, so set `Event.DateTimeStamp`
+  to produce a conforming event; the library does not use the current time, which keeps the output deterministic.
+- `Event.IsAllDay` writes the date part of `Start` and `End` as `DTSTART;VALUE=DATE:`/`DTEND;VALUE=DATE:`,
+  ignoring `Event.TimeZone`.
+- An attendee or an organizer without an address is not written.
+- A time zone identifier containing `:`, `;` or `,`, such as `(UTC+01:00) Amsterdam, Berlin`, is quoted in the
+  `TZID` parameter and escaped in the `VTIMEZONE` `TZID` property. An identifier containing a `"` or a control
+  character cannot be written, and `ToIcs` throws an `InvalidOperationException` before writing anything.
+- `AdditionalProperties` values are escaped as `TEXT`. `RawProperties` are written verbatim; an
+  `InternetCalendarProperty` validates its name, parameters and value when it is created, so it cannot inject
+  a line:
+
+  ````c#
+  @event.RawProperties.Add(new InternetCalendarProperty("EXDATE", [new("TZID", "Europe/Paris")], "20240104T100000"));
+  @event.RawProperties.Add(new InternetCalendarProperty("GEO", "37.386013;-122.082932"));
+  ````
+
+- A property of either collection named after one the writer emits itself — `BEGIN`, `END`, `VERSION` and
+  `PRODID` for the calendar; `UID`, `STATUS`, `ORGANIZER`, `ATTENDEE`, `CREATED`, `LAST-MODIFIED`, `DTSTAMP`,
+  `DTSTART`, `DTEND`, `RRULE`, `SUMMARY` and `DESCRIPTION` as well for an event — is not written.
 
 ### Writing
 
@@ -160,7 +209,7 @@ var occurrences = cron.GetNextOccurrences(DateTime.Now).Take(10).ToArray();
 - 6 fields: `second minute hour day-of-month month day-of-week`
 - 7 fields: `second minute hour day-of-month month day-of-week year`
 
-When using the 5-field format, seconds are implicitly set to `0`.
+Fields are separated by spaces or tabs. When using the 5-field format, seconds are implicitly set to `0`.
 
 ### Field ranges
 
@@ -177,18 +226,25 @@ When using the 5-field format, seconds are implicitly set to `0`.
 For all fields:
 
 - `*` or `?`: any value
-- `a,b,c`: list
+- `a,b,c`: list. Each item can be a value, a range, a step, `*` or `*/n` (for example `*/15,7`). A `*` item means any value. `?` is only valid as the whole field.
 - `a-b`: range
 - `*/n`: step from field minimum
 - `a-b/n`: stepped range
 - `a/n`: step starting at `a`
 
+A range whose start is greater than its end wraps around the end of the field, except in the year field where it is invalid:
+
+- `22-2` in the hour field means `22,23,0,1,2`
+- `22-2/2` in the hour field means `22,0,2`
+- `FRI-MON` in the day-of-week field means `5,6,0,1`
+- `NOV-FEB` in the month field means `11,12,1,2`
+
 Day-of-month field additionally supports:
 
 - `L`: last day of month
-- `L-n`: nth day before end of month (for example `L-2`)
+- `L-n`: nth day before end of month (for example `L-2`, `n` in `0-30`)
 - `LW`: last weekday of month
-- `nW`: nearest weekday to day `n`
+- `nW`: nearest weekday to day `n` (`n` in `1-31`), without leaving the month
 
 Day-of-week field additionally supports:
 
@@ -205,5 +261,6 @@ Day-of-week field additionally supports:
 
 ### Notes
 
-- Parsing is case-insensitive for month/day names and predefined schedules.
+- Parsing is case-insensitive for month/day names, special values (`L`, `W`), and predefined schedules.
+- Occurrences are whole seconds. A start date with a fractional second starts at the next whole second.
 - `day-of-month` and `day-of-week` are combined with **AND** semantics. A date must satisfy both fields to match.

@@ -12,37 +12,17 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
     /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = [];
 
+    /// <summary>Limits occurrences to specific days of the year (1-366, -1 to -366).</summary>
+    public IList<int> ByYearDays { get; set; } = [];
+
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
     {
-        var current = startDate;
-        while (true)
-        {
-            var matches = true;
+        return GetNextOccurrencesInternal(startDate, endBound: null);
+    }
 
-            if (!IsEmpty(ByMonths) && !ByMonths.Contains(current.Month))
-                matches = false;
-
-            if (!IsEmpty(ByMonthDays) && !ByMonthDays.Contains(current.Day))
-                matches = false;
-
-            if (!IsEmpty(ByWeekDays) && !ByWeekDays.Contains(current.DayOfWeek))
-                matches = false;
-
-            if (!IsEmpty(ByHours) && !ByHours.Contains(current.Hour))
-                matches = false;
-
-            if (!IsEmpty(ByMinutes) && !ByMinutes.Contains(current.Minute))
-                matches = false;
-
-            if (matches)
-            {
-                yield return current;
-            }
-
-            current = current.AddSeconds(Interval);
-        }
-
-        // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
+    private protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate, DateTime? endBound)
+    {
+        return RecurrenceRuleEvaluator.Evaluate(Frequency.Secondly, this, startDate, endBound, weekDays: ByWeekDays, months: ByMonths, monthDays: ByMonthDays, yearDays: ByYearDays);
     }
 
     /// <inheritdoc />
@@ -83,6 +63,12 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
                 sb.AppendJoin(',', ByMonths);
             }
 
+            if (!IsEmpty(ByYearDays))
+            {
+                sb.Append(";BYYEARDAY=");
+                sb.AppendJoin(',', ByYearDays);
+            }
+
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
@@ -105,6 +91,12 @@ internal sealed class SecondlyRecurrenceRule : RecurrenceRule
             {
                 sb.Append(";BYMINUTE=");
                 sb.AppendJoin(',', ByMinutes);
+            }
+
+            if (!IsEmpty(BySeconds))
+            {
+                sb.Append(";BYSECOND=");
+                sb.AppendJoin(',', BySeconds);
             }
 
             if (!IsEmpty(BySetPositions))

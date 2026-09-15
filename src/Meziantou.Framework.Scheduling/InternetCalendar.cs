@@ -18,8 +18,35 @@ public sealed class InternetCalendar
     /// <summary>The product identifier written as PRODID, in the FPI form suggested by RFC 5545 section 3.7.3.</summary>
     private const string ProductIdentifier = "-//Meziantou//Meziantou.Framework.Scheduling//EN";
 
-    /// <summary>Gets additional custom properties for the calendar.</summary>
+    /// <summary>The names a VCALENDAR is written with, which an additional property cannot duplicate.</summary>
+    private static readonly HashSet<string> CalendarPropertyNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "BEGIN", "END", "VERSION", "PRODID",
+    };
+
+    /// <summary>The names a VEVENT is written with, which an additional property cannot duplicate.</summary>
+    private static readonly HashSet<string> EventPropertyNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "BEGIN", "END", "UID", "STATUS", "ORGANIZER", "ATTENDEE", "CREATED", "LAST-MODIFIED", "DTSTAMP", "DTSTART", "DTEND", "RRULE", "SUMMARY", "DESCRIPTION",
+    };
+
+    /// <summary>Gets additional custom properties for the calendar, whose values are TEXT (RFC 5545 section 3.3.11).</summary>
+    /// <remarks>
+    /// <para>A value is escaped when written, so it cannot hold a structured value such as a list or a parameter; use
+    /// <see cref="RawProperties"/> for those. The parser only stores a property here when this form writes it back
+    /// unchanged.</para>
+    /// <para>A property whose name is not a valid property name, or is BEGIN, END, VERSION or PRODID, is not written.</para>
+    /// </remarks>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Gets the properties of the calendar that are written verbatim, in order, after <see cref="AdditionalProperties"/>.</summary>
+    /// <remarks>
+    /// <para>The parser stores here, as written, every calendar property the model does not represent and that
+    /// <see cref="AdditionalProperties"/> cannot hold without changing it: a property with parameters, a repeated one, or one
+    /// whose value is not a single TEXT value.</para>
+    /// <para>A property named BEGIN, END, VERSION or PRODID is not written.</para>
+    /// </remarks>
+    public IList<InternetCalendarProperty> RawProperties { get; } = new List<InternetCalendarProperty>();
 
     /// <summary>Gets the events in this calendar.</summary>
     public IList<Event> Events { get; } = new List<Event>();
@@ -38,6 +65,7 @@ public sealed class InternetCalendar
 
     /// <summary>Writes the calendar to a text writer in iCalendar format.</summary>
     /// <param name="writer">The text writer to write to.</param>
+    /// <remarks>Content lines longer than 75 octets are folded, as RFC 5545 section 3.1 recommends.</remarks>
     public void ToIcs(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -78,7 +106,7 @@ public sealed class InternetCalendar
         // PRODID is REQUIRED in a VCALENDAR (RFC 5545 section 3.6).
         Utilities.WriteLine(writer, "PRODID:" + ProductIdentifier);
 
-        WriteAdditionalProperties(writer, AdditionalProperties);
+        WriteAdditionalProperties(writer, AdditionalProperties, RawProperties, CalendarPropertyNames);
 
         // A VTIMEZONE must precede the components referencing its TZID.
         foreach (var timeZone in timeZones)
@@ -92,30 +120,43 @@ public sealed class InternetCalendar
             if (!string.IsNullOrEmpty(@event.Id))
                 WriteTextProperty(writer, "UID", @event.Id);
 
-            Utilities.WriteLine(writer, "STATUS:" + Utilities.StatusToString(@event.Status));
+            if (@event.Status is { } status)
+                Utilities.WriteLine(writer, "STATUS:" + Utilities.StatusToString(status));
+
             if ((@event.Organizer?.Address) is not null)
                 Utilities.WriteLine(writer, "ORGANIZER:" + @event.Organizer.Address);
 
             foreach (var attendee in @event.Attendees)
             {
-                if (attendee is null)
+                // An empty ATTENDEE is not a calendar user address, so, as for the organizer, an attendee without one is skipped.
+                if (attendee?.Address is null)
                     continue;
 
                 Utilities.WriteLine(writer, "ATTENDEE:" + attendee.Address);
             }
 
-            Utilities.WriteLine(writer, "CREATED:" + Utilities.DateTimeToString(@event.Created));
-            Utilities.WriteLine(writer, "LAST-MODIFIED:" + Utilities.DateTimeToString(@event.LastModified));
-            Utilities.WriteLine(writer, "DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
-            WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.TimeZone);
-            WriteDateTimeProperty(writer, "DTEND", @event.End, @event.TimeZone);
+            // RFC 5545 sections 3.8.7.1 to 3.8.7.3 require these values in UTC.
+            if (@event.Created != default)
+                Utilities.WriteLine(writer, "CREATED:" + Utilities.UtcDateTimeToString(@event.Created));
+
+            if (@event.LastModified != default)
+                Utilities.WriteLine(writer, "LAST-MODIFIED:" + Utilities.UtcDateTimeToString(@event.LastModified));
+
+            if (@event.DateTimeStamp != default)
+                Utilities.WriteLine(writer, "DTSTAMP:" + Utilities.UtcDateTimeToString(@event.DateTimeStamp));
+
+            var timeZone = @event.IsAllDay ? null : @event.TimeZone;
+            WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.IsAllDay, timeZone);
+            if (@event.End != default)
+                WriteDateTimeProperty(writer, "DTEND", @event.End, @event.IsAllDay, timeZone);
+
             if (@event.RecurrenceRule is not null)
-                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, @event.TimeZone));
+                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, timeZone));
 
             if (!string.IsNullOrEmpty(@event.Summary))
                 WriteTextProperty(writer, "SUMMARY", @event.Summary);
 
-            WriteAdditionalProperties(writer, @event.AdditionalProperties);
+            WriteAdditionalProperties(writer, @event.AdditionalProperties, @event.RawProperties, EventPropertyNames);
 
             if (@event.Description is { } description)
             {
@@ -140,7 +181,8 @@ public sealed class InternetCalendar
         var indexes = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var @event in Events)
         {
-            if (@event?.TimeZone is not { } timeZone)
+            // An all-day event is written with DATE values, which do not reference its time zone.
+            if (@event?.TimeZone is not { } timeZone || @event.IsAllDay)
                 continue;
 
             if (!Utilities.IsValidTimeZoneId(timeZone.Id))
@@ -164,9 +206,15 @@ public sealed class InternetCalendar
         return result;
     }
 
-    /// <summary>Writes a date-time property, using the TZID form (RFC 5545 section 3.3.5) when the event has a time zone.</summary>
-    private static void WriteDateTimeProperty(TextWriter writer, string name, DateTime value, TimeZoneInfo? timeZone)
+    /// <summary>Writes a date-time property, using the TZID form (RFC 5545 section 3.3.5) when the event has a time zone, or a DATE value (section 3.3.4).</summary>
+    private static void WriteDateTimeProperty(TextWriter writer, string name, DateTime value, bool isDate, TimeZoneInfo? timeZone)
     {
+        if (isDate)
+        {
+            Utilities.WriteLine(writer, name + ";VALUE=DATE:" + value.ToString("yyyyMMdd", CultureInfo.InvariantCulture));
+            return;
+        }
+
         if (timeZone is null)
         {
             Utilities.WriteLine(writer, name + ':' + Utilities.DateTimeToString(value));
@@ -175,7 +223,7 @@ public sealed class InternetCalendar
 
         // The identifier was validated before any output was written.
         var wallClock = Utilities.ToWallClock(value, timeZone);
-        Utilities.WriteLine(writer, name + ";TZID=" + timeZone.Id + ':' + wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
+        Utilities.WriteLine(writer, name + ";TZID=" + Utilities.TimeZoneIdToParameterValue(timeZone.Id) + ':' + wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
     }
 
     /// <summary>RFC 5545 section 3.3.10: when DTSTART carries a TZID, UNTIL must be a UTC date-time.</summary>
@@ -195,73 +243,34 @@ public sealed class InternetCalendar
         return text.Replace(floating, ";UNTIL=" + utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 
-    private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> properties)
+    private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties, HashSet<string> reservedNames)
     {
-        foreach (var additionalProperty in properties)
+        foreach (var additionalProperty in additionalProperties)
         {
-            // A name outside the iCalendar grammar cannot be written as a content line, and a
-            // name carrying a line break would start an attacker-chosen property.
-            if (!IsValidPropertyName(additionalProperty.Key))
+            // A name outside the iCalendar grammar cannot be written as a content line, and a name carrying a line break
+            // would start an attacker-chosen property. A reserved name would duplicate a property the model writes, or,
+            // for BEGIN and END, open or close a component.
+            if (!InternetCalendarProperty.IsValidName(additionalProperty.Key) || reservedNames.Contains(additionalProperty.Key))
                 continue;
 
             // RFC 5545 section 3.8.8.2: the default value type of a non-standard property is TEXT.
             WriteTextProperty(writer, additionalProperty.Key, additionalProperty.Value);
+        }
+
+        foreach (var rawProperty in rawProperties)
+        {
+            // The property validated its name, parameters and value when it was created.
+            if (rawProperty is null || reservedNames.Contains(rawProperty.Name))
+                continue;
+
+            rawProperty.Write(writer);
         }
     }
 
     /// <summary>Writes a content line whose value is escaped as an iCalendar TEXT value.</summary>
     private static void WriteTextProperty(TextWriter writer, string name, string? value)
     {
-        writer.Write(name);
-        writer.Write(':');
-        WriteEscaped(writer, value);
-        writer.Write(Utilities.CrLf);
-    }
-
-    /// <summary>Escapes an iCalendar TEXT value per RFC 5545 section 3.3.11.</summary>
-    private static void WriteEscaped(TextWriter writer, string? value)
-    {
-        if (value is null)
-            return;
-
-        foreach (var c in value)
-        {
-            switch (c)
-            {
-                case '\\':
-                    writer.Write("\\\\");
-                    break;
-                case ';':
-                    writer.Write("\\;");
-                    break;
-                case ',':
-                    writer.Write("\\,");
-                    break;
-                case '\r':
-                    break;
-                case '\n':
-                    writer.Write("\\n");
-                    break;
-                default:
-                    writer.Write(c);
-                    break;
-            }
-        }
-    }
-
-    /// <summary>An iCalendar property name is ALPHA / DIGIT / "-" (RFC 5545 section 3.1).</summary>
-    private static bool IsValidPropertyName(string name)
-    {
-        if (string.IsNullOrEmpty(name))
-            return false;
-
-        foreach (var c in name)
-        {
-            if (!char.IsAsciiLetterOrDigit(c) && c is not '-')
-                return false;
-        }
-
-        return true;
+        Utilities.WriteLine(writer, name + ':' + Utilities.EscapeText(value));
     }
 
     /// <summary>Converts the calendar to an iCalendar format string.</summary>

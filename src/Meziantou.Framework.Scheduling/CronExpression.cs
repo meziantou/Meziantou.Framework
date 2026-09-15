@@ -1,3 +1,6 @@
+#if NETCOREAPP3_0_OR_GREATER
+using System.Numerics;
+#endif
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Scheduling;
@@ -7,6 +10,9 @@ public sealed class CronExpression : IRecurrenceRule
     , IParsable<CronExpression>, ISpanParsable<CronExpression>
 #endif
 {
+    // The last year representable by DateTime
+    private const int MaxYear = 9999;
+
     private readonly CronField _seconds;
     private readonly CronField _minutes;
     private readonly CronField _hours;
@@ -70,11 +76,32 @@ public sealed class CronExpression : IRecurrenceRule
             return TryParsePredefined(expression, out cronExpression);
         }
 
-        // Split by whitespace
-        Span<Range> ranges = stackalloc Range[8];
-        var count = expression.Split(ranges, ' ', StringSplitOptions.RemoveEmptyEntries);
+        // Split by spaces and tabs
+        Span<Range> ranges = stackalloc Range[7];
+        var count = 0;
+        var index = 0;
+        while (index < expression.Length)
+        {
+            if (IsFieldSeparator(expression[index]))
+            {
+                index++;
+                continue;
+            }
 
-        if (count < 5 || count > 7)
+            if (count == ranges.Length)
+                return false;
+
+            var fieldStart = index;
+            while (index < expression.Length && !IsFieldSeparator(expression[index]))
+            {
+                index++;
+            }
+
+            ranges[count] = new Range(fieldStart, index);
+            count++;
+        }
+
+        if (count < 5)
             return false;
 
         CronField seconds;
@@ -153,6 +180,8 @@ public sealed class CronExpression : IRecurrenceRule
         cronExpression = new CronExpression(seconds, minutes, hours, dayOfMonth, month, dayOfWeek, year, hasSeconds, hasYear);
         return true;
     }
+
+    private static bool IsFieldSeparator(char c) => c is ' ' or '\t';
 
     private static bool TryParsePredefined(ReadOnlySpan<char> expression, [NotNullWhen(true)] out CronExpression? cronExpression)
     {
@@ -250,103 +279,86 @@ public sealed class CronExpression : IRecurrenceRule
         if (field.IsEmpty)
             return false;
 
-        // Handle ? (any)
-        if (field.Length is 1 && field[0] == '?')
+        // Handle ? (any), which is only valid as the whole field
+        if (field is "?")
         {
             result = CronField.CreateAll(kind);
-            return true;
-        }
-
-        // Handle * (all)
-        if (field.Length is 1 && field[0] == '*')
-        {
-            result = CronField.CreateAll(kind);
-            return true;
-        }
-
-        // Handle */step
-        if (field.Length > 2 && field[0] == '*' && field[1] == '/')
-        {
-            if (!TryParseInt(field[2..], out var step) || step <= 0)
-                return false;
-
-            result = CronField.CreateStep(kind, GetMinValue(kind), GetMaxValue(kind), step);
             return true;
         }
 
         // Handle list (comma-separated)
-        if (field.Contains(','))
+        var builder = new CronFieldBuilder(kind);
+        var remaining = field;
+        while (true)
         {
-            var values = new List<CronFieldValue>();
-            var remaining = field;
-            while (!remaining.IsEmpty)
-            {
-                var commaIndex = remaining.IndexOf(',');
-                ReadOnlySpan<char> part;
-                if (commaIndex >= 0)
-                {
-                    part = remaining[..commaIndex];
-                    remaining = remaining[(commaIndex + 1)..];
-                }
-                else
-                {
-                    part = remaining;
-                    remaining = [];
-                }
+            var commaIndex = remaining.IndexOf(',');
+            var part = commaIndex >= 0 ? remaining[..commaIndex] : remaining;
+            if (!TryParseFieldPart(part, kind, ref builder))
+                return false;
 
-                if (!TryParseFieldPart(part, kind, out var partValues))
-                    return false;
-                values.AddRange(partValues);
-            }
+            if (commaIndex < 0)
+                break;
 
-            result = CronField.CreateList(kind, values);
-            return true;
+            remaining = remaining[(commaIndex + 1)..];
         }
 
-        // Parse single part
-        if (!TryParseFieldPart(field, kind, out var singleValues))
-            return false;
-
-        result = CronField.CreateList(kind, singleValues);
+        result = builder.Build();
         return true;
     }
 
-    private static bool TryParseFieldPart(ReadOnlySpan<char> part, CronFieldKind kind, out List<CronFieldValue> values)
+    private static bool TryParseFieldPart(ReadOnlySpan<char> part, CronFieldKind kind, ref CronFieldBuilder builder)
     {
-        values = [];
-
         if (part.IsEmpty)
             return false;
 
-        // Handle special day of month cases: L, LW, L-n
+        // Handle * (all)
+        if (part is "*")
+        {
+            builder.SetAll();
+            return true;
+        }
+
+        // Handle */step
+        if (part.Length > 2 && part[0] == '*' && part[1] == '/')
+        {
+            if (!TryParseInt(part[2..], out var allStep) || allStep <= 0)
+                return false;
+
+            builder.AddRange(GetMinValue(kind), GetMaxValue(kind), allStep);
+            return true;
+        }
+
+        // Handle special day of month cases: L, LW, L-n, nW
         if (kind is CronFieldKind.DayOfMonth)
         {
             if (part.Equals("L", StringComparison.OrdinalIgnoreCase))
             {
-                values.Add(new CronFieldValue { Kind = CronValueKind.Last });
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.Last });
                 return true;
             }
 
             if (part.Equals("LW", StringComparison.OrdinalIgnoreCase))
             {
-                values.Add(new CronFieldValue { Kind = CronValueKind.LastWeekday });
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.LastWeekday });
                 return true;
             }
 
-            if (part.Length > 2 && part[0] == 'L' && part[1] == '-')
+            if (part.Length > 2 && part[0] is 'L' or 'l' && part[1] == '-')
             {
-                if (!TryParseInt(part[2..], out var offset) || offset < 0)
+                if (!TryParseInt(part[2..], out var offset) || offset > 30)
                     return false;
-                values.Add(new CronFieldValue { Kind = CronValueKind.LastOffset, Value = offset });
+
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.LastOffset, Value = offset });
                 return true;
             }
 
             // Handle nW (nearest weekday)
-            if (part.Length > 1 && (part[^1] == 'W' || part[^1] == 'w'))
+            if (part.Length > 1 && part[^1] is 'W' or 'w')
             {
-                if (!TryParseInt(part[..^1], out var day))
+                if (!TryParseInt(part[..^1], out var day) || day is < 1 or > 31)
                     return false;
-                values.Add(new CronFieldValue { Kind = CronValueKind.NearestWeekday, Value = day });
+
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.NearestWeekday, Value = day });
                 return true;
             }
         }
@@ -355,11 +367,12 @@ public sealed class CronExpression : IRecurrenceRule
         if (kind is CronFieldKind.DayOfWeek)
         {
             // Handle nL (last day of week in month)
-            if (part.Length >= 2 && (part[^1] == 'L' || part[^1] == 'l'))
+            if (part.Length >= 2 && part[^1] is 'L' or 'l')
             {
                 if (!TryParseDayOfWeek(part[..^1], out var dow))
                     return false;
-                values.Add(new CronFieldValue { Kind = CronValueKind.LastDayOfWeek, Value = dow });
+
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.LastDayOfWeek, Value = dow });
                 return true;
             }
 
@@ -371,73 +384,48 @@ public sealed class CronExpression : IRecurrenceRule
                     return false;
                 if (!TryParseInt(part[(hashIndex + 1)..], out var nth) || nth < 1 || nth > 5)
                     return false;
-                values.Add(new CronFieldValue { Kind = CronValueKind.NthDayOfWeek, Value = dow, NthValue = nth });
+
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.NthDayOfWeek, Value = dow, NthValue = nth });
                 return true;
             }
         }
 
-        // Handle range with optional step: start-end or start-end/step or start/step
+        // Handle value or range with optional step: n, start-end, start-end/step or start/step
+        var rangePart = part;
+        var step = 1;
         var slashIndex = part.IndexOf('/');
-        if (slashIndex > 0)
+        if (slashIndex >= 0)
         {
-            var rangePart = part[..slashIndex];
-            var stepPart = part[(slashIndex + 1)..];
-
-            if (!TryParseInt(stepPart, out var step) || step <= 0)
+            if (!TryParseInt(part[(slashIndex + 1)..], out step) || step <= 0)
                 return false;
 
-            // Check if range or single value
-            var dashIndex = rangePart.IndexOf('-');
-            if (dashIndex > 0)
-            {
-                // Range with step: start-end/step
-                if (!TryParseValue(rangePart[..dashIndex], kind, out var start))
-                    return false;
-                if (!TryParseValue(rangePart[(dashIndex + 1)..], kind, out var end))
-                    return false;
-
-                for (var i = start; i <= end; i += step)
-                {
-                    values.Add(new CronFieldValue { Kind = CronValueKind.Value, Value = i });
-                }
-                return true;
-            }
-            else
-            {
-                // Single value with step: n/step (means n, n+step, n+2*step, ... up to max)
-                if (!TryParseValue(rangePart, kind, out var start))
-                    return false;
-
-                var max = GetMaxValue(kind);
-                for (var i = start; i <= max; i += step)
-                {
-                    values.Add(new CronFieldValue { Kind = CronValueKind.Value, Value = i });
-                }
-                return true;
-            }
+            rangePart = part[..slashIndex];
         }
 
-        // Handle range: start-end
-        var rangeDashIndex = part.IndexOf('-');
-        if (rangeDashIndex > 0)
+        int start;
+        int end;
+        var dashIndex = rangePart.IndexOf('-');
+        if (dashIndex >= 0)
         {
-            if (!TryParseValue(part[..rangeDashIndex], kind, out var start))
+            if (!TryParseValue(rangePart[..dashIndex], kind, out start))
                 return false;
-            if (!TryParseValue(part[(rangeDashIndex + 1)..], kind, out var end))
+            if (!TryParseValue(rangePart[(dashIndex + 1)..], kind, out end))
                 return false;
 
-            for (var i = start; i <= end; i++)
-            {
-                values.Add(new CronFieldValue { Kind = CronValueKind.Value, Value = i });
-            }
-            return true;
+            // A reversed range wraps around the end of the field, except for years which do not cycle
+            if (end < start && kind is CronFieldKind.Year)
+                return false;
+        }
+        else
+        {
+            if (!TryParseValue(rangePart, kind, out start))
+                return false;
+
+            // n/step means n, n+step, n+2*step, ... up to the maximum value of the field
+            end = slashIndex >= 0 ? GetMaxValue(kind) : start;
         }
 
-        // Single value
-        if (!TryParseValue(part, kind, out var value))
-            return false;
-
-        values.Add(new CronFieldValue { Kind = CronValueKind.Value, Value = value });
+        builder.AddRange(start, end, step);
         return true;
     }
 
@@ -525,23 +513,47 @@ public sealed class CronExpression : IRecurrenceRule
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
+    // Values of a field are stored as bits relative to this offset. Days and months use their value as the
+    // bit index, so that a day-of-month field can be combined with a day mask without shifting.
+    private static int GetOffset(CronFieldKind kind) => kind is CronFieldKind.Year ? GetMinValue(kind) : 0;
+
     public IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
-        var current = startDate;
+        var kind = startDate.Kind;
+        var ticks = startDate.Ticks;
 
-        // Limit to prevent infinite loops for invalid expressions
-        var maxIterations = 100000;
-        var iterations = 0;
-
-        while (iterations < maxIterations)
+        // Occurrences are whole seconds, so a start with a fractional second begins at the next whole second
+        var fraction = ticks % TimeSpan.TicksPerSecond;
+        if (fraction is not 0)
         {
-            var next = GetNextOccurrence(current);
-            if (next is null)
+            if (DateTime.MaxValue.Ticks - ticks < TimeSpan.TicksPerSecond - fraction)
                 yield break;
 
-            yield return next.Value;
-            current = next.Value.AddSeconds(1);
-            iterations++;
+            ticks += TimeSpan.TicksPerSecond - fraction;
+        }
+
+        var cursor = new OccurrenceCursor(new DateTime(ticks, kind));
+        if (!TryMoveToOccurrence(ref cursor))
+            yield break;
+
+        while (true)
+        {
+            yield return cursor.ToDateTime(kind);
+
+            // Fast path: the next occurrence is in the same minute, so the other fields still match
+            if (cursor.Second < 59)
+            {
+                var second = _seconds.GetNext(cursor.Second + 1);
+                if (second >= 0)
+                {
+                    cursor.Second = second;
+                    continue;
+                }
+            }
+
+            cursor.Second++;
+            if (!TryMoveToOccurrence(ref cursor))
+                yield break;
         }
     }
 
@@ -578,134 +590,255 @@ public sealed class CronExpression : IRecurrenceRule
         return GetNextOccurrences(TimeZoneInfo.ConvertTime(startDate, timeZone).DateTime, timeZone);
     }
 
-    private DateTime? GetNextOccurrence(DateTime from)
+    // Moves the cursor to the first occurrence at or after its current position. The search ends when
+    // no field can match anymore, or when it goes beyond the last year representable by DateTime.
+    private bool TryMoveToOccurrence(ref OccurrenceCursor cursor)
     {
-        var current = from;
-        try
+        while (true)
         {
-            while (true)
+            // Propagate the carries of the previous step
+            if (cursor.Second > 59)
             {
-                // Check year
-                if (!_year.Matches(current.Year))
-                {
-                    var nextYear = _year.GetNext(current.Year);
-                    if (nextYear is null || nextYear.Value > 2099)
-                        return null;
+                cursor.Second = 0;
+                cursor.Minute++;
+            }
 
-                    current = new DateTime(nextYear.Value, 1, 1, 0, 0, 0, from.Kind);
-                    continue;
-                }
+            if (cursor.Minute > 59)
+            {
+                cursor.Minute = 0;
+                cursor.Hour++;
+            }
 
-                // Check month
-                if (!_month.Matches(current.Month))
-                {
-                    var nextMonth = _month.GetNext(current.Month);
-                    if (nextMonth is null)
-                    {
-                        current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0, from.Kind);
-                        continue;
-                    }
+            if (cursor.Hour > 23)
+            {
+                cursor.Hour = 0;
+                cursor.Day++;
+            }
 
-                    current = new DateTime(current.Year, nextMonth.Value, 1, 0, 0, 0, from.Kind);
-                    continue;
-                }
+            if (cursor.Month > 12)
+            {
+                cursor.Month = 1;
+                cursor.Year++;
+            }
 
-                // Check day of month and day of week
-                if (!MatchesDay(current))
-                {
-                    var nextDay = GetNextMatchingDay(current);
-                    if (nextDay is null)
-                    {
-                        // Move to next month
-                        if (current.Month is 12)
-                        {
-                            current = new DateTime(current.Year + 1, 1, 1, 0, 0, 0, from.Kind);
-                        }
-                        else
-                        {
-                            current = new DateTime(current.Year, current.Month + 1, 1, 0, 0, 0, from.Kind);
-                        }
-                        continue;
-                    }
+            if (cursor.Year > MaxYear)
+                return false;
 
-                    current = new DateTime(current.Year, current.Month, nextDay.Value, 0, 0, 0, from.Kind);
-                    continue;
-                }
+            // Check year
+            var year = _year.GetNext(cursor.Year);
+            if (year < 0 || year > MaxYear)
+                return false;
 
-                // Check hour
-                if (!_hours.Matches(current.Hour))
-                {
-                    var nextHour = _hours.GetNext(current.Hour);
-                    if (nextHour is null)
-                    {
-                        current = current.Date.AddDays(1);
-                        continue;
-                    }
+            if (year != cursor.Year)
+            {
+                cursor.Year = year;
+                cursor.Month = 1;
+                cursor.ResetDay();
+            }
 
-                    current = new DateTime(current.Year, current.Month, current.Day, nextHour.Value, 0, 0, from.Kind);
-                    continue;
-                }
+            // Check month
+            var month = _month.GetNext(cursor.Month);
+            if (month < 0)
+            {
+                cursor.Year++;
+                cursor.Month = 1;
+                cursor.ResetDay();
+                continue;
+            }
 
-                // Check minute
-                if (!_minutes.Matches(current.Minute))
-                {
-                    var nextMinute = _minutes.GetNext(current.Minute);
-                    if (nextMinute is null)
-                    {
-                        current = new DateTime(current.Year, current.Month, current.Day, current.Hour, 0, 0, from.Kind).AddHours(1);
-                        continue;
-                    }
+            if (month != cursor.Month)
+            {
+                cursor.Month = month;
+                cursor.ResetDay();
+            }
 
-                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, nextMinute.Value, 0, from.Kind);
-                    continue;
-                }
+            // Check day of month and day of week
+            if (cursor.DayMaskYear != cursor.Year || cursor.DayMaskMonth != cursor.Month)
+            {
+                cursor.DayMask = GetDayMask(cursor.Year, cursor.Month);
+                cursor.DayMaskYear = cursor.Year;
+                cursor.DayMaskMonth = cursor.Month;
+            }
 
-                // Check second
-                if (!_seconds.Matches(current.Second))
-                {
-                    var nextSecond = _seconds.GetNext(current.Second);
-                    if (nextSecond is null)
-                    {
-                        current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, 0, from.Kind).AddMinutes(1);
-                        continue;
-                    }
+            var remainingDays = cursor.DayMask >> cursor.Day;
+            if (remainingDays is 0)
+            {
+                cursor.Month++;
+                cursor.ResetDay();
+                continue;
+            }
 
-                    current = new DateTime(current.Year, current.Month, current.Day, current.Hour, current.Minute, nextSecond.Value, from.Kind);
-                    continue;
-                }
+            var day = cursor.Day + TrailingZeroCount(remainingDays);
+            if (day != cursor.Day)
+            {
+                cursor.Day = day;
+                cursor.ResetTime();
+            }
 
-                return current;
+            // Check hour
+            var hour = _hours.GetNext(cursor.Hour);
+            if (hour < 0)
+            {
+                cursor.Day++;
+                cursor.ResetTime();
+                continue;
+            }
+
+            if (hour != cursor.Hour)
+            {
+                cursor.Hour = hour;
+                cursor.Minute = 0;
+                cursor.Second = 0;
+            }
+
+            // Check minute
+            var minute = _minutes.GetNext(cursor.Minute);
+            if (minute < 0)
+            {
+                cursor.Hour++;
+                cursor.Minute = 0;
+                cursor.Second = 0;
+                continue;
+            }
+
+            if (minute != cursor.Minute)
+            {
+                cursor.Minute = minute;
+                cursor.Second = 0;
+            }
+
+            // Check second
+            var second = _seconds.GetNext(cursor.Second);
+            if (second < 0)
+            {
+                cursor.Minute++;
+                cursor.Second = 0;
+                continue;
+            }
+
+            cursor.Second = second;
+            return true;
+        }
+    }
+
+    // Gets the days of the month matching both the day-of-month and the day-of-week fields. Bit n is set when day n matches.
+    private ulong GetDayMask(int year, int month)
+    {
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var mask = (ulong.MaxValue >> (63 - daysInMonth)) & ~1UL;
+        if (_dayOfMonth.IsAll && _dayOfWeek.IsAll)
+            return mask;
+
+        var firstDayOfWeek = (int)new DateTime(year, month, 1).DayOfWeek;
+        if (!_dayOfMonth.IsAll)
+        {
+            mask &= GetDayOfMonthMask(daysInMonth, firstDayOfWeek);
+        }
+
+        if (!_dayOfWeek.IsAll)
+        {
+            mask &= GetDayOfWeekMask(daysInMonth, firstDayOfWeek);
+        }
+
+        return mask;
+    }
+
+    private ulong GetDayOfMonthMask(int daysInMonth, int firstDayOfWeek)
+    {
+        var mask = _dayOfMonth.Bits;
+        foreach (var special in _dayOfMonth.Specials)
+        {
+            var day = special.Kind switch
+            {
+                CronValueKind.Last => daysInMonth,
+                CronValueKind.LastOffset => daysInMonth - special.Value,
+                CronValueKind.LastWeekday => GetLastWeekday(daysInMonth, firstDayOfWeek),
+                CronValueKind.NearestWeekday => GetNearestWeekday(special.Value, daysInMonth, firstDayOfWeek),
+                _ => -1,
+            };
+
+            if (day >= 1)
+            {
+                mask |= 1UL << day;
             }
         }
-        catch (ArgumentOutOfRangeException)
-        {
-            // Greater than DateTime.MaxValue
-        }
 
-        return null;
+        return mask;
     }
 
-    private bool MatchesDay(DateTime date)
+    private ulong GetDayOfWeekMask(int daysInMonth, int firstDayOfWeek)
     {
-        return _dayOfMonth.MatchesDay(date.Day, date) && _dayOfWeek.MatchesDayOfWeek(date);
-    }
+        // Rotate the weekly pattern so that bit n matches the (n+1)-th day of the month, then repeat it over 5 weeks
+        var week = _dayOfWeek.Bits & 0x7F;
+        var rotated = ((week >> firstDayOfWeek) | (week << (7 - firstDayOfWeek))) & 0x7F;
+        var mask = (rotated | (rotated << 7) | (rotated << 14) | (rotated << 21) | (rotated << 28)) << 1;
 
-    private int? GetNextMatchingDay(DateTime date)
-    {
-        var daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
-
-        for (var day = date.Day; day <= daysInMonth; day++)
+        foreach (var special in _dayOfWeek.Specials)
         {
-            var testDate = new DateTime(date.Year, date.Month, day);
-            if (_dayOfMonth.MatchesDay(day, testDate) && _dayOfWeek.MatchesDayOfWeek(testDate))
+            var day = special.Kind switch
             {
-                return day;
+                CronValueKind.LastDayOfWeek => daysInMonth - ((GetDayOfWeek(daysInMonth, firstDayOfWeek) - special.Value + 7) % 7),
+                CronValueKind.NthDayOfWeek => 1 + ((special.Value - firstDayOfWeek + 7) % 7) + (7 * (special.NthValue - 1)),
+                _ => -1,
+            };
+
+            if (day >= 1 && day <= daysInMonth)
+            {
+                mask |= 1UL << day;
             }
         }
 
-        return null;
+        return mask;
     }
 
+    private static int GetDayOfWeek(int day, int firstDayOfWeek) => (firstDayOfWeek + day - 1) % 7;
+
+    private static int GetLastWeekday(int daysInMonth, int firstDayOfWeek)
+    {
+        return GetDayOfWeek(daysInMonth, firstDayOfWeek) switch
+        {
+            (int)DayOfWeek.Saturday => daysInMonth - 1,
+            (int)DayOfWeek.Sunday => daysInMonth - 2,
+            _ => daysInMonth,
+        };
+    }
+
+    private static int GetNearestWeekday(int targetDay, int daysInMonth, int firstDayOfWeek)
+    {
+        // If the target day doesn't exist in this month, there is no match
+        if (targetDay > daysInMonth)
+            return -1;
+
+        return GetDayOfWeek(targetDay, firstDayOfWeek) switch
+        {
+            // Move to Friday if possible, otherwise Monday
+            (int)DayOfWeek.Saturday => targetDay > 1 ? targetDay - 1 : targetDay + 2,
+
+            // Move to Monday if possible, otherwise Friday
+            (int)DayOfWeek.Sunday => targetDay < daysInMonth ? targetDay + 1 : targetDay - 2,
+            _ => targetDay,
+        };
+    }
+
+    private static int TrailingZeroCount(ulong value)
+    {
+#if NETCOREAPP3_0_OR_GREATER
+        return BitOperations.TrailingZeroCount(value);
+#else
+        // De Bruijn sequence lookup. The value is never 0.
+        return DeBruijnBitPositions[(int)(unchecked((value & (~value + 1)) * 0x03F79D71B4CB0A89UL) >> 58)];
+#endif
+    }
+
+#if !NETCOREAPP3_0_OR_GREATER
+    private static ReadOnlySpan<byte> DeBruijnBitPositions =>
+    [
+        0, 1, 48, 2, 57, 49, 28, 3, 61, 58, 50, 42, 38, 29, 17, 4,
+        62, 55, 59, 36, 53, 51, 43, 22, 45, 39, 33, 30, 24, 18, 12, 5,
+        63, 47, 56, 27, 60, 41, 37, 16, 54, 35, 52, 21, 44, 32, 23, 11,
+        46, 26, 40, 15, 34, 20, 31, 10, 25, 14, 19, 9, 13, 8, 7, 6,
+    ];
+#endif
 #if NET7_0_OR_GREATER
     static CronExpression IParsable<CronExpression>.Parse(string s, IFormatProvider? provider) => Parse(s);
     static bool IParsable<CronExpression>.TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)] out CronExpression? result) => TryParse(s, out result);
@@ -726,7 +859,6 @@ public sealed class CronExpression : IRecurrenceRule
 
     private enum CronValueKind
     {
-        Value,
         Last,
         LastOffset,
         LastWeekday,
@@ -744,218 +876,186 @@ public sealed class CronExpression : IRecurrenceRule
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct CronField
+    private struct OccurrenceCursor
+    {
+        public int Year;
+        public int Month;
+        public int Day;
+        public int Hour;
+        public int Minute;
+        public int Second;
+
+        public int DayMaskYear;
+        public int DayMaskMonth;
+        public ulong DayMask;
+
+        private int _dateTicksYear;
+        private int _dateTicksMonth;
+        private int _dateTicksDay;
+        private long _dateTicks;
+
+        public OccurrenceCursor(DateTime value)
+        {
+            Year = value.Year;
+            Month = value.Month;
+            Day = value.Day;
+            Hour = value.Hour;
+            Minute = value.Minute;
+            Second = value.Second;
+        }
+
+        public DateTime ToDateTime(DateTimeKind kind)
+        {
+            // Consecutive occurrences are often on the same day, so the ticks of the date are cached
+            if (_dateTicksDay != Day || _dateTicksMonth != Month || _dateTicksYear != Year)
+            {
+                _dateTicks = new DateTime(Year, Month, Day).Ticks;
+                _dateTicksYear = Year;
+                _dateTicksMonth = Month;
+                _dateTicksDay = Day;
+            }
+
+            return new DateTime(_dateTicks + (((Hour * 3600L) + (Minute * 60L) + Second) * TimeSpan.TicksPerSecond), kind);
+        }
+
+        public void ResetDay()
+        {
+            Day = 1;
+            ResetTime();
+        }
+
+        public void ResetTime()
+        {
+            Hour = 0;
+            Minute = 0;
+            Second = 0;
+        }
+    }
+
+    // Values are stored as a bitmask: bit n is set when the value (offset + n) is part of the field.
+    // Only the year field (1970-2099, 130 values) needs more than one 64-bit word and a non-zero offset.
+    [StructLayout(LayoutKind.Auto)]
+    private struct CronFieldBuilder
     {
         private readonly CronFieldKind _kind;
-        private readonly bool _isAll;
-        private readonly List<CronFieldValue>? _values;
+        private ulong _word0;
+        private ulong _word1;
+        private ulong _word2;
+        private bool _isAll;
+        private List<CronFieldValue>? _specials;
 
-        private CronField(CronFieldKind kind, bool isAll, List<CronFieldValue>? values)
+        public CronFieldBuilder(CronFieldKind kind)
         {
             _kind = kind;
-            _isAll = isAll;
-            _values = values;
         }
 
-        public static CronField CreateAll(CronFieldKind kind) => new(kind, isAll: true, values: null);
+        public void SetAll() => _isAll = true;
 
-        public static CronField CreateValue(CronFieldKind kind, int value) =>
-            new(kind, isAll: false, values: [new CronFieldValue { Kind = CronValueKind.Value, Value = value }]);
+        public void AddSpecial(CronFieldValue value) => (_specials ??= []).Add(value);
 
-        public static CronField CreateStep(CronFieldKind kind, int start, int end, int step)
+        // Adds start, start+step, ... up to end. When end is lower than start, the range wraps around
+        // the end of the field: 22-2 in the hour field means 22, 23, 0, 1, 2.
+        public void AddRange(int start, int end, int step)
         {
-            var values = new List<CronFieldValue>();
-            for (var i = start; i <= end; i += step)
+            var min = GetMinValue(_kind);
+            var max = GetMaxValue(_kind);
+            var size = max - min + 1;
+            long last = end < start ? end + size : end;
+            for (long i = start; i <= last; i += step)
             {
-                values.Add(new CronFieldValue { Kind = CronValueKind.Value, Value = i });
-            }
-            return new CronField(kind, isAll: false, values: values);
-        }
-
-        public static CronField CreateList(CronFieldKind kind, List<CronFieldValue> values) =>
-            new(kind, isAll: false, values: values);
-
-        public bool Matches(int value)
-        {
-            if (_isAll)
-                return true;
-
-            if (_values is null)
-                return false;
-
-            foreach (var v in _values)
-            {
-                if (v.Kind is CronValueKind.Value && v.Value == value)
-                    return true;
-            }
-
-            return false;
-        }
-
-        public bool MatchesDay(int day, DateTime date)
-        {
-            if (_isAll)
-                return true;
-
-            if (_values is null)
-                return false;
-
-            var daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
-
-            foreach (var v in _values)
-            {
-                switch (v.Kind)
+                var value = (int)(i > max ? i - size : i);
+                var index = value - GetOffset(_kind);
+                var bit = 1UL << (index & 63);
+                switch (index >> 6)
                 {
-                    case CronValueKind.Value:
-                        if (v.Value == day)
-                            return true;
+                    case 0:
+                        _word0 |= bit;
                         break;
 
-                    case CronValueKind.Last:
-                        if (day == daysInMonth)
-                            return true;
+                    case 1:
+                        _word1 |= bit;
                         break;
 
-                    case CronValueKind.LastOffset:
-                        if (day == daysInMonth - v.Value)
-                            return true;
-                        break;
-
-                    case CronValueKind.LastWeekday:
-                        var lastWeekday = GetLastWeekday(date.Year, date.Month);
-                        if (day == lastWeekday)
-                            return true;
-                        break;
-
-                    case CronValueKind.NearestWeekday:
-                        var nearestWeekday = GetNearestWeekday(date.Year, date.Month, v.Value);
-                        if (day == nearestWeekday)
-                            return true;
+                    default:
+                        _word2 |= bit;
                         break;
                 }
             }
-
-            return false;
         }
 
-        public bool MatchesDayOfWeek(DateTime date)
+        public readonly CronField Build()
         {
             if (_isAll)
-                return true;
+                return CronField.CreateAll(_kind);
 
-            if (_values is null)
-                return false;
+            return new CronField(_kind, _word0, _word1, _word2, _specials?.ToArray() ?? []);
+        }
+    }
 
-            var dayOfWeek = (int)date.DayOfWeek;
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct CronField
+    {
+        private const int MaxIndex = 3 * 64;
 
-            foreach (var v in _values)
+        private readonly int _offset;
+        private readonly ulong _word1;
+        private readonly ulong _word2;
+
+        public CronField(CronFieldKind kind, ulong word0, ulong word1, ulong word2, CronFieldValue[] specials)
+        {
+            _offset = GetOffset(kind);
+            Bits = word0;
+            _word1 = word1;
+            _word2 = word2;
+            Specials = specials;
+        }
+
+        private CronField(CronFieldKind kind)
+        {
+            _offset = GetOffset(kind);
+            IsAll = true;
+            Specials = [];
+        }
+
+        public bool IsAll { get; }
+
+        // Bits of the values lower than offset + 64, which covers every field except the year
+        public ulong Bits { get; }
+
+        public CronFieldValue[] Specials { get; }
+
+        public static CronField CreateAll(CronFieldKind kind) => new(kind);
+
+        public static CronField CreateValue(CronFieldKind kind, int value)
+        {
+            var builder = new CronFieldBuilder(kind);
+            builder.AddRange(value, value, 1);
+            return builder.Build();
+        }
+
+        // Gets the smallest value of the field greater than or equal to value, or -1 if there is none.
+        public int GetNext(int value) => IsAll ? value : GetNextFromBits(value);
+
+        private int GetNextFromBits(int value)
+        {
+            var index = Math.Max(value - _offset, 0);
+            while (index < MaxIndex)
             {
-                switch (v.Kind)
+                var word = (index >> 6) switch
                 {
-                    case CronValueKind.Value:
-                        if (v.Value == dayOfWeek)
-                            return true;
-                        break;
+                    0 => Bits,
+                    1 => _word1,
+                    _ => _word2,
+                };
 
-                    case CronValueKind.LastDayOfWeek:
-                        // Last occurrence of day v.Value in the month
-                        if (dayOfWeek == v.Value && IsLastOccurrenceOfDayInMonth(date))
-                            return true;
-                        break;
+                var bits = word & (ulong.MaxValue << (index & 63));
+                if (bits is not 0)
+                    return _offset + (index & ~63) + TrailingZeroCount(bits);
 
-                    case CronValueKind.NthDayOfWeek:
-                        // Nth occurrence of day v.Value in the month
-                        if (dayOfWeek == v.Value && GetDayOfWeekOccurrence(date) == v.NthValue)
-                            return true;
-                        break;
-                }
+                index = (index | 63) + 1;
             }
 
-            return false;
-        }
-
-        private static int GetLastWeekday(int year, int month)
-        {
-            var daysInMonth = DateTime.DaysInMonth(year, month);
-            var lastDay = new DateTime(year, month, daysInMonth);
-
-            while (lastDay.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            {
-                lastDay = lastDay.AddDays(-1);
-            }
-
-            return lastDay.Day;
-        }
-
-        private static int GetNearestWeekday(int year, int month, int targetDay)
-        {
-            var daysInMonth = DateTime.DaysInMonth(year, month);
-
-            // If the target day doesn't exist in this month, return -1 (no match)
-            if (targetDay > daysInMonth)
-                return -1;
-
-            var date = new DateTime(year, month, targetDay);
-
-            if (date.DayOfWeek is DayOfWeek.Saturday)
-            {
-                // Move to Friday if possible, otherwise Monday
-                if (targetDay > 1)
-                    return targetDay - 1;
-                else
-                    return targetDay + 2; // Monday
-            }
-
-            if (date.DayOfWeek is DayOfWeek.Sunday)
-            {
-                // Move to Monday if possible, otherwise Friday
-                if (targetDay < daysInMonth)
-                    return targetDay + 1;
-                else
-                    return targetDay - 2; // Friday
-            }
-
-            return targetDay;
-        }
-
-        private static bool IsLastOccurrenceOfDayInMonth(DateTime date)
-        {
-            // Check if there's another occurrence of this day of week in the remaining month
-            var nextSameDay = date.AddDays(7);
-            return nextSameDay.Month != date.Month;
-        }
-
-        private static int GetDayOfWeekOccurrence(DateTime date)
-        {
-            return (date.Day - 1) / 7 + 1;
-        }
-
-        public int? GetNext(int current)
-        {
-            if (_isAll)
-            {
-                var max = GetMaxValue(_kind);
-                if (current < max)
-                    return current;
-                return null;
-            }
-
-            if (_values is null)
-                return null;
-
-            int? result = null;
-            foreach (var v in _values)
-            {
-                if (v.Kind is CronValueKind.Value && v.Value >= current)
-                {
-                    if (result is null || v.Value < result.Value)
-                    {
-                        result = v.Value;
-                    }
-                }
-            }
-
-            return result;
+            return -1;
         }
     }
 }

@@ -605,19 +605,18 @@ public partial class RecurrenceRuleTests
             new DateTime(1999, 05, 17, 09, 00, 00));
     }
 
-    // Currently we do not support BYWEEKNO
-    //[Fact]
-    //public void Yearly_MondayOfWeekNumber20Forever()
-    //{
-    //    RecurrenceRule rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=20;BYDAY=MO");
-    //    DateTime startDate = new DateTime(1997, 05, 12, 09, 00, 00);
-    //    var occurrences = rrule.GetNextOccurrences(startDate);
+    [Fact]
+    public void Yearly_MondayOfWeekNumber20Forever()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=20;BYDAY=MO");
+        var startDate = new DateTime(1997, 05, 12, 09, 00, 00);
+        var occurrences = rrule.GetNextOccurrences(startDate);
 
-    //    AssertOccurrencesStartWith(occurrences,
-    //        new DateTime(1997, 05, 12, 09, 00, 00),
-    //        new DateTime(1998, 05, 11, 09, 00, 00),
-    //        new DateTime(1999, 05, 17, 09, 00, 00));
-    //}
+        AssertOccurrencesStartWith(occurrences,
+            new DateTime(1997, 05, 12, 09, 00, 00),
+            new DateTime(1998, 05, 11, 09, 00, 00),
+            new DateTime(1999, 05, 17, 09, 00, 00));
+    }
 
     [Fact]
     public void Yearly_EveryThursdayInMarchForever()

@@ -1753,6 +1753,33 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void String_InvisibleChar_InObject_IndentsEveryLine()
+    {
+        var options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true };
+        var text = HumanReadableSerializer.Serialize(new { Multiline = "line 1\r\nline\t2", Empty = "a\r\n\rb\n" }, options);
+
+        // Line endings are normalized to options.NewLine: the control pictures already record the original ones
+        var expected = string.Join(options.NewLine, "Multiline:", "  line␠1␍␊", "  line␉2", "Empty:", "  a␍␊", "  ␍", "  b␊", "");
+        Assert.Equal(expected, text);
+    }
+
+    [Fact]
+    public void PropertyName_InvisibleChar_InObject_IndentsEveryLine()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new { A = new Dictionary<string, int> { ["a\nb"] = 1, [""] = 2 } },
+            Options = new HumanReadableSerializerOptions { ShowInvisibleCharactersInValues = true },
+            Expected = """
+            A:
+              a␊
+              b: 1
+              : 2
+            """,
+        });
+    }
+
+    [Fact]
     public void PropertyName_InvisibleChar()
     {
         AssertSerialization(new Validation

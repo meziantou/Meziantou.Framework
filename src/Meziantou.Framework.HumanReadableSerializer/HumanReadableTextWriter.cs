@@ -52,41 +52,34 @@ public sealed class HumanReadableTextWriter
 
     private void Write(ReadOnlySpan<char> value, bool showInvisibleCharacters = false)
     {
+        if (value.IsEmpty)
+            return;
+
+        showInvisibleCharacters &= _options.ShowInvisibleCharactersInValues;
+
         var first = true;
-        if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues)
+        foreach (var (line, eol) in StringUtils.EnumerateLines(value))
         {
-            foreach (var (line, eol) in StringUtils.EnumerateLines(value))
+            if (!first)
+            {
+                WriteNewLine();
+            }
+
+            if (showInvisibleCharacters)
+            {
+                // The control pictures record the original end of line, so the actual line break
+                // is normalized and indented the same way as when the option is disabled.
+                WritePendingText(indent: !line.IsEmpty || !eol.IsEmpty);
+                ReplaceInvisibleCharacters(_text, line);
+                ReplaceInvisibleCharacters(_text, eol);
+            }
+            else
             {
                 WritePendingText(indent: !line.IsEmpty);
-                ReplaceInvisibleCharacters(_text, line, _options.NewLine);
-                ReplaceInvisibleCharacters(_text, eol, _options.NewLine);
+                _text.Append(line);
             }
-        }
-        else
-        {
-            if (!value.IsEmpty)
-            {
-                foreach (var (line, eol) in StringUtils.EnumerateLines(value))
-                {
-                    if (!first)
-                    {
-                        WriteNewLine();
-                    }
 
-                    WritePendingText(indent: !line.IsEmpty);
-                    if (showInvisibleCharacters && _options.ShowInvisibleCharactersInValues)
-                    {
-                        ReplaceInvisibleCharacters(_text, line, _options.NewLine);
-                        ReplaceInvisibleCharacters(_text, eol, _options.NewLine);
-                    }
-                    else
-                    {
-                        _text.Append(line);
-                    }
-
-                    first = false;
-                }
-            }
+            first = false;
         }
     }
 
@@ -95,29 +88,13 @@ public sealed class HumanReadableTextWriter
         _context = WriterContext.NewLine;
     }
 
-    private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value, string newLine)
+    private static void ReplaceInvisibleCharacters(StringBuilder sb, ReadOnlySpan<char> value)
     {
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
 
-            if (c is '\r')
-            {
-                if (i + 1 < value.Length && value[i + 1] is '\n')
-                {
-                    sb.Append("\u240D\u240A").Append(newLine);
-                    i++;
-                }
-                else
-                {
-                    sb.Append('\u240D').Append(newLine);
-                }
-            }
-            else if (c is '\n')
-            {
-                sb.Append('\u240A').Append(newLine);
-            }
-            else if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
+            if (c is >= '\u0000' and <= '\u0020') // Control characters: https://www.compart.com/en/unicode/block/U+2400
             {
                 sb.Append((char)((short)'\u2400' + (short)c));
             }

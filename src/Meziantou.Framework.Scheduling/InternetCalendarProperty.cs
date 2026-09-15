@@ -108,7 +108,7 @@ public sealed class InternetCalendarProperty
     }
 
     /// <summary>A param-value list (RFC 5545 section 3.1): paramtext or quoted-string values separated by commas.</summary>
-    private static bool IsValidParameterValue(string value)
+    internal static bool IsValidParameterValue(string value)
     {
         var index = 0;
         while (true)
@@ -153,7 +153,7 @@ public sealed class InternetCalendarProperty
     }
 
     /// <summary>A value is *VALUE-CHAR (RFC 5545 section 3.1): any character but a CTL, horizontal tabs aside.</summary>
-    private static bool IsValidValue(string value)
+    internal static bool IsValidValue(string value)
     {
         foreach (var c in value)
         {

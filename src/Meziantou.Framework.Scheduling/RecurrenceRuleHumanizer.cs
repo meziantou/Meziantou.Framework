@@ -106,26 +106,26 @@ internal abstract class RecurrenceRuleHumanizer
     }
 
     /// <summary>Gets the times of day described by BYHOUR, BYMINUTE and BYSECOND when they are fully specified and few enough to be listed.</summary>
-    protected static List<(int Hour, int Minute, int? Second)>? GetListedTimes(RuleParts rule)
+    protected static List<(int Hour, int Minute, int? Second)>? GetListedTimes(IList<int> hours, IList<int> minutes, IList<int> seconds)
     {
-        if (rule.ByHours.Count is 0 || rule.ByMinutes.Count is 0)
+        if (hours.Count is 0 || minutes.Count is 0)
             return null;
 
-        if ((long)rule.ByHours.Count * rule.ByMinutes.Count * Math.Max(1, rule.BySeconds.Count) > MaxListedTimes)
+        if ((long)hours.Count * minutes.Count * Math.Max(1, seconds.Count) > MaxListedTimes)
             return null;
 
         var result = new List<(int Hour, int Minute, int? Second)>();
-        foreach (var hour in rule.ByHours)
+        foreach (var hour in hours)
         {
-            foreach (var minute in rule.ByMinutes)
+            foreach (var minute in minutes)
             {
-                if (rule.BySeconds.Count is 0)
+                if (seconds.Count is 0)
                 {
                     result.Add((hour, minute, null));
                 }
                 else
                 {
-                    foreach (var second in rule.BySeconds)
+                    foreach (var second in seconds)
                     {
                         result.Add((hour, minute, second));
                     }
@@ -134,6 +134,131 @@ internal abstract class RecurrenceRuleHumanizer
         }
 
         return result;
+    }
+
+    /// <summary>Gets the BYSETPOS values as positions among the days of a month or a year, such as "the last weekday", when the rule can be described that way.</summary>
+    /// <remarks>
+    /// <para>BYSETPOS selects among every instance of a period: its days, each expanded by every time of day. The positions can
+    /// only be described as day positions when the period is the one the days are counted in (a month, or a year that is not
+    /// split across several months), and when every position selects the same time of day. That time of day is returned too.</para>
+    /// </remarks>
+    /// <returns>The day positions, or <see langword="null"/> when BYSETPOS must be described as positions among the occurrences.</returns>
+    protected static DaySetPositions? GetDaySetPositions(RuleParts rule)
+    {
+        if (rule.BySetPositions.Count is 0 || rule.ByDays.Count is 0 || rule.HasOrdinalDays)
+            return null;
+
+        if (rule.ByMonthDays.Count > 0 || rule.ByYearDays.Count > 0 || rule.ByWeekNumbers.Count > 0)
+            return null;
+
+        // In a YEARLY rule the set is the whole year, so "the last weekday of January and February" would be wrong
+        if (rule.Frequency is not (Frequency.Monthly or Frequency.Yearly) || (rule.Frequency is Frequency.Yearly && rule.ByMonths.Count > 1))
+            return null;
+
+        var minuteCount = Math.Max(1, rule.ByMinutes.Count);
+        var secondCount = Math.Max(1, rule.BySeconds.Count);
+        var timesPerDay = (long)Math.Max(1, rule.ByHours.Count) * minuteCount * secondCount;
+
+        long? timeIndex = null;
+        var dayPositions = new List<int>();
+        foreach (var position in rule.BySetPositions)
+        {
+            if (position is 0)
+                continue;
+
+            long dayPosition;
+            long index;
+            if (position > 0)
+            {
+                dayPosition = ((position - 1L) / timesPerDay) + 1;
+                index = (position - 1L) % timesPerDay;
+            }
+            else
+            {
+                var fromEnd = -(long)position - 1;
+                dayPosition = -((fromEnd / timesPerDay) + 1);
+                index = timesPerDay - 1 - (fromEnd % timesPerDay);
+            }
+
+            if (timeIndex is not null && timeIndex != index)
+                return null;
+
+            timeIndex = index;
+            if (!dayPositions.Contains((int)dayPosition))
+            {
+                dayPositions.Add((int)dayPosition);
+            }
+        }
+
+        if (timeIndex is not { } selectedTime)
+            return null;
+
+        return new DaySetPositions(
+            dayPositions,
+            SelectTime(rule.ByHours, selectedTime / ((long)minuteCount * secondCount)),
+            SelectTime(rule.ByMinutes, selectedTime / secondCount % minuteCount),
+            SelectTime(rule.BySeconds, selectedTime % secondCount));
+
+        static IList<int> SelectTime(IList<int> values, long index) => values.Count is 0 ? values : [values[(int)index]];
+    }
+
+    /// <summary>Gets a value indicating whether the week start changes the occurrences in a way the rest of the text does not already convey.</summary>
+    /// <remarks>
+    /// <para>The week start numbers the weeks of BYWEEKNO. In a WEEKLY rule, it also decides which of the listed days share a
+    /// week, which matters when weeks are skipped or when BYSETPOS selects among the days of a week. Two week starts that
+    /// begin the week with the same listed day group the days identically, so a week start is only reported when it groups
+    /// them differently from the default one.</para>
+    /// </remarks>
+    protected static bool IsWeekStartSignificant(RuleParts rule)
+    {
+        if (rule.WeekStart == RecurrenceRule.DefaultFirstDayOfWeek)
+            return false;
+
+        if (rule.ByWeekNumbers.Count > 0)
+            return true;
+
+        if (rule.Frequency is not Frequency.Weekly || rule.ByDays.Count < 2 || (rule.Interval is 1 && rule.BySetPositions.Count is 0))
+            return false;
+
+        var daysOfWeek = rule.DaysOfWeek;
+        return GetFirstDayOfWeek(daysOfWeek, rule.WeekStart) != GetFirstDayOfWeek(daysOfWeek, RecurrenceRule.DefaultFirstDayOfWeek);
+
+        static DayOfWeek GetFirstDayOfWeek(List<DayOfWeek> daysOfWeek, DayOfWeek weekStart)
+        {
+            return daysOfWeek.OrderBy(day => (day - weekStart + 7) % 7).First();
+        }
+    }
+
+    /// <summary>Sorts values whose order is meaningless and removes the duplicates.</summary>
+    private static List<int> SortValues(IEnumerable<int>? values)
+    {
+        return values is null ? [] : [.. values.Distinct().OrderBy(value => value)];
+    }
+
+    /// <summary>Sorts positions in chronological order (1, 2, …, -2, -1) and removes the duplicates.</summary>
+    private static List<int> SortPositions(IEnumerable<int>? values)
+    {
+        return values is null ? [] : [.. values.Distinct().OrderBy(value => value < 0).ThenBy(value => value)];
+    }
+
+    /// <summary>The positions among the days of a period selected by BYSETPOS, with the time of day they select.</summary>
+    protected sealed class DaySetPositions
+    {
+        public DaySetPositions(IList<int> dayPositions, IList<int> hours, IList<int> minutes, IList<int> seconds)
+        {
+            DayPositions = dayPositions;
+            Hours = hours;
+            Minutes = minutes;
+            Seconds = seconds;
+        }
+
+        public IList<int> DayPositions { get; }
+
+        public IList<int> Hours { get; }
+
+        public IList<int> Minutes { get; }
+
+        public IList<int> Seconds { get; }
     }
 
     protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
@@ -168,20 +293,23 @@ internal abstract class RecurrenceRuleHumanizer
     /// <summary>A frequency-independent view of the parts of a recurrence rule.</summary>
     protected sealed class RuleParts
     {
-        private RuleParts(Frequency frequency, RecurrenceRule rrule, IEnumerable<ByDay>? byDays, IList<int>? byMonthDays, IList<int>? byMonths, IList<int>? byYearDays)
+        private RuleParts(Frequency frequency, RecurrenceRule rrule, IEnumerable<ByDay>? byDays, IList<int>? byYearDays, IList<int>? byWeekNumbers)
         {
             Frequency = frequency;
             Interval = rrule.Interval;
             Occurrences = rrule.Occurrences;
             EndDate = rrule.EndDate;
-            ByDays = byDays is null ? [] : [.. byDays];
-            ByMonthDays = byMonthDays ?? [];
-            ByMonths = byMonths ?? [];
-            ByYearDays = byYearDays ?? [];
-            BySetPositions = rrule.BySetPositions ?? [];
-            ByHours = rrule.ByHours ?? [];
-            ByMinutes = rrule.ByMinutes ?? [];
-            BySeconds = rrule.BySeconds ?? [];
+            IsEndDateDate = rrule.IsEndDateDate;
+            WeekStart = rrule.WeekStart;
+            ByDays = byDays is null ? [] : [.. byDays.Distinct()];
+            ByMonthDays = SortPositions(rrule.ByMonthDays);
+            ByMonths = SortValues(rrule.ByMonths);
+            ByYearDays = SortPositions(byYearDays);
+            ByWeekNumbers = SortPositions(byWeekNumbers);
+            BySetPositions = SortPositions(rrule.BySetPositions);
+            ByHours = SortValues(rrule.ByHours);
+            ByMinutes = SortValues(rrule.ByMinutes);
+            BySeconds = SortValues(rrule.BySeconds);
         }
 
         public Frequency Frequency { get; }
@@ -192,6 +320,11 @@ internal abstract class RecurrenceRuleHumanizer
 
         public DateTime? EndDate { get; }
 
+        /// <summary>Gets a value indicating whether <see cref="EndDate"/> is a DATE, which has no time of day.</summary>
+        public bool IsEndDateDate { get; }
+
+        public DayOfWeek WeekStart { get; }
+
         public IList<ByDay> ByDays { get; }
 
         public IList<int> ByMonthDays { get; }
@@ -199,6 +332,8 @@ internal abstract class RecurrenceRuleHumanizer
         public IList<int> ByMonths { get; }
 
         public IList<int> ByYearDays { get; }
+
+        public IList<int> ByWeekNumbers { get; }
 
         public IList<int> BySetPositions { get; }
 
@@ -216,13 +351,13 @@ internal abstract class RecurrenceRuleHumanizer
         {
             return rrule switch
             {
-                SecondlyRecurrenceRule rule => new RuleParts(Frequency.Secondly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                MinutelyRecurrenceRule rule => new RuleParts(Frequency.Minutely, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                HourlyRecurrenceRule rule => new RuleParts(Frequency.Hourly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                DailyRecurrenceRule rule => new RuleParts(Frequency.Daily, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                WeeklyRecurrenceRule rule => new RuleParts(Frequency.Weekly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                MonthlyRecurrenceRule rule => new RuleParts(Frequency.Monthly, rrule, rule.ByWeekDays, rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                YearlyRecurrenceRule rule => new RuleParts(Frequency.Yearly, rrule, rule.ByWeekDays, rrule.ByMonthDays, rrule.ByMonths, rule.ByYearDays),
+                SecondlyRecurrenceRule rule => new RuleParts(Frequency.Secondly, rrule, ToByDays(rule.ByWeekDays), rule.ByYearDays, byWeekNumbers: null),
+                MinutelyRecurrenceRule rule => new RuleParts(Frequency.Minutely, rrule, ToByDays(rule.ByWeekDays), rule.ByYearDays, byWeekNumbers: null),
+                HourlyRecurrenceRule rule => new RuleParts(Frequency.Hourly, rrule, ToByDays(rule.ByWeekDays), rule.ByYearDays, byWeekNumbers: null),
+                DailyRecurrenceRule rule => new RuleParts(Frequency.Daily, rrule, ToByDays(rule.ByWeekDays), byYearDays: null, byWeekNumbers: null),
+                WeeklyRecurrenceRule rule => new RuleParts(Frequency.Weekly, rrule, ToByDays(rule.ByWeekDays), byYearDays: null, byWeekNumbers: null),
+                MonthlyRecurrenceRule rule => new RuleParts(Frequency.Monthly, rrule, rule.ByWeekDays, byYearDays: null, byWeekNumbers: null),
+                YearlyRecurrenceRule rule => new RuleParts(Frequency.Yearly, rrule, rule.ByWeekDays, rule.ByYearDays, rule.ByWeekNumbers),
                 _ => null,
             };
         }

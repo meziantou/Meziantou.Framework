@@ -137,6 +137,12 @@ public sealed class CronExpressionTests
     [InlineData("0 0 12 * * 0-7/2", "2024-01-02T12:00:00", "2024-01-04T12:00:00", "2024-01-06T12:00:00", "2024-01-07T12:00:00")]
     [InlineData("0 0 12 * * 7L", "2024-01-28T12:00:00", "2024-02-25T12:00:00", "2024-03-31T12:00:00")]
     [InlineData("0 0 12 * * 7#2", "2024-01-14T12:00:00", "2024-02-11T12:00:00", "2024-03-10T12:00:00")]
+    [InlineData("0 0 12 * * 1/2", "2024-01-01T12:00:00", "2024-01-03T12:00:00", "2024-01-05T12:00:00", "2024-01-07T12:00:00", "2024-01-08T12:00:00")]
+    [InlineData("0 0 12 * * MON/2", "2024-01-01T12:00:00", "2024-01-03T12:00:00", "2024-01-05T12:00:00", "2024-01-07T12:00:00", "2024-01-08T12:00:00")]
+    [InlineData("0 0 12 * * 1-7/2", "2024-01-01T12:00:00", "2024-01-03T12:00:00", "2024-01-05T12:00:00", "2024-01-07T12:00:00", "2024-01-08T12:00:00")]
+    [InlineData("0 0 12 * * 6/2", "2024-01-06T12:00:00", "2024-01-13T12:00:00", "2024-01-20T12:00:00")]
+    [InlineData("0 0 12 * * */2", "2024-01-02T12:00:00", "2024-01-04T12:00:00", "2024-01-06T12:00:00", "2024-01-07T12:00:00", "2024-01-09T12:00:00")]
+    [InlineData("0 0 12 * * 0/2", "2024-01-02T12:00:00", "2024-01-04T12:00:00", "2024-01-06T12:00:00", "2024-01-07T12:00:00", "2024-01-09T12:00:00")]
     public void EvaluateCronExpression_DayOfWeek(string expression, params string[] expectedOccurrences)
     {
         var cron = CronExpression.Parse(expression);
@@ -437,6 +443,102 @@ public sealed class CronExpressionTests
         Assert.Throws<ArgumentNullException>(() => cron.GetNextOccurrences(new DateTime(2024, 01, 01), timeZone: null!));
     }
 
+    // Synthetic time zones work when globalization is invariant, and keep the tests independent of the time zone database.
+    private static TimeZoneInfo CreateTestTimeZone(TimeSpan baseUtcOffset, TimeSpan daylightDelta)
+    {
+        // Daylight saving time starts on the last Sunday of March at 02:00 and ends on the last Sunday of October at 03:00 daylight time
+        var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday);
+        var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday);
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, daylightDelta, daylightStart, daylightEnd);
+        return TimeZoneInfo.CreateCustomTimeZone("Test/Zone", baseUtcOffset, "Test", "Test Standard", "Test Daylight", [rule]);
+    }
+
+    private static TimeZoneInfo TestParis => CreateTestTimeZone(TimeSpan.FromHours(1), TimeSpan.FromHours(1));
+
+    private static TimeZoneInfo TestNewYork
+    {
+        get
+        {
+            var daylightStart = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 2, DayOfWeek.Sunday);
+            var daylightEnd = TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 11, week: 1, DayOfWeek.Sunday);
+            var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2007, 1, 1), DateTime.MaxValue.Date, TimeSpan.FromHours(1), daylightStart, daylightEnd);
+            return TimeZoneInfo.CreateCustomTimeZone("Test/New_York", TimeSpan.FromHours(-5), "Test Eastern", "EST", "EDT", [rule]);
+        }
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AcrossAHalfHourGap_KeepsTheOccurrencesAfterAMovedOne()
+    {
+        var cron = CronExpression.Parse("0,20,40 * * * *");
+        var timeZone = CreateTestTimeZone(new TimeSpan(10, 30, 00), TimeSpan.FromMinutes(30));
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2026, 03, 29, 01, 40, 00), timeZone).Take(5);
+
+        // The gap skips 02:00 to 02:30: 02:00 and 02:20 move to 02:30 and 02:50, around 02:40
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 01, 40, 00, new TimeSpan(10, 30, 00)),
+            new DateTimeOffset(2026, 03, 29, 02, 30, 00, TimeSpan.FromHours(11)),
+            new DateTimeOffset(2026, 03, 29, 02, 40, 00, TimeSpan.FromHours(11)),
+            new DateTimeOffset(2026, 03, 29, 02, 50, 00, TimeSpan.FromHours(11)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(11)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_Hourly_AcrossSpringForward_ReturnsTheInstantOnce()
+    {
+        var cron = CronExpression.Parse("0 * * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2026, 03, 29, 01, 00, 00), TestParis).Take(3);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 01, 00, 00, TimeSpan.FromHours(1)),
+            new DateTimeOffset(2026, 03, 29, 03, 00, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 29, 04, 00, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Theory]
+    [InlineData("45 1 * * *", "2026-11-02T01:45:00-05:00")]
+    [InlineData("* * * * *", "2026-11-01T02:00:00-05:00")]
+    public void GetNextOccurrences_DateTimeOffsetStart_InTheSecondPassOfARepeatedHour_ReturnsNothingBeforeIt(string expression, string expected)
+    {
+        var cron = CronExpression.Parse(expression);
+        var startDate = new DateTimeOffset(2026, 11, 01, 01, 40, 00, TimeSpan.FromHours(-5));
+        var expectedOccurrence = DateTimeOffset.Parse(expected, CultureInfo.InvariantCulture);
+
+        AssertOccurrences(cron.GetNextOccurrences(startDate, TestNewYork).Take(1), expectedOccurrence);
+        AssertOccurrences(((IRecurrenceRule)cron).GetNextOccurrences(startDate, TestNewYork).Take(1), expectedOccurrence);
+        Assert.Equal(expectedOccurrence, ((IRecurrenceRule)cron).GetNextOccurrence(startDate, TestNewYork));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_DateTimeOffsetStart_AfterAForwardTransition_IncludesAMovedOccurrence()
+    {
+        var cron = CronExpression.Parse("40 2 * * *");
+
+        // 02:40 does not exist and is read as 03:40+02:00, which is after the start although 02:40 is before 03:30
+        var occurrences = cron.GetNextOccurrences(new DateTimeOffset(2026, 03, 29, 03, 30, 00, TimeSpan.FromHours(2)), TestParis).Take(2);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2026, 03, 29, 03, 40, 00, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 03, 30, 02, 40, 00, TimeSpan.FromHours(2)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AtTheLimits_DoesNotThrow()
+    {
+        Assert.Empty(CronExpression.Parse("0 23 31 12 *").GetNextOccurrences(new DateTime(9999, 12, 31), TestNewYork).Take(2).ToList());
+        Assert.Null(CronExpression.Parse("0 * * * *").GetNextOccurrence(new DateTime(9999, 12, 31, 23, 00, 00), TestNewYork));
+        Assert.Empty(CronExpression.Parse("* * * * *").GetNextOccurrences(DateTimeOffset.MaxValue, TestParis).ToList());
+
+        // January 1 of year 1 at midnight is before the minimum instant, so the first occurrence is a year later
+        AssertOccurrences(
+            CronExpression.Parse("0 0 1 1 *").GetNextOccurrences(DateTime.MinValue, TestParis).Take(1),
+            new DateTimeOffset(0002, 01, 01, 00, 00, 00, TimeSpan.FromHours(1)));
+        AssertOccurrences(
+            CronExpression.Parse("0 0 1 1 *").GetNextOccurrences(DateTimeOffset.MinValue, TestParis).Take(1),
+            new DateTimeOffset(0002, 01, 01, 00, 00, 00, TimeSpan.FromHours(1)));
+    }
+
 #if !INVARIANT_GLOBALIZATION_MODE_ENABLED
     // An IANA identifier does not resolve on Windows when globalization is invariant.
     private static TimeZoneInfo NewYork => TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
@@ -518,6 +620,24 @@ public sealed class CronExpressionTests
         var actual = cron.GetNextOccurrences(startDate, "America/New_York").Take(4).ToArray();
 
         AssertOccurrences(actual, expected);
+    }
+
+    [Fact]
+    public void GetNextOccurrences_DateTimeOffsetStart_NewYork_InTheSecondPassOfARepeatedHour_ReturnsNothingBeforeIt()
+    {
+        var cron = CronExpression.Parse("45 1 * * *");
+
+        var occurrences = cron.GetNextOccurrences(new DateTimeOffset(2026, 11, 01, 01, 40, 00, TimeSpan.FromHours(-5)), NewYork).Take(1);
+
+        AssertOccurrences(occurrences, new DateTimeOffset(2026, 11, 02, 01, 45, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
+    public void GetNextOccurrences_TimeZone_AtTheLimitsOfTheSystemTimeZones_DoesNotThrow()
+    {
+        Assert.Empty(CronExpression.Parse("0 23 31 12 *").GetNextOccurrences(new DateTime(9999, 12, 31), NewYork).Take(2).ToList());
+        Assert.Null(CronExpression.Parse("0 * * * *").GetNextOccurrence(new DateTime(9999, 12, 31, 23, 00, 00), NewYork));
+        Assert.NotEmpty(CronExpression.Parse("0 0 1 1 *").GetNextOccurrences(DateTime.MinValue, TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo")).Take(1).ToList());
     }
 #endif
 

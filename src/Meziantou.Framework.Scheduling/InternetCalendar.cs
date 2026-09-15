@@ -52,6 +52,11 @@ public sealed class InternetCalendar
     public IList<Event> Events { get; } = new List<Event>();
 
     /// <summary>Gets or sets the iCalendar version.</summary>
+    /// <remarks>
+    /// The value is <c>vers</c> or <c>minver;maxver</c> (RFC 5545 section 3.7.4), so it is read and written as is rather than
+    /// as TEXT. A version containing a control character other than a tab cannot be written, and <see cref="ToIcs()"/> throws
+    /// an <see cref="InvalidOperationException"/> before writing anything.
+    /// </remarks>
     public string Version { get; set; } = "2.0";
 
     /// <summary>Writes the calendar to a stream in iCalendar format.</summary>
@@ -96,12 +101,18 @@ public sealed class InternetCalendar
         END:VCALENDAR
         */
 
-        // The identifiers are validated before the first write so an invalid one cannot produce partial output.
+        // The identifiers and the version are validated before the first write so an invalid one cannot produce partial output.
         var timeZones = GetTimeZones();
 
+        // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", which TEXT escaping would alter, so it is written
+        // as is. A control character would let it start a property of its own, so it is rejected rather than altered.
+        var version = Version;
+        if (!string.IsNullOrEmpty(version) && !InternetCalendarProperty.IsValidValue(version))
+            throw new InvalidOperationException("The iCalendar version contains a control character");
+
         Utilities.WriteLine(writer, "BEGIN:VCALENDAR");
-        if (!string.IsNullOrEmpty(Version))
-            WriteTextProperty(writer, "VERSION", Version);
+        if (!string.IsNullOrEmpty(version))
+            Utilities.WriteLine(writer, "VERSION:" + version);
 
         // PRODID is REQUIRED in a VCALENDAR (RFC 5545 section 3.6).
         Utilities.WriteLine(writer, "PRODID:" + ProductIdentifier);
@@ -116,6 +127,10 @@ public sealed class InternetCalendar
 
         foreach (var @event in Events)
         {
+            // As for the attendees, and as GetTimeZones does, a null entry is skipped.
+            if (@event is null)
+                continue;
+
             Utilities.WriteLine(writer, "BEGIN:VEVENT");
             if (!string.IsNullOrEmpty(@event.Id))
                 WriteTextProperty(writer, "UID", @event.Id);
@@ -123,8 +138,8 @@ public sealed class InternetCalendar
             if (@event.Status is { } status)
                 Utilities.WriteLine(writer, "STATUS:" + Utilities.StatusToString(status));
 
-            if ((@event.Organizer?.Address) is not null)
-                Utilities.WriteLine(writer, "ORGANIZER:" + @event.Organizer.Address);
+            if (@event.Organizer is { Address: { } organizerAddress } organizer)
+                WriteUserAddressProperty(writer, "ORGANIZER", organizer.Parameters, organizerAddress);
 
             foreach (var attendee in @event.Attendees)
             {
@@ -132,7 +147,7 @@ public sealed class InternetCalendar
                 if (attendee?.Address is null)
                     continue;
 
-                Utilities.WriteLine(writer, "ATTENDEE:" + attendee.Address);
+                WriteUserAddressProperty(writer, "ATTENDEE", attendee.Parameters, attendee.Address);
             }
 
             // RFC 5545 sections 3.8.7.1 to 3.8.7.3 require these values in UTC.
@@ -146,12 +161,14 @@ public sealed class InternetCalendar
                 Utilities.WriteLine(writer, "DTSTAMP:" + Utilities.UtcDateTimeToString(@event.DateTimeStamp));
 
             var timeZone = @event.IsAllDay ? null : @event.TimeZone;
-            WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.IsAllDay, timeZone);
+            if (@event.Start != default)
+                WriteDateTimeProperty(writer, "DTSTART", @event.Start, @event.IsAllDay, timeZone);
+
             if (@event.End != default)
                 WriteDateTimeProperty(writer, "DTEND", @event.End, @event.IsAllDay, timeZone);
 
             if (@event.RecurrenceRule is not null)
-                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, timeZone));
+                Utilities.WriteLine(writer, "RRULE:" + GetRecurrenceRuleValue(@event.RecurrenceRule, @event, timeZone));
 
             if (!string.IsNullOrEmpty(@event.Summary))
                 WriteTextProperty(writer, "SUMMARY", @event.Summary);
@@ -159,14 +176,7 @@ public sealed class InternetCalendar
             WriteAdditionalProperties(writer, @event.AdditionalProperties, @event.RawProperties, EventPropertyNames);
 
             if (@event.Description is { } description)
-            {
                 WriteTextProperty(writer, "DESCRIPTION", description);
-            }
-            else
-            {
-                // The escaped empty line this library has always written when no description is set.
-                Utilities.WriteLine(writer, "DESCRIPTION:\\n");
-            }
 
             Utilities.WriteLine(writer, "END:VEVENT");
         }
@@ -226,21 +236,72 @@ public sealed class InternetCalendar
         Utilities.WriteLine(writer, name + ";TZID=" + Utilities.TimeZoneIdToParameterValue(timeZone.Id) + ':' + wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture));
     }
 
-    /// <summary>RFC 5545 section 3.3.10: when DTSTART carries a TZID, UNTIL must be a UTC date-time.</summary>
-    private static string GetRecurrenceRuleValue(RecurrenceRule recurrenceRule, TimeZoneInfo? timeZone)
+    /// <summary>Gets the RRULE value, whose UNTIL has the value type of the DTSTART the event is written with.</summary>
+    /// <remarks>
+    /// <para>RFC 5545 section 3.3.10: when DTSTART is a DATE, UNTIL must be a DATE; when DTSTART is a floating date-time, UNTIL
+    /// must be floating; and when DTSTART carries a TZID or is in UTC, UNTIL must be a UTC date-time.</para>
+    /// <para>A value of another form is converted, keeping the bound it denotes: a wall-clock UNTIL is read in the frame of the
+    /// start (its time zone, UTC, or the local time zone); an instant is read as a wall clock in that frame, or by its own
+    /// reading for a floating start, as <see cref="RecurrenceRule.GetNextOccurrences(DateTime)"/> compares them; and a DATE
+    /// bounds the occurrences through the end of that day.</para>
+    /// <para>The recurrence rule itself is not modified.</para>
+    /// </remarks>
+    private static string GetRecurrenceRuleValue(RecurrenceRule recurrenceRule, Event @event, TimeZoneInfo? timeZone)
     {
         var text = recurrenceRule.Text;
-        if (timeZone is null || recurrenceRule.EndDate is not { Kind: DateTimeKind.Unspecified } endDate)
+        if (recurrenceRule.EndDate is not { } endDate || recurrenceRule.EndDateText is not { } written)
             return text;
 
-        // The bound has to be read the same way the occurrences it bounds are, so UNTIL goes through the
-        // RFC 5545 section 3.3.5 disambiguation rather than TimeZoneInfo.ConvertTimeToUtc, which throws on a
-        // time inside the gap of a forward transition and resolves an ambiguous one to its second occurrence.
-        var utc = Utilities.ToDateTimeOffset(endDate, timeZone).UtcDateTime;
+        var until = GetUntilValue(endDate, recurrenceRule.IsEndDateDate, @event, timeZone);
+        if (string.Equals(until, written, StringComparison.Ordinal))
+            return text;
 
         // The replaced token is a fixed-length value this library itself produced, so the substitution is unambiguous.
-        var floating = ";UNTIL=" + recurrenceRule.EndDateText;
-        return text.Replace(floating, ";UNTIL=" + utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        return text.Replace(";UNTIL=" + written, ";UNTIL=" + until, StringComparison.Ordinal);
+    }
+
+    private static string GetUntilValue(DateTime endDate, bool isDate, Event @event, TimeZoneInfo? timeZone)
+    {
+        // The last second of a day, which a DATE UNTIL includes; DTSTART has no finer precision.
+        var endOfDay = new TimeSpan(23, 59, 59);
+
+        if (@event.IsAllDay)
+        {
+            // Only the date part of the start is written, whatever its kind, so an instant is reduced to a date in the
+            // frame that kind denotes.
+            var date = isDate ? endDate : ToWallClock(endDate, GetFrame(@event.Start.Kind));
+            return date.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+        }
+
+        var frame = timeZone ?? GetFrame(@event.Start.Kind);
+        if (frame is null)
+        {
+            // A floating start compares the reading of an instant with its own reading.
+            var wallClock = isDate ? endDate.Date + endOfDay : endDate;
+            return wallClock.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture);
+        }
+
+        var utc = endDate.Kind switch
+        {
+            DateTimeKind.Utc => endDate,
+            DateTimeKind.Local => endDate.ToUniversalTime(),
+
+            // The bound has to be read the same way the occurrences it bounds are, so UNTIL goes through the
+            // RFC 5545 section 3.3.5 disambiguation rather than TimeZoneInfo.ConvertTimeToUtc, which throws on a
+            // time inside the gap of a forward transition and resolves an ambiguous one to its second occurrence.
+            _ => Utilities.ToDateTimeOffset(isDate ? endDate.Date + endOfDay : endDate, frame).UtcDateTime,
+        };
+
+        return utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture);
+
+        static TimeZoneInfo? GetFrame(DateTimeKind kind) => kind switch
+        {
+            DateTimeKind.Utc => TimeZoneInfo.Utc,
+            DateTimeKind.Local => TimeZoneInfo.Local,
+            _ => null,
+        };
+
+        static DateTime ToWallClock(DateTime value, TimeZoneInfo? frame) => frame is null ? value : Utilities.ToWallClock(value, frame);
     }
 
     private static void WriteAdditionalProperties(TextWriter writer, IDictionary<string, string> additionalProperties, IList<InternetCalendarProperty> rawProperties, HashSet<string> reservedNames)
@@ -265,6 +326,21 @@ public sealed class InternetCalendar
 
             rawProperty.Write(writer);
         }
+    }
+
+    /// <summary>Writes an ORGANIZER or an ATTENDEE content line (RFC 5545 sections 3.8.4.3 and 3.8.4.1), whose value is a CAL-ADDRESS.</summary>
+    private static void WriteUserAddressProperty(TextWriter writer, string name, IList<KeyValuePair<string, string>> parameters, InternetCalendarUserAddress address)
+    {
+        var sb = new StringBuilder(name);
+
+        // The parameters were validated when they were added.
+        foreach (var parameter in parameters)
+        {
+            sb.Append(';').Append(parameter.Key).Append('=').Append(parameter.Value);
+        }
+
+        sb.Append(':').Append(address.GetContentLineValue());
+        Utilities.WriteLine(writer, sb.ToString());
     }
 
     /// <summary>Writes a content line whose value is escaped as an iCalendar TEXT value.</summary>

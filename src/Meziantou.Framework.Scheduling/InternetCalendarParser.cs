@@ -90,8 +90,9 @@ internal static class InternetCalendarParser
             index++;
             switch (line.Name.ToUpperInvariant())
             {
+                // RFC 5545 section 3.7.4: the value is "vers" or "minver;maxver", not TEXT, so it is kept as written.
                 case "VERSION":
-                    result.Version = line.GetTextValue();
+                    result.Version = line.Value;
                     break;
 
                 // PRODID identifies the product that wrote the calendar, which this library sets itself.
@@ -180,13 +181,16 @@ internal static class InternetCalendarParser
                         return false;
 
                     result.Organizer = new Organizer { Address = organizer };
+                    ((InternetCalendarParameterCollection)result.Organizer.Parameters).AddParsed(line.GetRawParameters());
                     break;
 
                 case "ATTENDEE":
-                    if (!TryParseUserAddress(line, out var attendee, out error))
+                    if (!TryParseUserAddress(line, out var attendeeAddress, out error))
                         return false;
 
-                    result.Attendees.Add(new Attendee { Address = attendee });
+                    var attendee = new Attendee { Address = attendeeAddress };
+                    ((InternetCalendarParameterCollection)attendee.Parameters).AddParsed(line.GetRawParameters());
+                    result.Attendees.Add(attendee);
                     break;
 
                 case "CREATED":

@@ -11,9 +11,13 @@ namespace Meziantou.Framework.Scheduling;
 /// its shortest periods are merged into the preceding ones.</para>
 /// <para>The ongoing pattern, a STANDARD and a DAYLIGHT sub-component whose yearly RRULE never ends and that a
 /// <see cref="TimeZoneInfo.TransitionTime"/> can express (such as BYDAY=-1SU or BYMONTHDAY=22), becomes a single open-ended rule
-/// from the year after the last onset of the other sub-components. Any other open-ended recurrence is expanded for
-/// <see cref="YearsToExpandOpenEndedRecurrence"/> years, after which the offset stays the one of the last change.</para>
+/// from the year after the last onset of the other sub-components. The other open-ended recurrences repeat with the Gregorian
+/// calendar, every 400 years unless INTERVAL lengthens that: one repetition is expanded, and its changes and rules are repeated
+/// until the last supported year, so the cost does not depend on DTSTART, which Outlook writes in 1601. A recurrence producing
+/// too many onsets for its repetition to be expanded is only expanded for <see cref="YearsToExpandOpenEndedRecurrence"/> years,
+/// after which the offset stays the one of the last change.</para>
 /// <para>Before the first change, the offset is the TZOFFSETFROM of that change.</para>
+/// <para>A change at midnight on January 1 may happen one millisecond early, when the runtime reproduces no rule placing it exactly.</para>
 /// <para>.NET Standard 2.0 cannot change the standard offset in an adjustment rule, so there the years whose standard offset
 /// differs from the base one keep the base offset.</para>
 /// </remarks>
@@ -28,15 +32,39 @@ internal static class VTimeZoneReader
     /// <summary>The number of years inspected to recognize the transition an open-ended recurrence describes.</summary>
     private const int YearsToRecognizeTransition = 28;
 
-    /// <summary>The number of years an open-ended recurrence no <see cref="TimeZoneInfo.TransitionTime"/> expresses is expanded for.</summary>
+    /// <summary>The number of years an open-ended recurrence is expanded for when it produces too many onsets for its repetition to be found.</summary>
     private const int YearsToExpandOpenEndedRecurrence = 300;
+
+    /// <summary>The number of years after which the Gregorian calendar repeats, days of the week included.</summary>
+    private const int GregorianCycleYears = 400;
+
+    /// <summary>The number of days in <see cref="GregorianCycleYears"/> years.</summary>
+    private const int GregorianCycleDays = 146097;
+
+    /// <summary>Bounds the years expanded to find the repetition of an open-ended recurrence, which INTERVAL lengthens.</summary>
+    private const int MaxRepetitionYears = 2000;
+
+    /// <summary>The years a repetition must end before the last supported year for its changes to be repeated rather than expanded.</summary>
+    private const int RepetitionMarginYears = 16;
 
 #if NET6_0_OR_GREATER
     /// <summary>The number of years the open-ended adjustment rule is checked against the recurrences it replaces.</summary>
     private const int YearsToVerifyOngoingRule = 30;
+
+    /// <summary>The number of years verified with the same time zone, made of their rules and of the rules of their neighbors.</summary>
+    private const int VerifiedSectionYears = 64;
 #endif
 
     private const int LastSupportedYear = 9998;
+
+    /// <summary>The transition the runtime reads as the start of the year when a daylight saving period starts with it.</summary>
+    private static readonly TimeZoneInfo.TransitionTime StartOfYearTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1), 1, 1);
+
+    /// <summary>The transition the runtime reads as the end of the year when a daylight saving period ends with it: any time within the first second of January 1.</summary>
+    private static readonly TimeZoneInfo.TransitionTime EndOfYearTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0, 1), 1, 1);
+
+    /// <summary>The last millisecond of the year, which the runtime reads as an ordinary transition.</summary>
+    private static readonly TimeZoneInfo.TransitionTime LastMillisecondOfYearTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 12, 31);
 
     /// <summary>Creates the time zone described by the content lines of a VTIMEZONE component, its delimiters excluded.</summary>
     /// <returns>The time zone, whose identifier is <paramref name="id"/>, or <see langword="null"/> when the component cannot be represented.</returns>
@@ -106,7 +134,7 @@ internal static class VTimeZoneReader
         var transitions = Normalize(ExpandAll(observances, lastExpandedYear));
         var years = CreateYearRules(transitions.FindAll(transition => transition.Local.Year < ongoingFromYear), baseUtcOffset, ongoingFromYear - 1);
         years.Add([new RuleSpecification(new DateTime(ongoingFromYear, 1, 1), DateTime.MaxValue.Date, daylight.OffsetTo - standard.OffsetTo, daylightStart, daylightEnd, TimeSpan.Zero)]);
-        var timeZone = CreateTimeZone(id, standard.Name ?? id, daylight.Name ?? id, baseUtcOffset, years, transitions);
+        var timeZone = CreateTimeZone(id, standard.Name ?? id, daylight.Name ?? id, baseUtcOffset, new YearRules(years), transitions);
 
 #if NET6_0_OR_GREATER
         // A transition the runtime computes differently, such as one close to the end of a year, is not worth an approximation:
@@ -121,19 +149,171 @@ internal static class VTimeZoneReader
     /// <summary>Creates the time zone from the changes of offset the observances describe.</summary>
     private static TimeZoneInfo CreateFromTransitions(string id, List<Observance> observances)
     {
+        var standardName = FindName(observances, isDaylight: false) ?? id;
+        var daylightName = FindName(observances, isDaylight: true) ?? id;
         var lastYear = LastSupportedYear;
-        foreach (var observance in observances)
+        if (TryFindRepetition(observances, out var repeatedFromYear, out var repetitionYears))
         {
-            if (observance.RecurrenceRule is not null && observance.IsForever)
+            if (repeatedFromYear + repetitionYears + RepetitionMarginYears <= LastSupportedYear)
+                return CreateRepeatingTimeZone(id, standardName, daylightName, observances, repeatedFromYear, repetitionYears);
+        }
+        else
+        {
+            // A recurrence producing too many onsets for its repetition to be found is only expanded for a bounded number of years.
+            foreach (var observance in observances)
             {
-                lastYear = Math.Min(lastYear, Math.Max(observance.Start.Year, 1) + YearsToExpandOpenEndedRecurrence);
+                if (observance.RecurrenceRule is not null && observance.IsForever)
+                {
+                    lastYear = Math.Min(lastYear, Math.Max(observance.Start.Year, 1) + YearsToExpandOpenEndedRecurrence);
+                }
             }
         }
 
         var transitions = Normalize(ExpandAll(observances, lastYear));
         var baseUtcOffset = transitions.Count > 0 ? transitions[^1].To : observances[^1].OffsetTo;
         var years = CreateYearRules(transitions, baseUtcOffset, transitions.Count > 0 ? transitions[^1].Local.Year : 0);
-        return CreateTimeZone(id, FindName(observances, isDaylight: false) ?? id, FindName(observances, isDaylight: true) ?? id, baseUtcOffset, years, transitions);
+        return CreateTimeZone(id, standardName, daylightName, baseUtcOffset, new YearRules(years), transitions);
+    }
+
+    /// <summary>Creates the time zone whose changes of offset from <paramref name="repeatedFromYear"/> on repeat every <paramref name="repetitionYears"/> years.</summary>
+    /// <remarks>
+    /// Only one repetition is expanded, and its changes are repeated until the last supported year, so the cost does not depend
+    /// on the year of DTSTART, which Outlook writes as 1601. The rules of the repeated years are not listed either: they are
+    /// those of the listed years shifted by whole repetitions.
+    /// </remarks>
+    private static TimeZoneInfo CreateRepeatingTimeZone(string id, string standardName, string daylightName, List<Observance> observances, int repeatedFromYear, int repetitionYears)
+    {
+        var lastListedYear = repeatedFromYear + repetitionYears - 1;
+        var transitions = Normalize(ExpandAll(observances, lastListedYear + 1));
+        var start = transitions.FindIndex(transition => transition.Local.Year >= repeatedFromYear);
+        var end = transitions.FindIndex(transition => transition.Local.Year > lastListedYear);
+        if (end >= 0)
+        {
+            transitions.RemoveRange(end, transitions.Count - end);
+        }
+        else
+        {
+            end = transitions.Count;
+        }
+
+        if (start >= 0 && start < end)
+        {
+            // A repetition shifts every date by a whole number of days, keeping its month and its day.
+            var shift = GetRepetitionShift(repetitionYears);
+            for (var repetition = 1; transitions[start].Local.Year + (repetition * repetitionYears) <= LastSupportedYear; repetition++)
+            {
+                for (var i = start; i < end && transitions[i].Local.Year + (repetition * repetitionYears) <= LastSupportedYear; i++)
+                {
+                    var transition = transitions[i];
+                    transitions.Add(new Transition(transition.Utc + TimeSpan.FromTicks(shift.Ticks * repetition), transition.From, transition.To, transition.IsDaylight));
+                }
+            }
+        }
+        else
+        {
+            // No change repeats, so the offset no longer changes.
+            lastListedYear = transitions.Count > 0 ? transitions[^1].Local.Year : 0;
+            repetitionYears = 0;
+        }
+
+        var baseUtcOffset = transitions.Count > 0 ? transitions[^1].To : observances[^1].OffsetTo;
+        var listedYears = CreateYearRules(transitions, baseUtcOffset, lastListedYear);
+        if (repetitionYears is 0)
+            return CreateTimeZone(id, standardName, daylightName, baseUtcOffset, new YearRules(listedYears), transitions);
+
+        // The listed years end with a whole repetition, unless the changes start after its first year.
+        var repeatedFromIndex = listedYears.Count - repetitionYears;
+        if (repeatedFromIndex <= 0 || listedYears[repeatedFromIndex][0].Start != new DateTime(repeatedFromYear, 1, 1))
+            return CreateTimeZone(id, standardName, daylightName, baseUtcOffset, new YearRules(CreateYearRules(transitions, baseUtcOffset, transitions[^1].Local.Year)), transitions);
+
+        var count = listedYears.Count + (transitions[^1].Local.Year - lastListedYear);
+        return CreateTimeZone(id, standardName, daylightName, baseUtcOffset, new YearRules(listedYears, repeatedFromIndex, repetitionYears, count), transitions);
+    }
+
+    /// <summary>
+    /// Finds the year from which the changes of offset repeat every <paramref name="repetitionYears"/> years, as they do once only
+    /// open-ended recurrences produce onsets: these repeat with the Gregorian calendar.
+    /// </summary>
+    private static bool TryFindRepetition(List<Observance> observances, out int repeatedFromYear, out int repetitionYears)
+    {
+        repeatedFromYear = 0;
+        repetitionYears = 1;
+        var lastOtherYear = 0;
+        var hasRepeatingObservance = false;
+        foreach (var observance in observances)
+        {
+            if (observance.RecurrenceRule is not null && observance.IsForever)
+            {
+                if (observance.GetRepeatedOccurrences() is null)
+                    return false;
+
+                var years = (long)repetitionYears * observance.RepetitionYears / GreatestCommonDivisor(repetitionYears, observance.RepetitionYears);
+                if (years > MaxRepetitionYears)
+                    return false;
+
+                repetitionYears = (int)years;
+                hasRepeatingObservance = true;
+
+                // The year of DTSTART is not repeated, as a producer such as Outlook writes a DTSTART that does not follow the rule.
+                lastOtherYear = Math.Max(lastOtherYear, observance.Start.Year);
+                foreach (var date in observance.RecurrenceDates)
+                {
+                    lastOtherYear = Math.Max(lastOtherYear, date.Year);
+                }
+            }
+            else
+            {
+                foreach (var onset in Expand(observance, LastSupportedYear + 1))
+                {
+                    lastOtherYear = Math.Max(lastOtherYear, onset.Local.Year);
+                }
+            }
+        }
+
+        if (!hasRepeatingObservance)
+            return false;
+
+        // From the first repeated onset following all the other ones, each change starts from the offset a repeated onset set.
+        // The local time of the change of that first onset may fall in the next year, which is not repeated either.
+        var firstRepeatedYear = int.MaxValue;
+        foreach (var observance in observances)
+        {
+            if (observance.RecurrenceRule is null || !observance.IsForever || observance.GetRepeatedOccurrences() is not { } occurrences)
+                continue;
+
+            foreach (var occurrence in occurrences)
+            {
+                if (occurrence.Year == observance.Start.Year)
+                    continue;
+
+                var year = occurrence.Year;
+                if (year <= lastOtherYear)
+                {
+                    year += (lastOtherYear - year + observance.RepetitionYears) / observance.RepetitionYears * observance.RepetitionYears;
+                }
+
+                firstRepeatedYear = Math.Min(firstRepeatedYear, year);
+            }
+        }
+
+        // Without any repeated onset, the offset no longer changes after the other onsets.
+        if (firstRepeatedYear == int.MaxValue)
+            return false;
+
+        repeatedFromYear = firstRepeatedYear + 2;
+        return true;
+    }
+
+    private static TimeSpan GetRepetitionShift(int repetitionYears) => TimeSpan.FromDays(repetitionYears / GregorianCycleYears * GregorianCycleDays);
+
+    private static int GreatestCommonDivisor(int a, int b)
+    {
+        while (b is not 0)
+        {
+            (a, b) = (b, a % b);
+        }
+
+        return a;
     }
 
     private static void FindOngoingObservances(List<Observance> observances, out Observance? ongoingStandard, out Observance? ongoingDaylight)
@@ -231,6 +411,13 @@ internal static class VTimeZoneReader
 
         var offset = transitions[0].From;
         var firstYear = transitions[0].Local.Year;
+
+        // A first change at midnight on January 1 may be expressed by the rule of the previous year, which is then described on its own.
+        if (firstYear > 1 && transitions[0].Local == new DateTime(firstYear, 1, 1))
+        {
+            firstYear--;
+        }
+
         if (firstYear > 1)
         {
             rules.Add([RuleSpecification.CreateConstant(DateTime.MinValue, new DateTime(firstYear - 1, 12, 31), offset - baseUtcOffset)]);
@@ -246,7 +433,8 @@ internal static class VTimeZoneReader
                 index++;
             }
 
-            rules.Add(CreateYearRule(year, offset, yearTransitions, baseUtcOffset));
+            Transition? nextYearStartChange = year < DateTime.MaxValue.Year && index < transitions.Count && transitions[index].Local == new DateTime(year + 1, 1, 1) ? transitions[index] : null;
+            rules.Add(CreateYearRule(year, offset, yearTransitions, nextYearStartChange, baseUtcOffset));
             if (yearTransitions.Count > 0)
             {
                 offset = yearTransitions[^1].To;
@@ -256,10 +444,33 @@ internal static class VTimeZoneReader
         return rules;
     }
 
-    private static List<RuleSpecification> CreateYearRule(int year, TimeSpan startOffset, List<Transition> transitions, TimeSpan baseUtcOffset)
+    private static List<RuleSpecification> CreateYearRule(int year, TimeSpan startOffset, List<Transition> transitions, Transition? nextYearStartChange, TimeSpan baseUtcOffset)
     {
         var yearStart = new DateTime(year, 1, 1);
         var yearEnd = new DateTime(year, 12, 31);
+
+        // The runtime reads the rule of a year for some instants of the neighboring years, depending on the offsets and on its
+        // version, so a change at midnight on January 1 can come early or late by up to the difference of the offsets. A daylight
+        // saving period lasting a whole year places it exactly in more cases: in the offset changed to, during the previous year,
+        // or in the offset changed from, during the year of the change. The verification finds which the runtime reproduces.
+        if (transitions.Count is 0 && nextYearStartChange is { } change && IsValidDaylightDelta(startOffset - change.To))
+        {
+            return
+            [
+                RuleSpecification.CreateConstant(yearStart, yearEnd, startOffset - baseUtcOffset),
+                new RuleSpecification(yearStart, yearEnd, startOffset - change.To, StartOfYearTransition, EndOfYearTransition, change.To - baseUtcOffset),
+                new RuleSpecification(yearStart, yearEnd, startOffset - change.To, StartOfYearTransition, LastMillisecondOfYearTransition, change.To - baseUtcOffset),
+            ];
+        }
+
+        if (transitions.Count is 1 && transitions[0].Local == yearStart && IsValidDaylightDelta(transitions[0].To - startOffset))
+        {
+            return
+            [
+                RuleSpecification.CreateConstant(yearStart, yearEnd, transitions[0].To - baseUtcOffset),
+                new RuleSpecification(yearStart, yearEnd, transitions[0].To - startOffset, StartOfYearTransition, LastMillisecondOfYearTransition, startOffset - baseUtcOffset),
+            ];
+        }
 
         // offsets[i] is in effect from instants[i - 1] to instants[i].
         var offsets = new List<TimeSpan> { startOffset };
@@ -326,7 +537,7 @@ internal static class VTimeZoneReader
                 rule = new RuleSpecification(yearStart, yearEnd, offsets[0] - offsets[1], CreateFixedTransition(instants.Count is 2 ? second : yearStart), CreateFixedTransition(first), offsets[1] - baseUtcOffset);
             }
 
-            if (rule.DaylightDelta >= TimeSpan.FromHours(-23) && rule.DaylightDelta <= TimeSpan.FromHours(14) && !rule.DaylightTransitionStart.Equals(rule.DaylightTransitionEnd))
+            if (IsValidDaylightDelta(rule.DaylightDelta) && !rule.DaylightTransitionStart.Equals(rule.DaylightTransitionEnd))
             {
                 result.Add(rule);
             }
@@ -336,6 +547,8 @@ internal static class VTimeZoneReader
 
         bool IsWithinYear(DateTime local) => local >= yearStart.AddSeconds(1) && local < yearStart.AddYears(1);
     }
+
+    private static bool IsValidDaylightDelta(TimeSpan delta) => delta >= TimeSpan.FromHours(-23) && delta <= TimeSpan.FromHours(14);
 
     /// <summary>Gives the shortest period of a year the offset of a neighbor, and drops the changes left without effect.</summary>
     private static void RemoveShortestPeriod(DateTime yearStart, List<TimeSpan> offsets, List<Transition> instants)
@@ -374,80 +587,146 @@ internal static class VTimeZoneReader
         }
     }
 
-    private static void AddRule(List<RuleSpecification> rules, RuleSpecification rule)
-    {
-        if (rules.Count > 0 && rules[^1].TryExtend(rule))
-            return;
-
-        rules.Add(rule);
-    }
-
     /// <summary>Creates the time zone from the rules of each year, choosing for each year a rule the runtime reproduces.</summary>
-    private static TimeZoneInfo CreateTimeZone(string id, string standardName, string daylightName, TimeSpan baseUtcOffset, List<List<RuleSpecification>> years, List<Transition> transitions)
+    private static TimeZoneInfo CreateTimeZone(string id, string standardName, string daylightName, TimeSpan baseUtcOffset, YearRules years, List<Transition> transitions)
     {
         var choices = new int[years.Count];
-        var timeZone = CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices);
-
 #if NET6_0_OR_GREATER
         // The runtime computes the offsets near the start and the end of a year from the rules of both years, in ways that
         // differ between versions, so the rule of a year is replaced by another expressing it when its year is not reproduced.
-        for (var i = 0; i < years.Count; i++)
+        // The offsets of a year only depend on the rules of the neighboring years, so the years are verified with a time zone
+        // made of the rules of a few years around them, which keeps the cost of each year independent of the number of years.
+        var verifiedYearCount = years.Count;
+        TimeZoneInfo? section = null;
+        var sectionEnd = 0;
+        for (var i = 0; i < verifiedYearCount; i++)
+        {
+            if (section is null || i >= sectionEnd)
+            {
+                sectionEnd = Math.Min(years.Count, i + VerifiedSectionYears);
+                section = CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices, Math.Max(0, i - 2), Math.Min(years.Count, sectionEnd + 2));
+            }
+
+            // A rule chosen for the year, or for the next one, makes the section out of date.
+            if (!ReferenceEquals(Choose(i, Math.Max(0, i - 2), Math.Min(years.Count, i + 3), section), section))
+            {
+                section = null;
+            }
+
+            // Once the choices around a year repeat the ones made a repetition before, the choices of the following years repeat
+            // them too, as their changes and their neighbors do.
+            if (years.RepetitionYears > 0 && i - 2 - years.RepetitionYears >= years.RepeatedFromIndex && i + 1 < years.Count && IsRepeatingChoice(i - 2) && IsRepeatingChoice(i - 1) && IsRepeatingChoice(i) && IsRepeatingChoice(i + 1))
+            {
+                for (var repeated = i + 2; repeated < years.Count; repeated++)
+                {
+                    choices[repeated] = choices[repeated - years.RepetitionYears];
+                }
+
+                verifiedYearCount = i + 1;
+            }
+        }
+
+        var timeZone = CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices, 0, years.Count);
+
+        // The runtime reads the last supported years in its own way, so their repeated choices are verified as well.
+        for (var i = Math.Max(verifiedYearCount, years.Count - 3); i < years.Count; i++)
+        {
+            timeZone = Choose(i, 0, years.Count, timeZone);
+        }
+
+        return timeZone;
+
+        bool IsRepeatingChoice(int index) => choices[index] == choices[index - years.RepetitionYears];
+
+        // Chooses the rules of a year and of the next one for the time zone to reproduce that year, verified with the time zone
+        // made of the rules of the years from start to end, excluded, of which current is the one with the choices made so far.
+        TimeZoneInfo Choose(int index, int start, int end, TimeZoneInfo? current)
         {
             // The rule before the first change spans the whole past, of which only its end needs checking.
-            var from = years[i][0].Start == DateTime.MinValue ? years[i][0].End.AddDays(-1) : years[i][0].Start.AddDays(-1);
-            var to = years[i][0].End == DateTime.MaxValue.Date ? years[i][0].Start.AddDays(2) : years[i][0].End.AddDays(2);
-            if (Verify(timeZone, transitions, from, to))
-                continue;
+            var candidates = years.Get(index, out var shiftYears);
+            var ruleStart = candidates[0].Start.AddYears(shiftYears);
+            var ruleEnd = candidates[0].End.AddYears(shiftYears);
+            var from = ruleStart == DateTime.MinValue ? ruleEnd.AddDays(-1) : ruleStart.AddDays(-1);
+            var to = ruleEnd == DateTime.MaxValue.Date ? ruleStart.AddDays(2) : ruleEnd.AddDays(2);
+            current ??= CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices, start, end);
+            var isCurrentThrowing = false;
+            if (IsVerified(current, isMillisecondEarlyAllowed: false, ref isCurrentThrowing))
+                return current;
 
-            // The year is checked with its start and its end, which also depend on the rules of the neighboring years.
-            var nextCandidateCount = i + 1 < years.Count ? years[i + 1].Count : 1;
-            var isReproduced = false;
-            for (var choice = 0; choice < years[i].Count && !isReproduced; choice++)
+            // The year is checked with its start and its end, which also depend on the rules of the neighboring years. A rule
+            // changing the offset one millisecond early at the end of a year is only used when no rule is exact.
+            var hasNext = index + 1 < years.Count;
+            var nextCandidateCount = hasNext ? years.Get(index + 1, out _).Count : 1;
+            foreach (var isMillisecondEarlyAllowed in new[] { false, true })
             {
-                for (var nextChoice = 0; nextChoice < nextCandidateCount && !isReproduced; nextChoice++)
+                for (var choice = 0; choice < candidates.Count; choice++)
                 {
-                    if (choice == choices[i] && (i + 1 == years.Count || nextChoice == choices[i + 1]))
-                        continue;
+                    for (var nextChoice = 0; nextChoice < nextCandidateCount; nextChoice++)
+                    {
+                        if (!isMillisecondEarlyAllowed && choice == choices[index] && (!hasNext || nextChoice == choices[index + 1]))
+                            continue;
 
-                    var previousChoice = choices[i];
-                    var previousNextChoice = i + 1 < years.Count ? choices[i + 1] : 0;
-                    choices[i] = choice;
-                    if (i + 1 < years.Count)
-                    {
-                        choices[i + 1] = nextChoice;
-                    }
-
-                    var candidate = CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices);
-                    if (Verify(candidate, transitions, from, to))
-                    {
-                        timeZone = candidate;
-                        isReproduced = true;
-                    }
-                    else
-                    {
-                        choices[i] = previousChoice;
-                        if (i + 1 < years.Count)
+                        var previousChoice = choices[index];
+                        var previousNextChoice = hasNext ? choices[index + 1] : 0;
+                        choices[index] = choice;
+                        if (hasNext)
                         {
-                            choices[i + 1] = previousNextChoice;
+                            choices[index + 1] = nextChoice;
+                        }
+
+                        var candidate = CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices, start, end);
+                        var isCandidateThrowing = false;
+                        if (IsVerified(candidate, isMillisecondEarlyAllowed, ref isCandidateThrowing))
+                            return candidate;
+
+                        choices[index] = previousChoice;
+                        if (hasNext)
+                        {
+                            choices[index + 1] = previousNextChoice;
                         }
                     }
+                }
+            }
+
+            // The .NET 10 runtime throws computing some offsets of the first years from a daylight saving period. When no other
+            // rule avoids it, verifying the time zone again throws, so it is rejected rather than failing when used.
+            if (isCurrentThrowing)
+            {
+                _ = Verify(current, transitions, from, to);
+            }
+
+            return current;
+
+            bool IsVerified(TimeZoneInfo zone, bool isMillisecondEarlyAllowed, ref bool isThrowing)
+            {
+                try
+                {
+                    return Verify(zone, transitions, from, to, isMillisecondEarlyAllowed);
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    isThrowing = true;
+                    return false;
                 }
             }
         }
 #else
         _ = transitions;
+        return CreateTimeZone(id, standardName, daylightName, baseUtcOffset, years, choices, 0, years.Count);
 #endif
-
-        return timeZone;
     }
 
-    private static TimeZoneInfo CreateTimeZone(string id, string standardName, string daylightName, TimeSpan baseUtcOffset, List<List<RuleSpecification>> years, int[] choices)
+    /// <summary>Creates the time zone made of the chosen rules of the years from <paramref name="start"/> to <paramref name="end"/>, excluded.</summary>
+    private static TimeZoneInfo CreateTimeZone(string id, string standardName, string daylightName, TimeSpan baseUtcOffset, YearRules years, int[] choices, int start, int end)
     {
-        var specifications = new List<RuleSpecification>(years.Count);
-        for (var i = 0; i < years.Count; i++)
+        var specifications = new List<RuleSpecification>();
+        for (var i = start; i < end; i++)
         {
-            var candidate = years[i][choices[i]];
-            AddRule(specifications, new RuleSpecification(candidate.Start, candidate.End, candidate.DaylightDelta, candidate.DaylightTransitionStart, candidate.DaylightTransitionEnd, candidate.BaseUtcOffsetDelta));
+            var candidate = years.Get(i, out var shiftYears)[choices[i]];
+            if (specifications.Count is 0 || !specifications[^1].TryExtend(candidate, shiftYears))
+            {
+                specifications.Add(new RuleSpecification(candidate.Start.AddYears(shiftYears), candidate.End.AddYears(shiftYears), candidate.DaylightDelta, candidate.DaylightTransitionStart, candidate.DaylightTransitionEnd, candidate.BaseUtcOffsetDelta));
+            }
         }
 
         var adjustmentRules = new List<TimeZoneInfo.AdjustmentRule>(specifications.Count);
@@ -467,7 +746,11 @@ internal static class VTimeZoneReader
 
 #if NET6_0_OR_GREATER
     /// <summary>Checks the time zone reports the offsets of <paramref name="transitions"/> between two dates, at and around each change and each year boundary.</summary>
-    private static bool Verify(TimeZoneInfo timeZone, List<Transition> transitions, DateTime from, DateTime to)
+    /// <param name="isMillisecondEarlyAllowed">
+    /// Whether a change at midnight on January 1 may happen one millisecond early, as it does with a daylight saving period
+    /// ending on the last millisecond of the year, which is the only exact rule for some offsets on some runtimes.
+    /// </param>
+    private static bool Verify(TimeZoneInfo timeZone, List<Transition> transitions, DateTime from, DateTime to, bool isMillisecondEarlyAllowed = false)
     {
         if (transitions.Count is 0)
             return true;
@@ -475,7 +758,8 @@ internal static class VTimeZoneReader
         for (var i = FindLastTransitionAtOrBefore(transitions, from) + 1; i < transitions.Count && transitions[i].Utc < to; i++)
         {
             var transition = transitions[i];
-            if (GetOffset(transition.Utc.AddTicks(-1)) != transition.From || GetOffset(transition.Utc) != transition.To)
+            var before = isMillisecondEarlyAllowed && transition.Local.TimeOfDay == TimeSpan.Zero && transition.Local.DayOfYear is 1 ? transition.Utc.AddMilliseconds(-1).AddTicks(-1) : transition.Utc.AddTicks(-1);
+            if (GetOffset(before) != transition.From || GetOffset(transition.Utc) != transition.To)
                 return false;
         }
 
@@ -611,6 +895,24 @@ internal static class VTimeZoneReader
                 yield return new Onset(observance, observance.Start);
             }
         }
+        else if (maxYearExclusive > (long)observance.Start.Year + 1 + observance.RepetitionYears && observance.GetRepeatedOccurrences() is { } occurrences)
+        {
+            // The occurrences following the year of DTSTART repeat every RepetitionYears years.
+            var shift = GetRepetitionShift(observance.RepetitionYears);
+            for (var repetition = 0L; observance.Start.Year + 1 + (repetition * observance.RepetitionYears) < maxYearExclusive; repetition++)
+            {
+                foreach (var occurrence in occurrences)
+                {
+                    if (repetition > 0 && occurrence.Year == observance.Start.Year)
+                        continue;
+
+                    if (occurrence.Year + (repetition * observance.RepetitionYears) >= maxYearExclusive)
+                        break;
+
+                    yield return new Onset(observance, occurrence + TimeSpan.FromTicks(shift.Ticks * repetition));
+                }
+            }
+        }
         else
         {
             foreach (var occurrence in observance.RecurrenceRule.GetNextOccurrences(observance.Start))
@@ -715,6 +1017,8 @@ internal static class VTimeZoneReader
         private TimeSpan? _offsetFrom;
         private TimeSpan? _offsetTo;
         private readonly List<(DateTime Value, bool IsUtc)> _recurrenceDates = [];
+        private List<DateTime>? _repeatedOccurrences;
+        private bool _hasRepeatedOccurrences;
 
 
         public bool IsDaylight { get; } = isDaylight;
@@ -731,6 +1035,42 @@ internal static class VTimeZoneReader
         public RecurrenceRule? RecurrenceRule { get; private set; }
 
         public bool IsForever => UntilUtc is null && UntilLocal is null && RecurrenceRule?.Occurrences is null;
+
+        /// <summary>The number of years after which the occurrences of the recurrence repeat: the Gregorian calendar repeats every 400 years, which INTERVAL may lengthen.</summary>
+        public int RepetitionYears { get; private set; }
+
+        /// <summary>
+        /// Lists the occurrences of an open-ended recurrence in the year of DTSTART and in the <see cref="RepetitionYears"/> years
+        /// following it, which repeat forever, or returns <see langword="null"/> when they are too many or the recurrence ends.
+        /// </summary>
+        public List<DateTime>? GetRepeatedOccurrences()
+        {
+            if (!_hasRepeatedOccurrences)
+            {
+                _hasRepeatedOccurrences = true;
+                if (RecurrenceRule is not null && IsForever && RepetitionYears <= MaxRepetitionYears)
+                {
+                    var occurrences = new List<DateTime>();
+                    var endYear = Start.Year + 1 + RepetitionYears;
+                    _repeatedOccurrences = occurrences;
+                    foreach (var occurrence in RecurrenceRule.GetNextOccurrences(Start))
+                    {
+                        if (occurrence.Year >= endYear)
+                            break;
+
+                        if (occurrences.Count >= MaxOnsetsPerObservance)
+                        {
+                            _repeatedOccurrences = null;
+                            break;
+                        }
+
+                        occurrences.Add(occurrence);
+                    }
+                }
+            }
+
+            return _repeatedOccurrences;
+        }
 
         public DateTime? UntilUtc { get; private set; }
 
@@ -816,6 +1156,10 @@ internal static class VTimeZoneReader
 
             OffsetFrom = offsetFrom;
             OffsetTo = offsetTo;
+            if (RecurrenceRule is not null)
+            {
+                RepetitionYears = (int)Math.Min((long)GregorianCycleYears / GreatestCommonDivisor(GregorianCycleYears, RecurrenceRule.Interval) * RecurrenceRule.Interval, int.MaxValue);
+            }
 
             // The onsets are local times, so a UTC value a producer wrote anyway is expressed in the offset in effect before it.
             Start = ToLocal(start, _isStartUtc);
@@ -856,6 +1200,49 @@ internal static class VTimeZoneReader
         public DateTime Local => Utc + From;
     }
 
+    /// <summary>The candidate rules of each year, the preferred one first.</summary>
+    private sealed class YearRules
+    {
+        private readonly List<List<RuleSpecification>> _listedYears;
+
+        public YearRules(List<List<RuleSpecification>> listedYears)
+            : this(listedYears, listedYears.Count, repetitionYears: 0, listedYears.Count)
+        {
+        }
+
+        /// <param name="listedYears">The candidate rules of the years before the repeated ones.</param>
+        /// <param name="repeatedFromIndex">The index of the first year that the years past the listed ones repeat.</param>
+        /// <param name="repetitionYears">The number of years after which the years repeat.</param>
+        /// <param name="count">The number of years.</param>
+        public YearRules(List<List<RuleSpecification>> listedYears, int repeatedFromIndex, int repetitionYears, int count)
+        {
+            _listedYears = listedYears;
+            RepeatedFromIndex = repeatedFromIndex;
+            RepetitionYears = repetitionYears;
+            Count = Math.Max(count, listedYears.Count);
+        }
+
+        public int Count { get; }
+
+        public int RepeatedFromIndex { get; }
+
+        public int RepetitionYears { get; }
+
+        /// <summary>Gets the candidate rules of a year, as listed for the year <paramref name="shiftYears"/> years before.</summary>
+        public List<RuleSpecification> Get(int index, out int shiftYears)
+        {
+            shiftYears = 0;
+            if (index >= _listedYears.Count)
+            {
+                var repetitions = ((index - _listedYears.Count) / RepetitionYears) + 1;
+                shiftYears = repetitions * RepetitionYears;
+                index -= shiftYears;
+            }
+
+            return _listedYears[index];
+        }
+    }
+
     private sealed class RuleSpecification(DateTime start, DateTime end, TimeSpan daylightDelta, TimeZoneInfo.TransitionTime daylightTransitionStart, TimeZoneInfo.TransitionTime daylightTransitionEnd, TimeSpan baseUtcOffsetDelta)
     {
         public DateTime Start { get; } = start;
@@ -882,11 +1269,11 @@ internal static class VTimeZoneReader
                 baseUtcOffsetDelta);
         }
 
-        /// <summary>Merges a rule into this one when it continues it with the same offsets and transitions.</summary>
-        public bool TryExtend(RuleSpecification next)
+        /// <summary>Merges a rule, shifted by a number of years, into this one when it continues it with the same offsets and transitions.</summary>
+        public bool TryExtend(RuleSpecification next, int shiftYears)
         {
             if (End == DateTime.MaxValue.Date ||
-                End.AddDays(1) != next.Start ||
+                End.AddDays(1) != next.Start.AddYears(shiftYears) ||
                 DaylightDelta != next.DaylightDelta ||
                 BaseUtcOffsetDelta != next.BaseUtcOffsetDelta ||
                 !DaylightTransitionStart.Equals(next.DaylightTransitionStart) ||
@@ -895,7 +1282,7 @@ internal static class VTimeZoneReader
                 return false;
             }
 
-            End = next.End;
+            End = next.End.AddYears(shiftYears);
             return true;
         }
 

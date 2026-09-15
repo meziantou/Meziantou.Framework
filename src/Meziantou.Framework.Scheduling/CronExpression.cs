@@ -397,8 +397,9 @@ public sealed class CronExpression : IRecurrenceRule
             if (!TryParseValue(rangePart, kind, out start))
                 return false;
 
-            // n/step means n, n+step, n+2*step, ... up to the maximum value of the field
-            end = slashIndex >= 0 ? GetMaxValue(kind) : start;
+            // n/step means n, n+step, n+2*step, ... up to the maximum value of the field. The day-of-week field
+            // ends on 7, the other value of Sunday, so that n/step is the same as n-7/step.
+            end = slashIndex < 0 ? start : kind is CronFieldKind.DayOfWeek ? 7 : GetMaxValue(kind);
         }
 
         builder.AddRange(start, end, step);
@@ -542,8 +543,13 @@ public sealed class CronExpression : IRecurrenceRule
     /// <para>The occurrences keep their wall-clock time across a daylight saving transition, so their UTC offset changes.
     /// A local time made invalid or ambiguous by a transition is resolved as RFC 5545 section 3.3.5 requires: an ambiguous
     /// time keeps its first occurrence, and an invalid time is read with the UTC offset in effect before the gap.</para>
-    /// <para>As a consequence, an hourly expression repeats an instant across a forward transition and skips the instants
-    /// of the repeated hour across a backward one.</para>
+    /// <para>A time inside the gap of a forward transition therefore moves forward by the length of the gap, which can place
+    /// its occurrence after the occurrences of the times that follow it: the occurrences are still returned in increasing
+    /// order. An occurrence that denotes the same instant as another one, as the hour skipped by a forward transition does
+    /// for an hourly expression, is returned once. Across a backward transition, the instants of the repeated hour are
+    /// skipped.</para>
+    /// <para>An occurrence outside the range of <see cref="DateTimeOffset"/> is not returned: the enumeration ends at the
+    /// first one after the range.</para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
     public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTime startDate, TimeZoneInfo timeZone)
@@ -554,17 +560,23 @@ public sealed class CronExpression : IRecurrenceRule
     }
 
     /// <summary>Gets all occurrences of the expression, starting from the instant <paramref name="startDate"/> denotes.</summary>
-    /// <param name="startDate">The instant to start generating occurrences from. It is reduced to a wall-clock time in <paramref name="timeZone"/>.</param>
+    /// <param name="startDate">The instant to start generating occurrences from.</param>
     /// <param name="timeZone">The time zone the expression is evaluated in.</param>
     /// <returns>An enumerable sequence of occurrences, each carrying the UTC offset in effect at that occurrence.</returns>
-    /// <remarks>Reducing an instant to a wall-clock time is lossy in the hour repeated by a backward transition, where both
-    /// readings denote the same wall clock. Use the <see cref="DateTime"/> overload to control which one is meant.</remarks>
+    /// <remarks>
+    /// <para>Every occurrence at or after <paramref name="startDate"/> is returned, and none before it. This includes an
+    /// occurrence whose wall-clock time is before the reading of <paramref name="startDate"/>, but which a forward
+    /// transition moves after it, and excludes the first reading of a wall-clock time in the hour repeated by a backward
+    /// transition when <paramref name="startDate"/> is in its second pass.</para>
+    /// <para>The resolution of invalid and ambiguous local times is the same as for the <see cref="DateTime"/> overload.</para>
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is <see langword="null"/>.</exception>
     public IEnumerable<DateTimeOffset> GetNextOccurrences(DateTimeOffset startDate, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(timeZone);
 
-        return GetNextOccurrences(TimeZoneInfo.ConvertTime(startDate, timeZone).DateTime, timeZone);
+        // An expression has no anchor, so starting from an earlier wall-clock time only produces occurrences that are skipped
+        return Utilities.SkipBefore(GetNextOccurrences(Utilities.GetEarliestWallClock(startDate, timeZone), timeZone), startDate);
     }
 
     // Moves the cursor to the first occurrence at or after its current position. The search ends when

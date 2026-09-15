@@ -106,12 +106,15 @@ public class YamlValue : YamlElement
         get { return _scalar.Tag; }
         set
         {
+            // An implicit tag is not written, so a specific tag makes the scalar explicit, as it is when parsed.
+            // The non-specific tag "!" is written regardless, and removing the tag makes the scalar implicit again.
+            var isImplicit = string.IsNullOrEmpty(value) || value == "!";
             Scalar = new Scalar(_scalar.Anchor,
                 value,
                 _scalar.Value,
                 _scalar.Style,
-                _scalar.IsPlainImplicit,
-                _scalar.IsQuotedImplicit,
+                isImplicit,
+                isImplicit,
                 _scalar.Start,
                 _scalar.End);
         }

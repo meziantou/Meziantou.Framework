@@ -243,4 +243,76 @@ public class YamlNodeTest
         stream.WriteTo(writer, true);
         Assert.StartsWith("3.14", serialized.ToString());
     }
+
+    [Fact]
+    public void Mapping_ReplacingKeyByIndex_RemovesPreviousKeyFromStringLookup()
+    {
+        var mapping = new YamlMapping();
+        mapping["a"] = new YamlValue("1");
+
+        mapping[0] = new KeyValuePair<YamlElement, YamlElement?>(new YamlValue("b"), new YamlValue("2"));
+
+        Assert.False(mapping.ContainsKey("a"));
+        Assert.Null(mapping["a"]);
+        Assert.True(mapping.ContainsKey("b"));
+        Assert.HasCount(1, mapping);
+    }
+
+    [Fact]
+    public void Mapping_ValuesAndCopyTo_FollowKeyOrder()
+    {
+        var mapping = new YamlMapping();
+        mapping["a"] = new YamlValue("1");
+        mapping["b"] = new YamlValue("2");
+        mapping.Remove("a");
+        mapping["c"] = new YamlValue("3");
+
+        Assert.Equal(new[] { "b", "c" }, mapping.Keys.Select(key => ((YamlValue)key).Value).ToArray());
+        Assert.Equal(new[] { "2", "3" }, mapping.Values.Select(value => ((YamlValue)value!).Value).ToArray());
+
+        var pairs = new KeyValuePair<YamlElement, YamlElement?>[2];
+        ((ICollection<KeyValuePair<YamlElement, YamlElement?>>)mapping).CopyTo(pairs, 0);
+        Assert.Equal(new[] { "b", "c" }, pairs.Select(pair => ((YamlValue)pair.Key).Value).ToArray());
+    }
+
+    [Fact]
+    public void Mapping_Keys_IsReadOnly()
+    {
+        var mapping = new YamlMapping();
+        mapping["a"] = new YamlValue("1");
+
+        Assert.True(mapping.Keys.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => mapping.Keys.Clear());
+        Assert.HasCount(1, mapping);
+    }
+
+    [Fact]
+    public void Mapping_ContainsPair_ComparesValue()
+    {
+        var mapping = new YamlMapping();
+        var key = new YamlValue("a");
+        var value = new YamlValue("1");
+        mapping.Add(key, value);
+        var collection = (ICollection<KeyValuePair<YamlElement, YamlElement?>>)mapping;
+
+        Assert.True(collection.Contains(new KeyValuePair<YamlElement, YamlElement?>(key, value)));
+        Assert.False(collection.Contains(new KeyValuePair<YamlElement, YamlElement?>(key, new YamlValue("1"))));
+    }
+
+    [Fact]
+    public void ToObject_KeepChompedScalar_KeepsTrailingLineBreaks()
+    {
+        var stream = YamlStream.Load(new StringReader("--- |+\n  a\n\n"));
+
+        Assert.Equal("a\n\n", stream[0].Contents!.ToObject<string>());
+    }
+
+    [Fact]
+    public void Value_SettingTag_WritesTag()
+    {
+        var mapping = new YamlMapping();
+        mapping["k"] = new YamlValue("x") { Tag = "tag:example.com,2000:foo" };
+
+        Assert.Equal("k: !<tag:example.com,2000:foo> x", mapping.ToString());
+    }
 }

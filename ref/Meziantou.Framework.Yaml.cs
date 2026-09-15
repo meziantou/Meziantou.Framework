@@ -930,12 +930,15 @@ namespace Meziantou.Framework.Yaml.Serialization
         public string? SourceName { get => throw null; }
         public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public bool IsCurrentNodeDerivedTypeResolved { get => throw null; }
         public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public Meziantou.Framework.Yaml.Serialization.YamlReader CreateReader(string yaml) => throw null;
+        public void MarkCurrentNodeDerivedTypeResolved() { }
         public bool TryReadAlias(out object? value) => throw null;
         public void RegisterAnchor(string anchor, object value) { }
         public static string BufferCurrentNodeToStringAndFindDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string discriminatorPropertyName, out string? discriminatorValue) => throw null;
+        public static string BufferCurrentNodeToStringAndRemoveDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string? discriminatorPropertyName, bool removeTag, out string? discriminatorValue) => throw null;
         public static string BufferCurrentNodeToString(Meziantou.Framework.Yaml.Serialization.YamlReader reader) => throw null;
         public bool Read() => throw null;
         public void Skip() { }
@@ -1134,8 +1137,10 @@ namespace Meziantou.Framework.Yaml.Serialization
 
     public sealed class YamlWriter : Meziantou.Framework.Yaml.Serialization.YamlReaderWriterBase
     {
+        public bool IsCollectingReferences { get => throw null; }
         public YamlWriter(System.IO.TextWriter writer, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
         public YamlWriter(System.Text.StringBuilder stringBuilder, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) : base(default(Meziantou.Framework.Yaml.YamlSerializerOptions)) { }
+        public bool ShouldInvokeOnSerializing(object value) => throw null;
         public BlockSequenceItemStyleScope PushBlockSequenceItemStyle(Meziantou.Framework.Yaml.YamlSequenceItemStyle mappingStyle, Meziantou.Framework.Yaml.YamlSequenceItemStyle sequenceStyle) => throw null;
         public StringStyleScope PushStringStyle(Meziantou.Framework.Yaml.ScalarStyle style) => throw null;
         public bool TryWriteReference(object? value) => throw null;
@@ -1147,6 +1152,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public void WriteStartSequence() { }
         public void WriteEndSequence() { }
         public void WritePropertyName(string name) { }
+        public void WriteDictionaryKey(object key) { }
         public void WriteScalar(string? value) { }
         public void WriteString(string? value) { }
         public void WriteScalar(System.ReadOnlySpan<char> value) { }

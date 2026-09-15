@@ -14,13 +14,19 @@ internal sealed class YamlReferenceWriter
         }
     }
 
+    /// <summary>Gets a value indicating whether the references are being collected, before the value is actually written.</summary>
+    public bool IsCollecting => _referenceCounts is not null && !IsCollectionComplete;
+
+    /// <summary>Gets a value indicating whether the references were collected, and the value is now actually written.</summary>
+    public bool IsCollectionComplete { get; private set; }
+
     public bool TryGetAnchor(object value, out string anchor)
     {
         if (_anchors.TryGetValue(value, out anchor!))
         {
-            if (_referenceCounts is not null)
+            if (IsCollecting)
             {
-                _referenceCounts[value]++;
+                _referenceCounts![value]++;
             }
 
             return true;
@@ -36,7 +42,7 @@ internal sealed class YamlReferenceWriter
             return existing;
         }
 
-        if (_referenceCounts is not null && _referenceCounts.TryGetValue(value, out var count) && count < 2)
+        if (IsCollectionComplete && _referenceCounts!.TryGetValue(value, out var count) && count < 2)
         {
             return null;
         }
@@ -44,18 +50,22 @@ internal sealed class YamlReferenceWriter
         var anchor = $"id{_nextId:000}";
         _nextId++;
         _anchors[value] = anchor;
-        if (_referenceCounts is not null && !_referenceCounts.ContainsKey(value))
+        if (IsCollecting)
         {
-            _referenceCounts[value] = 1;
+            _referenceCounts![value] = 1;
         }
 
         return anchor;
     }
 
+    /// <summary>Determines whether the value was written while the references were collected.</summary>
+    /// <remarks>The counts are frozen once the collection is complete, so a value first written afterwards is not reported.</remarks>
+    public bool WasCollected(object value) => _referenceCounts is not null && _referenceCounts.ContainsKey(value);
+
     public void CompleteReferenceCollection()
     {
         _anchors.Clear();
         _nextId = 1;
+        IsCollectionComplete = true;
     }
 }
-

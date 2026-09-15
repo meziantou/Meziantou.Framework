@@ -1075,6 +1075,138 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Empty(diagnostics);
     }
 
+    [Theory]
+    [InlineData("[YamlDerivedType(typeof(Dog), \"one\")] [YamlDerivedType(typeof(Dog), \"two\")]", "the derived type 'Dog' is registered more than once")]
+    [InlineData("[YamlDerivedType(typeof(Dog), \"pet\")] [YamlDerivedType(typeof(Cat), \"pet\")]", "the discriminator 'pet' is registered for both 'Dog' and 'Cat'")]
+    [InlineData("[YamlDerivedType(typeof(Dog), Tag = \"!pet\")] [YamlDerivedType(typeof(Cat), Tag = \"!pet\")]", "the tag '!pet' is registered for both 'Dog' and 'Cat'")]
+    [InlineData("[YamlDerivedType(typeof(Dog))] [YamlDerivedType(typeof(Cat))]", "both 'Dog' and 'Cat' are registered as the default derived type")]
+    public void MFY026_IsReported_WhenDerivedTypeRegistrationsConflict(string attributes, string expectedMessage)
+    {
+        var source = $$"""
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            {{attributes}}
+            public abstract class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            public sealed class Cat : Animal
+            {
+            }
+
+            [YamlSerializable(typeof(Animal))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostic = Assert.Single(RunAnalyzer(source), static diagnostic => diagnostic.Id == "MFY026");
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains(expectedMessage, diagnostic.GetMessage());
+
+        var result = RunGenerator(source);
+        Assert.Empty(result.GeneratedSource);
+    }
+
+    [Fact]
+    public void MFY026_IsReported_WhenAPolymorphicInterfaceRegistersADiscriminatorTwice()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            [YamlDerivedType(typeof(Dog), "pet")]
+            [YamlDerivedType(typeof(Cat), "pet")]
+            public interface IAnimal
+            {
+            }
+
+            public sealed class Dog : IAnimal
+            {
+            }
+
+            public sealed class Cat : IAnimal
+            {
+            }
+
+            [YamlSerializable(typeof(IAnimal))]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostic = Assert.Single(RunAnalyzer(Source), static diagnostic => diagnostic.Id == "MFY026");
+        Assert.Contains("the discriminator 'pet'", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void MFY026_IsReported_WhenDerivedTypeMappingsConflict()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            public abstract class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            public sealed class Cat : Animal
+            {
+            }
+
+            [YamlSerializable(typeof(Animal))]
+            [YamlDerivedTypeMapping(typeof(Animal), typeof(Dog), "pet")]
+            [YamlDerivedTypeMapping(typeof(Animal), typeof(Cat), "pet")]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostic = Assert.Single(RunAnalyzer(Source), static diagnostic => diagnostic.Id == "MFY026");
+        Assert.Contains("the discriminator 'pet' is registered for both 'Dog' and 'Cat'", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public void MFY026_IsNotReported_WhenADerivedTypeMappingOverlapsAnAttributeRegistration()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            [YamlPolymorphic]
+            [YamlDerivedType(typeof(Dog), "pet")]
+            public abstract class Animal
+            {
+            }
+
+            public sealed class Dog : Animal
+            {
+            }
+
+            public sealed class Cat : Animal
+            {
+            }
+
+            [YamlSerializable(typeof(Animal))]
+            [YamlDerivedTypeMapping(typeof(Animal), typeof(Cat), "pet")]
+            [YamlDerivedTypeMapping(typeof(Animal), typeof(Dog), "dog")]
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        Assert.DoesNotContain(RunAnalyzer(Source), static diagnostic => diagnostic.Id == "MFY026");
+        Assert.NotEmpty(RunGenerator(Source).GeneratedSource);
+    }
+
     [Fact]
     public void AnalyzerReportsErrorForClosedTypePolymorphismInferenceOnNonClosedType()
     {
@@ -1271,6 +1403,112 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.DoesNotContain(result.Diagnostics, static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         Assert.Contains("private static" + (updatedMemorySafetyRules ? " safe" : "") + " extern ", result.GeneratedSource);
         Assert.Contains("public static" + (updatedMemorySafetyRules ? " safe" : "") + " extern ", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void UnsupportedTypes_AreReportedInsteadOfGeneratingCode()
+    {
+        const string Source = """
+            #nullable enable
+
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class Item
+            {
+                public int Value { get; set; }
+            }
+
+            public readonly struct Numbers : IEnumerable<int>
+            {
+                public IEnumerator<int> GetEnumerator() => throw null!;
+
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+
+            public sealed class Model
+            {
+                public ArrayList? List { get; set; }
+
+                public Type? Type { get; set; }
+
+                public Func<int>? Callback { get; set; }
+
+                public Dictionary<Item, int>? ItemKeys { get; set; }
+
+                public List<BitArray>? Tables { get; set; }
+            }
+
+            [YamlSerializable(typeof(Model))]
+            [YamlSerializable(typeof(Hashtable))]
+            [YamlSerializable(typeof(IAsyncEnumerable<int>))]
+            [YamlSerializable(typeof(Dictionary<Item, int>))]
+            [YamlSerializable(typeof(List<List<ArrayList>>))]
+            [YamlSerializable(typeof(Numbers))]
+            internal partial class UnsupportedTypesContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var diagnostics = RunAnalyzer(Source);
+        var members = diagnostics.Where(static diagnostic => diagnostic.Id == "MFY002").Select(static diagnostic => diagnostic.GetMessage()).ToArray();
+        var types = diagnostics.Where(static diagnostic => diagnostic.Id == "MFY007").Select(static diagnostic => diagnostic.GetMessage()).ToArray();
+
+        Assert.HasCount(5, members);
+        Assert.Contains(members, static message => message.Contains("'List'", StringComparison.Ordinal));
+        Assert.Contains(members, static message => message.Contains("'Type'", StringComparison.Ordinal));
+        Assert.Contains(members, static message => message.Contains("'Callback'", StringComparison.Ordinal));
+        Assert.Contains(members, static message => message.Contains("'ItemKeys'", StringComparison.Ordinal));
+        Assert.Contains(members, static message => message.Contains("'Tables'", StringComparison.Ordinal));
+        Assert.HasCount(5, types);
+        Assert.Contains(types, static message => message.Contains("Numbers' is not supported: it is enumerable", StringComparison.Ordinal));
+        Assert.Contains(types, static message => message.Contains("Hashtable' is not supported", StringComparison.Ordinal));
+        Assert.Contains(types, static message => message.Contains("asynchronous sequences", StringComparison.Ordinal));
+        Assert.Contains(types, static message => message.Contains("dictionary key type 'global::Item'", StringComparison.Ordinal));
+        Assert.Contains(types, static message => message.Contains("element type 'global::System.Collections.ArrayList'", StringComparison.Ordinal));
+        Assert.All(diagnostics.Where(static diagnostic => diagnostic.Id is "MFY002" or "MFY007"), static diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
+
+        var result = RunGenerator(Source);
+        Assert.DoesNotContain("UnsupportedTypesContext", result.GeneratedSource);
+    }
+
+    [Fact]
+    public void ObjectRootAndObjectKeys_GenerateCompilingCode()
+    {
+        // The generated code relies on the implicit usings of the SDK
+        const string Source = """
+            #nullable enable
+
+            global using System;
+            global using System.Collections.Generic;
+            global using System.IO;
+            global using System.Linq;
+            global using System.Threading;
+            global using System.Threading.Tasks;
+            using Meziantou.Framework.Yaml;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class Model
+            {
+                public Dictionary<object, object?>? Values { get; set; }
+            }
+
+            [YamlSerializable(typeof(object))]
+            [YamlSerializable(typeof(Model))]
+            [YamlSerializable(typeof(Dictionary<object, object>))]
+            internal partial class ObjectContext : YamlSerializerContext
+            {
+                public static YamlTypeInfo UntypedTypeInfo => Default.Object;
+            }
+            """;
+
+        var result = RunGenerator(Source);
+
+        Assert.Empty(RunAnalyzer(Source));
+        Assert.DoesNotContain(result.Diagnostics, static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("writer.WriteDictionaryKey(pair.Key);", result.GeneratedSource);
     }
 
     private static Diagnostic[] RunAnalyzer([StringSyntax("c#-test")] string source)

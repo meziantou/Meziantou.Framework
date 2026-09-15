@@ -75,6 +75,63 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     internal YamlReferenceWriter? ReferenceWriter => _referenceWriter;
 
+    /// <summary>
+    /// Gets a value indicating whether this writer only collects the object references of the value being serialized,
+    /// and discards what it writes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With <see cref="YamlReferenceHandling.PreserveMinimal"/>, a value is written twice: a first pass finds the
+    /// references that are shared or cyclic, and only those get an anchor when the value is actually written by the
+    /// second pass. Converters are called in both passes, so a converter with side effects can check this property to
+    /// run them once.
+    /// </para>
+    /// <para>
+    /// The <see cref="IYamlOnSerialized.OnSerialized"/> callback is not invoked by the first pass. See
+    /// <see cref="ShouldInvokeOnSerializing(object)"/> for the <see cref="IYamlOnSerializing.OnSerializing"/> callback.
+    /// </para>
+    /// </remarks>
+    public bool IsCollectingReferences => _referenceWriter?.IsCollecting is true;
+
+    /// <summary>
+    /// Determines whether the <see cref="IYamlOnSerializing.OnSerializing"/> callback of <paramref name="value"/> is
+    /// invoked by this writer, so it runs once when the value is written by the two passes of
+    /// <see cref="YamlReferenceHandling.PreserveMinimal"/>.
+    /// </summary>
+    /// <param name="value">The value about to be written.</param>
+    /// <returns><see langword="true"/> when the callback must be invoked before writing <paramref name="value"/>; otherwise <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// The callback of an object runs in the first pass, before its references are collected, so the second pass
+    /// writes the same references. The callback of a value type runs in the second pass: each pass writes its own copy
+    /// of the value, so a change made to the copy of the first pass would be lost.
+    /// </para>
+    /// <para>
+    /// This method always returns <see langword="true"/> for other reference handling modes. It is intended for
+    /// generated serializers and custom converters that invoke the serialization callbacks themselves. See
+    /// <see cref="IsCollectingReferences"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public bool ShouldInvokeOnSerializing(object value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        if (_referenceWriter is null)
+        {
+            return true;
+        }
+
+        var isValueType = value.GetType().IsValueType;
+        if (_referenceWriter.IsCollecting)
+        {
+            return !isValueType;
+        }
+
+        // An object written by the first pass already had its callback invoked there.
+        return !_referenceWriter.IsCollectionComplete || isValueType || !_referenceWriter.WasCollected(value);
+    }
+
     internal bool EndsWithNewLine => _hasWrittenChar && _lastWrittenChar == '\n';
 
     /// <summary>Gets a value indicating whether the next character is written at the first column of a line.</summary>
@@ -169,7 +226,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return false;
     }
 
-    /// <summary>Writes a YAML tag for the next value.</summary>
+    /// <summary>Writes a YAML tag for the next node, which is a mapping key when <see cref="WritePropertyName(string)"/> is called next.</summary>
     /// <param name="tag">The YAML tag, such as <c>!dog</c>.</param>
     public void WriteTag(string tag)
     {
@@ -268,7 +325,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
            c is '_' or '-' or ';' or '/' or '?' or ':' or '@' or '&' or '=' or '+' or '$' or '.' or '~' or '*' or '\'' or '(' or ')' ||
            (allowFlowIndicators && c is ',' or '!' or '[' or ']');
 
-    /// <summary>Writes a YAML anchor for the next value.</summary>
+    /// <summary>Writes a YAML anchor for the next node, which is a mapping key when <see cref="WritePropertyName(string)"/> is called next.</summary>
     public void WriteAnchor(string anchor)
     {
         ArgumentNullException.ThrowIfNull(anchor);
@@ -350,6 +407,26 @@ public sealed class YamlWriter : YamlReaderWriterBase
         WritePropertyNameCore(name, ScalarStyle.Any);
     }
 
+    /// <summary>Writes a dictionary key the way the built-in dictionary converters write it.</summary>
+    /// <param name="key">The key.</param>
+    /// <remarks>
+    /// <para>
+    /// A string key is converted using <see cref="YamlSerializerOptions.DictionaryKeyPolicy"/> and is quoted when it
+    /// would resolve to a null, a boolean, or a number, so it is read back as a string by an untyped reader. An enum
+    /// key is written with the names of the enum converter, and the other keys use their invariant representation
+    /// (<c>true</c>, <c>1.5</c>, <c>.inf</c>, the round-trip format of dates, ...).
+    /// </para>
+    /// <para>
+    /// This is how the keys of a dictionary whose key type is <see cref="object"/> are written.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="YamlException"><paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The writer is not positioned within a mapping key.</exception>
+    public void WriteDictionaryKey(object key)
+    {
+        Converters.YamlDictionaryConverterHelper.WriteKey(this, key);
+    }
+
     /// <summary>Writes a mapping key that keeps the style it was read with.</summary>
     /// <param name="name">The key name.</param>
     /// <param name="style">The style of the key in the source document.</param>
@@ -389,6 +466,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 Write("? ");
             }
 
+            WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
             WriteKeyScalar(name, style);
             Write(':');
 
@@ -415,6 +493,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
             Write("? ");
         }
 
+        // An anchor or a tag written before the name belongs to the key, which is the next node.
+        WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
         WriteKeyScalar(name, style);
         if (explicitKey)
         {
@@ -429,6 +509,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
     }
 
     /// <summary>Writes a scalar value.</summary>
+    /// <remarks>
+    /// A non-null value is never written as a null scalar: text such as <c>null</c> or <c>~</c>, which a plain scalar
+    /// would resolve to null, is quoted. Use <see cref="WriteNullValue"/> to write a null.
+    /// </remarks>
     public void WriteScalar(string? value)
     {
         WriteValuePrefixForScalar();
@@ -441,7 +525,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        WriteScalarCore(value, isKey: false);
+        WriteNonNullScalarCore(value);
         CompleteValueAfterScalar();
     }
 
@@ -525,11 +609,12 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     /// <summary>Writes a scalar value from a character span.</summary>
     /// <param name="value">The scalar text.</param>
+    /// <remarks>Text that a plain scalar would resolve to null, such as <c>null</c> or <c>~</c>, is quoted.</remarks>
     public void WriteScalar(ReadOnlySpan<char> value)
     {
         WriteValuePrefixForScalar();
         WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
-        WriteScalarCore(value, isKey: false);
+        WriteNonNullScalarCore(value);
         CompleteValueAfterScalar();
     }
 
@@ -621,6 +706,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(char value)
     {
+        // A plain '~' is read back as null, which a character cannot be, so WriteScalar quotes it.
         Span<char> span = stackalloc char[1];
         span[0] = value;
         WriteScalar(span);
@@ -1154,7 +1240,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private void WriteEmptyContainerInline(ContainerKind kind, PendingStartKind pendingStart)
     {
-        if ((pendingStart == PendingStartKind.None || pendingStart == PendingStartKind.Root) && _depth == 0)
+        // A root collection without node properties starts the document. With properties (PendingStartKind.Root),
+        // the "{}" or "[]" must be separated from them, or "&a{}" is read as a malformed anchor.
+        if (pendingStart == PendingStartKind.None && _depth == 0)
         {
             Write(kind == ContainerKind.Mapping ? "{}" : "[]");
             return;
@@ -1264,20 +1352,19 @@ public sealed class YamlWriter : YamlReaderWriterBase
     {
         if (value is ISpanFormattable spanFormattable)
         {
+            // A value that does not fit in the buffer, such as a large BigInteger, is formatted as a string below.
             Span<char> buffer = stackalloc char[64];
-            if (!spanFormattable.TryFormat(buffer, out var written, format, CultureInfo.InvariantCulture))
+            if (spanFormattable.TryFormat(buffer, out var written, format, CultureInfo.InvariantCulture))
             {
-                throw new InvalidOperationException($"Unable to format scalar value of type '{typeof(T)}'.");
-            }
+                if (plainSafe)
+                {
+                    WritePlainScalar(buffer[..written]);
+                    return;
+                }
 
-            if (plainSafe)
-            {
-                WritePlainScalar(buffer[..written]);
+                WriteScalar(buffer[..written]);
                 return;
             }
-
-            WriteScalar(buffer[..written]);
-            return;
         }
 
         var formatString = format.Length == 0
@@ -1301,6 +1388,25 @@ public sealed class YamlWriter : YamlReaderWriterBase
     private void WriteScalarCore(string value, bool isKey)
     {
         WriteScalarCore(value.AsSpan(), isKey);
+    }
+
+    /// <summary>Writes the text of a non-null scalar so that it is not read back as null.</summary>
+    /// <remarks>
+    /// The empty scalar is already quoted by <see cref="WriteScalarCore(ReadOnlySpan{char}, bool)"/>. The other
+    /// spellings of null (<c>null</c>, <c>Null</c>, <c>NULL</c>, <c>~</c>) are quoted here, whatever the schema, so
+    /// the text of an enum name, a URI, or a custom converter never turns into a null.
+    /// </remarks>
+    private void WriteNonNullScalarCore(ReadOnlySpan<char> value)
+    {
+        if (value.Length != 0 && YamlScalar.IsNull(value))
+        {
+            Write('"');
+            WriteEscaped(value);
+            Write('"');
+            return;
+        }
+
+        WriteScalarCore(value, isKey: false);
     }
 
     private void WriteScalarCore(ReadOnlySpan<char> value, bool isKey)
@@ -1339,7 +1445,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
             // A plain "<<" key was read as the merge key, so it is only quoted when the writer picks the style.
             ScalarStyle.Plain when IsPlainSafe(value, isKey: false) => ScalarStyle.Plain,
             ScalarStyle.SingleQuoted when CanWriteSingleQuotedScalar(value) => ScalarStyle.SingleQuoted,
-            ScalarStyle.Any when IsPlainSafe(value, isKey: true) => ScalarStyle.Plain,
+            // A plain "null" or "~" key is read back as a null key, which no dictionary accepts.
+            ScalarStyle.Any when IsPlainSafe(value, isKey: true) && !YamlScalar.IsNull(value) => ScalarStyle.Plain,
             _ => ScalarStyle.DoubleQuoted,
         };
     }
@@ -1410,7 +1517,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 Write('"');
                 return true;
 
-            case ScalarStyle.Plain when IsPlainSafe(value, isKey: false):
+            // A plain string that reads as a null, a boolean, or a number would not be read back as that string.
+            case ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && !ShouldQuoteAmbiguousScalar(value):
                 Write(value);
                 return true;
 
@@ -1625,7 +1733,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
         }
     }
 
-    private bool ShouldQuoteAmbiguousScalar(ReadOnlySpan<char> value)
+    internal bool ShouldQuoteAmbiguousScalar(ReadOnlySpan<char> value)
     {
         if (!Options.ScalarStylePreferences.PreferQuotedForAmbiguousScalars)
         {

@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
-internal sealed class YamlEnumConverter<TEnum> : YamlConverter<TEnum> where TEnum : struct, Enum
+internal sealed class YamlEnumConverter<TEnum> : YamlConverter<TEnum>, IYamlEnumNameFormatter where TEnum : struct, Enum
 {
     private readonly Dictionary<TEnum, string>? _valueToName;
     private readonly Dictionary<string, TEnum>? _nameToValue;
@@ -42,6 +42,17 @@ internal sealed class YamlEnumConverter<TEnum> : YamlConverter<TEnum> where TEnu
         throw YamlThrowHelper.ThrowInvalidEnumScalar(reader, text);
     }
 
+    public string FormatName(object value)
+    {
+        var enumValue = (TEnum)value;
+        if (_valueToName is not null && _valueToName.TryGetValue(enumValue, out var name))
+        {
+            return name;
+        }
+
+        return FormatDefaultName(enumValue);
+    }
+
     public override void Write(YamlWriter writer, TEnum value)
     {
         if (_valueToName is not null && _valueToName.TryGetValue(value, out var name))
@@ -50,7 +61,22 @@ internal sealed class YamlEnumConverter<TEnum> : YamlConverter<TEnum> where TEnu
             return;
         }
 
-        writer.WriteScalar(value.ToString());
+        writer.WriteScalar(FormatDefaultName(value));
+    }
+
+    private static string FormatDefaultName(TEnum value)
+    {
+        var name = value.ToString();
+        if (name.Length == 0 || char.IsAsciiDigit(name[0]) || char.IsLetter(name[0]) || name[0] == '_' || char.GetUnicodeCategory(name[0]) == UnicodeCategory.LetterNumber)
+        {
+            return name;
+        }
+
+        // A value without a name is formatted as a number, and the negative sign of the current culture is not
+        // always '-' (ar-SA prefixes it with a directional mark), so the number is formatted with the invariant culture.
+        return Type.GetTypeCode(typeof(TEnum)) is TypeCode.SByte or TypeCode.Int16 or TypeCode.Int32 or TypeCode.Int64
+            ? Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+            : Convert.ToUInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
     }
 
     [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(

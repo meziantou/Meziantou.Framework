@@ -33,6 +33,11 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
 
     // Whether a numeric type configured with the handling can read the scalar the reader is positioned on, when that
     // scalar resolves to a string, such as a quoted number. The source generator emits the same check inline.
+    /// <summary>Gets whether <paramref name="handling"/> lets a numeric <paramref name="type"/> read some string scalars.</summary>
+    internal static bool CanReadStringScalars(Type type, YamlNumberHandling handling)
+        => (handling & YamlNumberHandling.AllowReadingFromString) != YamlNumberHandling.None ||
+           ((handling & YamlNumberHandling.AllowNamedFloatingPointLiterals) != YamlNumberHandling.None && IsNamedFloatType(Nullable.GetUnderlyingType(type) ?? type));
+
     internal static bool CanReadStringScalar(YamlReader reader, Type type, YamlNumberHandling handling)
     {
         if (reader.TokenType != YamlTokenType.Scalar)

@@ -210,7 +210,11 @@ public static class YamlSerializer
     /// <exception cref="ArgumentNullException"><paramref name="yaml"/> is <see langword="null"/>.</exception>
     public static T? Deserialize<T>(string yaml, YamlSerializerOptions? options = null)
     {
-        return (T?)Deserialize(yaml, typeof(T), options);
+        ArgumentNullException.ThrowIfNull(yaml);
+
+        var effectiveOptions = options ?? YamlSerializerOptions.Default;
+        var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
+        return DeserializeAs<T>(typeInfo, yaml);
     }
 
     /// <summary>Deserializes a YAML payload from text using generated metadata from a serializer context.</summary>
@@ -222,7 +226,11 @@ public static class YamlSerializer
     /// <exception cref="InvalidOperationException">No generated metadata is available for <typeparamref name="T"/> in <paramref name="context"/>.</exception>
     public static T? Deserialize<T>(string yaml, YamlSerializerContext context)
     {
-        return (T?)Deserialize(yaml, typeof(T), context);
+        ArgumentNullException.ThrowIfNull(yaml);
+        ArgumentNullException.ThrowIfNull(context);
+
+        var typeInfo = ResolveTypeInfo(context, typeof(T));
+        return DeserializeAs<T>(typeInfo, yaml);
     }
 
     /// <summary>Deserializes a YAML payload into an explicit destination type.</summary>
@@ -368,7 +376,7 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
-        return (T?)DeserializeCore(typeInfo, reader);
+        return DeserializeAs<T>(typeInfo, reader);
     }
 
     /// <summary>Attempts to deserialize YAML from a text reader.</summary>
@@ -443,13 +451,8 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(context);
 
-        var typeInfo = ResolveTypeInfo(context, typeof(T)) as YamlTypeInfo<T>;
-        if (typeInfo is null)
-        {
-            throw new InvalidOperationException($"No generated metadata is available for type '{typeof(T)}' on context '{context.GetType()}'.");
-        }
-
-        return DeserializeCore(typeInfo, reader);
+        var typeInfo = ResolveTypeInfo(context, typeof(T));
+        return DeserializeAs<T>(typeInfo, reader);
     }
 
     /// <summary>Attempts to deserialize YAML from a text reader using generated metadata from a serializer context.</summary>
@@ -1039,13 +1042,20 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(typeInfo);
         ArgumentNullException.ThrowIfNull(reader);
 
-        var yamlReader = YamlReader.Create(reader, typeInfo.Options);
-        if (!yamlReader.Read())
+        try
         {
-            return null;
-        }
+            var yamlReader = YamlReader.Create(reader, typeInfo.Options);
+            if (!yamlReader.Read())
+            {
+                return null;
+            }
 
-        return typeInfo.ReadAsObject(yamlReader);
+            return typeInfo.ReadAsObject(yamlReader);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw CreateInvalidEncodingException(typeInfo.Options.SourceName, exception);
+        }
     }
 
     private static T? DeserializeCore<T>(YamlTypeInfo<T> typeInfo, TextReader reader)
@@ -1053,13 +1063,47 @@ public static class YamlSerializer
         ArgumentNullException.ThrowIfNull(typeInfo);
         ArgumentNullException.ThrowIfNull(reader);
 
-        var yamlReader = YamlReader.Create(reader, typeInfo.Options);
-        if (!yamlReader.Read())
+        try
         {
-            return default;
+            var yamlReader = YamlReader.Create(reader, typeInfo.Options);
+            if (!yamlReader.Read())
+            {
+                return default;
+            }
+
+            return typeInfo.Read(yamlReader);
+        }
+        catch (DecoderFallbackException exception)
+        {
+            throw CreateInvalidEncodingException(typeInfo.Options.SourceName, exception);
+        }
+    }
+
+    // The text is decoded while it is parsed, so invalid bytes surface in the middle of deserialization. They make the
+    // payload invalid like any syntax error, which the TryDeserialize overloads report by returning false.
+    private static YamlException CreateInvalidEncodingException(string? sourceName, DecoderFallbackException exception)
+        => new(sourceName, Mark.Empty, Mark.Empty, "The YAML payload contains bytes that are not valid in its text encoding.", exception);
+
+    // An empty payload has no value, which reads as null. Unboxing that null into a non-nullable value type would
+    // throw a NullReferenceException, so it is returned as default(T), like the YamlTypeInfo<T> overloads do.
+    private static T? DeserializeAs<T>(YamlTypeInfo typeInfo, string yaml)
+    {
+        if (typeInfo is YamlTypeInfo<T> typedTypeInfo)
+        {
+            return DeserializeCore(typedTypeInfo, yaml);
         }
 
-        return typeInfo.Read(yamlReader);
+        return DeserializeCore(typeInfo, yaml) is { } value ? (T)value : default;
+    }
+
+    private static T? DeserializeAs<T>(YamlTypeInfo typeInfo, TextReader reader)
+    {
+        if (typeInfo is YamlTypeInfo<T> typedTypeInfo)
+        {
+            return DeserializeCore(typedTypeInfo, reader);
+        }
+
+        return DeserializeCore(typeInfo, reader) is { } value ? (T)value : default;
     }
 
     private static StringBuilder AcquireStringBuilder(int minimumCapacity)

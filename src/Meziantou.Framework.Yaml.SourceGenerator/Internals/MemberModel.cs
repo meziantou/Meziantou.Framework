@@ -61,6 +61,12 @@ internal sealed class MemberModel
     public string SerializedNameExpressionForRead { get; }
     public string SerializedNameExpressionForWrite { get; }
 
+    /// <summary>Gets the serialized name of the member, used to sort members when the mapping order is <c>Sorted</c>.</summary>
+    public string SerializedName { get; set; } = string.Empty;
+
+    /// <summary>Gets the value of the <c>[YamlPropertyOrder]</c> attribute applied to the member, or 0.</summary>
+    public int Order { get; set; }
+
     /// <summary>
     /// Builds the expression reading the member from the given receiver expression.
     /// </summary>

@@ -41,15 +41,41 @@ internal static class YamlThrowHelper
 
     /// <summary>Throws an exception for unknown Type Discriminator.</summary>
     public static YamlException ThrowUnknownTypeDiscriminator(YamlReader reader, string? discriminatorValue, Type baseType)
-        => new(reader.SourceName, reader.Start, reader.End, $"Unknown type discriminator '{discriminatorValue}' for '{baseType}'.");
+        => ThrowUnknownTypeDiscriminator(reader, reader.Start, reader.End, discriminatorValue, baseType);
+
+    /// <summary>Throws an exception for unknown Type Discriminator, located at the polymorphic node.</summary>
+    public static YamlException ThrowUnknownTypeDiscriminator(YamlReader reader, Mark start, Mark end, string? discriminatorValue, Type baseType)
+        => new(reader.SourceName, start, end, $"Unknown type discriminator '{discriminatorValue}' for '{baseType}'.");
 
     /// <summary>Throws an exception for unknown Type Tag.</summary>
     public static YamlException ThrowUnknownTypeTag(YamlReader reader, string? tag, Type baseType)
-        => new(reader.SourceName, reader.Start, reader.End, $"Unknown type tag '{tag}' for '{baseType}'.");
+        => ThrowUnknownTypeTag(reader, reader.Start, reader.End, tag, baseType);
+
+    /// <summary>Throws an exception for unknown Type Tag, located at the polymorphic node.</summary>
+    public static YamlException ThrowUnknownTypeTag(YamlReader reader, Mark start, Mark end, string? tag, Type baseType)
+        => new(reader.SourceName, start, end, $"Unknown type tag '{tag}' for '{baseType}'.");
 
     /// <summary>Throws an exception for abstract Type Without Discriminator.</summary>
     public static YamlException ThrowAbstractTypeWithoutDiscriminator(YamlReader reader, Type type)
-        => new(reader.SourceName, reader.Start, reader.End, $"Cannot deserialize abstract type '{type}' without a known derived type discriminator.");
+        => ThrowAbstractTypeWithoutDiscriminator(reader, reader.Start, reader.End, type);
+
+    /// <summary>Throws an exception for abstract Type Without Discriminator, located at the polymorphic node.</summary>
+    public static YamlException ThrowAbstractTypeWithoutDiscriminator(YamlReader reader, Mark start, Mark end, Type type)
+        => new(reader.SourceName, start, end, $"Cannot deserialize abstract type '{type}' without a known derived type discriminator.");
+
+    /// <summary>Converts the value an alias resolved to into the type being deserialized.</summary>
+    /// <remarks>An anchored node can be deserialized as a type the alias destination does not accept.</remarks>
+    public static T CastAliasValue<T>(YamlReader reader, object? value)
+    {
+        try
+        {
+            return (T)value!;
+        }
+        catch (InvalidCastException exception)
+        {
+            throw new YamlException(reader.SourceName, reader.Start, reader.End, exception.Message, exception);
+        }
+    }
 
     /// <summary>Throws an exception for expected Discriminator Scalar.</summary>
     public static YamlException ThrowExpectedDiscriminatorScalar(YamlReader reader, string discriminatorPropertyName)
@@ -154,6 +180,18 @@ internal static class YamlThrowHelper
     /// <summary>Throws an exception for invalid <see cref="Int128"/> Scalar.</summary>
     public static YamlException ThrowInvalidInt128Scalar(YamlReader reader)
         => ThrowInvalidScalar(reader, $"Invalid Int128 scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for an invalid BigInteger scalar.</summary>
+    public static YamlException ThrowInvalidBigIntegerScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid BigInteger scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for an invalid Version scalar.</summary>
+    public static YamlException ThrowInvalidVersionScalar(YamlReader reader)
+        => ThrowInvalidScalar(reader, $"Invalid Version scalar '{reader.ScalarValue}'.");
+
+    /// <summary>Throws an exception for an invalid Rune scalar.</summary>
+    public static YamlException ThrowInvalidRuneScalar(YamlReader reader, string text)
+        => ThrowInvalidScalar(reader, $"Invalid Rune scalar '{text}'.");
 
     /// <summary>Throws an exception for invalid <see cref="UInt128"/> Scalar.</summary>
     public static YamlException ThrowInvalidUInt128Scalar(YamlReader reader)

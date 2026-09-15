@@ -834,6 +834,40 @@ public class YamlRuntimeDerivedTypeTests
         Assert.Contains("not assignable", ex.InnerException!.Message);
     }
 
+    [Theory]
+    [InlineData("type", "registers the derived type")]
+    [InlineData("discriminator", "registers the discriminator 'car'")]
+    [InlineData("tag", "registers the tag '!car'")]
+    [InlineData("default", "as its default derived type")]
+    public void RuntimeDerivedTypesThrowWhenTheyConflictWithEachOther(string conflict, string expectedMessage)
+    {
+        YamlDerivedType[] mappings = conflict switch
+        {
+            "type" => [new YamlDerivedType(typeof(Car), "one"), new YamlDerivedType(typeof(Car), "two")],
+            "discriminator" => [new YamlDerivedType(typeof(Car), "car"), new YamlDerivedType(typeof(Truck), "car")],
+            "tag" => [new YamlDerivedType(typeof(Car), "car") { Tag = "!car" }, new YamlDerivedType(typeof(Truck), "truck") { Tag = "!car" }],
+            _ => [new YamlDerivedType(typeof(Car)), new YamlDerivedType(typeof(Truck))],
+        };
+
+        var options = new YamlSerializerOptions
+        {
+            PolymorphismOptions = new YamlPolymorphismOptions
+            {
+                DerivedTypeMappings =
+                {
+                    [typeof(Vehicle)] = mappings,
+                },
+            },
+        };
+
+        var writeException = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize<Vehicle>(new Car(), options));
+        Assert.Contains(expectedMessage, writeException.Message);
+
+        var readException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Vehicle>("$type: car\n", options));
+        Assert.IsType<InvalidOperationException>(readException.InnerException);
+        Assert.Contains(expectedMessage, readException.InnerException!.Message);
+    }
+
     [Fact]
     public void YamlDerivedTypeConstructorThrowsOnNullType()
     {

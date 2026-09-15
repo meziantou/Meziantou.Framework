@@ -238,6 +238,13 @@ public sealed class YamlMergeKeyTests
 
     internal sealed record MergeRecord(int B, int A = 0);
 
+    internal sealed class MergeInitOnlyPayload
+    {
+        public int A { get; init; }
+
+        public required int B { get; init; }
+    }
+
     private sealed class PopulateConfig
     {
         public Section? Defaults { get; set; }
@@ -271,6 +278,28 @@ public sealed class YamlMergeKeyTests
         Assert.NotNull(result);
         Assert.Equal(1, result.A);
         Assert.Equal(3, result.B);
+    }
+
+    [Theory]
+    [InlineData(false, "<<: [{ A: 1 }, { A: 3, B: 4 }]\n")]
+    [InlineData(false, "<<: [{ <<: { A: 1 } }, { A: 3, B: 4 }]\n")]
+    [InlineData(true, "<<: [{ A: 1 }, { A: 3, B: 4 }]\n")]
+    [InlineData(true, "<<: [{ <<: { A: 1 } }, { A: 3, B: 4 }]\n")]
+    public void Deserialize_Object_EarlierMergeSequenceMappingsTakePrecedence(bool useSourceGeneration, string yaml)
+    {
+        var payload = Deserialize<MergePayload>(yaml, useSourceGeneration);
+        var record = Deserialize<MergeRecord>(yaml, useSourceGeneration);
+        var initOnly = Deserialize<MergeInitOnlyPayload>(yaml, useSourceGeneration);
+
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload.A);
+        Assert.Equal(4, payload.B);
+        Assert.NotNull(record);
+        Assert.Equal(1, record.A);
+        Assert.Equal(4, record.B);
+        Assert.NotNull(initOnly);
+        Assert.Equal(1, initOnly.A);
+        Assert.Equal(4, initOnly.B);
     }
 
     [Fact]
@@ -426,6 +455,7 @@ public sealed class YamlMergeKeyTests
 
 [YamlSerializable(typeof(YamlMergeKeyTests.MergePayload))]
 [YamlSerializable(typeof(YamlMergeKeyTests.MergeRecord))]
+[YamlSerializable(typeof(YamlMergeKeyTests.MergeInitOnlyPayload))]
 [YamlSerializable(typeof(YamlMergeKeyTests.MergeDictionaryHolder))]
 [YamlSerializable(typeof(Dictionary<string, string>))]
 [YamlSerializable(typeof(Dictionary<string, object?>))]

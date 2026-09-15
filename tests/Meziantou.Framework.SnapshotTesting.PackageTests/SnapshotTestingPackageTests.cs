@@ -98,6 +98,62 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
         AssertSourceRootFileWasGenerated(projectDirectory);
     }
 
+    [Fact]
+    public async Task Package_GeneratesTheSourceRootFileForEachPackage_WhenReferencingInlineSnapshotTesting()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("consumer-both");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        // Both packages contain the shared source root targets, so the project imports two copies of them.
+        // The project directory is a source root, so both packages must register its mapping.
+        temporaryDirectory.CreateTextFile("consumer-both/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <OutputType>Exe</OutputType>
+                <TargetFramework>net10.0</TargetFramework>
+                <DeterministicSourcePaths>true</DeterministicSourcePaths>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <SourceRoot Include="$(MSBuildProjectDirectory)/" />
+              </ItemGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{SnapshotTestingPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" />
+                <PackageReference Include="{{SnapshotTestingPackageFixture.InlineSnapshotTestingPackageName}}" Version="{{fixture.PackageVersion}}" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("consumer-both/Program.cs", """
+            using System;
+            using System.Collections.Concurrent;
+            using System.Linq;
+            using System.Reflection;
+
+            foreach (var assembly in new[] { typeof(Meziantou.Framework.SnapshotTesting.Snapshot).Assembly, typeof(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot).Assembly })
+            {
+                var type = assembly.GetType("Meziantou.Framework.SnapshotTesting.CallerContextUtilities", throwOnError: true);
+                var mappings = (ConcurrentDictionary<string, string>)type.GetField("SourceRootMappings", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                if (!mappings.Values.Any(value => value.EndsWith("/consumer-both/", StringComparison.Ordinal)))
+                {
+                    Console.WriteLine("The project source root is not registered in " + assembly.GetName().Name + ": " + string.Join(", ", mappings.Values));
+                    return 1;
+                }
+            }
+
+            return 0;
+            """);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        AssertSourceRootFileWasGenerated(projectDirectory);
+        AssertSourceRootFileWasGenerated(projectDirectory, "InlineSnapshotTestingSourceRoot.g.cs");
+        await RunDotNetCommand(projectDirectory, ["run", "--no-build", "--disable-build-servers"], expectedExitCode: 0);
+    }
+
     private FullPath CreateConsumer(TemporaryDirectory temporaryDirectory, string directoryName, string additionalProperties)
     {
         var projectDirectory = temporaryDirectory.CreateDirectory(directoryName);
@@ -124,11 +180,11 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
         return projectDirectory;
     }
 
-    private static void AssertSourceRootFileWasGenerated(FullPath projectDirectory)
+    private static void AssertSourceRootFileWasGenerated(FullPath projectDirectory, string fileName = "SnapshotTestingSourceRoot.g.cs")
     {
         var intermediateDirectory = projectDirectory / "obj";
         var files = Directory.Exists(intermediateDirectory)
-            ? Directory.GetFiles(intermediateDirectory, "SnapshotTestingSourceRoot.g.cs", SearchOption.AllDirectories)
+            ? Directory.GetFiles(intermediateDirectory, fileName, SearchOption.AllDirectories)
             : [];
 
         Assert.NotEmpty(files, $"No source root file was generated in '{intermediateDirectory}'.");

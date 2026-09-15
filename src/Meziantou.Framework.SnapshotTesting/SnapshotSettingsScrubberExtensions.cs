@@ -43,9 +43,24 @@ public static class SnapshotSettingsScrubberExtensions
         public void ScrubLinesWithReplace(Func<string, string?> replaceLine) => settings.Scrubbers.Add(new LineReplaceScrubber(replaceLine));
 
         /// <summary>Adds a scrubber that replaces the machine name with a consistent value.</summary>
-        public void ScrubMachineName() => settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(Environment.MachineName, "TheMachineName", StringComparison.OrdinalIgnoreCase)));
+        /// <remarks>Only whole words are replaced, ignoring case. Does nothing when <see cref="Environment.MachineName"/> is empty.</remarks>
+        public void ScrubMachineName() => AddWholeWordScrubber(settings, Environment.MachineName, "TheMachineName");
 
         /// <summary>Adds a scrubber that replaces the user name with a consistent value.</summary>
-        public void ScrubUserName() => settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(Environment.UserName, "TheUserName", StringComparison.OrdinalIgnoreCase)));
+        /// <remarks>Only whole words are replaced, ignoring case. Does nothing when <see cref="Environment.UserName"/> is empty.</remarks>
+        public void ScrubUserName() => AddWholeWordScrubber(settings, Environment.UserName, "TheUserName");
+    }
+
+    /// <summary>
+    /// Adds a scrubber that replaces <paramref name="value"/> where it forms a whole word. A user or a machine name is
+    /// often a common word - <c>runner</c> on GitHub Actions, <c>root</c> in a container - so replacing every substring
+    /// would also change <c>xunit.runner.visualstudio</c> or <c>chroot</c>, only on the machines using that name.
+    /// </summary>
+    internal static void AddWholeWordScrubber(SnapshotSettings settings, string? value, string replacement)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+
+        settings.Scrubbers.Add(new LineReplaceScrubber(line => ScrubberUtilities.ReplaceWholeWord(line, value, replacement)));
     }
 }

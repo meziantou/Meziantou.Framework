@@ -20,6 +20,7 @@ namespace Meziantou.Framework.SnapshotTesting
     public interface ISnapshotComparer
     {
         bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual);
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual, out string? mismatchReason) => throw null;
     }
 
     public interface ISnapshotSerializer
@@ -31,6 +32,7 @@ namespace Meziantou.Framework.SnapshotTesting
     {
         public ImageComparer(Meziantou.Framework.SnapshotTesting.ImageComparisonSettings? settings = null) { }
         public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual) => throw null;
+        public bool Equals(Meziantou.Framework.SnapshotTesting.SnapshotData expected, Meziantou.Framework.SnapshotTesting.SnapshotData actual, out string? mismatchReason) => throw null;
     }
 
     public sealed class ImageComparisonSettings
@@ -80,6 +82,7 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public abstract class MergeToolResult : System.IDisposable
     {
+        public virtual bool WaitsForMerge { get => throw null; }
         public abstract void Dispose();
         public abstract void WaitForExit();
     }

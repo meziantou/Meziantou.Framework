@@ -41,8 +41,10 @@ public sealed class ImageComparisonSettings
     /// <remarks>
     /// The distance is the Hamming distance between the hashes, plus the difference between the mean luminances of the
     /// images on the same scale (a solid black and a solid white image are 64 apart; each unit is about 4 luminance levels
-    /// out of 255), capped at 64. Images that are not fully opaque are compared composited over a black and over a white
-    /// background, and the larger distance is used. Images must have the same dimensions.
+    /// out of 255), capped at 64. A bit is set only when the left thumbnail cell is brighter than the right one by more
+    /// than half a luminance level, so invisible noise in flat areas does not flip bits. Images that are not fully opaque
+    /// are compared composited over a black and over a white background, and the larger distance is used. Images must have
+    /// the same dimensions.
     /// </remarks>
     public int? DHashThreshold
     {
@@ -59,7 +61,8 @@ public sealed class ImageComparisonSettings
     /// Values range from <c>0</c> (identical hashes) to <c>64</c>. When <see langword="null"/>, pHash comparison is not performed.
     /// </summary>
     /// <remarks>
-    /// The distance is computed like the one used by <see cref="DHashThreshold"/>.
+    /// The distance is computed like the one used by <see cref="DHashThreshold"/>. A bit is set only when its DCT coefficient
+    /// exceeds the median coefficient by more than one luminance level, so invisible noise in flat areas does not flip bits.
     /// </remarks>
     public int? PHashThreshold
     {

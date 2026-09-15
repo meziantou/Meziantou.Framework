@@ -16,6 +16,11 @@ namespace Meziantou.Framework.SnapshotTesting;
 /// hardware.
 /// </para>
 /// <para>
+/// Differences smaller than a luminance level do not set bits: the dHash requires adjacent cells to differ by more
+/// than half a level, and the pHash requires coefficients to exceed their median by more than one level. Otherwise
+/// the bits of flat areas, whose cells or coefficients are all equal, would flip on invisible noise.
+/// </para>
+/// <para>
 /// Hashes only describe the structure of an image, not its overall brightness, and transparent pixels have no
 /// luminance of their own. <see cref="ComputeDHashDistance"/> and <see cref="ComputePHashDistance"/> therefore add
 /// the difference between the mean luminances to the Hamming distance, and evaluate images that are not fully opaque
@@ -39,11 +44,18 @@ internal static class ImageHash
     // The luminance of a white pixel, premultiplied by an opaque alpha
     private const long MaxPixelValue = (RedWeight + GreenWeight + BlueWeight) * 255 * 255;
 
+    // The luminance of one level out of 255 in a single pixel, premultiplied by an opaque alpha
+    private const long LuminanceLevel = MaxPixelValue / 255;
+
     /// <summary>
-    /// Coefficients closer to the median than this are considered equal to it. The DCT of an exact thumbnail
-    /// only carries rounding noise at this scale, which would otherwise decide the bits of flat images.
+    /// Coefficients that do not exceed the median by more than this are considered equal to it, in luminance
+    /// levels. A change of <c>δ</c> levels in a single thumbnail cell moves every coefficient, and therefore their
+    /// median, by at most <c>δ</c>. On a flat or one-directional image, where most coefficients equal the median,
+    /// a bit can then only flip when the thumbnail cells change by more than half a luminance level in total,
+    /// which is the tolerance the dHash uses between adjacent cells. Without it, the rounding noise of the DCT, or
+    /// a single pixel changed by one level, decided about half the bits of such images.
     /// </summary>
-    private const double PHashCoefficientTolerance = 1e-6;
+    private const double PHashCoefficientTolerance = 1;
 
     private static readonly double[][] CosineTable = CreateCosineTable();
 
@@ -54,7 +66,7 @@ internal static class ImageHash
     {
         Span<long> thumbnail = stackalloc long[DHashWidth * DHashHeight];
         ComputeThumbnail(image, whiteBackground: false, DHashWidth, DHashHeight, thumbnail);
-        return ComputeDHash(thumbnail);
+        return ComputeDHash(thumbnail, image);
     }
 
     /// <summary>
@@ -101,7 +113,7 @@ internal static class ImageHash
 
             var hashDistance = perceptual
                 ? ComputeHammingDistance(ComputePHash(expectedThumbnail, expected), ComputePHash(actualThumbnail, actual))
-                : ComputeHammingDistance(ComputeDHash(expectedThumbnail), ComputeDHash(actualThumbnail));
+                : ComputeHammingDistance(ComputeDHash(expectedThumbnail, expected), ComputeDHash(actualThumbnail, actual));
             var backgroundDistance = hashDistance
                 + ComputeMeanLuminanceDistance(expectedThumbnail, actualThumbnail, expected.Width, expected.Height);
             distance = Math.Max(distance, backgroundDistance);
@@ -130,9 +142,12 @@ internal static class ImageHash
         return (int)(Int128.Abs(difference) * MaxDistance / maxDifference);
     }
 
-    private static ulong ComputeDHash(ReadOnlySpan<long> thumbnail)
+    private static ulong ComputeDHash(ReadOnlySpan<long> thumbnail, Image image)
     {
-        // All the cells receive the same total weight, so they compare exactly without being normalized
+        // All the cells receive the same total weight, width × height, so they compare exactly without being
+        // normalized. A bit is set only when the left cell is brighter by more than half a luminance level: with a
+        // strict comparison, equal cells, which flat areas produce, flipped on any invisible change.
+        var doubledTolerance = (long)image.Width * image.Height * LuminanceLevel;
         ulong hash = 0;
         var bitIndex = 0;
         for (var y = 0; y < DHashHeight; y++)
@@ -140,7 +155,7 @@ internal static class ImageHash
             var rowOffset = y * DHashWidth;
             for (var x = 0; x < DHashWidth - 1; x++)
             {
-                if (thumbnail[rowOffset + x] > thumbnail[rowOffset + x + 1])
+                if (2 * (thumbnail[rowOffset + x] - thumbnail[rowOffset + x + 1]) > doubledTolerance)
                     hash |= 1UL << bitIndex;
 
                 bitIndex++;
@@ -154,7 +169,7 @@ internal static class ImageHash
     {
         // Each cell receives a total weight of width × height, so this brings the cells back to luminance levels
         // from 0 to 255, the scale PHashCoefficientTolerance is expressed in.
-        var luminanceScale = (double)image.Width * image.Height * (MaxPixelValue / 255);
+        var luminanceScale = (double)image.Width * image.Height * LuminanceLevel;
         Span<double> luminance = stackalloc double[PHashSize * PHashSize];
         for (var i = 0; i < luminance.Length; i++)
         {

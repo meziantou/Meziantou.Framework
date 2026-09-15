@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
 using System.IO.Hashing;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
@@ -27,6 +28,23 @@ public sealed class PngImageLoaderTests
             new Argb(0xFFFF0000u),
             new Argb(0x800000FFu),
         ], image.Pixels.ToArray());
+    }
+
+    // The interlaced files use a different filter type on every row, including the first row of each Adam7
+    // pass. The .from-png.png files are Pillow's decoding of them, written without interlacing.
+    [Theory]
+    [InlineData("png-rgb8-interlaced")]
+    [InlineData("png-gray2-interlaced")]
+    [InlineData("png-indexed4-interlaced")]
+    public async Task Image_LoadAsync_InterlacedPngAndConvertedPng_AreIdentical(string scenario)
+    {
+        var interlacedImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".png");
+        var pngImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".from-png.png");
+
+        Assert.Equal(pngImage.Width, interlacedImage.Width);
+        Assert.Equal(pngImage.Height, interlacedImage.Height);
+        Assert.Equal(pngImage.Pixels.ToArray(), interlacedImage.Pixels.ToArray());
+        Assert.Equal(pngImage, interlacedImage);
     }
 
     [Fact]
@@ -109,6 +127,21 @@ public sealed class PngImageLoaderTests
     }
 
     [Fact]
+    public void Load_Indexed_TruncatesAPaletteLargerThanTheBitDepthAllows()
+    {
+        // A 2-bit image with a 256-entry palette: libpng keeps the 4 entries that the indexes can reach
+        var palette = new byte[256 * 3];
+        for (var i = 0; i < 256; i++)
+        {
+            palette[i * 3] = (byte)i;
+        }
+
+        var data = ImageTestData.CreatePng(width: 4, height: 1, bitDepth: 2, colorType: 3, samples: [0b00_01_10_11], palette, transparency: [0xFF, 0xFF, 0xFF, 0x80]);
+
+        Assert.Equal([new Argb(0xFF000000u), new Argb(0xFF010000u), new Argb(0xFF020000u), new Argb(0x80030000u)], Image.Load(data).Pixels.ToArray());
+    }
+
+    [Fact]
     public void Load_Indexed8_IgnoresTransparencyEntriesBeyondThePalette()
     {
         var data = ImageTestData.CreatePng(width: 2, height: 1, bitDepth: 8, colorType: 3, samples: [0, 1], palette: [0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00], transparency: [0x10, 0x20, 0x30, 0x40]);
@@ -178,13 +211,34 @@ public sealed class PngImageLoaderTests
     }
 
     [Fact]
-    public void Load_AnimatedPng_DecodesTheDefaultImage()
+    public void Load_AnimatedPng_ThrowsNotSupported()
+    {
+        var data = CreateAnimatedPng(secondFrameSample: 0x40);
+
+        var exception = Assert.Throws<NotSupportedException>(() => Image.Load(data));
+        Assert.Contains("Animated", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("acTL")]
+    [InlineData("fcTL")]
+    [InlineData("fdAT")]
+    public void Load_ThrowsNotSupportedWhenAnyAnimationChunkIsPresent(string chunkType)
     {
         var data = ImageTestData.CreatePng(width: 1, height: 1, bitDepth: 8, colorType: 2, samples: [0x10, 0x20, 0x30]);
-        data = InsertChunkBefore(data, "IDAT", "acTL", [0, 0, 0, 2, 0, 0, 0, 0]);
-        data = InsertChunkBefore(data, "IEND", "fdAT", [0, 0, 0, 1, 0x78, 0x9C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01]);
+        data = InsertChunkBefore(data, chunkType is "fdAT" ? "IEND" : "IDAT", chunkType, new byte[8]);
 
-        Assert.Equal([new Argb(0xFF102030u)], Image.Load(data).Pixels.ToArray());
+        Assert.Throws<NotSupportedException>(() => Image.Load(data));
+    }
+
+    [Fact]
+    public void ImageComparer_DetectsAnimatedPngsThatDifferOnlyOnALaterFrame()
+    {
+        var expected = new SnapshotData("png", CreateAnimatedPng(secondFrameSample: 0x40));
+        var actual = new SnapshotData("png", CreateAnimatedPng(secondFrameSample: 0x50));
+
+        Assert.False(ImageComparer.Instance.Equals(expected, actual));
+        Assert.True(ImageComparer.Instance.Equals(expected, new SnapshotData("png", CreateAnimatedPng(secondFrameSample: 0x40))));
     }
 
     [Fact]
@@ -277,6 +331,33 @@ public sealed class PngImageLoaderTests
         var imageData = ImageTestData.CreatePngWithRawImageData(width: 2, height: 2, bitDepth: 8, colorType: 6, new byte[9]);
 
         Assert.Throws<InvalidDataException>(() => Image.Load(imageData));
+    }
+
+    /// <summary>Builds a 1x1 APNG of two frames that share their default image and differ on the second frame.</summary>
+    private static byte[] CreateAnimatedPng(byte secondFrameSample)
+    {
+        var data = ImageTestData.CreatePng(width: 1, height: 1, bitDepth: 8, colorType: 2, samples: [0x10, 0x20, 0x30]);
+        data = InsertChunkBefore(data, "IDAT", "acTL", [0, 0, 0, 2, 0, 0, 0, 0]);
+        data = InsertChunkBefore(data, "IDAT", "fcTL", CreateFrameControl(sequenceNumber: 0));
+        data = InsertChunkBefore(data, "IEND", "fcTL", CreateFrameControl(sequenceNumber: 1));
+
+        using var compressedStream = new MemoryStream();
+        using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            zlib.Write([0, secondFrameSample, secondFrameSample, secondFrameSample]);
+        }
+
+        return InsertChunkBefore(data, "IEND", "fdAT", [0, 0, 0, 2, .. compressedStream.ToArray()]);
+
+        static byte[] CreateFrameControl(uint sequenceNumber)
+        {
+            var frameControl = new byte[26];
+            BinaryPrimitives.WriteUInt32BigEndian(frameControl, sequenceNumber);
+            BinaryPrimitives.WriteUInt32BigEndian(frameControl.AsSpan(4), 1); // Width
+            BinaryPrimitives.WriteUInt32BigEndian(frameControl.AsSpan(8), 1); // Height
+            BinaryPrimitives.WriteUInt16BigEndian(frameControl.AsSpan(22), 1); // Delay denominator
+            return frameControl;
+        }
     }
 
     private static int FindChunk(byte[] png, string type)

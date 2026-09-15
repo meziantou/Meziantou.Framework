@@ -18,7 +18,10 @@
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ContinuousTestingDetector.cs" Link="Utils/ContinuousTestingDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/LLMEnvironmentDetector.cs" Link="Utils/LLMEnvironmentDetector.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/CallerContextUtilities.cs" Link="Utils/CallerContextUtilities.cs" />
-    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/GitTool.cs" Link="MergeTools/GitTool.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTool.cs" Link="MergeTool.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeToolResult.cs" Link="MergeToolResult.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/MergeTools/*.cs" LinkBase="MergeTools" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/common/ScrubberUtilities.cs" Link="Scrubbers/ScrubberUtilities.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/FileInfoExtensions.cs" Link="Utils/FileInfoExtensions.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessEntry.cs" Link="Utils/ProcessEntry.cs" />
     <Compile Include="../Meziantou.Framework.SnapshotTesting/common/Utils/ProcessExtensions.cs" Link="Utils/ProcessExtensions.cs" />

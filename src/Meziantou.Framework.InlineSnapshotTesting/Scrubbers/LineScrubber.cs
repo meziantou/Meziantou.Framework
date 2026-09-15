@@ -1,5 +1,3 @@
-using Meziantou.Framework.HumanReadable.Utils;
-
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal abstract class LineScrubber : Scrubber
@@ -8,7 +6,7 @@ internal abstract class LineScrubber : Scrubber
     {
         var sb = new StringBuilder(text.Length);
         var lastEndOfLineLength = 0;
-        foreach (var (line, eol) in StringUtils.EnumerateLines(text))
+        foreach (var (line, eol) in ScrubberUtilities.EnumerateLines(text))
         {
             var newLine = ScrubLine(line);
             if (newLine is not null)
@@ -17,11 +15,11 @@ internal abstract class LineScrubber : Scrubber
                 sb.Append(eol);
                 lastEndOfLineLength = eol.Length;
             }
-            else if (eol.IsEmpty && !line.IsEmpty)
+            else if (eol.IsEmpty)
             {
                 // Removing the last line must also remove the line break that separated it from the previous line.
-                // Otherwise the text would end with a line break it did not have. An empty last line means the text
-                // ends with a line break, which is kept.
+                // Otherwise the text would end with a line break it did not have. A text that ends with a line break
+                // has no line without one, so its last line break is kept.
                 sb.Length -= lastEndOfLineLength;
             }
         }

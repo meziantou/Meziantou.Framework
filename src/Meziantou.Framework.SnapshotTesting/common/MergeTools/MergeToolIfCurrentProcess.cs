@@ -1,7 +1,13 @@
 using System.Diagnostics;
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
+
+namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+#else
 using Meziantou.Framework.SnapshotTesting.Utils;
 
 namespace Meziantou.Framework.SnapshotTesting.MergeTools;
+#endif
 
 internal sealed class MergeToolIfCurrentProcess(MergeTool tool, string[] processNames) : MergeTool
 {

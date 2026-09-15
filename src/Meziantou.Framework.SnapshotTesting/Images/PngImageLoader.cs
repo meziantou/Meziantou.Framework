@@ -131,10 +131,9 @@ internal static class PngImageLoader
                 if (paletteEntryCount > 256)
                     throw new InvalidDataException("The PNG PLTE chunk contains too many entries.");
 
-                if (colorType == 3 && paletteEntryCount > (1 << bitDepth))
-                    throw new InvalidDataException("The PNG PLTE chunk contains too many entries for the bit depth.");
-
-                palette = chunkData.ToArray();
+                // Entries beyond what the bit depth can index can never be referenced; libpng truncates them.
+                paletteEntryCount = Math.Min(paletteEntryCount, 1 << bitDepth);
+                palette = chunkData[..(paletteEntryCount * 3)].ToArray();
                 seenPlte = true;
                 continue;
             }
@@ -207,8 +206,12 @@ internal static class PngImageLoader
                 break;
             }
 
-            // The animation chunks of an APNG (acTL, fcTL, fdAT) are ancillary: the default image is the IDAT
-            // data, which is what a decoder without APNG support displays.
+            // The animation chunks of an APNG (acTL, fcTL, fdAT) are ancillary, but decoding only the default
+            // image would make two animations that differ on a later frame compare equal. Like a multi-page
+            // TIFF, an animated PNG is left to the byte comparison.
+            if (chunkType.SequenceEqual("acTL"u8) || chunkType.SequenceEqual("fcTL"u8) || chunkType.SequenceEqual("fdAT"u8))
+                throw new NotSupportedException("Animated PNG is not supported.");
+
             if (seenIdat)
                 idatEnded = true;
 

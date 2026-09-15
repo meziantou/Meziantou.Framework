@@ -171,6 +171,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
 
     public abstract class MergeToolResult : System.IDisposable
     {
+        public virtual bool WaitsForMerge { get => throw null; }
         public abstract void Dispose();
         public abstract void WaitForExit();
     }

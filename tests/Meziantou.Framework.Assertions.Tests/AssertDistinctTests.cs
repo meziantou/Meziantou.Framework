@@ -243,6 +243,59 @@ public sealed class AssertDistinctTests
     }
 
     [Fact]
+    public async Task NotDistinct_AsyncEnumerableFails()
+    {
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.NotDistinct(actual), """
+            Assert.NotDistinct() assertion failed.
+            Expression: actual
+            Not expected: all distinct items
+            Actual:       [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public async Task NullActual_Fails()
+    {
+        int[]? array = null;
+        string? text = null;
+        IEnumerable<int>? enumerable = null;
+        System.Collections.IEnumerable? nonGeneric = null;
+        IAsyncEnumerable<int>? asyncEnumerable = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Distinct(array), """
+            Assert.Distinct() assertion failed.
+            Expression: array
+            Actual: <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotDistinct(enumerable), """
+            Assert.NotDistinct() assertion failed.
+            Expression: enumerable
+            Not expected: all distinct items
+            Actual:       <null>
+            """);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(text));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(enumerable));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(nonGeneric));
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(asyncEnumerable));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(array));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(text));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(nonGeneric));
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotDistinct(asyncEnumerable));
+    }
+
+    [Fact]
+    public void Array_UsesTheComparer()
+    {
+        var actual = new[] { "a", "A" };
+
+        AssertionsAssert.Distinct(actual);
+        AssertionsAssert.NotDistinct(actual, StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Distinct(actual, StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void NonGenericEnumerable_LargeCollectionUsesHashLookup()
     {
         var comparer = new CountingEqualityComparer();

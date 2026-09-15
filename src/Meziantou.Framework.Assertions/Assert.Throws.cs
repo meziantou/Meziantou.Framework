@@ -191,6 +191,93 @@ public partial class Assert
         return await Throws(expectedExceptionType, action, message, actionExpression).ConfigureAwait(false);
     }
 
+    /// <summary>Asserts that the action throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The action expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the action.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    public static T Throws<T>(string? paramName, Action action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(Throws<T>(action, message, actionExpression), paramName, message, actionExpression);
+    }
+
+    /// <summary>Asserts that the function throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The function expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the function.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    public static T Throws<T>(string? paramName, Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(Throws<T>(action, message, actionExpression), paramName, message, actionExpression);
+    }
+
+    /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The asynchronous action expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the action.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    [OverloadResolutionPriority(1)]
+    public static async Task<T> Throws<T>(string? paramName, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(await Throws<T>(action, message, actionExpression).ConfigureAwait(false), paramName, message, actionExpression);
+    }
+
+    /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The asynchronous function expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the function.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    [OverloadResolutionPriority(1)]
+    public static async Task<T> Throws<T>(string? paramName, Func<Task<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(await Throws<T>(action, message, actionExpression).ConfigureAwait(false), paramName, message, actionExpression);
+    }
+
+    /// <summary>Asserts that the asynchronous action throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The asynchronous action expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the action.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    public static async Task<T> Throws<T>(string? paramName, Func<ValueTask> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(await Throws<T>(action, message, actionExpression).ConfigureAwait(false), paramName, message, actionExpression);
+    }
+
+    /// <summary>Asserts that the asynchronous function throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The asynchronous function expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the function.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    public static async Task<T> Throws<T>(string? paramName, Func<ValueTask<object?>> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return CheckParameterName(await Throws<T>(action, message, actionExpression).ConfigureAwait(false), paramName, message, actionExpression);
+    }
+
+    /// <summary>Compatibility shim for xUnit. Asserts that the asynchronous action throws an exception exactly of the specified type, whose <see cref="ArgumentException.ParamName"/> is <paramref name="paramName"/>.</summary>
+    /// <param name="paramName">The expected parameter name.</param>
+    /// <param name="action">The asynchronous action expected to throw.</param>
+    /// <param name="actionExpression">The expression that produced the action.</param>
+    /// <typeparam name="T">The exact expected exception type.</typeparam>
+    /// <returns>The thrown exception.</returns>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static async Task<T> ThrowsAsync<T>(string? paramName, Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : ArgumentException
+    {
+        return await Throws<T>(paramName, action, message, actionExpression).ConfigureAwait(false);
+    }
+
     /// <summary>Asserts that the action throws an exception assignable to the specified type.</summary>
     /// <param name="action">The action expected to throw.</param>
     /// <param name="actionExpression">The expression that produced the action.</param>
@@ -375,11 +462,11 @@ public partial class Assert
         }
         catch (Exception exception)
         {
+            if (IsUnexpectedXunitSkipException(expectedExceptionType, exception))
+                throw;
+
             if (IsExpectedException(expectedExceptionType, allowDerivedTypes, exception))
                 return exception;
-
-            if (IsXunitSkipException(exception))
-                throw;
 
             throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, message, actionExpression);
         }
@@ -395,11 +482,11 @@ public partial class Assert
         }
         catch (Exception exception)
         {
+            if (IsUnexpectedXunitSkipException(expectedExceptionType, exception))
+                throw;
+
             if (IsExpectedException(expectedExceptionType, allowDerivedTypes, exception))
                 return exception;
-
-            if (IsXunitSkipException(exception))
-                throw;
 
             throw CreateThrowsException(expectedExceptionType, allowDerivedTypes, exception, message, actionExpression);
         }
@@ -415,5 +502,21 @@ public partial class Assert
     private static bool IsExpectedException(Type expectedExceptionType, bool allowDerivedTypes, Exception exception)
     {
         return allowDerivedTypes ? expectedExceptionType.IsAssignableFrom(exception.GetType()) : exception.GetType() == expectedExceptionType;
+    }
+
+    // A skip request must escape the assertion unchanged, even when its type is assignable to the expected type
+    // (ThrowsAny<Exception>). Only a caller that expects the exact type of the skip exception observes it.
+    private static bool IsUnexpectedXunitSkipException(Type expectedExceptionType, Exception exception)
+    {
+        return IsXunitSkipException(exception) && exception.GetType() != expectedExceptionType;
+    }
+
+    private static T CheckParameterName<T>(T exception, string? expectedParamName, string? message, string? actionExpression)
+        where T : ArgumentException
+    {
+        if (string.Equals(expectedParamName, exception.ParamName, StringComparison.Ordinal))
+            return exception;
+
+        throw new AssertionException(ErrorFormatter.Format(new ThrowsParameterNameAssertionError(exception, expectedParamName, actionExpression, message)), exception);
     }
 }

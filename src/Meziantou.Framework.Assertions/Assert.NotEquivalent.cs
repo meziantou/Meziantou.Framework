@@ -11,8 +11,7 @@ public partial class Assert
 
     public static void NotEquivalent(object? expected, object? actual, EquivalentOptions? options, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var failure = GetStructuralDifference(expected, actual, new StructuralPath(), new HashSet<StructuralReferencePair>(), [], StructuralComparisonOptions.Create(options));
-        if (failure is not null)
+        if (!AreStructurallyEquivalent(expected, actual, StructuralComparisonOptions.Create(options)))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEquivalentAssertionError(expected, actual, actualExpression, expectedExpression, message)));

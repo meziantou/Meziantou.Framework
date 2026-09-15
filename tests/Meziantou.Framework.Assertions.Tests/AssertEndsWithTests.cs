@@ -398,4 +398,294 @@ public sealed class AssertEndsWithTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith("bc", actual));
     }
 
+    [Fact]
+    public void String_PositionalMessage_ComparesTheSuffix()
+    {
+        AssertionsAssert.EndsWith("bc", "abc", "custom message");
+        AssertionsAssert.DoesNotEndWith("b", "abc", "custom message");
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith("b", "abc", "custom message"), """
+            Assert.EndsWith() assertion failed.
+            Message: custom message
+            Expected expression: "b"
+            Actual expression:   "abc"
+            Comparison: Ordinal
+            Index of first difference: 0
+            Expected suffix: "b̲"
+            Actual:          "abc̲"
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith("bc", "abc", "custom message"), """
+            Assert.DoesNotEndWith() assertion failed.
+            Message: custom message
+            Expected expression: "bc"
+            Actual expression:   "abc"
+            Not expected suffix: "bc"
+            Actual:              "abc"
+            """);
+    }
+
+    [Fact]
+    public void String_ObjectTypedArguments_CompareTheSuffix()
+    {
+        object expected = "bc";
+        System.Collections.IEnumerable actual = "abc";
+        System.Collections.IEnumerable actualChars = "abc".ToCharArray();
+
+        AssertionsAssert.EndsWith(expected, actual, "custom message");
+        AssertionsAssert.EndsWith(expected, actualChars, "custom message");
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(expected, actual, "custom message"));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(expected, actualChars, "custom message"));
+    }
+
+    [Fact]
+    public void Char_ComparesTheLastCharacter()
+    {
+        AssertionsAssert.EndsWith('c', "abc");
+        AssertionsAssert.DoesNotEndWith('b', "abc");
+        AssertionsAssert.DoesNotEndWith('c', "");
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith('b', "abc"), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: 'b'
+            Actual expression:   "abc"
+            Expected suffix: 'b'
+            Actual:          "abc̲"
+            """);
+    }
+
+    [Fact]
+    public void NullStringOrArray_Fails()
+    {
+        string? text = null;
+        int[]? array = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith('a', text), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: 'a'
+            Actual expression:   text
+            Expected suffix: 'a'
+            Actual:          <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith('a', text), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: 'a'
+            Actual expression:   text
+            Not expected suffix: 'a'
+            Actual:              <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith(1, array), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   array
+            Expected suffix: 1
+            Actual:          <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(1, array), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: 1
+            Actual expression:   array
+            Not expected suffix: 1
+            Actual:              <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith([1], array), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: [1]
+            Actual expression:   array
+            Not expected suffix: [1]
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void Overloads_BindLikeContains()
+    {
+        List<object> objects = ["a", "b", "c"];
+        List<int> numbers = [1, 2, 3];
+
+        AssertionsAssert.EndsWith("c", objects);
+        AssertionsAssert.DoesNotEndWith("b", objects);
+        AssertionsAssert.EndsWith([3], numbers);
+        AssertionsAssert.EndsWith([2, 3], numbers);
+        AssertionsAssert.DoesNotEndWith([2], numbers);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith([1, 3], numbers), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: [1, 3]
+            Actual expression:   numbers
+            Index of first difference: 0
+            Expected suffix: [1̲, 3]
+            Actual:          [1, 2̲, 3]
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith([2, 3], numbers), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: [2, 3]
+            Actual expression:   numbers
+            Not expected suffix: [2, 3]
+            Actual:              [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public void SequenceOfObjects_IsComparedAsASuffixOrAsTheLastItem()
+    {
+        List<object> actual = [1, 2, 3];
+        var array = new object[] { 2, 3 };
+        List<object> actualWithArray = [1, array];
+
+        AssertionsAssert.EndsWith(new object[] { 2, 3 }, actual);
+        AssertionsAssert.EndsWith(new object[] { 2, 3 }, (System.Collections.IEnumerable)actual);
+        AssertionsAssert.EndsWith(array, actualWithArray);
+        AssertionsAssert.EndsWith(array, (System.Collections.IEnumerable)actualWithArray);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(new object[] { 2, 3 }, actual));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(array, actualWithArray));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith(array, (System.Collections.IEnumerable)actualWithArray));
+        AssertionsAssert.DoesNotEndWith(new object[] { 1, 2 }, actual);
+    }
+
+    [Fact]
+    public void StringComparison_Success()
+    {
+        AssertionsAssert.EndsWith("LO", "Hello", StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.EndsWith("LO".AsSpan(), "Hello".AsSpan(), StringComparison.OrdinalIgnoreCase);
+        AssertionsAssert.DoesNotEndWith("LO", "Hello", StringComparison.Ordinal);
+        AssertionsAssert.DoesNotEndWith("LO".AsSpan(), "Hello".AsSpan(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StringComparison_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith("LO", "Hello", StringComparison.Ordinal), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: "LO"
+            Actual expression:   "Hello"
+            Comparison: Ordinal
+            Index of first difference: 0
+            Expected suffix: "L̲O"
+            Actual:          "Hell̲o"
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith("LO".AsSpan(), "Hello".AsSpan(), StringComparison.Ordinal), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: "LO".AsSpan()
+            Actual expression:   "Hello".AsSpan()
+            Comparison: Ordinal
+            Index of first difference: 0
+            Expected suffix: "L̲O"
+            Actual:          "Hell̲o"
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith("LO", "Hello", StringComparison.OrdinalIgnoreCase), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: "LO"
+            Actual expression:   "Hello"
+            Not expected suffix: "LO"
+            Actual:              "Hello"
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith("LO".AsSpan(), "Hello".AsSpan(), StringComparison.OrdinalIgnoreCase), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: "LO".AsSpan()
+            Actual expression:   "Hello".AsSpan()
+            Not expected suffix: "LO"
+            Actual:              "Hello"
+            """);
+    }
+
+    [Fact]
+    public void CharSpan_IgnoreCase()
+    {
+        AssertionsAssert.EndsWith("LO".AsSpan(), "Hello".AsSpan(), ignoreCase: true);
+        AssertionsAssert.DoesNotEndWith("LO".AsSpan(), "Hello".AsSpan());
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EndsWith("LO".AsSpan(), "Hello".AsSpan()), """
+            Assert.EndsWith() assertion failed.
+            Expected expression: "LO".AsSpan()
+            Actual expression:   "Hello".AsSpan()
+            Comparison: Ordinal
+            Index of first difference: 0
+            Expected suffix: "L̲O"
+            Actual:          "Hell̲o"
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith("LO".AsSpan(), "Hello".AsSpan(), ignoreCase: true), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: "LO".AsSpan()
+            Actual expression:   "Hello".AsSpan()
+            Not expected suffix: "LO"
+            Actual:              "Hello"
+            """);
+    }
+
+    [Fact]
+    public void DoesNotEndWith_SpanSuffix()
+    {
+        AssertionsAssert.DoesNotEndWith<int>([1, 2], [1, 2, 3]);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith<int>([2, 3], [1, 2, 3]), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: [2, 3]
+            Actual expression:   [1, 2, 3]
+            Not expected suffix: [2, 3]
+            Actual:              [1, 2, 3]
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotEndWith_NonGenericAndAsyncSuccess()
+    {
+        System.Collections.IEnumerable actual = new object[] { 1, 2, 3 };
+
+        AssertionsAssert.DoesNotEndWith(2, actual);
+        AssertionsAssert.DoesNotEndWith(new object[] { 1, 2 }, actual);
+        await AssertionsAssert.DoesNotEndWith([1, 2], AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]));
+    }
+
+    [Fact]
+    public void EndsWithAndDoesNotEndWith_AreComplements()
+    {
+        string[] texts = ["", "c", "bc", "BC", "abc", "bcx"];
+        foreach (var expected in texts)
+        {
+            foreach (var actual in texts)
+            {
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, actual), () => AssertionsAssert.DoesNotEndWith(expected, actual));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, actual, "message"), () => AssertionsAssert.DoesNotEndWith(expected, actual, "message"));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, actual, ignoreCase: true), () => AssertionsAssert.DoesNotEndWith(expected, actual, ignoreCase: true));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, actual, StringComparison.OrdinalIgnoreCase), () => AssertionsAssert.DoesNotEndWith(expected, actual, StringComparison.OrdinalIgnoreCase));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected.AsSpan(), actual.AsSpan()), () => AssertionsAssert.DoesNotEndWith(expected.AsSpan(), actual.AsSpan()));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected.AsSpan(), actual.AsSpan(), ignoreCase: true), () => AssertionsAssert.DoesNotEndWith(expected.AsSpan(), actual.AsSpan(), ignoreCase: true));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith((object)expected, (System.Collections.IEnumerable)actual), () => AssertionsAssert.DoesNotEndWith((object)expected, (System.Collections.IEnumerable)actual));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith((System.Collections.IEnumerable)expected, (System.Collections.IEnumerable)actual), () => AssertionsAssert.DoesNotEndWith((System.Collections.IEnumerable)expected, (System.Collections.IEnumerable)actual));
+            }
+
+            foreach (var character in "cCbx")
+            {
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(character, expected), () => AssertionsAssert.DoesNotEndWith(character, expected));
+            }
+        }
+
+        int[][] sequences = [[], [3], [2, 3], [1, 2], [1, 2, 3]];
+        foreach (var expected in sequences)
+        {
+            foreach (var actual in sequences)
+            {
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(new ReadOnlySpan<int>(expected), new ReadOnlySpan<int>(actual)), () => AssertionsAssert.DoesNotEndWith(new ReadOnlySpan<int>(expected), new ReadOnlySpan<int>(actual)));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, actual.AsEnumerable()), () => AssertionsAssert.DoesNotEndWith(expected, actual.AsEnumerable()));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected, (System.Collections.IEnumerable)actual), () => AssertionsAssert.DoesNotEndWith(expected, (System.Collections.IEnumerable)actual));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(expected.Cast<object>(), actual.Cast<object>().ToList()), () => AssertionsAssert.DoesNotEndWith(expected.Cast<object>(), actual.Cast<object>().ToList()));
+            }
+
+            foreach (var item in new[] { 0, 1, 2, 3 })
+            {
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(item, expected), () => AssertionsAssert.DoesNotEndWith(item, expected));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(item, new ReadOnlySpan<int>(expected)), () => AssertionsAssert.DoesNotEndWith(item, new ReadOnlySpan<int>(expected)));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(item, expected.Select(i => i)), () => AssertionsAssert.DoesNotEndWith(item, expected.Select(i => i)));
+                AssertContainsTests.AssertComplements(() => AssertionsAssert.EndsWith(item, (System.Collections.IEnumerable)expected), () => AssertionsAssert.DoesNotEndWith(item, (System.Collections.IEnumerable)expected));
+            }
+        }
+    }
+
+    [Fact]
+    public async Task AsyncEndsWithAndDoesNotEndWith_AreComplements()
+    {
+        int[][] sequences = [[], [3], [2, 3], [1, 2], [1, 2, 3]];
+        foreach (var expected in sequences)
+        {
+            foreach (var actual in sequences)
+            {
+                await AssertContainsTests.AssertComplementsAsync(() => AssertionsAssert.EndsWith(expected, AssertionTestHelpers.ToAsyncEnumerable(actual)), () => AssertionsAssert.DoesNotEndWith(expected, AssertionTestHelpers.ToAsyncEnumerable(actual)));
+            }
+        }
+    }
 }

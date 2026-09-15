@@ -282,6 +282,32 @@ public sealed class AssertThrowsTests
     }
 
     [Fact]
+    public void ThrowsAny_XunitSkipAssignableToTheExpectedTypeIsNotReturned()
+    {
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.ThrowsAny<Exception>(() => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.ThrowsAny(typeof(Exception), () => AssertionsAssert.XunitSkip("n/a")));
+        AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.Throws<Exception>(() => AssertionsAssert.XunitSkip("n/a")));
+    }
+
+    [Fact]
+    public async Task ThrowsAnyAsync_XunitSkipAssignableToTheExpectedTypeIsNotReturned()
+    {
+        await AssertionTestHelpers.ValidateXunitSkipAsync(() => AssertionsAssert.ThrowsAny<Exception>(async () =>
+        {
+            await Task.Yield();
+            AssertionsAssert.XunitSkip("n/a");
+        }));
+    }
+
+    [Fact]
+    public void Throws_XunitSkipIsReturnedWhenItsExactTypeIsExpected()
+    {
+        var exception = AssertionsAssert.ThrowsAny<AssertionException>(() => AssertionsAssert.XunitSkip("n/a"));
+
+        AssertionsAssert.Equal("$XunitDynamicSkip$n/a", exception.Message);
+    }
+
+    [Fact]
     public async Task ThrowsAsync_XunitSkipIsNotWrapped()
     {
         await AssertionTestHelpers.ValidateXunitSkipAsync(() => AssertionsAssert.Throws<InvalidOperationException>(async () =>
@@ -289,6 +315,128 @@ public sealed class AssertThrowsTests
             await Task.Yield();
             AssertionsAssert.XunitSkip("n/a");
         }));
+    }
+
+    [Fact]
+    public async Task ThrowsParamName_Success()
+    {
+        var exception = CreateArgumentNullException("value");
+        var service = new ValueTaskService(exception);
+        Action action = () => { throw exception; };
+
+        AssertionsAssert.Same(exception, AssertionsAssert.Throws<ArgumentNullException>("value", action));
+        AssertionsAssert.Same(exception, AssertionsAssert.Throws<ArgumentNullException>("value", () => new ThrowingPropertySource(exception).Value));
+        AssertionsAssert.Same(exception, await AssertionsAssert.Throws<ArgumentNullException>("value", () => ThrowAsync(exception)));
+        AssertionsAssert.Same(exception, await AssertionsAssert.Throws<ArgumentNullException>("value", () => new ThrowingPropertySource(exception).ValueAsync));
+        AssertionsAssert.Same(exception, await AssertionsAssert.Throws<ArgumentNullException>("value", () => service.SaveAsync()));
+        AssertionsAssert.Same(exception, await AssertionsAssert.Throws<ArgumentNullException>("value", () => service.LoadAsync()));
+        AssertionsAssert.Same(exception, await AssertionsAssert.ThrowsAsync<ArgumentNullException>("value", () => ThrowAsync(exception)));
+    }
+
+    [Fact]
+    public void ThrowsParamName_NullParamName_Success()
+    {
+        var exception = CreateArgumentException("Failure", paramName: null);
+        Action action = () => { throw exception; };
+
+        AssertionsAssert.Same(exception, AssertionsAssert.Throws<ArgumentException>(null, action));
+    }
+
+    [Fact]
+    public async Task ThrowsParamName_FailsWhenTheParameterNameDiffers()
+    {
+        var exception = CreateArgumentNullException("other");
+        Action action = () => { throw exception; };
+
+        var assertionException = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Throws<ArgumentNullException>("value", action));
+        AssertionsAssert.Equal("""
+            Assert.Throws() assertion failed.
+            Expression: action
+            Exception type: System.ArgumentNullException
+            Expected parameter name: "value"
+            Actual parameter name:   "other"
+            Exception: Value cannot be null. (Parameter 'other')
+            """, assertionException.Message);
+        AssertionsAssert.Same(exception, assertionException.InnerException);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Throws<ArgumentException>("value", () => ThrowAsync(CreateArgumentException("Failure", paramName: null))), """
+            Assert.Throws() assertion failed.
+            Expression: () => ThrowAsync(CreateArgumentException("Failure", paramName: null))
+            Exception type: System.ArgumentException
+            Expected parameter name: "value"
+            Actual parameter name:   <null>
+            Exception: Failure
+            """);
+    }
+
+    [Fact]
+    public void ThrowsParamName_FailsWhenDerivedExceptionIsThrown()
+    {
+        Action action = () => { throw CreateArgumentNullException("value"); };
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Throws<ArgumentException>("value", action), """
+            Assert.Throws() assertion failed.
+            Expression: action
+            Expected exception type: System.ArgumentException
+            Actual exception type:   System.ArgumentNullException
+            Exception: Value cannot be null. (Parameter 'value')
+            """);
+    }
+
+    [Fact]
+    public void DoesNotThrow_Function_Success()
+    {
+        var source = new ValueSource(42);
+
+        AssertionsAssert.DoesNotThrow(() => source.Value);
+        AssertionsAssert.DoesNotThrow<InvalidOperationException>(() => source.Value);
+        AssertionsAssert.DoesNotThrow(typeof(InvalidOperationException), () => source.Value);
+        AssertionsAssert.DoesNotThrowAny<InvalidOperationException>(() => source.Value);
+        AssertionsAssert.DoesNotThrowAny(typeof(InvalidOperationException), () => source.Value);
+    }
+
+    [Fact]
+    public void DoesNotThrow_Function_FailsAndKeepsTheOriginalException()
+    {
+        var exception = new InvalidOperationException("Failure");
+        var source = new ThrowingPropertySource(exception);
+
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrow(() => source.Value), """
+            Assert.DoesNotThrow() assertion failed.
+            Expression: () => source.Value
+            Not expected: exception
+            Exception: System.InvalidOperationException
+            Exception message: Failure
+            """);
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrow<InvalidOperationException>(() => source.Value), """
+            Assert.DoesNotThrow() assertion failed.
+            Expression: () => source.Value
+            Not expected: exception of type System.InvalidOperationException
+            Exception: System.InvalidOperationException
+            Exception message: Failure
+            """);
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrow(typeof(InvalidOperationException), () => source.Value), """
+            Assert.DoesNotThrow() assertion failed.
+            Expression: () => source.Value
+            Not expected: exception of type System.InvalidOperationException
+            Exception: System.InvalidOperationException
+            Exception message: Failure
+            """);
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrowAny<Exception>(() => source.Value), """
+            Assert.DoesNotThrowAny() assertion failed.
+            Expression: () => source.Value
+            Not expected: exception assignable to System.Exception
+            Exception: System.InvalidOperationException
+            Exception message: Failure
+            """);
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrowAny(typeof(Exception), () => source.Value), """
+            Assert.DoesNotThrowAny() assertion failed.
+            Expression: () => source.Value
+            Not expected: exception assignable to System.Exception
+            Exception: System.InvalidOperationException
+            Exception message: Failure
+            """);
+        AssertionsAssert.Same(exception, AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(() => source.Value)));
     }
 
     [Fact]
@@ -411,6 +559,80 @@ public sealed class AssertThrowsTests
     }
 
     [Fact]
+    public void DoesNotThrow_ExactType_OtherExceptionsPropagateUnchanged()
+    {
+        var derivedException = CreateArgumentNullException("value");
+        var unrelatedException = new InvalidOperationException("Failure");
+        Action derivedAction = () => { throw derivedException; };
+        Action unrelatedAction = () => { throw unrelatedException; };
+
+        AssertionsAssert.Same(derivedException, AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(derivedAction)));
+        AssertionsAssert.Same(derivedException, AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow(typeof(ArgumentException), derivedAction)));
+        AssertionsAssert.Same(unrelatedException, AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(unrelatedAction)));
+        AssertionsAssert.Same(unrelatedException, AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrowAny<ArgumentException>(unrelatedAction)));
+        AssertionsAssert.Same(unrelatedException, AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrowAny(typeof(ArgumentException), unrelatedAction)));
+    }
+
+    [Fact]
+    public void DoesNotThrowAny_DerivedExceptionFails()
+    {
+        var exception = CreateArgumentNullException("value");
+        Action action = () => { throw exception; };
+
+        ValidateDoesNotThrow(exception, () => AssertionsAssert.DoesNotThrowAny<ArgumentException>(action), """
+            Assert.DoesNotThrowAny() assertion failed.
+            Expression: action
+            Not expected: exception assignable to System.ArgumentException
+            Exception: System.ArgumentNullException
+            Exception message: Value cannot be null. (Parameter 'value')
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotThrow_Task_ExactType_OtherExceptionsPropagateUnchanged()
+    {
+        var derivedException = CreateArgumentNullException("value");
+        var unrelatedException = new InvalidOperationException("Failure");
+        Func<Task> derivedAction = () => ThrowAsync(derivedException);
+        Func<Task> unrelatedAction = () => ThrowAsync(unrelatedException);
+
+        AssertionsAssert.Same(derivedException, await AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(derivedAction)));
+        AssertionsAssert.Same(derivedException, await AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow(typeof(ArgumentException), derivedAction)));
+        AssertionsAssert.Same(unrelatedException, await AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(unrelatedAction)));
+        AssertionsAssert.Same(unrelatedException, await AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrowAny<ArgumentException>(unrelatedAction)));
+        await ValidateDoesNotThrowAsync(derivedException, () => AssertionsAssert.DoesNotThrowAny<ArgumentException>(derivedAction), """
+            Assert.DoesNotThrowAny() assertion failed.
+            Expression: derivedAction
+            Not expected: exception assignable to System.ArgumentException
+            Exception: System.ArgumentNullException
+            Exception message: Value cannot be null. (Parameter 'value')
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotThrow_ValueTask_ExactType_OtherExceptionsPropagateUnchanged()
+    {
+        var derivedException = CreateArgumentNullException("value");
+        var unrelatedException = new InvalidOperationException("Failure");
+        var derivedService = new ValueTaskService(derivedException);
+        var unrelatedService = new ValueTaskService(unrelatedException);
+        Func<ValueTask> derivedAction = derivedService.SaveAsync;
+        Func<ValueTask> unrelatedAction = unrelatedService.SaveAsync;
+
+        AssertionsAssert.Same(derivedException, await AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(derivedAction)));
+        AssertionsAssert.Same(derivedException, await AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.DoesNotThrow(typeof(ArgumentException), derivedAction)));
+        AssertionsAssert.Same(unrelatedException, await AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrow<ArgumentException>(unrelatedAction)));
+        AssertionsAssert.Same(unrelatedException, await AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.DoesNotThrowAny<ArgumentException>(unrelatedAction)));
+        await ValidateDoesNotThrowAsync(derivedException, () => AssertionsAssert.DoesNotThrowAny<ArgumentException>(derivedAction), """
+            Assert.DoesNotThrowAny() assertion failed.
+            Expression: derivedAction
+            Not expected: exception assignable to System.ArgumentException
+            Exception: System.ArgumentNullException
+            Exception message: Value cannot be null. (Parameter 'value')
+            """);
+    }
+
+    [Fact]
     public async Task DoesNotThrow_XunitSkipIsNotWrapped()
     {
         AssertionTestHelpers.ValidateXunitSkip(() => AssertionsAssert.DoesNotThrow(() => AssertionsAssert.XunitSkip("n/a")));
@@ -445,6 +667,21 @@ public sealed class AssertThrowsTests
     private static Task ThrowAsync(Exception exception)
     {
         return Task.FromException(exception);
+    }
+
+    private static ArgumentNullException CreateArgumentNullException(string paramName)
+    {
+        return new ArgumentNullException(paramName);
+    }
+
+    private static ArgumentException CreateArgumentException(string message, string? paramName)
+    {
+        return new ArgumentException(message, paramName);
+    }
+
+    private sealed class ValueSource(object? value)
+    {
+        public object? Value => value;
     }
 
     private sealed class ThrowingPropertySource(Exception exception)

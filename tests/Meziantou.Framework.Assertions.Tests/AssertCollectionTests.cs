@@ -129,4 +129,84 @@ public sealed class AssertCollectionTests
                        Actual:   2
             """);
     }
+
+    [Fact]
+    public void NullActual_Fails()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Collection(actual, item => AssertionsAssert.Equal(1, item)), """
+            Assert.Collection() assertion failed.
+            Expression: actual
+            Expected count: 1
+            Actual:         <null>
+            """);
+    }
+
+    [Fact]
+    public void EndlessSequenceFailsWithoutDrainingIt()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Collection(AssertionTestHelpers.EndlessSequence(), _ => { }, _ => { }), """
+            Assert.Collection() assertion failed: Collection count does not match inspector count.
+            Expression: AssertionTestHelpers.EndlessSequence()
+            Expected count: 2
+            Actual count:   at least 11
+            Actual: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void LazySequence_StopsOneItemPastTheInspectors()
+    {
+        var enumerated = 0;
+        IEnumerable<int> Source()
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                enumerated++;
+                yield return i;
+            }
+        }
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Collection(Source(), [.. Enumerable.Repeat<Action<int>>(_ => { }, 20)]));
+
+        AssertionsAssert.Equal(21, enumerated);
+    }
+
+    [Fact]
+    public void EveryFixedArityOverload_RunsEachInspectorOnItsItem()
+    {
+        var calls = new List<int>();
+        Action<int> At(int index) => item =>
+        {
+            AssertionsAssert.Equal(index, item);
+            calls.Add(index);
+        };
+
+        void Verify(int count, Action<IEnumerable<int>> assertion)
+        {
+            calls.Clear();
+            assertion(Enumerable.Range(0, count).ToList());
+            AssertionsAssert.Equal(Enumerable.Range(0, count), calls);
+            AssertionsAssert.Throws<AssertionException>(() => assertion(Enumerable.Range(0, count + 1).ToList()));
+        }
+
+        Verify(0, actual => AssertionsAssert.Collection(actual));
+        Verify(1, actual => AssertionsAssert.Collection(actual, At(0)));
+        Verify(2, actual => AssertionsAssert.Collection(actual, At(0), At(1)));
+        Verify(3, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2)));
+        Verify(4, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3)));
+        Verify(5, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4)));
+        Verify(6, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5)));
+        Verify(7, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6)));
+        Verify(8, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7)));
+        Verify(9, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8)));
+        Verify(10, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9)));
+        Verify(11, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10)));
+        Verify(12, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11)));
+        Verify(13, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12)));
+        Verify(14, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12), At(13)));
+        Verify(15, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12), At(13), At(14)));
+        Verify(16, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12), At(13), At(14), At(15)));
+    }
 }

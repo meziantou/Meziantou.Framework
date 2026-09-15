@@ -30,7 +30,8 @@ public partial class Assert
 
     public static void IsNotAssignableTo(Type expectedType, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        if (actual is null || !expectedType.IsAssignableFrom(actual.GetType()))
+        // IsInstanceOfType matches "actual is not T", which also considers COM objects and IDynamicInterfaceCastable
+        if (!expectedType.IsInstanceOfType(actual))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeTypeAssertionError(nameof(IsNotAssignableTo), "Not expected assignable type", expectedType, actual, actualExpression, message)));

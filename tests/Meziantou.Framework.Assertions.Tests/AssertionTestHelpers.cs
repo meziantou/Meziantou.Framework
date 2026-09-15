@@ -16,16 +16,38 @@ internal static class AssertionTestHelpers
         };
     }
 
+    // The oracle is xunit's Assert, not the library under test: a regression in Throws or in the string Equal must not
+    // make every message test pass vacuously.
     public static void Validate(Action action, string expectedMessage)
     {
-        var exception = AssertionsAssert.Throws<AssertionException>(action);
-        AssertionsAssert.Equal(expectedMessage, exception.Message);
+        AssertionException? exception = null;
+        try
+        {
+            action();
+        }
+        catch (AssertionException ex)
+        {
+            exception = ex;
+        }
+
+        global::Xunit.Assert.NotNull(exception);
+        global::Xunit.Assert.Equal(expectedMessage, exception.Message);
     }
 
     public static async Task ValidateAsync(Func<Task> action, string expectedMessage)
     {
-        var exception = await AssertionsAssert.Throws<AssertionException>(action);
-        AssertionsAssert.Equal(expectedMessage, exception.Message);
+        AssertionException? exception = null;
+        try
+        {
+            await action();
+        }
+        catch (AssertionException ex)
+        {
+            exception = ex;
+        }
+
+        global::Xunit.Assert.NotNull(exception);
+        global::Xunit.Assert.Equal(expectedMessage, exception.Message);
     }
 
     /// <summary>

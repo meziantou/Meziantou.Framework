@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
@@ -446,6 +447,291 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public async Task AsyncEnumerableDifferentTypes_Success()
+    {
+        await AssertionsAssert.EqualUnordered(AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]), AssertionTestHelpers.ToAsyncEnumerable([3L, 2L, 1L]));
+        await AssertionsAssert.NotEqualUnordered(AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]), AssertionTestHelpers.ToAsyncEnumerable([3L, 2L, 4L]));
+    }
+
+    [Fact]
+    public async Task AsyncEnumerableDifferentTypes_Fails()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 1, 2]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([1L, 2L, 2L]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Missing expected item index: 1
+            Unexpected actual item index: 2
+            Expected: [1, 1̲, 2]
+            Actual:   [1, 2, 2̲]
+            """);
+    }
+
+    [Fact]
+    public async Task AsyncEnumerableDifferentTypes_NotEqualUnorderedFails()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2]);
+        var actual = AssertionTestHelpers.ToAsyncEnumerable([2L, 1L]);
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.NotEqualUnordered(expected, actual), """
+            Assert.NotEqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: [1, 2]
+            Actual:       [2, 1]
+            """);
+    }
+
+    [Fact]
+    public async Task AsyncEnumerableDifferentTypes_ActualIsNull()
+    {
+        var expected = AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]);
+        IAsyncEnumerable<long>? actual = null;
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: [1, 2, 3]
+            Actual:   <null>
+            """);
+        await AssertionsAssert.NotEqualUnordered(AssertionTestHelpers.ToAsyncEnumerable([1, 2, 3]), actual);
+    }
+
+    [Fact]
+    public async Task BothNull_EqualUnorderedSucceeds()
+    {
+        IEnumerable<int>? expected = null;
+        IEnumerable<int>? actual = null;
+        IEnumerable<long>? actualLong = null;
+        System.Collections.IEnumerable? expectedNonGeneric = null;
+        System.Collections.IEnumerable? actualNonGeneric = null;
+        IAsyncEnumerable<int>? expectedAsync = null;
+        IAsyncEnumerable<int>? actualAsync = null;
+        IAsyncEnumerable<long>? actualAsyncLong = null;
+
+        AssertionsAssert.EqualUnordered(expected, actual);
+        AssertionsAssert.EqualUnordered(expected, actual, comparer: null);
+        AssertionsAssert.EqualUnordered(expected, actualLong);
+        AssertionsAssert.EqualUnordered(expectedNonGeneric, actualNonGeneric);
+        AssertionsAssert.EqualUnordered(expectedNonGeneric, actualNonGeneric, comparer: null);
+        await AssertionsAssert.EqualUnordered(expectedAsync, actualAsync);
+        await AssertionsAssert.EqualUnordered(expectedAsync, actualAsync, comparer: null);
+        await AssertionsAssert.EqualUnordered(expectedAsync, actualAsyncLong);
+    }
+
+    [Fact]
+    public async Task BothNull_NotEqualUnorderedFails()
+    {
+        IEnumerable<int>? expected = null;
+        IEnumerable<int>? actual = null;
+        const string ExpectedMessage = """
+            Assert.NotEqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected: <null>
+            Actual:       <null>
+            """;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered(expected, actual), ExpectedMessage);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered(expected, actual, comparer: null), ExpectedMessage);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered<int, long>(expected, actual: null), ExpectedMessage.Replace("Actual expression:   actual", "Actual expression:   null", StringComparison.Ordinal));
+
+        System.Collections.IEnumerable? expectedNonGeneric = null;
+        System.Collections.IEnumerable? actualNonGeneric = null;
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqualUnordered(expectedNonGeneric, actualNonGeneric), ExpectedMessage.Replace("expression: expected", "expression: expectedNonGeneric", StringComparison.Ordinal).Replace("expression:   actual", "expression:   actualNonGeneric", StringComparison.Ordinal));
+
+        IAsyncEnumerable<int>? expectedAsync = null;
+        IAsyncEnumerable<int>? actualAsync = null;
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.NotEqualUnordered(expectedAsync, actualAsync), ExpectedMessage.Replace("expression: expected", "expression: expectedAsync", StringComparison.Ordinal).Replace("expression:   actual", "expression:   actualAsync", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ExpectedIsNull_Fails()
+    {
+        IEnumerable<int>? expected = null;
+        IEnumerable<int> actual = [1, 2];
+        const string ExpectedMessage = """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Expected: <null>
+            Actual:   [1, 2]
+            """;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual), ExpectedMessage);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual, comparer: null), ExpectedMessage);
+        AssertionsAssert.NotEqualUnordered(expected, actual);
+
+        System.Collections.IEnumerable? expectedNonGeneric = null;
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expectedNonGeneric, actual), ExpectedMessage.Replace("expression: expected", "expression: expectedNonGeneric", StringComparison.Ordinal));
+        AssertionsAssert.NotEqualUnordered(expectedNonGeneric, actual);
+
+        IAsyncEnumerable<int>? expectedAsync = null;
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.EqualUnordered(expectedAsync, AssertionTestHelpers.ToAsyncEnumerable([1, 2])), ExpectedMessage.Replace("expression: expected", "expression: expectedAsync", StringComparison.Ordinal).Replace("expression:   actual", "expression:   AssertionTestHelpers.ToAsyncEnumerable([1, 2])", StringComparison.Ordinal));
+        await AssertionsAssert.NotEqualUnordered(expectedAsync, AssertionTestHelpers.ToAsyncEnumerable([1, 2]));
+    }
+
+    [Fact]
+    public void NestedCollections_AreComparedByValue()
+    {
+        List<int[]> expected = [[1, 2], [3]];
+        List<int[]> actual = [[3], [1, 2]];
+
+        AssertionsAssert.EqualUnordered(expected, actual);
+        AssertionsAssert.EqualUnordered(expected, actual, comparer: null);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual, comparer: null));
+        AssertionsAssert.NotEqualUnordered(expected, [[3], [2, 1]]);
+    }
+
+    [Fact]
+    public void NestedCollections_FailsWhenContentDiffers()
+    {
+        List<int[]> expected = [[1, 2], [3]];
+        List<int[]> actual = [[3], [2, 1]];
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered(expected, actual), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Missing expected item index: 0
+            Unexpected actual item index: 1
+            Expected: [[̲1̲,̲ ̲2̲]̲, [3]]
+            Actual:   [[3], [̲2̲,̲ ̲1̲]̲]
+            """);
+    }
+
+    [Fact]
+    public void NestedCollections_ExplicitDefaultComparerComparesByReference()
+    {
+        List<int[]> expected = [[1, 2]];
+        List<int[]> actual = [[1, 2]];
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EqualUnordered(expected, actual, EqualityComparer<int[]>.Default));
+        AssertionsAssert.NotEqualUnordered(expected, actual, EqualityComparer<int[]>.Default);
+    }
+
+    [Fact]
+    public async Task NestedCollections_AsyncEnumerableAreComparedByValue()
+    {
+        await AssertionsAssert.EqualUnordered(AssertionTestHelpers.ToAsyncEnumerable<int[]>([[1, 2], [3]]), AssertionTestHelpers.ToAsyncEnumerable<int[]>([[3], [1, 2]]));
+        await AssertionsAssert.EqualUnordered(AssertionTestHelpers.ToAsyncEnumerable<int[]>([[1, 2], [3]]), AssertionTestHelpers.ToAsyncEnumerable<int[]>([[3], [1, 2]]), comparer: null);
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(AssertionTestHelpers.ToAsyncEnumerable<int[]>([[1, 2], [3]]), AssertionTestHelpers.ToAsyncEnumerable<int[]>([[3], [1, 2]])));
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(AssertionTestHelpers.ToAsyncEnumerable<int[]>([[1, 2], [3]]), AssertionTestHelpers.ToAsyncEnumerable<int[]>([[3], [1, 2]]), comparer: null));
+    }
+
+    [Fact]
+    public void BoxedNumbers_AreComparedByValue()
+    {
+        List<object> expected = [1, 2.5, "a", (byte)4];
+        List<object> actual = ["a", 4m, 2.5f, 1L];
+
+        AssertionsAssert.EqualUnordered(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual));
+    }
+
+    [Fact]
+    public void DefaultImmutableArrayItems_Success()
+    {
+        List<ImmutableArray<int>> expected = [default, default];
+        List<ImmutableArray<int>> actual = [default, default];
+
+        AssertionsAssert.EqualUnordered(expected, actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual));
+    }
+
+    [Fact]
+    public void ComparerWithoutHashCode_Success()
+    {
+        var comparer = new NoHashCodeComparer();
+
+        AssertionsAssert.EqualUnordered([1, 2, 3], [3, 1, 2], comparer);
+        AssertionsAssert.NotEqualUnordered([1, 2, 3], [3, 1, 4], comparer);
+        AssertionsAssert.EqualUnordered((System.Collections.IEnumerable)new object[] { 1, 2, 3 }, new object[] { 3, 1, 2 }, comparer);
+        AssertionsAssert.NotEqualUnordered((System.Collections.IEnumerable)new object[] { 1, 2, 3 }, new object[] { 3, 1, 4 }, comparer);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered([1, 2, 3], [3, 1, 4], comparer), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: [1, 2, 3]
+            Actual expression:   [3, 1, 4]
+            Missing expected item index: 1
+            Unexpected actual item index: 2
+            Expected: [1, 2̲, 3]
+            Actual:   [3, 1, 4̲]
+            """);
+    }
+
+    [Fact]
+    public void Failure_ComparesEachItemAConstantNumberOfTimes()
+    {
+        var comparer = new CountingComparer();
+        var expected = Enumerable.Range(0, 2000).ToArray();
+        var actual = expected.Reverse().ToArray();
+        actual[500] = -1;
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EqualUnordered(expected, actual, comparer));
+
+        AssertionsAssert.Contains("Missing expected item index: 1499", exception.Message);
+        AssertionsAssert.Contains("Unexpected actual item index: 500", exception.Message);
+        AssertionsAssert.True(comparer.EqualsCallCount <= 4 * expected.Length, $"Equals was called {comparer.EqualsCallCount} times");
+    }
+
+    [Fact]
+    public void Failure_ReportsItemsNoPairingCanUse()
+    {
+        // Without hash codes, the first expected item cannot be paired, and the first actual item is only paired by a later
+        // expected item. The message must not report it as unexpected.
+        var comparer = new NoHashCodeComparer();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered([5, 1], [1, 7], comparer), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: [5, 1]
+            Actual expression:   [1, 7]
+            Missing expected item index: 0
+            Unexpected actual item index: 1
+            Expected: [5̲, 1]
+            Actual:   [1, 7̲]
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.EqualUnordered([5, 1, 2], [1, 2], comparer), """
+            Assert.EqualUnordered() assertion failed.
+            Expected expression: [5, 1, 2]
+            Actual expression:   [1, 2]
+            Missing expected item index: 0
+            Expected: [5̲, 1, 2]
+            Actual:   [1, 2]
+            """);
+    }
+
+    [Fact]
+    public void NonGenericComparer_ComparesEachItemAConstantNumberOfTimes()
+    {
+        var comparer = new CountingComparer();
+        System.Collections.IEnumerable expected = Enumerable.Range(0, 2000).Cast<object>().ToArray();
+        System.Collections.IEnumerable actual = Enumerable.Range(0, 2000).Reverse().Cast<object>().ToArray();
+
+        AssertionsAssert.EqualUnordered(expected, actual, comparer);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered(expected, actual, comparer));
+
+        AssertionsAssert.True(comparer.EqualsCallCount <= 4 * 2000, $"Equals was called {comparer.EqualsCallCount} times");
+    }
+
+    [Fact]
+    public void NestedCollections_ComparesEachItemAConstantNumberOfTimes()
+    {
+        var counter = new StrongBox<int>();
+        var expected = Enumerable.Range(0, 2000).Select(value => new[] { new CountingItem(value, counter) }).ToArray();
+        var actual = expected.Reverse().Select(items => new List<CountingItem> { new(items[0].Value, counter) }).ToArray();
+
+        AssertionsAssert.EqualUnordered((System.Collections.IEnumerable)expected, (System.Collections.IEnumerable)actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqualUnordered((System.Collections.IEnumerable)expected, (System.Collections.IEnumerable)actual));
+
+        AssertionsAssert.True(counter.Value <= 8 * expected.Length, $"Equals was called {counter.Value} times");
+    }
+
+    [Fact]
     public void NotEqualUnordered_EnumeratesASingleUseSequenceOnlyOnce()
     {
         var expected = new SingleUseEnumerable<int>([1, 2]);
@@ -504,7 +790,7 @@ public sealed class AssertEqualUnorderedTests
         public int GetHashCode(string obj) => 0;
     }
 
-    private sealed class CountingComparer : IEqualityComparer<int>
+    private sealed class CountingComparer : IEqualityComparer<int>, System.Collections.IEqualityComparer
     {
         public int EqualsCallCount { get; private set; }
 
@@ -515,6 +801,23 @@ public sealed class AssertEqualUnorderedTests
         }
 
         public int GetHashCode(int obj) => obj;
+
+        bool System.Collections.IEqualityComparer.Equals(object? x, object? y) => x is int left && y is int right && Equals(left, right);
+
+        int System.Collections.IEqualityComparer.GetHashCode(object obj) => obj is int value ? value : 0;
+    }
+
+    /// <summary>A comparer written only for Equals, whose GetHashCode throws.</summary>
+    [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "The comparer simulates one that does not implement GetHashCode.")]
+    private sealed class NoHashCodeComparer : IEqualityComparer<int>, System.Collections.IEqualityComparer
+    {
+        public bool Equals(int x, int y) => x == y;
+
+        public int GetHashCode(int obj) => throw new NotSupportedException();
+
+        bool System.Collections.IEqualityComparer.Equals(object? x, object? y) => object.Equals(x, y);
+
+        int System.Collections.IEqualityComparer.GetHashCode(object obj) => throw new NotSupportedException();
     }
 
     private sealed class CountingItem(int value, StrongBox<int> equalsCallCount) : IEquatable<CountingItem>

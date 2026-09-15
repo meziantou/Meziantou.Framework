@@ -182,4 +182,106 @@ public sealed class AssertSingleTests
             """);
     }
 
+    [Fact]
+    public async Task NullActual_Fails()
+    {
+        int[]? array = null;
+        string? text = null;
+        IEnumerable<int>? enumerable = null;
+        System.Collections.IEnumerable? nonGeneric = null;
+        IAsyncEnumerable<int>? asyncEnumerable = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Single(array), """
+            Assert.Single() assertion failed.
+            Expression: array
+            Actual: <null>
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Single(enumerable, item => item > 0), """
+            Assert.Single() assertion failed.
+            Expression:           enumerable
+            Predicate expression: item => item > 0
+            Actual: <null>
+            """);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Single(text));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Single(enumerable));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Single(nonGeneric));
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Single(asyncEnumerable));
+    }
+
+    [Fact]
+    public void Array_Success()
+    {
+        var actual = new[] { 42 };
+
+        AssertionsAssert.Equal(42, AssertionsAssert.Single(actual));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Single(new[] { 1, 2 }), """
+            Assert.Single() assertion failed.
+            Expression: new[] { 1, 2 }
+            Actual: [1, 2̲]
+            """);
+    }
+
+    [Fact]
+    public void ListWithSingleItem_IsNotEnumerated()
+    {
+        AssertionsAssert.Equal(42, AssertionsAssert.Single(new NonEnumerableList(42)));
+        AssertionsAssert.Equal(42, AssertionsAssert.Single((System.Collections.IEnumerable)new NonEnumerableList(42)));
+    }
+
+    private sealed class NonEnumerableList(int item) : IList<int>, System.Collections.IList
+    {
+        public int Count => 1;
+
+        public bool IsReadOnly => true;
+
+        public bool IsFixedSize => true;
+
+        public bool IsSynchronized => false;
+
+        public object SyncRoot => this;
+
+        public int this[int index]
+        {
+            get => index is 0 ? item : throw new ArgumentOutOfRangeException(nameof(index));
+            set => throw new NotSupportedException();
+        }
+
+        object? System.Collections.IList.this[int index]
+        {
+            get => this[index];
+            set => throw new NotSupportedException();
+        }
+
+        public int IndexOf(int value) => throw new NotSupportedException();
+
+        public void Insert(int index, int value) => throw new NotSupportedException();
+
+        public void RemoveAt(int index) => throw new NotSupportedException();
+
+        public void Add(int value) => throw new NotSupportedException();
+
+        public void Clear() => throw new NotSupportedException();
+
+        public bool Contains(int value) => throw new NotSupportedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotSupportedException();
+
+        public bool Remove(int value) => throw new NotSupportedException();
+
+        int System.Collections.IList.Add(object? value) => throw new NotSupportedException();
+
+        bool System.Collections.IList.Contains(object? value) => throw new NotSupportedException();
+
+        int System.Collections.IList.IndexOf(object? value) => throw new NotSupportedException();
+
+        void System.Collections.IList.Insert(int index, object? value) => throw new NotSupportedException();
+
+        void System.Collections.IList.Remove(object? value) => throw new NotSupportedException();
+
+        void System.Collections.ICollection.CopyTo(Array array, int index) => throw new NotSupportedException();
+
+        public IEnumerator<int> GetEnumerator() => throw new InvalidOperationException("The list must not be enumerated.");
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 }

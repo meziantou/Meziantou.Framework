@@ -64,4 +64,19 @@ public sealed class FormatterOptions
             field = value;
         }
     } = 4;
+
+    /// <summary>Gets or sets the maximum number of characters of a string to format before truncating it.</summary>
+    /// <remarks>
+    /// A longer string is formatted as a window of this many characters around the highlighted character (the first difference, for instance),
+    /// with an ellipsis for each truncated side and the total length of the string. Text produced by <see cref="object.ToString"/> is truncated to this many characters too.
+    /// </remarks>
+    public int MaxFormattedStringLength
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = value;
+        }
+    } = 10_000;
 }

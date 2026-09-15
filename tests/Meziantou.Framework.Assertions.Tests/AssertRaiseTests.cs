@@ -173,6 +173,22 @@ public sealed class AssertRaiseTests
     }
 
     [Fact]
+    public void DoesNotRaiseAny_Success()
+    {
+        var genericSource = new GenericEventSource<DerivedEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+
+        AssertionsAssert.DoesNotRaiseAny<DerivedEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => { });
+        AssertionsAssert.DoesNotRaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => { });
+    }
+
+    [Fact]
     public void AssertRaise_EventRaisedWithNullArguments_Success()
     {
         var genericSource = new GenericEventSource<CustomEventArgs>();
@@ -350,6 +366,247 @@ public sealed class AssertRaiseTests
                 source.Raise(source, new DerivedEventArgs());
                 source.Raise(source, new DerivedEventArgs());
             });
+    }
+
+    [Fact]
+    public async Task DoesNotRaise_AsyncAction_FailsWhenEventIsRaisedAfterAnAwait()
+    {
+        var genericSource = new GenericEventSource<CustomEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotRaise<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            async () =>
+            {
+                await Task.Yield();
+                genericSource.Raise(genericSource, new CustomEventArgs("value"));
+            }), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual:       async () =>
+                        {
+                            await Task.Yield();
+                            genericSource.Raise(genericSource, new CustomEventArgs("value"));
+                        }
+            """);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotRaise(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => RaiseAfterYieldAsync(nonGenericSource)), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact EventArgs
+            Actual:       () => RaiseAfterYieldAsync(nonGenericSource)
+            """);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotRaiseAny<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => RaiseAfterYieldValueTaskAsync(genericSource, new CustomEventArgs("value"))), """
+            Assert.DoesNotRaiseAny() assertion failed.
+            Not expected: event assignable to Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual:       () => RaiseAfterYieldValueTaskAsync(genericSource, new CustomEventArgs("value"))
+            """);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotRaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            async () =>
+            {
+                await Task.Yield();
+                nonGenericSource.Raise(nonGenericSource, EventArgs.Empty);
+            }), """
+            Assert.DoesNotRaiseAny() assertion failed.
+            Not expected: event assignable to EventArgs
+            Actual:       async () =>
+                        {
+                            await Task.Yield();
+                            nonGenericSource.Raise(nonGenericSource, EventArgs.Empty);
+                        }
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotRaise_AsyncAction_Success()
+    {
+        var genericSource = new GenericEventSource<BaseEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+
+        await AssertionsAssert.DoesNotRaise<BaseEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => RaiseAfterYieldValueTaskAsync(genericSource, new DerivedEventArgs()));
+        await AssertionsAssert.DoesNotRaise(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            async () => await Task.Yield());
+        await AssertionsAssert.DoesNotRaiseAny<BaseEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            async ValueTask () => await Task.Yield());
+        await AssertionsAssert.DoesNotRaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => new ValueTask(Task.Delay(1)));
+    }
+
+    [Fact]
+    public async Task AssertRaise_AsyncAction_ReturnsTheEventRaisedAfterAnAwait()
+    {
+        var genericSource = new GenericEventSource<BaseEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+        var arguments = new DerivedEventArgs();
+
+        var genericResult = await AssertionsAssert.Raise<BaseEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            async () =>
+            {
+                await Task.Yield();
+                genericSource.Raise(genericSource, arguments);
+                genericSource.Raise(nonGenericSource, new BaseEventArgs());
+            });
+        var genericAnyResult = await AssertionsAssert.RaiseAny<BaseEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => RaiseAfterYieldValueTaskAsync(genericSource, arguments));
+        var nonGenericResult = await AssertionsAssert.Raise(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => RaiseAfterYieldAsync(nonGenericSource));
+        var nonGenericAnyResult = await AssertionsAssert.RaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            async ValueTask () =>
+            {
+                await Task.Yield();
+                nonGenericSource.Raise(genericSource, arguments);
+            });
+
+        AssertionsAssert.Same(nonGenericSource, genericResult.Sender);
+        AssertionsAssert.Same(genericSource, genericAnyResult.Sender);
+        AssertionsAssert.Same(arguments, genericAnyResult.Arguments);
+        AssertionsAssert.Same(nonGenericSource, nonGenericResult.Sender);
+        AssertionsAssert.Same(EventArgs.Empty, nonGenericResult.Arguments);
+        AssertionsAssert.Same(genericSource, nonGenericAnyResult.Sender);
+        AssertionsAssert.Same(arguments, nonGenericAnyResult.Arguments);
+    }
+
+    [Fact]
+    public async Task AssertRaise_AsyncAction_FailsWhenNoEventIsRaised()
+    {
+        var source = new GenericEventSource<CustomEventArgs>();
+
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.Raise<CustomEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            async () => await Task.Yield()), """
+            Assert.Raise() assertion failed.
+            Expression: async () => await Task.Yield()
+            Expected event args type: Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual event args type:   <null>
+            """);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.RaiseAny<CustomEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () => new ValueTask(Task.Delay(1))), """
+            Assert.RaiseAny() assertion failed.
+            Expression: () => new ValueTask(Task.Delay(1))
+            Expected event args type: Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual event args type:   <null>
+            """);
+    }
+
+    [Fact]
+    public async Task AssertRaise_AsyncAction_DetachesHandlerOnlyWhenTheTaskCompletes()
+    {
+        var source = new CountingEventSource();
+        var detachCountBeforeCompletion = -1;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var assertion = AssertionsAssert.DoesNotRaise(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            async () =>
+            {
+                await completion.Task;
+                detachCountBeforeCompletion = source.DetachCount;
+            });
+        completion.SetResult();
+        await assertion;
+
+        AssertionsAssert.Equal(0, detachCountBeforeCompletion);
+        AssertionsAssert.Equal(1, source.AttachCount);
+        AssertionsAssert.Equal(1, source.DetachCount);
+    }
+
+    [Fact]
+    public async Task AssertRaise_AsyncAction_DetachesHandlerWhenActionThrows()
+    {
+        var source = new CountingEventSource();
+        var exception = new InvalidOperationException("Failure");
+
+        AssertionsAssert.Same(exception, await AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.Raise(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            async () =>
+            {
+                await Task.Yield();
+                throw exception;
+            })));
+        AssertionsAssert.Equal(1, source.AttachCount);
+        AssertionsAssert.Equal(1, source.DetachCount);
+    }
+
+    [Fact]
+    public async Task XunitCompatibilityShims()
+    {
+        var genericSource = new GenericEventSource<BaseEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+        var arguments = new BaseEventArgs();
+        var derivedArguments = new DerivedEventArgs();
+
+        AssertionsAssert.Same(arguments, AssertionsAssert.Raises<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => genericSource.Raise(genericSource, arguments)).Arguments);
+        AssertionsAssert.Same(arguments, (await AssertionsAssert.RaisesAsync<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => RaiseAfterYieldAsync(genericSource, arguments))).Arguments);
+        AssertionsAssert.Same(derivedArguments, AssertionsAssert.RaisesAny<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => genericSource.Raise(genericSource, derivedArguments)).Arguments);
+        AssertionsAssert.Same(derivedArguments, (await AssertionsAssert.RaisesAnyAsync<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => RaiseAfterYieldAsync(genericSource, derivedArguments))).Arguments);
+        AssertionsAssert.Same(derivedArguments, AssertionsAssert.RaisesAny(handler => nonGenericSource.Raised += handler, handler => nonGenericSource.Raised -= handler, () => nonGenericSource.Raise(nonGenericSource, derivedArguments)).Arguments);
+        AssertionsAssert.Same(EventArgs.Empty, (await AssertionsAssert.RaisesAnyAsync(handler => nonGenericSource.Raised += handler, handler => nonGenericSource.Raised -= handler, () => RaiseAfterYieldAsync(nonGenericSource))).Arguments);
+        AssertionsAssert.NotRaisedAny<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => { });
+        await AssertionsAssert.NotRaisedAnyAsync<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, async () => await Task.Yield());
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Raises<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => genericSource.Raise(genericSource, derivedArguments)));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotRaisedAny<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => genericSource.Raise(genericSource, derivedArguments)));
+        await AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotRaisedAnyAsync<BaseEventArgs>(handler => genericSource.Raised += handler, handler => genericSource.Raised -= handler, () => RaiseAfterYieldAsync(genericSource, derivedArguments)));
+    }
+
+    [Fact]
+    public void RaisedEventRecorder_RecordsConcurrentEvents()
+    {
+        const int EventCount = 100_000;
+        var recorder = new RaisedEventRecorder<EventArgs>();
+
+        Parallel.For(0, EventCount, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(4, Environment.ProcessorCount) }, _ => recorder.Record(sender: null, EventArgs.Empty));
+
+        AssertionsAssert.HasCount(EventCount, recorder.GetEvents());
+    }
+
+    private static async Task RaiseAfterYieldAsync(NonGenericEventSource source)
+    {
+        await Task.Yield();
+        source.Raise(source, EventArgs.Empty);
+    }
+
+    private static async Task RaiseAfterYieldAsync<TEventArgs>(GenericEventSource<TEventArgs> source, TEventArgs arguments)
+        where TEventArgs : EventArgs
+    {
+        await Task.Yield();
+        source.Raise(source, arguments);
+    }
+
+    private static async ValueTask RaiseAfterYieldValueTaskAsync<TEventArgs>(GenericEventSource<TEventArgs> source, TEventArgs arguments)
+        where TEventArgs : EventArgs
+    {
+        await Task.Yield();
+        source.Raise(source, arguments);
     }
 
     private sealed class GenericEventSource<TEventArgs>

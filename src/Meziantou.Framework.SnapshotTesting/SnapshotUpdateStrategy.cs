@@ -137,7 +137,7 @@ public abstract class SnapshotUpdateStrategy
         byte[] content;
         try
         {
-            content = File.ReadAllBytes(actualFilePath);
+            content = ReadAllBytesWithRetry(actualFilePath);
         }
         catch (FileNotFoundException) when (File.Exists(verifiedFilePath))
         {
@@ -208,7 +208,7 @@ public abstract class SnapshotUpdateStrategy
     {
         try
         {
-            return File.ReadAllBytes(path).AsSpan().SequenceEqual(data);
+            return ReadAllBytesWithRetry(path).AsSpan().SequenceEqual(data);
         }
         catch (FileNotFoundException)
         {
@@ -231,6 +231,33 @@ public abstract class SnapshotUpdateStrategy
         }
         catch (UnauthorizedAccessException)
         {
+        }
+    }
+
+    /// <summary>
+    /// Reads a snapshot file that another process may be replacing at the same time. The file is opened with
+    /// <see cref="FileShare.Delete" /> so the reader does not prevent the replacement, and the sharing violation a
+    /// reader gets on Windows while the file is being replaced is retried. A missing file is not retried.
+    /// </summary>
+    internal static byte[] ReadAllBytesWithRetry(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                using var memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+            catch (IOException ex) when (ex is not FileNotFoundException and not DirectoryNotFoundException && attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
         }
     }
 

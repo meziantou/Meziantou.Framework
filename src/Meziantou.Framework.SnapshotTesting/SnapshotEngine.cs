@@ -290,7 +290,18 @@ internal static class SnapshotEngine
                 extension = extension[1..];
             }
 
-            result[path] = new SnapshotData(extension, File.ReadAllBytes(path));
+            // Another process validating the same snapshot may be replacing the file right now
+            byte[] content;
+            try
+            {
+                content = SnapshotUpdateStrategy.ReadAllBytesWithRetry(path);
+            }
+            catch (FileNotFoundException)
+            {
+                continue;
+            }
+
+            result[path] = new SnapshotData(extension, content);
         }
 
         return result;

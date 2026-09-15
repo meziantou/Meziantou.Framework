@@ -1,17 +1,19 @@
+using Meziantou.Framework.DependencyScanning.Locations;
 using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Model;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class YamlParserUtilities
 {
-    public static YamlStream? LoadYamlDocument(Stream stream)
+    public static YamlFile? LoadYamlFile(ScanFileContext context)
     {
         try
         {
-            using var textReader = new StreamReader(stream, leaveOpen: true);
-            return YamlStream.Load(textReader);
+            using var textReader = new StreamReader(context.Content, leaveOpen: true);
+            var text = textReader.ReadToEnd();
+            var stream = YamlStream.Load(new StringReader(text));
+            return new YamlFile(context, text, stream);
         }
         catch
         {
@@ -33,38 +35,6 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static void ReportDependency(DependencyScanner scanner, ScanFileContext context, YamlElement node, DependencyType dependencyType)
-    {
-        var value = GetScalarValue(node);
-        if (value is null)
-            return;
-
-        context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
-    }
-
-    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlElement? node, DependencyType dependencyType, char versionSeparator)
-    {
-        var value = GetScalarValue(node);
-        if (value is null)
-            return;
-
-        var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
-        if (index < 0)
-        {
-            context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
-        }
-        else
-        {
-            context.ReportDependency(
-                scanner,
-                name: value[..index],
-                version: value[(index + 1)..],
-                dependencyType,
-                nameLocation: GetLocation(context, node, start: 0, length: index),
-                versionLocation: GetLocation(context, node, start: index + 1, length: value.Length - index - 1));
-        }
-    }
-
     public static string? GetScalarValue(YamlElement? node)
     {
         if (node is YamlValue scalar)
@@ -73,59 +43,114 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static TextLocation? GetLocation(ScanFileContext context, YamlElement? node, int? start = null, int? length = null)
+    internal sealed class YamlFile
     {
-        if (node is null)
-            return null;
+        private readonly ScanFileContext _context;
+        private readonly string _text;
+        private readonly HashSet<int> _reportedScalars = [];
 
-        start ??= 0;
-
-        var span = GetSpan(node);
-        if (span is null)
-            return null;
-
-        var (spanStart, spanEnd) = span.Value;
-        var line = spanStart.Line + 1;
-        var column = spanStart.Column + 1 + start.Value;
-        if (node is YamlValue { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted })
+        public YamlFile(ScanFileContext context, string text, YamlStream stream)
         {
-            column += 1;
+            _context = context;
+            _text = text;
+            Stream = stream;
         }
 
-        if (length is null)
+        public ScanFileContext Context => _context;
+
+        public YamlStream Stream { get; }
+
+        /// <summary>
+        /// Aliases (<c>*name</c>) are expanded as copies of the anchored node that keep its source marks.
+        /// Returns <see langword="false"/> when a scalar at the same source position was already reported, so the anchored node is reported once.
+        /// </summary>
+        public bool TryMarkAsReported(YamlElement? node)
         {
-            if (node is YamlValue { Value: { } nodeValue })
+            if (node is not YamlValue scalar)
+                return true;
+
+            return _reportedScalars.Add(scalar.Scalar.Start.Index);
+        }
+
+        public void ReportDependencyWithSeparator(DependencyScanner scanner, YamlElement? node, DependencyType dependencyType, char versionSeparator)
+        {
+            var value = GetScalarValue(node);
+            if (value is null || !TryMarkAsReported(node))
+                return;
+
+            var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
+            if (index < 0)
             {
-                length = Math.Max(0, nodeValue.Length - start.Value);
+                _context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(node), versionLocation: null);
             }
             else
             {
-                length = Math.Max(0, spanEnd.Column - spanStart.Column - start.Value);
+                _context.ReportDependency(
+                    scanner,
+                    name: value[..index],
+                    version: value[(index + 1)..],
+                    dependencyType,
+                    nameLocation: GetLocation(node, start: 0, length: index),
+                    versionLocation: GetLocation(node, start: index + 1, length: value.Length - index - 1));
             }
         }
 
-        return new TextLocation(context.FileSystem, context.FullPath, line, column, length.Value);
-    }
-
-    private static (Mark Start, Mark End)? GetSpan(YamlElement node)
-    {
-        ParsingEvent? first = null;
-        ParsingEvent? last = null;
-
-        foreach (var yamlEvent in node.EnumerateEvents())
+        public void ReportDockerImage(DependencyScanner scanner, YamlElement? node, int prefixLength = 0)
         {
-            if (yamlEvent is StreamStart or StreamEnd or DocumentStart or DocumentEnd)
-            {
-                continue;
-            }
+            var value = GetScalarValue(node);
+            if (value is null || value.Length <= prefixLength || !TryMarkAsReported(node))
+                return;
 
-            first ??= yamlEvent;
-            last = yamlEvent;
+            DockerImageReference.Report(scanner, _context, value[prefixLength..], (start, length) => GetLocation(node, prefixLength + start, length));
         }
 
-        if (first is null || last is null)
-            return null;
+        /// <summary>
+        /// Gets the location of a range of a scalar value. The location is only updatable when the source text of the scalar is exactly its value,
+        /// that is plain scalars and quoted scalars without escape sequences that fit on one line. Block scalars, escaped or multi-line scalars
+        /// get a <see cref="NonUpdatableLocation"/>, as offsets in the value do not map to offsets in the file.
+        /// </summary>
+        public Location? GetLocation(YamlElement? node, int start = 0, int? length = null)
+        {
+            if (node is not YamlValue scalar)
+                return null;
 
-        return (first.Start, last.End);
+            var value = scalar.Value;
+            length ??= Math.Max(0, value.Length - start);
+
+            var scalarEvent = scalar.Scalar;
+            var end = scalarEvent.End;
+            var endOfValue = end.Index;
+            switch (scalarEvent.Style)
+            {
+                case ScalarStyle.Plain:
+                    break;
+
+                case ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted:
+                    var quote = scalarEvent.Style is ScalarStyle.SingleQuoted ? '\'' : '"';
+                    endOfValue--;
+                    if (endOfValue < 0 || endOfValue >= _text.Length || _text[endOfValue] != quote)
+                        return new NonUpdatableLocation(_context);
+
+                    break;
+
+                default:
+                    return new NonUpdatableLocation(_context);
+            }
+
+            // The start mark may include node properties (anchor, tag), so the value is located from the end mark
+            var startOfValue = endOfValue - value.Length;
+            if (startOfValue < scalarEvent.Start.Index || startOfValue < 0 || endOfValue > _text.Length || !_text.AsSpan(startOfValue, value.Length).SequenceEqual(value))
+                return new NonUpdatableLocation(_context);
+
+            // The column is computed from the end mark, which is only valid when the value is on the line of the end mark
+            if (value.AsSpan().ContainsAny('\r', '\n'))
+                return new NonUpdatableLocation(_context);
+
+            var column = end.Column - (end.Index - startOfValue) + 1 + start;
+            if (column < 1)
+                return new NonUpdatableLocation(_context);
+
+            return new TextLocation(_context.FileSystem, _context.FullPath, end.Line + 1, column, length.Value);
+        }
     }
 }

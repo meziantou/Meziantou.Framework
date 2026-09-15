@@ -1,3 +1,4 @@
+using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
@@ -88,6 +89,35 @@ public sealed class DependencyScannerTests
         });
     }
 
+    [Fact]
+    public async Task ReportScanException_LargeDirectory_FailsFast()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        const int FileCount = 10_050;
+        for (var i = 0; i < FileCount; i++)
+        {
+            await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "", XunitCancellationToken);
+        }
+
+        var scanner = new CountingScanThrowScanner();
+        var options = new ScannerOptions { DegreeOfParallelism = 2, Scanners = [scanner] };
+        var scanTask = DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, XunitCancellationToken);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => scanTask.WaitAsync(TimeSpan.FromMinutes(2), XunitCancellationToken));
+        Assert.True(scanner.ScanCount < FileCount, $"The scan should stop after the first failure, but {scanner.ScanCount.ToStringInvariant()} files were scanned");
+    }
+
+    [Fact]
+    public async Task ScanDirectory_MissingDirectory_ReturnsFaultedTask()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var missingDirectory = directory.GetFullPath("missing");
+
+        var task = DependencyScanner.ScanDirectoryAsync(missingDirectory, new ScannerOptions { Scanners = [new DummyScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken);
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() => task);
+    }
+
     [Theory]
     [InlineData("/root", "/root", "")]
     [InlineData("/root/", "/root", "")]
@@ -118,8 +148,36 @@ public sealed class DependencyScannerTests
         Assert.True(scanner.ReachedExpectedConcurrency);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-2)]
+    [InlineData(int.MinValue)]
+    public void DegreeOfParallelism_InvalidValue_Throws(int degreeOfParallelism)
+    {
+        var options = new ScannerOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.DegreeOfParallelism = degreeOfParallelism);
+    }
+
     [Fact]
-    public async Task ScanDirectory_PropagatesCancellationFromXmlParsing()
+    public async Task DegreeOfParallelism_MinusOne_UsesProcessorCount()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath1 = directory.CreateEmptyFile("file1.txt");
+        var filePath2 = directory.CreateEmptyFile("file2.txt");
+        var options = new ScannerOptions { DegreeOfParallelism = -1, Scanners = [new DummyScanner()] };
+
+        var directoryItems = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+        var fileItems = await DependencyScanner.ScanFilesAsync(directory.FullPath, [filePath1, filePath2], options, XunitCancellationToken);
+
+        Assert.Equal(2, directoryItems.Count);
+        Assert.Equal(2, fileItems.Count);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_PropagatesCancellationFromXmlParsing(int degreeOfParallelism)
     {
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath("test.csproj"), """
@@ -129,7 +187,7 @@ public sealed class DependencyScannerTests
         using var cancellationTokenSource = new CancellationTokenSource();
         await cancellationTokenSource.CancelAsync();
 
-        var options = new ScannerOptions { DegreeOfParallelism = 1, Scanners = [new MsBuildReferencesDependencyScanner()] };
+        var options = new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new MsBuildReferencesDependencyScanner()] };
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, cancellationTokenSource.Token));
     }
 
@@ -214,6 +272,25 @@ public sealed class DependencyScannerTests
     {
         var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], [new DummyScanner()], XunitCancellationToken);
         Assert.Single(items);
+    }
+
+    [Fact]
+    public async Task ScanFile_InMemory_PackagesConfig()
+    {
+        var content = Encoding.UTF8.GetBytes("""
+            <?xml version="1.0" encoding="utf-8"?>
+            <packages>
+              <package id="Newtonsoft.Json" version="13.0.3" targetFramework="net48" />
+              <package id="Serilog" version="3.1.1" targetFramework="net48" />
+            </packages>
+            """);
+
+        var items = await DependencyScanner.ScanFileAsync("/repo", "/repo/src/packages.config", content, XunitCancellationToken);
+
+        Assert.Equal(["Newtonsoft.Json", "Serilog"], items.Select(item => item.Name).Order(StringComparer.Ordinal));
+        var versionLocation = items.First().VersionLocation;
+        Assert.NotNull(versionLocation);
+        await Assert.ThrowsAsync<NotSupportedException>(() => versionLocation.UpdateAsync("1.0.0", XunitCancellationToken));
     }
 
     [Fact]
@@ -329,6 +406,292 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task XmlLocation_UpdateElementPart_MapsNormalizedLineEndingsOntoTheFile()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        const string Original = "<Project>\r\n  <PropertyGroup>\r\n    <TargetFrameworks>\r\n      net8.0;\r\n      net9.0\r\n    </TargetFrameworks>\r\n  </PropertyGroup>\r\n</Project>\r\n";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("TargetFrameworks"));
+        var index = element.Value.IndexOf("net9.0", StringComparison.Ordinal);
+        Assert.NotEqual(-1, index);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, element, index, "net9.0".Length);
+        await location.UpdateAsync("net9.0", "net10.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal(Original.Replace("net9.0", "net10.0", StringComparison.Ordinal), updatedContent);
+    }
+
+    [Fact]
+    public async Task XmlLocation_UpdateElementPart_MapsReferencesOntoTheFile()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        const string Original = "<Project><Value>a&amp;&#x62;;1.0.0;c</Value></Project>";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Value"));
+        Assert.Equal("a&b;1.0.0;c", element.Value);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, element, column: 4, length: 5);
+        await location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal("<Project><Value>a&amp;&#x62;;2.0.0;c</Value></Project>", updatedContent);
+    }
+
+    [Fact]
+    public async Task XmlLocation_UpdateAttributePart_MapsNormalizedWhitespaceAndReferencesOntoTheFile()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        const string Original = "<Project><Reference Include=\"a&amp;b,\r\n\tVersion=1.0.0\" /></Project>";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Reference"));
+        var attribute = element.Attribute("Include");
+        Assert.NotNull(attribute);
+        Assert.Equal("a&b,  Version=1.0.0", attribute.Value);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, element, attribute, column: 14, length: 5);
+        await location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal("<Project><Reference Include=\"a&amp;b,\r\n\tVersion=2.0.0\" /></Project>", updatedContent);
+    }
+
+    [Fact]
+    public async Task XmlLocation_UpdateElement_ComparesTheDecodedValue()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        await File.WriteAllTextAsync(filePath, "<Project><Version>1.0.0&#x2D;beta</Version></Project>", XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version"));
+        var location = new XmlLocation(FileSystem.Instance, filePath, element);
+        await location.UpdateAsync("1.0.0-beta", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal("<Project><Version>2.0.0</Version></Project>", updatedContent);
+    }
+
+    [Fact]
+    public async Task XmlLocation_Update_EscapesTheNewValue()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        await File.WriteAllTextAsync(filePath, "<Project><Version A=\"1.0.0\">1.0.0</Version></Project>", XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version"));
+        var attribute = element.Attribute("A");
+        Assert.NotNull(attribute);
+        await new XmlLocation(FileSystem.Instance, filePath, element).UpdateAsync("1.0.0", "a&<b>\"", XunitCancellationToken);
+        await new XmlLocation(FileSystem.Instance, filePath, element, attribute).UpdateAsync("1.0.0", "a&<b>\"", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+        Assert.Equal("<Project><Version A=\"a&amp;&lt;b&gt;&quot;\">a&amp;&lt;b&gt;\"</Version></Project>", updatedContent);
+
+        var updatedElement = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version"));
+        Assert.Equal("a&<b>\"", updatedElement.Value);
+        Assert.Equal("a&<b>\"", updatedElement.Attribute("A")?.Value);
+    }
+
+    [Theory]
+    [InlineData("<!-- comment -->1.0.0")]
+    [InlineData("<![CDATA[1.0.0]]>")]
+    [InlineData("<?pi data?>1.0.0")]
+    public async Task XmlLocation_UpdateElementWithNonTextContent_Throws(string content)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        var original = "<Project><Version>" + content + "</Version></Project>";
+        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version"));
+        Assert.Equal("1.0.0", element.Value);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, element, column: 0, length: 5);
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken));
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("2.0.0", XunitCancellationToken));
+        Assert.Equal(original, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task XmlLocation_LinePosition_AddsTheColumnOnce()
+    {
+        const string Content = "<Project Sdk=\"My.Sdk/1.2.3\" />";
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(Content));
+        var document = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, XunitCancellationToken);
+        var element = document.Root!;
+        var attribute = element.Attribute("Sdk");
+        Assert.NotNull(attribute);
+
+        ILocationLineInfo location = new XmlLocation(FileSystem.Instance, "test.csproj", element, attribute, column: 7, length: 5);
+
+        Assert.Equal(1, location.LineNumber);
+        Assert.Equal(((IXmlLineInfo)attribute).LinePosition + 7, location.LinePosition);
+        Assert.EndsWith(":1," + location.LinePosition.ToString(CultureInfo.InvariantCulture), location.ToString());
+    }
+
+    [Fact]
+    public async Task XmlLocation_Update_HonorsTheEncodingOfTheXmlDeclaration()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.nuspec");
+        const string Original = "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>\n<package><description>café</description><dependency version=\"1.0.0\" /></package>";
+        await File.WriteAllBytesAsync(filePath, Encoding.Latin1.GetBytes(Original), XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("dependency"));
+        Assert.Equal("café", element.Parent!.Element("description")!.Value);
+        var attribute = element.Attribute("version");
+        Assert.NotNull(attribute);
+
+        var location = new XmlLocation(FileSystem.Instance, filePath, element, attribute);
+        await location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+
+        var updatedContent = await File.ReadAllBytesAsync(filePath, XunitCancellationToken);
+        Assert.Equal(Encoding.Latin1.GetBytes(Original.Replace("1.0.0", "2.0.0", StringComparison.Ordinal)), updatedContent);
+    }
+
+    [Fact]
+    public async Task TextLocation_Update_FileThatIsNotValidUtf8_ThrowsWithoutModifyingTheFile()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("requirements.txt");
+        byte[] original = [.. "# caf"u8, 0xE9, .. "\nrequests==1.0.0\n"u8];
+        await File.WriteAllBytesAsync(filePath, original, XunitCancellationToken);
+
+        var location = new TextLocation(FileSystem.Instance, filePath, line: 2, column: 11, length: 5);
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken));
+
+        Assert.Equal(original, await File.ReadAllBytesAsync(filePath, XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TextLocation_Update_PreservesTheByteOrderMark(bool withBom)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("requirements.txt");
+        byte[] bom = withBom ? [0xEF, 0xBB, 0xBF] : [];
+        await File.WriteAllBytesAsync(filePath, [.. bom, .. "# café\nrequests==1.0.0\n"u8], XunitCancellationToken);
+
+        var location = new TextLocation(FileSystem.Instance, filePath, line: 2, column: 11, length: 5);
+        await location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+
+        Assert.Equal([.. bom, .. "# café\nrequests==2.0.0\n"u8], await File.ReadAllBytesAsync(filePath, XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData("a\rFROM b:1", 2)]
+    [InlineData("a\r\nFROM b:1", 2)]
+    [InlineData("a\r\r\nFROM b:1", 3)]
+    [InlineData("a\n\rFROM b:1", 3)]
+    public void TextLocation_FromIndex_EndsLinesOnCarriageReturnsAndLineFeeds(string text, int expectedLine)
+    {
+        var index = text.IndexOf("b:1", StringComparison.Ordinal);
+
+        var location = TextLocation.FromIndex(FileSystem.Instance, "file.txt", text, index, length: 3);
+
+        Assert.Equal(expectedLine, location.LineNumber);
+        Assert.Equal(6, location.LinePosition);
+    }
+
+    [Theory]
+    [InlineData("\r", 3)]
+    [InlineData("\r\r\n", 5)]
+    public async Task TextLocation_Update_EndsLinesOnCarriageReturns(string newLine, int line)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("file.txt");
+        var original = "a" + newLine + "b" + newLine + "value: 1.0.0" + newLine;
+        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+
+        // The line number as TextReader.ReadLine counts it
+        var location = new TextLocation(FileSystem.Instance, filePath, line, column: 8, length: 5);
+        await location.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+
+        Assert.Equal(original.Replace("1.0.0", "2.0.0", StringComparison.Ordinal), await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("xml")]
+    [InlineData("json")]
+    public async Task Location_Update_CancellationAfterReadingTheFile_DoesNotModifyTheFile(string kind)
+    {
+        const string XmlContent = "<Project><Version>1.0.0</Version></Project>";
+        var (content, location) = kind switch
+        {
+            "text" => ("version: 1.0.0", (Func<IFileSystem, Location>)(fileSystem => new TextLocation(fileSystem, "file", line: 1, column: 10, length: 5))),
+            "xml" => (XmlContent, fileSystem => new XmlLocation(fileSystem, "file", XDocument.Parse(XmlContent).Root!.Element("Version")!)),
+            _ => ("{\"version\":\"1.0.0\"}", fileSystem => new JsonLocation(fileSystem, "file", "$['version']", -1, -1)),
+        };
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await using var stream = CancelAtEndOfStreamMemoryStream.Create(Encoding.UTF8.GetBytes(content), cancellationTokenSource);
+        var fileSystem = new SingleStreamFileSystem(stream);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => location(fileSystem).UpdateAsync("1.0.0", "2.0.0", cancellationTokenSource.Token));
+
+        Assert.Equal(content, Encoding.UTF8.GetString(stream.ToArray()));
+    }
+
+    [Fact]
+    public async Task JsonLocation_UpdatePart_ValueOnlyFoundInAnotherPart_Throws()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("renovate.json");
+
+        // The location was recorded for "github>org/cfg#1.0.0", then the file changed
+        const string Original = """{"extends":["github>org/1.0.0#2.0.0"]}""";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var location = new JsonLocation(FileSystem.Instance, filePath, "$['extends'][0]", 15, 5);
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("1.0.0", "3.0.0", XunitCancellationToken));
+
+        Assert.Equal(Original, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData("github>org/configuration", """{"extends":["github>org/configuration#2.0.0"]}""")]
+    [InlineData("github>o/c", """{"extends":["github>o/c#2.0.0"]}""")]
+    [InlineData("github>org/configuration-1.0.0", null)]
+    public async Task JsonLocation_UpdatePart_AfterRenamingThePrecedingPart(string newName, string? expected)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("renovate.json");
+        const string Original = """{"extends":["github>org/cfg#1.0.0"]}""";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var nameLocation = new JsonLocation(FileSystem.Instance, filePath, "$['extends'][0]", 0, "github>org/cfg".Length);
+        var versionLocation = new JsonLocation(FileSystem.Instance, filePath, "$['extends'][0]", "github>org/cfg#".Length, "1.0.0".Length);
+        await nameLocation.UpdateAsync("github>org/cfg", newName, XunitCancellationToken);
+
+        if (expected is null)
+        {
+            // The old version occurs twice after the recorded start, so the one to replace is ambiguous
+            var renamedContent = await File.ReadAllTextAsync(filePath, XunitCancellationToken);
+            await Assert.ThrowsAsync<DependencyScannerException>(() => versionLocation.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken));
+            Assert.Equal(renamedContent, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+        }
+        else
+        {
+            await versionLocation.UpdateAsync("1.0.0", "2.0.0", XunitCancellationToken);
+            Assert.Equal(expected, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+        }
+    }
+
+    private static async Task<XDocument> LoadXmlDocument(string filePath)
+    {
+        await using var stream = File.OpenRead(filePath);
+        return await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task GetEncodingAsync_ReadUntilCountOrEndAsync_ReadsBufferUsingSlices()
     {
         await using var stream = new RestrictedStream(new MemoryStream([0xEF, 0xBB, 0xBF, (byte)'a']), new RestrictedStreamOptions
@@ -356,6 +719,16 @@ public sealed class DependencyScannerTests
         var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
 
         Assert.Equal(expectedCodePage, encoding.CodePage);
+    }
+
+    [Fact]
+    public async Task GetEncodingAsync_DoesNotDetectUtf7()
+    {
+        await using var stream = new MemoryStream("+/v8"u8.ToArray());
+
+        var encoding = await StreamUtilities.GetEncodingAsync(stream, XunitCancellationToken);
+
+        Assert.Equal(Encoding.UTF8.CodePage, encoding.CodePage);
     }
 
     [Fact]
@@ -438,6 +811,22 @@ public sealed class DependencyScannerTests
         Assert.Equal(DependencyType.Npm, item.Type);
     }
 
+    [Theory]
+    [InlineData(30)]
+    [InlineData(31)]
+    [InlineData(64)]
+    public async Task ReportDependency_SupportedTypeWithLargeValue(int typeValue)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+        var type = (DependencyType)typeValue;
+        var options = new ScannerOptions { Scanners = [new ScannerWithTypes([DependencyType.NuGet, type])] };
+
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+
+        Assert.Equal([DependencyType.NuGet, type], items.Select(item => item.Type).Order());
+    }
+
     private sealed class ScannerWithTypes(DependencyType[] types) : DependencyScanner
     {
         protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = types;
@@ -517,6 +906,23 @@ public sealed class DependencyScannerTests
         protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
     }
 
+    private sealed class CountingScanThrowScanner : DependencyScanner
+    {
+        private int _scanCount;
+
+        public int ScanCount => Volatile.Read(ref _scanCount);
+
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
+
+        public override ValueTask ScanAsync(ScanFileContext context)
+        {
+            Interlocked.Increment(ref _scanCount);
+            throw new InvalidOperationException();
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
     private sealed class ShouldScanThrowScanner : DependencyScanner
     {
         protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
@@ -540,6 +946,42 @@ public sealed class DependencyScannerTests
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
+    private sealed class CancelAtEndOfStreamMemoryStream(CancellationTokenSource cancellationTokenSource) : MemoryStream
+    {
+        public override int Read(byte[] buffer, int offset, int count) => CancelAtEnd(base.Read(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer) => CancelAtEnd(base.Read(buffer));
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => CancelAtEnd(await base.ReadAsync(buffer.AsMemory(offset, count), cancellationToken));
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => CancelAtEnd(await base.ReadAsync(buffer, cancellationToken));
+
+        public static CancelAtEndOfStreamMemoryStream Create(byte[] content, CancellationTokenSource cancellationTokenSource)
+        {
+            var stream = new CancelAtEndOfStreamMemoryStream(cancellationTokenSource);
+            stream.Write(content);
+            stream.Position = 0;
+            return stream;
+        }
+
+        private int CancelAtEnd(int read)
+        {
+            if (read == 0)
+            {
+                cancellationTokenSource.Cancel();
+            }
+
+            return read;
+        }
+    }
+
+    private sealed class SingleStreamFileSystem(Stream stream) : IFileSystem
+    {
+        public Stream OpenRead(string path) => stream;
+        public Stream OpenReadWrite(string path) => stream;
+        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
     }
 
     private sealed class InMemoryFileSystem : IFileSystem

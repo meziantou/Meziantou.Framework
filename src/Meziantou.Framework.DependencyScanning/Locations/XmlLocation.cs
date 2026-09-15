@@ -5,6 +5,12 @@ using Meziantou.Framework.Language.Xml;
 
 namespace Meziantou.Framework.DependencyScanning;
 
+/// <summary>The location of a value in an XML file: the value of an element or of an attribute, or a part of it.</summary>
+/// <remarks>
+/// The column and length are offsets in the value as <see cref="XElement.Value"/> or <see cref="XAttribute.Value"/>
+/// exposes it: line breaks normalized, references resolved, and, for an attribute, whitespace normalized to spaces.
+/// An update maps them back onto the text written in the file.
+/// </remarks>
 internal class XmlLocation : Location, ILocationLineInfo
 {
     private readonly LineInfo _lineInfo;
@@ -32,7 +38,7 @@ internal class XmlLocation : Location, ILocationLineInfo
     {
         XPath = XmlUtilities.CreateXPath(element);
         var lineInfo = LineInfo.FromXObject((XObject?)attribute ?? element);
-        _lineInfo = column == 0 && lineInfo != default ? lineInfo : new LineInfo(lineInfo.LineNumber, lineInfo.LinePosition + column);
+        _lineInfo = lineInfo == default ? default : new LineInfo(lineInfo.LineNumber, lineInfo.LinePosition + Math.Max(column, 0));
         AttributeName = attribute?.Name.LocalName;
         StartPosition = column;
         Length = length;
@@ -46,32 +52,16 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     public override bool IsUpdatable => true;
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
-    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition + Math.Clamp(StartPosition, 0, int.MaxValue);
+    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
         var stream = FileSystem.OpenReadWrite(FilePath);
         try
         {
-            string content;
-            Encoding encoding;
-            using (var reader = await StreamUtilities.CreateReaderAsync(stream, cancellationToken).ConfigureAwait(false))
-            {
-                content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-                encoding = reader.CurrentEncoding;
-            }
-
-            var syntaxTree = XmlSyntaxTree.ParseText(content);
-            var locationXPath = AttributeName is null ? XPath : $"{XPath}/@{AttributeName}";
-            var updatedRoot = ReplaceValue(syntaxTree, locationXPath, oldValue, newValue);
-            var updatedContent = updatedRoot.ToFullString();
-
-            stream.SetLength(0);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            await using var writer = StreamUtilities.CreateWriter(stream, encoding);
-            await writer.WriteAsync(updatedContent.AsMemory(), cancellationToken).ConfigureAwait(false);
-            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+            var file = await StreamUtilities.ReadForUpdateAsync(stream, isXml: true, cancellationToken).ConfigureAwait(false);
+            var updatedContent = ReplaceValue(file.Text, oldValue, newValue);
+            await StreamUtilities.WriteForUpdateAsync(stream, file, updatedContent, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -89,58 +79,75 @@ internal class XmlLocation : Location, ILocationLineInfo
         return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
     }
 
-    private string UpdateTextValue(string? currentValue, string? oldValue, string newValue)
+    private string ReplaceValue(string text, string? oldValue, string newValue)
     {
-        if (StartPosition < 0)
-        {
-            if (oldValue is not null && currentValue != oldValue)
-                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
-
-            return newValue;
-        }
-
-        if (currentValue is null)
-            throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
-
-        if (Length < 0 || StartPosition > currentValue.Length || Length > currentValue.Length - StartPosition)
-            throw new DependencyScannerException($"The recorded location does not fit in the current value '{currentValue}'. The file was probably modified since last scan.");
-
-        if (oldValue is not null)
-        {
-            var slicedCurrentValue = currentValue.AsSpan(StartPosition, Length);
-            if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
-                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
-        }
-
-        return currentValue
-            .Remove(StartPosition, Length)
-            .Insert(StartPosition, newValue);
-    }
-
-    private XmlDocumentSyntax ReplaceValue(XmlSyntaxTree syntaxTree, string locationXPath, string? oldValue, string newValue)
-    {
-        var root = syntaxTree.GetRoot();
+        var root = XmlSyntaxTree.ParseText(text).GetRoot();
+        var locationXPath = AttributeName is null ? XPath : $"{XPath}/@{AttributeName}";
         var node = root.SelectSingleSyntaxNode(locationXPath) ?? throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
-        return node switch
+        var (sourceStart, sourceEnd, isAttribute, quote) = node switch
         {
-            XmlAttributeSyntax attribute => ReplaceAttributeValue(root, attribute, oldValue, newValue),
-            XmlElementSyntax element => ReplaceElementValue(root, element, oldValue, newValue),
+            XmlAttributeSyntax attribute => (attribute.ValueToken.SpanStart, attribute.ValueToken.Span.End, true, attribute.StartQuoteToken.Text is ['\''] ? '\'' : '"'),
+            XmlElementSyntax element => GetElementContentSpan(text, element),
 
             // A self-closing element has no content to carry a value.
             XmlEmptyElementSyntax => throw new DependencyScannerException("Cannot update value of a self-closing XML element."),
             _ => throw new DependencyScannerException("Dependency not found. File was probably modified since last scan."),
         };
+
+        var sourceText = text[sourceStart..sourceEnd];
+        if (!XmlUtilities.TryDecodeCharacterData(sourceText, isAttribute, out var currentValue, out var sourceOffsets))
+            throw new DependencyScannerException($"The value '{sourceText}' contains an entity reference that cannot be resolved. The location cannot be mapped onto the file.");
+
+        var (start, length) = (StartPosition, Length);
+        if (start < 0)
+        {
+            (start, length) = (0, currentValue.Length);
+        }
+        else if (length < 0 || start > currentValue.Length || length > currentValue.Length - start)
+        {
+            throw new DependencyScannerException($"The recorded location does not fit in the current value '{currentValue}'. The file was probably modified since last scan.");
+        }
+
+        var slicedCurrentValue = currentValue.AsSpan(start, length);
+        if (oldValue is not null && !slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
+            throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
+
+        var replaceStart = sourceOffsets[start];
+        var replaceEnd = sourceOffsets[start + length];
+        if (replaceStart < 0 || replaceEnd < 0)
+            throw new DependencyScannerException($"The recorded location splits a character reference in '{sourceText}'. The location cannot be mapped onto the file.");
+
+        replaceStart += sourceStart;
+        replaceEnd += sourceStart;
+        var escapedValue = XmlUtilities.EscapeCharacterData(newValue, isAttribute, quote);
+
+        // A line feed written right after a carriage return would merge with it into a single line break
+        if (!isAttribute && escapedValue is ['\n', ..] && replaceStart > 0 && text[replaceStart - 1] == '\r')
+        {
+            escapedValue = string.Concat("&#xA;", escapedValue.AsSpan(1));
+        }
+
+        return string.Concat(text.AsSpan(0, replaceStart), escapedValue, text.AsSpan(replaceEnd));
     }
 
-    private XmlDocumentSyntax ReplaceAttributeValue(XmlDocumentSyntax document, XmlAttributeSyntax attribute, string? oldValue, string newValue)
+    private static (int Start, int End, bool IsAttribute, char Quote) GetElementContentSpan(string text, XmlElementSyntax element)
     {
-        var updatedValue = UpdateTextValue(attribute.Value, oldValue, newValue);
-        return document.ReplaceNode(attribute, attribute.WithValue(updatedValue));
-    }
+        foreach (var child in element.Content)
+        {
+            // The value of an element holding anything but text does not map onto a single run of text: comments and
+            // processing instructions are not part of it, and a CDATA section or a child element has its own escaping.
+            if (child is not XmlTextSyntax)
+                throw new DependencyScannerException($"Cannot update the value of the XML element '{element.Name}' because it contains child elements, comments, CDATA sections or processing instructions.");
+        }
 
-    private XmlDocumentSyntax ReplaceElementValue(XmlDocumentSyntax document, XmlElementSyntax element, string? oldValue, string newValue)
-    {
-        var updatedValue = UpdateTextValue(element.GetInnerText(), oldValue, newValue);
-        return document.ReplaceNode(element, element.WithInnerText(updatedValue));
+        if (element.EndTag is not { } endTag)
+            throw new DependencyScannerException($"Cannot update the value of the XML element '{element.Name}' because it has no end tag.");
+
+        var start = element.StartTag.FullSpan.End;
+        var end = endTag.FullSpan.Start;
+        if (end < start || !text.AsSpan(start, end - start).Equals(element.GetInnerText(), StringComparison.Ordinal))
+            throw new DependencyScannerException($"Cannot locate the content of the XML element '{element.Name}'.");
+
+        return (start, end, false, '"');
     }
 }

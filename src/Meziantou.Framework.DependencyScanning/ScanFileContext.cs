@@ -84,7 +84,7 @@ public readonly struct ScanFileContext : IAsyncDisposable
 
     private bool ShouldReportDependency(DependencyScanner scanner, DependencyType type)
     {
-        if (scanner.SupportedDependencyTypes is null || !scanner.SupportedDependencyTypes.Contains(type))
+        if (!scanner.IsDependencyTypeSupported(type))
             throw new InvalidOperationException($"The scanner '{scanner.GetType().FullName}' does not support dependencies of type '{type}'. Supported types are: {string.Join(", ", scanner.SupportedDependencyTypes ?? [])}");
 
         if (_options.IncludedDependencyTypes.Count > 0 && !_options.IncludedDependencyTypes.Contains(type))

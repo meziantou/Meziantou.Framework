@@ -29,6 +29,20 @@ The library can detect the following dependency types:
 - **RenovateConfiguration** - Renovate configuration extends
 - **SwiftPackage** - Swift Package Manager dependencies
 - **MSBuildProjectReference** - MSBuild project references
+- **DotNetAssemblyReference** - .NET assembly file references
+- **RubyGem** - Ruby gem packages
+
+## Scanner Notes
+
+- **Docker images** (Dockerfile `FROM` and `COPY --from`, GitHub Actions `container`, `services` and `docker://` references, Azure Pipelines containers): the tag is the part after the last `:` that follows the last `/`, so `localhost:5000/image:1.0` is reported as `localhost:5000/image` version `1.0`. An image pinned by digest (`image@sha256:...` or `image:tag@sha256:...`) is reported with the digest as its version. This version is not updatable, and the digest and tag are available in `Dependency.Metadata` under the `digest` and `tag` keys. In a Dockerfile, only references with a tag or a digest are reported, so build stage names are not mistaken for images.
+- **Variables**: names or versions that contain a variable reference, such as `FROM node:${NODE_VERSION}`, are reported with a location that is not updatable.
+- **YAML files**: a value is only updatable when its text in the file is exactly its value (plain scalars, and single-line quoted scalars without escape sequences). Block scalars (`|`, `>`), escaped or multi-line values are reported with a location that is not updatable. A value referenced through an alias (`*name`) is reported once.
+- **GitHub Actions**: workflows in `.github/workflows` and action metadata files (`action.yml`, `action.yaml`) anywhere in the repository are scanned. Local actions and reusable workflows (`uses: ./...`) are not reported.
+- **Azure Pipelines**: templates referenced from steps, jobs, stages and `extends`, deployment job lifecycle hooks, and `git`, `github`, `githubenterprise` and `bitbucket` repository resources are reported. A job `container` that names a container resource is not reported again.
+- **Helm charts**: the dependency name is the chart `name`. The `repository` and `alias` values are available in `Dependency.Metadata` under the `repository` and `alias` keys.
+- **npm**: protocol and path specifiers (`workspace:`, `file:`, `link:`, git URLs, `github:`, tarball URLs, `owner/repo` shorthands, ...) are reported with a version location that is not updatable. An alias (`"name": "npm:package@1.0.0"`) is reported as the aliased package, with the alias name in `Dependency.Metadata` under the `alias` key.
+- **Python**: `*requirements*.txt` files and `.txt` files in a `requirements` directory are scanned. Only exact pins (`==`) are reported.
+- **Renovate**: `.json5` files are read as JSON with comments and trailing commas. JSON5-only syntax, such as unquoted property names or single-quoted strings, is not supported.
 
 ## Usage
 
@@ -173,6 +187,8 @@ var dependencies = await DependencyScanner.ScanDirectoryAsync(
     options,
     cancellationToken);
 ```
+
+`FilePatterns` are matched against the path of the file relative to the scanned root directory, for instance `build/*.yml` or `**/*.custom`.
 
 The regex pattern must include named groups:
 - `name` - The dependency name (required)

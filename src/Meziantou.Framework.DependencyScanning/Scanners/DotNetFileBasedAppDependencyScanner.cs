@@ -29,40 +29,52 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
         {
             lineNo++;
 
-            var remainingLine = line;
+            // Skip leading whitespace and comments. offset is the start of the remaining text in the line.
+            var offset = 0;
+            var hasCommentOnLine = false;
             while (true)
             {
                 if (isInsideMultilineComment)
                 {
-                    var commentEndIndex = remainingLine.IndexOf("*/", StringComparison.Ordinal);
+                    var commentEndIndex = line.IndexOf("*/", offset, StringComparison.Ordinal);
                     if (commentEndIndex < 0)
                     {
-                        remainingLine = "";
+                        offset = line.Length;
                         break;
                     }
 
-                    remainingLine = remainingLine[(commentEndIndex + 2)..];
+                    offset = commentEndIndex + 2;
                     isInsideMultilineComment = false;
+                    hasCommentOnLine = true;
                 }
 
-                remainingLine = remainingLine.TrimStart();
-                if (!remainingLine.StartsWith("/*", StringComparison.Ordinal))
+                while (offset < line.Length && char.IsWhiteSpace(line[offset]))
+                {
+                    offset++;
+                }
+
+                if (!line.AsSpan(offset).StartsWith("/*", StringComparison.Ordinal))
                     break;
 
-                remainingLine = remainingLine[2..];
+                offset += 2;
                 isInsideMultilineComment = true;
+                hasCommentOnLine = true;
             }
 
+            var remainingLine = line.AsSpan(offset);
+
             // Skip empty lines, comments, and shebang lines at the top of the file
-            if (string.IsNullOrWhiteSpace(remainingLine) || remainingLine.StartsWith("//", StringComparison.Ordinal) || remainingLine.StartsWith("#!", StringComparison.Ordinal))
+            if (remainingLine.IsWhiteSpace() || remainingLine.StartsWith("//", StringComparison.Ordinal) || remainingLine.StartsWith("#!", StringComparison.Ordinal))
                 continue;
 
-            // Stop scanning at first non-directive line
-            if (!remainingLine.StartsWith("#:", StringComparison.Ordinal))
+            // Stop scanning at first non-directive line.
+            // Like any preprocessor directive, a directive must be the first non-whitespace text of its line, so a directive after a comment is ignored by the compiler.
+            if (!remainingLine.StartsWith("#:", StringComparison.Ordinal) || hasCommentOnLine)
                 break;
 
+            // The regexes match the whole line, so the reported columns are columns in the raw line
             // Package directive: #:package Name or #:package Name@Version
-            var match = PackageRegex().Match(remainingLine);
+            var match = PackageRegex().Match(line);
             if (match.Success)
             {
                 ReportNameVersionDependency(context, match, lineNo, DependencyType.NuGet);
@@ -70,7 +82,7 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             }
 
             // SDK directive: #:sdk Name or #:sdk Name@Version
-            match = SdkRegex().Match(remainingLine);
+            match = SdkRegex().Match(line);
             if (match.Success)
             {
                 ReportNameVersionDependency(context, match, lineNo, DependencyType.NuGet);
@@ -78,7 +90,7 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             }
 
             // Project directive: #:project Path
-            match = ProjectRegex().Match(remainingLine);
+            match = ProjectRegex().Match(line);
             if (match.Success)
             {
                 ReportPathDependency(context, match, lineNo, DependencyType.MSBuildProjectReference);
@@ -86,7 +98,7 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             }
 
             // Reference directive: #:ref Path
-            match = RefRegex().Match(remainingLine);
+            match = RefRegex().Match(line);
             if (match.Success)
             {
                 ReportPathDependency(context, match, lineNo, DependencyType.DotNetAssemblyReference);
@@ -94,7 +106,7 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             }
 
             // Property directive: #:property TargetFramework=value
-            match = TargetFrameworkPropertyRegex().Match(remainingLine);
+            match = TargetFrameworkPropertyRegex().Match(line);
             if (match.Success)
             {
                 var valueGroup = match.Groups["Value"];
@@ -127,18 +139,18 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             versionLocation: null);
     }
 
-    [GeneratedRegex(@"^#:package\s+(?<Name>[^\s@]+)(?:@(?<Version>\S+))?\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
+    [GeneratedRegex(@"^\s*#:package\s+(?<Name>[^\s@]+)(?:@(?<Version>\S+))?\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
     private static partial Regex PackageRegex();
 
-    [GeneratedRegex(@"^#:sdk\s+(?<Name>[^\s@]+)(?:@(?<Version>\S+))?\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
+    [GeneratedRegex(@"^\s*#:sdk\s+(?<Name>[^\s@]+)(?:@(?<Version>\S+))?\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
     private static partial Regex SdkRegex();
 
-    [GeneratedRegex(@"^#:project\s+(?<Path>\S+)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
+    [GeneratedRegex(@"^\s*#:project\s+(?<Path>\S(?:.*\S)?)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
     private static partial Regex ProjectRegex();
 
-    [GeneratedRegex(@"^#:ref\s+(?<Path>\S+)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
+    [GeneratedRegex(@"^\s*#:ref\s+(?<Path>\S(?:.*\S)?)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
     private static partial Regex RefRegex();
 
-    [GeneratedRegex(@"^#:property\s+TargetFramework=(?<Value>\S+)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
+    [GeneratedRegex(@"^\s*#:property\s+(?i:TargetFramework)\s*=\s*(?<Value>\S+)\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: Timeout.Infinite)]
     private static partial Regex TargetFrameworkPropertyRegex();
 }

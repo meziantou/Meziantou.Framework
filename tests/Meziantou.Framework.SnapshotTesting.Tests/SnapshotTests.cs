@@ -1517,7 +1517,7 @@ public sealed partial class SnapshotTests
     }
 
     [Theory]
-    [InlineData("line 1\r\nline\t2", "line␠1␍␊\r\nline␉2")]
+    [InlineData("line 1\r\nline\t2", "line␠1␍␊\nline␉2")]
     [InlineData("a b\tc", "a b\tc")]
     public void ShowInvisibleCharactersInValues(string value, string expected)
     {

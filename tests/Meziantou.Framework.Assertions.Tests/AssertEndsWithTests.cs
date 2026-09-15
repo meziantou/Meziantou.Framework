@@ -252,23 +252,80 @@ public sealed class AssertEndsWithTests
     {
         AssertionsAssert.DoesNotEndWith(2, [1, 2, 3]);
         AssertionsAssert.DoesNotEndWith("He", "hello");
-
-        IEnumerable<int>? enumerable = null;
-        System.Collections.IEnumerable? nonGenericEnumerable = null;
-        string? text = null;
-
-        AssertionsAssert.DoesNotEndWith(3, enumerable);
-        AssertionsAssert.DoesNotEndWith(3, nonGenericEnumerable);
-        AssertionsAssert.DoesNotEndWith("lo", text);
     }
 
     [Fact]
-    public async Task DoesNotEndWith_AsyncEnumerableSucceedsWhenActualIsNull()
+    public void DoesNotEndWith_ValueEnumerableFailsWhenActualIsNull()
+    {
+        IEnumerable<int>? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(3, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: 3
+            Actual expression:   actual
+            Not expected suffix: 3
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotEndWith_ValueNonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(3, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: 3
+            Actual expression:   actual
+            Not expected suffix: 3
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotEndWith_StringFailsWhenActualIsNull()
+    {
+        var expected = "lo";
+        string? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(expected, actual, ignoreCase: true), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Comparison: OrdinalIgnoreCase
+            Not expected suffix: "lo"
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public async Task DoesNotEndWith_AsyncEnumerableFailsWhenActualIsNull()
     {
         IEnumerable<int> expected = [2, 3];
         IAsyncEnumerable<int>? actual = null;
 
-        await AssertionsAssert.DoesNotEndWith(expected, actual);
+        await AssertionTestHelpers.ValidateAsync(() => AssertionsAssert.DoesNotEndWith(expected, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected suffix: [2, 3]
+            Actual:              <null>
+            """);
+    }
+
+    [Fact]
+    public void DoesNotEndWith_NonGenericEnumerableFailsWhenActualIsNull()
+    {
+        System.Collections.IEnumerable expected = new object[] { 2, 3 };
+        System.Collections.IEnumerable? actual = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotEndWith(expected, actual), """
+            Assert.DoesNotEndWith() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Not expected suffix: [2, 3]
+            Actual:              <null>
+            """);
     }
 
     [Fact]
@@ -317,6 +374,28 @@ public sealed class AssertEndsWithTests
 
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith("b", actual));
         AssertionsAssert.DoesNotEndWith("a", actual);
+    }
+
+    [Fact]
+    public void EndsWith_StringExpectedAgainstNonGenericCollection_ComparesTheLastItem()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.EndsWith("b", actual);
+        AssertionsAssert.EndsWith("B", actual, StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EndsWith("a", actual));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EndsWith("", actual));
+    }
+
+    [Fact]
+    public void EndsWith_StringExpectedAgainstNonGenericCharSequence_ComparesTheSuffix()
+    {
+        System.Collections.IEnumerable actual = "abc";
+
+        AssertionsAssert.EndsWith("bc", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EndsWith("b", actual));
+        AssertionsAssert.DoesNotEndWith("b", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotEndWith("bc", actual));
     }
 
 }

@@ -234,6 +234,66 @@ public sealed class AssertSetTests
     }
 
     [Fact]
+    public void NotProperSubset_EnumeratesSingleUseSequencesOnlyOnce()
+    {
+        var expected = AssertionTestHelpers.SingleUse(1);
+        var actual = AssertionTestHelpers.SingleUse(1, 2);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSubset(expected, actual), """
+            Assert.NotProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Not expected subset: [1]
+            Actual:              [1, 2]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSubset_NonGenericEnumeratesSingleUseSequencesOnlyOnce()
+    {
+        System.Collections.IEnumerable expected = AssertionTestHelpers.SingleUse(1);
+        System.Collections.IEnumerable actual = AssertionTestHelpers.SingleUse(1, 2);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSubset(expected, actual), """
+            Assert.NotProperSubset() assertion failed.
+            Expected subset expression: expected
+            Actual expression:          actual
+            Not expected subset: [1]
+            Actual:              [1, 2]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSuperset_EnumeratesSingleUseSequencesOnlyOnce()
+    {
+        var expected = AssertionTestHelpers.SingleUse(1, 2);
+        var actual = AssertionTestHelpers.SingleUse(1);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSuperset(expected, actual), """
+            Assert.NotProperSuperset() assertion failed.
+            Expected superset expression: expected
+            Actual expression:            actual
+            Not expected superset: [1, 2]
+            Actual:                [1]
+            """);
+    }
+
+    [Fact]
+    public void NotProperSuperset_NonGenericEnumeratesSingleUseSequencesOnlyOnce()
+    {
+        System.Collections.IEnumerable expected = AssertionTestHelpers.SingleUse(1, 2);
+        System.Collections.IEnumerable actual = AssertionTestHelpers.SingleUse(1);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotProperSuperset(expected, actual), """
+            Assert.NotProperSuperset() assertion failed.
+            Expected superset expression: expected
+            Actual expression:            actual
+            Not expected superset: [1, 2]
+            Actual:                [1]
+            """);
+    }
+
+    [Fact]
     public void NotProperSubset_UsesExpectedSetComparer()
     {
         var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a" };

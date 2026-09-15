@@ -8,6 +8,9 @@ namespace Meziantou.Framework.Assertions;
 public partial class Assert
 {
     private static readonly ConcurrentDictionary<StructuralMembersCacheKey, Dictionary<string, StructuralMember>> StructuralMembersCache = new();
+    private static readonly ConcurrentDictionary<Type, bool> StructuralNumberTypes = new();
+    private static readonly ConcurrentDictionary<Type, StructuralCollectionKind> StructuralCollectionKinds = new();
+    private static readonly ConcurrentDictionary<Type, MethodInfo?> StructuralSequenceToArrayMethods = new();
 
     public static void Equivalent(object? expected, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
@@ -78,6 +81,18 @@ public partial class Assert
             visitedAdditions.Add(pair);
         }
 
+        // Memory<T>, ReadOnlyMemory<T> and ReadOnlySequence<T> are sequences that do not implement IEnumerable. Walking
+        // their members would compare where the content is stored rather than the content itself.
+        if (TryGetStructuralSequenceItems(expected, out var expectedSequenceItems))
+        {
+            expected = expectedSequenceItems;
+        }
+
+        if (TryGetStructuralSequenceItems(actual, out var actualSequenceItems))
+        {
+            actual = actualSequenceItems;
+        }
+
         if (expected is System.Collections.IEnumerable expectedEnumerable && actual is System.Collections.IEnumerable actualEnumerable)
             return GetStructuralEnumerableDifference(expectedEnumerable, actualEnumerable, path, visited, visitedAdditions, options);
 
@@ -86,7 +101,21 @@ public partial class Assert
 
     private static StructuralDifference? GetStructuralEnumerableDifference(System.Collections.IEnumerable expected, System.Collections.IEnumerable actual, StructuralPath path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
     {
-        if (options.IgnoreCollectionOrder)
+        var expectedKind = GetStructuralCollectionKind(expected.GetType());
+        var actualKind = GetStructuralCollectionKind(actual.GetType());
+
+        // The position of an entry in a dictionary is not part of its value, so entries are matched by key. The
+        // entries are read before deciding, as a type can implement a dictionary interface and still enumerate
+        // something else than key/value pairs.
+        if (expectedKind is StructuralCollectionKind.Dictionary && actualKind is StructuralCollectionKind.Dictionary
+            && TryGetStructuralDictionaryEntries(expected, out var expectedEntries)
+            && TryGetStructuralDictionaryEntries(actual, out var actualEntries))
+        {
+            return GetStructuralDictionaryDifference(expectedEntries, actualEntries, path, visited, visitedAdditions, options);
+        }
+
+        // A set has no meaningful order, so comparing it by position against anything would depend on its internal layout.
+        if (options.IgnoreCollectionOrder || expectedKind is StructuralCollectionKind.Set || actualKind is StructuralCollectionKind.Set)
             return GetStructuralUnorderedEnumerableDifference(expected, actual, path, visited, visitedAdditions, options);
 
         return GetStructuralOrderedEnumerableDifference(expected, actual, path, visited, visitedAdditions, options);
@@ -134,37 +163,15 @@ public partial class Assert
     {
         var expectedItems = new List<object?>(EnumerateObjects(expected));
         var actualItems = new List<object?>(EnumerateObjects(actual));
-        var matchedActualIndexes = new bool[actualItems.Count];
+        var matches = MatchStructuralItems(expectedItems, actualItems, path, visited, visitedAdditions, options, out var matchedActualIndexes);
 
-        for (var expectedIndex = 0; expectedIndex < expectedItems.Count; expectedIndex++)
+        for (var expectedIndex = 0; expectedIndex < matches.Length; expectedIndex++)
         {
+            if (matches[expectedIndex] >= 0)
+                continue;
+
             using var scope = path.Push(expectedIndex);
-            var expectedItem = expectedItems[expectedIndex];
-            var found = false;
-
-            for (var actualIndex = 0; actualIndex < actualItems.Count; actualIndex++)
-            {
-                if (matchedActualIndexes[actualIndex])
-                    continue;
-
-                var visitedAdditionsCount = visitedAdditions.Count;
-                var depth = path.Depth;
-                var difference = GetStructuralDifference(expectedItem, actualItems[actualIndex], path, visited, visitedAdditions, options);
-                RollbackStructuralVisitedAdditions(visited, visitedAdditions, visitedAdditionsCount);
-                if (difference is not null)
-                {
-                    // A rejected candidate leaves the segments of the mismatch behind; drop them before the next one.
-                    path.TruncateTo(depth);
-                    continue;
-                }
-
-                matchedActualIndexes[actualIndex] = true;
-                found = true;
-                break;
-            }
-
-            if (!found)
-                return new StructuralDifference(path.ToString(), expectedItem, StructuralMissingValue.Instance, "Actual collection is missing an equivalent item.");
+            return new StructuralDifference(path.ToString(), expectedItems[expectedIndex], StructuralMissingValue.Instance, "Actual collection is missing an equivalent item.");
         }
 
         for (var actualIndex = 0; actualIndex < matchedActualIndexes.Length; actualIndex++)
@@ -177,6 +184,123 @@ public partial class Assert
         }
 
         return null;
+    }
+
+    private static StructuralDifference? GetStructuralDictionaryDifference(List<KeyValuePair<object?, object?>> expectedEntries, List<KeyValuePair<object?, object?>> actualEntries, StructuralPath path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options)
+    {
+        var expectedKeys = new List<object?>(expectedEntries.Count);
+        foreach (var entry in expectedEntries)
+        {
+            expectedKeys.Add(entry.Key);
+        }
+
+        var actualKeys = new List<object?>(actualEntries.Count);
+        foreach (var entry in actualEntries)
+        {
+            actualKeys.Add(entry.Key);
+        }
+
+        var matches = MatchStructuralItems(expectedKeys, actualKeys, path, visited, visitedAdditions, options, out var matchedActualIndexes);
+
+        for (var expectedIndex = 0; expectedIndex < matches.Length; expectedIndex++)
+        {
+            var expectedEntry = expectedEntries[expectedIndex];
+            using var scope = path.PushKey(expectedEntry.Key);
+            var actualIndex = matches[expectedIndex];
+            if (actualIndex < 0)
+                return new StructuralDifference(path.ToString(), expectedEntry.Value, StructuralMissingValue.Instance, "Actual dictionary is missing a key.");
+
+            var difference = GetStructuralDifference(expectedEntry.Value, actualEntries[actualIndex].Value, path, visited, visitedAdditions, options);
+            if (difference is not null)
+                return difference;
+        }
+
+        for (var actualIndex = 0; actualIndex < matchedActualIndexes.Length; actualIndex++)
+        {
+            if (matchedActualIndexes[actualIndex])
+                continue;
+
+            var actualEntry = actualEntries[actualIndex];
+            using var scope = path.PushKey(actualEntry.Key);
+            return new StructuralDifference(path.ToString(), StructuralMissingValue.Instance, actualEntry.Value, "Actual dictionary contains an unexpected key.");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Pairs each expected item with an equivalent actual item, and returns the index of the actual item matched by each
+    /// expected item, or -1 when there is none.
+    /// </summary>
+    private static int[] MatchStructuralItems(List<object?> expectedItems, List<object?> actualItems, StructuralPath path, HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, StructuralComparisonOptions options, out bool[] matchedActualIndexes)
+    {
+        var matches = new int[expectedItems.Count];
+        matchedActualIndexes = new bool[actualItems.Count];
+
+        // Keys and set items are usually leaves such as strings or numbers. Equal leaves are equivalent, so they are
+        // paired through a hash lookup first, and only the remaining items need the quadratic structural search. The
+        // lookup is restricted to leaves because hashing an arbitrary object can recurse forever on a cyclic graph.
+        var leafComparer = options.StringComparison is StringComparison.Ordinal ? StructuralLeafEqualityComparer.Ordinal : StructuralLeafEqualityComparer.OrdinalIgnoreCase;
+        Dictionary<object, int>? firstActualIndexByLeaf = null;
+        int[]? nextActualIndexWithSameLeaf = null;
+        for (var actualIndex = actualItems.Count - 1; actualIndex >= 0; actualIndex--)
+        {
+            var actualItem = actualItems[actualIndex];
+            if (actualItem is null || !IsSimpleStructuralValue(actualItem.GetType()))
+                continue;
+
+            firstActualIndexByLeaf ??= new Dictionary<object, int>(leafComparer);
+            nextActualIndexWithSameLeaf ??= new int[actualItems.Count];
+            nextActualIndexWithSameLeaf[actualIndex] = firstActualIndexByLeaf.TryGetValue(actualItem, out var nextIndex) ? nextIndex : -1;
+            firstActualIndexByLeaf[actualItem] = actualIndex;
+        }
+
+        for (var expectedIndex = 0; expectedIndex < expectedItems.Count; expectedIndex++)
+        {
+            matches[expectedIndex] = -1;
+            var expectedItem = expectedItems[expectedIndex];
+            if (firstActualIndexByLeaf is null || expectedItem is null || !IsSimpleStructuralValue(expectedItem.GetType()))
+                continue;
+
+            if (firstActualIndexByLeaf.TryGetValue(expectedItem, out var actualIndex) && actualIndex >= 0)
+            {
+                matches[expectedIndex] = actualIndex;
+                matchedActualIndexes[actualIndex] = true;
+                firstActualIndexByLeaf[expectedItem] = nextActualIndexWithSameLeaf![actualIndex];
+            }
+        }
+
+        for (var expectedIndex = 0; expectedIndex < expectedItems.Count; expectedIndex++)
+        {
+            if (matches[expectedIndex] >= 0)
+                continue;
+
+            for (var actualIndex = 0; actualIndex < actualItems.Count; actualIndex++)
+            {
+                if (matchedActualIndexes[actualIndex])
+                    continue;
+
+                var visitedAdditionsCount = visitedAdditions.Count;
+                var depth = path.Depth;
+                var difference = GetStructuralDifference(expectedItems[expectedIndex], actualItems[actualIndex], path, visited, visitedAdditions, options);
+                RollbackStructuralVisitedAdditions(visited, visitedAdditions, visitedAdditionsCount);
+
+                // A rejected candidate leaves the segments of the mismatch behind; drop them before the next one.
+                path.TruncateTo(depth);
+                if (difference is not null)
+                    continue;
+
+                matches[expectedIndex] = actualIndex;
+                matchedActualIndexes[actualIndex] = true;
+                break;
+            }
+
+            // Callers report the first unmatched expected item, so matching the following ones would be wasted work.
+            if (matches[expectedIndex] < 0)
+                break;
+        }
+
+        return matches;
     }
 
     private static void RollbackStructuralVisitedAdditions(HashSet<StructuralReferencePair> visited, List<StructuralReferencePair> visitedAdditions, int count)
@@ -192,6 +316,11 @@ public partial class Assert
     {
         var expectedMembers = GetStructuralMembers(expected.GetType(), options.MemberNameComparer);
         var actualMembers = GetStructuralMembers(actual.GetType(), options.MemberNameComparer);
+
+        // A value that exposes nothing to compare keeps its state private. Treating it as equivalent to any other such
+        // value would make every assertion on it pass, so its own equality decides.
+        if (expectedMembers.Count == 0 && actualMembers.Count == 0)
+            return ValuesEqual(expected, actual) ? null : new StructuralDifference(path.ToString(), expected, actual, "Values differ.");
 
         foreach (var expectedMember in expectedMembers.Values)
         {
@@ -226,7 +355,7 @@ public partial class Assert
         var result = new Dictionary<string, StructuralMember>(cacheKey.Comparer);
         foreach (var property in cacheKey.Type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
-            if (property.GetMethod is null || property.GetIndexParameters().Length != 0)
+            if (property.GetMethod is null || property.GetIndexParameters().Length != 0 || !CanReadStructuralMember(property.PropertyType))
                 continue;
 
             result.TryAdd(property.Name, new StructuralMember(property.Name, property));
@@ -234,10 +363,111 @@ public partial class Assert
 
         foreach (var field in cacheKey.Type.GetFields(BindingFlags.Instance | BindingFlags.Public))
         {
+            if (!CanReadStructuralMember(field.FieldType))
+                continue;
+
             result.TryAdd(field.Name, new StructuralMember(field.Name, field));
         }
 
         return result;
+    }
+
+    /// <summary>Reports whether reflection can read a member of the type as an object that can be compared.</summary>
+    private static bool CanReadStructuralMember(Type type)
+    {
+        if (type.IsByRef)
+        {
+            type = type.GetElementType()!;
+        }
+
+        // A ref struct such as Span<T> cannot be boxed, so reading it throws, and a pointer is an address rather than a value.
+        return !type.IsByRefLike && !type.IsPointer && !type.IsFunctionPointer;
+    }
+
+    private static bool TryGetStructuralSequenceItems(object value, [NotNullWhen(true)] out System.Collections.IEnumerable? items)
+    {
+        if (TryGetMemoryItems(value, out items))
+            return true;
+
+        var toArrayMethod = StructuralSequenceToArrayMethods.GetOrAdd(value.GetType(), GetStructuralSequenceToArrayMethod);
+        if (toArrayMethod is null)
+            return false;
+
+        items = (System.Collections.IEnumerable?)toArrayMethod.Invoke(obj: null, [value]);
+        return items is not null;
+    }
+
+    private static MethodInfo? GetStructuralSequenceToArrayMethod(Type type)
+    {
+        if (!type.IsConstructedGenericType || type.GetGenericTypeDefinition() != typeof(System.Buffers.ReadOnlySequence<>))
+            return null;
+
+        return typeof(System.Buffers.BuffersExtensions).GetMethod(nameof(System.Buffers.BuffersExtensions.ToArray), PublicStatic)!.MakeGenericMethod(type.GetGenericArguments());
+    }
+
+    private static StructuralCollectionKind GetStructuralCollectionKind(Type type)
+    {
+        return StructuralCollectionKinds.GetOrAdd(type, CreateStructuralCollectionKind);
+    }
+
+    private static StructuralCollectionKind CreateStructuralCollectionKind(Type type)
+    {
+        var result = StructuralCollectionKind.Sequence;
+        foreach (var @interface in type.GetInterfaces())
+        {
+            if (@interface == typeof(System.Collections.IDictionary))
+                return StructuralCollectionKind.Dictionary;
+
+            if (!@interface.IsGenericType)
+                continue;
+
+            var definition = @interface.GetGenericTypeDefinition();
+            if (definition == typeof(IDictionary<,>) || definition == typeof(IReadOnlyDictionary<,>))
+                return StructuralCollectionKind.Dictionary;
+
+            if (definition == typeof(ISet<>) || definition == typeof(IReadOnlySet<>))
+            {
+                result = StructuralCollectionKind.Set;
+            }
+        }
+
+        return result;
+    }
+
+    private static bool TryGetStructuralDictionaryEntries(System.Collections.IEnumerable dictionary, [NotNullWhen(true)] out List<KeyValuePair<object?, object?>>? entries)
+    {
+        entries = [];
+        if (dictionary is System.Collections.IDictionary nonGenericDictionary)
+        {
+            var enumerator = nonGenericDictionary.GetEnumerator();
+            try
+            {
+                while (enumerator.MoveNext())
+                {
+                    entries.Add(new KeyValuePair<object?, object?>(enumerator.Key, enumerator.Value));
+                }
+            }
+            finally
+            {
+                (enumerator as IDisposable)?.Dispose();
+            }
+
+            return true;
+        }
+
+        foreach (var item in dictionary)
+        {
+            if (item?.GetType() is not { IsGenericType: true } itemType || itemType.GetGenericTypeDefinition() != typeof(KeyValuePair<,>))
+            {
+                entries = null;
+                return false;
+            }
+
+            var members = GetStructuralMembers(itemType, StringComparer.Ordinal);
+            entries.Add(new KeyValuePair<object?, object?>(members[nameof(KeyValuePair<object, object>.Key)].GetValue(item), members[nameof(KeyValuePair<object, object>.Value)].GetValue(item)));
+        }
+
+        return true;
     }
 
     private static bool StructuralValuesEqual(object? expected, object? actual, StructuralComparisonOptions options)
@@ -260,7 +490,23 @@ public partial class Assert
             || type == typeof(TimeOnly)
             || type == typeof(TimeSpan)
             || type == typeof(Guid)
-            || type == typeof(Uri);
+            || type == typeof(Uri)
+            || StructuralNumberTypes.GetOrAdd(type, IsNumberType);
+    }
+
+    /// <summary>
+    /// Reports whether the type is a number, such as <see cref="Int128"/>, <see cref="Half"/> or <see cref="System.Numerics.BigInteger"/>.
+    /// The public properties of a number describe it (IsZero, Sign, …) without identifying it, so a number is a leaf.
+    /// </summary>
+    private static bool IsNumberType(Type type)
+    {
+        foreach (var @interface in type.GetInterfaces())
+        {
+            if (@interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(System.Numerics.INumberBase<>))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -279,6 +525,8 @@ public partial class Assert
 
         public Scope Push(int index) => Push(new StructuralPathSegment(memberName: null, index));
 
+        public Scope PushKey(object? key) => Push(new StructuralPathSegment(key));
+
         public void TruncateTo(int depth) => _segments.RemoveRange(depth, _segments.Count - depth);
 
         public override string ToString()
@@ -286,7 +534,11 @@ public partial class Assert
             var builder = new StringBuilder(Root);
             foreach (var segment in _segments)
             {
-                if (segment.MemberName is null)
+                if (segment.IsKey)
+                {
+                    builder.Append('[').Append(FormatKey(segment.Key)).Append(']');
+                }
+                else if (segment.MemberName is null)
                 {
                     builder.Append('[').Append(segment.Index.ToString(CultureInfo.InvariantCulture)).Append(']');
                 }
@@ -297,6 +549,17 @@ public partial class Assert
             }
 
             return builder.ToString();
+        }
+
+        private static string FormatKey(object? key)
+        {
+            return key switch
+            {
+                null => "<null>",
+                string value => AssertionFormatter.FormatStringValue(value, highlightedIndex: null),
+                IFormattable value => value.ToString(format: null, CultureInfo.InvariantCulture),
+                _ => key.ToString() ?? string.Empty,
+            };
         }
 
         private Scope Push(StructuralPathSegment segment)
@@ -312,10 +575,55 @@ public partial class Assert
         }
     }
 
-    private readonly struct StructuralPathSegment(string? memberName, int index)
+    private readonly struct StructuralPathSegment
     {
-        public string? MemberName { get; } = memberName;
-        public int Index { get; } = index;
+        public StructuralPathSegment(string? memberName, int index)
+        {
+            MemberName = memberName;
+            Index = index;
+        }
+
+        public StructuralPathSegment(object? key)
+        {
+            Key = key;
+            IsKey = true;
+            Index = -1;
+        }
+
+        public string? MemberName { get; }
+        public int Index { get; }
+        public object? Key { get; }
+        public bool IsKey { get; }
+    }
+
+    private enum StructuralCollectionKind
+    {
+        Sequence,
+        Dictionary,
+        Set,
+    }
+
+    /// <summary>Compares leaves the way <see cref="StructuralValuesEqual"/> does when they are equal, so a match is always equivalent.</summary>
+    private sealed class StructuralLeafEqualityComparer(StringComparer stringComparer) : IEqualityComparer<object>
+    {
+        public static StructuralLeafEqualityComparer Ordinal { get; } = new(StringComparer.Ordinal);
+        public static StructuralLeafEqualityComparer OrdinalIgnoreCase { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        public new bool Equals(object? x, object? y)
+        {
+            if (x is string xString && y is string yString)
+                return stringComparer.Equals(xString, yString);
+
+            return object.Equals(x, y);
+        }
+
+        public int GetHashCode(object obj)
+        {
+            if (obj is string value)
+                return stringComparer.GetHashCode(value);
+
+            return obj.GetHashCode();
+        }
     }
 
     private readonly struct StructuralDifference(string path, object? expectedValue, object? actualValue, string reason)

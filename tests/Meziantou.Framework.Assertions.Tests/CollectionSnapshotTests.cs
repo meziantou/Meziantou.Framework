@@ -108,6 +108,30 @@ public sealed class CollectionSnapshotTests
     }
 
     [Fact]
+    public void Create_LazyEnumerableWithLargeKnownCount_DoesNotReserveCapacityForUnobservedItems()
+    {
+        using var snapshot = CollectionSnapshot.Create<int>(Enumerable.Range(0, 50_000_000).Select(i => i));
+
+        AssertionsAssert.True(snapshot.TryGetItem(0, out _));
+
+        var cache = AssertionsAssert.IsType<List<int>>(snapshot.Items);
+        AssertionsAssert.InRange(cache.Capacity, 1, 64);
+    }
+
+    [Fact]
+    public void EnsureComplete_LazyEnumerableWithKnownCount_SizesTheCacheOnce()
+    {
+        IEnumerable<int> source = new HashSet<int>(Enumerable.Range(0, 1_000));
+
+        using var snapshot = CollectionSnapshot.Create<int>(source);
+        snapshot.EnsureComplete();
+
+        var cache = AssertionsAssert.IsType<List<int>>(snapshot.Items);
+        AssertionsAssert.HasCount(1_000, cache);
+        AssertionsAssert.Equal(1_000, cache.Capacity);
+    }
+
+    [Fact]
     public async Task Create_AsyncEnumerableCachesItemsIncrementally()
     {
         var source = new TrackingAsyncEnumerable<int>([1, 2, 3]);

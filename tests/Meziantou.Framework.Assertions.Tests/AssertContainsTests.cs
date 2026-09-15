@@ -651,7 +651,7 @@ public sealed class AssertContainsTests
             Expected expression: "a"
             Actual expression:   actual
             Not expected key: "a"
-            Actual:           [[a, 1]]
+            Actual:           [["a", 1]]
             """);
     }
 
@@ -679,6 +679,130 @@ public sealed class AssertContainsTests
         var table = new System.Collections.Hashtable { { "a", 1 }, { "b", 2 } };
 
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("b", table.Keys));
+    }
+
+    [Fact]
+    public void Contains_StringExpectedAgainstNonGenericCollection_SearchesForTheItem()
+    {
+        System.Collections.IEnumerable actual = new[] { "a", "b" };
+
+        AssertionsAssert.Contains("b", actual);
+        AssertionsAssert.Contains("B", actual, StringComparer.OrdinalIgnoreCase);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Contains("B", actual));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Contains("", actual), """
+            Assert.Contains() assertion failed.
+            Expected expression: ""
+            Actual expression:   actual
+            Expected item: ""
+            Actual:        ["a", "b"]
+            """);
+    }
+
+    [Fact]
+    public void Contains_StringExpectedAgainstNonGenericCharSequence_SearchesForTheSubsequence()
+    {
+        System.Collections.IEnumerable actual = "abcd";
+
+        AssertionsAssert.Contains("bc", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Contains("ca", actual));
+        AssertionsAssert.DoesNotContain("ca", actual);
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("bc", actual));
+    }
+
+    [Fact]
+    public void DoesNotContain_KeyValuePairEnumerableUsesTheDictionaryComparerLikeContains()
+    {
+        IReadOnlyDictionary<string, int> actual = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["A"] = 1 };
+
+        AssertionsAssert.Equal(1, AssertionsAssert.Contains("a", actual));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("a", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: "a"
+            Actual expression:   actual
+            Not expected key: "a"
+            Actual:           [["A", 1]]
+            """);
+
+        AssertionsAssert.Equal(1, AssertionsAssert.Contains("a", actual, StringComparer.Ordinal));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("a", actual, StringComparer.Ordinal));
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Contains("b", actual, StringComparer.OrdinalIgnoreCase));
+        AssertionsAssert.DoesNotContain("b", actual, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DoesNotContain_KeyValuePairEnumerableUsesTheComparerLikeContains()
+    {
+        IEnumerable<KeyValuePair<string, int>> actual = [new("A", 1)];
+
+        AssertionsAssert.Equal(1, AssertionsAssert.Contains("a", actual, StringComparer.OrdinalIgnoreCase));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotContain("a", actual, StringComparer.OrdinalIgnoreCase));
+        AssertionsAssert.DoesNotContain("a", actual);
+    }
+
+    [Fact]
+    public void DoesNotContain_KeyValuePairEnumerableSucceedsForNullKeyAgainstDictionary()
+    {
+        IReadOnlyDictionary<string, int> actual = new Dictionary<string, int>(StringComparer.Ordinal) { ["A"] = 1 };
+        string key = null!;
+
+        AssertionsAssert.DoesNotContain(key, actual);
+    }
+
+    [Fact]
+    public void DoesNotContain_ValueEnumerableFailsOnEndlessSequence()
+    {
+        var actual = AssertionTestHelpers.EndlessSequence();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(5, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 5
+            Actual expression:   actual
+            Not expected item: 5
+            Actual:            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_KeyValuePairEnumerableFailsOnEndlessSequence()
+    {
+        var actual = AssertionTestHelpers.EndlessSequence().Select(i => KeyValuePair.Create(i, i));
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(5, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 5
+            Actual expression:   actual
+            Not expected key: 5
+            Actual:           [[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9], ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_ValueNonGenericEnumerableFailsOnEndlessSequence()
+    {
+        System.Collections.IEnumerable actual = AssertionTestHelpers.EndlessSequence();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain(5, actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: 5
+            Actual expression:   actual
+            Not expected: 5
+            Actual:       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]
+            """);
+    }
+
+    [Fact]
+    public void DoesNotContain_StringExpectedAgainstNonGenericEndlessSequenceFails()
+    {
+        System.Collections.IEnumerable actual = AssertionTestHelpers.EndlessSequence().Select(i => i.ToString(CultureInfo.InvariantCulture));
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotContain("5", actual), """
+            Assert.DoesNotContain() assertion failed.
+            Expected expression: "5"
+            Actual expression:   actual
+            Not expected: "5"
+            Actual:       ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ...]
+            """);
     }
 
 }

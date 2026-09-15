@@ -22,9 +22,13 @@ public partial class Assert
 
     public static void DoesNotHaveCount<T>(int expectedCount, IEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (TryGetKnownCount(actual, out var knownCount) && knownCount != expectedCount)
+            return;
+
+        // Observing expectedCount + 1 items decides the comparison, so a longer or infinite sequence is not drained.
+        // When the assertion fails, the sequence has exactly expectedCount items and is therefore complete.
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        actualSnapshot.EnsureComplete();
-        if (actualSnapshot.Items.Count != expectedCount)
+        if (!CountSatisfies(actualSnapshot, expectedCount, CountComparison.Equal))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<IReadOnlyList<T>>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actualSnapshot.Items, actualExpression, message)));
@@ -33,8 +37,7 @@ public partial class Assert
     public static void DoesNotHaveCount(int expectedCount, System.Collections.IEnumerable actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         using var actualSnapshot = CollectionSnapshot.Create(actual);
-        actualSnapshot.EnsureComplete();
-        if (actualSnapshot.Items.Count != expectedCount)
+        if (!CountSatisfies(actualSnapshot, expectedCount, CountComparison.Equal))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeCountAssertionError<IReadOnlyList<object?>>(nameof(DoesNotHaveCount), expectedCount, actualSnapshot.Items.Count, actualSnapshot.Items, actualExpression, message)));
@@ -43,8 +46,7 @@ public partial class Assert
     public static async Task DoesNotHaveCount<T>(int expectedCount, IAsyncEnumerable<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-        if (actualSnapshot.Items.Count != expectedCount)
+        if (!await CountSatisfiesAsync(actualSnapshot, expectedCount, CountComparison.Equal).ConfigureAwait(false))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NegativeExpressionAssertionError(nameof(DoesNotHaveCount), "count " + expectedCount.ToString(CultureInfo.InvariantCulture), AssertionFormatter.FormatExpression(actualExpression), message)));

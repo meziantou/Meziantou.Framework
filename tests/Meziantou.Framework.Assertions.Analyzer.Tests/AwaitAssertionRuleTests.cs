@@ -283,6 +283,38 @@ public sealed class AwaitAssertionRuleTests : AssertionsAnalyzerTestBase
     }
 
     [Fact]
+    public async Task Analyzer_ReportsDiagnostic_ForDiscardedValueTaskExceptionAssertions()
+    {
+        var source = """
+            using System;
+            using System.Threading.Tasks;
+            using Meziantou.Framework.Assertions;
+
+            namespace Sample;
+
+            public static class TestClass
+            {
+                public static void M(Func<ValueTask> action, Func<ValueTask<object?>> function)
+                {
+                    {|MFAS0048:Assert.Throws<InvalidOperationException>(() => SaveAsync())|};
+                    {|MFAS0048:Assert.Throws(typeof(InvalidOperationException), action)|};
+                    {|MFAS0048:Assert.ThrowsAny<InvalidOperationException>(function)|};
+                    {|MFAS0048:Assert.ThrowsAny(typeof(InvalidOperationException), SaveAsync)|};
+                    {|MFAS0048:Assert.DoesNotThrow(() => SaveAsync())|};
+                    {|MFAS0048:Assert.DoesNotThrow<InvalidOperationException>(action)|};
+                    {|MFAS0048:Assert.DoesNotThrow(typeof(InvalidOperationException), SaveAsync)|};
+                    {|MFAS0048:Assert.DoesNotThrowAny<InvalidOperationException>(action)|};
+                    {|MFAS0048:Assert.DoesNotThrowAny(typeof(InvalidOperationException), action)|};
+                }
+
+                private static ValueTask SaveAsync() => default;
+            }
+            """;
+
+        await CreateAnalyzerTest<AwaitAssertionAnalyzerType>(source).RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
     public async Task Analyzer_DoesNotReportDiagnostic_WhenTheAssertionReturnsAValueThatIsATask()
     {
         // Assert.Single<T> returns T, so these return a Task without the assertion being asynchronous

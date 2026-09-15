@@ -172,6 +172,186 @@ public sealed class AssertRaiseTests
             """);
     }
 
+    [Fact]
+    public void AssertRaise_EventRaisedWithNullArguments_Success()
+    {
+        var genericSource = new GenericEventSource<CustomEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+
+        var genericResult = AssertionsAssert.Raise<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => genericSource.Raise(genericSource, null!));
+        var nonGenericResult = AssertionsAssert.Raise(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => nonGenericSource.Raise(nonGenericSource, null!));
+        var genericAnyResult = AssertionsAssert.RaiseAny<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => genericSource.Raise(genericSource, null!));
+        var nonGenericAnyResult = AssertionsAssert.RaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => nonGenericSource.Raise(nonGenericSource, null!));
+
+        AssertionsAssert.Same(genericSource, genericResult.Sender);
+        AssertionsAssert.Null(genericResult.Arguments);
+        AssertionsAssert.Same(nonGenericSource, nonGenericResult.Sender);
+        AssertionsAssert.Null(nonGenericResult.Arguments);
+        AssertionsAssert.Same(genericSource, genericAnyResult.Sender);
+        AssertionsAssert.Null(genericAnyResult.Arguments);
+        AssertionsAssert.Same(nonGenericSource, nonGenericAnyResult.Sender);
+        AssertionsAssert.Null(nonGenericAnyResult.Arguments);
+    }
+
+    [Fact]
+    public void AssertRaise_ReturnsTheFirstMatchingEvent()
+    {
+        var source = new GenericEventSource<BaseEventArgs>();
+        var firstSender = new object();
+        var secondSender = new object();
+        var thirdSender = new object();
+        var derivedArguments = new DerivedEventArgs();
+        var firstBaseArguments = new BaseEventArgs();
+        var secondBaseArguments = new BaseEventArgs();
+
+        var result = AssertionsAssert.Raise<BaseEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () =>
+            {
+                source.Raise(firstSender, derivedArguments);
+                source.Raise(secondSender, firstBaseArguments);
+                source.Raise(thirdSender, secondBaseArguments);
+            });
+
+        AssertionsAssert.Same(secondSender, result.Sender);
+        AssertionsAssert.Same(firstBaseArguments, result.Arguments);
+    }
+
+    [Fact]
+    public void AssertRaise_ReturnsTheSenderOfTheMatchingEvent()
+    {
+        var source = new NonGenericEventSource();
+        var firstArguments = new CustomEventArgs("first");
+        var secondSender = new object();
+
+        var result = AssertionsAssert.RaiseAny(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () =>
+            {
+                source.Raise(sender: null, firstArguments);
+                source.Raise(secondSender, new CustomEventArgs("second"));
+            });
+
+        AssertionsAssert.Null(result.Sender);
+        AssertionsAssert.Same(firstArguments, result.Arguments);
+    }
+
+    [Fact]
+    public void AssertRaise_FailsWhenNoRaisedEventMatches()
+    {
+        var source = new NonGenericEventSource();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Raise(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () =>
+            {
+                source.Raise(source, new CustomEventArgs("first"));
+                source.Raise(source, new DerivedEventArgs());
+            }), """
+            Assert.Raise() assertion failed.
+            Expression: () =>
+                        {
+                            source.Raise(source, new CustomEventArgs("first"));
+                            source.Raise(source, new DerivedEventArgs());
+                        }
+            Expected event args type: System.EventArgs
+            Actual event args type:   Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            """);
+    }
+
+    [Fact]
+    public void DoesNotRaise_FailsWhenEventIsRaisedWithNullArguments()
+    {
+        var genericSource = new GenericEventSource<CustomEventArgs>();
+        var nonGenericSource = new NonGenericEventSource();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaise<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => genericSource.Raise(genericSource, null!)), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual:       () => genericSource.Raise(genericSource, null!)
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaise(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => nonGenericSource.Raise(nonGenericSource, null!)), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact EventArgs
+            Actual:       () => nonGenericSource.Raise(nonGenericSource, null!)
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaiseAny<CustomEventArgs>(
+            handler => genericSource.Raised += handler,
+            handler => genericSource.Raised -= handler,
+            () => genericSource.Raise(genericSource, null!)), """
+            Assert.DoesNotRaiseAny() assertion failed.
+            Not expected: event assignable to Meziantou.Framework.Assertions.Tests.AssertRaiseTests+CustomEventArgs
+            Actual:       () => genericSource.Raise(genericSource, null!)
+            """);
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaiseAny(
+            handler => nonGenericSource.Raised += handler,
+            handler => nonGenericSource.Raised -= handler,
+            () => nonGenericSource.Raise(nonGenericSource, null!)), """
+            Assert.DoesNotRaiseAny() assertion failed.
+            Not expected: event assignable to EventArgs
+            Actual:       () => nonGenericSource.Raise(nonGenericSource, null!)
+            """);
+    }
+
+    [Fact]
+    public void DoesNotRaise_FailsWhenALaterEventMatches()
+    {
+        var source = new GenericEventSource<BaseEventArgs>();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotRaise<BaseEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () =>
+            {
+                source.Raise(source, new DerivedEventArgs());
+                source.Raise(source, new BaseEventArgs());
+            }), """
+            Assert.DoesNotRaise() assertion failed.
+            Not expected: event with exact Meziantou.Framework.Assertions.Tests.AssertRaiseTests+BaseEventArgs
+            Actual:       () =>
+                        {
+                            source.Raise(source, new DerivedEventArgs());
+                            source.Raise(source, new BaseEventArgs());
+                        }
+            """);
+    }
+
+    [Fact]
+    public void DoesNotRaise_SucceedsWhenNoRaisedEventMatches()
+    {
+        var source = new GenericEventSource<BaseEventArgs>();
+
+        AssertionsAssert.DoesNotRaise<BaseEventArgs>(
+            handler => source.Raised += handler,
+            handler => source.Raised -= handler,
+            () =>
+            {
+                source.Raise(source, new DerivedEventArgs());
+                source.Raise(source, new DerivedEventArgs());
+            });
+    }
+
     private sealed class GenericEventSource<TEventArgs>
         where TEventArgs : EventArgs
     {

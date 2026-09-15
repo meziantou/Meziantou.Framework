@@ -44,8 +44,7 @@ public partial class Assert
         using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
         actualSnapshot.EnsureComplete();
         expectedSnapshot.EnsureComplete();
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (System.Collections.IEqualityComparer?)null);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+        if (!AreValuesEqualUnordered(expectedSnapshot.Items, actualSnapshot.Items, comparer: null))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -91,8 +90,7 @@ public partial class Assert
         await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
         await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
         await expectedSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (System.Collections.IEqualityComparer?)null);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+        if (!AreValuesEqualUnordered(expectedSnapshot.Items, actualSnapshot.Items, comparer: null))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -107,8 +105,7 @@ public partial class Assert
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         expectedSnapshot.EnsureComplete();
         actualSnapshot.EnsureComplete();
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, (System.Collections.IEqualityComparer?)null);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+        if (!AreValuesEqualUnordered(expectedSnapshot.Items, actualSnapshot.Items, comparer: null))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -123,8 +120,7 @@ public partial class Assert
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         expectedSnapshot.EnsureComplete();
         actualSnapshot.EnsureComplete();
-        var (missingExpectedIndex, unexpectedActualIndex) = GetEqualUnorderedMismatch(expectedSnapshot.Items, actualSnapshot.Items, comparer);
-        if (missingExpectedIndex is not null || unexpectedActualIndex is not null)
+        if (!AreValuesEqualUnordered(expectedSnapshot.Items, actualSnapshot.Items, comparer))
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualUnorderedAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));

@@ -19,7 +19,7 @@ public partial class Assert
             {
                 inspectors[i](actualSnapshot.Items[i]);
             }
-            catch (Exception exception)
+            catch (Exception exception) when (!IsXunitSkipException(exception))
             {
                 throw new AssertionException(ErrorFormatter.Format(new CollectionInspectorAssertionError<T>(actualSnapshot, i, exception, actualExpression, message)), exception);
             }

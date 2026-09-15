@@ -31,7 +31,7 @@ public partial class Assert
 
     public static void NotEqual(decimal expected, decimal actual, decimal tolerance, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (expected == actual || Math.Abs(expected - actual) <= tolerance)
+        if (IsWithinTolerance(expected, actual, tolerance))
         {
             throw new AssertionException(ErrorFormatter.Format(new NegativeEqualWithToleranceAssertionError<decimal>(expected, actual, tolerance, message, actualExpression, expectedExpression)));
         }
@@ -73,10 +73,15 @@ public partial class Assert
 
     public static void NotEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (expected.SequenceEqual(actual))
-        {
-            throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<T, T>(nameof(NotEqual), "Not expected", expected, actual, actualExpression, expectedExpression, message)));
-        }
+        // Assert.Equal compares the items as values, so a boxed 1 equals a boxed 1L. Comparing the raw bytes gives the
+        // same answer only for the primitive types BitwiseEquatable admits.
+        var areEqual = BitwiseEquatable<T>.IsSupported
+            ? expected.Length == actual.Length && BitwiseSequenceEqual(expected, actual)
+            : SpansEqual(expected, actual);
+        if (!areEqual)
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanValueAssertionError<T, T>(nameof(NotEqual), "Not expected", expected, actual, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
@@ -98,13 +103,7 @@ public partial class Assert
 
     public static void NotEqual<T>(IEnumerable<T> expected, IEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-            return;
-
-        if (!CollectionsEqual(expected, actual, (IEqualityComparer<T>)EqualityComparer<T>.Default))
-            return;
-
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        NotEqual(expected, actual, comparer: null, message, actualExpression, expectedExpression);
     }
 
     public static void NotEqual<T>(IEnumerable<T> expected, IEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -112,10 +111,13 @@ public partial class Assert
         if (actual is null)
             return;
 
-        if (!CollectionsEqual(expected, actual, comparer))
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        if (IndexOfFirstDifference(expectedSnapshot, actualSnapshot, comparer) >= 0)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<T>, IEnumerable<T>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        // The sequences may not be enumerable twice, so the message is built from what the comparison already read.
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     [OverloadResolutionPriority(-1)]
@@ -124,23 +126,17 @@ public partial class Assert
         if (actual is null)
             return;
 
-        if (!CollectionsEqual(expected, actual, (System.Collections.IEqualityComparer?)null))
+        using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
+        if (IndexOfFirstValueDifference(expectedSnapshot, actualSnapshot, comparer: null) >= 0)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IEnumerable<TExpected>, IEnumerable<TActual>?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T>? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-            return;
-
-        await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (IEqualityComparer<T>)EqualityComparer<T>.Default).ConfigureAwait(false))
-            return;
-
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+        await NotEqual(expected, actual, comparer: null, message, actualExpression, expectedExpression).ConfigureAwait(false);
     }
 
     public static async Task NotEqual<T>(IAsyncEnumerable<T> expected, IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -150,7 +146,7 @@ public partial class Assert
 
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         await using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, comparer).ConfigureAwait(false))
+        if (await IndexOfFirstDifferenceAsync(expectedSnapshot, actualSnapshot, comparer).ConfigureAwait(false) >= 0)
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<T>, IReadOnlyList<T>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -164,7 +160,7 @@ public partial class Assert
 
         await using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
         await using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-        if (!await AsyncCollectionsEqual(expectedSnapshot, actualSnapshot, (System.Collections.IEqualityComparer?)null).ConfigureAwait(false))
+        if (await IndexOfFirstValueDifferenceAsync(expectedSnapshot, actualSnapshot, comparer: null).ConfigureAwait(false) >= 0)
             return;
 
         throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<TExpected>, IReadOnlyList<TActual>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
@@ -172,13 +168,7 @@ public partial class Assert
 
     public static void NotEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        if (actual is null)
-            return;
-
-        if (!CollectionsEqual(EnumerateObjects(expected), EnumerateObjects(actual), (System.Collections.IEqualityComparer?)null))
-            return;
-
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        NotEqual(expected, actual, comparer: null, message, actualExpression, expectedExpression);
     }
 
     public static void NotEqual(System.Collections.IEnumerable expected, System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
@@ -186,10 +176,12 @@ public partial class Assert
         if (actual is null)
             return;
 
-        if (!CollectionsEqual(EnumerateObjects(expected), EnumerateObjects(actual), comparer))
+        using var actualSnapshot = CollectionSnapshot.Create(actual);
+        using var expectedSnapshot = CollectionSnapshot.Create(expected);
+        if (IndexOfFirstValueDifference(expectedSnapshot, actualSnapshot, comparer) >= 0)
             return;
 
-        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<System.Collections.IEnumerable, System.Collections.IEnumerable?>("Not expected", expected, actual, actualExpression, expectedExpression, message)));
+        throw new AssertionException(ErrorFormatter.Format(new NotEqualAssertionError<IReadOnlyList<object?>, IReadOnlyList<object?>>("Not expected", expectedSnapshot.Items, actualSnapshot.Items, actualExpression, expectedExpression, message)));
     }
 
     private static bool SpansEqual<TExpected, TActual>(ReadOnlySpan<TExpected> expected, ReadOnlySpan<TActual> actual)
@@ -204,82 +196,5 @@ public partial class Assert
         }
 
         return true;
-    }
-
-    private static bool CollectionsEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual, IEqualityComparer<T>? comparer)
-    {
-        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
-        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
-        comparer ??= EqualityComparer<T>.Default;
-
-        for (var index = 0; ; index++)
-        {
-            var actualHasNext = actualSnapshot.TryGetItem(index, out var actualItem);
-            var expectedHasNext = expectedSnapshot.TryGetItem(index, out var expectedItem);
-            if (!actualHasNext && !expectedHasNext)
-                return true;
-
-            if (actualHasNext != expectedHasNext)
-                return false;
-
-            if (!comparer.Equals(expectedItem, actualItem))
-                return false;
-        }
-    }
-
-    private static bool CollectionsEqual<TExpected, TActual>(IEnumerable<TExpected> expected, IEnumerable<TActual> actual, System.Collections.IEqualityComparer? comparer)
-    {
-        using var actualSnapshot = CollectionSnapshot.Create<TActual>(actual);
-        using var expectedSnapshot = CollectionSnapshot.Create<TExpected>(expected);
-
-        for (var index = 0; ; index++)
-        {
-            var actualHasNext = actualSnapshot.TryGetItem(index, out var actualItem);
-            var expectedHasNext = expectedSnapshot.TryGetItem(index, out var expectedItem);
-            if (!actualHasNext && !expectedHasNext)
-                return true;
-
-            if (actualHasNext != expectedHasNext)
-                return false;
-
-            if (!ValuesEqual(expectedItem, actualItem, comparer))
-                return false;
-        }
-    }
-
-    private static async Task<bool> AsyncCollectionsEqual<T>(AsyncCollectionSnapshot<T> expectedSnapshot, AsyncCollectionSnapshot<T> actualSnapshot, IEqualityComparer<T>? comparer)
-    {
-        comparer ??= EqualityComparer<T>.Default;
-
-        for (var index = 0; ; index++)
-        {
-            var (actualHasNext, actualItem) = await actualSnapshot.TryGetItem(index).ConfigureAwait(false);
-            var (expectedHasNext, expectedItem) = await expectedSnapshot.TryGetItem(index).ConfigureAwait(false);
-            if (!actualHasNext && !expectedHasNext)
-                return true;
-
-            if (actualHasNext != expectedHasNext)
-                return false;
-
-            if (!comparer.Equals(expectedItem, actualItem))
-                return false;
-        }
-    }
-
-    private static async Task<bool> AsyncCollectionsEqual<TExpected, TActual>(AsyncCollectionSnapshot<TExpected> expectedSnapshot, AsyncCollectionSnapshot<TActual> actualSnapshot, System.Collections.IEqualityComparer? comparer)
-    {
-        for (var index = 0; ; index++)
-        {
-            var (actualHasNext, actualItem) = await actualSnapshot.TryGetItem(index).ConfigureAwait(false);
-            var (expectedHasNext, expectedItem) = await expectedSnapshot.TryGetItem(index).ConfigureAwait(false);
-            if (!actualHasNext && !expectedHasNext)
-                return true;
-
-            if (actualHasNext != expectedHasNext)
-                return false;
-
-            if (!ValuesEqual(expectedItem, actualItem, comparer))
-                return false;
-        }
     }
 }

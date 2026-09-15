@@ -46,8 +46,7 @@ public partial class Assert
             if (!comparer.Equals(expected, item))
                 continue;
 
-            actualSnapshot.EnsureComplete();
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, IReadOnlyList<T>>("Not expected item", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<T, IReadOnlyList<T>>("Not expected item", expected, ErrorFormatter.GetFormattedItems(actualSnapshot), actualExpression, expectedExpression, message)));
         }
     }
 
@@ -74,16 +73,34 @@ public partial class Assert
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<TKey>(nameof(DoesNotContain), "Expected key expression", "Not expected key", expected, actualExpression, expectedExpression, message)));
         }
 
-        comparer ??= EqualityComparer<TKey>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<KeyValuePair<TKey, TValue>>(actual);
+        if (!ContainsKey(expected, actual, actualSnapshot, comparer))
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, IReadOnlyList<KeyValuePair<TKey, TValue>>>("Not expected key", expected, ErrorFormatter.GetFormattedItems(actualSnapshot), actualExpression, expectedExpression, message)));
+    }
+
+    /// <summary>Looks the key up the same way the matching Contains overload does, so the two assertions are exact complements.</summary>
+    private static bool ContainsKey<TKey, TValue>(TKey expected, IEnumerable<KeyValuePair<TKey, TValue>> actual, CollectionSnapshot<KeyValuePair<TKey, TValue>> actualSnapshot, IEqualityComparer<TKey>? comparer)
+    {
+        // A dictionary compares keys with its own comparer. Dictionaries reject a null key, which they cannot contain.
+        if (expected is not null)
+        {
+            if (actual is IReadOnlyDictionary<TKey, TValue> readOnlyDictionary && readOnlyDictionary.ContainsKey(expected))
+                return true;
+
+            if (actual is IDictionary<TKey, TValue> dictionary && dictionary.ContainsKey(expected))
+                return true;
+        }
+
+        comparer ??= EqualityComparer<TKey>.Default;
         for (var index = 0; actualSnapshot.TryGetItem(index, out var item); index++)
         {
-            if (!comparer.Equals(expected, item.Key))
-                continue;
-
-            actualSnapshot.EnsureComplete();
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<TKey, IReadOnlyList<KeyValuePair<TKey, TValue>>>("Not expected key", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+            if (comparer.Equals(expected, item.Key))
+                return true;
         }
+
+        return false;
     }
 
     [OverloadResolutionPriority(1)]
@@ -115,8 +132,7 @@ public partial class Assert
             if (!object.Equals(expected, item))
                 continue;
 
-            actualSnapshot.EnsureComplete();
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, ErrorFormatter.GetFormattedItems(actualSnapshot), actualExpression, expectedExpression, message)));
         }
     }
 
@@ -199,7 +215,7 @@ public partial class Assert
         // A string is itself an IEnumerable, so without this guard it binds here rather than to the object overload
         // and is searched as a char subsequence of a collection whose elements are not chars. That comparison can
         // never match, which makes the assertion impossible to fail.
-        if (expected is string)
+        if (expected is string && actual is not IEnumerable<char>)
         {
             DoesNotContainValue(expected, actual, comparer, message, actualExpression, expectedExpression);
             return;
@@ -223,8 +239,7 @@ public partial class Assert
             if (!Equals(expected, item, comparer))
                 continue;
 
-            actualSnapshot.EnsureComplete();
-            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, actualSnapshot.Items, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new DoesNotContainAssertionError<object?, IReadOnlyList<object?>>("Not expected", expected, ErrorFormatter.GetFormattedItems(actualSnapshot), actualExpression, expectedExpression, message)));
         }
     }
 }

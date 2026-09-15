@@ -261,6 +261,49 @@ public sealed class AssertCountTests
     }
 
     [Fact]
+    public async Task DoesNotHaveCount_DoesNotDrainEndlessSequence()
+    {
+        AssertionsAssert.DoesNotHaveCount(3, AssertionTestHelpers.EndlessSequence());
+        AssertionsAssert.DoesNotHaveCount(3, (System.Collections.IEnumerable)AssertionTestHelpers.EndlessSequence());
+        await AssertionsAssert.DoesNotHaveCount(3, AssertionTestHelpers.ToAsyncEnumerable(AssertionTestHelpers.EndlessSequence()));
+    }
+
+    [Fact]
+    public void DoesNotHaveCount_StopsEnumeratingAfterExpectedCountPlusOne()
+    {
+        var enumerated = 0;
+
+        AssertionsAssert.DoesNotHaveCount(3, CountingSequence(10, () => enumerated++));
+
+        AssertionsAssert.Equal(4, enumerated);
+    }
+
+    [Fact]
+    public void DoesNotHaveCount_UsesCountOfReadOnlyCollectionWithoutEnumerating()
+    {
+        var enumerated = 0;
+        var actual = new CountingCollection(3, () => enumerated++);
+
+        AssertionsAssert.DoesNotHaveCount(2, actual);
+
+        AssertionsAssert.Equal(0, enumerated);
+    }
+
+    [Fact]
+    public void DoesNotHaveCount_FailsWhenSequenceHasExpectedCount()
+    {
+        var actual = CountingSequence(3, () => { });
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.DoesNotHaveCount(3, actual), """
+            Assert.DoesNotHaveCount() assertion failed.
+            Expression: actual
+            Not expected count: 3
+            Actual count:       3
+            Actual: [0, 1, 2]
+            """);
+    }
+
+    [Fact]
     public void DoesNotHaveCount_EnumeratesASingleUseSequenceOnlyOnce()
     {
         var actual = AssertionTestHelpers.SingleUse(1, 2, 3);

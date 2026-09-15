@@ -214,15 +214,31 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
 
     private sealed class LazySnapshot : CollectionSnapshot<T>
     {
+        /// <summary>
+        /// Upper bound of the capacity reserved before any item is read. Many assertions stop after a few items
+        /// (NotEmpty, StartsWith, a failing All...), so sizing the cache for a large known count up front would
+        /// allocate memory for items that are never observed.
+        /// </summary>
+        private const int MaxInitialCapacity = 64;
+
         private readonly List<T> _cache;
         private readonly IEnumerable<T> _source;
+        private readonly int _knownCount;
         private IEnumerator<T>? _enumerator;
         private bool _isComplete;
 
         public LazySnapshot(IEnumerable<T> source)
         {
             _source = source;
-            _cache = Enumerable.TryGetNonEnumeratedCount(source, out var count) ? new List<T>(count) : [];
+            if (Enumerable.TryGetNonEnumeratedCount(source, out var count))
+            {
+                _knownCount = count;
+                _cache = new List<T>(Math.Min(count, MaxInitialCapacity));
+            }
+            else
+            {
+                _cache = [];
+            }
         }
 
         public override bool IsComplete => _isComplete;
@@ -268,6 +284,8 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
 
         protected override void EnsureCompleteCore()
         {
+            // Every item is about to be read, so the known count can size the cache without over-allocating
+            _cache.EnsureCapacity(_knownCount);
             _enumerator ??= _source.GetEnumerator();
 
             Debug.Assert(_enumerator is not null);

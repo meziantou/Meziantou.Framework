@@ -59,6 +59,8 @@ public sealed class RuntimeTypeConditionRuleTests : AssertionsAnalyzerTestBase
                 {
                     Assert.True(value.GetType() == type);
                     Assert.True(type == typeof(string));
+                    Assert.False(value.GetType() == typeof(int?));
+                    Assert.True(value.GetType() != typeof(Nullable<int>));
                 }
             }
             """;

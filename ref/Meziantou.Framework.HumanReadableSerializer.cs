@@ -112,6 +112,7 @@ namespace Meziantou.Framework.HumanReadable
         public bool IsReadOnly { get => throw null; }
         public int MaxDepth { get => throw null; set { } }
         public bool ShowInvisibleCharactersInValues { get => throw null; set { } }
+        public string NewLine { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.HumanReadable.HumanReadableConverter> Converters { get => throw null; }
         public System.Collections.Generic.IComparer<string>? PropertyOrder { get => throw null; set { } }
         public System.Collections.Generic.IComparer<string>? DictionaryKeyOrder { get => throw null; set { } }

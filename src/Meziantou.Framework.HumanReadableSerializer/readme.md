@@ -29,6 +29,8 @@ var options = new HumanReadableSerializerOptions()
 HumanReadableSerializer.Serialize(obj, options);
 ````
 
+Lines are separated by `\n` on every platform, including line breaks inside multi-line values. Set `NewLine = "\r\n"` to use Windows line endings instead.
+
 Available attributes:
 - `[HumanReadableIgnore]` allows to ignore a property or a field
 - `[HumanReadableIncludeAttribute]` allows to include a property or a field

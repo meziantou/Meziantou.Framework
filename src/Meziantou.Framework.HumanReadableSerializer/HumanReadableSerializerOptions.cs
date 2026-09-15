@@ -42,34 +42,28 @@ public sealed record HumanReadableSerializerOptions
     }
 
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
-    private HumanReadableSerializerOptions(HumanReadableSerializerOptions? options)
+    private HumanReadableSerializerOptions(HumanReadableSerializerOptions options)
     {
-        _memberAttributes = [];
-        _typeAttributes = [];
+        // Field initializers are not executed in a record copy constructor, so every property must be copied explicitly
+        _memberAttributes = [.. options._memberAttributes];
+        _typeAttributes = [.. options._typeAttributes];
         _memberInfoCache = new();
         _convertersCache = new();
-        _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
+        _valueFormatters = new(options._valueFormatters, StringComparer.OrdinalIgnoreCase);
 
         Converters = new ConverterList(this);
-        if (options != null)
+        foreach (var converter in options.Converters)
         {
-            MaxDepth = options.MaxDepth;
-            ShowInvisibleCharactersInValues = options.ShowInvisibleCharactersInValues;
-            IncludeFields = options.IncludeFields;
-            DefaultIgnoreCondition = options.DefaultIgnoreCondition;
-            foreach (var converter in options.Converters)
-            {
-                Converters.Add(converter);
-            }
-
-            _typeAttributes.AddRange(options._typeAttributes);
-            _memberAttributes.AddRange(options._memberAttributes);
-
-            foreach (var formatter in options._valueFormatters)
-            {
-                _valueFormatters.Add(formatter.Key, formatter.Value);
-            }
+            Converters.Add(converter);
         }
+
+        MaxDepth = options.MaxDepth;
+        ShowInvisibleCharactersInValues = options.ShowInvisibleCharactersInValues;
+        PropertyOrder = options.PropertyOrder;
+        DictionaryKeyOrder = options.DictionaryKeyOrder;
+        IncludeFields = options.IncludeFields;
+        IncludeObsoleteMembers = options.IncludeObsoleteMembers;
+        DefaultIgnoreCondition = options.DefaultIgnoreCondition;
     }
 
     /// <summary>Gets or creates serialization data for the current serialization scope.</summary>

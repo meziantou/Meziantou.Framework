@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Unicode;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
@@ -9,6 +10,9 @@ internal sealed class JsonNodeDocument
     {
         AllowTrailingCommas = true,
         CommentHandling = JsonCommentHandling.Skip,
+
+        // Otherwise a duplicate key is only reported when the object is first read, as an ArgumentException
+        AllowDuplicateProperties = false,
     };
 
     private JsonNodeDocument(JsonNode root)
@@ -18,6 +22,12 @@ internal sealed class JsonNodeDocument
 
     public JsonNode Root { get; }
 
+    /// <summary>Parses a JSON document, reporting any malformed content as a <see cref="JsonException"/>.</summary>
+    /// <remarks>
+    /// System.Text.Json only reports invalid strings when they are read. Everything is validated here instead, so that a
+    /// scanner only has to handle <see cref="JsonException"/>.
+    /// </remarks>
+    /// <exception cref="JsonException">The document is not valid JSON.</exception>
     public static async ValueTask<JsonNodeDocument> ParseAsync(Stream stream, CancellationToken cancellationToken)
     {
         var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
@@ -31,13 +41,60 @@ internal sealed class JsonNodeDocument
             return new JsonNodeDocument(ParseNode(text));
         }
 
-        var root = await JsonNode.ParseAsync(stream, nodeOptions: null, documentOptions: JsonDocumentOptions, cancellationToken: cancellationToken).ConfigureAwait(false) ?? throw new JsonException("Expected a JSON value.");
-        return new JsonNodeDocument(root);
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+        var utf8Json = memoryStream.GetBuffer().AsSpan(0, (int)memoryStream.Length);
+        if (utf8Json is [0xEF, 0xBB, 0xBF, ..])
+        {
+            utf8Json = utf8Json[3..];
+        }
+
+        return new JsonNodeDocument(ParseUtf8(utf8Json));
     }
 
+    /// <exception cref="JsonException">The document is not valid JSON.</exception>
     public static JsonNode ParseNode(string text)
     {
-        return JsonNode.Parse(text, nodeOptions: null, documentOptions: JsonDocumentOptions) ?? throw new JsonException("Expected a JSON value.");
+        // Encoding replaces lone surrogates, so the UTF-8 bytes are always valid
+        return ParseUtf8(Encoding.UTF8.GetBytes(text));
+    }
+
+    private static JsonNode ParseUtf8(ReadOnlySpan<byte> utf8Json)
+    {
+        if (!Utf8.IsValid(utf8Json))
+            throw new JsonException("The JSON document is not valid UTF-8.");
+
+        ValidateEscapedStrings(utf8Json);
+        return JsonNode.Parse(utf8Json, nodeOptions: null, documentOptions: JsonDocumentOptions) ?? throw new JsonException("Expected a JSON value.");
+    }
+
+    /// <summary>Ensures every escaped string decodes, which an escaped lone surrogate such as <c>"\uD800"</c> does not.</summary>
+    private static void ValidateEscapedStrings(ReadOnlySpan<byte> utf8Json)
+    {
+        if (utf8Json.IndexOf("\\u"u8) < 0)
+            return;
+
+        var reader = new Utf8JsonReader(utf8Json, new JsonReaderOptions
+        {
+            AllowTrailingCommas = JsonDocumentOptions.AllowTrailingCommas,
+            CommentHandling = JsonDocumentOptions.CommentHandling,
+            MaxDepth = JsonDocumentOptions.MaxDepth,
+        });
+
+        try
+        {
+            while (reader.Read())
+            {
+                if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName && reader.ValueIsEscaped)
+                {
+                    _ = reader.GetString();
+                }
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new JsonException("The JSON document contains a string that cannot be decoded.", ex);
+        }
     }
 
     public static string GetPath(JsonNode node)

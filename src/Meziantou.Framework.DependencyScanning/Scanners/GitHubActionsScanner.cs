@@ -3,7 +3,7 @@ using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilitie
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans GitHub Actions workflow YAML files for action references and Docker images.</summary>
+/// <summary>Scans GitHub Actions workflow files and action metadata files (<c>action.yml</c>) for action references and Docker images.</summary>
 public sealed class GitHubActionsScanner : DependencyScanner
 {
     private const string DockerPrefix = "docker://";
@@ -12,19 +12,14 @@ public sealed class GitHubActionsScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
+        // https://docs.github.com/en/actions/sharing-automations/creating-actions/metadata-syntax-for-github-actions
+        if (context.HasFileName("action.yml", ignoreCase: false) || context.HasFileName("action.yaml", ignoreCase: false))
+            return true;
+
         // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#about-yaml-syntax-for-workflows
         if (context.HasExtension([".yml", ".yaml"], ignoreCase: false))
         {
-            var directoryName = Path.GetFileName(context.Directory);
-            if (directoryName is "workflows")
-            {
-                var parentDirectory = Path.GetDirectoryName(context.Directory);
-                directoryName = Path.GetFileName(parentDirectory);
-                if (directoryName is ".github")
-                {
-                    return Path.GetDirectoryName(parentDirectory).Equals(context.RootDirectory, StringComparison.Ordinal);
-                }
-            }
+            return context.RelativeDirectory is ".github/workflows" or ".github\\workflows";
         }
 
         return false;
@@ -32,15 +27,16 @@ public sealed class GitHubActionsScanner : DependencyScanner
 
     public override ValueTask ScanAsync(ScanFileContext context)
     {
-        var yaml = LoadYamlDocument(context.Content);
+        var yaml = LoadYamlFile(context);
         if (yaml is null)
             return ValueTask.CompletedTask;
 
-        foreach (var document in yaml)
+        foreach (var document in yaml.Stream)
         {
             if (document.Contents is not YamlMapping rootNode)
                 continue;
 
+            // Workflow
             var jobsNode = GetProperty(rootNode, "jobs", StringComparison.OrdinalIgnoreCase);
             if (jobsNode is YamlMapping jobs)
             {
@@ -48,23 +44,17 @@ public sealed class GitHubActionsScanner : DependencyScanner
                 {
                     if (job.Value is YamlMapping jobNode)
                     {
-                        ExtractUsesProperty(context, jobNode);
-
-                        var stepsNode = GetProperty(jobNode, "steps", StringComparison.OrdinalIgnoreCase);
-                        if (stepsNode is YamlSequence steps)
-                        {
-                            foreach (var step in steps.OfType<YamlMapping>())
-                            {
-                                ExtractUsesProperty(context, step);
-                            }
-                        }
+                        ExtractUsesProperty(yaml, jobNode);
+                        ExtractSteps(yaml, jobNode);
 
                         var containerNode = GetProperty(jobNode, "container", StringComparison.OrdinalIgnoreCase);
                         if (containerNode is YamlMapping container)
                         {
-                            var imageNode = GetProperty(container, "image", StringComparison.OrdinalIgnoreCase);
-                            ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
+                            containerNode = GetProperty(container, "image", StringComparison.OrdinalIgnoreCase);
                         }
+
+                        // container: node:18
+                        yaml.ReportDockerImage(this, containerNode);
 
                         var servicesNode = GetProperty(jobNode, "services", StringComparison.OrdinalIgnoreCase);
                         if (servicesNode is YamlMapping services)
@@ -74,11 +64,26 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 if (serviceNameNode.Value is YamlMapping serviceNode)
                                 {
                                     var imageNode = GetProperty(serviceNode, "image", StringComparison.Ordinal);
-                                    ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
+                                    yaml.ReportDockerImage(this, imageNode);
                                 }
                             }
                         }
                     }
+                }
+            }
+
+            // Action metadata file (action.yml)
+            var runsNode = GetProperty(rootNode, "runs", StringComparison.Ordinal);
+            if (runsNode is YamlMapping runs)
+            {
+                // Composite action
+                ExtractSteps(yaml, runs);
+
+                // Docker container action: image is either a Dockerfile path or docker://image:tag
+                var imageNode = GetProperty(runs, "image", StringComparison.Ordinal);
+                if (GetScalarValue(imageNode) is { } image && image.StartsWith(DockerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    yaml.ReportDockerImage(this, imageNode, DockerPrefix.Length);
                 }
             }
         }
@@ -86,7 +91,19 @@ public sealed class GitHubActionsScanner : DependencyScanner
         return ValueTask.CompletedTask;
     }
 
-    private void ExtractUsesProperty(ScanFileContext context, YamlElement node)
+    private void ExtractSteps(YamlFile yaml, YamlMapping node)
+    {
+        var stepsNode = GetProperty(node, "steps", StringComparison.OrdinalIgnoreCase);
+        if (stepsNode is YamlSequence steps)
+        {
+            foreach (var step in steps.OfType<YamlMapping>())
+            {
+                ExtractUsesProperty(yaml, step);
+            }
+        }
+    }
+
+    private void ExtractUsesProperty(YamlFile yaml, YamlElement node)
     {
         var uses = GetProperty(node, "uses", StringComparison.OrdinalIgnoreCase);
         if (uses is YamlValue usesValue && usesValue.Value is { } value)
@@ -94,31 +111,13 @@ public sealed class GitHubActionsScanner : DependencyScanner
             // uses: docker://alpine:3.8
             if (value.StartsWith(DockerPrefix, StringComparison.OrdinalIgnoreCase)) // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#example-using-a-docker-hub-action
             {
-                var index = value.AsSpan()[DockerPrefix.Length..].LastIndexOf(':');
-                if (index > 0)
-                {
-                    var name = value[DockerPrefix.Length..(DockerPrefix.Length + index)];
-                    var version = value[(DockerPrefix.Length + index + 1)..];
-
-                    var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
-                    var versionLocation = GetLocation(context, usesValue, start: DockerPrefix.Length + index + 1, length: version.Length);
-
-                    context.ReportDependency(this, name, version, DependencyType.DockerImage, nameLocation, versionLocation);
-                }
-                else
-                {
-                    // no version
-                    var name = value[DockerPrefix.Length..];
-                    var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
-
-                    context.ReportDependency(this, name, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null);
-
-                }
+                yaml.ReportDockerImage(this, usesValue, DockerPrefix.Length);
             }
             // use: action@v1
-            else
+            // Local actions and reusable workflows (uses: ./.github/actions/local) are part of the repository, not dependencies
+            else if (!value.StartsWith("./", StringComparison.Ordinal) && !value.StartsWith("../", StringComparison.Ordinal))
             {
-                ReportDependencyWithSeparator(this, context, usesValue, DependencyType.GitHubActions, '@');
+                yaml.ReportDependencyWithSeparator(this, usesValue, DependencyType.GitHubActions, '@');
             }
         }
     }

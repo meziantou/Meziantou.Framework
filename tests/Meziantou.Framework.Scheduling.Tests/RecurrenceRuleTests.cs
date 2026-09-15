@@ -1061,6 +1061,33 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
+    public void Until_Floating_IsComparedAsAWallClockInATimeZone()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240310T090000");
+        var startDate = new DateTime(2024, 03, 09, 09, 00, 00);
+
+        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
+
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)));
+    }
+
+    [Fact]
+    public void Until_Date_IncludesItsDayInATimeZoneWestOfUtc()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240103");
+
+        var occurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01), NewYork);
+
+        // Read as midnight UTC, January 3 at midnight in New York (05:00Z) would have been excluded
+        AssertOccurrences(occurrences,
+            new DateTimeOffset(2024, 01, 01, 00, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 01, 02, 00, 00, 00, TimeSpan.FromHours(-5)),
+            new DateTimeOffset(2024, 01, 03, 00, 00, 00, TimeSpan.FromHours(-5)));
+    }
+
+    [Fact]
     public void Daily_TimeZone_Count_IsUnaffectedByATransition()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=5");
@@ -1634,19 +1661,6 @@ public partial class RecurrenceRuleTests
     }
 
     [Fact]
-    public void Until_Floating_IsComparedAsAWallClockInATimeZone()
-    {
-        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240310T090000");
-        var startDate = new DateTime(2024, 03, 09, 09, 00, 00);
-
-        var occurrences = rrule.GetNextOccurrences(startDate, NewYork);
-
-        AssertOccurrences(occurrences,
-            new DateTimeOffset(2024, 03, 09, 09, 00, 00, TimeSpan.FromHours(-5)),
-            new DateTimeOffset(2024, 03, 10, 09, 00, 00, TimeSpan.FromHours(-4)));
-    }
-
-    [Fact]
     public void Until_Date_IsParsedAsAWallClockValueAndWrittenBackAsADate()
     {
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240105");
@@ -1663,20 +1677,6 @@ public partial class RecurrenceRuleTests
         rrule.EndDate = new DateTime(2024, 01, 06);
 
         Assert.Equal("FREQ=DAILY;UNTIL=20240106T000000", rrule.Text);
-    }
-
-    [Fact]
-    public void Until_Date_IncludesItsDayInATimeZoneWestOfUtc()
-    {
-        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240103");
-
-        var occurrences = rrule.GetNextOccurrences(new DateTime(2024, 01, 01), NewYork);
-
-        // Read as midnight UTC, January 3 at midnight in New York (05:00Z) would have been excluded
-        AssertOccurrences(occurrences,
-            new DateTimeOffset(2024, 01, 01, 00, 00, 00, TimeSpan.FromHours(-5)),
-            new DateTimeOffset(2024, 01, 02, 00, 00, 00, TimeSpan.FromHours(-5)),
-            new DateTimeOffset(2024, 01, 03, 00, 00, 00, TimeSpan.FromHours(-5)));
     }
 
     [Fact]

@@ -4,6 +4,18 @@ namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
+    // Arrays would otherwise bind to the ReadOnlySpan<T> overload, which turns a null array into an empty span.
+    [OverloadResolutionPriority(1)]
+    public static void NotDistinct<T>([NotNull] T[]? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(NotDistinct), actualExpression, message, "Not expected", "all distinct items");
+        }
+
+        NotDistinct(new ReadOnlySpan<T>(actual), comparer, message, actualExpression);
+    }
+
     public static void NotDistinct<T>(ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
@@ -28,13 +40,23 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeReadOnlySpanActualValueAssertionError<T>(nameof(NotDistinct), "all distinct items", actual, actualExpression, message)));
     }
 
-    public static void NotDistinct(string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void NotDistinct([NotNull] string? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(NotDistinct), actualExpression, message, "Not expected", "all distinct items");
+        }
+
         NotDistinct(actual.AsSpan(), comparer: null, message: message, actualExpression: actualExpression);
     }
 
-    public static void NotDistinct<T>(IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void NotDistinct<T>([NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(NotDistinct), actualExpression, message, "Not expected", "all distinct items");
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         FirstIndexLookup<T>? firstIndexes = null;
@@ -57,8 +79,13 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotDistinct), "all distinct items", actualSnapshot.Items, actualExpression, message)));
     }
 
-    public static void NotDistinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void NotDistinct([NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(NotDistinct), actualExpression, message, "Not expected", "all distinct items");
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         FirstIndexLookup<object?>? firstIndexes = null;
         for (var duplicateIndex = 0; actualSnapshot.TryGetItem(duplicateIndex, out var item); duplicateIndex++)
@@ -82,8 +109,13 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<object?>>(nameof(NotDistinct), "all distinct items", actualSnapshot.Items, actualExpression, message)));
     }
 
-    public static async Task NotDistinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static async Task NotDistinct<T>([NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(NotDistinct), actualExpression, message, "Not expected", "all distinct items");
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
         FirstIndexLookup<T>? firstIndexes = null;
@@ -102,6 +134,7 @@ public partial class Assert
             }
         }
 
-        throw new AssertionException(ErrorFormatter.Format(new NegativeExpressionAssertionError(nameof(NotDistinct), "all distinct items", AssertionFormatter.FormatExpression(actualExpression), message)));
+        // Every item was observed to find that they are all distinct, so they can be reported like a synchronous sequence.
+        throw new AssertionException(ErrorFormatter.Format(new NegativeActualValueAssertionError<IReadOnlyList<T>>(nameof(NotDistinct), "all distinct items", actualSnapshot.Items, actualExpression, message)));
     }
 }

@@ -451,7 +451,7 @@ internal static class ConditionRewriteAnalyzerCommon
     }
 
     // ---------------------------------------------------------------------------------------------------------
-    // Assert.True(set.IsProperSubsetOf(other)) -> Assert.ProperSubset(set, other)
+    // Assert.True(set.IsProperSubsetOf(other)) -> Assert.ProperSubset(other, set)
     // ---------------------------------------------------------------------------------------------------------
     internal static bool TryGetSetMatch(IInvocationOperation assertInvocation, INamedTypeSymbol assertType, Symbols symbols, out ConditionRewriteMatch match)
     {
@@ -477,8 +477,9 @@ internal static class ConditionRewriteAnalyzerCommon
             return false;
         }
 
-        // Assert.ProperSubset(expected, actual) asserts that 'expected' is a proper subset of 'actual',
-        // which matches the receiver/argument order of ISet<T>.IsProperSubsetOf
+        // Like xunit, Assert.ProperSubset(expectedSuperset, actual) asserts actual.IsProperSubsetOf(expectedSuperset), so
+        // the receiver becomes the actual value. The assertion then uses the receiver's comparer when it is a set, as the
+        // original expression does.
         var assertionMethodName = (isSubset, conditionExpectedToBeFalse) switch
         {
             (true, false) => ProperSubsetAssertionMethodName,
@@ -490,7 +491,7 @@ internal static class ConditionRewriteAnalyzerCommon
         match = new ConditionRewriteMatch(
             invocation,
             assertionMethodName,
-            [instance.UnwrapImplicitConversions(), invocation.Arguments[0].Value.UnwrapImplicitConversions()]);
+            [invocation.Arguments[0].Value.UnwrapImplicitConversions(), instance.UnwrapImplicitConversions()]);
         return true;
     }
 

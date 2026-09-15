@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
@@ -21,7 +22,7 @@ public sealed partial class AssertMatchTests
         var actual = "value";
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Matches(regex, actual), """
-            Assert.Match() assertion failed.
+            Assert.Matches() assertion failed.
             Expected expression: regex
             Actual expression:   actual
             Expected pattern: "^sam"
@@ -45,7 +46,7 @@ public sealed partial class AssertMatchTests
         var actual = "value";
 
         AssertionTestHelpers.Validate(() => AssertionsAssert.Matches(pattern, actual), """
-            Assert.Match() assertion failed.
+            Assert.Matches() assertion failed.
             Expected expression: pattern
             Actual expression:   actual
             Expected pattern: "^sam"
@@ -99,6 +100,31 @@ public sealed partial class AssertMatchTests
             Not expected pattern: "^sam"
             Actual:               "sample"
             """);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout", Justification = "The test checks the default timeout")]
+    public void Pattern_UsesTheDefaultMatchTimeout()
+    {
+        // Guards against a regular expression created before the module initializer, as the pattern below would then run for hours
+        AssertionsAssert.Equal(DefaultMatchTimeout, new Regex("^sam", RegexOptions.None).MatchTimeout);
+
+        const string CatastrophicPattern = "^(a|aa)+$";
+        var actual = new string('a', 100) + "!";
+
+        AssertionsAssert.Equal(DefaultMatchTimeout, AssertionsAssert.Throws<RegexMatchTimeoutException>(() => AssertionsAssert.Matches(CatastrophicPattern, actual)).MatchTimeout);
+        AssertionsAssert.Equal(DefaultMatchTimeout, AssertionsAssert.Throws<RegexMatchTimeoutException>(() => AssertionsAssert.DoesNotMatch(CatastrophicPattern, actual)).MatchTimeout);
+    }
+
+    // Matches(string pattern, ...) must behave like Regex.IsMatch(input, pattern), which uses the default match timeout.
+    // The default timeout is read once per process, before the first regular expression is created, so it is set when
+    // the test assembly is loaded.
+    private static readonly TimeSpan DefaultMatchTimeout = TimeSpan.FromMilliseconds(500);
+
+    [ModuleInitializer]
+    internal static void InitializeRegexDefaultMatchTimeout()
+    {
+        AppDomain.CurrentDomain.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", DefaultMatchTimeout);
     }
 
     [GeneratedRegex("^sam", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

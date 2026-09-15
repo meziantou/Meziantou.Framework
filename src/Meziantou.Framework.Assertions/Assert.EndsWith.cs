@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Assertions;
 
+// The overloads and their priorities mirror Contains (see Assert.Contains.cs), so a call binds the same way for all these assertions.
 public partial class Assert
 {
     /// <summary>Asserts that a span ends with the specified value.</summary>
@@ -10,6 +11,7 @@ public partial class Assert
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(1)]
     public static void EndsWith<T>(T expected, ReadOnlySpan<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         comparer ??= EqualityComparer<T>.Default;
@@ -19,12 +21,49 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new ValueEndsWithAssertionError<T>(expected, actual, actualExpression, expectedExpression, message)));
     }
 
+    /// <summary>Asserts that an array ends with the specified value.</summary>
+    /// <param name="expected">The value expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="actual">The array to inspect.</param>
+    /// <param name="comparer">The comparer used to compare values.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    // An array would otherwise bind to the ReadOnlySpan<T> overload, which turns a null array into an empty span.
+    [OverloadResolutionPriority(1)]
+    public static void EndsWith<T>(T expected, [NotNull] T[]? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<T>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
+
+        EndsWith(expected, new ReadOnlySpan<T>(actual), comparer, message, actualExpression, expectedExpression);
+    }
+
+    /// <summary>Asserts that a string ends with the specified character.</summary>
+    /// <param name="expected">The character expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="actual">The string to inspect.</param>
+    /// <param name="comparer">The comparer used to compare characters.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    // A string would otherwise bind to the ReadOnlySpan<char> overload, which turns a null string into an empty span.
+    [OverloadResolutionPriority(1)]
+    public static void EndsWith(char expected, [NotNull] string? actual, IEqualityComparer<char>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<char>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
+
+        EndsWith(expected, actual.AsSpan(), comparer, message, actualExpression, expectedExpression);
+    }
+
     /// <summary>Asserts that an enumerable ends with the specified value.</summary>
     /// <param name="expected">The value expected at the end of <paramref name="actual"/>.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(1)]
     public static void EndsWith<T>(T expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
@@ -43,15 +82,28 @@ public partial class Assert
     }
 
     /// <summary>Asserts that a non-generic enumerable ends with the specified value.</summary>
-    /// <param name="expected">The value expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="expected">The value expected at the end of <paramref name="actual"/>. A string compared to a sequence of characters is compared as a suffix.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(-1)]
     public static void EndsWith(object? expected, [NotNull] System.Collections.IEnumerable? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
         if (actual is null)
         {
             throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<object?>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
+
+        // A string is never equal to a char, so comparing it to the last item of a char sequence could never succeed.
+        switch (expected, actual)
+        {
+            case (string expectedString, string actualString):
+                EndsWith(expectedString, actualString, StringComparison.Ordinal, message, actualExpression, expectedExpression);
+                return;
+
+            case (string expectedString, IEnumerable<char>):
+                EndsWith((System.Collections.IEnumerable)expectedString, actual, comparer: null, message, actualExpression, expectedExpression);
+                return;
         }
 
         EndsWithValue(expected, actual, comparer: null, message, actualExpression, expectedExpression);
@@ -84,6 +136,32 @@ public partial class Assert
         throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanEndsWithAssertionError<T>(expected, actual, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression, message)));
     }
 
+    /// <summary>Asserts that an enumerable ends with the specified suffix.</summary>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>. When <paramref name="expected"/> is itself the last item of <paramref name="actual"/>, the assertion also succeeds.</param>
+    /// <param name="actual">The enumerable to inspect.</param>
+    /// <param name="comparer">The comparer used to compare values.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(2)]
+    public static void EndsWith<T>(IEnumerable<T> expected, [NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual is null)
+        {
+            throw new AssertionException(ErrorFormatter.Format(new NullActualAssertionError<IEnumerable<T>>(nameof(EndsWith), "Expected expression", "Expected suffix", expected, actualExpression, expectedExpression, message)));
+        }
+
+        comparer ??= EqualityComparer<T>.Default;
+        using var expectedSnapshot = CollectionSnapshot.Create<T>(expected);
+        using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
+        expectedSnapshot.EnsureComplete();
+        actualSnapshot.EnsureComplete();
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, expectedSnapshot.Items, actualSnapshot.Items, comparer);
+        if (firstDifferenceIndex is null)
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new CollectionEndsWithAssertionError<T, T>(expectedSnapshot, actualSnapshot, firstDifferenceIndex.GetValueOrDefault(), actualExpression, expectedExpression, message)));
+    }
+
     /// <summary>Asserts that a character span ends with the specified suffix.</summary>
     /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
     /// <param name="actual">The span to inspect.</param>
@@ -92,12 +170,22 @@ public partial class Assert
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
     public static void EndsWith(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        if (actual.EndsWith(expected, comparison))
+        EndsWith(expected, actual, GetOrdinalComparison(ignoreCase), message, actualExpression, expectedExpression);
+    }
+
+    /// <summary>Asserts that a character span ends with the specified suffix.</summary>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="actual">The span to inspect.</param>
+    /// <param name="comparisonType">The comparison used to compare <paramref name="expected"/> with the end of <paramref name="actual"/>.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    public static void EndsWith(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual, StringComparison comparisonType, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
+        if (actual.EndsWith(expected, comparisonType))
             return;
 
-        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression, message)));
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparisonType);
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparisonType, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that a string ends with the specified suffix.</summary>
@@ -106,23 +194,35 @@ public partial class Assert
     /// <param name="ignoreCase">When <see langword="true"/>, the comparison ignores casing (OrdinalIgnoreCase); otherwise, it is case-sensitive (Ordinal).</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(2)]
     public static void EndsWith(string expected, [NotNull] string? actual, bool ignoreCase = false, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
     {
-        var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        EndsWith(expected, actual, GetOrdinalComparison(ignoreCase), message, actualExpression, expectedExpression);
+    }
+
+    /// <summary>Asserts that a string ends with the specified suffix.</summary>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="actual">The string to inspect.</param>
+    /// <param name="comparisonType">The comparison used to compare <paramref name="expected"/> with the end of <paramref name="actual"/>.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <param name="expectedExpression">The expression that produced the expected value.</param>
+    [OverloadResolutionPriority(2)]
+    public static void EndsWith(string expected, [NotNull] string? actual, StringComparison comparisonType, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+    {
         if (actual is null)
         {
-            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(EndsWith), "Expected suffix", expected, comparison, actualExpression, expectedExpression, message)));
+            throw new AssertionException(ErrorFormatter.Format(new StringNullActualAssertionError(nameof(EndsWith), "Expected suffix", expected, comparisonType, actualExpression, expectedExpression, message)));
         }
 
-        if (actual.EndsWith(expected, comparison))
+        if (actual.EndsWith(expected, comparisonType))
             return;
 
-        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparison);
-        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparison, actualExpression, expectedExpression, message)));
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, actual, comparisonType);
+        throw new AssertionException(ErrorFormatter.Format(new ReadOnlySpanCharEndsWithAssertionError(expected, actual, firstDifferenceIndex, comparisonType, actualExpression, expectedExpression, message)));
     }
 
     /// <summary>Asserts that an asynchronous sequence ends with the specified suffix.</summary>
-    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>. When <paramref name="expected"/> is itself the last item of <paramref name="actual"/>, the assertion also succeeds.</param>
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -141,7 +241,7 @@ public partial class Assert
 
         expectedSnapshot.EnsureComplete();
         await actualSnapshot.EnsureCompleteAsync().ConfigureAwait(false);
-        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer);
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (firstDifferenceIndex is null)
             return;
 
@@ -149,7 +249,7 @@ public partial class Assert
     }
 
     /// <summary>Asserts that a non-generic enumerable ends with the specified non-generic suffix.</summary>
-    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>.</param>
+    /// <param name="expected">The suffix expected at the end of <paramref name="actual"/>. Without <paramref name="comparer"/>, the assertion also succeeds when <paramref name="expected"/> is itself the last item of <paramref name="actual"/>. A string is compared as an item, unless <paramref name="actual"/> is a sequence of characters.</param>
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
@@ -175,7 +275,7 @@ public partial class Assert
 
         expectedSnapshot.EnsureComplete();
         actualSnapshot.EnsureComplete();
-        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expectedSnapshot.Items, actualSnapshot.Items, comparer);
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expected, expectedSnapshot.Items, actualSnapshot.Items, comparer);
         if (firstDifferenceIndex is null)
             return;
 
@@ -212,6 +312,20 @@ public partial class Assert
         return expected.Length;
     }
 
+    /// <summary>
+    /// Returns the index of the first item of <paramref name="expectedItems"/> that does not match the end of
+    /// <paramref name="actual"/>, or <see langword="null"/> when <paramref name="actual"/> ends with it, or when
+    /// <paramref name="expected"/> is itself the last item of <paramref name="actual"/>.
+    /// </summary>
+    private static int? GetFirstSuffixDifferenceIndex<T>(IEnumerable<T> expected, IReadOnlyList<T> expectedItems, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
+    {
+        var firstDifferenceIndex = GetFirstSuffixDifferenceIndex(expectedItems, actual, comparer);
+        if (firstDifferenceIndex is not null && expected is T expectedAsItem && actual.Count > 0 && comparer.Equals(expectedAsItem, actual[^1]))
+            return null;
+
+        return firstDifferenceIndex;
+    }
+
     private static int? GetFirstSuffixDifferenceIndex<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, IEqualityComparer<T> comparer)
     {
         if (expected.Count > actual.Count)
@@ -227,18 +341,34 @@ public partial class Assert
         return null;
     }
 
-    private static int? GetFirstSuffixDifferenceIndex(IReadOnlyList<object?> expected, IReadOnlyList<object?> actual, System.Collections.IEqualityComparer? comparer)
+    /// <inheritdoc cref="GetFirstSuffixDifferenceIndex{T}(IEnumerable{T}, IReadOnlyList{T}, IReadOnlyList{T}, IEqualityComparer{T})"/>
+    /// <remarks>
+    /// A string or a custom comparer disables the item match: a string is never equal to a char, and a non-generic
+    /// comparer may not accept a sequence as an argument.
+    /// </remarks>
+    private static int? GetFirstSuffixDifferenceIndex(System.Collections.IEnumerable expected, IReadOnlyList<object?> expectedItems, IReadOnlyList<object?> actual, System.Collections.IEqualityComparer? comparer)
     {
-        if (expected.Count > actual.Count)
-            return actual.Count;
-
-        var actualOffset = actual.Count - expected.Count;
-        for (var i = 0; i < expected.Count; i++)
+        int? firstDifferenceIndex = null;
+        if (expectedItems.Count > actual.Count)
         {
-            if (!Equals(expected[i], actual[actualOffset + i], comparer))
-                return i;
+            firstDifferenceIndex = actual.Count;
+        }
+        else
+        {
+            var actualOffset = actual.Count - expectedItems.Count;
+            for (var i = 0; i < expectedItems.Count; i++)
+            {
+                if (!Equals(expectedItems[i], actual[actualOffset + i], comparer))
+                {
+                    firstDifferenceIndex = i;
+                    break;
+                }
+            }
         }
 
-        return null;
+        if (firstDifferenceIndex is not null && comparer is null && expected is not string && actual.Count > 0 && object.Equals(expected, actual[^1]))
+            return null;
+
+        return firstDifferenceIndex;
     }
 }

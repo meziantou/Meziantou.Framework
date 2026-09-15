@@ -188,6 +188,89 @@ public sealed class CollectionSnapshotTests
         AssertionsAssert.True(source.EnumeratorDisposed);
     }
 
+    [Fact]
+    public void WindowedItemBuffer_RetainsOnlyTheFirstAndMostRecentItems()
+    {
+        var buffer = new WindowedItemBuffer<int>(prefixCapacity: 3, recentCapacity: 2);
+        for (var i = 0; i < 10_000; i++)
+        {
+            buffer.Add(i);
+        }
+
+        AssertionsAssert.Equal(10_000, buffer.Count);
+        AssertionsAssert.InRange(buffer.RetainedCount, 5, 3 + 2 + 64);
+        AssertionsAssert.True(buffer.TryGetItem(2, out var prefixItem));
+        AssertionsAssert.Equal(2, prefixItem);
+        AssertionsAssert.True(buffer.TryGetItem(9_998, out var recentItem));
+        AssertionsAssert.Equal(9_998, recentItem);
+        AssertionsAssert.Equal(9_999, buffer[9_999]);
+        AssertionsAssert.False(buffer.TryGetItem(5_000, out _));
+        AssertionsAssert.Throws<InvalidOperationException>(() => buffer[5_000]);
+        AssertionsAssert.Throws<ArgumentOutOfRangeException>(() => buffer[10_000]);
+        AssertionsAssert.HasCount(10_000, buffer.ToList());
+    }
+
+    [Fact]
+    public void WindowedItemBuffer_RetainAllStopsDiscarding()
+    {
+        var buffer = new WindowedItemBuffer<int>(prefixCapacity: 1, recentCapacity: 1);
+        for (var i = 0; i < 100; i++)
+        {
+            buffer.Add(i);
+        }
+
+        buffer.RetainAll();
+        var retainedBefore = buffer.RetainedCount;
+        for (var i = 100; i < 1_000; i++)
+        {
+            buffer.Add(i);
+        }
+
+        AssertionsAssert.Equal(retainedBefore + 900, buffer.RetainedCount);
+        AssertionsAssert.True(buffer.TryGetItem(99, out var item));
+        AssertionsAssert.Equal(99, item);
+    }
+
+    [Fact]
+    public void CreateSinglePass_UsesListDirectly()
+    {
+        var source = new List<int> { 1, 2, 3 };
+
+        using var snapshot = CollectionSnapshot.CreateSinglePass<int>(source);
+
+        AssertionsAssert.True(snapshot.IsComplete);
+        AssertionsAssert.Same(source, snapshot.Items);
+    }
+
+    [Fact]
+    public void CreateSinglePass_LazyEnumerableReadsItemsInOrder()
+    {
+        var source = new TrackingEnumerable<int>(Enumerable.Range(0, 1_000).ToArray());
+
+        using var snapshot = CollectionSnapshot.CreateSinglePass<int>(source);
+        for (var i = 0; i < 1_000; i++)
+        {
+            AssertionsAssert.True(snapshot.TryGetItem(i, out var item));
+            AssertionsAssert.Equal(i, item);
+        }
+
+        AssertionsAssert.False(snapshot.TryGetItem(1_000, out _));
+        AssertionsAssert.True(snapshot.IsComplete);
+        AssertionsAssert.Equal(1_000, snapshot.ObservedCount);
+        AssertionsAssert.Equal("1000", snapshot.GetCountText());
+        AssertionsAssert.True(source.EnumeratorDisposed);
+    }
+
+    [Fact]
+    public void GetCountText_IsALowerBoundForAnIncompleteSequence()
+    {
+        using var snapshot = CollectionSnapshot.Create<int>(AssertionTestHelpers.EndlessSequence());
+
+        AssertionsAssert.True(snapshot.TryGetItem(4, out _));
+
+        AssertionsAssert.Equal("at least 5", snapshot.GetCountText());
+    }
+
     private sealed class ThrowingEnumerableReadOnlyList<T>(IReadOnlyList<T> items) : IReadOnlyList<T>
     {
         public int Count => items.Count;

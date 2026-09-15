@@ -4,6 +4,22 @@ namespace Meziantou.Framework.Assertions;
 
 public partial class Assert
 {
+    /// <summary>Asserts that an array is not null and does not contain duplicate items.</summary>
+    /// <param name="actual">The array to inspect.</param>
+    /// <param name="comparer">The comparer used to compare values.</param>
+    /// <param name="actualExpression">The expression that produced the actual value.</param>
+    /// <remarks>Arrays would otherwise bind to the <see cref="ReadOnlySpan{T}"/> overload, which turns a null array into an empty span.</remarks>
+    [OverloadResolutionPriority(1)]
+    public static void Distinct<T>([NotNull] T[]? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(Distinct), actualExpression, message);
+        }
+
+        Distinct(new ReadOnlySpan<T>(actual), comparer, message, actualExpression);
+    }
+
     /// <summary>Asserts that a span does not contain duplicate items.</summary>
     /// <param name="actual">The span to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
@@ -40,8 +56,13 @@ public partial class Assert
     /// <summary>Asserts that a string does not contain duplicate characters.</summary>
     /// <param name="actual">The string to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct(string actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct([NotNull] string? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(Distinct), actualExpression, message);
+        }
+
         Distinct(actual.AsSpan(), comparer: null, message: message, actualExpression: actualExpression);
     }
 
@@ -49,8 +70,13 @@ public partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct<T>(IEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct<T>([NotNull] IEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(Distinct), actualExpression, message);
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 
@@ -80,8 +106,13 @@ public partial class Assert
     /// <param name="actual">The enumerable to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static void Distinct(System.Collections.IEnumerable actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static void Distinct([NotNull] System.Collections.IEnumerable? actual, System.Collections.IEqualityComparer? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(Distinct), actualExpression, message);
+        }
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
 
         FirstIndexLookup<object?>? firstIndexes = null;
@@ -111,8 +142,13 @@ public partial class Assert
     /// <param name="actual">The sequence to inspect.</param>
     /// <param name="comparer">The comparer used to compare values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
-    public static async Task Distinct<T>(IAsyncEnumerable<T> actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static async Task Distinct<T>([NotNull] IAsyncEnumerable<T>? actual, IEqualityComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
+        if (actual is null)
+        {
+            ThrowNullCollection(nameof(Distinct), actualExpression, message);
+        }
+
         comparer ??= EqualityComparer<T>.Default;
         await using var actualSnapshot = CollectionSnapshot.Create<T>(actual);
 

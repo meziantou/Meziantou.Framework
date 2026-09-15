@@ -159,7 +159,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncVoid")!);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => executor.ExecuteAsync(new Test(), [new Validator()]));
+        var exception = Assert.Throws<InvalidOperationException>(() => _ = executor.ExecuteAsync(new Test(), [new Validator()]));
         Assert.Contains("async void", exception.Message);
     }
 
@@ -240,7 +240,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam")!);
 
-        Assert.Throws<ArgumentException>(() => executor.ExecuteAsync(new Test(), []));
+        Assert.Throws<ArgumentException>(() => _ = executor.ExecuteAsync(new Test(), []));
     }
 
     [Fact]

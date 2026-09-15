@@ -12,8 +12,8 @@ public partial class Assert
     /// <param name="comparer">The comparer used to order values.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <remarks>
-    /// When <paramref name="comparer"/> is <see langword="null"/> or <see cref="Comparer{T}.Default"/>, a NaN floating-point value is never in range,
-    /// whether it is the value or one of the bounds. This matches <c>low &lt;= actual &amp;&amp; actual &lt;= high</c>.
+    /// When <paramref name="comparer"/> is <see langword="null"/> or <see cref="Comparer{T}.Default"/>, a NaN floating-point value or a null <see cref="Nullable{T}"/>
+    /// is never in range, whether it is the value or one of the bounds. This matches <c>low &lt;= actual &amp;&amp; actual &lt;= high</c>.
     /// </remarks>
     public static void InRange<T>(T actual, T low, T high, IComparer<T>? comparer = null, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
@@ -28,6 +28,12 @@ public partial class Assert
             // Comparer<T>.Default orders NaN below every other value and equal to itself, so it would consider NaN in [NaN, x]
             // and any value in [NaN, x]. Relational operators return false for NaN, so no range can contain it.
             if (IsNaN(actual) || IsNaN(low) || IsNaN(high))
+                return false;
+
+            // Comparer<T>.Default orders null below every other value of a Nullable<T>, while the lifted relational
+            // operators return false when an operand is null, so no range contains null and a null bound contains nothing.
+            // For a value type T, "is null" is only true for a Nullable<T> without a value.
+            if (typeof(T).IsValueType && (actual is null || low is null || high is null))
                 return false;
 
             comparer = Comparer<T>.Default;

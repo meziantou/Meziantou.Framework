@@ -131,6 +131,44 @@ public sealed class AssertInRangeTests
         AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange((double?)actual, low, high));
     }
 
+    [Theory]
+    [InlineData(null, 0, 10)]
+    [InlineData(5, null, 10)]
+    [InlineData(5, 0, null)]
+    [InlineData(null, null, 10)]
+    [InlineData(null, 0, null)]
+    [InlineData(5, null, null)]
+    [InlineData(null, null, null)]
+    public void NullNullable_NotInRange(int? actual, int? low, int? high)
+    {
+        AssertionsAssert.NotInRange(actual, low, high);
+        AssertionsAssert.NotInRange(actual, low, high, Comparer<int?>.Default);
+
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange(actual, low, high));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange(actual, low, high, Comparer<int?>.Default));
+    }
+
+    [Fact]
+    public void NullNullable_CustomComparerIsHonored()
+    {
+        int? low = null;
+
+        AssertionsAssert.InRange(5, low, 10, Comparer<int?>.Create((x, y) => Comparer<int?>.Default.Compare(x, y)));
+    }
+
+    [Fact]
+    public void NullNullable_FailureMessage()
+    {
+        int? low = null;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.InRange(5, low, 10), """
+            Assert.InRange() assertion failed.
+            Expression: 5
+            Expected: in range [<null>, 10]
+            Actual:   5
+            """);
+    }
+
     [Fact]
     public void NaN_CustomComparerIsHonored()
     {

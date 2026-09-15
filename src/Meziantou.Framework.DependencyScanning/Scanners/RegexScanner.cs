@@ -53,7 +53,7 @@ public sealed class RegexScanner : DependencyScanner
         }
     }
 
-    /// <summary>Gets or sets the glob patterns specifying which files to scan. If <see langword="null"/>, all files are scanned.</summary>
+    /// <summary>Gets or sets the glob patterns specifying which files to scan. Patterns are matched against the path relative to the root directory of the scan (for instance <c>build/*.yml</c>). If <see langword="null"/>, all files are scanned.</summary>
     public GlobCollection? FilePatterns { get; set; }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -67,6 +67,7 @@ public sealed class RegexScanner : DependencyScanner
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
 
+        var lineTracker = new LineTracker(text);
         foreach (Match match in regex.Matches(text))
         {
             Debug.Assert(match.Success);
@@ -79,13 +80,26 @@ public sealed class RegexScanner : DependencyScanner
                 if (versionGroup.Success)
                 {
                     var version = versionGroup.Value;
-                    var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
-                    var versionLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, versionGroup.Index, versionGroup.Length);
+
+                    // Groups can appear in any order in the pattern, compute the first one first so the tracker only moves forward
+                    TextLocation nameLocation;
+                    TextLocation versionLocation;
+                    if (nameGroup.Index <= versionGroup.Index)
+                    {
+                        nameLocation = lineTracker.CreateLocation(context, nameGroup.Index, nameGroup.Length);
+                        versionLocation = lineTracker.CreateLocation(context, versionGroup.Index, versionGroup.Length);
+                    }
+                    else
+                    {
+                        versionLocation = lineTracker.CreateLocation(context, versionGroup.Index, versionGroup.Length);
+                        nameLocation = lineTracker.CreateLocation(context, nameGroup.Index, nameGroup.Length);
+                    }
+
                     context.ReportDependency(this, name, version, DependencyType, nameLocation, versionLocation);
                 }
                 else
                 {
-                    var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
+                    var nameLocation = lineTracker.CreateLocation(context, nameGroup.Index, nameGroup.Length);
                     context.ReportDependency(this, name, version: null, DependencyType, nameLocation, versionLocation: null);
                 }
             }
@@ -95,8 +109,42 @@ public sealed class RegexScanner : DependencyScanner
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         if (FilePatterns is not null)
-            return FilePatterns.IsMatch(context.Directory, context.FileName);
+            return FilePatterns.IsMatch(context.RelativeDirectory, context.FileName);
 
         return true;
+    }
+
+    /// <summary>Computes line and column numbers of increasing offsets without rescanning the text from the start. <c>\r\n</c>, <c>\r</c> and <c>\n</c> are line breaks.</summary>
+    private sealed class LineTracker(string text)
+    {
+        private int _index;
+        private int _line = 1;
+        private int _lineStart;
+
+        public TextLocation CreateLocation(ScanFileContext context, int index, int length)
+        {
+            // Matches are returned in order, except with RegexOptions.RightToLeft
+            if (index < _index)
+            {
+                _index = 0;
+                _line = 1;
+                _lineStart = 0;
+            }
+
+            while (_index < index)
+            {
+                var c = text[_index];
+                if (c is '\n' || (c is '\r' && (_index + 1 >= text.Length || text[_index + 1] is not '\n')))
+                {
+                    _line++;
+                    _lineStart = _index + 1;
+                }
+
+                _index++;
+            }
+
+            // LineNumber and LinePosition are 1-based
+            return new TextLocation(context.FileSystem, context.FullPath, _line, index - _lineStart + 1, length);
+        }
     }
 }

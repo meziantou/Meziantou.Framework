@@ -16,6 +16,8 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         "optionalDependencies",
     ];
 
+    private const string NpmAliasPrefix = "npm:";
+
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
@@ -72,15 +74,40 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
                 continue;
             }
 
-            if (version is null)
+            if (version is null || valuePath is null)
                 continue;
 
-            if (valuePath is not null)
+            // "alias": "npm:package@range" installs another package under the alias name
+            if (version.StartsWith(NpmAliasPrefix, StringComparison.Ordinal))
             {
-                context.ReportDependency(this, packageName, version, DependencyType.Npm,
-                    nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new JsonLocation(context, valuePath));
+                var aliased = version[NpmAliasPrefix.Length..];
+                var versionSeparator = aliased.LastIndexOf('@', StringComparison.Ordinal);
+                if (versionSeparator > 0 && versionSeparator < aliased.Length - 1)
+                {
+                    context.ReportDependency(this, aliased[..versionSeparator], aliased[(versionSeparator + 1)..], DependencyType.Npm,
+                        nameLocation: new NonUpdatableLocation(context),
+                        versionLocation: new JsonLocation(context, valuePath, NpmAliasPrefix.Length + versionSeparator + 1, aliased.Length - versionSeparator - 1),
+                        tags: [],
+                        metadata: [KeyValuePair.Create<string, object?>("alias", packageName)]);
+                }
+                else if (aliased.Length > 0 && versionSeparator <= 0)
+                {
+                    context.ReportDependency(this, aliased, version: null, DependencyType.Npm,
+                        nameLocation: new NonUpdatableLocation(context),
+                        versionLocation: null,
+                        tags: [],
+                        metadata: [KeyValuePair.Create<string, object?>("alias", packageName)]);
+                }
+
+                continue;
             }
+
+            // Protocols (workspace:, file:, link:, portal:, git+https:, github:, http(s)://...) and paths or GitHub shorthands (owner/repo#tag)
+            // are not registry versions, so they cannot be updated as such. Semver ranges never contain ':' or '/'.
+            var isRegistryVersion = !version.AsSpan().ContainsAny(':', '/');
+            context.ReportDependency(this, packageName, version, DependencyType.Npm,
+                nameLocation: new NonUpdatableLocation(context),
+                versionLocation: isRegistryVersion ? new JsonLocation(context, valuePath) : new NonUpdatableLocation(context));
         }
 
         return ValueTask.CompletedTask;

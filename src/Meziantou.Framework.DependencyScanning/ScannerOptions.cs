@@ -62,8 +62,21 @@ public sealed class ScannerOptions
     /// <summary>Gets or sets a predicate to filter which files to scan.</summary>
     public FileSystemEntryPredicate? ShouldScanFilePredicate { get; set; }
 
-    /// <summary>Gets or sets the maximum number of parallel scanning tasks. Default is 16.</summary>
-    public int DegreeOfParallelism { get; set; } = 16;
+    /// <summary>Gets or sets the maximum number of parallel scanning tasks, or <c>-1</c> to use <see cref="Environment.ProcessorCount"/>. Default is 16.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is <c>0</c> or less than <c>-1</c>.</exception>
+    public int DegreeOfParallelism
+    {
+        get => field;
+        set
+        {
+            if (value is 0 or < -1)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The degree of parallelism must be greater than 0, or -1 to use the number of processors.");
+
+            field = value;
+        }
+    } = 16;
+
+    internal int EffectiveDegreeOfParallelism => DegreeOfParallelism is -1 ? Environment.ProcessorCount : DegreeOfParallelism;
 
     /// <summary>Gets or sets the file system implementation to use for file access.</summary>
     public IFileSystem FileSystem { get; set; } = Internals.FileSystem.Instance;

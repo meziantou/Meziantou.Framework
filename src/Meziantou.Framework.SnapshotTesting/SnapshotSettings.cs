@@ -93,6 +93,8 @@ public sealed record SnapshotSettings
         ];
         Comparers = new SnapshotComparerCollection();
         Comparers.Set(SnapshotType.None, ByteArraySnapshotComparer.Instance);
+        Comparers.Set(SnapshotType.Default, TextSnapshotComparer.Instance);
+        Comparers.Set(SnapshotType.Svg, TextSnapshotComparer.Instance);
         Scrubbers = new CopyOnWriteList<Scrubber>();
         SnapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
         MaxSnapshotFileNameLength = 128;

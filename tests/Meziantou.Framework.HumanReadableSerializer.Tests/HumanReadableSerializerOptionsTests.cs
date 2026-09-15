@@ -71,6 +71,7 @@ public sealed class HumanReadableSerializerOptionsTests
         var type = property.PropertyType;
         object value = type switch
         {
+            _ when property.Name is nameof(HumanReadableSerializerOptions.NewLine) => "\r\n",
             _ when type == typeof(bool) => !(bool)defaultValue!,
             _ when type == typeof(int) => (int)defaultValue! + 1,
             _ when type.IsEnum => Enum.GetValues(type).Cast<object>().First(item => !item.Equals(defaultValue)),
@@ -97,6 +98,58 @@ public sealed class HumanReadableSerializerOptionsTests
 
         Assert.Empty(clone.Converters);
         Assert.Single(options.Converters);
+    }
+
+    [Fact]
+    public void NewLine_DefaultsToLineFeed()
+    {
+        var text = HumanReadableSerializer.Serialize(new MultiLinePayload { Value = "line1\r\nline2" });
+
+        Assert.Equal("\n", new HumanReadableSerializerOptions().NewLine);
+        Assert.Equal("A: 1\nValue:\n  line1\n  line2", text);
+    }
+
+    [Fact]
+    public void NewLine_CarriageReturnLineFeed()
+    {
+        var options = new HumanReadableSerializerOptions { NewLine = "\r\n" };
+
+        var text = HumanReadableSerializer.Serialize(new MultiLinePayload { Value = "line1\nline2" }, options);
+
+        Assert.Equal("A: 1\r\nValue:\r\n  line1\r\n  line2", text);
+    }
+
+    [Theory]
+    [InlineData("\n", "a\u240D\u240A\nb\u240D\nc\u240A\nd")]
+    [InlineData("\r\n", "a\u240D\u240A\r\nb\u240D\r\nc\u240A\r\nd")]
+    public void NewLine_ShowInvisibleCharacters(string newLine, string expected)
+    {
+        var options = new HumanReadableSerializerOptions { NewLine = newLine, ShowInvisibleCharactersInValues = true };
+
+        var text = HumanReadableSerializer.Serialize("a\r\nb\rc\nd", options);
+
+        Assert.Equal(expected, text);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\r")]
+    [InlineData(" ")]
+    public void NewLine_RejectsUnsupportedValues(string newLine)
+    {
+        var options = new HumanReadableSerializerOptions();
+
+        Assert.Throws<ArgumentException>(() => options.NewLine = newLine);
+    }
+
+    [Fact]
+    public void NewLine_IsCopiedByClone()
+    {
+        var options = new HumanReadableSerializerOptions { NewLine = "\r\n" };
+
+        var clone = options with { };
+
+        Assert.Equal("\r\n", clone.NewLine);
     }
 
     [Fact]
@@ -127,6 +180,12 @@ public sealed class HumanReadableSerializerOptionsTests
         public string Name { get; } = "test";
         public string[] Tags { get; } = ["a", "b"];
         public DateTime When { get; } = new(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc);
+    }
+
+    private sealed class MultiLinePayload
+    {
+        public int A { get; } = 1;
+        public string? Value { get; init; }
     }
 
     private sealed class DummyConverter : HumanReadableConverter

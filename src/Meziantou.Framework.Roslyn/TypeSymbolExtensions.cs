@@ -235,6 +235,248 @@ internal static partial class TypeSymbolExtensions
         return !expectedType.IsSealed && symbol.InheritsFrom(expectedType, visitedTypeParameters);
     }
 
+    /// <summary>
+    /// Determines whether a value of type <paramref name="type"/> can be assigned to a variable of type <paramref name="targetType"/> while keeping its identity,
+    /// that is through an identity, an implicit reference or a boxing conversion.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This follows the C# conversion rules: a type is assignable to itself, to its base types, to the interfaces it implements, and to <see cref="object"/>.
+    /// The variance of generic interfaces and delegates, array covariance, and the constraints of type parameters are taken into account, so
+    /// <c>string[]</c> is assignable to <c>IEnumerable&lt;object&gt;</c> and <c>T</c> in <c>where T : IDisposable</c> is assignable to <c>IDisposable</c>.
+    /// <c>object</c> and <c>dynamic</c> are interchangeable, and so are tuples differing only by their element names.
+    /// </para>
+    /// <para>
+    /// Conversions that produce a different value are not considered: numeric, nullable, user-defined, tuple, pointer or span conversions.
+    /// For instance, <c>int</c> is not assignable to <c>long</c> nor to <c>int?</c>, and <c>IEnumerable&lt;int&gt;</c> is not assignable to <c>IEnumerable&lt;object&gt;</c>.
+    /// </para>
+    /// </remarks>
+    public static bool IsAssignableTo(this ITypeSymbol type, [NotNullWhen(true)] ITypeSymbol? targetType)
+    {
+        if (targetType is null)
+            return false;
+
+        return IsAssignableTo(type, targetType, visitedTypeParameters: null, depth: 0);
+    }
+
+    /// <summary>
+    /// Determines whether a value of type <paramref name="sourceType"/> can be assigned to a variable of type <paramref name="type"/> while keeping its identity.
+    /// </summary>
+    /// <remarks>
+    /// This is the reverse of <see cref="IsAssignableTo(ITypeSymbol, ITypeSymbol)"/>, which documents the conversions taken into account.
+    /// </remarks>
+    public static bool IsAssignableFrom(this ITypeSymbol type, [NotNullWhen(true)] ITypeSymbol? sourceType)
+    {
+        if (sourceType is null)
+            return false;
+
+        return IsAssignableTo(sourceType, type, visitedTypeParameters: null, depth: 0);
+    }
+
+    // Variance lets a contravariant type argument grow at each step, so a pathological hierarchy could recurse forever
+    private const int MaxAssignabilityDepth = 32;
+
+    private static bool IsAssignableTo(ITypeSymbol type, ITypeSymbol targetType, HashSet<ITypeParameterSymbol>? visitedTypeParameters, int depth)
+    {
+        if (IsIdentityConvertible(type, targetType))
+            return true;
+
+        if (depth > MaxAssignabilityDepth || type.TypeKind is TypeKind.Error || targetType.TypeKind is TypeKind.Error)
+            return false;
+
+        switch (type)
+        {
+            case ITypeParameterSymbol typeParameter:
+                // A type parameter that allows ref structs cannot be boxed, not even to the type parameters it depends on
+                if (AllowsRefLikeType(typeParameter))
+                    return false;
+
+                if (IsObjectOrDynamic(targetType))
+                    return true;
+
+                if ((typeParameter.HasValueTypeConstraint || typeParameter.HasUnmanagedTypeConstraint) && targetType.SpecialType is SpecialType.System_ValueType)
+                    return true;
+
+                return AnyConstraintTypeMatches(typeParameter, visitedTypeParameters, (constraintType, visitedTypeParameters) =>
+                {
+                    return IsAssignableTo(constraintType, targetType, visitedTypeParameters, depth);
+                });
+
+            case IArrayTypeSymbol arrayType:
+                if (IsObjectOrDynamic(targetType))
+                    return true;
+
+                if (targetType is IArrayTypeSymbol targetArrayType)
+                {
+                    return arrayType.Rank == targetArrayType.Rank
+                        && arrayType.IsSZArray == targetArrayType.IsSZArray
+                        && HasImplicitReferenceConversion(arrayType.ElementType, targetArrayType.ElementType, depth + 1);
+                }
+
+                if (IsAssignableToBaseTypeOrInterface(arrayType, targetType, depth))
+                    return true;
+
+                // T[] implements IList<T> and its base interfaces, which are invariant, but the array is still covariant
+                if (arrayType.IsSZArray && targetType is INamedTypeSymbol { TypeKind: TypeKind.Interface, TypeArguments.Length: 1 } targetInterface)
+                {
+                    foreach (var @interface in arrayType.AllInterfaces)
+                    {
+                        if (@interface.TypeArguments.Length == 1
+                            && SymbolEquals(@interface.OriginalDefinition, targetInterface.OriginalDefinition)
+                            && IsIdentityConvertible(@interface.TypeArguments[0], arrayType.ElementType))
+                        {
+                            return HasImplicitReferenceConversion(arrayType.ElementType, targetInterface.TypeArguments[0], depth + 1);
+                        }
+                    }
+                }
+
+                return false;
+
+            case INamedTypeSymbol namedType:
+                if (namedType.IsRefLikeType)
+                    return false;
+
+                // A nullable value type boxes to the boxed form of its underlying type, or to null
+                if (namedType.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T)
+                    return targetType.IsReferenceType && targetType.TypeKind is not TypeKind.TypeParameter && IsAssignableTo(namedType.TypeArguments[0], targetType, visitedTypeParameters, depth);
+
+                if (IsObjectOrDynamic(targetType))
+                    return true;
+
+                if (namedType.TypeKind is TypeKind.Interface or TypeKind.Delegate && IsVarianceConvertible(namedType, targetType, depth))
+                    return true;
+
+                return IsAssignableToBaseTypeOrInterface(namedType, targetType, depth);
+
+            default:
+                return false;
+        }
+    }
+
+    private static bool IsAssignableToBaseTypeOrInterface(ITypeSymbol type, ITypeSymbol targetType, int depth)
+    {
+        if (targetType.TypeKind is TypeKind.Interface)
+        {
+            foreach (var @interface in type.AllInterfaces)
+            {
+                if (IsVarianceConvertible(@interface, targetType, depth))
+                    return true;
+            }
+
+            return false;
+        }
+
+        var baseType = type.BaseType;
+        while (baseType is not null)
+        {
+            if (IsIdentityConvertible(baseType, targetType))
+                return true;
+
+            baseType = baseType.BaseType;
+        }
+
+        return false;
+    }
+
+    private static bool HasImplicitReferenceConversion(ITypeSymbol type, ITypeSymbol targetType, int depth)
+    {
+        // Any conversion that keeps the identity of a reference type is a reference conversion, boxing only applies to the other types
+        return type.IsReferenceType && IsAssignableTo(type, targetType, visitedTypeParameters: null, depth);
+    }
+
+    private static bool IsVarianceConvertible(INamedTypeSymbol type, ITypeSymbol targetType, int depth)
+    {
+        if (IsIdentityConvertible(type, targetType))
+            return true;
+
+        if (targetType is not INamedTypeSymbol namedTargetType
+            || namedTargetType.TypeKind is not (TypeKind.Interface or TypeKind.Delegate)
+            || !SymbolEquals(type.OriginalDefinition, namedTargetType.OriginalDefinition)
+            || !AreIdentityConvertible(type.ContainingType, namedTargetType.ContainingType))
+        {
+            return false;
+        }
+
+        var typeParameters = type.OriginalDefinition.TypeParameters;
+        for (var i = 0; i < typeParameters.Length; i++)
+        {
+            var typeArgument = type.TypeArguments[i];
+            var targetTypeArgument = namedTargetType.TypeArguments[i];
+            if (IsIdentityConvertible(typeArgument, targetTypeArgument))
+                continue;
+
+            var isConvertible = typeParameters[i].Variance switch
+            {
+                VarianceKind.Out => HasImplicitReferenceConversion(typeArgument, targetTypeArgument, depth + 1),
+                VarianceKind.In => HasImplicitReferenceConversion(targetTypeArgument, typeArgument, depth + 1),
+                _ => false,
+            };
+
+            if (!isConvertible)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsIdentityConvertible(ITypeSymbol type, ITypeSymbol targetType)
+    {
+        if (SymbolEquals(type, targetType))
+            return true;
+
+        if (IsObjectOrDynamic(type) && IsObjectOrDynamic(targetType))
+            return true;
+
+        switch (type, targetType)
+        {
+            case (IArrayTypeSymbol arrayType, IArrayTypeSymbol targetArrayType):
+                return arrayType.Rank == targetArrayType.Rank
+                    && arrayType.IsSZArray == targetArrayType.IsSZArray
+                    && IsIdentityConvertible(arrayType.ElementType, targetArrayType.ElementType);
+
+            case (IPointerTypeSymbol pointerType, IPointerTypeSymbol targetPointerType):
+                return IsIdentityConvertible(pointerType.PointedAtType, targetPointerType.PointedAtType);
+
+            // List<dynamic> is List<object>, and (int A, int B) is (int, int)
+            case (INamedTypeSymbol { IsGenericType: true } namedType, INamedTypeSymbol { IsGenericType: true } namedTargetType):
+                if (!SymbolEquals(namedType.OriginalDefinition, namedTargetType.OriginalDefinition) || namedType.TypeArguments.Length != namedTargetType.TypeArguments.Length)
+                    return false;
+
+                for (var i = 0; i < namedType.TypeArguments.Length; i++)
+                {
+                    if (!IsIdentityConvertible(namedType.TypeArguments[i], namedTargetType.TypeArguments[i]))
+                        return false;
+                }
+
+                return AreIdentityConvertible(namedType.ContainingType, namedTargetType.ContainingType);
+
+            default:
+                return false;
+        }
+    }
+
+    private static bool AreIdentityConvertible(ITypeSymbol? type, ITypeSymbol? targetType)
+    {
+        if (type is null || targetType is null)
+            return type is null && targetType is null;
+
+        return IsIdentityConvertible(type, targetType);
+    }
+
+    private static bool IsObjectOrDynamic(ITypeSymbol type)
+    {
+        return type.SpecialType is SpecialType.System_Object || type.TypeKind is TypeKind.Dynamic;
+    }
+
+    private static bool AllowsRefLikeType(ITypeParameterSymbol typeParameter)
+    {
+#if ROSLYN_4_12_OR_GREATER
+        return typeParameter.AllowsRefLikeType;
+#else
+        return false;
+#endif
+    }
+
     private static bool AnyConstraintTypeMatches(ITypeParameterSymbol typeParameter, HashSet<ITypeParameterSymbol>? visitedTypeParameters, Func<ITypeSymbol, HashSet<ITypeParameterSymbol>, bool> predicate)
     {
         visitedTypeParameters ??= [];

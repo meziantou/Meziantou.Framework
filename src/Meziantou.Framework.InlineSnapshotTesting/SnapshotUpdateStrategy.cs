@@ -50,12 +50,13 @@ public abstract class SnapshotUpdateStrategy
 
     internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot)
     {
-        if (settings.AutoDetectContinuousEnvironment && InlineSnapshotSettings.IsRunningOnContinuousIntegration())
+        if (IsUpdateDisabledByEnvironment(settings))
             return false;
 
         return CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
     }
 
+    internal static bool IsUpdateDisabledByEnvironment(InlineSnapshotSettings settings) => settings.AutoDetectContinuousEnvironment && InlineSnapshotSettings.IsRunningOnContinuousIntegration();
 
     /// <summary>Indicates if an an inline snapshot must be updated</summary>
     public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
@@ -72,8 +73,10 @@ public abstract class SnapshotUpdateStrategy
         if (sourcePath == destinationPath)
             return;
 
-        var fi = new FileInfo(sourcePath);
-        fi.TrySetReadOnly(false);
+        // Writing into the existing file, rather than moving the new file over it, keeps what belongs to the file itself:
+        // the target of a symbolic link, hard links, the permissions, and on Windows the ACL, which a moved file would
+        // bring from the temporary directory.
+        var content = File.ReadAllBytes(sourcePath);
 
         // An editor or another test process can hold the source file open for a moment, which is a sharing violation on Windows.
         const int MaxAttemptCount = 8;
@@ -81,7 +84,8 @@ public abstract class SnapshotUpdateStrategy
         {
             try
             {
-                File.Move(sourcePath, destinationPath, overwrite: true);
+                WriteContent(destinationPath, content);
+                TryDeleteFile(sourcePath);
                 return;
             }
             catch (IOException ex) when (ex is not FileNotFoundException && attempt < MaxAttemptCount)
@@ -92,6 +96,13 @@ public abstract class SnapshotUpdateStrategy
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
             }
+        }
+
+        static void WriteContent(FullPath path, byte[] content)
+        {
+            using var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            stream.Write(content);
+            stream.SetLength(content.Length);
         }
     }
 
@@ -123,14 +134,32 @@ public abstract class SnapshotUpdateStrategy
         return name;
     }
 
+    /// <summary>
+    /// Returns a message when <c>INLINESNAPSHOTTESTING_STRATEGY</c> names no strategy. The variable is then ignored, which
+    /// would otherwise go unnoticed as the default strategy does not update snapshots either.
+    /// </summary>
+    internal static string? GetUnknownStrategyEnvironmentVariableMessage() => GetUnknownStrategyMessage(Environment.GetEnvironmentVariable(SnapshotUpdateStrategyEnvironmentVariableName));
+
+    internal static string? GetUnknownStrategyMessage(string? variable)
+    {
+        if (string.IsNullOrWhiteSpace(variable) || FindStrategy(variable.Trim()) is not null)
+            return null;
+
+        var validNames = string.Join(", ", SnapshotUpdateStrategyProperties.Select(property => property.Name));
+        return $"The {SnapshotUpdateStrategyEnvironmentVariableName} environment variable is ignored: '{variable}' is not a known strategy. Valid values are {validNames}.";
+    }
+
     private static SnapshotUpdateStrategy? GetStrategyFromEnvironmentVariable()
     {
         var variable = Environment.GetEnvironmentVariable(SnapshotUpdateStrategyEnvironmentVariableName);
         if (string.IsNullOrWhiteSpace(variable))
             return null;
 
-        var strategyName = variable.Trim();
+        return FindStrategy(variable.Trim());
+    }
 
+    private static SnapshotUpdateStrategy? FindStrategy(string strategyName)
+    {
         foreach (var property in SnapshotUpdateStrategyProperties)
         {
             if (!typeof(SnapshotUpdateStrategy).IsAssignableFrom(property.PropertyType))

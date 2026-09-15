@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class MergeToolTests
@@ -160,6 +161,40 @@ public sealed class MergeToolTests
         using var process = Process.Start(psi)!;
         process.WaitForExit();
         Assert.Equal(0, process.ExitCode);
+    }
+
+    [Theory]
+    [InlineData("1234 (dotnet) S 42 1234 1234 0 -1", 42)]
+    [InlineData("1234 (Code Helper (Plugin)) S 42 1234", 42)]
+    [InlineData("1234 (a) b) R 7", 7)]
+    [InlineData("1234 (dotnet)", null)]
+    [InlineData("invalid", null)]
+    public void ProcessExtensions_ParseLinuxParentProcessId(string stat, int? expected)
+    {
+        Assert.Equal(expected, ProcessExtensions.ParseLinuxParentProcessId(stat));
+    }
+
+    [Fact]
+    public void ProcessExtensions_GetAncestorProcesses_ReturnsTheParentProcess()
+    {
+        // The ancestors used to be read on Windows only, so the IDE running the tests was never detected on Linux and macOS
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+            return;
+
+        using var currentProcess = Process.GetCurrentProcess();
+        var ancestors = currentProcess.GetAncestorProcesses().ToList();
+        try
+        {
+            Assert.NotEmpty(ancestors);
+            Assert.DoesNotContain(ancestors, ancestor => ancestor.Id == currentProcess.Id);
+        }
+        finally
+        {
+            foreach (var ancestor in ancestors)
+            {
+                ancestor.Dispose();
+            }
+        }
     }
 
     private static ProcessStartInfo CreateShellStartInfo(string command)

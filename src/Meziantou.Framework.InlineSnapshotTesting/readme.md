@@ -233,10 +233,10 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The diff tool configured by the `DiffEngine_Tool` environment variable
 - The merge tool from the local git configuration
 - The diff tool from the local git configuration
-- The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is only supported on Windows.
+- The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is supported on Windows, Linux and macOS.
 - The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
 
-Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
+Merge tools are not started when `InlineSnapshotSettings.MergeTools` is `null` or empty, when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
 
 `DiffEngine_Tool` is the case-insensitive name of a `MergeTool` property, for example `VisualStudioCode` or `rider`.
 
@@ -452,7 +452,7 @@ InlineSnapshot
 - `SnapshotUpdateStrategy.Disallow`: Do not update the snapshot
 
 You can also set the default strategy using the `INLINESNAPSHOTTESTING_STRATEGY` environment variable.  
-The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`).
+The value is case-insensitive and must match one of the `SnapshotUpdateStrategy` static property names (for example: `DISALLOW`, `MergeTool`, `overwritewithoutfailure`). Any other value is ignored, and the assertion message says so.
 
 ## Recreate the snapshots
 

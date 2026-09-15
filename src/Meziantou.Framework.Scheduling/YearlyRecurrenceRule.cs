@@ -9,14 +9,8 @@ namespace Meziantou.Framework.Scheduling;
 /// </example>
 internal sealed class YearlyRecurrenceRule : RecurrenceRule
 {
-    /// <summary>Limits occurrences to specific days of the month.</summary>
-    public new IList<int>? ByMonthDays { get; set; }
-
     /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay>? ByWeekDays { get; set; }
-
-    /// <summary>Limits occurrences to specific months.</summary>
-    public new IList<int>? ByMonths { get; set; }
 
     /// <summary>Limits occurrences to specific weeks of the year (1-53, -53 to -1), numbered as RFC 5545 defines using <see cref="RecurrenceRule.WeekStart"/>.</summary>
     public IList<int>? ByWeekNumbers { get; set; }
@@ -51,7 +45,7 @@ internal sealed class YearlyRecurrenceRule : RecurrenceRule
             if (EndDate.HasValue)
             {
                 sb.Append(";UNTIL=");
-                sb.Append(Utilities.DateTimeToString(EndDate.Value));
+                sb.Append(EndDateText);
             }
 
             if (Occurrences.HasValue)

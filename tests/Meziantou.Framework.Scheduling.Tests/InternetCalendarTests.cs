@@ -440,6 +440,45 @@ public sealed class InternetCalendarTests
     }
 
     [Fact]
+    public void ToIcs_FloatingRecurrenceUntil_RoundTrips()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY");
+        rrule.EndDate = new DateTime(2024, 03, 01, 08, 00, 00, DateTimeKind.Unspecified);
+        var @event = CreateEvent();
+        @event.RecurrenceRule = rrule;
+
+        var parsed = InternetCalendar.Parse(CreateCalendarWithEvent(@event).ToIcs());
+
+        var recurrenceRule = parsed.Events.Single().RecurrenceRule;
+        Assert.Equal("FREQ=DAILY;UNTIL=20240301T080000", recurrenceRule?.Text);
+        Assert.Equal(DateTimeKind.Unspecified, recurrenceRule?.EndDate?.Kind);
+    }
+
+    [Fact]
+    public void ToIcs_DateRecurrenceUntil_OfAnAllDayEvent_IsWrittenBackAsADate()
+    {
+        var calendar = InternetCalendar.Parse(CreateIcs("DTSTART;VALUE=DATE:20240101", "RRULE:FREQ=DAILY;UNTIL=20240105"));
+
+        var ics = calendar.ToIcs();
+
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240105", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
+    public void ToIcs_DateRecurrenceUntil_IsWrittenInUtcWhenTheEventHasATimeZone()
+    {
+        var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240301");
+        var @event = CreateEvent();
+        @event.TimeZone = CreateTestTimeZone();
+        @event.RecurrenceRule = rrule;
+
+        var ics = CreateCalendarWithEvent(@event).ToIcs();
+
+        // Midnight in a -05:00 time zone is 05:00Z
+        Assert.Equal("RRULE:FREQ=DAILY;UNTIL=20240301T050000Z", GetContentLine(ics, "RRULE"));
+    }
+
+    [Fact]
     public void ToIcs_KeepsTheTimeStampsUnchangedWhenTheEventHasATimeZone()
     {
         var @event = CreateEvent();

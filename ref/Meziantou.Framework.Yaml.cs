@@ -1197,6 +1197,7 @@ namespace Meziantou.Framework.Yaml.Serialization.Converters
     public sealed class YamlNumberHandlingConverter : Meziantou.Framework.Yaml.Serialization.YamlConverter
     {
         public YamlNumberHandlingConverter(Meziantou.Framework.Yaml.Serialization.YamlConverter inner, System.Type type, Meziantou.Framework.Yaml.YamlNumberHandling handling) { }
+        public static bool CanReadStringScalar(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type type, Meziantou.Framework.Yaml.YamlNumberHandling handling) => throw null;
         public override bool CanConvert(System.Type typeToConvert) => throw null;
         public override object? Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader, System.Type typeToConvert) => throw null;
         public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, object? value) { }

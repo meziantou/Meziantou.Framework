@@ -672,6 +672,20 @@ A union declaring cases that can never be told apart is rejected when the classi
 A union declaring a nullable case round-trips `null` to that case. When no case is nullable, `null` produces the default
 value of the union.
 
+`YamlNumberHandlingAttribute` on a union applies to its numeric cases. A quoted scalar normally selects a string case, but
+with `AllowReadingFromString` a quoted number such as `"42"` also matches the numeric cases, and with
+`AllowNamedFloatingPointLiterals` a quoted `"NaN"`, `"Infinity"`, or `"-Infinity"` also matches the floating-point
+cases. A scalar matching several cases is ambiguous and needs a type classifier:
+
+```csharp
+[YamlNumberHandling(YamlNumberHandling.AllowReadingFromString)]
+internal union IdOrName(int, string);
+
+YamlSerializer.Deserialize<IdOrName>("\"alice\""); // "alice"
+YamlSerializer.Deserialize<IdOrName>("42");        // 42
+YamlSerializer.Deserialize<IdOrName>("\"42\"");    // throws: both cases match
+```
+
 ## Type classifiers
 
 Implement `YamlTypeClassifierFactory` to select a union case, or a derived type, with your own rules. `CanClassify`

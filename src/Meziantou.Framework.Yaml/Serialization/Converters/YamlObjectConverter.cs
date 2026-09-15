@@ -3311,7 +3311,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     private static YamlNumberHandlingConverter? CreateNumberHandlingConverter(MemberInfo member, Type memberType, Type declaringType, YamlReaderWriterBase readerWriter)
     {
         var handling = GetEffectiveNumberHandling(member, declaringType);
-        if (handling == YamlNumberHandling.None || !IsSupportedNumberHandlingType(memberType))
+        if (handling == YamlNumberHandling.None || !YamlNumberHandlingConverter.IsSupportedType(memberType))
         {
             return null;
         }
@@ -3335,24 +3335,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
 
         return YamlNumberHandling.None;
-    }
-
-    private static bool IsSupportedNumberHandlingType(Type type)
-    {
-        var underlying = Nullable.GetUnderlyingType(type) ?? type;
-        return underlying == typeof(byte) || underlying == typeof(sbyte)
-            || underlying == typeof(short) || underlying == typeof(ushort)
-            || underlying == typeof(int) || underlying == typeof(uint)
-            || underlying == typeof(long) || underlying == typeof(ulong)
-            || underlying == typeof(float) || underlying == typeof(double)
-            || underlying == typeof(decimal)
-#if NET11_0_OR_GREATER
-            || underlying == typeof(BFloat16)
-            || underlying == typeof(Decimal32)
-            || underlying == typeof(Decimal64)
-            || underlying == typeof(Decimal128)
-#endif
-            || underlying == typeof(nint) || underlying == typeof(nuint);
     }
 
     private static (YamlSequenceItemStyle MappingStyle, YamlSequenceItemStyle SequenceStyle) GetBlockSequenceItemStyles(MemberInfo member)

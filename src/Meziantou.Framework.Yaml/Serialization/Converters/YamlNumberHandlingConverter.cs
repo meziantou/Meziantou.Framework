@@ -31,6 +31,36 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
         _handling = handling;
     }
 
+    /// <summary>
+    /// Determines whether a numeric type configured with <paramref name="handling"/> can read the scalar
+    /// <paramref name="reader"/> is positioned on when that scalar resolves to a string, such as a quoted number.
+    /// </summary>
+    /// <param name="reader">The reader positioned on the scalar.</param>
+    /// <param name="type">The numeric CLR type that would read the scalar.</param>
+    /// <param name="handling">The number handling applied to <paramref name="type"/>.</param>
+    /// <returns><see langword="true"/> when <paramref name="handling"/> lets <paramref name="type"/> read the scalar; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> or <paramref name="type"/> is <see langword="null"/>.</exception>
+    public static bool CanReadStringScalar(YamlReader reader, Type type, YamlNumberHandling handling)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (reader.TokenType != YamlTokenType.Scalar)
+        {
+            return false;
+        }
+
+        if ((handling & YamlNumberHandling.AllowNamedFloatingPointLiterals) != YamlNumberHandling.None &&
+            IsNamedFloatType(Nullable.GetUnderlyingType(type) ?? type) &&
+            GetNamedFloatLiteral(reader.ScalarValue) is not NamedFloatLiteral.None)
+        {
+            return true;
+        }
+
+        return (handling & YamlNumberHandling.AllowReadingFromString) != YamlNumberHandling.None &&
+               (YamlScalar.TryParseInt64(reader, out _) || YamlScalar.TryParseDouble(reader, out _));
+    }
+
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert) => typeToConvert == _type;
 
@@ -74,14 +104,7 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
     {
         value = null;
 
-        var literal = text switch
-        {
-            "NaN" => NamedFloatLiteral.NaN,
-            "Infinity" or "+Infinity" => NamedFloatLiteral.PositiveInfinity,
-            "-Infinity" => NamedFloatLiteral.NegativeInfinity,
-            _ => NamedFloatLiteral.None,
-        };
-
+        var literal = GetNamedFloatLiteral(text);
         if (literal is NamedFloatLiteral.None)
         {
             return false;
@@ -127,6 +150,44 @@ public sealed class YamlNumberHandlingConverter : YamlConverter
 
         return false;
     }
+
+    internal static bool IsSupportedType(Type type)
+    {
+        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+        return underlying == typeof(byte) || underlying == typeof(sbyte)
+            || underlying == typeof(short) || underlying == typeof(ushort)
+            || underlying == typeof(int) || underlying == typeof(uint)
+            || underlying == typeof(long) || underlying == typeof(ulong)
+            || underlying == typeof(float) || underlying == typeof(double)
+            || underlying == typeof(decimal)
+#if NET11_0_OR_GREATER
+            || underlying == typeof(BFloat16)
+            || underlying == typeof(Decimal32)
+            || underlying == typeof(Decimal64)
+            || underlying == typeof(Decimal128)
+#endif
+            || underlying == typeof(nint) || underlying == typeof(nuint);
+    }
+
+    private static NamedFloatLiteral GetNamedFloatLiteral(string? text)
+        => text switch
+        {
+            "NaN" => NamedFloatLiteral.NaN,
+            "Infinity" or "+Infinity" => NamedFloatLiteral.PositiveInfinity,
+            "-Infinity" => NamedFloatLiteral.NegativeInfinity,
+            _ => NamedFloatLiteral.None,
+        };
+
+    private static bool IsNamedFloatType(Type type)
+        => type == typeof(double) ||
+           type == typeof(float)
+#if NET11_0_OR_GREATER
+           || type == typeof(BFloat16)
+           || type == typeof(Decimal32)
+           || type == typeof(Decimal64)
+           || type == typeof(Decimal128)
+#endif
+        ;
 
     private static object CreateNamedFloat<T>(NamedFloatLiteral literal)
         where T : struct, IFloatingPointIeee754<T>

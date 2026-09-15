@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.DnsServer.Listeners;
 
-internal sealed class DnsQuicListener : BackgroundService
+internal sealed class DnsQuicListener : BackgroundService, IAsyncDisposable
 {
     /// <summary>How long shutdown waits for in-flight requests before dropping them.</summary>
     private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(5);
@@ -21,6 +21,10 @@ internal sealed class DnsQuicListener : BackgroundService
     private readonly ILogger<DnsQuicListener> _logger;
     private readonly PendingRequestTracker _pendingRequests = new();
 
+    // Published once by StartAsync and never mutated afterwards: ExecuteAsync can still be iterating it
+    // when a failed startup makes the host dispose the services underneath it.
+    private (QuicListener Listener, IPEndPoint Endpoint)[] _listeners = [];
+
     public DnsQuicListener(DnsServerOptions options, DnsRequestProcessor processor, ILogger<DnsQuicListener> logger)
     {
         _options = options;
@@ -28,18 +32,49 @@ internal sealed class DnsQuicListener : BackgroundService
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         if (!QuicListener.IsSupported)
         {
             _logger.LogWarning("QUIC is not supported on this platform. DNS over QUIC listeners will not start.");
-            return;
+        }
+        else
+        {
+            // Bind up front, like the UDP listener, so that the server accepts connections as soon as the host
+            // reports it started, and a port conflict surfaces as a startup failure rather than faulting the
+            // background task later.
+            var listeners = new List<(QuicListener Listener, IPEndPoint Endpoint)>(_options.QuicListeners.Count);
+            try
+            {
+                foreach (var listenerOptions in _options.QuicListeners)
+                {
+                    var endpoint = new IPEndPoint(listenerOptions.BindAddress, listenerOptions.Port);
+                    var listener = await QuicListener.ListenAsync(CreateListenerOptions(listenerOptions, endpoint), cancellationToken).ConfigureAwait(false);
+                    listeners.Add((listener, endpoint));
+                }
+            }
+            catch
+            {
+                foreach (var (listener, _) in listeners)
+                {
+                    await listener.DisposeAsync().ConfigureAwait(false);
+                }
+
+                throw;
+            }
+
+            _listeners = [.. listeners];
         }
 
-        var tasks = new List<Task>();
-        foreach (var listener in _options.QuicListeners)
+        await base.StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var tasks = new List<Task>(_listeners.Length);
+        foreach (var (listener, endpoint) in _listeners)
         {
-            tasks.Add(RunListenerAsync(listener, stoppingToken));
+            tasks.Add(RunListenerAsync(listener, endpoint, stoppingToken));
         }
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -53,13 +88,36 @@ internal sealed class DnsQuicListener : BackgroundService
         {
             _logger.LogWarning("Some QUIC DNS requests were still running after {Timeout} and were abandoned", DrainTimeout);
         }
+
+        await DisposeListenersAsync().ConfigureAwait(false);
     }
 
-    private async Task RunListenerAsync(Hosting.QuicListenerOptions listenerOptions, CancellationToken stoppingToken)
+    public async ValueTask DisposeAsync()
     {
-        var endpoint = new IPEndPoint(listenerOptions.BindAddress, listenerOptions.Port);
+        base.Dispose();
+        await DisposeListenersAsync().ConfigureAwait(false);
+    }
 
-        await using var listener = await QuicListener.ListenAsync(new System.Net.Quic.QuicListenerOptions
+    public override void Dispose()
+    {
+        // QuicListener is only asynchronously disposable. BackgroundService.Dispose cancels the accept loops first,
+        // so this only waits for the native listeners to stop.
+        base.Dispose();
+        DisposeListenersAsync().AsTask().GetAwaiter().GetResult();
+    }
+
+    private async ValueTask DisposeListenersAsync()
+    {
+        // QuicListener.DisposeAsync is idempotent, so StopAsync and Dispose can both run this.
+        foreach (var (listener, _) in _listeners)
+        {
+            await listener.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private System.Net.Quic.QuicListenerOptions CreateListenerOptions(Hosting.QuicListenerOptions listenerOptions, IPEndPoint endpoint)
+    {
+        return new System.Net.Quic.QuicListenerOptions
         {
             ListenEndPoint = endpoint,
             ApplicationProtocols = [new SslApplicationProtocol("doq")],
@@ -76,8 +134,11 @@ internal sealed class DnsQuicListener : BackgroundService
                     ServerCertificate = listenerOptions.Certificate,
                 },
             }),
-        }, stoppingToken).ConfigureAwait(false);
+        };
+    }
 
+    private async Task RunListenerAsync(QuicListener listener, IPEndPoint endpoint, CancellationToken stoppingToken)
+    {
         _logger.LogInformation("DNS QUIC listener started on {Endpoint}", endpoint);
 
         try
@@ -91,6 +152,11 @@ internal sealed class DnsQuicListener : BackgroundService
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The host disposed the service while the accept was pending
                     break;
                 }
 

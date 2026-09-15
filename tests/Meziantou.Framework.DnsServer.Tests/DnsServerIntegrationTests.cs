@@ -1048,6 +1048,34 @@ public sealed class DnsServerIntegrationTests
     }
 
     [Fact]
+    public async Task Quic_BindFailure_IsReportedByStartAsync()
+    {
+        if (!System.Net.Quic.QuicListener.IsSupported)
+            return;
+
+        // A listener in the same process with the same ALPN makes the server's listener fail to bind. The failure
+        // has to surface from StartAsync: binding in the background would also let a client connect before the
+        // listener exists and get an ICMP port unreachable.
+        using var certificate = CreateSelfSignedCertificate();
+        await using var squatter = await System.Net.Quic.QuicListener.ListenAsync(new System.Net.Quic.QuicListenerOptions
+        {
+            ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+            ApplicationProtocols = [new SslApplicationProtocol("doq")],
+            ConnectionOptionsCallback = (_, _, _) => throw new InvalidOperationException("No connection is expected."),
+        }, XunitCancellationToken);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseUrls("http://127.0.0.1:0");
+        builder.AddDnsServer(options => options.AddQuicListener(squatter.LocalEndPoint.Port, certificate, IPAddress.Loopback));
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, ct) => ValueTask.FromResult(context.CreateResponse()));
+
+        await Assert.ThrowsAnyAsync<Exception>(() => app.StartAsync(XunitCancellationToken));
+        Assert.False(app.Lifetime.ApplicationStopping.IsCancellationRequested);
+    }
+
+    [Fact]
     public async Task Tcp_ResponseLargerThan64K_IsTruncatedInsteadOfCorruptingTheStream()
     {
         var port = 0;

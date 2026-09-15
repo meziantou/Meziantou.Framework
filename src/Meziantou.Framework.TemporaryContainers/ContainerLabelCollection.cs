@@ -1,4 +1,5 @@
 using System.Collections;
+using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class ContainerLabelCollection : IEnumerable<KeyValuePair<string, string>>
 {
     private readonly Dictionary<string, string> _labels;
+    private bool _isReadOnly;
 
     internal ContainerLabelCollection()
     {
@@ -27,6 +29,7 @@ public sealed class ContainerLabelCollection : IEnumerable<KeyValuePair<string, 
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(value);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         _labels[name] = value;
     }
 
@@ -36,6 +39,7 @@ public sealed class ContainerLabelCollection : IEnumerable<KeyValuePair<string, 
     public bool Remove(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
         return _labels.Remove(name);
     }
 
@@ -53,4 +57,6 @@ public sealed class ContainerLabelCollection : IEnumerable<KeyValuePair<string, 
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator() => _labels.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
 }

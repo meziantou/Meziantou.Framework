@@ -41,6 +41,14 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void FormatCommand_RedactsVolumeDriverOptionValues()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["volume", "create", "--opt", "password=hunter2", "-o", "o=addr=10.0.0.1", "data"]);
+
+        Assert.Equal("docker volume create --opt password=*** -o o=*** data", command);
+    }
+
+    [Fact]
     public void FormatCommand_KeepsArgumentsThatOnlyLookLikeEnvironmentVariables()
     {
         var command = ContainerCli.FormatCommand("docker", ["create", "--label", "owner=meziantou", "busybox:1.37"]);
@@ -60,7 +68,9 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("cp src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("cp abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
         Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc"));
-        Assert.Equal("version", string.Join(' ', runtime.BuildProbeArguments()));
+        Assert.Equal("version --format {{.Server.Os}}", string.Join(' ', runtime.BuildProbeArguments()));
+        Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", follow: false)));
+        Assert.Equal("image rm meziantou-tc/abc:latest", string.Join(' ', runtime.BuildDeleteImageArguments("meziantou-tc/abc:latest")));
     }
 
     [Fact]
@@ -180,6 +190,243 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public async Task ExistsAsync_ReportsAMissingContainerWhenTheDaemonAnswers()
+    {
+        var executable = CreateStubCli(exitCode: 0, failingCommand: "container");
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+
+            Assert.False(await runtime.ExistsAsync("abc", XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public async Task ExistsAsync_ThrowsWhenTheDaemonDoesNotAnswer()
+    {
+        // Every command fails, the probe included: that is a daemon that does not answer, not a missing container, and a
+        // cleanup must not report the container as removed.
+        var executable = CreateStubCli(exitCode: 1);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+
+            await Assert.ThrowsAsync<ContainerRuntimeException>(() => runtime.ExistsAsync("abc", XunitCancellationToken));
+            await Assert.ThrowsAsync<ContainerRuntimeException>(() => runtime.DeleteAsync("abc", XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ReportsAContainerThatIsStillThere()
+    {
+        // 'rm' fails while 'inspect' still finds the container: the runtime could not remove it.
+        var executable = CreateStubCli(exitCode: 0, failingCommand: "rm");
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+
+            await Assert.ThrowsAsync<ContainerRuntimeException>(() => runtime.DeleteAsync("abc", XunitCancellationToken));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public void DockerCreateArguments_PullNothingSinceTheImageIsAlreadyPrepared()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("busybox:1.37"));
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+
+        var args = runtime.BuildCreateArguments(definition, "busybox:1.37");
+
+        Assert.Equal("never", args[args.ToList().IndexOf("--pull") + 1]);
+    }
+
+    [Fact]
+    public void CreateArguments_PassTheEnvironmentThroughAFile()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("busybox:1.37"));
+        definition.Environment.Add("PASSWORD", "hunter2");
+        definition.Environment.Add("MULTILINE", "first\nsecond");
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+
+        using var environmentFile = EnvironmentFile.Create(definition.Environment);
+        var args = runtime.BuildCreateArguments(definition, "busybox:1.37", environmentFile);
+
+        // The values of a command line can be read by every user of the machine; the file only by the current one.
+        Assert.NotNull(environmentFile);
+        Assert.Equal(environmentFile.Path, args[args.ToList().IndexOf("--env-file") + 1]);
+        Assert.DoesNotContain(args, arg => arg.Contains("hunter2", StringComparison.Ordinal));
+        Assert.Equal("PASSWORD=hunter2\n", File.ReadAllText(environmentFile.Path));
+        if (!OperatingSystem.IsWindows())
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(environmentFile.Path));
+
+        // A value that spans lines cannot be written to the file, so it stays on the command line.
+        Assert.Contains("MULTILINE=first\nsecond", args);
+    }
+
+    [Theory]
+    [InlineData("value", true)]
+    [InlineData("va lue=with spaces", true)]
+    [InlineData("multi\nline", false)]
+    [InlineData("carriage\rreturn", false)]
+    [InlineData("\"quoted\"", false)]
+    [InlineData("'quoted'", false)]
+    [InlineData("with # comment", false)]
+    public void EnvironmentFile_OnlyHoldsTheValuesEveryRuntimeReadsTheSameWay(string value, bool expected)
+    {
+        Assert.Equal(expected, EnvironmentFile.CanBeWritten("NAME", value));
+    }
+
+    [Theory]
+    [InlineData(null, 8080, true, "127.0.0.1::8080")]
+    [InlineData(9090, 8080, true, "127.0.0.1:9090:8080")]
+    [InlineData(null, 8080, false, "8080")]
+    [InlineData(9090, 8080, false, "9090:8080")]
+    public void FormatPort_PublishesOnTheLoopbackAddress(int? hostPort, int port, bool hostIpSupported, string expected)
+    {
+        Assert.Equal(expected, DockerCreateArgumentBuilder.FormatPort(new ContainerPort(hostPort, port), hostIpSupported));
+    }
+
+    [Fact]
+    public void FormatPort_EnclosesAnIPv6AddressInBrackets()
+    {
+        Assert.Equal("[::1]::8080", DockerCreateArgumentBuilder.FormatPort(new ContainerPort(8080) with { HostIp = "::1" }, hostIpSupported: true));
+    }
+
+    [Theory]
+    [InlineData("alpine", "alpine:latest")]
+    [InlineData("library/alpine", "library/alpine:latest")]
+    [InlineData("alpine:3.20", "alpine:3.20")]
+    [InlineData("localhost:5000/app", "localhost:5000/app:latest")]
+    [InlineData("localhost:5000/app:1", "localhost:5000/app:1")]
+    [InlineData("alpine@sha256:abcd", "alpine@sha256:abcd")]
+    public void WithDefaultTag_AddsLatestToAnUntaggedReference(string reference, string expected)
+    {
+        // The Engine API pulls every tag of an untagged reference.
+        Assert.Equal(expected, ImageReference.WithDefaultTag(reference));
+    }
+
+    [Theory]
+    [InlineData("tcp://10.0.0.1:2375", "http://10.0.0.1:2375/")]
+    [InlineData("http://10.0.0.1:2375", "http://10.0.0.1:2375/")]
+    public void TryParseDockerHost_ResolvesTheEndpoint(string dockerHost, string expectedDisplayName)
+    {
+        Assert.True(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out var endpoint));
+        Assert.Equal(expectedDisplayName, endpoint.DisplayName);
+    }
+
+    [Theory]
+    [InlineData("unix:///var/run/docker.sock", "/var/run/docker.sock")]
+    [InlineData("unix:///run/user/1000/docker%20sock", "/run/user/1000/docker sock")]
+    public void TryParseDockerHost_ResolvesAUnixSocket(string dockerHost, string expectedPath)
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        Assert.True(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out var endpoint));
+        Assert.Equal(FullPath.FromPath(expectedPath), endpoint.UnixSocketPath);
+    }
+
+    [Fact]
+    public void TryParseDockerHost_UsesTlsWhenTheCliIsConfiguredForIt()
+    {
+        var tls = new DockerApiTransport.TlsSettings("/certs");
+
+        Assert.True(DockerApiTransport.TryParseDockerHost("tcp://docker.example.com:2376", tls, out var endpoint));
+
+        Assert.Equal("https://docker.example.com:2376/", endpoint.DisplayName);
+        Assert.Same(tls, endpoint.Tls);
+    }
+
+    [Theory]
+    [InlineData(@"npipe:////./pipe/docker_engine", ".", "docker_engine")]
+    [InlineData(@"npipe://server/pipe/custom", "server", "custom")]
+    public void TryParseDockerHost_ResolvesANamedPipe(string dockerHost, string expectedServer, string expectedName)
+    {
+        Assert.True(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out var endpoint));
+        Assert.Equal(expectedServer, endpoint.NamedPipeServer);
+        Assert.Equal(expectedName, endpoint.NamedPipeName);
+    }
+
+    [Theory]
+    [InlineData("ssh://user@host")]
+    [InlineData("unix://")]
+    [InlineData("not a uri")]
+    public void TryParseDockerHost_RejectsAnUnsupportedValue(string dockerHost)
+    {
+        Assert.False(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out _));
+    }
+
+    [Fact]
+    public void ParseInspect_ReadsTheBindingsUnderNetworkSettings()
+    {
+        // docker and podman report one binding per address family for a port published on every interface, and podman
+        // leaves HostIp empty.
+        var inspectOutput =
+                """
+                [
+                    {
+                        "Id": "container-id",
+                        "Name": "/test",
+                        "Ports": {},
+                        "Config": { "Env": ["PATH=/bin", "PASSWORD=a=b"] },
+                        "NetworkSettings": {
+                            "Ports": {
+                                "8080/tcp": [ { "HostIp": "0.0.0.0", "HostPort": "50809" }, { "HostIp": "::", "HostPort": "50809" } ],
+                                "5432/tcp": [ { "HostIp": "", "HostPort": "50810" } ],
+                                "9090/tcp": null
+                            }
+                        }
+                    }
+                ]
+                """;
+
+        var container = DockerContainerInfoParser.ParseInspectOutput(inspectOutput);
+
+        Assert.Equal(50809, container.Ports[8080]);
+        Assert.Equal(50810, container.Ports[5432]);
+        Assert.False(container.Ports.ContainsKey(9090));
+        Assert.Equal("a=b", container.Environment["PASSWORD"]);
+    }
+
+    [Fact]
+    public void ParseInspect_AnEmptyNetworkSettingsDoesNotHideTheTopLevelBindings()
+    {
+        var inspectOutput =
+                """
+                [
+                    {
+                        "Id": "container-id",
+                        "Ports": { "8080/tcp": [ { "HostIp": "127.0.0.1", "HostPort": "50809" } ] },
+                        "NetworkSettings": { "Ports": {} }
+                    }
+                ]
+                """;
+
+        Assert.Equal(50809, DockerContainerInfoParser.ParseInspectOutput(inspectOutput).Ports[8080]);
+    }
+
+    [Theory]
+    [InlineData("1234 (dotnet) S 1 1234 1234 0 -1 4194560 100 0 0 0 1 2 0 0 20 0 21 0 98765 12345 678", "98765")]
+    [InlineData("1234 (my (weird) name) R 1 1234 1234 0 -1 4194560 100 0 0 0 1 2 0 0 20 0 21 0 98765 12345 678", "98765")]
+    [InlineData("1234 (dotnet) Z 1 1234 1234 0 -1 4194560 100 0 0 0 1 2 0 0 20 0 21 0 98765 12345 678", null)]
+    [InlineData("1234 (dotnet) S 1", null)]
+    public void ParseStartTicks_ReadsTheStartTimeOfTheProcess(string stat, string? expected)
+    {
+        Assert.Equal(expected, SessionIdentity.ParseStartTicks(stat));
+    }
+
+    [Fact]
     public void WslcCreateArguments_DoNotUsePullOption()
     {
         var definition = new ContainerDefinition(new RegistryImage("busybox:1.37"));
@@ -275,18 +522,18 @@ public sealed class DockerRuntimeAdapterTests
     [Fact]
     public void IsTransient_DockerApiResponse_ServerErrorIsTransient()
     {
-        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.ServiceUnavailable)));
-        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.InternalServerError)));
-        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.TooManyRequests)));
-        Assert.True(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.RequestTimeout)));
+        Assert.True(TransientError.IsTransient(ApiFailure(HttpStatusCode.ServiceUnavailable)));
+        Assert.True(TransientError.IsTransient(ApiFailure(HttpStatusCode.InternalServerError)));
+        Assert.True(TransientError.IsTransient(ApiFailure(HttpStatusCode.TooManyRequests)));
+        Assert.True(TransientError.IsTransient(ApiFailure(HttpStatusCode.RequestTimeout)));
     }
 
     [Fact]
     public void IsTransient_DockerApiResponse_ClientErrorIsPermanent()
     {
-        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.NotFound)));
-        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.Unauthorized)));
-        Assert.False(TransientError.IsTransient(new DockerApiException("boom", HttpStatusCode.Conflict)));
+        Assert.False(TransientError.IsTransient(ApiFailure(HttpStatusCode.NotFound)));
+        Assert.False(TransientError.IsTransient(ApiFailure(HttpStatusCode.Unauthorized)));
+        Assert.False(TransientError.IsTransient(ApiFailure(HttpStatusCode.Conflict)));
     }
 
     [Fact]
@@ -302,8 +549,8 @@ public sealed class DockerRuntimeAdapterTests
         Assert.False(TransientError.IsTransient(NoStatusCode("manifest for busybox:nope not found: manifest unknown")));
         Assert.False(TransientError.IsTransient(NoStatusCode("pull access denied, repository does not exist")));
 
-        static DockerApiException NoStatusCode(string message)
-            => new("Unable to pull image 'busybox:1.37': " + message, statusCode: null);
+        static ContainerRuntimeException NoStatusCode(string message)
+            => new("Unable to pull image 'busybox:1.37': " + message, ContainerRuntime.DockerApi, statusCode: null);
     }
 
     [Fact]
@@ -378,10 +625,10 @@ public sealed class DockerRuntimeAdapterTests
     public async Task RetryStrategy_DoesNotRetryAPermanentFailure()
     {
         var attempts = 0;
-        await Assert.ThrowsAsync<DockerApiException>(() => RetryStrategy.ExecuteAsync(_ =>
+        await Assert.ThrowsAsync<ContainerRuntimeException>(() => RetryStrategy.ExecuteAsync(_ =>
         {
             attempts++;
-            throw new DockerApiException("manifest unknown", HttpStatusCode.NotFound);
+            throw ApiFailure(HttpStatusCode.NotFound);
         }, TransientError.IsTransient, onRetry: null, TimeSpan.Zero, CancellationToken.None));
 
         Assert.Equal(1, attempts);
@@ -430,21 +677,28 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     /// <summary>Writes a CLI that exits with <paramref name="exitCode"/> whatever it is asked to do, so the outcome of the probe can be forced.</summary>
-    private static string CreateStubCli(int exitCode)
+    /// <param name="exitCode">The exit code of every command.</param>
+    /// <param name="failingCommand">A first argument for which the CLI fails with the exit code 1 instead.</param>
+    private static string CreateStubCli(int exitCode, string? failingCommand = null)
     {
         var path = Path.Combine(Path.GetTempPath(), "MezTC-stub-" + Guid.NewGuid().ToString("N"));
         if (OperatingSystem.IsWindows())
         {
             path += ".cmd";
-            File.WriteAllText(path, $"@exit /b {exitCode}\r\n");
+            var failing = failingCommand is null ? "" : $"@if \"%1\"==\"{failingCommand}\" exit /b 1\r\n";
+            File.WriteAllText(path, $"{failing}@exit /b {exitCode}\r\n");
         }
         else
         {
             path += ".sh";
-            File.WriteAllText(path, $"#!/bin/sh\nexit {exitCode}\n");
+            var failing = failingCommand is null ? "" : $"if [ \"$1\" = \"{failingCommand}\" ]; then exit 1; fi\n";
+            File.WriteAllText(path, $"#!/bin/sh\n{failing}exit {exitCode}\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
         return path;
     }
+
+    private static ContainerRuntimeException ApiFailure(HttpStatusCode statusCode)
+        => new("boom", ContainerRuntime.DockerApi, statusCode);
 }

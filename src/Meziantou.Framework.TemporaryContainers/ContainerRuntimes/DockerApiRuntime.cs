@@ -16,8 +16,14 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 {
     private static readonly char[] ContainerPathSeparators = ['/', '\\'];
 
+    // A daemon that is reachable answers '/version' at once. The timeout only matters when the socket exists and the
+    // daemon behind it never answers, and it has to leave room for a thread pool that is busy starting many tests.
+    private static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(10);
+
     private readonly DockerRegistryAuthProvider _authProvider;
-    private DockerApiConnection? _connection;
+    private readonly Lock _connectionLock = new();
+    private volatile DockerApiConnection? _connection;
+    private Task<DockerApiConnection?>? _connectionProbe;
 
     internal DockerApiRuntime()
         : base("DockerApi")
@@ -28,19 +34,20 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     public override async Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
         => await EnsureConnectionAsync(cancellationToken).ConfigureAwait(false) is not null;
 
-    internal override bool SupportsPause => true;
-
-    internal override bool SupportsRestart => true;
-
     internal override bool SupportsReaper => true;
+
+    internal override bool SupportsImageCleanup => true;
+
+    internal override bool LogsIncludeTimestamps => true;
 
     internal override async Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
         if (definition.ReuseId is { } reuseId && await FindReusableContainerAsync(reuseId, cancellationToken).ConfigureAwait(false) is { } reusedContainerId)
             return reusedContainerId;
 
-        var imageRef = await PrepareImageAsync(definition.Image, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
-        var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef);
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        var imageRef = await PrepareImageAsync(definition, cancellationToken).ConfigureAwait(false);
+        var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef, hostIpSupported: !connection.IsWindowsDaemon);
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
         var endpoint = "/containers/create";
 
@@ -59,13 +66,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             // Another process created the container between the lookup and the creation. Adopting it is the whole
             // point of a reuse identifier.
             return await FindReusableContainerAsync(definition.ReuseId!, cancellationToken).ConfigureAwait(false)
-                ?? throw new InvalidOperationException($"Unable to create the container: the name '{name}' is already used by a container that does not belong to this library.");
+                ?? throw CreateException($"Unable to create the container: the name '{name}' is already used by a container that does not belong to this library.", HttpStatusCode.Conflict);
         }
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var createResponse = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.CreateContainerResponse);
+        var createResponse = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.CreateContainerResponse, cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(createResponse?.Id))
-            throw new InvalidOperationException("Unable to create the container: the Docker API response does not contain an id.");
+            throw CreateException("Unable to create the container: the Docker API response does not contain an id.", statusCode: null);
 
         return createResponse.Id;
     }
@@ -115,14 +122,17 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return response.StatusCode != HttpStatusCode.NotFound;
     }
 
-    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, CancellationToken cancellationToken)
+    internal override async Task CreateVolumeAsync(VolumeDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
     {
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity);
+        labels[ResourceLabels.Instance] = instanceId;
+
         var payload = new DockerApiModels.VolumeCreateRequest
         {
             Name = name,
             Driver = definition.Driver,
             DriverOpts = definition.DriverOptions.Count > 0 ? definition.DriverOptions.ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal) : null,
-            Labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity),
+            Labels = labels,
         };
 
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.VolumeCreateRequest);
@@ -137,25 +147,37 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     }
 
     internal override async Task<bool> VolumeExistsAsync(string name, CancellationToken cancellationToken)
+        => await GetVolumeLabelsAsync(name, cancellationToken).ConfigureAwait(false) is not null;
+
+    internal override async Task<IReadOnlyDictionary<string, string>?> GetVolumeLabelsAsync(string name, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(HttpMethod.Get, "/volumes/" + Uri.EscapeDataString(name), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
-        return response.StatusCode != HttpStatusCode.NotFound;
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var volume = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.VolumeInspectResponse, cancellationToken).ConfigureAwait(false);
+        return volume?.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal);
+    }
+
+    internal override async Task DeleteImageAsync(string image, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(HttpMethod.Delete, "/images/" + Uri.EscapeDataString(image), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
     }
 
     internal override async Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
     {
         using var response = await SendAsync(HttpMethod.Get, "/containers/" + Uri.EscapeDataString(id) + "/json", content: null, cancellationToken).ConfigureAwait(false);
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var result = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.DockerInspectResult);
-        if (result is null)
-            throw new InvalidOperationException("Unable to inspect the container: the Docker API response is empty.");
+        var result = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.DockerInspectResult, cancellationToken).ConfigureAwait(false)
+            ?? throw CreateException("Unable to inspect the container: the Docker API response is empty.", statusCode: null);
 
         return DockerContainerInfoParser.ParseInspectResult(result);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var endpoint = "/containers/" + Uri.EscapeDataString(id) + "/logs?stdout=1&stderr=1&follow=1&timestamps=1";
+        var endpoint = "/containers/" + Uri.EscapeDataString(id) + "/logs?stdout=1&stderr=1&timestamps=1&follow=" + (follow ? "1" : "0");
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         await foreach (var entry in ReadMultiplexedLogsAsync(stream, cancellationToken).ConfigureAwait(false))
@@ -164,14 +186,11 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal override async Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
     {
-        if (options.StandardInput is not null)
-            throw new NotSupportedException("The Docker API runtime does not support stdin for exec operations.");
-
         var createExecRequest = new DockerApiModels.ExecCreateRequest
         {
             AttachStdout = true,
             AttachStderr = true,
-            AttachStdin = false,
+            AttachStdin = options.StandardInput is not null,
             Tty = false,
             Cmd = [.. options.Command],
             Env = [.. options.Environment.Select(static pair => pair.Key + "=" + pair.Value)],
@@ -182,38 +201,112 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         using var createExecContent = CreateJsonContent(createExecRequest, DockerApiJsonContext.Default.ExecCreateRequest);
         using var createExecResponse = await SendAsync(HttpMethod.Post, "/containers/" + Uri.EscapeDataString(id) + "/exec", createExecContent, cancellationToken).ConfigureAwait(false);
         using var createExecStream = await createExecResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var createExecResult = JsonSerializer.Deserialize(createExecStream, DockerApiJsonContext.Default.ExecCreateResponse);
-        var execId = createExecResult?.Id ?? throw new InvalidOperationException("Unable to create exec command: missing exec id.");
+        var createExecResult = await JsonSerializer.DeserializeAsync(createExecStream, DockerApiJsonContext.Default.ExecCreateResponse, cancellationToken).ConfigureAwait(false);
+        var execId = createExecResult?.Id ?? throw CreateException("Unable to create exec command: missing exec id.", statusCode: null);
 
-        var startExecRequest = new DockerApiModels.ExecStartRequest
+        var startExecRequest = JsonSerializer.Serialize(new DockerApiModels.ExecStartRequest { Detach = false, Tty = false }, DockerApiJsonContext.Default.ExecStartRequest);
+        var startEndpoint = "/exec/" + Uri.EscapeDataString(execId) + "/start";
+
+        string standardOutput;
+        string standardError;
+        if (options.StandardInput is { } standardInput)
         {
-            Detach = false,
-            Tty = false,
-        };
+            (standardOutput, standardError) = await StartExecWithStandardInputAsync(startEndpoint, startExecRequest, standardInput, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            using var startExecContent = new StringContent(startExecRequest, Encoding.UTF8, "application/json");
+            using var startExecResponse = await SendAsync(HttpMethod.Post, startEndpoint, startExecContent, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            await using var startExecStream = await startExecResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            (standardOutput, standardError) = await ReadMultiplexedTextAsync(startExecStream, cancellationToken).ConfigureAwait(false);
+        }
 
-        using var startExecContent = CreateJsonContent(startExecRequest, DockerApiJsonContext.Default.ExecStartRequest);
-        using var startExecResponse = await SendAsync(HttpMethod.Post, "/exec/" + Uri.EscapeDataString(execId) + "/start", startExecContent, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        await using var startExecStream = await startExecResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var (standardOutput, standardError) = await ReadMultiplexedTextAsync(startExecStream, cancellationToken).ConfigureAwait(false);
+        var exitCode = await WaitForExecExitCodeAsync(execId, cancellationToken).ConfigureAwait(false);
+        return new ExecResult(exitCode, standardOutput, standardError);
+    }
 
-        using var inspectExecResponse = await SendAsync(HttpMethod.Get, "/exec/" + Uri.EscapeDataString(execId) + "/json", content: null, cancellationToken).ConfigureAwait(false);
-        using var inspectExecStream = await inspectExecResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var inspectExecResult = JsonSerializer.Deserialize(inspectExecStream, DockerApiJsonContext.Default.ExecInspectResponse)
-            ?? throw new InvalidOperationException("Unable to inspect exec command result.");
+    /// <summary>Starts an exec over a connection the daemon takes over, sends the standard input while the output is read, and closes the input side once it is sent, which is how the process sees the end of its input.</summary>
+    private async Task<(string StandardOutput, string StandardError)> StartExecWithStandardInputAsync(string endpoint, string body, InputSource standardInput, CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
+        if (upgraded is null)
+            throw CreateException("Docker API request POST " + endpoint + " failed with status " + (int)statusCode + " (" + statusCode.ToString() + "): " + errorBody, statusCode);
 
-        return new ExecResult(inspectExecResult.ExitCode, standardOutput, standardError);
+        await using (upgraded.ConfigureAwait(false))
+        {
+            // The output is read while the input is written: a process that echoes its input would otherwise fill the
+            // buffers of the connection and never read the rest.
+            var output = ReadMultiplexedTextAsync(upgraded.Stream, cancellationToken);
+            await WriteStandardInputAsync(upgraded, standardInput, cancellationToken).ConfigureAwait(false);
+            return await output.ConfigureAwait(false);
+        }
+    }
+
+    private static async Task WriteStandardInputAsync(DockerApiTransport.UpgradedConnection connection, InputSource standardInput, CancellationToken cancellationToken)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
+        {
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var read = standardInput.Read(buffer);
+                if (read <= 0)
+                    break;
+
+                await connection.Stream.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            }
+
+            await connection.Stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await connection.CloseWriteAsync().ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // A process that exits without reading its whole input closes the connection under the writer. What it
+            // printed and its exit code are still what the caller asked for.
+        }
+        catch (SocketException)
+        {
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    /// <summary>Reads the exit code of an exec. The output stream ends when the process closes it, which is not necessarily when the process exits, and the daemon records the exit asynchronously, so the exec is polled until the daemon reports it as done.</summary>
+    private async Task<int> WaitForExecExitCodeAsync(string execId, CancellationToken cancellationToken)
+    {
+        var delay = TimeSpan.FromMilliseconds(10);
+        while (true)
+        {
+            using (var response = await SendAsync(HttpMethod.Get, "/exec/" + Uri.EscapeDataString(execId) + "/json", content: null, cancellationToken).ConfigureAwait(false))
+            {
+                using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                var result = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.ExecInspectResponse, cancellationToken).ConfigureAwait(false)
+                    ?? throw CreateException("Unable to inspect exec command result.", statusCode: null);
+
+                if (!result.Running && result.ExitCode is { } exitCode)
+                    return exitCode;
+            }
+
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            delay = TimeSpan.FromMilliseconds(Math.Min(delay.TotalMilliseconds * 2, 500));
+        }
     }
 
     internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, path), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        var (resolvedPath, _) = await ResolvePathAsync(id, path, cancellationToken).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedPath), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         return await DockerApiTarArchive.ReadSingleFileAsync(archive, path, cancellationToken).ConfigureAwait(false);
     }
 
     internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
     {
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(GetContainerPathName(path), content, cancellationToken).ConfigureAwait(false);
+        await using var archive = await DockerApiTarArchive.CreateForFileAsync(GetContainerPathName(path), content, DockerApiTarArchive.RegularFileMode, cancellationToken).ConfigureAwait(false);
         await PutArchiveAsync(id, GetContainerParentPath(path), archive, cancellationToken).ConfigureAwait(false);
     }
 
@@ -232,17 +325,17 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
 
         await using var file = File.OpenRead(source);
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(entryName, file, cancellationToken).ConfigureAwait(false);
+        await using var archive = await DockerApiTarArchive.CreateForFileAsync(entryName, file, DockerApiTarArchive.GetFileMode(source), cancellationToken).ConfigureAwait(false);
         await PutArchiveAsync(id, targetDirectory, archive, cancellationToken).ConfigureAwait(false);
     }
 
     internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
-        var sourceIsDirectory = await StatPathAsync(id, source, cancellationToken).ConfigureAwait(false) is { IsDirectory: true };
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, source), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        var (resolvedSource, sourceStat) = await ResolvePathAsync(id, source, cancellationToken).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedSource), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
-        if (sourceIsDirectory)
+        if (sourceStat is { IsDirectory: true })
         {
             // A destination directory that does not exist yet takes the place of the copied one, so the archive's own top-level directory is dropped.
             var destinationExists = Directory.Exists(destination);
@@ -259,6 +352,17 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         await using var content = await DockerApiTarArchive.ReadSingleFileAsync(archive, source, cancellationToken).ConfigureAwait(false);
         await using var file = File.Create(targetFile);
         await content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Replaces a path that is a symbolic link with the path it points to.</summary>
+    /// <remarks>The archive endpoint resolves every link of a path but the last one, and archives a last one that is a link as a link, without content. Reading the path through the container (<c>cat</c>) follows the link, so the path is resolved first to behave the same. The daemon reports the target of a link fully resolved, relative to the root of the container.</remarks>
+    private async Task<(string Path, DockerApiModels.ContainerPathStat? Stat)> ResolvePathAsync(string id, string path, CancellationToken cancellationToken)
+    {
+        var stat = await StatPathAsync(id, path, cancellationToken).ConfigureAwait(false);
+        if (stat is { IsSymbolicLink: true, LinkTarget: { Length: > 0 } linkTarget })
+            return (linkTarget, await StatPathAsync(id, linkTarget, cancellationToken).ConfigureAwait(false));
+
+        return (path, stat);
     }
 
     private async Task PutArchiveAsync(string id, string directory, Stream archive, CancellationToken cancellationToken)
@@ -314,19 +418,25 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     }
 
     internal override async Task<IReadOnlyList<ManagedResource>> ListManagedContainersAsync(CancellationToken cancellationToken)
+        => await ListManagedResourcesAsync("/containers/json?all=1&filters=", cancellationToken).ConfigureAwait(false);
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedImagesAsync(CancellationToken cancellationToken)
+        => await ListManagedResourcesAsync("/images/json?filters=", cancellationToken).ConfigureAwait(false);
+
+    private async Task<IReadOnlyList<ManagedResource>> ListManagedResourcesAsync(string endpointPrefix, CancellationToken cancellationToken)
     {
-        var endpoint = "/containers/json?all=1&filters=" + Uri.EscapeDataString(BuildManagedLabelFilter());
+        var endpoint = endpointPrefix + Uri.EscapeDataString(BuildManagedLabelFilter());
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var containers = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.ContainerSummaryArray);
-        if (containers is null)
+        var items = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.ContainerSummaryArray, cancellationToken).ConfigureAwait(false);
+        if (items is null)
             return [];
 
-        var resources = new List<ManagedResource>(containers.Length);
-        foreach (var container in containers)
+        var resources = new List<ManagedResource>(items.Length);
+        foreach (var item in items)
         {
-            if (!string.IsNullOrEmpty(container.Id))
-                resources.Add(new ManagedResource(container.Id, container.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal)));
+            if (!string.IsNullOrEmpty(item.Id))
+                resources.Add(new ManagedResource(item.Id, item.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal)));
         }
 
         return resources;
@@ -337,7 +447,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         var endpoint = "/volumes?filters=" + Uri.EscapeDataString(BuildManagedLabelFilter());
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var volumes = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.VolumeListResponse);
+        var volumes = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.VolumeListResponse, cancellationToken).ConfigureAwait(false);
         if (volumes?.Volumes is null)
             return [];
 
@@ -354,6 +464,17 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     private static string BuildManagedLabelFilter()
         => "{\"label\":[\"" + ResourceLabels.Managed + "\"]}";
 
+    /// <summary>The path of the daemon socket, as the containers of the daemon see it.</summary>
+    /// <remarks>On Linux, the daemon runs on the machine, so the socket this runtime connects to is the one to mount, rootless daemon included. On macOS and Windows, the daemon runs in a virtual machine: the socket this runtime connects to is a forwarding on the host, and the daemon's own socket is at the default path inside the machine.</remarks>
+    internal override async Task<string> GetReaperSocketPathAsync(CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        if (OperatingSystem.IsLinux() && connection.Endpoint.UnixSocketPath is { } socketPath)
+            return socketPath.Value;
+
+        return DefaultReaperSocketPath;
+    }
+
     private async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
         var labelFilter = JsonEncodedText.Encode(ResourceLabels.ReuseId + "=" + reuseId).ToString();
@@ -362,7 +483,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         var endpoint = "/containers/json?all=1&filters=" + Uri.EscapeDataString(filters);
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        var containers = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.ContainerSummaryArray);
+        var containers = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.ContainerSummaryArray, cancellationToken).ConfigureAwait(false);
         if (containers is null)
             return null;
 
@@ -375,34 +496,36 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return null;
     }
 
-    private async Task<string> PrepareImageAsync(ImageSource source, PullPolicy pullPolicy, ILogger? logger, CancellationToken cancellationToken)
+    private async Task<string> PrepareImageAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
-        switch (source)
+        var logger = definition.Logging.Logger;
+        switch (definition.Image)
         {
             case RegistryImage registry:
-                if (pullPolicy is PullPolicy.Always || pullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(registry.Name, logger, cancellationToken).ConfigureAwait(false))
-                    await PullImageAsync(registry.Name, logger, cancellationToken).ConfigureAwait(false);
+                // The Engine API pulls every tag of a reference that has none, where the CLI pulls 'latest'.
+                var imageName = ImageReference.WithDefaultTag(registry.Name);
+                if (definition.PullPolicy is PullPolicy.Always || definition.PullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(imageName, logger, cancellationToken).ConfigureAwait(false))
+                    await PullImageAsync(imageName, logger, cancellationToken).ConfigureAwait(false);
 
-                return registry.Name;
+                return imageName;
 
             case ExistingImage existing:
                 return existing.ImageId;
 
             case DockerfileImage dockerfile:
-                return await BuildImageAsync(dockerfile, cancellationToken).ConfigureAwait(false);
+                return await BuildImageAsync(dockerfile, ResourceLabels.BuildForImage(definition), cancellationToken).ConfigureAwait(false);
 
             case ArchiveImage archive:
-                _ = archive;
-                throw new NotSupportedException("The Docker API runtime does not support loading image archives.");
+                return await LoadImageAsync(archive, cancellationToken).ConfigureAwait(false);
 
             default:
-                throw new NotSupportedException($"Image source '{source.GetType()}' is not supported.");
+                throw new NotSupportedException($"Image source '{definition.Image.GetType()}' is not supported.");
         }
     }
 
-    private async Task<string> BuildImageAsync(DockerfileImage dockerfile, CancellationToken cancellationToken)
+    private async Task<string> BuildImageAsync(DockerfileImage dockerfile, Dictionary<string, string> labels, CancellationToken cancellationToken)
     {
-        var tag = "meziantou-tc/" + Guid.NewGuid().ToString("N") + ":latest";
+        var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
         var contextDirectory = Path.GetFullPath(dockerfile.ContextDirectory);
         var dockerfileName = Path.GetRelativePath(contextDirectory, Path.GetFullPath(dockerfile.DockerfilePath)).Replace('\\', '/');
 
@@ -418,10 +541,32 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         using var content = new StreamContent(context);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
 
-        var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag);
+        // The labels are what the cleanup and the reaper find a built image by.
+        var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag) +
+            "&labels=" + Uri.EscapeDataString(JsonSerializer.Serialize(labels, DockerApiJsonContext.Default.DictionaryStringString));
         using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
 
         // The daemon answers as soon as the build starts, so a failure is only reported in the stream of messages that follows.
+        await ReadProgressAsync(response, "Unable to build the image from '" + dockerfile.DockerfilePath + "': ", cancellationToken).ConfigureAwait(false);
+        return tag;
+    }
+
+    private async Task<string> LoadImageAsync(ArchiveImage archive, CancellationToken cancellationToken)
+    {
+        await using var file = File.OpenRead(archive.ArchivePath);
+        using var content = new StreamContent(file);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+
+        using var response = await SendAsync(HttpMethod.Post, "/images/load", content, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        var output = await ReadProgressAsync(response, "Unable to load the image archive '" + archive.ArchivePath + "': ", cancellationToken).ConfigureAwait(false);
+        return ContainerImageOutputParser.TryParseLoadedImage(output)
+            ?? throw CreateException("Unable to determine the image reference from the load output: " + output, statusCode: null);
+    }
+
+    /// <summary>Reads the stream of JSON messages the daemon answers a build or a load with, and returns the text they carry. A failure is only ever reported there.</summary>
+    private async Task<string> ReadProgressAsync(HttpResponseMessage response, string errorPrefix, CancellationToken cancellationToken)
+    {
+        var output = new StringBuilder();
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream);
         while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { } line)
@@ -432,10 +577,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             var progress = JsonSerializer.Deserialize(line, DockerApiJsonContext.Default.PullProgress);
             var errorMessage = progress?.ErrorDetail?.Message ?? progress?.Error;
             if (!string.IsNullOrEmpty(errorMessage))
-                throw new InvalidOperationException("Unable to build the image from '" + dockerfile.DockerfilePath + "': " + errorMessage);
+                throw CreateException(errorPrefix + errorMessage, statusCode: null);
+
+            output.Append(progress?.Stream);
         }
 
-        return tag;
+        return output.ToString();
     }
 
     private Task<bool> ImageExistsAsync(string imageName, ILogger? logger, CancellationToken cancellationToken)
@@ -480,18 +627,9 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (!response.IsSuccessStatusCode)
             throw await CreateRequestExceptionAsync(response, request.Method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        using var reader = new StreamReader(stream);
-        while (await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false) is { Length: > 0 } line)
-        {
-            var progress = JsonSerializer.Deserialize(line, DockerApiJsonContext.Default.PullProgress);
-            var errorMessage = progress?.ErrorDetail?.Message ?? progress?.Error;
-
-            // The daemon answers a pull with a success as soon as it starts, so a failure is only ever reported here.
-            // It carries no status code, which is why the classification of a transient failure falls back to the text.
-            if (!string.IsNullOrEmpty(errorMessage))
-                throw new DockerApiException("Unable to pull image '" + imageName + "': " + errorMessage, statusCode: null);
-        }
+        // The daemon answers a pull with a success as soon as it starts, so a failure is only ever reported in the body.
+        // It carries no status code, which is why the classification of a transient failure falls back to the text.
+        await ReadProgressAsync(response, "Unable to pull image '" + imageName + "': ", cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<HttpResponseMessage> SendAsync(HttpMethod method, string endpoint, HttpContent? content, CancellationToken cancellationToken, HttpStatusCode[]? allowedStatusCodes = null, HttpCompletionOption completionOption = HttpCompletionOption.ResponseContentRead)
@@ -507,7 +645,10 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (response.IsSuccessStatusCode || allowedStatusCodes is not null && Array.IndexOf(allowedStatusCodes, response.StatusCode) >= 0)
             return response;
 
-        throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
+        using (response)
+        {
+            throw await CreateRequestExceptionAsync(response, method.Method, request.RequestUri?.AbsolutePath ?? endpoint, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static string BuildEndpoint(DockerApiConnection connection, string endpoint)
@@ -518,25 +659,28 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return "/v" + connection.ApiVersion + endpoint;
     }
 
-    private static async Task<Exception> CreateRequestExceptionAsync(HttpResponseMessage response, string method, string endpoint, CancellationToken cancellationToken)
+    private async Task<Exception> CreateRequestExceptionAsync(HttpResponseMessage response, string method, string endpoint, CancellationToken cancellationToken)
     {
         string? daemonMessage = null;
         try
         {
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            var error = JsonSerializer.Deserialize(stream, DockerApiJsonContext.Default.ErrorResponse);
+            var error = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.ErrorResponse, cancellationToken).ConfigureAwait(false);
             daemonMessage = error?.Message;
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // The body only adds detail to the status: a body that cannot be read must not replace the failure it describes.
         }
 
         var message = "Docker API request " + method + " " + endpoint + " failed with status " + (int)response.StatusCode + " (" + response.StatusCode.ToString() + ")";
         if (!string.IsNullOrEmpty(daemonMessage))
             message += ": " + daemonMessage;
 
-        return new DockerApiException(message, response.StatusCode);
+        return CreateException(message, response.StatusCode);
     }
+
+    private ContainerRuntimeException CreateException(string message, HttpStatusCode? statusCode) => new(message, this, statusCode);
 
     internal static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -575,7 +719,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
-    private static async Task<(string StandardOutput, string StandardError)> ReadMultiplexedTextAsync(Stream stream, CancellationToken cancellationToken)
+    internal static async Task<(string StandardOutput, string StandardError)> ReadMultiplexedTextAsync(Stream stream, CancellationToken cancellationToken)
     {
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
@@ -590,8 +734,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return (stdout.ToString(), stderr.ToString());
     }
 
+    /// <summary>Reads the frames of a stream multiplexed by the daemon: each payload is prefixed by an 8-byte header whose first byte is the stream and whose last four bytes are the big-endian payload length.</summary>
+    /// <remarks>The daemon cuts frames wherever its reads end, not between characters, so each stream keeps its own decoder: a character split between two frames is decoded once both halves have arrived.</remarks>
     private static async IAsyncEnumerable<(LogStream Stream, string Text)> ReadMultiplexedFramesAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        var standardOutputDecoder = Encoding.UTF8.GetDecoder();
+        var standardErrorDecoder = Encoding.UTF8.GetDecoder();
         var header = new byte[8];
         while (await FillBufferAsync(stream, header, cancellationToken).ConfigureAwait(false))
         {
@@ -609,13 +757,29 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             try
             {
                 await ReadExactlyAsync(stream, rented.AsMemory(0, payloadLength), cancellationToken).ConfigureAwait(false);
-                yield return (streamKind, Encoding.UTF8.GetString(rented, 0, payloadLength));
+                var text = Decode(streamKind is LogStream.Stderr ? standardErrorDecoder : standardOutputDecoder, rented.AsSpan(0, payloadLength), flush: false);
+                if (text.Length > 0)
+                    yield return (streamKind, text);
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(rented);
             }
         }
+
+        // A stream that ends in the middle of a character still reports what it received.
+        if (Decode(standardOutputDecoder, [], flush: true) is { Length: > 0 } standardOutputRest)
+            yield return (LogStream.Stdout, standardOutputRest);
+
+        if (Decode(standardErrorDecoder, [], flush: true) is { Length: > 0 } standardErrorRest)
+            yield return (LogStream.Stderr, standardErrorRest);
+    }
+
+    private static string Decode(Decoder decoder, ReadOnlySpan<byte> bytes, bool flush)
+    {
+        var chars = new char[decoder.GetCharCount(bytes, flush)];
+        var written = decoder.GetChars(bytes, chars, flush);
+        return new string(chars, 0, written);
     }
 
     private static async ValueTask<bool> FillBufferAsync(Stream stream, byte[] buffer, CancellationToken cancellationToken)
@@ -690,18 +854,36 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     private async Task<DockerApiConnection?> EnsureConnectionAsync(CancellationToken cancellationToken)
     {
-        // Only a success is cached, so a daemon started after a failed attempt is still detected.
         if (_connection is { } connection)
             return connection;
 
+        Task<DockerApiConnection?> probe;
+        lock (_connectionLock)
+        {
+            if (_connection is { } publishedConnection)
+                return publishedConnection;
+
+            // Concurrent callers share the probe in flight, so a burst of tests starting at once opens one connection
+            // instead of one each. Only a success is kept: a probe that completed without publishing a connection
+            // failed, and a daemon started after it is still detected by the next caller.
+            if (_connectionProbe is null || _connectionProbe.IsCompleted)
+                _connectionProbe = ProbeConnectionAsync();
+
+            probe = _connectionProbe;
+        }
+
+        return await probe.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<DockerApiConnection?> ProbeConnectionAsync()
+    {
         foreach (var endpoint in DockerApiTransport.GetEndpoints())
         {
             HttpClient? candidateClient = null;
             try
             {
                 candidateClient = DockerApiTransport.CreateClient(endpoint);
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(2));
+                using var cts = new CancellationTokenSource(ProbeTimeout);
                 using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
                 if (!versionResponse.IsSuccessStatusCode)
                     continue;
@@ -712,25 +894,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                     continue;
 
                 // The client and the API version are published together, so a caller that sees the connection sees both.
-                // Concurrent callers may reach this point at the same time: the first one published wins and the others
-                // dispose the client they built.
-                var candidate = new DockerApiConnection(candidateClient, version.ApiVersion);
-                var published = Interlocked.CompareExchange(ref _connection, candidate, comparand: null) ?? candidate;
-                if (ReferenceEquals(published, candidate))
-                    candidateClient = null;
-
-                return published;
+                var connection = new DockerApiConnection(candidateClient, version.ApiVersion, endpoint, string.Equals(version.Os, "windows", StringComparison.OrdinalIgnoreCase));
+                candidateClient = null;
+                _connection = connection;
+                return connection;
             }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-            }
-            catch (HttpRequestException)
-            {
-            }
-            catch (SocketException)
-            {
-            }
-            catch (IOException)
+            catch (Exception ex) when (ex is OperationCanceledException or HttpRequestException or SocketException or IOException or JsonException)
             {
             }
             finally
@@ -743,5 +912,6 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     }
 
     /// <summary>The endpoint the runtime talks to, published as a single value so that a caller never sees a client without its API version.</summary>
-    private sealed record DockerApiConnection(HttpClient HttpClient, string ApiVersion);
+    /// <param name="IsWindowsDaemon">Whether the daemon runs Windows containers, which cannot publish a port on a specific host address.</param>
+    private sealed record DockerApiConnection(HttpClient HttpClient, string ApiVersion, DockerApiTransport.Endpoint Endpoint, bool IsWindowsDaemon);
 }

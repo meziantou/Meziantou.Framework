@@ -11,9 +11,13 @@ public partial class TemporaryContainer
     private const int InitialReattachDelayInMilliseconds = 100;
     private const int MaxReattachDelayInMilliseconds = 5000;
 
+    // A runtime that cannot say whether the container still runs is asked again, but not forever.
+    private const int MaxFailedInspections = 5;
+
     private void StartForwardingLogs()
     {
-        if (_forwardLogsTask is not null)
+        // A pump that ended on its own (the container exited) is replaced, so the next run of the container is logged.
+        if (_forwardLogsTask is { IsCompleted: false })
             return;
 
         if (_definition.Logging.Logger is not { } logger)
@@ -22,8 +26,9 @@ public partial class TemporaryContainer
         if (_id is null)
             return;
 
+        _forwardLogsCancellationTokenSource?.Dispose();
         _forwardLogsCancellationTokenSource = new CancellationTokenSource();
-        _forwardLogsTask = ForwardLogsAsync(_id, logger, _forwardLogsCancellationTokenSource.Token);
+        _forwardLogsTask = ForwardLogsAsync(logger, _forwardLogsCancellationTokenSource.Token);
     }
 
     private async Task StopForwardingLogsAsync()
@@ -38,7 +43,7 @@ public partial class TemporaryContainer
 
         try
         {
-            cts.Cancel();
+            await cts.CancelAsync().ConfigureAwait(false);
             await task.ConfigureAwait(false);
         }
         catch
@@ -52,17 +57,18 @@ public partial class TemporaryContainer
         }
     }
 
-    private async Task ForwardLogsAsync(string id, ILogger logger, CancellationToken cancellationToken)
+    private async Task ForwardLogsAsync(ILogger logger, CancellationToken cancellationToken)
     {
         var consumedCount = 0;
         var attempt = 0;
+        var failedInspections = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             var consumedBeforeAttach = consumedCount;
             try
             {
                 var index = 0;
-                await foreach (var entry in Runtime.GetLogsAsync(id, cancellationToken).ConfigureAwait(false))
+                await foreach (var entry in GetCurrentRunLogsAsync(follow: true, cancellationToken).ConfigureAwait(false))
                 {
                     // Attaching to the logs replays them from the beginning, so the lines consumed by a previous
                     // attach have to be dropped: the logger must not see the whole log again on every re-attach.
@@ -70,15 +76,8 @@ public partial class TemporaryContainer
                         continue;
 
                     consumedCount = index;
-
-                    if (entry.Stream is LogStream.Stdout && _definition.Logging.CaptureStandardOutput)
-                    {
-                        logger.LogInformation("{ContainerLog}", entry.Message);
-                    }
-                    else if (entry.Stream is LogStream.Stderr && _definition.Logging.CaptureStandardError)
-                    {
-                        logger.LogError("{ContainerLog}", entry.Message);
-                    }
+                    if (!TryLog(logger, entry))
+                        return;
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -88,15 +87,24 @@ public partial class TemporaryContainer
             }
             catch
             {
-                // The runtime stopped streaming, or the logger itself threw. A logger backed by a test output helper does
-                // that as soon as the test that owns it completes, which is exactly when the container is being disposed.
-                return;
+                // The runtime dropped the stream in the middle of an entry. That says no more about the container than
+                // a stream that ends, so it is handled the same way.
             }
 
             // The stream ended on its own. The container may still have a whole life to log, so the only reason to
             // stop pumping is the container itself being done.
-            if (!await IsRunningOrPausedAsync(id, cancellationToken).ConfigureAwait(false))
-                return;
+            switch (await IsRunningOrPausedAsync(cancellationToken).ConfigureAwait(false))
+            {
+                case false:
+                    return;
+
+                case null when ++failedInspections >= MaxFailedInspections:
+                    return;
+
+                case true:
+                    failedInspections = 0;
+                    break;
+            }
 
             // A stream that carried something was a working one, so the next attach is worth making right away.
             attempt = consumedCount > consumedBeforeAttach ? 0 : attempt + 1;
@@ -112,22 +120,45 @@ public partial class TemporaryContainer
         }
     }
 
-    /// <summary>Determines whether the container may still write logs, without ever throwing: forwarding logs is
-    /// best-effort, so a container that cannot be inspected simply ends the pump.</summary>
-    private async Task<bool> IsRunningOrPausedAsync(string id, CancellationToken cancellationToken)
+    /// <summary>Logs an entry. A logger backed by a test output helper throws as soon as the test that owns it completes, which is exactly when the container is being disposed, so a logger that throws ends the pump.</summary>
+    private bool TryLog(ILogger logger, LogEntry entry)
     {
         try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
-            var info = await Runtime.InspectAsync(id, cts.Token).ConfigureAwait(false);
+            if (entry.Stream is LogStream.Stdout && _definition.Logging.CaptureStandardOutput)
+            {
+                logger.LogInformation("{ContainerLog}", entry.Message);
+            }
+            else if (entry.Stream is LogStream.Stderr && _definition.Logging.CaptureStandardError)
+            {
+                logger.LogError("{ContainerLog}", entry.Message);
+            }
 
-            // A paused container is not done: it keeps its logs and resumes writing to them once it is unpaused.
-            return info.State is ContainerState.Running or ContainerState.Paused;
+            return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    /// <summary>Determines whether the container may still write logs, without ever throwing. Returns <see langword="null"/> when the runtime could not tell.</summary>
+    private async Task<bool?> IsRunningOrPausedAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
+
+            // A paused container is not done: it keeps its logs and resumes writing to them once it is unpaused.
+            return info.State is ContainerState.Running or ContainerState.Paused;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch
+        {
+            return null;
         }
     }
 

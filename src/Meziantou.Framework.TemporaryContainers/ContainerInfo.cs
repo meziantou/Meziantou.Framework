@@ -35,4 +35,7 @@ public sealed record ContainerInfo
 
     /// <summary>Gets the container labels.</summary>
     public IReadOnlyDictionary<string, string> Labels { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>The environment the container was created with, which holds the credentials a reused container has to be adopted with.</summary>
+    internal IReadOnlyDictionary<string, string> Environment { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 }

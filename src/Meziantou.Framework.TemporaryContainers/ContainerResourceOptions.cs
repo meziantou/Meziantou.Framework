@@ -1,8 +1,12 @@
+using Meziantou.Framework.TemporaryContainers.Internals;
+
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Resource limits for a container.</summary>
 public sealed class ContainerResourceOptions
 {
+    private bool _isReadOnly;
+
     internal ContainerResourceOptions()
     {
     }
@@ -15,11 +19,37 @@ public sealed class ContainerResourceOptions
     }
 
     /// <summary>Gets or sets the memory limit in bytes.</summary>
-    public long? MemoryLimit { get; set; }
+    public long? MemoryLimit
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the number of CPUs the container may use.</summary>
-    public double? CpuLimit { get; set; }
+    public double? CpuLimit
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets a value indicating whether the container's root filesystem is read-only.</summary>
-    public bool ReadOnlyRootFilesystem { get; set; }
+    public bool ReadOnlyRootFilesystem
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    internal void MakeReadOnly() => _isReadOnly = true;
 }

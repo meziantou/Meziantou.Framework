@@ -3,6 +3,7 @@
     <Project Path="../src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
     <Project Path="../src/Meziantou.DnsProxy/Meziantou.DnsProxy.csproj" />
     <Project Path="../src/Meziantou.Extensions.Logging.FileLogger/Meziantou.Extensions.Logging.FileLogger.csproj" />
+    <Project Path="../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat.Tool/Meziantou.Framework.AtlassianDataFormat.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
@@ -42,6 +43,7 @@
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.Templating.Tool/Meziantou.Framework.Templating.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Templating/Meziantou.Framework.Templating.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
@@ -78,6 +80,7 @@
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tool.Tests/Meziantou.Framework.SnapshotTesting.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Templating.Tool.Tests/Meziantou.Framework.Templating.Tool.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />

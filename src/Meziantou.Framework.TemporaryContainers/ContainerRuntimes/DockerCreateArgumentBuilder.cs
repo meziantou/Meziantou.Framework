@@ -2,8 +2,13 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerCreateArgumentBuilder
 {
+    /// <param name="definition">The container definition.</param>
+    /// <param name="imageRef">The image to create the container from.</param>
+    /// <param name="pullPolicyValue">The value of <c>--pull</c>, or <see langword="null"/> to leave it out.</param>
     /// <param name="quotedMountFieldsSupported">Whether the runtime parses the <c>--mount</c> descriptor as a CSV record, which is the only way to express a value containing a comma. Docker does; podman and wslc split on the comma instead.</param>
-    public static List<string> Build(ContainerDefinition definition, string imageRef, string? pullPolicyValue, bool quotedMountFieldsSupported)
+    /// <param name="hostIpSupported">Whether a port can be published on a specific host address, which Windows containers and wslc cannot.</param>
+    /// <param name="environmentFile">The file holding the environment variables, or <see langword="null"/> to pass them all on the command line.</param>
+    public static List<string> Build(ContainerDefinition definition, string imageRef, string? pullPolicyValue, bool quotedMountFieldsSupported, bool hostIpSupported = true, EnvironmentFile? environmentFile = null)
     {
         var args = new List<string> { "create" };
 
@@ -27,24 +32,18 @@ internal static class DockerCreateArgumentBuilder
         AddOption(args, "--network", definition.Network.Network);
         AddOption(args, "--network-alias", definition.Network.Alias);
 
-        foreach (var (name, value) in ResourceLabels.Build(definition.Labels, definition.ReuseId, definition.SessionOwned, definition.Identity))
+        foreach (var (name, value) in ResourceLabels.Build(definition))
         {
             args.Add("--label");
             args.Add($"{name}={value}");
         }
 
-        foreach (var (name, value) in definition.Environment)
-        {
-            args.Add("--env");
-            args.Add($"{name}={value}");
-        }
+        EnvironmentFile.AddArguments(args, definition.Environment, environmentFile);
 
         foreach (var port in definition.Ports)
         {
             args.Add("-p");
-            args.Add(port.HostPort is { } hostPort
-                ? string.Create(CultureInfo.InvariantCulture, $"{hostPort}:{port.Port}")
-                : port.Port.ToString(CultureInfo.InvariantCulture));
+            args.Add(FormatPort(port, hostIpSupported));
         }
 
         foreach (var mount in definition.Mounts)
@@ -63,6 +62,17 @@ internal static class DockerCreateArgumentBuilder
             args.Add(token);
 
         return args;
+    }
+
+    /// <summary>Formats a <c>-p</c> value: <c>ip:hostPort:containerPort</c>, where an empty host port asks for a random one and an IPv6 address is enclosed in brackets.</summary>
+    internal static string FormatPort(ContainerPort port, bool hostIpSupported)
+    {
+        var hostPort = port.HostPort?.ToString(CultureInfo.InvariantCulture);
+        if (!hostIpSupported)
+            return hostPort is null ? port.Port.ToString(CultureInfo.InvariantCulture) : string.Create(CultureInfo.InvariantCulture, $"{hostPort}:{port.Port}");
+
+        var hostIp = port.HostIp.Contains(':', StringComparison.Ordinal) ? "[" + port.HostIp + "]" : port.HostIp;
+        return string.Create(CultureInfo.InvariantCulture, $"{hostIp}:{hostPort}:{port.Port}");
     }
 
     private static void AddOption(List<string> args, string flag, string? value)

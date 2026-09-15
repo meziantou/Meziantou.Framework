@@ -21,7 +21,7 @@ public static class Wait
     public static IWaitStrategy ForLogMessage(string substring, int occurrences = 1)
     {
         ArgumentNullException.ThrowIfNull(substring);
-        return new LogMessageWaitStrategy(new Regex(Regex.Escape(substring), RegexOptions.None, TimeSpan.FromSeconds(1)), occurrences);
+        return new LogMessageWaitStrategy(new Regex(Regex.Escape(substring), RegexOptions.None, TimeSpan.FromSeconds(1)), occurrences, substring);
     }
 
     /// <summary>Waits until a log line matches the specified pattern.</summary>

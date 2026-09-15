@@ -284,10 +284,26 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         definition.Logging.Logger = XUnitLogger.CreateLogger();
 
 
-        await using var container = await StartWithRetryAsync(definition);
+        // A session of its own tells the image of this test from the ones the other tests build at the same time.
+        var sessionId = Guid.NewGuid().ToString("N");
+        definition.Identity = SessionIdentity.Current with { SessionId = sessionId };
 
-        var content = await GetIndexContentAsync(container);
-        Assert.Equal("hello from container", content);
+        var runtime = await Runtime.GetEffectiveRuntimeAsync(XunitCancellationToken);
+        await using (var container = await StartWithRetryAsync(definition))
+        {
+            var content = await GetIndexContentAsync(container);
+            Assert.Equal("hello from container", content);
+
+            if (runtime.SupportsImageCleanup)
+                Assert.Contains(await runtime.ListManagedImagesAsync(XunitCancellationToken), image => IsOfSession(image, sessionId));
+        }
+
+        // The image was built for the container, so it goes with it rather than piling up after every run.
+        if (runtime.SupportsImageCleanup)
+            Assert.DoesNotContain(await runtime.ListManagedImagesAsync(XunitCancellationToken), image => IsOfSession(image, sessionId));
+
+        static bool IsOfSession(ManagedResource resource, string sessionId)
+            => resource.Labels.TryGetValue(ResourceLabels.SessionId, out var value) && value == sessionId;
     }
 
     [Fact]
@@ -419,6 +435,142 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Files_ReadAnEmptyFileAndASymbolicLink()
+    {
+        // The Docker API archives an empty file without content and a link without its target, where 'cat' reads both.
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The files are created with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+        await ExecShellAsync(container, "mkdir -p /data/sub && : > /data/empty.txt && printf linked > /data/target.txt && ln -s target.txt /data/link.txt && printf nested > /data/sub/nested.txt");
+
+        await using (var empty = await container.OpenReadAsync("/data/empty.txt", XunitCancellationToken))
+        {
+            Assert.Equal(0, empty.Length);
+        }
+
+        await using (var link = await container.OpenReadAsync("/data/link.txt", XunitCancellationToken))
+        using (var reader = new StreamReader(link))
+        {
+            Assert.Equal("linked", await reader.ReadToEndAsync(XunitCancellationToken));
+        }
+
+        // apple/container hangs on a copy it cannot complete, so a directory copy is only exercised elsewhere.
+        if (Runtime == ContainerRuntime.AppleContainer)
+            return;
+
+        var downloaded = Path.Combine(Path.GetTempPath(), "MezTC-download-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await container.CopyFromContainerAsync("/data", downloaded, XunitCancellationToken);
+
+            Assert.Equal("", await File.ReadAllTextAsync(Path.Combine(downloaded, "empty.txt"), XunitCancellationToken));
+            Assert.Equal("nested", await File.ReadAllTextAsync(Path.Combine(downloaded, "sub", "nested.txt"), XunitCancellationToken));
+            Assert.Equal("linked", await File.ReadAllTextAsync(Path.Combine(downloaded, "link.txt"), XunitCancellationToken));
+        }
+        finally
+        {
+            if (Directory.Exists(downloaded))
+                Directory.Delete(downloaded, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Files_CopyToContainerKeepsTheExecutableBit()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The script is run with a POSIX shell.");
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows files have no executable bit to keep.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var script = Path.Combine(Path.GetTempPath(), "MezTC-script-" + Guid.NewGuid().ToString("N"));
+        await File.WriteAllTextAsync(script, "#!/bin/sh\necho executed\n", XunitCancellationToken);
+        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        try
+        {
+            await container.CopyToContainerAsync(script, "/tmp/script.sh", XunitCancellationToken);
+        }
+        finally
+        {
+            File.Delete(script);
+        }
+
+        var exec = await container.ExecAsync(options => options.Command.Add("/tmp/script.sh"), XunitCancellationToken);
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Contains("executed", exec.StandardOutput);
+    }
+
+    [Fact]
+    public async Task ExecAsync_SendsTheStandardInputAndKeepsTheCharactersOfTheOutput()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.DockerApi && OperatingSystem.IsWindows(), "A named pipe cannot close the input of the command.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        // Enough text for the daemon to split it into several frames, wherever its reads end.
+        var input = string.Concat(Enumerable.Repeat("héllo wörld 🎉\n", 5000));
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("cat");
+            options.StandardInput = InputSource.FromText(input);
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Equal(input, exec.StandardOutput.ReplaceLineEndings("\n").TrimEnd('\n') + "\n");
+    }
+
+    [Fact]
+    public async Task ExecAsync_ReportsTheExitCodeOfACommandThatOutlivesItsOutput()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        // The output ends as soon as the command closes it, long before the command exits.
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("exec >&- 2>&-; sleep 1; exit 3");
+        }, XunitCancellationToken);
+
+        Assert.Equal(3, exec.ExitCode);
+    }
+
+    [Fact]
+    public async Task WaitForPort_WaitsForTheServiceRatherThanThePortForwarder()
+    {
+        // The port forwarders of the runtimes accept a connection before anything listens in the container.
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.AppleContainer, "The published port is not reachable from the host with apple/container.");
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The server is started with a POSIX shell.");
+
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage)) { Runtime = Runtime };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("sleep 3; mkdir -p /www; printf 'hello from container' > /www/index.html; exec httpd -f -p 8080 -h /www");
+        AddHttpPortBinding(definition);
+        definition.WaitStrategies.Add(Wait.ForPort(8080));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        Assert.Equal("hello from container", await client.GetStringAsync(new Uri($"http://127.0.0.1:{container.GetMappedPort(8080)}/"), XunitCancellationToken));
+    }
+
+    private static async Task ExecShellAsync(TemporaryContainer container, string command)
+    {
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add(command);
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+    }
+
+    [Fact]
     public Task Lifecycle_RestartStopAndDelete()
     {
         // Restarting a container makes the runtime rebuild its port forwarding, which fails transiently on CI agents
@@ -429,7 +581,13 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
             await container.RestartAsync(XunitCancellationToken);
-            Assert.True(container.GetMappedPort(8080) > 0);
+
+            // A restart can publish the port on another host port: the mapping must be the one the runtime reports now.
+            var info = await container.InspectAsync(XunitCancellationToken);
+            if (info.Ports.TryGetValue(8080, out var reportedPort))
+                Assert.Equal(reportedPort, container.GetMappedPort(8080));
+
+            Assert.Equal("hello from container", await GetIndexContentAsync(container));
 
             await container.StopAsync(XunitCancellationToken);
             Assert.Equal(ContainerState.Exited, (await container.InspectAsync(XunitCancellationToken)).State);
@@ -496,6 +654,54 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
             // and not a freshly picked mapping.
             await second.StartAsync(XunitCancellationToken);
             Assert.Equal(firstPort, second.GetMappedPort(8080));
+        }
+        finally
+        {
+            await DeleteReusedContainerAsync(reuseId);
+        }
+    }
+
+    [Fact]
+    public async Task Reuse_ConcurrentProcessesAdoptTheSameContainer()
+    {
+        var reuseId = "meziantou-tc-test-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            var definition = CreateHttpServerDefinition();
+            definition.ReuseId = reuseId;
+            await using var first = definition.CreateContainer();
+            await using var second = definition.CreateContainer();
+
+            // Both find nothing and both create: the runtime rejects the second name, and that one adopts the first.
+            await Task.WhenAll(first.EnsureCreatedAsync(XunitCancellationToken), second.EnsureCreatedAsync(XunitCancellationToken));
+
+            Assert.Equal(first.Id, second.Id);
+        }
+        finally
+        {
+            await DeleteReusedContainerAsync(reuseId);
+        }
+    }
+
+    [Fact]
+    public async Task Reuse_RefusesAContainerCreatedFromAnotherDefinition()
+    {
+        var reuseId = "meziantou-tc-test-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            var definition = CreateHttpServerDefinition();
+            definition.ReuseId = reuseId;
+            await using (var first = definition.CreateContainer())
+            {
+                await first.EnsureCreatedAsync(XunitCancellationToken);
+            }
+
+            var changed = CreateHttpServerDefinition();
+            changed.ReuseId = reuseId;
+            changed.Environment.Add("MODE", "changed");
+            await using var second = changed.CreateContainer();
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => second.EnsureCreatedAsync(XunitCancellationToken));
         }
         finally
         {
@@ -797,6 +1003,37 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.True(await container.ExistsAsync(XunitCancellationToken), "Disposing the reaper removed a container of the current run.");
     }
 
+    /// <summary>Shared assertion that the reaper removes the resources of the session once the process is gone, and only those (called from the runtimes driven by a docker-compatible socket).</summary>
+    protected async Task AssertReaperRemovesTheSessionWhenTheProcessIsGoneAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The reaper image only runs on Linux containers.");
+
+        await using var sessionContainer = CreateHttpServerDefinition().CreateContainer();
+        await sessionContainer.EnsureCreatedAsync(XunitCancellationToken);
+
+        // Another session of a live process: a run that is over would be removed by the cleanup tests of the other runtimes
+        // that share this daemon.
+        var otherSession = CreateHttpServerDefinition();
+        otherSession.Identity = SessionIdentity.Current with { SessionId = Guid.NewGuid().ToString("N") };
+        await using var otherContainer = otherSession.CreateContainer();
+        await otherContainer.EnsureCreatedAsync(XunitCancellationToken);
+
+        var options = new ContainerReaperOptions { ReconnectionTimeout = TimeSpan.FromSeconds(1) };
+        await using var reaper = await Runtime.StartReaperAsync(options, XunitCancellationToken);
+
+        // What the watchdog sees when this process is killed: the connection goes away and never comes back.
+        await reaper.AbandonConnectionAsync();
+
+        var stopwatch = Stopwatch.StartNew();
+        while (await sessionContainer.ExistsAsync(XunitCancellationToken))
+        {
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(2), "The reaper did not remove the container of the session.");
+            await Task.Delay(TimeSpan.FromMilliseconds(500), XunitCancellationToken);
+        }
+
+        Assert.True(await otherContainer.ExistsAsync(XunitCancellationToken), "The reaper removed a container of another session.");
+    }
+
     /// <summary>A definition whose container looks like the leftover of a run that is over: the process id is the one of this process, but the start time is not, which is exactly what a reused process id looks like.</summary>
     private ContainerDefinition CreateOrphanedDefinition()
     {
@@ -810,6 +1047,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         {
             SessionId = Guid.NewGuid().ToString("N"),
             ProcessStartTime = "0",
+            ProcessStartTicks = OperatingSystem.IsLinux() ? "0" : "",
         };
 
     protected ContainerDefinition CreateHttpServerDefinition()

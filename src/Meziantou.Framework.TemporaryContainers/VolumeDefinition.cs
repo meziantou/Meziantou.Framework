@@ -1,3 +1,5 @@
+using Meziantou.Framework.TemporaryContainers.Internals;
+
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>Describes how a volume should be created. Configure an instance and call <see cref="CreateVolume"/> to obtain a <see cref="TemporaryVolume"/>.</summary>
@@ -14,7 +16,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// </example>
 public sealed class VolumeDefinition
 {
-    private ContainerRuntime _runtime = ContainerRuntime.Auto;
+    private bool _isReadOnly;
 
     /// <summary>Initializes a new instance of the <see cref="VolumeDefinition"/> class.</summary>
     public VolumeDefinition()
@@ -23,7 +25,7 @@ public sealed class VolumeDefinition
         DriverOptions = new VolumeDriverOptionCollection();
     }
 
-    /// <summary>Initializes a new instance of the <see cref="VolumeDefinition"/> class by deep-copying another definition.</summary>
+    /// <summary>Initializes a new instance of the <see cref="VolumeDefinition"/> class by deep-copying another definition. The copy can be changed even when <paramref name="other"/> belongs to a volume.</summary>
     /// <param name="other">The definition to copy.</param>
     public VolumeDefinition(VolumeDefinition other)
     {
@@ -40,22 +42,47 @@ public sealed class VolumeDefinition
     /// <summary>Gets or sets the container runtime to use.</summary>
     public ContainerRuntime Runtime
     {
-        get => _runtime;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            _runtime = value;
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    } = ContainerRuntime.Auto;
+
+    /// <summary>Gets or sets the volume name. When <see langword="null"/>, a random name is generated, or a name derived from <see cref="ReuseId"/> when that is set.</summary>
+    public string? Name
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
         }
     }
 
-    /// <summary>Gets or sets the volume name. When <see langword="null"/>, a random name is generated, or a name derived from <see cref="ReuseId"/> when that is set.</summary>
-    public string? Name { get; set; }
-
     /// <summary>Gets or sets the volume driver. When <see langword="null"/>, the runtime uses its default driver.</summary>
-    public string? Driver { get; set; }
+    public string? Driver
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets an identifier used to reuse an existing volume across runs. When set, the volume is not removed on dispose.</summary>
-    public string? ReuseId { get; set; }
+    public string? ReuseId
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
 
     /// <summary>Gets the labels.</summary>
     public ContainerLabelCollection Labels { get; }
@@ -63,13 +90,23 @@ public sealed class VolumeDefinition
     /// <summary>Gets the driver-specific options.</summary>
     public VolumeDriverOptionCollection DriverOptions { get; }
 
-    /// <summary>The run recorded in the labels of the volume. Defaults to the current one; the tests use it to create a volume that looks like the leftover of a run that is over.</summary>
-    internal Internals.SessionIdentity? Identity { get; set; }
+    /// <summary>Gets a value indicating whether the definition belongs to a volume, in which case it can no longer be changed.</summary>
+    public bool IsReadOnly => _isReadOnly;
 
-    /// <summary>Creates a <see cref="TemporaryVolume"/> from a deep copy of this definition. Later changes to this definition do not affect the returned volume.</summary>
+    /// <summary>The run recorded in the labels of the volume. Defaults to the current one; the tests use it to create a volume that looks like the leftover of a run that is over.</summary>
+    internal SessionIdentity? Identity { get; set; }
+
+    /// <summary>Creates a <see cref="TemporaryVolume"/> from a deep copy of this definition. Later changes to this definition do not affect the returned volume, and the copy the volume owns cannot be changed.</summary>
     /// <returns>A new volume.</returns>
     public TemporaryVolume CreateVolume()
     {
         return new TemporaryVolume(new VolumeDefinition(this));
+    }
+
+    internal void MakeReadOnly()
+    {
+        _isReadOnly = true;
+        Labels.MakeReadOnly();
+        DriverOptions.MakeReadOnly();
     }
 }

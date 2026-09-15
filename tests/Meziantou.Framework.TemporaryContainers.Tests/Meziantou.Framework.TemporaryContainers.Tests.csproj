@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 
 </Project>

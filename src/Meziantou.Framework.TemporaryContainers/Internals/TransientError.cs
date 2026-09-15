@@ -37,8 +37,10 @@ internal static class TransientError
 
     public static bool IsTransient(Exception exception) => exception switch
     {
-        DockerApiException { StatusCode: { } statusCode } => IsTransientStatusCode(statusCode),
-        DockerApiException => IsTransientMessage(exception.Message),
+        ContainerRuntimeException { StatusCode: { } statusCode } => IsTransientStatusCode(statusCode),
+
+        // The Docker Engine API reports a failed pull in the body of a successful response: the message is all there is.
+        ContainerRuntimeException { Command: null } => IsTransientMessage(exception.Message),
         ContainerRuntimeException runtimeException => IsTransientMessage(runtimeException.StandardError) || IsTransientMessage(runtimeException.StandardOutput),
         HttpRequestException or IOException or SocketException or TimeoutException => true,
         _ => false,

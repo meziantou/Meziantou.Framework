@@ -4,4 +4,7 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 /// <param name="Volume">The volume to mount.</param>
 /// <param name="Target">The path inside the container.</param>
 /// <param name="ReadOnly">Whether the mount is read-only.</param>
-internal sealed record OwnedVolumeMount(TemporaryVolume Volume, string Target, bool ReadOnly) : IMount;
+internal sealed record OwnedVolumeMount(TemporaryVolume Volume, string Target, bool ReadOnly) : IMount
+{
+    string IMount.ContainerPath => Target;
+}

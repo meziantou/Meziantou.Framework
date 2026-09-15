@@ -12,7 +12,8 @@ internal static class Utilities
     /// <summary>The length a content line should not exceed, excluding the line break (RFC 5545 section 3.1).</summary>
     public const int MaxContentLineOctets = 75;
 
-    private static readonly string[] DateTimeFormats =
+    /// <summary>The date-time forms that denote an instant: a UTC value or a value with an explicit offset.</summary>
+    private static readonly string[] InstantDateTimeFormats =
     [
         // Basic formats
         "yyyyMMddTHHmmsszzz",
@@ -36,7 +37,17 @@ internal static class Utilities
         "yyyy-MM-ddTHHzzz",
         "yyyy-MM-ddTHHzz",
         "yyyy-MM-ddTHHZ",
-        // Accuracy reduced to date
+    ];
+
+    /// <summary>The date-time forms that denote a wall-clock reading: a floating date-time or a date (RFC 5545 sections 3.3.4 and 3.3.5).</summary>
+    private static readonly string[] FloatingDateTimeFormats =
+    [
+        "yyyyMMddTHHmmss",
+        "yyyy-MM-ddTHH:mm:ss",
+        "yyyyMMddTHHmm",
+        "yyyy-MM-ddTHH:mm",
+        "yyyyMMddTHH",
+        "yyyy-MM-ddTHH",
         "yyyyMMdd",
     ];
 
@@ -129,15 +140,24 @@ internal static class Utilities
         return sb.ToString();
     }
 
-    public static DateTime ParseDateTime(string str)
-    {
-        var dateTime = DateTime.ParseExact(str, DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
-        return dateTime;
-    }
-
+    /// <summary>Parses a date or a date-time value.</summary>
+    /// <remarks>
+    /// A UTC value, or one carrying an offset, denotes an instant and is returned as a <see cref="DateTimeKind.Utc"/> value.
+    /// A floating date-time or a date denotes a wall-clock reading and is returned as a <see cref="DateTimeKind.Unspecified"/>
+    /// value, a date being read as its first instant.
+    /// </remarks>
     public static bool TryParseDateTime(string str, out DateTime result)
     {
-        return DateTime.TryParseExact(str, DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out result);
+        if (DateTime.TryParseExact(str, InstantDateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out result))
+            return true;
+
+        return DateTime.TryParseExact(str, FloatingDateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
+    }
+
+    /// <summary>Formats the UNTIL value of a recurrence rule: a DATE value when it was parsed as one, a date-time otherwise.</summary>
+    public static string EndDateToString(DateTime value, bool isDate)
+    {
+        return isDate ? value.ToString("yyyyMMdd", CultureInfo.InvariantCulture) : DateTimeToString(value);
     }
 
     public static string DayOfWeekToString(DayOfWeek dayOfWeek)

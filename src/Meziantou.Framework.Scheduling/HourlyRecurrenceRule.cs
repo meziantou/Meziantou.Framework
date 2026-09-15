@@ -42,7 +42,7 @@ internal sealed class HourlyRecurrenceRule : RecurrenceRule
             if (EndDate.HasValue)
             {
                 sb.Append(";UNTIL=");
-                sb.Append(Utilities.DateTimeToString(EndDate.Value));
+                sb.Append(EndDateText);
             }
 
             if (Occurrences.HasValue)

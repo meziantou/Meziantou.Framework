@@ -222,7 +222,7 @@ internal abstract class RecurrenceRuleHumanizer
                 DailyRecurrenceRule rule => new RuleParts(Frequency.Daily, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
                 WeeklyRecurrenceRule rule => new RuleParts(Frequency.Weekly, rrule, ToByDays(rule.ByWeekDays), rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
                 MonthlyRecurrenceRule rule => new RuleParts(Frequency.Monthly, rrule, rule.ByWeekDays, rrule.ByMonthDays, rrule.ByMonths, byYearDays: null),
-                YearlyRecurrenceRule rule => new RuleParts(Frequency.Yearly, rrule, rule.ByWeekDays, rule.ByMonthDays, rule.ByMonths, rule.ByYearDays),
+                YearlyRecurrenceRule rule => new RuleParts(Frequency.Yearly, rrule, rule.ByWeekDays, rrule.ByMonthDays, rrule.ByMonths, rule.ByYearDays),
                 _ => null,
             };
         }

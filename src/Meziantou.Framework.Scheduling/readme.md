@@ -71,6 +71,15 @@ produced.
 
 `CronExpression` supports the same overloads.
 
+### UNTIL
+
+A UTC `UNTIL` (`20240110T100000Z`), or one carrying an offset, is parsed as a `Utc` `EndDate` and denotes an instant.
+A floating `UNTIL` (`20240110T100000`) or a date (`20240110`) is parsed as an `Unspecified` `EndDate` and denotes a
+wall-clock reading, a date being its first instant; a date is written back as a date.
+
+Without a time zone, an instant bounds the occurrences of a `Utc` or `Local` start date by instant, and the occurrences
+of an `Unspecified` start date by wall clock. A wall-clock `UNTIL` always bounds them by wall clock.
+
 ## iCalendar
 
 `InternetCalendar` reads and writes events in the iCalendar format.
@@ -218,7 +227,7 @@ Fields are separated by spaces or tabs. When using the 5-field format, seconds a
 - hour: `0-23`
 - day-of-month: `1-31`
 - month: `1-12` or `JAN-DEC`
-- day-of-week: `0-6` or `SUN-SAT` (`0` = Sunday)
+- day-of-week: `0-7` or `SUN-SAT` (`0` and `7` = Sunday, so `1-7` means every day)
 - year (optional): `1970-2099`
 
 ### Operators and special values

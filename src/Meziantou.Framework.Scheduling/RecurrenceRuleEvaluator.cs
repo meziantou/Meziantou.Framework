@@ -16,6 +16,9 @@ internal sealed class RecurrenceRuleEvaluator
     private const int SecondsPerHour = 3600;
     private const int SecondsPerDay = 86400;
     private const int MaxYear = 9999;
+    private const long DaysPer400Years = 146097;
+    private const long MonthsPer400Years = 4800;
+    private const long SecondsPer400Years = DaysPer400Years * SecondsPerDay;
 
     private static readonly long MaxDayNumber = DateTime.MaxValue.Ticks / TicksPerDay;
     private static readonly long MaxSecondNumber = DateTime.MaxValue.Ticks / TicksPerSecond;
@@ -32,6 +35,7 @@ internal sealed class RecurrenceRuleEvaluator
     private readonly int _startMonth;
     private readonly long _endTicks;
     private readonly long _fractionTicks;
+    private readonly long _periodsPerCycle;
 
     private readonly bool _hasMonthFilter;
     private readonly int _monthMask;
@@ -244,6 +248,20 @@ internal sealed class RecurrenceRuleEvaluator
         {
             _setPositions = [.. setPositions.Where(position => position is not 0)];
         }
+
+        // The Gregorian calendar, week days included, repeats every 400 years, so the instances of a period only depend on
+        // where its start falls within that cycle. The starts visit this many distinct positions of the cycle before they
+        // repeat: once that many consecutive periods produced nothing, no later period can produce anything either. This ends
+        // the rules whose interval never lands on a matching period, such as FREQ=DAILY;INTERVAL=7;BYDAY=TU from a Monday,
+        // instead of scanning every period up to DateTime.MaxValue.
+        _periodsPerCycle = frequency switch
+        {
+            Frequency.Yearly => 400 / GreatestCommonDivisor(_interval, 400),
+            Frequency.Monthly => MonthsPer400Years / GreatestCommonDivisor(_interval, MonthsPer400Years),
+            Frequency.Weekly => DaysPer400Years / GreatestCommonDivisor(7 * _interval, DaysPer400Years),
+            Frequency.Daily => DaysPer400Years / GreatestCommonDivisor(_interval, DaysPer400Years),
+            _ => SecondsPer400Years / GreatestCommonDivisor(GetStepInSeconds(), SecondsPer400Years),
+        };
     }
 
     public static IEnumerable<DateTime> Evaluate(
@@ -288,16 +306,20 @@ internal sealed class RecurrenceRuleEvaluator
         var indexes = new long[setPositions?.Length ?? 0];
 
         long periodIndex = 0;
+
+        // The index of the first period after the last one that produced an instance, whether or not it precedes the start date
+        long firstPeriodAfterLastInstance = 0;
         while (true)
         {
+            var scanLimit = firstPeriodAfterLastInstance + _periodsPerCycle;
             int dayCount;
             if (_frequency >= Frequency.Daily)
             {
-                dayCount = MoveToNextDayPeriod(ref periodIndex, days);
+                dayCount = MoveToNextDayPeriod(ref periodIndex, days, scanLimit);
             }
             else
             {
-                dayCount = MoveToNextTimePeriod(ref periodIndex, days, out hour[0], out minute[0], out second[0]);
+                dayCount = MoveToNextTimePeriod(ref periodIndex, days, scanLimit, out hour[0], out minute[0], out second[0]);
             }
 
             if (dayCount is 0)
@@ -305,6 +327,7 @@ internal sealed class RecurrenceRuleEvaluator
 
             if (setPositions is null)
             {
+                firstPeriodAfterLastInstance = periodIndex;
                 for (var dayIndex = 0; dayIndex < dayCount; dayIndex++)
                 {
                     foreach (var h in hours)
@@ -327,6 +350,11 @@ internal sealed class RecurrenceRuleEvaluator
             else
             {
                 var indexCount = SelectSetPositions(setPositions, dayCount * timesPerDay, indexes);
+                if (indexCount > 0)
+                {
+                    firstPeriodAfterLastInstance = periodIndex;
+                }
+
                 for (var i = 0; i < indexCount; i++)
                 {
                     var index = indexes[i];
@@ -477,12 +505,16 @@ internal sealed class RecurrenceRuleEvaluator
         return false;
     }
 
-    private int MoveToNextDayPeriod(ref long periodIndex, int[] days)
+    /// <summary>Moves to the next period holding at least one day, and returns its number of days, or 0 when there is none before <paramref name="scanLimit"/>.</summary>
+    private int MoveToNextDayPeriod(ref long periodIndex, int[] days, long scanLimit)
     {
         var startDayNumber = _startDayNumber;
         var startOfFirstWeek = startDayNumber - Modulo(GetDayOfWeek(startDayNumber) - _weekStart, 7);
         while (true)
         {
+            if (periodIndex >= scanLimit)
+                return 0;
+
             var dayCount = 0;
             switch (_frequency)
             {
@@ -604,14 +636,15 @@ internal sealed class RecurrenceRuleEvaluator
         }
     }
 
-    private int MoveToNextTimePeriod(ref long periodIndex, int[] days, out int hour, out int minute, out int second)
+    /// <summary>Moves to the next period matching the day and time parts, or returns 0 when there is none before <paramref name="scanLimit"/>.</summary>
+    private int MoveToNextTimePeriod(ref long periodIndex, int[] days, long scanLimit, out int hour, out int minute, out int second)
     {
         var step = GetStepInSeconds();
         var firstPeriod = GetFirstTimePeriod();
         while (true)
         {
             var period = firstPeriod + (periodIndex * step);
-            if (period > MaxSecondNumber || IsAfterEnd(period * TicksPerSecond))
+            if (periodIndex >= scanLimit || period > MaxSecondNumber || IsAfterEnd(period * TicksPerSecond))
             {
                 hour = minute = second = 0;
                 return 0;

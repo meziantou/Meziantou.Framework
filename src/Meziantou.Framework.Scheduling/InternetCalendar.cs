@@ -239,7 +239,7 @@ public sealed class InternetCalendar
         var utc = Utilities.ToDateTimeOffset(endDate, timeZone).UtcDateTime;
 
         // The replaced token is a fixed-length value this library itself produced, so the substitution is unambiguous.
-        var floating = ";UNTIL=" + endDate.ToString(Utilities.FloatingDateTimeFormat, CultureInfo.InvariantCulture);
+        var floating = ";UNTIL=" + recurrenceRule.EndDateText;
         return text.Replace(floating, ";UNTIL=" + utc.ToString(Utilities.UtcDateTimeFormat, CultureInfo.InvariantCulture), StringComparison.Ordinal);
     }
 

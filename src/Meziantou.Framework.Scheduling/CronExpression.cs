@@ -20,10 +20,8 @@ public sealed class CronExpression : IRecurrenceRule
     private readonly CronField _month;
     private readonly CronField _dayOfWeek;
     private readonly CronField _year;
-    private readonly bool _hasSeconds;
-    private readonly bool _hasYear;
 
-    private CronExpression(CronField seconds, CronField minutes, CronField hours, CronField dayOfMonth, CronField month, CronField dayOfWeek, CronField year, bool hasSeconds, bool hasYear)
+    private CronExpression(CronField seconds, CronField minutes, CronField hours, CronField dayOfMonth, CronField month, CronField dayOfWeek, CronField year)
     {
         _seconds = seconds;
         _minutes = minutes;
@@ -32,8 +30,6 @@ public sealed class CronExpression : IRecurrenceRule
         _month = month;
         _dayOfWeek = dayOfWeek;
         _year = year;
-        _hasSeconds = hasSeconds;
-        _hasYear = hasYear;
     }
 
     public static CronExpression Parse(string expression)
@@ -111,14 +107,10 @@ public sealed class CronExpression : IRecurrenceRule
         CronField month;
         CronField dayOfWeek;
         CronField year;
-        bool hasSeconds;
-        bool hasYear;
 
         if (count is 5)
         {
             // Standard: min hour dom month dow
-            hasSeconds = false;
-            hasYear = false;
             seconds = CronField.CreateValue(CronFieldKind.Seconds, 0);
 
             if (!TryParseField(expression[ranges[0]], CronFieldKind.Minutes, out minutes))
@@ -137,9 +129,6 @@ public sealed class CronExpression : IRecurrenceRule
         else if (count is 6)
         {
             // With seconds: sec min hour dom month dow
-            hasSeconds = true;
-            hasYear = false;
-
             if (!TryParseField(expression[ranges[0]], CronFieldKind.Seconds, out seconds))
                 return false;
             if (!TryParseField(expression[ranges[1]], CronFieldKind.Minutes, out minutes))
@@ -158,9 +147,6 @@ public sealed class CronExpression : IRecurrenceRule
         else // count == 7
         {
             // With seconds and year: sec min hour dom month dow year
-            hasSeconds = true;
-            hasYear = true;
-
             if (!TryParseField(expression[ranges[0]], CronFieldKind.Seconds, out seconds))
                 return false;
             if (!TryParseField(expression[ranges[1]], CronFieldKind.Minutes, out minutes))
@@ -177,7 +163,7 @@ public sealed class CronExpression : IRecurrenceRule
                 return false;
         }
 
-        cronExpression = new CronExpression(seconds, minutes, hours, dayOfMonth, month, dayOfWeek, year, hasSeconds, hasYear);
+        cronExpression = new CronExpression(seconds, minutes, hours, dayOfMonth, month, dayOfWeek, year);
         return true;
     }
 
@@ -198,9 +184,7 @@ public sealed class CronExpression : IRecurrenceRule
                 CronField.CreateValue(CronFieldKind.DayOfMonth, 1),
                 CronField.CreateValue(CronFieldKind.Month, 1),
                 CronField.CreateAll(CronFieldKind.DayOfWeek),
-                CronField.CreateAll(CronFieldKind.Year),
-                hasSeconds: false,
-                hasYear: false);
+                CronField.CreateAll(CronFieldKind.Year));
             return true;
         }
 
@@ -214,9 +198,7 @@ public sealed class CronExpression : IRecurrenceRule
                 CronField.CreateValue(CronFieldKind.DayOfMonth, 1),
                 CronField.CreateAll(CronFieldKind.Month),
                 CronField.CreateAll(CronFieldKind.DayOfWeek),
-                CronField.CreateAll(CronFieldKind.Year),
-                hasSeconds: false,
-                hasYear: false);
+                CronField.CreateAll(CronFieldKind.Year));
             return true;
         }
 
@@ -230,9 +212,7 @@ public sealed class CronExpression : IRecurrenceRule
                 CronField.CreateAll(CronFieldKind.DayOfMonth),
                 CronField.CreateAll(CronFieldKind.Month),
                 CronField.CreateValue(CronFieldKind.DayOfWeek, 0),
-                CronField.CreateAll(CronFieldKind.Year),
-                hasSeconds: false,
-                hasYear: false);
+                CronField.CreateAll(CronFieldKind.Year));
             return true;
         }
 
@@ -247,9 +227,7 @@ public sealed class CronExpression : IRecurrenceRule
                 CronField.CreateAll(CronFieldKind.DayOfMonth),
                 CronField.CreateAll(CronFieldKind.Month),
                 CronField.CreateAll(CronFieldKind.DayOfWeek),
-                CronField.CreateAll(CronFieldKind.Year),
-                hasSeconds: false,
-                hasYear: false);
+                CronField.CreateAll(CronFieldKind.Year));
             return true;
         }
 
@@ -263,9 +241,7 @@ public sealed class CronExpression : IRecurrenceRule
                 CronField.CreateAll(CronFieldKind.DayOfMonth),
                 CronField.CreateAll(CronFieldKind.Month),
                 CronField.CreateAll(CronFieldKind.DayOfWeek),
-                CronField.CreateAll(CronFieldKind.Year),
-                hasSeconds: false,
-                hasYear: false);
+                CronField.CreateAll(CronFieldKind.Year));
             return true;
         }
 
@@ -372,7 +348,7 @@ public sealed class CronExpression : IRecurrenceRule
                 if (!TryParseDayOfWeek(part[..^1], out var dow))
                     return false;
 
-                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.LastDayOfWeek, Value = dow });
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.LastDayOfWeek, Value = dow % 7 });
                 return true;
             }
 
@@ -385,7 +361,7 @@ public sealed class CronExpression : IRecurrenceRule
                 if (!TryParseInt(part[(hashIndex + 1)..], out var nth) || nth < 1 || nth > 5)
                     return false;
 
-                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.NthDayOfWeek, Value = dow, NthValue = nth });
+                builder.AddSpecial(new CronFieldValue { Kind = CronValueKind.NthDayOfWeek, Value = dow % 7, NthValue = nth });
                 return true;
             }
         }
@@ -481,7 +457,8 @@ public sealed class CronExpression : IRecurrenceRule
         if (value.Equals("FRI", StringComparison.OrdinalIgnoreCase)) { result = 5; return true; }
         if (value.Equals("SAT", StringComparison.OrdinalIgnoreCase)) { result = 6; return true; }
 
-        return TryParseInt(value, out result) && result >= 0 && result <= 6;
+        // 0 and 7 both denote Sunday. 7 is kept as is so that a range such as 1-7 or 0-7/2 ends on it; the field stores it as 0.
+        return TryParseInt(value, out result) && result >= 0 && result <= 7;
     }
 
     private static bool TryParseInt(ReadOnlySpan<char> value, out int result)

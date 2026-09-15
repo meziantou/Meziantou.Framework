@@ -8,4 +8,6 @@ internal sealed class DisallowStrategy : SnapshotUpdateStrategy
 
     public override void UpdateFile(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
         => throw new InvalidOperationException($"'{nameof(SnapshotUpdateStrategy)}.{nameof(SnapshotUpdateStrategy.Disallow)}' never writes to source files. Set '{nameof(InlineSnapshotSettings)}.{nameof(InlineSnapshotSettings.SnapshotUpdateStrategy)}' to '{nameof(SnapshotUpdateStrategy.Overwrite)}' or '{nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure)}' to update snapshots.");
+
+    public override string ToString() => nameof(Disallow);
 }

@@ -4,15 +4,23 @@
   </PropertyGroup>
 
   <!--
-    Snapshots stored as source files (.cs / .vb) live next to the test source files and must not be compiled with the project.
+    Snapshots live next to the test source files, and a snapshot can have any extension: source files (.cs / .vb) would be
+    compiled, .razor and .cshtml files would be compiled as components and views, .resx files would be embedded, .xaml files
+    would be compiled as pages, and the Web SDK would copy .json files to the output and publish directories.
+    Only the default items are removed, so a project that includes a snapshot explicitly while the corresponding default
+    items are disabled keeps it. The snapshots are then added back as None items, so they still show up in the IDE.
     The removal/inclusion pair is idempotent, so importing this file more than once is harmless.
   -->
-  <ItemGroup Condition="'$(SnapshotTestingExcludeSnapshotFilesFromCompilation)' == 'true' and '$(EnableDefaultItems)' != 'false' and '$(EnableDefaultCompileItems)' != 'false'">
-    <Compile Remove="**/__snapshots__/**/*.cs" />
-    <Compile Remove="**/__snapshots__/**/*.vb" />
-    <None Remove="**/__snapshots__/**/*.cs" />
-    <None Remove="**/__snapshots__/**/*.vb" />
-    <None Include="**/__snapshots__/**/*.cs" />
-    <None Include="**/__snapshots__/**/*.vb" />
+  <ItemGroup Condition="'$(SnapshotTestingExcludeSnapshotFilesFromCompilation)' == 'true' and '$(EnableDefaultItems)' != 'false'">
+    <Compile Remove="**/__snapshots__/**" Condition="'$(EnableDefaultCompileItems)' != 'false'" />
+    <EmbeddedResource Remove="**/__snapshots__/**" Condition="'$(EnableDefaultEmbeddedResourceItems)' != 'false'" />
+    <Content Remove="**/__snapshots__/**" Condition="'$(EnableDefaultContentItems)' != 'false'" />
+    <Page Remove="**/__snapshots__/**" Condition="'$(EnableDefaultPageItems)' != 'false'" />
+    <ApplicationDefinition Remove="**/__snapshots__/**" Condition="'$(EnableDefaultApplicationDefinition)' != 'false'" />
+    <MauiXaml Remove="**/__snapshots__/**" Condition="'$(EnableDefaultMauiItems)' != 'false'" />
+    <AvaloniaXaml Remove="**/__snapshots__/**" Condition="'$(EnableDefaultAvaloniaItems)' != 'false'" />
+    <None Include="**/__snapshots__/**"
+          Exclude="@(None);$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)"
+          Condition="'$(EnableDefaultNoneItems)' != 'false'" />
   </ItemGroup>
 </Project>

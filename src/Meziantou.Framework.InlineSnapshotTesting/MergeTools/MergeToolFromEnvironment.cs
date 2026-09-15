@@ -1,29 +1,42 @@
+using System.Reflection;
+
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 internal sealed class MergeToolFromEnvironment : MergeTool
 {
-    public override MergeToolResult? Start(string currentFilePath, string newFilePath)
+    public override MergeToolResult? Start(string currentFilePath, string newFilePath) => Start(currentFilePath, newFilePath, waitForMerge: false);
+
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var variable = Environment.GetEnvironmentVariable("DiffEngine_Tool");
+        return GetTool()?.Start(currentFilePath, newFilePath, waitForMerge);
+    }
+
+    /// <summary>Resolves the <see cref="MergeTool" /> property named by <c>DiffEngine_Tool</c>, ignoring the case.</summary>
+    internal static MergeTool? GetTool()
+    {
+        var variable = Environment.GetEnvironmentVariable("DiffEngine_Tool")?.Trim();
         if (string.IsNullOrEmpty(variable))
             return null;
 
-        // This instance is itself exposed as MergeTool.DiffToolFromEnvironmentVariable, so resolving that name
-        // would hand back this very object and recurse until the process died with a StackOverflowException.
-        if (string.Equals(variable, nameof(MergeTool.DiffToolFromEnvironmentVariable), StringComparison.Ordinal))
-            return null;
+        foreach (var property in typeof(MergeTool).GetProperties(BindingFlags.Public | BindingFlags.Static))
+        {
+            if (!string.Equals(property.Name, variable, StringComparison.OrdinalIgnoreCase))
+                continue;
 
-        var property = typeof(MergeTool).GetProperty(variable, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-        if (property is null)
-            return null;
+            if (!typeof(MergeTool).IsAssignableFrom(property.PropertyType))
+                return null;
 
-        if (!typeof(MergeTool).IsAssignableFrom(property.PropertyType))
-            return null;
+            // This instance is itself exposed as MergeTool.DiffToolFromEnvironmentVariable, so resolving that name
+            // would hand back this very object and recurse until the process died with a StackOverflowException.
+            var tool = (MergeTool?)property.GetValue(null);
+            if (tool is null or MergeToolFromEnvironment)
+                return null;
 
-        var tool = (MergeTool?)property.GetValue(null);
-        if (tool is null)
-            return null;
+            return tool;
+        }
 
-        return tool.Start(currentFilePath, newFilePath);
+        return null;
     }
+
+    public override string ToString() => nameof(MergeTool.DiffToolFromEnvironmentVariable);
 }

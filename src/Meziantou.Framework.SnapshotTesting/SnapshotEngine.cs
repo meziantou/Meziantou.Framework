@@ -31,11 +31,12 @@ internal static class SnapshotEngine
             callerContext.Freeze();
         }
 
-        var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles);
+        var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles, out var ambiguousFilePaths);
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
         var comparison = Compare(settings, type, actualFiles, expectedFiles);
         var filesToUpdate = BuildSnapshotFilesToUpdate(actualFiles, comparison.PathsToUpdate);
+        DeleteStaleActualSnapshots(actualFiles, comparison);
         WriteActualSnapshots(filesToUpdate);
 
         if (!comparison.HasDifferences && !settings.ForceUpdateSnapshots)
@@ -45,7 +46,7 @@ internal static class SnapshotEngine
         {
             if (comparison.HasDifferences)
             {
-                ThrowAssertion(comparison.Message);
+                ThrowAssertion(AppendUpdatesDisabledReason(settings, comparison.Message));
             }
 
             return;
@@ -62,7 +63,7 @@ internal static class SnapshotEngine
             filesToUpdate.AddRange(remainingFiles);
         }
 
-        ApplySnapshotUpdates(settings, filesToUpdate, comparison.ExtraPaths);
+        ApplySnapshotUpdates(settings, filesToUpdate, ExcludeAmbiguousPaths(comparison.ExtraPaths, ambiguousFilePaths));
 
         if (comparison.HasDifferences && settings.SnapshotUpdateStrategy.MustReportError(settings, callerContext.SourceFilePath))
         {
@@ -79,14 +80,23 @@ internal static class SnapshotEngine
         var result = new List<SnapshotData>(data.Count);
         foreach (var snapshotData in data)
         {
-            result.Add(ApplyScrubbers(snapshotData, settings.Scrubbers));
+            result.Add(ApplyScrubbers(type, snapshotData, settings.Scrubbers));
         }
 
         return result;
     }
 
-    private static SnapshotData ApplyScrubbers(SnapshotData snapshotData, IList<Scrubber> scrubbers)
+    /// <summary>
+    /// Applies the scrubbers to a text snapshot. Scrubbers work on lines of text, so a snapshot stored in a binary
+    /// format (<c>png</c>, <c>bin</c>, ...) is left untouched, even when its bytes happen to be valid UTF-8. A format
+    /// that is neither a known text format nor a known binary one is scrubbed when its content is UTF-8 text.
+    /// </summary>
+    private static SnapshotData ApplyScrubbers(SnapshotType type, SnapshotData snapshotData, IList<Scrubber> scrubbers)
     {
+        var extension = ResolveSnapshotExtension(type, snapshotData);
+        if (SnapshotType.IsKnownBinaryType(extension))
+            return snapshotData;
+
         string text;
         try
         {
@@ -94,7 +104,10 @@ internal static class SnapshotEngine
         }
         catch (DecoderFallbackException ex)
         {
-            throw new SnapshotException("Snapshot scrubbers can only be applied to UTF-8 text snapshots.", ex);
+            if (!SnapshotType.IsKnownTextType(extension))
+                return snapshotData;
+
+            throw new SnapshotException($"Snapshot scrubbers can only be applied to UTF-8 text snapshots, and the '{extension}' snapshot is not valid UTF-8.", ex);
         }
 
         foreach (var scrubber in scrubbers)
@@ -210,8 +223,8 @@ internal static class SnapshotEngine
             sb.AppendLine("Unexpected snapshot files:");
             foreach (var path in extraPaths.OrderBy(static p => p.Value, StringComparer.Ordinal))
             {
+                // Nothing produces this file anymore, so there is no actual file to compare it with.
                 sb.Append("  - ").AppendLine(path.Value);
-                sb.Append("    Actual:   ").AppendLine(GetActualSnapshotPath(path).Value);
             }
         }
 
@@ -242,6 +255,18 @@ internal static class SnapshotEngine
         sb.AppendLine("  - Re-run the test.");
     }
 
+    /// <summary>
+    /// Explains that the snapshot was not updated because the environment detection disabled updates. Without it, the
+    /// guidance suggests re-running with an update strategy that the detection silently ignores.
+    /// </summary>
+    private static string AppendUpdatesDisabledReason(SnapshotSettings settings, string message)
+    {
+        if (!settings.AutoDetectContinuousEnvironment || ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is not { } environment)
+            return message;
+
+        return message + Environment.NewLine + Environment.NewLine + ContinuousEnvironmentDetector.FormatUpdatesDisabledMessage(environment, SnapshotSettings.AutoDetectContinuousEnvironmentVariableName, nameof(SnapshotSettings));
+    }
+
     private static string? FormatSummary(IEnumerable<FullPath> paths)
     {
         var items = paths.Select(static p => p.Value).OrderBy(static item => item, StringComparer.Ordinal).ToArray();
@@ -265,13 +290,67 @@ internal static class SnapshotEngine
                 extension = extension[1..];
             }
 
-            result[path] = new SnapshotData(extension, File.ReadAllBytes(path));
+            // Another process validating the same snapshot may be replacing the file right now
+            byte[] content;
+            try
+            {
+                content = SnapshotUpdateStrategy.ReadAllBytesWithRetry(path);
+            }
+            catch (FileNotFoundException)
+            {
+                continue;
+            }
+
+            result[path] = new SnapshotData(extension, content);
         }
 
         return result;
     }
 
     private static List<SnapshotFile> BuildActualFiles(
+        SnapshotSettings settings,
+        SnapshotCallerContext callerContext,
+        SnapshotType type,
+        IReadOnlyList<SnapshotData> serialized,
+        SnapshotTestContext? testContext)
+    {
+        var result = BuildActualFilesForTestContext(settings, callerContext, type, serialized, testContext);
+        var usesBuiltInNames = SnapshotSettings.UsesBuiltInSnapshotNames(settings);
+        var owner = usesBuiltInNames ? callerContext.GetNameOwner() : null;
+        var isLegacyName = false;
+
+        // Earlier versions derived some test names in ways that gave several tests the same name. The snapshot
+        // files they created keep being used while the files for the current name do not exist, so the new naming
+        // does not orphan the snapshots users already committed. The legacy name may be the current name of
+        // another test - the string "null" was named like null - in which case that test owns the file.
+        if (testContext?.LegacyTestName is { } legacyTestName && !result.Exists(static file => File.Exists(file.FilePath)))
+        {
+            var legacyResult = BuildActualFilesForTestContext(settings, callerContext, type, serialized, testContext with { TestName = legacyTestName, LegacyTestName = null });
+            if (legacyResult.Exists(static file => File.Exists(file.FilePath)) &&
+                (owner is null || GetSnapshotName(legacyResult) is not { } legacySnapshotName || !SnapshotNameRegistry.IsClaimedByAnotherTest(legacyResult[0].FilePath.Parent, legacySnapshotName, owner)))
+            {
+                result = legacyResult;
+                isLegacyName = true;
+            }
+        }
+
+        if (owner is not null && GetSnapshotName(result) is { } snapshotName)
+        {
+            SnapshotNameRegistry.Claim(result[0].FilePath.Parent, snapshotName, owner, isLegacyName);
+        }
+
+        return result;
+    }
+
+    private static string? GetSnapshotName(List<SnapshotFile> files)
+    {
+        if (files.Count == 0 || GetVerifiedBaseName(files[0].FilePath) is not { } firstName)
+            return null;
+
+        return GetSnapshotName(firstName, files.Count);
+    }
+
+    private static List<SnapshotFile> BuildActualFilesForTestContext(
         SnapshotSettings settings,
         SnapshotCallerContext callerContext,
         SnapshotType type,
@@ -292,6 +371,13 @@ internal static class SnapshotEngine
                 settings,
                 serialized.Count));
 
+            // Comparers receive the extension in the same form for both sides: without the leading dot, as the
+            // verified file loaded from disk has it.
+            if (!string.Equals(snapshotData.Extension, extension, StringComparison.Ordinal))
+            {
+                snapshotData = snapshotData with { Extension = extension };
+            }
+
             result.Add(new SnapshotFile(path, snapshotData));
         }
 
@@ -306,8 +392,24 @@ internal static class SnapshotEngine
         return extension?.TrimStart('.');
     }
 
-    private static IReadOnlyCollection<FullPath> DiscoverExpectedFilePaths(List<SnapshotFile> actualFiles)
+    /// <summary>
+    /// Lists the verified files that belong to the assertion: the files it produces, plus the files it left behind
+    /// when it produced a different number of snapshots or a different type of snapshot.
+    /// </summary>
+    /// <param name="actualFiles">Files the assertion produces.</param>
+    /// <param name="ambiguousPaths">
+    /// Files that are reported as unexpected but must not be deleted, as they may belong to another test. See
+    /// <see cref="AddIndexedFilesOfThisAssertion" />.
+    /// </param>
+    /// <remarks>
+    /// Every file named after the assertion is claimed, whatever its extension: a test whose snapshot changes type
+    /// - a text snapshot becoming a PNG - must not leave its previous file behind. This is sound because another
+    /// assertion cannot use the same name: a second assertion of the same test gets an ordinal suffix, and a test
+    /// whose name collides with another one is reported by <see cref="SnapshotNameRegistry" />.
+    /// </remarks>
+    private static IReadOnlyCollection<FullPath> DiscoverExpectedFilePaths(List<SnapshotFile> actualFiles, out IReadOnlyCollection<FullPath> ambiguousPaths)
     {
+        ambiguousPaths = [];
         var actualPaths = new HashSet<FullPath>(actualFiles.Select(f => f.FilePath));
         if (actualFiles.Count == 0)
             return actualPaths;
@@ -345,7 +447,9 @@ internal static class SnapshotEngine
 
         if (indexedCandidates is not null)
         {
-            AddIndexedFilesOfThisAssertion(actualFiles, directory, indexedPrefix, indexedCandidates, expected);
+            var ambiguous = new HashSet<FullPath>();
+            AddIndexedFilesOfThisAssertion(actualFiles, directory, indexedPrefix, indexedCandidates, expected, ambiguous);
+            ambiguousPaths = ambiguous;
         }
 
         return expected;
@@ -356,18 +460,28 @@ internal static class SnapshotEngine
     /// than it does now.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An assertion numbers its files from zero without a gap, so an index only identifies it when every
     /// index below belongs to it too. A lone <c>Name_1.verified.txt</c> sitting next to
     /// <c>Name.verified.txt</c> with no <c>Name_0.verified.txt</c> is the snapshot of a test called
     /// <c>Name_1</c>: reporting it here would fail this assertion for a file it does not own, and deleting it
     /// would take out the other test's baseline.
+    /// </para>
+    /// <para>
+    /// That rule is not enough once the assertion produces indexed files itself. When <c>Name</c> produces
+    /// <c>Name_0</c> and <c>Name_1</c>, a <c>Name_2.verified.txt</c> is either a file it produced in an earlier
+    /// run or the snapshot of a test called <c>Name_2</c>, and nothing on disk tells which. Such a file is skipped
+    /// when a test of the current process uses that name, and otherwise reported without being deleted: the user
+    /// decides whether to remove it.
+    /// </para>
     /// </remarks>
     private static void AddIndexedFilesOfThisAssertion(
         List<SnapshotFile> actualFiles,
         FullPath directory,
         string indexedPrefix,
         Dictionary<int, string> indexedCandidates,
-        HashSet<FullPath> expected)
+        HashSet<FullPath> expected,
+        HashSet<FullPath> ambiguous)
     {
         var actualIndexes = new HashSet<int>();
         foreach (var actualFile in actualFiles)
@@ -387,8 +501,24 @@ internal static class SnapshotEngine
             if (!indexedCandidates.TryGetValue(index, out var fileName))
                 break;
 
-            expected.Add(directory / fileName);
+            if (SnapshotNameRegistry.IsClaimed(directory, indexedPrefix + index.ToString(CultureInfo.InvariantCulture)))
+                break;
+
+            var path = directory / fileName;
+            expected.Add(path);
+            if (actualIndexes.Count > 0)
+            {
+                ambiguous.Add(path);
+            }
         }
+    }
+
+    private static IReadOnlyCollection<FullPath> ExcludeAmbiguousPaths(IReadOnlyCollection<FullPath> paths, IReadOnlyCollection<FullPath> ambiguousPaths)
+    {
+        if (ambiguousPaths.Count == 0 || paths.Count == 0)
+            return paths;
+
+        return [.. paths.Where(path => !ambiguousPaths.Contains(path))];
     }
 
     /// <summary>
@@ -531,7 +661,37 @@ internal static class SnapshotEngine
     {
         foreach (var fileToUpdate in filesToUpdate)
         {
-            WriteAllBytesWithRetry(fileToUpdate.ActualPath, fileToUpdate.ActualData);
+            SnapshotUpdateStrategy.WriteAllBytesWithRetry(fileToUpdate.ActualPath, fileToUpdate.ActualData);
+        }
+    }
+
+    /// <summary>
+    /// Removes the actual files that an earlier failed run of this assertion left behind for snapshots that now match,
+    /// and for snapshots that the assertion no longer produces. Approving the actual files would otherwise replace a
+    /// correct verified file with that stale output, or bring back a snapshot that is no longer expected.
+    /// </summary>
+    private static void DeleteStaleActualSnapshots(List<SnapshotFile> actualFiles, SnapshotComparisonResult comparison)
+    {
+        foreach (var actualFile in actualFiles)
+        {
+            if (comparison.PathsToUpdate.Contains(actualFile.FilePath))
+                continue;
+
+            DeleteActualSnapshot(actualFile.FilePath);
+        }
+
+        foreach (var extraPath in comparison.ExtraPaths)
+        {
+            DeleteActualSnapshot(extraPath);
+        }
+
+        static void DeleteActualSnapshot(FullPath verifiedPath)
+        {
+            var actualPath = GetActualSnapshotPath(verifiedPath);
+            if (File.Exists(actualPath))
+            {
+                SnapshotUpdateStrategy.TryDeleteFile(actualPath);
+            }
         }
     }
 
@@ -547,34 +707,6 @@ internal static class SnapshotEngine
             return expectedSnapshotPath.Parent / actualSnapshotName;
 
         return expectedSnapshotPath.Parent / (actualSnapshotName + extension);
-    }
-
-    private static void WriteAllBytesWithRetry(FullPath path, byte[] data)
-    {
-        const int MaxAttemptCount = 8;
-        for (var attempt = 1; ; attempt++)
-        {
-            try
-            {
-                path.CreateParentDirectory();
-                var fileInfo = new FileInfo(path);
-                if (fileInfo.Exists)
-                {
-                    fileInfo.TrySetReadOnly(false);
-                }
-
-                File.WriteAllBytes(path, data);
-                return;
-            }
-            catch (IOException) when (attempt < MaxAttemptCount)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
-            }
-            catch (UnauthorizedAccessException) when (attempt < MaxAttemptCount)
-            {
-                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
-            }
-        }
     }
 
     [DoesNotReturn]

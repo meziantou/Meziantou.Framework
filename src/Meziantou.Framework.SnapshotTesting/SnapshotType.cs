@@ -28,6 +28,37 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         ["ico"] = Ico,
     };
 
+    // Formats whose content is text. They are compared without regard to line endings or a leading UTF-8 byte
+    // order mark, and scrubbers are always applied to them.
+    private static readonly HashSet<string> KnownTextTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "txt", "text", "log", "svg",
+        "json", "jsonc", "json5", "jsonl", "ndjson", "geojson", "har",
+        "yaml", "yml", "toml", "ini", "cfg", "conf", "config", "env", "properties", "editorconfig",
+        "xml", "xsd", "xsl", "xslt", "xaml", "axaml", "resx", "props", "targets", "csproj", "vbproj", "fsproj", "sln", "slnx", "nuspec", "manifest", "plist",
+        "html", "htm", "xhtml", "cshtml", "vbhtml", "razor", "css", "scss", "sass", "less",
+        "md", "markdown", "mdx", "rst", "adoc", "tex",
+        "csv", "tsv",
+        "cs", "csx", "vb", "fs", "fsi", "fsx", "il", "c", "h", "cpp", "hpp", "cc", "java", "kt", "kts", "go", "rs", "swift", "py", "rb", "php", "pl", "lua",
+        "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx",
+        "sql", "graphql", "gql", "proto", "http",
+        "sh", "bash", "zsh", "ps1", "psm1", "psd1", "bat", "cmd",
+        "diff", "patch", "ics", "vcf", "srt", "vtt",
+    };
+
+    // Formats whose content is binary. Scrubbers are never applied to them, even when the bytes happen to be
+    // valid UTF-8.
+    private static readonly HashSet<string> KnownBinaryTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bin", "dat",
+        "png", "bmp", "jpeg", "jpg", "tiff", "tif", "webp", "gif", "ico", "avif", "heic", "heif",
+        "pdf", "zip", "gz", "tgz", "7z", "tar", "br", "zst", "nupkg", "snupkg",
+        "docx", "xlsx", "pptx", "odt", "ods", "odp",
+        "dll", "exe", "pdb", "so", "dylib", "wasm",
+        "woff", "woff2", "ttf", "otf", "eot",
+        "mp3", "mp4", "wav", "ogg", "webm", "flac", "avi", "mov",
+    };
+
     private SnapshotType(string type, string? mimeType = null, string? displayName = null)
     {
         Type = type;
@@ -62,8 +93,30 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         return new SnapshotType(name ?? nameSpan.ToString());
     }
 
-    public bool Equals([NotNullWhen(true)] SnapshotType? other) => other is not null && StringComparer.Ordinal.Equals(Type, other.Type);
-    public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Type);
+    /// <summary>Indicates whether a snapshot stored with this extension is text, such as <c>txt</c>, <c>json</c> or <c>cs</c>.</summary>
+    internal static bool IsKnownTextType(string? extension) => ContainsExtension(KnownTextTypes, extension);
+
+    /// <summary>Indicates whether a snapshot stored with this extension is binary, such as <c>png</c> or <c>bin</c>.</summary>
+    internal static bool IsKnownBinaryType(string? extension) => ContainsExtension(KnownBinaryTypes, extension);
+
+    private static bool ContainsExtension(HashSet<string> extensions, string? extension)
+    {
+        if (string.IsNullOrEmpty(extension))
+            return false;
+
+        var span = extension.AsSpan();
+        if (span[0] == '.')
+        {
+            span = span[1..];
+        }
+
+        return extensions.GetAlternateLookup<ReadOnlySpan<char>>().Contains(span);
+    }
+
+    // A type names a file extension, and "JSON" and "json" name the same format: a comparer registered for one
+    // must apply to a snapshot requested as the other.
+    public bool Equals([NotNullWhen(true)] SnapshotType? other) => other is not null && StringComparer.OrdinalIgnoreCase.Equals(Type, other.Type);
+    public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(Type);
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is SnapshotType snapshotType && Equals(snapshotType);
 
     public static bool operator ==(SnapshotType? left, SnapshotType? right) => left is null ? right is null : left.Equals(right);

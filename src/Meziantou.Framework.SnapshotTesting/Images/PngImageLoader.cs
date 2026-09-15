@@ -12,6 +12,9 @@ internal static class PngImageLoader
     private static readonly int[] Adam7XSteps = [8, 8, 4, 4, 2, 2, 1];
     private static readonly int[] Adam7YSteps = [8, 8, 8, 4, 4, 2, 2];
 
+    // libpng keeps a 256-entry palette whose unused entries are zero, so an index past the PLTE entries is opaque black
+    private static readonly Argb OutOfRangePaletteColor = new(255, 0, 0, 0);
+
     internal static bool IsPng(ReadOnlySpan<byte> data)
     {
         return data.StartsWith(PngSignature);
@@ -63,15 +66,24 @@ internal static class PngImageLoader
 
             var chunkType = data[chunkTypeOffset..(chunkTypeOffset + 4)];
             var chunkData = data[chunkDataOffset..chunkCrcOffset];
-            var expectedChunkCrc = ReadUInt32BigEndian(data, chunkCrcOffset);
-            var actualChunkCrc = ComputePngCrc32(chunkType, chunkData);
-            if (expectedChunkCrc != actualChunkCrc)
-                throw new InvalidDataException("The PNG chunk CRC is invalid.");
-
             offset = chunkCrcOffset + 4;
 
             if (!seenIhdr && !chunkType.SequenceEqual("IHDR"u8))
                 throw new InvalidDataException("The PNG IHDR chunk must be the first chunk.");
+
+            var expectedChunkCrc = ReadUInt32BigEndian(data, chunkCrcOffset);
+            var actualChunkCrc = ComputePngCrc32(chunkType, chunkData);
+            if (expectedChunkCrc != actualChunkCrc)
+            {
+                // Like libpng, a corrupted ancillary chunk is discarded; only the critical chunks define the image.
+                if (IsPngCriticalChunk(chunkType))
+                    throw new InvalidDataException("The PNG chunk CRC is invalid.");
+
+                if (seenIdat && !chunkType.SequenceEqual("IDAT"u8))
+                    idatEnded = true;
+
+                continue;
+            }
 
             if (chunkType.SequenceEqual("IHDR"u8))
             {
@@ -95,17 +107,22 @@ internal static class PngImageLoader
                 interlaceMethod = chunkData[12];
 
                 ValidatePngHeader(width, height, bitDepth, colorType, compressionMethod, filterMethod, interlaceMethod);
+                if (!ImageLimits.IsValidSize(width, height))
+                    throw new InvalidDataException("The PNG image dimensions exceed the supported limit.");
+
                 seenIhdr = true;
                 continue;
             }
 
             if (chunkType.SequenceEqual("PLTE"u8))
             {
-                if (!seenIhdr || seenPlte || seenIdat)
-                    throw new InvalidDataException("The PNG PLTE chunk is invalid.");
+                // Grayscale images cannot use a palette, and truecolor images only suggest one for quantization:
+                // libpng ignores it in both cases.
+                if (colorType != 3)
+                    continue;
 
-                if (colorType is 0 or 4)
-                    throw new NotSupportedException("PLTE is not allowed for grayscale PNG images.");
+                if (seenPlte || seenIdat)
+                    throw new InvalidDataException("The PNG PLTE chunk is invalid.");
 
                 if (chunkData.Length == 0 || chunkData.Length % 3 != 0)
                     throw new InvalidDataException("The PNG PLTE chunk length is invalid.");
@@ -124,7 +141,11 @@ internal static class PngImageLoader
 
             if (chunkType.SequenceEqual("tRNS"u8))
             {
-                if (!seenIhdr || seenIdat || seenTrns)
+                // Images with an alpha channel cannot also use tRNS; libpng ignores the chunk.
+                if (colorType is 4 or 6)
+                    continue;
+
+                if (seenIdat || seenTrns)
                     throw new InvalidDataException("The PNG tRNS chunk is invalid.");
 
                 seenTrns = true;
@@ -151,15 +172,11 @@ internal static class PngImageLoader
                         if (!seenPlte || palette is null)
                             throw new InvalidDataException("The PNG tRNS chunk requires a preceding PLTE chunk.");
 
+                        // Entries beyond the palette can never be referenced; libpng truncates them.
                         var paletteEntryCount = palette.Length / 3;
-                        if (chunkData.Length > paletteEntryCount)
-                            throw new InvalidDataException("The PNG tRNS chunk length is invalid for indexed PNG images.");
-
-                        paletteAlpha = chunkData.ToArray();
+                        paletteAlpha = chunkData[..Math.Min(chunkData.Length, paletteEntryCount)].ToArray();
                         break;
                     }
-                    default:
-                        throw new NotSupportedException("The PNG tRNS chunk is not allowed for this color type.");
                 }
 
                 continue;
@@ -190,9 +207,8 @@ internal static class PngImageLoader
                 break;
             }
 
-            if (chunkType.SequenceEqual("acTL"u8) || chunkType.SequenceEqual("fcTL"u8) || chunkType.SequenceEqual("fdAT"u8))
-                throw new NotSupportedException("Animated PNG (APNG) is not supported.");
-
+            // The animation chunks of an APNG (acTL, fcTL, fdAT) are ancillary: the default image is the IDAT
+            // data, which is what a decoder without APNG support displays.
             if (seenIdat)
                 idatEnded = true;
 
@@ -206,11 +222,9 @@ internal static class PngImageLoader
         if (!seenIdat)
             throw new InvalidDataException("The PNG IDAT chunk is missing.");
 
+        // Data after IEND is ignored, as libpng does
         if (!seenIend)
             throw new InvalidDataException("The PNG IEND chunk is missing.");
-
-        if (offset != data.Length)
-            throw new InvalidDataException("The PNG data has trailing bytes.");
 
         var bitsPerPixel = checked(GetPngChannelCount(colorType) * bitDepth);
         var expectedImageDataLength = GetExpectedPngImageDataLength(width, height, bitsPerPixel, interlaceMethod);
@@ -222,6 +236,9 @@ internal static class PngImageLoader
 
         var decompressedData = decompressedStream.GetBuffer().AsSpan(0, expectedImageDataLength);
         var pixels = new Argb[checked(width * height)];
+
+        // 8 bits per sample lose the low byte of 16-bit samples, which exact comparisons must still see
+        var highPrecisionSamples = bitDepth == 16 ? new ushort[checked(pixels.Length * 4)] : null;
         if (interlaceMethod == 0)
         {
             DecodePngRows(
@@ -239,7 +256,8 @@ internal static class PngImageLoader
                 transparentGreen,
                 transparentBlue,
                 hasTransparentRgb,
-                pixels);
+                pixels,
+                highPrecisionSamples);
         }
         else
         {
@@ -258,35 +276,50 @@ internal static class PngImageLoader
                 transparentGreen,
                 transparentBlue,
                 hasTransparentRgb,
-                pixels);
+                pixels,
+                highPrecisionSamples);
         }
 
-        return Image.Create(width, height, pixels);
+        return Image.Create(width, height, pixels, highPrecisionSamples);
     }
 
     /// <summary>Inflates the concatenated IDAT chunks.</summary>
     /// <param name="compressedStream">The concatenated IDAT chunks, positioned at the first byte.</param>
     /// <param name="expectedLength">
-    /// The image data size computed from the validated header. Inflating is stopped one byte past it: the
-    /// header already says how much data the image can hold, so anything beyond that is malformed and the
-    /// caller reports the size mismatch. Copying the whole stream instead would let a corrupt file inflate
-    /// to an arbitrary size and exhaust memory before the size is ever checked.
+    /// The image data size computed from the validated header. Inflating stops there: like libpng, data beyond
+    /// what the header describes is ignored, and never inflating it keeps a corrupt file from exhausting memory.
     /// </param>
     private static MemoryStream DecompressPngIdatData(Stream compressedStream, int expectedLength)
     {
+        // The initial capacity is capped: the stream only grows as data actually inflates, so a header
+        // declaring a large image does not allocate for data the file does not contain.
+        const int MaxInitialCapacity = 1024 * 1024;
+
         using var zlibStream = new ZLibStream(compressedStream, CompressionMode.Decompress, leaveOpen: true);
-        var output = new MemoryStream(expectedLength);
-
-        // One byte past the expected size is enough to tell "exactly right" from "too long".
-        var limit = (long)expectedLength + 1;
-        var buffer = new byte[Math.Min(limit, 81920)];
-        while (output.Length < limit)
+        var output = new MemoryStream(Math.Min(expectedLength, MaxInitialCapacity));
+        var buffer = new byte[Math.Min(expectedLength, 81920)];
+        try
         {
-            var read = zlibStream.Read(buffer, 0, (int)Math.Min(buffer.Length, limit - output.Length));
-            if (read == 0)
-                break;
+            while (output.Length < expectedLength)
+            {
+                var read = zlibStream.Read(buffer, 0, (int)Math.Min(buffer.Length, expectedLength - output.Length));
+                if (read == 0)
+                    break;
 
-            output.Write(buffer, 0, read);
+                output.Write(buffer, 0, read);
+            }
+
+            // The Adler-32 checksum follows the compressed data, so it is only verified once the inflater reads
+            // past the image data. A single byte is enough to get there without inflating trailing data.
+            if (output.Length == expectedLength)
+            {
+                _ = zlibStream.Read(buffer, 0, 1);
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            // ZLibStream reports every corruption, including a checksum mismatch, as an unsupported compression method
+            throw new InvalidDataException("The PNG compressed image data is corrupt.", ex);
         }
 
         return output;
@@ -307,7 +340,8 @@ internal static class PngImageLoader
         ushort transparentGreen,
         ushort transparentBlue,
         bool hasTransparentRgb,
-        Argb[] pixels)
+        Argb[] pixels,
+        ushort[]? highPrecisionSamples)
     {
         var bytesPerPixel = GetPngFilterBytesPerPixel(colorType, bitDepth);
         var rowLength = GetPngScanlineLength(width, bitsPerPixel);
@@ -336,7 +370,8 @@ internal static class PngImageLoader
                 transparentGreen,
                 transparentBlue,
                 hasTransparentRgb,
-                pixels.AsSpan(y * width, width));
+                pixels.AsSpan(y * width, width),
+                highPrecisionSamples is null ? [] : highPrecisionSamples.AsSpan(y * width * 4, width * 4));
 
             (previousRow, currentRow) = (currentRow, previousRow);
         }
@@ -357,7 +392,8 @@ internal static class PngImageLoader
         ushort transparentGreen,
         ushort transparentBlue,
         bool hasTransparentRgb,
-        Argb[] pixels)
+        Argb[] pixels,
+        ushort[]? highPrecisionSamples)
     {
         var bytesPerPixel = GetPngFilterBytesPerPixel(colorType, bitDepth);
         var currentDataOffset = 0;
@@ -373,6 +409,7 @@ internal static class PngImageLoader
             var previousRow = new byte[rowLength];
             var currentRow = new byte[rowLength];
             var decodedPassRow = new Argb[passWidth];
+            var decodedPassSamples = highPrecisionSamples is null ? [] : new ushort[passWidth * 4];
             for (var passY = 0; passY < passHeight; passY++)
             {
                 var filterType = data[currentDataOffset];
@@ -394,13 +431,18 @@ internal static class PngImageLoader
                     transparentGreen,
                     transparentBlue,
                     hasTransparentRgb,
-                    decodedPassRow);
+                    decodedPassRow,
+                    decodedPassSamples);
 
                 var destinationY = Adam7YStarts[pass] + (passY * Adam7YSteps[pass]);
                 for (var passX = 0; passX < passWidth; passX++)
                 {
                     var destinationX = Adam7XStarts[pass] + (passX * Adam7XSteps[pass]);
                     pixels[(destinationY * width) + destinationX] = decodedPassRow[passX];
+                    if (highPrecisionSamples is not null)
+                    {
+                        decodedPassSamples.AsSpan(passX * 4, 4).CopyTo(highPrecisionSamples.AsSpan(((destinationY * width) + destinationX) * 4));
+                    }
                 }
 
                 (previousRow, currentRow) = (currentRow, previousRow);
@@ -421,7 +463,8 @@ internal static class PngImageLoader
         ushort transparentGreen,
         ushort transparentBlue,
         bool hasTransparentRgb,
-        Span<Argb> destinationPixels)
+        Span<Argb> destinationPixels,
+        Span<ushort> destinationSamples)
     {
         // The color type and bit depth are fixed for the whole image, so the common 8-bit layouts get a
         // loop of their own instead of re-deciding how to read a sample for every channel of every pixel.
@@ -471,6 +514,7 @@ internal static class PngImageLoader
             }
         }
 
+        Span<ushort> samples = stackalloc ushort[4];
         for (var x = 0; x < pixelCount; x++)
         {
             destinationPixels[x] = DecodePngPixel(
@@ -485,7 +529,13 @@ internal static class PngImageLoader
                 transparentRed,
                 transparentGreen,
                 transparentBlue,
-                hasTransparentRgb);
+                hasTransparentRgb,
+                samples);
+
+            if (!destinationSamples.IsEmpty)
+            {
+                samples.CopyTo(destinationSamples[(x * 4)..]);
+            }
         }
     }
 
@@ -496,7 +546,10 @@ internal static class PngImageLoader
         {
             int paletteIndex = rowData[x];
             if (paletteIndex >= paletteEntryCount)
-                throw new InvalidDataException("The PNG palette index is out of range.");
+            {
+                destinationPixels[x] = OutOfRangePaletteColor;
+                continue;
+            }
 
             var entry = palette.AsSpan(paletteIndex * 3, 3);
             var alpha = paletteAlpha is not null && paletteIndex < paletteAlpha.Length ? paletteAlpha[paletteIndex] : (byte)255;
@@ -504,6 +557,8 @@ internal static class PngImageLoader
         }
     }
 
+    /// <summary>Decodes one pixel.</summary>
+    /// <param name="samples">Receives the A, R, G and B samples at the bit depth of the image. Indexed images leave it unchanged.</param>
     private static Argb DecodePngPixel(
         ReadOnlySpan<byte> rowData,
         int pixelIndex,
@@ -516,27 +571,31 @@ internal static class PngImageLoader
         ushort transparentRed,
         ushort transparentGreen,
         ushort transparentBlue,
-        bool hasTransparentRgb)
+        bool hasTransparentRgb,
+        Span<ushort> samples)
     {
+        var maxSample = (ushort)((1 << bitDepth) - 1);
         switch (colorType)
         {
             case 0:
             {
                 var graySample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 1, sampleIndexInPixel: 0);
+                var transparent = hasTransparentGray && graySample == transparentGray;
+                SetSamples(samples, transparent ? (ushort)0 : maxSample, graySample, graySample, graySample);
                 var gray = NormalizePngSampleToByte(graySample, bitDepth);
-                var alpha = hasTransparentGray && graySample == transparentGray ? (byte)0 : (byte)255;
-                return new Argb(alpha, gray, gray, gray);
+                return new Argb(transparent ? (byte)0 : (byte)255, gray, gray, gray);
             }
             case 2:
             {
                 var rSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 3, sampleIndexInPixel: 0);
                 var gSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 3, sampleIndexInPixel: 1);
                 var bSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 3, sampleIndexInPixel: 2);
+                var transparent = hasTransparentRgb && rSample == transparentRed && gSample == transparentGreen && bSample == transparentBlue;
+                SetSamples(samples, transparent ? (ushort)0 : maxSample, rSample, gSample, bSample);
                 var r = NormalizePngSampleToByte(rSample, bitDepth);
                 var g = NormalizePngSampleToByte(gSample, bitDepth);
                 var b = NormalizePngSampleToByte(bSample, bitDepth);
-                var alpha = hasTransparentRgb && rSample == transparentRed && gSample == transparentGreen && bSample == transparentBlue ? (byte)0 : (byte)255;
-                return new Argb(alpha, r, g, b);
+                return new Argb(transparent ? (byte)0 : (byte)255, r, g, b);
             }
             case 3:
             {
@@ -545,7 +604,7 @@ internal static class PngImageLoader
 
                 var paletteIndex = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 1, sampleIndexInPixel: 0);
                 if (paletteIndex >= palette.Length / 3)
-                    throw new InvalidDataException("The PNG palette index is out of range.");
+                    return OutOfRangePaletteColor;
 
                 var paletteOffset = checked((int)paletteIndex * 3);
                 var r = palette[paletteOffset];
@@ -558,6 +617,7 @@ internal static class PngImageLoader
             {
                 var graySample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 2, sampleIndexInPixel: 0);
                 var alphaSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 2, sampleIndexInPixel: 1);
+                SetSamples(samples, alphaSample, graySample, graySample, graySample);
                 var gray = NormalizePngSampleToByte(graySample, bitDepth);
                 var alpha = NormalizePngSampleToByte(alphaSample, bitDepth);
                 return new Argb(alpha, gray, gray, gray);
@@ -568,6 +628,7 @@ internal static class PngImageLoader
                 var gSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 4, sampleIndexInPixel: 1);
                 var bSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 4, sampleIndexInPixel: 2);
                 var aSample = ReadPngSample(rowData, pixelIndex, bitDepth, samplesPerPixel: 4, sampleIndexInPixel: 3);
+                SetSamples(samples, aSample, rSample, gSample, bSample);
                 var r = NormalizePngSampleToByte(rSample, bitDepth);
                 var g = NormalizePngSampleToByte(gSample, bitDepth);
                 var b = NormalizePngSampleToByte(bSample, bitDepth);
@@ -577,6 +638,14 @@ internal static class PngImageLoader
             default:
                 throw new NotSupportedException("Unsupported PNG color type.");
         }
+    }
+
+    private static void SetSamples(Span<ushort> samples, ushort alpha, ushort red, ushort green, ushort blue)
+    {
+        samples[0] = alpha;
+        samples[1] = red;
+        samples[2] = green;
+        samples[3] = blue;
     }
 
     private static ushort ReadPngSample(ReadOnlySpan<byte> rowData, int pixelIndex, byte bitDepth, int samplesPerPixel, int sampleIndexInPixel)
@@ -674,6 +743,10 @@ internal static class PngImageLoader
 
     private static int GetExpectedPngImageDataLength(int width, int height, int bitsPerPixel, byte interlaceMethod)
     {
+        // The pixel count is limited, but up to 8 bytes per pixel can still exceed what a single buffer holds
+        if ((long)width * height * ((bitsPerPixel + 7) / 8) > Array.MaxLength / 2)
+            throw new InvalidDataException("The PNG image data is too large.");
+
         if (interlaceMethod == 0)
             return checked(height * (1 + GetPngScanlineLength(width, bitsPerPixel)));
 

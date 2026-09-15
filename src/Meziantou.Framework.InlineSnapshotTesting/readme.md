@@ -236,7 +236,13 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is only supported on Windows.
 - The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
 
-You can disable the diff tool by setting the `DiffEngine_Disabled` environment variable.
+Merge tools are not started when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
+
+`DiffEngine_Tool` is the case-insensitive name of a `MergeTool` property, for example `VisualStudioCode` or `rider`.
+
+The `cmd` of a git `mergetool.<tool>` or `difftool.<tool>` is run like git runs it: verbatim, through `sh -c`, with the `LOCAL`, `REMOTE`, `BASE` and `MERGED` environment variables set, so `"$LOCAL"`, `${REMOTE}`, `~` or `&&` work as they do with git, and paths may contain spaces or quotes. On Windows, the `sh.exe` of Git for Windows is used. When it cannot be found, each placeholder is replaced by its value, quoted as a single argument. For a merge tool, `LOCAL` and `BASE` are a temporary copy of the source file as it was before the merge, `REMOTE` is a temporary copy of the source file that contains the new snapshot, and `MERGED` is the source file the tool writes the result to. For a diff tool, `LOCAL`, `MERGED` and `BASE` are the source file and `REMOTE` is a temporary copy of the source file that contains the new snapshot. A git tool command must not return before the merge is done (for VS Code, use `code --wait`): the temporary copy is deleted as soon as the command exits.
+
+`SnapshotUpdateStrategy.MergeToolSync` waits for the merge tool process to exit. Visual Studio Code and Cursor are started with `--wait` so they block until the diff is closed. Other launchers, such as the ones of Rider, Visual Studio or Kaleidoscope, may hand the files over to a running instance and exit immediately, so the test continues while the diff is still open. In that case, the temporary file that contains the new snapshot is only deleted when the test process exits.
 
 ## Using helper methods
 
@@ -419,8 +425,9 @@ InlineSnapshot
 
 ## CI environment
 
-When running in a CI environment, the snapshot is never updated. To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.).
-You can disable this behavior by setting `AutoDetectContinuousEnvironment` to `false`.
+When running in a CI environment, in a continuous testing runner (NCrunch, ReSharper), or when the tests are run by an LLM agent (Claude Code, Codex, GitHub Copilot, Cursor, etc.), the snapshot is never updated, whatever the update strategy. The failure message says which environment was detected.
+To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.). Containers and WSL are treated the same way, as no diff tool is expected to show up there.
+You can disable this behavior by setting the `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` environment variable to `false`, or by setting `AutoDetectContinuousEnvironment` to `false`.
 
 ````c#
 InlineSnapshot

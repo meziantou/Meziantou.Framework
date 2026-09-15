@@ -85,7 +85,7 @@ internal static partial class CallerContextUtilities
             return true;
         }
 
-        var relativePath = TryGetPathMappedRelativePath(sourceFilePath);
+        var relativePath = TryGetPathMappedRelativePath(sourceFilePath, out var matchedRealRoot);
         if (relativePath is null)
         {
             resolvedPath = default;
@@ -93,8 +93,25 @@ internal static partial class CallerContextUtilities
         }
 
         var normalizedRelativePath = relativePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+
+        // The prefix identifies the source root the file belongs to. With git submodules, each root is mapped to its
+        // own prefix ('/_/', '/_1/', ...) and two roots may contain the same relative path, so the other roots are
+        // only a fallback for a file the matching root does not contain.
+        if (matchedRealRoot is not null)
+        {
+            var candidatePath = FullPath.Combine(matchedRealRoot, normalizedRelativePath);
+            if (File.Exists(candidatePath))
+            {
+                resolvedPath = candidatePath;
+                return true;
+            }
+        }
+
         foreach (var realRoot in SourceRootMappings.Values)
         {
+            if (string.Equals(realRoot, matchedRealRoot, StringComparison.Ordinal))
+                continue;
+
             var candidatePath = FullPath.Combine(realRoot, normalizedRelativePath);
             if (File.Exists(candidatePath))
             {
@@ -107,22 +124,28 @@ internal static partial class CallerContextUtilities
         return false;
     }
 
-    private static string? TryGetPathMappedRelativePath(string path)
+    private static string? TryGetPathMappedRelativePath(string path, out string? matchedRealRoot)
     {
+        matchedRealRoot = null;
         var normalizedPath = path.Replace('\\', '/');
 
         string? longestMappedPrefix = null;
-        foreach (var mappedPrefix in SourceRootMappings.Keys)
+        string? longestMappedRealRoot = null;
+        foreach (var (mappedPrefix, realRoot) in SourceRootMappings)
         {
             if (normalizedPath.StartsWith(mappedPrefix, StringComparison.Ordinal) &&
                 (longestMappedPrefix is null || mappedPrefix.Length > longestMappedPrefix.Length))
             {
                 longestMappedPrefix = mappedPrefix;
+                longestMappedRealRoot = realRoot;
             }
         }
 
         if (longestMappedPrefix is not null)
+        {
+            matchedRealRoot = longestMappedRealRoot;
             return normalizedPath[longestMappedPrefix.Length..];
+        }
 
         // Generic fallbacks for the common /_/ pattern when no mappings are registered
         if (normalizedPath.StartsWith("/_/", StringComparison.Ordinal))

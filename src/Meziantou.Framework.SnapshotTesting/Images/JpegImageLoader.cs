@@ -2,12 +2,19 @@ using System.Buffers.Binary;
 
 namespace Meziantou.Framework.SnapshotTesting;
 
+/// <summary>
+/// Decodes baseline and extended sequential (8-bit, Huffman) JPEG images. The output is meant to match
+/// libjpeg-turbo's default decoding (<c>djpeg</c>, Pillow, browsers): accurate integer IDCT, "fancy" triangle
+/// upsampling for 2:1 chroma and the fixed-point YCbCr to RGB conversion.
+/// </summary>
 internal static class JpegImageLoader
 {
     private const byte MarkerPrefix = 0xFF;
     private const byte StartOfImageMarker = 0xD8;
     private const byte EndOfImageMarker = 0xD9;
     private const byte StartOfFrameBaselineMarker = 0xC0;
+    private const byte StartOfFrameExtendedSequentialMarker = 0xC1;
+    private const byte StartOfFrameProgressiveMarker = 0xC2;
     private const byte StartOfScanMarker = 0xDA;
     private const byte DefineHuffmanTableMarker = 0xC4;
     private const byte DefineQuantizationTableMarker = 0xDB;
@@ -19,7 +26,10 @@ internal static class JpegImageLoader
     private const byte Restart0Marker = 0xD0;
     private const byte Restart7Marker = 0xD7;
 
-    private static readonly int[] ZigZagOrder =
+    // The JPEG standard limits an interleaved MCU to 10 blocks.
+    private const int MaxBlocksInMcu = 10;
+
+    private static readonly byte[] ZigZagOrder =
     [
         0, 1, 8, 16, 9, 2, 3, 10,
         17, 24, 32, 25, 18, 11, 4, 5,
@@ -31,8 +41,32 @@ internal static class JpegImageLoader
         53, 60, 61, 54, 47, 55, 62, 63,
     ];
 
-    private const double InverseSqrt2 = 0.7071067811865476;
-    private static readonly double[][] CosineTable = CreateCosineTable();
+    // Constants of libjpeg's accurate integer IDCT (jidctint.c): FIX(x) = x * 2^13, rounded.
+    private const int IdctConstBits = 13;
+    private const int IdctPass1Bits = 2;
+    private const int Fix0_298631336 = 2446;
+    private const int Fix0_390180644 = 3196;
+    private const int Fix0_541196100 = 4433;
+    private const int Fix0_765366865 = 6270;
+    private const int Fix0_899976223 = 7373;
+    private const int Fix1_175875602 = 9633;
+    private const int Fix1_501321110 = 12299;
+    private const int Fix1_847759065 = 15137;
+    private const int Fix1_961570560 = 16069;
+    private const int Fix2_053119869 = 16819;
+    private const int Fix2_562915447 = 20995;
+    private const int Fix3_072711026 = 25172;
+
+    // The IDCT output is masked to 10 bits and mapped through this table, exactly like libjpeg's
+    // range-limit table: [0, 127] -> +128, [128, 511] -> 255, [512, 895] -> 0, [896, 1023] (negative) -> +128 - 1024.
+    private static readonly byte[] IdctRangeLimit = CreateIdctRangeLimitTable();
+
+    // Fixed-point YCbCr to RGB tables of libjpeg (jdcolor.c), 16 fractional bits.
+    private const int ColorScaleBits = 16;
+    private static readonly int[] CrToRed = CreateColorTable(1.40200, roundResult: true);
+    private static readonly int[] CbToBlue = CreateColorTable(1.77200, roundResult: true);
+    private static readonly int[] CrToGreen = CreateColorTable(-0.71414, roundResult: false, addHalf: false);
+    private static readonly int[] CbToGreen = CreateColorTable(-0.34414, roundResult: false, addHalf: true);
 
     internal static bool IsJpeg(ReadOnlySpan<byte> data)
     {
@@ -48,15 +82,38 @@ internal static class JpegImageLoader
         return decoder.Decode();
     }
 
-    private static double[][] CreateCosineTable()
+    private static byte[] CreateIdctRangeLimitTable()
     {
-        var table = new double[8][];
-        for (var x = 0; x < 8; x++)
+        var table = new byte[1024];
+        for (var i = 0; i < table.Length; i++)
         {
-            table[x] = new double[8];
-            for (var u = 0; u < 8; u++)
+            table[i] = i switch
             {
-                table[x][u] = Math.Cos((2 * x + 1) * u * Math.PI / 16);
+                < 128 => (byte)(i + 128),
+                < 512 => 255,
+                < 896 => 0,
+                _ => (byte)(i - 896),
+            };
+        }
+
+        return table;
+    }
+
+    private static int[] CreateColorTable(double factor, bool roundResult, bool addHalf = false)
+    {
+        var fixedFactor = (long)(factor * (1L << ColorScaleBits) + (factor < 0 ? -0.5 : 0.5));
+        const long OneHalf = 1L << (ColorScaleBits - 1);
+        var table = new int[256];
+        for (var i = 0; i < table.Length; i++)
+        {
+            var x = i - 128;
+            if (roundResult)
+            {
+                table[i] = (int)((fixedFactor * x + OneHalf) >> ColorScaleBits);
+            }
+            else
+            {
+                table[i] = (int)(fixedFactor * x + (addHalf ? OneHalf : 0));
             }
         }
 
@@ -66,35 +123,34 @@ internal static class JpegImageLoader
     private sealed class Decoder(byte[] data)
     {
         private readonly byte[] _data = data;
-        private readonly short[][] _quantizationTables = new short[4][];
+        private readonly ushort[]?[] _quantizationTables = new ushort[4][];
         private readonly HuffmanTable?[][] _huffmanTables =
         [
             new HuffmanTable?[4],
             new HuffmanTable?[4],
         ];
 
-        private readonly Dictionary<byte, FrameComponent> _frameComponents = [];
+        private readonly short[] _coefficients = new short[64];
+        private readonly int[] _idctWorkspace = new int[64];
+        private FrameComponent[] _frameComponents = [];
         private int _width;
         private int _height;
         private int _maxHorizontalSamplingFactor = 1;
         private int _maxVerticalSamplingFactor = 1;
+        private int _mcuCountX;
+        private int _mcuCountY;
         private int _restartInterval;
         private bool _sawJfifMarker;
         private byte? _adobeTransform;
-        private bool _scanDecoded;
 
         public Image Decode()
         {
             var position = 2;
-            var sawEoi = false;
             while (position < _data.Length)
             {
                 var marker = ReadMarker(ref position);
                 if (marker == EndOfImageMarker)
-                {
-                    sawEoi = true;
                     break;
-                }
 
                 if (marker == StartOfImageMarker)
                     throw new InvalidDataException("Unexpected JPEG start marker.");
@@ -104,15 +160,10 @@ internal static class JpegImageLoader
 
                 if (marker == StartOfScanMarker)
                 {
-                    if (_scanDecoded)
-                        throw new NotSupportedException("Progressive or multi-scan JPEG images are not supported.");
-
                     var scanHeader = ReadSegment(ref position);
                     var scanComponents = ParseStartOfScan(scanHeader);
                     var nextMarkerOffset = FindEntropyDataEnd(position);
-                    var entropyData = _data.AsSpan(position, nextMarkerOffset - position);
-                    DecodeScan(entropyData, scanComponents);
-                    _scanDecoded = true;
+                    DecodeScan(position, nextMarkerOffset, scanComponents);
                     position = nextMarkerOffset;
                     continue;
                 }
@@ -133,9 +184,11 @@ internal static class JpegImageLoader
                     case DefineRestartIntervalMarker:
                         ParseDefineRestartInterval(segment);
                         break;
-                    case StartOfFrameBaselineMarker:
-                        ParseStartOfFrameBaseline(segment);
+                    case StartOfFrameBaselineMarker or StartOfFrameExtendedSequentialMarker:
+                        ParseStartOfFrame(segment);
                         break;
+                    case StartOfFrameProgressiveMarker:
+                        throw new NotSupportedException("Progressive JPEG images are not supported.");
                     case App0Marker:
                         ParseApp0(segment);
                         break;
@@ -150,19 +203,21 @@ internal static class JpegImageLoader
                         break;
                     default:
                         if (IsStartOfFrameMarker(marker))
-                            throw new NotSupportedException("Only baseline JPEG images are supported.");
+                            throw new NotSupportedException("Only baseline and extended sequential Huffman JPEG images are supported.");
 
                         break;
                 }
             }
 
-            if (!_scanDecoded)
+            // A missing EOI marker is accepted as long as every component was fully decoded: the entropy
+            // decoder already reports scan data that ends before the last block.
+            if (_frameComponents.Length == 0 || _frameComponents.All(component => component.Plane is null))
                 throw new InvalidDataException("The JPEG image does not contain scan data.");
 
-            if (!sawEoi)
-                throw new InvalidDataException("The JPEG image is truncated.");
+            if (_frameComponents.Any(component => component.Plane is null))
+                throw new InvalidDataException("The JPEG image does not contain scan data for every component.");
 
-            return DecodeToImage();
+            return _frameComponents.Length == 1 ? ComposeGrayscale() : ComposeYcbcr();
         }
 
         private void ParseApp0(ReadOnlySpan<byte> segment)
@@ -284,16 +339,19 @@ internal static class JpegImageLoader
                 if (tableIndex >= _quantizationTables.Length)
                     throw new NotSupportedException("Unsupported JPEG quantization table index.");
 
-                if (precision != 0)
-                    throw new NotSupportedException("Only 8-bit JPEG quantization tables are supported.");
+                // Pq=1 (16-bit values) is legal in 8-bit images, and libjpeg writes it for low quality settings
+                if (precision > 1)
+                    throw new InvalidDataException("Invalid JPEG quantization table precision.");
 
-                if (position + 64 > segment.Length)
+                var valueSize = precision + 1;
+                if (position + 64 * valueSize > segment.Length)
                     throw new InvalidDataException("The JPEG quantization table is truncated.");
 
-                var table = new short[64];
+                var table = new ushort[64];
                 for (var i = 0; i < 64; i++)
                 {
-                    table[ZigZagOrder[i]] = segment[position++];
+                    table[ZigZagOrder[i]] = precision == 0 ? segment[position] : BinaryPrimitives.ReadUInt16BigEndian(segment[position..]);
+                    position += valueSize;
                 }
 
                 _quantizationTables[tableIndex] = table;
@@ -323,6 +381,9 @@ internal static class JpegImageLoader
                     symbolCount += lengths[i];
                 }
 
+                if (symbolCount > 256)
+                    throw new InvalidDataException("The JPEG Huffman table contains too many symbols.");
+
                 if (position + symbolCount > segment.Length)
                     throw new InvalidDataException("The JPEG Huffman symbols are truncated.");
 
@@ -332,8 +393,11 @@ internal static class JpegImageLoader
             }
         }
 
-        private void ParseStartOfFrameBaseline(ReadOnlySpan<byte> segment)
+        private void ParseStartOfFrame(ReadOnlySpan<byte> segment)
         {
+            if (_frameComponents.Length != 0)
+                throw new InvalidDataException("The JPEG image contains more than one frame header.");
+
             if (segment.Length < 6)
                 throw new InvalidDataException("The JPEG frame header is truncated.");
 
@@ -348,6 +412,9 @@ internal static class JpegImageLoader
             if (_width <= 0 || _height <= 0)
                 throw new NotSupportedException("Unsupported JPEG dimensions.");
 
+            if (!ImageLimits.IsValidSize(_width, _height))
+                throw new InvalidDataException("The JPEG image dimensions exceed the supported limit.");
+
             if (componentCount is not 1 and not 3)
                 throw new NotSupportedException("Only grayscale and YCbCr JPEG images are supported.");
 
@@ -355,10 +422,7 @@ internal static class JpegImageLoader
             if (segment.Length != expectedLength)
                 throw new InvalidDataException("Invalid JPEG frame header length.");
 
-            _frameComponents.Clear();
-            _maxHorizontalSamplingFactor = 1;
-            _maxVerticalSamplingFactor = 1;
-
+            var components = new FrameComponent[componentCount];
             for (var i = 0; i < componentCount; i++)
             {
                 var offset = 6 + i * 3;
@@ -368,87 +432,61 @@ internal static class JpegImageLoader
                 var verticalSamplingFactor = sampling & 0x0F;
                 var quantizationTableIndex = segment[offset + 2];
 
-                if (horizontalSamplingFactor == 0 || verticalSamplingFactor == 0)
+                if (horizontalSamplingFactor is < 1 or > 4 || verticalSamplingFactor is < 1 or > 4)
                     throw new InvalidDataException("Invalid JPEG sampling factors.");
-
-                if (horizontalSamplingFactor > 2 || verticalSamplingFactor > 2)
-                    throw new NotSupportedException("Only 4:4:4, 4:2:2, and 4:2:0 JPEG sampling is supported.");
 
                 if (quantizationTableIndex >= _quantizationTables.Length)
                     throw new NotSupportedException("Unsupported JPEG quantization table index.");
 
-                var frameComponent = new FrameComponent(id, horizontalSamplingFactor, verticalSamplingFactor, quantizationTableIndex);
-                if (!_frameComponents.TryAdd(id, frameComponent))
-                    throw new InvalidDataException("Duplicate JPEG frame component identifier.");
+                for (var j = 0; j < i; j++)
+                {
+                    if (components[j].Id == id)
+                        throw new InvalidDataException("Duplicate JPEG frame component identifier.");
+                }
 
-                if (horizontalSamplingFactor > _maxHorizontalSamplingFactor)
-                    _maxHorizontalSamplingFactor = horizontalSamplingFactor;
+                // A single-component image is never subsampled: its only scan is non-interleaved, so the
+                // declared factors have no effect on the decoded samples.
+                if (componentCount == 1)
+                {
+                    horizontalSamplingFactor = 1;
+                    verticalSamplingFactor = 1;
+                }
 
-                if (verticalSamplingFactor > _maxVerticalSamplingFactor)
-                    _maxVerticalSamplingFactor = verticalSamplingFactor;
+                components[i] = new FrameComponent(id, horizontalSamplingFactor, verticalSamplingFactor, quantizationTableIndex);
             }
 
-            if (componentCount == 3)
+            _maxHorizontalSamplingFactor = components.Max(component => component.HorizontalSamplingFactor);
+            _maxVerticalSamplingFactor = components.Max(component => component.VerticalSamplingFactor);
+            _mcuCountX = DivideRoundUp(_width, 8 * _maxHorizontalSamplingFactor);
+            _mcuCountY = DivideRoundUp(_height, 8 * _maxVerticalSamplingFactor);
+
+            foreach (var component in components)
             {
-                if (_maxHorizontalSamplingFactor > 2 || _maxVerticalSamplingFactor > 2)
-                    throw new NotSupportedException("Only 4:4:4, 4:2:2, and 4:2:0 JPEG sampling is supported.");
+                if (_maxHorizontalSamplingFactor % component.HorizontalSamplingFactor != 0 || _maxVerticalSamplingFactor % component.VerticalSamplingFactor != 0)
+                    throw new NotSupportedException("Fractional JPEG sampling factors are not supported.");
 
-                if (_maxHorizontalSamplingFactor == 1 && _maxVerticalSamplingFactor == 2)
-                    throw new NotSupportedException("Unsupported JPEG component sampling layout.");
-
-                var maxSamplingComponentCount = 0;
-                foreach (var frameComponent in _frameComponents.Values)
-                {
-                    if (frameComponent.HorizontalSamplingFactor == _maxHorizontalSamplingFactor &&
-                        frameComponent.VerticalSamplingFactor == _maxVerticalSamplingFactor)
-                    {
-                        maxSamplingComponentCount++;
-                    }
-                }
-
-                if (_maxHorizontalSamplingFactor == 1 && _maxVerticalSamplingFactor == 1)
-                {
-                    if (maxSamplingComponentCount != 3)
-                        throw new NotSupportedException("Unsupported JPEG component sampling layout.");
-                }
-                else if (_maxHorizontalSamplingFactor == 2 && (_maxVerticalSamplingFactor == 1 || _maxVerticalSamplingFactor == 2))
-                {
-                    if (maxSamplingComponentCount != 1)
-                        throw new NotSupportedException("Unsupported JPEG component sampling layout.");
-
-                    foreach (var frameComponent in _frameComponents.Values)
-                    {
-                        if (frameComponent.HorizontalSamplingFactor == _maxHorizontalSamplingFactor &&
-                            frameComponent.VerticalSamplingFactor == _maxVerticalSamplingFactor)
-                        {
-                            continue;
-                        }
-
-                        if (frameComponent.HorizontalSamplingFactor != 1 || frameComponent.VerticalSamplingFactor != 1)
-                            throw new NotSupportedException("Unsupported JPEG component sampling layout.");
-                    }
-                }
-                else
-                {
-                    throw new NotSupportedException("Only 4:4:4, 4:2:2, and 4:2:0 JPEG sampling is supported.");
-                }
+                component.Width = DivideRoundUp(_width * component.HorizontalSamplingFactor, _maxHorizontalSamplingFactor);
+                component.Height = DivideRoundUp(_height * component.VerticalSamplingFactor, _maxVerticalSamplingFactor);
+                component.BlocksPerLine = DivideRoundUp(component.Width, 8);
+                component.BlocksPerColumn = DivideRoundUp(component.Height, 8);
+                component.Stride = checked(_mcuCountX * component.HorizontalSamplingFactor * 8);
+                component.PlaneHeight = checked(_mcuCountY * component.VerticalSamplingFactor * 8);
             }
+
+            _frameComponents = components;
         }
 
         private ScanComponent[] ParseStartOfScan(ReadOnlySpan<byte> segment)
         {
-            if (_frameComponents.Count == 0)
+            if (_frameComponents.Length == 0)
                 throw new InvalidDataException("The JPEG frame header is missing.");
 
             if (segment.Length < 2)
                 throw new InvalidDataException("The JPEG scan header is truncated.");
 
             var componentCount = segment[0];
-            if (componentCount == 0)
+            if (componentCount == 0 || componentCount > _frameComponents.Length)
                 throw new InvalidDataException("The JPEG scan component count is invalid.");
-
-            if (componentCount != _frameComponents.Count)
-                throw new NotSupportedException("Only single-scan baseline JPEG images are supported.");
 
             var expectedLength = checked(1 + componentCount * 2 + 3);
             if (segment.Length != expectedLength)
@@ -465,27 +503,37 @@ internal static class JpegImageLoader
                 if (dcTableIndex >= 4 || acTableIndex >= 4)
                     throw new NotSupportedException("Unsupported JPEG Huffman table index.");
 
-                if (!_frameComponents.TryGetValue(componentId, out var frameComponent))
-                    throw new InvalidDataException("The JPEG scan references an unknown frame component.");
+                var frameComponent = Array.Find(_frameComponents, component => component.Id == componentId) ?? throw new InvalidDataException("The JPEG scan references an unknown frame component.");
+                for (var j = 0; j < i; j++)
+                {
+                    if (scanComponents[j].FrameComponent == frameComponent)
+                        throw new InvalidDataException("The JPEG scan references a component more than once.");
+                }
+
+                // Sequential images code each component in exactly one scan; anything else is a
+                // progressive-style refinement.
+                if (frameComponent.Plane is not null)
+                    throw new NotSupportedException("JPEG images with several scans for the same component are not supported.");
 
                 var dcTable = _huffmanTables[0][dcTableIndex] ?? throw new InvalidDataException("The JPEG DC Huffman table is missing.");
                 var acTable = _huffmanTables[1][acTableIndex] ?? throw new InvalidDataException("The JPEG AC Huffman table is missing.");
-                scanComponents[i] = new ScanComponent(frameComponent, dcTable, acTable);
+                var quantizationTable = _quantizationTables[frameComponent.QuantizationTableIndex] ?? throw new InvalidDataException("The JPEG quantization table is missing.");
+                scanComponents[i] = new ScanComponent(frameComponent, dcTable, acTable, quantizationTable);
             }
 
             var spectralSelectionStart = segment[offset++];
             var spectralSelectionEnd = segment[offset++];
             var successiveApproximation = segment[offset];
             if (spectralSelectionStart != 0 || spectralSelectionEnd != 63 || successiveApproximation != 0)
-                throw new NotSupportedException("Only baseline JPEG scans are supported.");
+                throw new NotSupportedException("Only sequential JPEG scans are supported.");
 
-            ValidateColorModel(scanComponents);
+            ValidateColorModel();
             return scanComponents;
         }
 
-        private void ValidateColorModel(ScanComponent[] scanComponents)
+        private void ValidateColorModel()
         {
-            if (scanComponents.Length == 1)
+            if (_frameComponents.Length == 1)
                 return;
 
             if (_adobeTransform == 2)
@@ -497,9 +545,9 @@ internal static class JpegImageLoader
             if (_sawJfifMarker || _adobeTransform == 1)
                 return;
 
-            var hasY = _frameComponents.ContainsKey(1);
-            var hasCb = _frameComponents.ContainsKey(2);
-            var hasCr = _frameComponents.ContainsKey(3);
+            var hasY = Array.Exists(_frameComponents, component => component.Id == 1);
+            var hasCb = Array.Exists(_frameComponents, component => component.Id == 2);
+            var hasCr = Array.Exists(_frameComponents, component => component.Id == 3);
             if (!hasY || !hasCb || !hasCr)
                 throw new NotSupportedException("Only YCbCr JPEG images are supported.");
         }
@@ -523,7 +571,7 @@ internal static class JpegImageLoader
                 }
 
                 if (position >= _data.Length)
-                    throw new InvalidDataException("The JPEG scan data is truncated.");
+                    return _data.Length;
 
                 var marker = _data[position];
                 if (marker == 0x00 || marker is >= Restart0Marker and <= Restart7Marker)
@@ -535,95 +583,114 @@ internal static class JpegImageLoader
                 return markerOffset;
             }
 
-            throw new InvalidDataException("The JPEG scan data is truncated.");
+            // No marker follows the scan (the EOI marker is missing): the scan data runs to the end of the file.
+            return _data.Length;
         }
 
-        private void DecodeScan(ReadOnlySpan<byte> entropyData, ScanComponent[] scanComponents)
+        private void DecodeScan(int entropyStart, int entropyEnd, ScanComponent[] scanComponents)
         {
-            var entropyReader = new EntropyReader(entropyData.ToArray());
-            var mcuWidth = checked(8 * _maxHorizontalSamplingFactor);
-            var mcuHeight = checked(8 * _maxVerticalSamplingFactor);
-            var mcuCountX = (_width + mcuWidth - 1) / mcuWidth;
-            var mcuCountY = (_height + mcuHeight - 1) / mcuHeight;
+            // Non-interleaved scans (a single component) code one block per MCU over the component's own block
+            // grid. Interleaved scans code H x V blocks of every component per MCU over the MCU grid of the frame.
+            var interleaved = scanComponents.Length > 1;
+            long blockCount;
+            int mcuCountX;
+            int mcuCountY;
+            if (interleaved)
+            {
+                var blocksPerMcu = scanComponents.Sum(component => component.FrameComponent.HorizontalSamplingFactor * component.FrameComponent.VerticalSamplingFactor);
+                if (blocksPerMcu > MaxBlocksInMcu)
+                    throw new InvalidDataException("The JPEG scan has too many blocks per MCU.");
 
-            var decodedMcus = new DecodedMcu[scanComponents.Length];
-            var pixels = new Argb[checked(_width * _height)];
+                mcuCountX = _mcuCountX;
+                mcuCountY = _mcuCountY;
+                blockCount = (long)mcuCountX * mcuCountY * blocksPerMcu;
+            }
+            else
+            {
+                mcuCountX = scanComponents[0].FrameComponent.BlocksPerLine;
+                mcuCountY = scanComponents[0].FrameComponent.BlocksPerColumn;
+                blockCount = (long)mcuCountX * mcuCountY;
+            }
 
+            // Every block codes at least a DC symbol and an end-of-block symbol, one bit each. Checking this
+            // before allocating keeps a tiny file with a huge frame header from allocating the sample planes.
+            if (blockCount * 2 > (long)(entropyEnd - entropyStart) * 8)
+                throw new InvalidDataException("The JPEG scan data is truncated.");
+
+            foreach (var scanComponent in scanComponents)
+            {
+                var component = scanComponent.FrameComponent;
+                component.Plane = new byte[checked(component.Stride * component.PlaneHeight)];
+                component.DcPredictor = 0;
+            }
+
+            var reader = new EntropyReader(_data, entropyStart, entropyEnd);
             var mcuSinceRestart = 0;
             var expectedRestartMarker = Restart0Marker;
-
             for (var mcuY = 0; mcuY < mcuCountY; mcuY++)
             {
                 for (var mcuX = 0; mcuX < mcuCountX; mcuX++)
                 {
                     if (_restartInterval > 0 && mcuSinceRestart == _restartInterval)
                     {
-                        entropyReader.ConsumeRestartMarker(expectedRestartMarker);
+                        reader.ConsumeRestartMarker(expectedRestartMarker);
                         expectedRestartMarker = (byte)(expectedRestartMarker == Restart7Marker ? Restart0Marker : expectedRestartMarker + 1);
-
                         foreach (var scanComponent in scanComponents)
                         {
-                            scanComponent.FrameComponent.ResetPredictor();
+                            scanComponent.FrameComponent.DcPredictor = 0;
                         }
 
                         mcuSinceRestart = 0;
                     }
 
-                    for (var componentIndex = 0; componentIndex < scanComponents.Length; componentIndex++)
+                    if (interleaved)
                     {
-                        var scanComponent = scanComponents[componentIndex];
-                        var blockCount = checked(scanComponent.FrameComponent.HorizontalSamplingFactor * scanComponent.FrameComponent.VerticalSamplingFactor);
-                        var blocks = new byte[blockCount][];
-                        for (var blockIndex = 0; blockIndex < blockCount; blockIndex++)
+                        foreach (var scanComponent in scanComponents)
                         {
-                            blocks[blockIndex] = DecodeBlock(entropyReader, scanComponent);
+                            var component = scanComponent.FrameComponent;
+                            for (var v = 0; v < component.VerticalSamplingFactor; v++)
+                            {
+                                for (var h = 0; h < component.HorizontalSamplingFactor; h++)
+                                {
+                                    DecodeBlock(ref reader, scanComponent, (mcuX * component.HorizontalSamplingFactor) + h, (mcuY * component.VerticalSamplingFactor) + v);
+                                }
+                            }
                         }
-
-                        decodedMcus[componentIndex] = new DecodedMcu(scanComponent.FrameComponent, blocks);
+                    }
+                    else
+                    {
+                        DecodeBlock(ref reader, scanComponents[0], mcuX, mcuY);
                     }
 
-                    WriteMcuPixels(decodedMcus, mcuX, mcuY, pixels);
                     mcuSinceRestart++;
                 }
             }
-
-            _decodedImage = Image.Create(_width, _height, pixels);
         }
 
-        private Image? _decodedImage;
-
-        private Image DecodeToImage()
+        private void DecodeBlock(ref EntropyReader reader, ScanComponent scanComponent, int blockX, int blockY)
         {
-            return _decodedImage ?? throw new InvalidDataException("The JPEG image did not decode.");
-        }
+            var coefficients = _coefficients;
+            var component = scanComponent.FrameComponent;
 
-        private byte[] DecodeBlock(EntropyReader entropyReader, ScanComponent scanComponent)
-        {
-            var coefficients = new int[64];
-            var quantizationTable = _quantizationTables[scanComponent.FrameComponent.QuantizationTableIndex];
-            if (quantizationTable is null)
-                throw new InvalidDataException("The JPEG quantization table is missing.");
+            var dcCodeLength = reader.DecodeHuffman(scanComponent.DcTable);
+            if (dcCodeLength > 16)
+                throw new InvalidDataException("Invalid JPEG DC coefficient length.");
 
-            var dcCodeLength = scanComponent.DcTable.Decode(entropyReader);
-            var dcDifference = entropyReader.ReceiveExtend(dcCodeLength);
-            var dc = scanComponent.FrameComponent.PredictDc(dcDifference);
-            coefficients[0] = checked(dc * quantizationTable[0]);
+            component.DcPredictor += reader.ReceiveExtend(dcCodeLength);
+            coefficients[0] = (short)component.DcPredictor;
 
-            var zigZagIndex = 1;
-            while (zigZagIndex < 64)
+            for (var zigZagIndex = 1; zigZagIndex < 64; zigZagIndex++)
             {
-                var symbol = scanComponent.AcTable.Decode(entropyReader);
-                if (symbol == 0x00)
-                    break;
-
+                var symbol = reader.DecodeHuffman(scanComponent.AcTable);
                 var runLength = symbol >> 4;
                 var codeLength = symbol & 0x0F;
                 if (codeLength == 0)
                 {
+                    // End of block, or a run of 16 zeros
                     if (runLength != 0x0F)
-                        throw new InvalidDataException("Invalid JPEG AC coefficient run-length.");
+                        break;
 
-                    zigZagIndex += 16;
+                    zigZagIndex += 15;
                     continue;
                 }
 
@@ -631,142 +698,261 @@ internal static class JpegImageLoader
                 if (zigZagIndex >= 64)
                     throw new InvalidDataException("Invalid JPEG AC coefficient index.");
 
-                var coefficient = entropyReader.ReceiveExtend(codeLength);
-                var naturalIndex = ZigZagOrder[zigZagIndex];
-                coefficients[naturalIndex] = checked(coefficient * quantizationTable[naturalIndex]);
-                zigZagIndex++;
+                coefficients[ZigZagOrder[zigZagIndex]] = (short)reader.ReceiveExtend(codeLength);
             }
 
-            return InverseDct(coefficients);
+            InverseDct(coefficients, scanComponent.QuantizationTable, _idctWorkspace, component.Plane.AsSpan((blockY * 8 * component.Stride) + (blockX * 8)), component.Stride);
+            Array.Clear(coefficients);
         }
 
-        private static byte[] InverseDct(int[] coefficients)
+        /// <summary>libjpeg's accurate integer IDCT (jpeg_idct_islow), including its range limiting.</summary>
+        private static void InverseDct(short[] coefficients, ushort[] quantizationTable, int[] workspace, Span<byte> output, int stride)
         {
-            var output = new byte[64];
-            for (var y = 0; y < 8; y++)
+            const int Pass1Shift = IdctConstBits - IdctPass1Bits;
+            const int Pass1Round = 1 << (Pass1Shift - 1);
+            const int Pass2Shift = IdctConstBits + IdctPass1Bits + 3;
+            const int Pass2Round = 1 << (Pass2Shift - 1);
+            const int RangeMask = 1023;
+
+            // Pass 1: process the columns, storing into the work array
+            for (var column = 0; column < 8; column++)
             {
-                for (var x = 0; x < 8; x++)
+                if (coefficients[8 + column] == 0 && coefficients[16 + column] == 0 && coefficients[24 + column] == 0 && coefficients[32 + column] == 0 &&
+                    coefficients[40 + column] == 0 && coefficients[48 + column] == 0 && coefficients[56 + column] == 0)
                 {
-                    double value = 0;
-                    for (var v = 0; v < 8; v++)
+                    var dcValue = (coefficients[column] * quantizationTable[column]) << IdctPass1Bits;
+                    for (var row = 0; row < 64; row += 8)
                     {
-                        var verticalScale = v == 0 ? InverseSqrt2 : 1.0;
-                        var cosineY = CosineTable[y][v];
-                        for (var u = 0; u < 8; u++)
-                        {
-                            var horizontalScale = u == 0 ? InverseSqrt2 : 1.0;
-                            var cosineX = CosineTable[x][u];
-                            value += horizontalScale * verticalScale * coefficients[v * 8 + u] * cosineX * cosineY;
-                        }
+                        workspace[row + column] = dcValue;
                     }
 
-                    var pixel = (int)Math.Round(value * 0.25 + 128.0, MidpointRounding.AwayFromZero);
-                    output[y * 8 + x] = (byte)Math.Clamp(pixel, 0, 255);
+                    continue;
                 }
+
+                var z2 = coefficients[16 + column] * quantizationTable[16 + column];
+                var z3 = coefficients[48 + column] * quantizationTable[48 + column];
+                var z1 = (z2 + z3) * Fix0_541196100;
+                var tmp2 = z1 + (z2 * Fix0_765366865);
+                var tmp3 = z1 - (z3 * Fix1_847759065);
+
+                z2 = coefficients[column] * quantizationTable[column];
+                z3 = coefficients[32 + column] * quantizationTable[32 + column];
+                var tmp0 = (z2 + z3) << IdctConstBits;
+                var tmp1 = (z2 - z3) << IdctConstBits;
+
+                var tmp10 = tmp0 + tmp2;
+                var tmp13 = tmp0 - tmp2;
+                var tmp11 = tmp1 + tmp3;
+                var tmp12 = tmp1 - tmp3;
+
+                tmp0 = coefficients[56 + column] * quantizationTable[56 + column];
+                tmp1 = coefficients[40 + column] * quantizationTable[40 + column];
+                tmp2 = coefficients[24 + column] * quantizationTable[24 + column];
+                tmp3 = coefficients[8 + column] * quantizationTable[8 + column];
+                OddPart(ref tmp0, ref tmp1, ref tmp2, ref tmp3);
+
+                workspace[column] = (tmp10 + tmp3 + Pass1Round) >> Pass1Shift;
+                workspace[56 + column] = (tmp10 - tmp3 + Pass1Round) >> Pass1Shift;
+                workspace[8 + column] = (tmp11 + tmp2 + Pass1Round) >> Pass1Shift;
+                workspace[48 + column] = (tmp11 - tmp2 + Pass1Round) >> Pass1Shift;
+                workspace[16 + column] = (tmp12 + tmp1 + Pass1Round) >> Pass1Shift;
+                workspace[40 + column] = (tmp12 - tmp1 + Pass1Round) >> Pass1Shift;
+                workspace[24 + column] = (tmp13 + tmp0 + Pass1Round) >> Pass1Shift;
+                workspace[32 + column] = (tmp13 - tmp0 + Pass1Round) >> Pass1Shift;
             }
 
-            return output;
-        }
-
-        private void WriteMcuPixels(DecodedMcu[] decodedMcus, int mcuX, int mcuY, Argb[] pixels)
-        {
-            if (decodedMcus.Length == 1)
+            // Pass 2: process the rows from the work array, storing into the output
+            var rangeLimit = IdctRangeLimit;
+            for (var row = 0; row < 8; row++)
             {
-                var grayscale = decodedMcus[0];
-                WriteMcuPixelsGrayscale(grayscale, mcuX, mcuY, pixels);
-                return;
-            }
-
-            WriteMcuPixelsYcbcr(decodedMcus, mcuX, mcuY, pixels);
-        }
-
-        private void WriteMcuPixelsGrayscale(DecodedMcu grayscale, int mcuX, int mcuY, Argb[] pixels)
-        {
-            var mcuWidth = checked(8 * _maxHorizontalSamplingFactor);
-            var mcuHeight = checked(8 * _maxVerticalSamplingFactor);
-            var originX = mcuX * mcuWidth;
-            var originY = mcuY * mcuHeight;
-
-            for (var y = 0; y < mcuHeight; y++)
-            {
-                var absoluteY = originY + y;
-                if (absoluteY >= _height)
-                    break;
-
-                for (var x = 0; x < mcuWidth; x++)
+                var ws = workspace.AsSpan(row * 8, 8);
+                var outputRow = output.Slice(row * stride, 8);
+                if (ws[1] == 0 && ws[2] == 0 && ws[3] == 0 && ws[4] == 0 && ws[5] == 0 && ws[6] == 0 && ws[7] == 0)
                 {
-                    var absoluteX = originX + x;
-                    if (absoluteX >= _width)
-                        break;
-
-                    var sample = grayscale.GetSample(x, y, _maxHorizontalSamplingFactor, _maxVerticalSamplingFactor);
-                    pixels[absoluteY * _width + absoluteX] = CreateArgb(sample, sample, sample);
+                    outputRow.Fill(rangeLimit[((ws[0] + (1 << (IdctPass1Bits + 2))) >> (IdctPass1Bits + 3)) & RangeMask]);
+                    continue;
                 }
+
+                var z2 = ws[2];
+                var z3 = ws[6];
+                var z1 = (z2 + z3) * Fix0_541196100;
+                var tmp2 = z1 + (z2 * Fix0_765366865);
+                var tmp3 = z1 - (z3 * Fix1_847759065);
+
+                var tmp0 = (ws[0] + ws[4]) << IdctConstBits;
+                var tmp1 = (ws[0] - ws[4]) << IdctConstBits;
+
+                var tmp10 = tmp0 + tmp2;
+                var tmp13 = tmp0 - tmp2;
+                var tmp11 = tmp1 + tmp3;
+                var tmp12 = tmp1 - tmp3;
+
+                tmp0 = ws[7];
+                tmp1 = ws[5];
+                tmp2 = ws[3];
+                tmp3 = ws[1];
+                OddPart(ref tmp0, ref tmp1, ref tmp2, ref tmp3);
+
+                outputRow[0] = rangeLimit[((tmp10 + tmp3 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[7] = rangeLimit[((tmp10 - tmp3 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[1] = rangeLimit[((tmp11 + tmp2 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[6] = rangeLimit[((tmp11 - tmp2 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[2] = rangeLimit[((tmp12 + tmp1 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[5] = rangeLimit[((tmp12 - tmp1 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[3] = rangeLimit[((tmp13 + tmp0 + Pass2Round) >> Pass2Shift) & RangeMask];
+                outputRow[4] = rangeLimit[((tmp13 - tmp0 + Pass2Round) >> Pass2Shift) & RangeMask];
             }
         }
 
-        private void WriteMcuPixelsYcbcr(DecodedMcu[] decodedMcus, int mcuX, int mcuY, Argb[] pixels)
+        /// <summary>Odd part of the IDCT; on input tmp0..tmp3 are the coefficients 7, 5, 3 and 1.</summary>
+        private static void OddPart(ref int tmp0, ref int tmp1, ref int tmp2, ref int tmp3)
         {
-            var yComponent = decodedMcus[0];
-            var cbComponent = decodedMcus[1];
-            var crComponent = decodedMcus[2];
-            if (_frameComponents.ContainsKey(1) && _frameComponents.ContainsKey(2) && _frameComponents.ContainsKey(3))
+            var z1 = tmp0 + tmp3;
+            var z2 = tmp1 + tmp2;
+            var z3 = tmp0 + tmp2;
+            var z4 = tmp1 + tmp3;
+            var z5 = (z3 + z4) * Fix1_175875602;
+
+            tmp0 *= Fix0_298631336;
+            tmp1 *= Fix2_053119869;
+            tmp2 *= Fix3_072711026;
+            tmp3 *= Fix1_501321110;
+            z1 *= -Fix0_899976223;
+            z2 *= -Fix2_562915447;
+            z3 = (z3 * -Fix1_961570560) + z5;
+            z4 = (z4 * -Fix0_390180644) + z5;
+
+            tmp0 += z1 + z3;
+            tmp1 += z2 + z4;
+            tmp2 += z2 + z3;
+            tmp3 += z1 + z4;
+        }
+
+        private Image ComposeGrayscale()
+        {
+            var component = _frameComponents[0];
+            var plane = component.Plane;
+            var pixels = new Argb[_width * _height];
+            for (var y = 0; y < _height; y++)
             {
-                for (var i = 0; i < decodedMcus.Length; i++)
+                var row = plane.AsSpan(y * component.Stride, _width);
+                var destination = pixels.AsSpan(y * _width, _width);
+                for (var x = 0; x < row.Length; x++)
                 {
-                    var component = decodedMcus[i];
-                    if (component.FrameComponent.Id == 1)
-                        yComponent = component;
-                    else if (component.FrameComponent.Id == 2)
-                        cbComponent = component;
-                    else if (component.FrameComponent.Id == 3)
-                        crComponent = component;
+                    var sample = row[x];
+                    destination[x] = new Argb(255, sample, sample, sample);
                 }
             }
 
-            var mcuWidth = checked(8 * _maxHorizontalSamplingFactor);
-            var mcuHeight = checked(8 * _maxVerticalSamplingFactor);
-            var originX = mcuX * mcuWidth;
-            var originY = mcuY * mcuHeight;
+            return Image.Create(_width, _height, pixels);
+        }
 
-            for (var y = 0; y < mcuHeight; y++)
+        private Image ComposeYcbcr()
+        {
+            // Like libjpeg, the components are Y, Cb and Cr in frame order whatever their identifiers.
+            var rowBuffers = new byte[3][];
+            for (var i = 0; i < rowBuffers.Length; i++)
             {
-                var absoluteY = originY + y;
-                if (absoluteY >= _height)
-                    break;
+                rowBuffers[i] = new byte[(_width + 2) & ~1];
+            }
 
-                for (var x = 0; x < mcuWidth; x++)
+            var pixels = new Argb[_width * _height];
+            for (var y = 0; y < _height; y++)
+            {
+                var yRow = GetUpsampledRow(_frameComponents[0], y, rowBuffers[0]);
+                var cbRow = GetUpsampledRow(_frameComponents[1], y, rowBuffers[1]);
+                var crRow = GetUpsampledRow(_frameComponents[2], y, rowBuffers[2]);
+                var destination = pixels.AsSpan(y * _width, _width);
+                for (var x = 0; x < destination.Length; x++)
                 {
-                    var absoluteX = originX + x;
-                    if (absoluteX >= _width)
-                        break;
-
-                    var ySample = yComponent.GetSample(x, y, _maxHorizontalSamplingFactor, _maxVerticalSamplingFactor);
-                    var cbSample = cbComponent.GetSample(x, y, _maxHorizontalSamplingFactor, _maxVerticalSamplingFactor);
-                    var crSample = crComponent.GetSample(x, y, _maxHorizontalSamplingFactor, _maxVerticalSamplingFactor);
-                    pixels[absoluteY * _width + absoluteX] = ConvertYcbcrToArgb(ySample, cbSample, crSample);
+                    int luma = yRow[x];
+                    var cb = cbRow[x];
+                    var cr = crRow[x];
+                    var red = luma + CrToRed[cr];
+                    var green = luma + ((CbToGreen[cb] + CrToGreen[cr]) >> ColorScaleBits);
+                    var blue = luma + CbToBlue[cb];
+                    destination[x] = new Argb(255, ClampToByte(red), ClampToByte(green), ClampToByte(blue));
                 }
             }
+
+            return Image.Create(_width, _height, pixels);
         }
 
-        private static Argb ConvertYcbcrToArgb(byte y, byte cb, byte cr)
+        /// <summary>
+        /// Returns the samples of one output row for a component, upsampled to the image width. 2:1 horizontal
+        /// and/or vertical factors use libjpeg's "fancy" triangle filter (jdsample.c), other factors replicate samples.
+        /// </summary>
+        private ReadOnlySpan<byte> GetUpsampledRow(FrameComponent component, int y, byte[] buffer)
         {
-            var cbOffset = cb - 128.0;
-            var crOffset = cr - 128.0;
-            var red = ClampToByte((int)Math.Round(y + 1.40200 * crOffset, MidpointRounding.AwayFromZero));
-            var green = ClampToByte((int)Math.Round(y - 0.344136 * cbOffset - 0.714136 * crOffset, MidpointRounding.AwayFromZero));
-            var blue = ClampToByte((int)Math.Round(y + 1.77200 * cbOffset, MidpointRounding.AwayFromZero));
-            return CreateArgb((byte)red, (byte)green, (byte)blue);
+            var plane = component.Plane;
+            var horizontalFactor = _maxHorizontalSamplingFactor / component.HorizontalSamplingFactor;
+            var verticalFactor = _maxVerticalSamplingFactor / component.VerticalSamplingFactor;
+            if (horizontalFactor == 1 && verticalFactor == 1)
+                return plane.AsSpan(y * component.Stride, _width);
+
+            var componentWidth = component.Width;
+            if (horizontalFactor == 2 && verticalFactor == 1 && componentWidth > 2)
+            {
+                var input = plane.AsSpan(y * component.Stride, componentWidth);
+                for (var i = 0; i < componentWidth; i++)
+                {
+                    var nearer = input[i] * 3;
+                    buffer[2 * i] = (byte)((nearer + input[i == 0 ? 0 : i - 1] + 1) >> 2);
+                    buffer[(2 * i) + 1] = (byte)((nearer + input[i == componentWidth - 1 ? i : i + 1] + 2) >> 2);
+                }
+
+                return buffer.AsSpan(0, _width);
+            }
+
+            if (verticalFactor == 2 && (horizontalFactor == 1 || (horizontalFactor == 2 && componentWidth > 2)))
+            {
+                // Even output rows lean on the input row above, odd rows on the row below. The edge rows are replicated.
+                var inputRow = y / 2;
+                var fartherRow = (y & 1) == 0 ? Math.Max(inputRow - 1, 0) : Math.Min(inputRow + 1, component.Height - 1);
+                var nearer = plane.AsSpan(inputRow * component.Stride, componentWidth);
+                var farther = plane.AsSpan(fartherRow * component.Stride, componentWidth);
+                if (horizontalFactor == 1)
+                {
+                    var bias = (y & 1) == 0 ? 1 : 2;
+                    for (var i = 0; i < componentWidth; i++)
+                    {
+                        buffer[i] = (byte)(((nearer[i] * 3) + farther[i] + bias) >> 2);
+                    }
+
+                    return buffer.AsSpan(0, _width);
+                }
+
+                var previousSum = (nearer[0] * 3) + farther[0];
+                var currentSum = previousSum;
+                for (var i = 0; i < componentWidth; i++)
+                {
+                    var nextSum = i == componentWidth - 1 ? currentSum : (nearer[i + 1] * 3) + farther[i + 1];
+                    buffer[2 * i] = (byte)(((currentSum * 3) + previousSum + 8) >> 4);
+                    buffer[(2 * i) + 1] = (byte)(((currentSum * 3) + nextSum + 7) >> 4);
+                    previousSum = currentSum;
+                    currentSum = nextSum;
+                }
+
+                return buffer.AsSpan(0, _width);
+            }
+
+            var source = plane.AsSpan((y / verticalFactor) * component.Stride, componentWidth);
+            for (var x = 0; x < _width; x++)
+            {
+                buffer[x] = source[x / horizontalFactor];
+            }
+
+            return buffer.AsSpan(0, _width);
         }
 
-        private static Argb CreateArgb(byte red, byte green, byte blue)
+        private static byte ClampToByte(int value)
         {
-            return new Argb((uint)(0xFF000000u | (uint)(red << 16) | (uint)(green << 8) | blue));
+            return (byte)Math.Clamp(value, 0, 255);
         }
 
-        private static int ClampToByte(int value)
+        private static int DivideRoundUp(int value, int divisor)
         {
-            return Math.Clamp(value, 0, 255);
+            return (value + divisor - 1) / divisor;
         }
 
         private static bool IsStartOfFrameMarker(byte marker)
@@ -840,59 +1026,52 @@ internal static class JpegImageLoader
 
     private sealed class FrameComponent(byte id, int horizontalSamplingFactor, int verticalSamplingFactor, int quantizationTableIndex)
     {
-        private int _dcPredictor;
-
         public byte Id { get; } = id;
         public int HorizontalSamplingFactor { get; } = horizontalSamplingFactor;
         public int VerticalSamplingFactor { get; } = verticalSamplingFactor;
         public int QuantizationTableIndex { get; } = quantizationTableIndex;
 
-        public int PredictDc(int difference)
-        {
-            _dcPredictor += difference;
-            return _dcPredictor;
-        }
+        /// <summary>Gets or sets the number of samples per line, ceil(image width * H / Hmax).</summary>
+        public int Width { get; set; }
 
-        public void ResetPredictor()
-        {
-            _dcPredictor = 0;
-        }
+        /// <summary>Gets or sets the number of lines, ceil(image height * V / Vmax).</summary>
+        public int Height { get; set; }
+
+        /// <summary>Gets or sets the block count of a line in a non-interleaved scan.</summary>
+        public int BlocksPerLine { get; set; }
+
+        /// <summary>Gets or sets the block count of a column in a non-interleaved scan.</summary>
+        public int BlocksPerColumn { get; set; }
+
+        /// <summary>Gets or sets the width of <see cref="Plane"/>, which covers every block of the interleaved MCU grid.</summary>
+        public int Stride { get; set; }
+
+        public int PlaneHeight { get; set; }
+
+        public byte[]? Plane { get; set; }
+
+        public int DcPredictor { get; set; }
     }
 
-    private readonly struct ScanComponent(FrameComponent frameComponent, HuffmanTable dcTable, HuffmanTable acTable)
-    {
-        public FrameComponent FrameComponent { get; } = frameComponent;
-        public HuffmanTable DcTable { get; } = dcTable;
-        public HuffmanTable AcTable { get; } = acTable;
-    }
-
-    private readonly struct DecodedMcu(FrameComponent frameComponent, byte[][] blocks)
-    {
-        public FrameComponent FrameComponent { get; } = frameComponent;
-        public byte[][] Blocks { get; } = blocks;
-
-        public byte GetSample(int xInMcu, int yInMcu, int maxHorizontalSamplingFactor, int maxVerticalSamplingFactor)
-        {
-            var sampleX = xInMcu * FrameComponent.HorizontalSamplingFactor / maxHorizontalSamplingFactor;
-            var sampleY = yInMcu * FrameComponent.VerticalSamplingFactor / maxVerticalSamplingFactor;
-            var blockX = sampleX / 8;
-            var blockY = sampleY / 8;
-            var block = Blocks[blockY * FrameComponent.HorizontalSamplingFactor + blockX];
-            return block[(sampleY % 8) * 8 + sampleX % 8];
-        }
-    }
+    private sealed record ScanComponent(FrameComponent FrameComponent, HuffmanTable DcTable, HuffmanTable AcTable, ushort[] QuantizationTable);
 
     private sealed class HuffmanTable
     {
-        private readonly int[] _minCode = new int[17];
+        public const int LookupBits = 9;
+
+        // (code length << 8) | symbol for every code of at most LookupBits bits, indexed by the next LookupBits
+        // bits of the stream; 0 when the code is longer.
+        private readonly ushort[] _lookup = new ushort[1 << LookupBits];
         private readonly int[] _maxCode = new int[17];
-        private readonly int[] _valuePointer = new int[17];
+        private readonly int[] _valueOffset = new int[17];
         private readonly byte[] _symbols;
 
         private HuffmanTable(byte[] symbols)
         {
             _symbols = symbols;
         }
+
+        public ReadOnlySpan<ushort> Lookup => _lookup;
 
         public static HuffmanTable Create(ReadOnlySpan<byte> codeLengths, byte[] symbols)
         {
@@ -905,17 +1084,27 @@ internal static class JpegImageLoader
             for (var bitLength = 1; bitLength <= 16; bitLength++)
             {
                 var count = codeLengths[bitLength - 1];
+                table._valueOffset[bitLength] = symbolIndex - code;
                 if (count == 0)
                 {
-                    table._minCode[bitLength] = -1;
                     table._maxCode[bitLength] = -1;
-                    table._valuePointer[bitLength] = symbolIndex;
                 }
                 else
                 {
-                    table._minCode[bitLength] = code;
+                    if (code + count > (1 << bitLength))
+                        throw new InvalidDataException("Invalid JPEG Huffman table.");
+
+                    if (bitLength <= LookupBits)
+                    {
+                        for (var i = 0; i < count; i++)
+                        {
+                            var entry = (ushort)((bitLength << 8) | symbols[symbolIndex + i]);
+                            var first = (code + i) << (LookupBits - bitLength);
+                            table._lookup.AsSpan(first, 1 << (LookupBits - bitLength)).Fill(entry);
+                        }
+                    }
+
                     table._maxCode[bitLength] = code + count - 1;
-                    table._valuePointer[bitLength] = symbolIndex;
                     symbolIndex += count;
                     code += count;
                 }
@@ -926,55 +1115,56 @@ internal static class JpegImageLoader
             return table;
         }
 
-        public int Decode(EntropyReader reader)
+        /// <summary>Decodes a code longer than <see cref="LookupBits"/> from the next 16 bits of the stream.</summary>
+        public int DecodeLongCode(int next16Bits, out int length)
         {
-            var code = 0;
-            for (var bitLength = 1; bitLength <= 16; bitLength++)
+            for (length = LookupBits + 1; length <= 16; length++)
             {
-                code = (code << 1) | reader.ReadBit();
-                var maxCode = _maxCode[bitLength];
-                if (maxCode == -1 || code > maxCode)
-                    continue;
+                var code = next16Bits >> (16 - length);
+                if (code <= _maxCode[length])
+                {
+                    var symbolIndex = _valueOffset[length] + code;
+                    if ((uint)symbolIndex >= (uint)_symbols.Length)
+                        throw new InvalidDataException("Invalid JPEG Huffman symbol index.");
 
-                var symbolIndex = _valuePointer[bitLength] + code - _minCode[bitLength];
-                if ((uint)symbolIndex >= (uint)_symbols.Length)
-                    throw new InvalidDataException("Invalid JPEG Huffman symbol index.");
-
-                return _symbols[symbolIndex];
+                    return _symbols[symbolIndex];
+                }
             }
 
             throw new InvalidDataException("Invalid JPEG Huffman code.");
         }
     }
 
-    private sealed class EntropyReader(byte[] data)
+    /// <summary>
+    /// Reads the entropy-coded segment most significant bit first, removing the stuffed zero bytes. Once a
+    /// marker or the end of the data is reached the reader supplies zero bits, like libjpeg, so a code can be
+    /// looked ahead; consuming any of those padding bits means the scan data is truncated.
+    /// </summary>
+    private struct EntropyReader(byte[] data, int start, int end)
     {
         private readonly byte[] _data = data;
-        private int _position;
-        private uint _bitBuffer;
+        private readonly int _end = end;
+        private int _position = start;
+        private ulong _bitBuffer;
         private int _bitsInBuffer;
+        private int _paddingBits;
+        private bool _reachedMarker;
 
-        public int ReadBit()
+        public int DecodeHuffman(HuffmanTable table)
         {
-            return ReadBits(1);
-        }
+            if (_bitsInBuffer < 16)
+                Fill();
 
-        public int ReadBits(int count)
-        {
-            if (count is < 0 or > 16)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            var lookupEntry = table.Lookup[(int)(_bitBuffer >> (_bitsInBuffer - HuffmanTable.LookupBits)) & ((1 << HuffmanTable.LookupBits) - 1)];
+            if (lookupEntry != 0)
+            {
+                Consume(lookupEntry >> 8);
+                return lookupEntry & 0xFF;
+            }
 
-            if (count == 0)
-                return 0;
-
-            if (!TryEnsureBits(count))
-                throw new InvalidDataException("The JPEG scan data is truncated.");
-
-            var shift = _bitsInBuffer - count;
-            var mask = (1 << count) - 1;
-            var value = (int)((_bitBuffer >> shift) & (uint)mask);
-            _bitsInBuffer -= count;
-            return value;
+            var symbol = table.DecodeLongCode((int)(_bitBuffer >> (_bitsInBuffer - 16)) & 0xFFFF, out var length);
+            Consume(length);
+            return symbol;
         }
 
         public int ReceiveExtend(int count)
@@ -982,35 +1172,33 @@ internal static class JpegImageLoader
             if (count == 0)
                 return 0;
 
-            var value = ReadBits(count);
-            var signBit = 1 << (count - 1);
-            if ((value & signBit) != 0)
-                return value;
+            if (_bitsInBuffer < count)
+                Fill();
 
-            var extension = (1 << count) - 1;
-            return value - extension;
-        }
-
-        public void AlignToByte()
-        {
-            _bitsInBuffer -= _bitsInBuffer % 8;
+            var value = (int)(_bitBuffer >> (_bitsInBuffer - count)) & ((1 << count) - 1);
+            Consume(count);
+            return value < (1 << (count - 1)) ? value - (1 << count) + 1 : value;
         }
 
         public void ConsumeRestartMarker(byte expectedMarker)
         {
-            AlignToByte();
-            if (_position >= _data.Length)
-                throw new InvalidDataException("The JPEG restart marker is missing.");
+            // The bits left in the buffer are the padding of the last byte before the marker
+            _bitBuffer = 0;
+            _bitsInBuffer = 0;
+            _paddingBits = 0;
+            _reachedMarker = false;
 
-            if (_data[_position++] != MarkerPrefix)
-                throw new InvalidDataException("Invalid JPEG restart marker.");
+            while (_position + 1 < _end && !(_data[_position] == MarkerPrefix && _data[_position + 1] != 0x00))
+            {
+                _position += _data[_position] == MarkerPrefix ? 2 : 1;
+            }
 
-            while (_position < _data.Length && _data[_position] == MarkerPrefix)
+            while (_position < _end && _data[_position] == MarkerPrefix)
             {
                 _position++;
             }
 
-            if (_position >= _data.Length)
+            if (_position >= _end)
                 throw new InvalidDataException("The JPEG restart marker is missing.");
 
             var marker = _data[_position++];
@@ -1018,47 +1206,48 @@ internal static class JpegImageLoader
                 throw new InvalidDataException("Unexpected JPEG restart marker.");
         }
 
-        private bool TryEnsureBits(int count)
+        private void Consume(int count)
         {
-            while (_bitsInBuffer < count)
+            _bitsInBuffer -= count;
+            if (_bitsInBuffer < _paddingBits)
+                throw new InvalidDataException("The JPEG scan data is truncated.");
+        }
+
+        private void Fill()
+        {
+            while (_bitsInBuffer <= 56)
             {
-                if (_position >= _data.Length)
-                    return false;
-
-                var value = _data[_position++];
-                if (value == MarkerPrefix)
+                int value;
+                if (_reachedMarker || _position >= _end)
                 {
-                    if (_position >= _data.Length)
-                        throw new InvalidDataException("Invalid marker in JPEG scan data.");
-
-                    var marker = _data[_position++];
-                    while (marker == MarkerPrefix)
+                    value = 0;
+                    _paddingBits += 8;
+                }
+                else
+                {
+                    value = _data[_position];
+                    if (value == MarkerPrefix)
                     {
-                        if (_position >= _data.Length)
-                            throw new InvalidDataException("Invalid marker in JPEG scan data.");
-
-                        marker = _data[_position++];
-                    }
-
-                    if (marker == 0x00)
-                    {
-                        value = MarkerPrefix;
-                    }
-                    else if (marker is >= Restart0Marker and <= Restart7Marker)
-                    {
-                        throw new InvalidDataException("Unexpected JPEG restart marker.");
+                        if (_position + 1 < _end && _data[_position + 1] == 0x00)
+                        {
+                            _position += 2;
+                        }
+                        else
+                        {
+                            _reachedMarker = true;
+                            value = 0;
+                            _paddingBits += 8;
+                        }
                     }
                     else
                     {
-                        throw new InvalidDataException("Unexpected marker in JPEG scan data.");
+                        _position++;
                     }
                 }
 
-                _bitBuffer = (_bitBuffer << 8) | value;
+                _bitBuffer = (_bitBuffer << 8) | (uint)value;
                 _bitsInBuffer += 8;
             }
-
-            return true;
         }
     }
 }

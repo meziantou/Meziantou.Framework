@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.HumanReadableSerializer/Utils/StringUtils.cs" Link="Utils/StringUtils.cs" />
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
+    <Compile Include="../Meziantou.Framework.CommandLine/CommandLineBuilder.cs" Link="Utils/CommandLineBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -32,6 +32,7 @@ internal sealed partial class SnapshotCallerContext
 
     private readonly SnapshotTestContext? _testContext;
     private StackWalkResult? _stackWalk;
+    private int _callOrdinal;
 
     private SnapshotCallerContext(string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {
@@ -90,6 +91,47 @@ internal sealed partial class SnapshotCallerContext
 
     /// <summary>Indicates whether the call stack was actually walked. Used by the tests.</summary>
     internal bool StackWalkPerformed => _stackWalk is not null && !ReferenceEquals(_stackWalk, StackWalkResult.Unavailable);
+
+    /// <summary>
+    /// 1-based position of this assertion among the assertions of its test that the built-in naming strategies
+    /// would give the same name. The first assertion keeps the name; the next ones get a suffix, so two calls to
+    /// <c>Snapshot.Validate</c> in one test no longer share a snapshot file.
+    /// </summary>
+    /// <remarks>
+    /// The assertions are told apart by their line, see <see cref="SnapshotNameRegistry.GetCallOrdinal" />. Several
+    /// assertions made from the same line - a loop, or a helper that does not forward the caller information - still
+    /// share a name.
+    /// </remarks>
+    public int CallOrdinal
+    {
+        get
+        {
+            if (_callOrdinal == 0)
+            {
+                var testContext = _testContext;
+                var testKey = string.Join('\0', SourceFilePath.Value, ClassName, MethodName, testContext?.TestName, SnapshotSettings.FormatMetadata(testContext?.Metadata));
+                _callOrdinal = SnapshotNameRegistry.GetCallOrdinal(testKey, LineNumber);
+            }
+
+            return _callOrdinal;
+        }
+    }
+
+    /// <summary>
+    /// Describes the test the assertion belongs to, to detect two tests sharing a snapshot name.
+    /// </summary>
+    public SnapshotNameOwner GetNameOwner()
+    {
+        var testContext = _testContext;
+        var metadata = SnapshotSettings.FormatMetadata(testContext?.Metadata);
+
+        // A test name set through Snapshot.TestContext is the user's choice, and several tests may use it to share
+        // a snapshot on purpose. Only the name itself tells such assertions apart.
+        if (testContext is { IsDetectedFromTestFramework: false, TestName: not null })
+            return new SnapshotNameOwner(SourceFilePath: null, ClassName: null, MethodName: null, testContext.TestName, metadata, TestId: null);
+
+        return new SnapshotNameOwner(SourceFilePath.Value, ClassName, MethodName, testContext?.TestName, metadata, testContext?.AmbiguousTestId);
+    }
 
     public static SnapshotCallerContext Create(string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext)
     {

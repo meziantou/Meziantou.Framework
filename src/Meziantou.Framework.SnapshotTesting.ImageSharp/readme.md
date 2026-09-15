@@ -67,3 +67,7 @@ SnapshotSettings.Default.AddImageSharp(new ImageComparisonSettings
 ```
 
 When `SimilarityThreshold` is set, the images must have the same dimensions and their score must be greater than or equal to the threshold. The score is the mean SSIM over every 7×7 window of the images (uniform weights, sample covariance, `K1 = 0.01`, `K2 = 0.03`), the value scikit-image's `structural_similarity(expected, actual, data_range=255, channel_axis=-1)` computes with its default parameters. The R, G, and B channels are premultiplied by the alpha channel and averaged, and the score is the lower of that value and the SSIM of the alpha channel, so opacity differences are detected. Because the score is a mean, a localized difference lowers it in proportion to the area it covers: a difference confined to 1% of the image lowers it by about 0.01 at most. Fully transparent pixels are equal whatever color they hide, with both the exact and the SSIM comparison, and a snapshot that cannot be decoded does not match.
+
+Images with samples of more than 8 bits, such as 16-bit PNGs, follow the same rule as the built-in `ImageComparer` and the SkiaSharp package: the exact comparison sees every bit of every sample (an 8-bit sample `v` equals the 16-bit sample `v × 257`), and the SSIM reduces each sample to 8 bits by keeping its high byte.
+
+When images do not match, the assertion message says why under the changed file: an image cannot be decoded, the images have different sizes or different pixels, or the SSIM score is below the threshold.

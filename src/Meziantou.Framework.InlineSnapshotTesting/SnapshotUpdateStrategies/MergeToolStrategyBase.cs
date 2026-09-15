@@ -13,18 +13,22 @@ internal abstract class MergeToolStrategyBase : SnapshotUpdateStrategy
 
     /// <summary>
     /// Starts the merge tool, or returns <see langword="null" /> when merge tools are switched off for this run
-    /// (<c>DiffEngine_Disabled</c>, or a detected build server, continuous testing or LLM environment when
-    /// <see cref="InlineSnapshotSettings.AutoDetectContinuousEnvironment" /> is set). Leaving the file alone lets the
-    /// caller report the snapshot difference, which is far more useful than an exception about a merge tool the user
-    /// deliberately turned off.
+    /// (<c>DiffEngine_Disabled</c>, a detected build server, continuous testing or LLM environment when
+    /// <see cref="InlineSnapshotSettings.AutoDetectContinuousEnvironment" /> is set, or a <see langword="null" /> or
+    /// empty <see cref="InlineSnapshotSettings.MergeTools" />). Leaving the file alone lets the caller report the
+    /// snapshot difference, which is far more useful than an exception about a merge tool the user deliberately turned off.
     /// </summary>
     protected static MergeToolResult? TryLaunchMergeTool(InlineSnapshotSettings settings, string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        if (InlineSnapshotTesting.MergeTool.IsDisabled(settings.AutoDetectContinuousEnvironment))
+        if (settings.MergeTools is null)
+            return null;
+
+        MergeTool[] mergeTools = [.. settings.MergeTools];
+        if (mergeTools.Length is 0 || InlineSnapshotTesting.MergeTool.IsDisabled(settings.AutoDetectContinuousEnvironment))
             return null;
 
         var failures = new List<MergeToolLaunchFailure>();
-        var result = InlineSnapshotTesting.MergeTool.Launch(settings.MergeTools, currentFilePath, newFilePath, waitForMerge, failures);
+        var result = InlineSnapshotTesting.MergeTool.Launch(mergeTools, currentFilePath, newFilePath, waitForMerge, failures);
         if (result is not null)
             return result;
 

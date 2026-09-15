@@ -65,6 +65,20 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Equal("user TheUserName end", scrubber.Scrub($"user {Environment.UserName} end"));
     }
 
+    [Theory]
+    [InlineData("/home/runner/work", "/home/TheUserName/work")]
+    [InlineData(@"C:\Users\Runner\.nuget", @"C:\Users\TheUserName\.nuget")]
+    [InlineData("Built by runner.", "Built by TheUserName.")]
+    [InlineData("xunit.runner.visualstudio", "xunit.runner.visualstudio")]
+    [InlineData("runners test-runner runner_1 runner-2 myrunner", "runners test-runner runner_1 runner-2 myrunner")]
+    public void ScrubUserName_ReplacesOnlyWholeWords(string text, string expected)
+    {
+        var settings = new InlineSnapshotSettings();
+        InlineSnapshotSettingsScrubberExtensions.AddWholeWordScrubber(settings, "runner", "TheUserName");
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
     [Fact]
     public void AssertSnapshot_ShouldContainResolutionGuidance()
     {
@@ -248,6 +262,44 @@ public sealed class InlineSnapshotSettingsTests
             Assert.Contains("DiffEngine_Tool", exception.Message);
             Assert.Contains("DiffEngine_Disabled", exception.Message);
             Assert.Contains("\"not the snapshot\"", File.ReadAllText(filePath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool), false)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool), true)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync), false)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync), true)]
+    public void MergeToolStrategy_WithoutMergeTools_ReportsTheSnapshotDifference(string strategyName, bool emptyList)
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-inline-snapshot", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var filePath = Path.Combine(directory, "Snapshot.cs");
+            // The trailing comment keeps the invocation under the column of the call below, which is how the snapshot is located.
+            File.WriteAllText(filePath, "InlineSnapshot.Validate(new object(), settings, \"not the snapshot\" /* covers the column of the call site */);" + Environment.NewLine);
+
+            var settings = InlineSnapshotSettings.Default with
+            {
+                SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
+                MergeTools = emptyList ? [] : null,
+                AutoDetectContinuousEnvironment = false,
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+
+            var exception = Assert.Throws<InlineSnapshotAssertionException>(() => InlineSnapshot.Validate(new object(), settings, "not the snapshot", filePath, lineNumber: 1));
+
+            Assert.StartsWith("Snapshots do not match", exception.Message);
+            Assert.Contains("\"not the snapshot\"", File.ReadAllText(filePath));
+            Assert.Single(Directory.GetFiles(directory));
         }
         finally
         {

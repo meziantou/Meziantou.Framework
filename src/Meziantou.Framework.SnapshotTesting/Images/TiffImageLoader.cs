@@ -393,11 +393,10 @@ internal static class TiffImageLoader
                 throw new InvalidDataException("Invalid TIFF LZW data.");
             }
 
-            for (var i = stackLength - 1; i >= 0; i--)
+            // Like libtiff, data that decodes past the end of the strip is ignored, even when the string of
+            // the last code only partly fits.
+            for (var i = stackLength - 1; i >= 0 && outputOffset < output.Length; i--)
             {
-                if (outputOffset >= output.Length)
-                    throw new InvalidDataException("Invalid TIFF LZW data.");
-
                 output[outputOffset] = stack[i];
                 outputOffset++;
             }

@@ -7,7 +7,7 @@ using Xunit.Sdk;
 
 namespace TestUtilities;
 
-public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLifetime
+public abstract class NuGetPackageFixture(string packageProjectName, params string[] additionalPackageProjectNames) : IAsyncLifetime
 {
     private const string PackageVersionValue = "999.0.0-local";
     private const string ConfigurationValue = "Debug";
@@ -43,9 +43,13 @@ public abstract class NuGetPackageFixture(string packageProjectName) : IAsyncLif
 
         // Building the main project also builds the projects it references, so they can all be packed without rebuilding.
         // The Version property applies to them too, so a dependency using that version must be packed to restore the package.
-        await RunDotNetCommand(repositoryRoot, ["build", GetProjectPath(repositoryRoot, packageProjectName), .. commonArguments], expectedExitCode: 0);
+        string[] packageProjectNames = [packageProjectName, .. additionalPackageProjectNames];
+        foreach (var projectName in packageProjectNames)
+        {
+            await RunDotNetCommand(repositoryRoot, ["build", GetProjectPath(repositoryRoot, projectName), .. commonArguments], expectedExitCode: 0);
+        }
 
-        var pendingProjectNames = new Queue<string>([packageProjectName]);
+        var pendingProjectNames = new Queue<string>(packageProjectNames);
         var packedProjectNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (pendingProjectNames.TryDequeue(out var projectName))
         {

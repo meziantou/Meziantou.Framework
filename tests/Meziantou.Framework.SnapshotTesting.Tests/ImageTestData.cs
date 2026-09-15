@@ -117,7 +117,7 @@ internal static class ImageTestData
         return data;
     }
 
-    public static byte[] CreatePngRgba32(int width, int height, IReadOnlyList<uint> pixels, float? gamma = null)
+    public static byte[] CreatePngRgba32(int width, int height, IReadOnlyList<uint> pixels, float? gamma = null, CompressionLevel compressionLevel = CompressionLevel.SmallestSize)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
@@ -145,7 +145,7 @@ internal static class ImageTestData
         byte[] compressedData;
         using (var compressedStream = new MemoryStream())
         {
-            using (var zlib = new ZLibStream(compressedStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            using (var zlib = new ZLibStream(compressedStream, compressionLevel, leaveOpen: true))
             {
                 zlib.Write(imageData);
             }
@@ -377,10 +377,11 @@ internal static class ImageTestData
             WriteGifUInt16(stream, frame.Top);
             WriteGifUInt16(stream, frame.Width);
             WriteGifUInt16(stream, frame.Height);
-            stream.WriteByte(0); // No local color table, not interlaced
+            stream.WriteByte(frame.Interlaced ? (byte)0b0100_0000 : (byte)0); // No local color table
 
             stream.WriteByte((byte)minimumCodeSize);
-            WriteGifSubBlocks(stream, frame.LzwCodes is null ? EncodeGifPixels(frame.PixelIndexes, minimumCodeSize) : EncodeGifLzwCodes(frame.LzwCodes, minimumCodeSize));
+            var pixelIndexes = frame.Interlaced && frame.LzwCodes is null ? GetGifInterlacedPixelOrder(frame.PixelIndexes, frame.Width, frame.Height) : frame.PixelIndexes;
+            WriteGifSubBlocks(stream, frame.LzwCodes is null ? EncodeGifPixels(pixelIndexes, minimumCodeSize) : EncodeGifLzwCodes(frame.LzwCodes, minimumCodeSize));
         }
 
         stream.WriteByte(0x3B); // Trailer
@@ -670,6 +671,24 @@ internal static class ImageTestData
         return stream.ToArray();
     }
 
+    /// <summary>Reorders rows given top to bottom into the order of the four interlace passes.</summary>
+    private static byte[] GetGifInterlacedPixelOrder(IReadOnlyList<byte> pixelIndexes, int width, int height)
+    {
+        var result = new List<byte>(pixelIndexes.Count);
+        foreach (var (start, step) in new[] { (0, 8), (4, 8), (2, 4), (1, 2) })
+        {
+            for (var row = start; row < height; row += step)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    result.Add(pixelIndexes[(row * width) + x]);
+                }
+            }
+        }
+
+        return [.. result];
+    }
+
     private static void WriteGifSubBlocks(Stream stream, ReadOnlySpan<byte> data)
     {
         while (!data.IsEmpty)
@@ -744,6 +763,11 @@ internal static class ImageTestData
     {
         public int DisposalMethod { get; init; }
         public int TransparentColorIndex { get; init; } = -1;
+
+        /// <summary>
+        /// Writes the frame interlaced. <see cref="PixelIndexes" /> are still given top to bottom.
+        /// </summary>
+        public bool Interlaced { get; init; }
 
         /// <summary>
         /// The LZW codes of the frame, written as they are instead of encoding <see cref="PixelIndexes" />.

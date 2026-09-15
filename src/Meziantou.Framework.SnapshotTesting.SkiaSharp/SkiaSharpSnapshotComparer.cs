@@ -5,8 +5,17 @@ namespace Meziantou.Framework.SnapshotTesting.SkiaSharp;
 
 internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? settings) : ISnapshotComparer
 {
-    public bool Equals(SnapshotData expected, SnapshotData actual)
+    private static readonly ImageComparer HighPrecisionComparer = new();
+
+    public bool Equals(SnapshotData expected, SnapshotData actual) => Equals(expected, actual, out _);
+
+    public bool Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)
     {
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(actual);
+
+        mismatchReason = null;
+
         // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0 and both
         // hash distances are 0 - every configured threshold is satisfied. This is the case for every passing
         // image snapshot test, and it avoids decoding both images.
@@ -14,22 +23,65 @@ internal sealed class SkiaSharpSnapshotComparer(ImageComparisonSettings? setting
             return true;
 
         using var expectedImage = Decode(expected.Data);
-        using var actualImage = Decode(actual.Data);
-        if (expectedImage is null || actualImage is null)
+        if (expectedImage is null)
+        {
+            mismatchReason = ImageMismatchReasons.CannotDecode("expected", error: null);
             return false;
+        }
+
+        using var actualImage = Decode(actual.Data);
+        if (actualImage is null)
+        {
+            mismatchReason = ImageMismatchReasons.CannotDecode("actual", error: null);
+            return false;
+        }
 
         if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+        {
+            mismatchReason = ImageMismatchReasons.DifferentSizes(expectedImage.Width, expectedImage.Height, actualImage.Width, actualImage.Height);
             return false;
+        }
 
         var expectedPixels = unsafe(MemoryMarshal.Cast<byte, uint>(expectedImage.GetPixelSpan()));
         var actualPixels = unsafe(MemoryMarshal.Cast<byte, uint>(actualImage.GetPixelSpan()));
 
         var threshold = settings?.SimilarityThreshold;
         if (threshold is null)
-            return ExactEquals(expectedPixels, actualPixels);
+        {
+            if (!ExactEquals(expectedPixels, actualPixels))
+            {
+                mismatchReason = ImageMismatchReasons.DifferentPixels;
+                return false;
+            }
 
-        // The bitmaps are allocated here, so their rows are contiguous and tightly packed
-        return SsimAccumulator.Compute(expectedPixels, actualPixels, expectedImage.Width, expectedImage.Height) >= threshold.Value;
+            // Skia decodes 16-bit PNG samples to their high byte, and none of the color types it decodes them to
+            // keeps the 16 bits exactly (half floats lose the low bits). The low bytes are compared with the
+            // built-in decoder, so an exact comparison sees every bit, as with the built-in comparer and ImageSharp.
+            if (IsSixteenBitPng(expected.Data) || IsSixteenBitPng(actual.Data))
+                return HighPrecisionComparer.Equals(expected, actual, out mismatchReason);
+
+            return true;
+        }
+
+        // The bitmaps are allocated here, so their rows are contiguous and tightly packed. The SSIM works on the
+        // 8-bit samples, and Skia reduces 16-bit samples to their high byte, as the built-in comparer and ImageSharp do.
+        var ssim = SsimAccumulator.Compute(expectedPixels, actualPixels, expectedImage.Width, expectedImage.Height);
+        if (ssim >= threshold.Value)
+            return true;
+
+        mismatchReason = ImageMismatchReasons.SimilarityBelowThreshold(ssim, threshold.Value);
+        return false;
+    }
+
+    /// <summary>
+    /// Reads the bit depth from the IHDR chunk, which the PNG specification requires to come first.
+    /// </summary>
+    private static bool IsSixteenBitPng(ReadOnlySpan<byte> data)
+    {
+        return data.Length > 24
+            && data.StartsWith((ReadOnlySpan<byte>)[137, 80, 78, 71, 13, 10, 26, 10])
+            && data.Slice(12, 4).SequenceEqual("IHDR"u8)
+            && data[24] is 16;
     }
 
     private static bool ExactEquals(ReadOnlySpan<uint> expected, ReadOnlySpan<uint> actual)

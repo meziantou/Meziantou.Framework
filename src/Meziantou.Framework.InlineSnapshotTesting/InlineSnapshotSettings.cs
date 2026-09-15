@@ -93,14 +93,17 @@ public sealed record InlineSnapshotSettings
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
-    /// Set the ordered list of tools to diff snapshots.
-    /// If null or empty, the diff tool is determined by
-    /// <list type="bullet">
-    ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
-    ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
-    /// </list>
+    /// Gets or sets the ordered list of tools used by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
+    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first tool that can be started is used.
+    /// The default list tries the <c>DiffEngine_Tool</c> environment variable, the git merge and diff tools, the current IDE
+    /// (Visual Studio, Visual Studio Code, Rider), and then the GUI tools detected by DiffEngine. Terminal tools such as Vim
+    /// are only used when they are named explicitly.
+    /// If <see langword="null" /> or empty, no merge tool is launched and the assertion failure is reported.
     /// </summary>
-    /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
+    /// <remarks>
+    /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools
+    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent.
+    /// </remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; } = DefaultMergeTools;
 
     /// <summary>Before editing a file, use the PDB to validate the file path containing the snapshot.</summary>

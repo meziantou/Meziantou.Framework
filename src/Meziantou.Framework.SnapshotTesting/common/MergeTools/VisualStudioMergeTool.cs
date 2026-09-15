@@ -1,7 +1,11 @@
 using System.Diagnostics;
 using Meziantou.Framework.DiffEngine;
 
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+#else
 namespace Meziantou.Framework.SnapshotTesting.MergeTools;
+#endif
 
 internal sealed class VisualStudioMergeTool : MergeTool
 {
@@ -10,8 +14,8 @@ internal sealed class VisualStudioMergeTool : MergeTool
         if (!DiffTools.TryFindByName(DiffTool.VisualStudio, out var resolvedTool))
             return null;
 
-        var rootFolder = Path.GetDirectoryName(resolvedTool.ExePath) ?? "";
-        var vsdiffmerge = Path.Combine(rootFolder, "CommonExtensions", "Microsoft", "TeamFoundation", "Team Explorer", "vsdiffmerge.exe");
+        var rootFolder = FullPath.FromPath(resolvedTool.ExePath).Parent;
+        var vsdiffmerge = rootFolder / "CommonExtensions" / "Microsoft" / "TeamFoundation" / "Team Explorer" / "vsdiffmerge.exe";
         if (!File.Exists(vsdiffmerge))
             return null;
 

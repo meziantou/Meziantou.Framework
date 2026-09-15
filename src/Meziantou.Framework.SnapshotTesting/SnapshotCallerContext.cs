@@ -15,6 +15,7 @@ internal sealed partial class SnapshotCallerContext
     [GeneratedRegex(@"^<(?<name>[^>]+)>b__[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
     private static partial Regex LambdaContainingMethodNameRegex { get; }
 
+    // The names of the base attributes. Attributes deriving from them are recognized too, see IsTestAttributeType.
     private static readonly HashSet<string> TestAttributeNames = new(StringComparer.Ordinal)
     {
         "FactAttribute",
@@ -262,11 +263,34 @@ internal sealed partial class SnapshotCallerContext
 
         foreach (var attribute in attributes)
         {
-            var attributeName = attribute.AttributeType.Name;
-            if (TestAttributeNames.Contains(attributeName))
-            {
+            if (IsTestAttributeType(attribute.AttributeType))
                 return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Indicates whether the attribute marks a test method. Test frameworks and their extensions derive their own
+    /// attributes from the base ones - <c>[DataTestMethod]</c>, <c>[STATestMethod]</c>, <c>[SkippableFact]</c>,
+    /// <c>[WpfFact]</c>... - so the whole base type chain is checked. Only the names are compared: the library does
+    /// not reference any test framework.
+    /// </summary>
+    private static bool IsTestAttributeType(Type? attributeType)
+    {
+        try
+        {
+            while (attributeType is not null && attributeType != typeof(Attribute) && attributeType != typeof(object))
+            {
+                if (TestAttributeNames.Contains(attributeType.Name))
+                    return true;
+
+                attributeType = attributeType.BaseType;
             }
+        }
+        catch (Exception ex) when (ex is TypeLoadException or FileNotFoundException or FileLoadException)
+        {
+            // A base type may live in an assembly that cannot be loaded.
         }
 
         return false;

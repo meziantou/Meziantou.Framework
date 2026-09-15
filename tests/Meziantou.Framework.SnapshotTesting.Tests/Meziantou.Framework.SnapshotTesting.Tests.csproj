@@ -7,12 +7,20 @@
   <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.ImageSharp/Meziantou.Framework.SnapshotTesting.ImageSharp.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.SkiaSharp/Meziantou.Framework.SnapshotTesting.SkiaSharp.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
+  </ItemGroup>
+
+  <!-- The SDK only imports the compile and runtime assets of packages, so the SkiaSharp comparer tests request the native libraries explicitly -->
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.152.0" IncludeAssets="runtime;compile;native" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.152.0" IncludeAssets="runtime;compile;native" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.152.0" IncludeAssets="runtime;compile;native" />
   </ItemGroup>
 
   <ItemGroup>

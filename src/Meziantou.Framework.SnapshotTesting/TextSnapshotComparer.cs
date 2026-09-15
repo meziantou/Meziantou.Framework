@@ -3,8 +3,9 @@ namespace Meziantou.Framework.SnapshotTesting;
 /// <summary>
 /// Compares text snapshots while treating <c>\r\n</c>, <c>\r</c> and <c>\n</c> as the same line ending. A verified
 /// file keeps whatever line endings the editor, the merge tool or git's <c>core.autocrlf</c> gave it, and that must
-/// not make a snapshot fail on another operating system. The comparison works on the UTF-8 bytes directly: CR and LF
-/// are ASCII, so they can never be part of a multi-byte sequence.
+/// not make a snapshot fail on another operating system. A leading UTF-8 byte order mark, which some editors add when
+/// saving a file, is ignored for the same reason. The comparison works on the UTF-8 bytes directly: CR and LF are
+/// ASCII, so they can never be part of a multi-byte sequence.
 /// </summary>
 internal sealed class TextSnapshotComparer : ISnapshotComparer
 {
@@ -15,8 +16,8 @@ internal sealed class TextSnapshotComparer : ISnapshotComparer
         ArgumentNullException.ThrowIfNull(expected);
         ArgumentNullException.ThrowIfNull(actual);
 
-        ReadOnlySpan<byte> expectedData = expected.Data;
-        ReadOnlySpan<byte> actualData = actual.Data;
+        var expectedData = SkipByteOrderMark(expected.Data);
+        var actualData = SkipByteOrderMark(actual.Data);
         if (expectedData.SequenceEqual(actualData))
             return true;
 
@@ -32,6 +33,14 @@ internal sealed class TextSnapshotComparer : ISnapshotComparer
             expectedData = SkipEndOfLine(expectedData[index..]);
             actualData = SkipEndOfLine(actualData[index..]);
         }
+    }
+
+    private static ReadOnlySpan<byte> SkipByteOrderMark(ReadOnlySpan<byte> data)
+    {
+        if (data is [0xEF, 0xBB, 0xBF, ..])
+            return data[3..];
+
+        return data;
     }
 
     private static bool IsEndOfLine(byte value) => value is (byte)'\r' or (byte)'\n';

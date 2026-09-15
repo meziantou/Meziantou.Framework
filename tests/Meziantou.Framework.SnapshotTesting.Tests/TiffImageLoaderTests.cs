@@ -1,7 +1,18 @@
+using System.Buffers.Binary;
+
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
 public sealed class TiffImageLoaderTests
 {
+    private const ushort TagImageWidth = 256;
+    private const ushort TagImageLength = 257;
+    private const ushort TagBitsPerSample = 258;
+    private const ushort TagStripOffsets = 273;
+    private const ushort TagRowsPerStrip = 278;
+    private const ushort TagStripByteCounts = 279;
+    private const ushort TagTileOffsets = 324;
+    private const ushort TagTileByteCounts = 325;
+
     private const ushort PhotometricBlackIsZero = 1;
     private const ushort PhotometricRgb = 2;
     private const ushort CompressionNone = 1;
@@ -126,6 +137,147 @@ public sealed class TiffImageLoaderTests
         var image = Image.Load(tiffData);
 
         Assert.Equal([new Argb(128, 128, 255, 64)], image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void Image_Load_ThrowsWhenTiffHasSeveralPages()
+    {
+        var tiffData = CreateTwoPageGrayscaleTiff(firstPage: 10, secondPage: 20);
+
+        Assert.Throws<NotSupportedException>(() => Image.Load(tiffData));
+    }
+
+    [Fact]
+    public void ImageComparer_DetectsMultiPageTiffsThatDifferOnlyOnALaterPage()
+    {
+        var expected = new SnapshotData("tiff", CreateTwoPageGrayscaleTiff(firstPage: 10, secondPage: 20));
+        var actual = new SnapshotData("tiff", CreateTwoPageGrayscaleTiff(firstPage: 10, secondPage: 30));
+
+        Assert.False(ImageComparer.Instance.Equals(expected, actual));
+        Assert.True(ImageComparer.Instance.Equals(expected, new SnapshotData("tiff", CreateTwoPageGrayscaleTiff(firstPage: 10, secondPage: 20))));
+    }
+
+    [Fact]
+    public void Image_Load_ReadsTheDefaultRowsPerStripAsASingleStrip()
+    {
+        var tiffData = CreateGrayscaleTiff(width: 2, height: 2, [1, 2, 3, 4]);
+        SetEntryValue(tiffData, TagRowsPerStrip, uint.MaxValue);
+
+        var image = Image.Load(tiffData);
+
+        Assert.Equal(CreateGrayscalePixels(""), image.Pixels.ToArray());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void Image_Load_DefaultsTheMissingBitsPerSampleToOneBit(int samplesPerPixel)
+    {
+        var tiffData = ImageTestData.CreateTiff(
+            width: 8,
+            height: 1,
+            samplesPerPixel,
+            samplesPerPixel is 1 ? PhotometricBlackIsZero : PhotometricRgb,
+            CompressionNone,
+            stripData: [0b1010_1010]);
+        RemoveEntry(tiffData, TagBitsPerSample);
+
+        var exception = Assert.Throws<NotSupportedException>(() => Image.Load(tiffData));
+        Assert.Contains("8-bit", exception.Message);
+    }
+
+    [Fact]
+    public void Image_Load_ThrowsNotSupportedForTiledTiff()
+    {
+        var tiffData = CreateGrayscaleTiff(width: 1, height: 1, [0]);
+        RenameEntry(tiffData, TagStripOffsets, TagTileOffsets);
+        RenameEntry(tiffData, TagStripByteCounts, TagTileByteCounts);
+
+        var exception = Assert.Throws<NotSupportedException>(() => Image.Load(tiffData));
+        Assert.Contains("Tiled", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(CompressionNone)]
+    [InlineData(CompressionLzw)]
+    public void Image_Load_ValidatesTheStripsBeforeAllocatingThePixels(ushort compression)
+    {
+        // 16000 x 16000 is within the pixel limit, but a strip of 2 bytes cannot hold it, uncompressed or not
+        var tiffData = CreateGrayscaleTiff(width: 16000, height: 16000, [0, 0], compression);
+
+        var allocatedBytes = GC.GetAllocatedBytesForCurrentThread();
+        Assert.Throws<InvalidDataException>(() => Image.Load(tiffData));
+        allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBytes;
+
+        Assert.True(allocatedBytes < 1024 * 1024, $"Allocated {allocatedBytes} bytes");
+    }
+
+    [Fact]
+    public void Image_Load_ThrowsNotSupportedWhenTiffDimensionsExceedTheLimit()
+    {
+        var tiffData = CreateGrayscaleTiff(width: 1, height: 1, [0]);
+        SetEntryValue(tiffData, TagImageWidth, 100_000);
+        SetEntryValue(tiffData, TagImageLength, 100_000);
+
+        Assert.Throws<NotSupportedException>(() => Image.Load(tiffData));
+    }
+
+    private static byte[] CreateGrayscaleTiff(int width, int height, byte[] stripData, ushort compression = CompressionNone)
+    {
+        return ImageTestData.CreateTiff(width, height, samplesPerPixel: 1, PhotometricBlackIsZero, compression, stripData);
+    }
+
+    /// <summary>
+    /// Appends a copy of the image file directory of a 1x1 grayscale TIFF that points to its own pixel, and links
+    /// it from the first directory.
+    /// </summary>
+    private static byte[] CreateTwoPageGrayscaleTiff(byte firstPage, byte secondPage)
+    {
+        var firstPageData = CreateGrayscaleTiff(width: 1, height: 1, [firstPage]);
+        const int FirstIfdOffset = 8;
+        var entryCount = BinaryPrimitives.ReadUInt16LittleEndian(firstPageData.AsSpan(FirstIfdOffset));
+        var ifdLength = 2 + (entryCount * 12) + 4;
+
+        // Directories start on a word boundary
+        var secondIfdOffset = (firstPageData.Length + 1) & ~1;
+        var secondPixelOffset = secondIfdOffset + ifdLength;
+        var data = new byte[secondPixelOffset + 1];
+        firstPageData.CopyTo(data, 0);
+        firstPageData.AsSpan(FirstIfdOffset, ifdLength).CopyTo(data.AsSpan(secondIfdOffset));
+        data[secondPixelOffset] = secondPage;
+
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(FirstIfdOffset + ifdLength - 4), (uint)secondIfdOffset);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(GetEntryOffset(data, secondIfdOffset, TagStripOffsets) + 8), (uint)secondPixelOffset);
+        return data;
+    }
+
+    private static void SetEntryValue(byte[] tiffData, ushort tag, uint value)
+    {
+        BinaryPrimitives.WriteUInt32LittleEndian(tiffData.AsSpan(GetEntryOffset(tiffData, 8, tag) + 8), value);
+    }
+
+    private static void RemoveEntry(byte[] tiffData, ushort tag)
+    {
+        // A private tag number that the decoder does not know
+        RenameEntry(tiffData, tag, 65000);
+    }
+
+    private static void RenameEntry(byte[] tiffData, ushort tag, ushort newTag)
+    {
+        BinaryPrimitives.WriteUInt16LittleEndian(tiffData.AsSpan(GetEntryOffset(tiffData, 8, tag)), newTag);
+    }
+
+    private static int GetEntryOffset(byte[] tiffData, int ifdOffset, ushort tag)
+    {
+        var entryCount = BinaryPrimitives.ReadUInt16LittleEndian(tiffData.AsSpan(ifdOffset));
+        for (var i = 0; i < entryCount; i++)
+        {
+            var entryOffset = ifdOffset + 2 + (i * 12);
+            if (BinaryPrimitives.ReadUInt16LittleEndian(tiffData.AsSpan(entryOffset)) == tag)
+                return entryOffset;
+        }
+
+        throw new ArgumentException($"The TIFF has no tag {tag}.", nameof(tag));
     }
 
     private static byte[] CreateRgbaTiff(byte[] samples, ushort? extraSample)

@@ -7,6 +7,10 @@ namespace Meziantou.Framework.SnapshotTesting;
 
 public sealed record SnapshotSettings
 {
+    // The longest file name ext4, APFS and most other file systems accept, in UTF-8 bytes. NTFS counts UTF-16
+    // code units instead, which never exceed the UTF-8 byte count.
+    private const int MaxFileNameByteCount = 255;
+
     private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
@@ -17,10 +21,16 @@ public sealed record SnapshotSettings
         new AutoDiffEngineTool());
 
 
+    internal const string AutoDetectContinuousEnvironmentVariableName = "SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT";
+
     public static SnapshotSettings Default { get; set; } = new();
 
     /// <summary>Gets or sets a value indicating whether to automatically detect continuous integration, continuous testing, and LLM environments and disable snapshot updates.</summary>
-    public bool AutoDetectContinuousEnvironment { get; set; } = true;
+    /// <remarks>
+    /// The default value is <see langword="true" />, unless the <c>SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT</c>
+    /// environment variable is set to <c>false</c>, <c>0</c>, <c>no</c> or <c>off</c>.
+    /// </remarks>
+    public bool AutoDetectContinuousEnvironment { get; set; } = ContinuousEnvironmentDetector.IsAutoDetectionEnabled(AutoDetectContinuousEnvironmentVariableName);
 
     public bool ForceUpdateSnapshots { get; set; }
 
@@ -69,14 +79,16 @@ public sealed record SnapshotSettings
     public SnapshotSerializerCollection Serializers { get; }
 
     /// <summary>
-    /// Set the ordered list of tools to diff snapshots.
-    /// If null or empty, the diff tool is determined by
-    /// <list type="bullet">
-    ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
-    ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
-    /// </list>
+    /// Gets or sets the ordered list of tools used by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
+    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first tool that can be started is used.
+    /// The default list tries the <c>DiffEngine_Tool</c> environment variable, the git merge and diff tools, the current IDE
+    /// (Visual Studio, Visual Studio Code, Rider), and then the tools detected by DiffEngine.
+    /// If <see langword="null" /> or empty, no merge tool is launched and the assertion failure is reported.
     /// </summary>
-    /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
+    /// <remarks>
+    /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools
+    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent.
+    /// </remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; }
 
     public SnapshotComparerCollection Comparers { get; }
@@ -119,7 +131,24 @@ public sealed record SnapshotSettings
         MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
     }
 
-    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected;
+    internal static bool IsRunningOnContinuousIntegration() => ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is not null;
+
+    /// <summary>
+    /// Indicates whether the snapshot names come from the library: the default path strategy combined with a
+    /// built-in naming strategy. Only those names are checked for collisions, as a custom strategy may give
+    /// several tests the same file on purpose.
+    /// </summary>
+    internal static bool UsesBuiltInSnapshotNames(SnapshotSettings settings)
+    {
+        return settings.SnapshotPathStrategy == (SnapshotPathStrategy)DefaultSnapshotPath && IsBuiltInNamingStrategy(settings.SnapshotNamingStrategy);
+    }
+
+    private static bool IsBuiltInNamingStrategy(SnapshotNamingStrategy strategy)
+    {
+        return ReferenceEquals(strategy, SnapshotNamingStrategies.ClassName_TestName) ||
+               ReferenceEquals(strategy, SnapshotNamingStrategies.TestName) ||
+               ReferenceEquals(strategy, SnapshotNamingStrategies.FullName);
+    }
 
     private static FullPath DefaultSnapshotPath(SnapshotPathContext context)
     {
@@ -157,26 +186,33 @@ public sealed record SnapshotSettings
             startPart = "snapshot";
         }
 
-        var hasMultipleSnapshots = context.SnapshotCount > 1;
-        var indexPart = context.Index.ToString(CultureInfo.InvariantCulture);
-        var suffixWithoutHash = hasMultipleSnapshots ? "_" + indexPart + ".verified." + extension : ".verified." + extension;
+        // The '_<index>' suffix tells apart the files of an assertion that produces several snapshots, and the
+        // '~<ordinal>' suffix tells apart the assertions of a test that would otherwise share a name. '~' is never
+        // produced by the sanitization, so the second assertion of a test cannot take the name of another test.
+        // The naming of a custom strategy is left alone: it may already tell the assertions apart.
+        var callOrdinal = IsBuiltInNamingStrategy(context.Settings.SnapshotNamingStrategy) ? context.CallOrdinal : 1;
+        var ordinalPart = callOrdinal > 1 ? "~" + callOrdinal.ToString(CultureInfo.InvariantCulture) : "";
+        var indexPart = context.SnapshotCount > 1 ? "_" + context.Index.ToString(CultureInfo.InvariantCulture) : "";
+        var extensionPart = ".verified." + extension;
+        var suffixWithoutHash = ordinalPart + indexPart + extensionPart;
         var shouldAddHashSuffix =
             isNameSanitized ||
             startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
+            Encoding.UTF8.GetByteCount(startPart) + Encoding.UTF8.GetByteCount(suffixWithoutHash) > MaxFileNameByteCount ||
             IsReservedSnapshotName(startPart);
 
         var suffix = suffixWithoutHash;
         if (shouldAddHashSuffix)
         {
             // The line number is deliberately not part of the hash: it would rename the snapshot whenever
-            // anything above the assertion moves, and it adds no uniqueness since two assertions in one
-            // test are already separated by the index suffix.
+            // anything above the assertion moves. Two assertions of one test are told apart by the ordinal
+            // suffix instead.
             // The source file name is used rather than its full path: the snapshot is stored next to the
             // source file, so the name is enough to tell two files of that directory apart, while the
             // absolute path would tie the file name to where the repository happens to be checked out.
             var hashInput = $"{context.SourceFilePath.Name}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
             var hash = ToHexSha256(hashInput, length: 8);
-            suffix = hasMultipleSnapshots ? "_" + hash + "_" + indexPart + ".verified." + extension : "_" + hash + ".verified." + extension;
+            suffix = "_" + hash + ordinalPart + indexPart + extensionPart;
         }
 
         var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
@@ -189,7 +225,30 @@ public sealed record SnapshotSettings
             startPart = startPart[..maxStartLength];
         }
 
+        startPart = TruncateToByteCount(startPart, MaxFileNameByteCount - Encoding.UTF8.GetByteCount(suffix));
         return startPart + suffix;
+    }
+
+    /// <summary>
+    /// Shortens a name so its UTF-8 encoding fits in the given number of bytes, without splitting a character.
+    /// </summary>
+    private static string TruncateToByteCount(string value, int maxByteCount)
+    {
+        if (Encoding.UTF8.GetByteCount(value) <= maxByteCount)
+            return value;
+
+        var byteCount = 0;
+        var length = 0;
+        foreach (var rune in value.EnumerateRunes())
+        {
+            byteCount += rune.Utf8SequenceLength;
+            if (byteCount > maxByteCount)
+                break;
+
+            length += rune.Utf16SequenceLength;
+        }
+
+        return length == 0 ? "s" : value[..length];
     }
 
     private static bool IsReservedSnapshotName(string value)
@@ -198,7 +257,7 @@ public sealed record SnapshotSettings
                value.EndsWith(".actual", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)
+    internal static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)
     {
         if (metadata is null || metadata.Count == 0)
             return "";

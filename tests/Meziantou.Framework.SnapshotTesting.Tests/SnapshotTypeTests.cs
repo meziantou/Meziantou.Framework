@@ -66,6 +66,24 @@ public sealed class SnapshotTypeTests
     }
 
     [Fact]
+    public void Equals_UnknownType_IsCaseInsensitive()
+    {
+        Assert.Equal(SnapshotType.Create("json"), SnapshotType.Create("JSON"));
+        Assert.Equal(SnapshotType.Create("json").GetHashCode(), SnapshotType.Create("JSON").GetHashCode());
+        Assert.True(SnapshotType.Create("json") == SnapshotType.Create(".Json"));
+    }
+
+    [Fact]
+    public void Comparers_Get_FindsAComparerRegisteredWithADifferentCase()
+    {
+        var comparers = new SnapshotComparerCollection();
+        var comparer = TextSnapshotComparer.Instance;
+        comparers.Set(SnapshotType.Create("JSON"), comparer);
+
+        Assert.Same(comparer, comparers.Get(SnapshotType.Create("json")));
+    }
+
+    [Fact]
     public void Create_WithMetadata_SetsAllProperties()
     {
         var result = SnapshotType.Create("json", "application/json", "JSON");

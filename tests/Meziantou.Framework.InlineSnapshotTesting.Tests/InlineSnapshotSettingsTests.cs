@@ -81,11 +81,58 @@ public sealed class InlineSnapshotSettingsTests
     }
 
     [Fact]
-    public void MergeToolStrategy_WhenDiffToolsAreDisabled_ReportsTheSnapshotDifference()
+    public void AssertSnapshot_ExplainsThatTheDetectedEnvironmentDisabledUpdates()
+    {
+        var settings = new InlineSnapshotSettings { AutoDetectContinuousEnvironment = true };
+
+        ContinuousEnvironmentDetector.DescriptionOverride = () => "an LLM agent (ClaudeCode)";
+        try
+        {
+            var exception = Assert.ThrowsAny<Exception>(() => settings.AssertSnapshot("old", "new"));
+            Assert.Contains("Snapshot updates are disabled because an LLM agent (ClaudeCode) was detected.", exception.Message);
+            Assert.Contains("set the INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT environment variable to false, or set InlineSnapshotSettings.AutoDetectContinuousEnvironment to false", exception.Message);
+
+            settings.AutoDetectContinuousEnvironment = false;
+            exception = Assert.ThrowsAny<Exception>(() => settings.AssertSnapshot("old", "new"));
+            Assert.DoesNotContain("Snapshot updates are disabled", exception.Message);
+        }
+        finally
+        {
+            ContinuousEnvironmentDetector.DescriptionOverride = null;
+        }
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData("0", false)]
+    [InlineData("off", false)]
+    public void AutoDetectContinuousEnvironment_Default_CanBeConfiguredUsingEnvironmentVariable(string? value, bool expected)
+    {
+        using var _ = new EnvironmentVariableScope("INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT", value);
+
+        Assert.Equal(expected, new InlineSnapshotSettings().AutoDetectContinuousEnvironment);
+    }
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.Disallow))]
+    [InlineData(nameof(SnapshotUpdateStrategy.Overwrite))]
+    [InlineData(nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure))]
+    public void SnapshotUpdateStrategy_ToString_ReturnsThePublicName(string strategyName)
+    {
+        Assert.Equal(strategyName, GetSnapshotUpdateStrategy(strategyName).ToString());
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("TRUE")]
+    [InlineData("1")]
+    public void MergeToolStrategy_WhenDiffToolsAreDisabled_ReportsTheSnapshotDifference(string value)
     {
         // Diff tools switched off used to surface as InlineSnapshotException("Cannot start the merge tool"),
         // which replaced the diff and the resolution guidance with a message about the tool.
-        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", "true");
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value);
 
         // The file the snapshot lives in is written for this test instead of using this very file through
         // CallerFilePath: a deterministic build reports the compile-time path ("/_/tests/..."), which does not exist
@@ -172,6 +219,61 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Null(MergeTool.DiffToolFromEnvironmentVariable.Start("current.cs", "new.cs"));
     }
 
+    [Fact]
+    public void MergeToolStrategy_WhenNoMergeToolStarts_ReportsTheFailures()
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+
+        var directory = Path.Combine(Path.GetTempPath(), "meziantou-inline-snapshot", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var filePath = Path.Combine(directory, "Snapshot.cs");
+            // The trailing comment keeps the invocation under the column of the call below, which is how the snapshot is located.
+            File.WriteAllText(filePath, "InlineSnapshot.Validate(new object(), settings, \"not the snapshot\" /* covers the column of the call site */);" + Environment.NewLine);
+
+            var settings = InlineSnapshotSettings.Default with
+            {
+                SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
+                MergeTools = [new ThrowingMergeTool()],
+                AutoDetectContinuousEnvironment = false,
+                ValidateSourceFilePathUsingPdbInfoWhenAvailable = false,
+                ValidateLineNumberUsingPdbInfoWhenAvailable = false,
+            };
+
+            var exception = Assert.Throws<InlineSnapshotException>(() => InlineSnapshot.Validate(new object(), settings, "not the snapshot", filePath, lineNumber: 1));
+
+            Assert.Contains("  * Source file:  " + filePath, exception.Message);
+            Assert.Contains("  - BrokenMergeTool: The merge tool is broken.", exception.Message);
+            Assert.Contains("DiffEngine_Tool", exception.Message);
+            Assert.Contains("DiffEngine_Disabled", exception.Message);
+            Assert.Contains("\"not the snapshot\"", File.ReadAllText(filePath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MergeTool_IsDisabled_IgnoresTheDetectedEnvironmentsWhenAutoDetectionIsOff()
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+
+        Assert.False(MergeTool.IsDisabled(autoDetectContinuousEnvironment: false));
+    }
+
+    [Theory]
+    [InlineData("rider")]
+    [InlineData("RIDER")]
+    [InlineData(" Rider ")]
+    public void DiffToolFromEnvironmentVariable_IgnoresTheCase(string value)
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Tool", value);
+
+        Assert.Same(MergeTool.Rider, MergeTools.MergeToolFromEnvironment.GetTool());
+    }
+
     private static SnapshotUpdateStrategy GetSnapshotUpdateStrategy(string name)
     {
         return name switch
@@ -183,6 +285,13 @@ public sealed class InlineSnapshotSettingsTests
             nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure) => SnapshotUpdateStrategy.OverwriteWithoutFailure,
             _ => throw new ArgumentOutOfRangeException(nameof(name)),
         };
+    }
+
+    private sealed class ThrowingMergeTool : MergeTool
+    {
+        public override MergeToolResult? Start(string currentFilePath, string newFilePath) => throw new InvalidOperationException("The merge tool is broken.");
+
+        public override string ToString() => "BrokenMergeTool";
     }
 
     private sealed class EnvironmentVariableScope : IDisposable

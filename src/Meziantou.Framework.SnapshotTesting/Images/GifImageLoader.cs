@@ -7,6 +7,12 @@ internal static class GifImageLoader
     /// each frame is composited over the canvas left by the previous one, honoring the disposal method of the
     /// graphic control extension.
     /// </summary>
+    /// <remarks>
+    /// The decoder is as lenient as browsers and Pillow with files that are slightly off the specification, so
+    /// such a GIF still gets PNG frames instead of an opaque binary snapshot: data after the last frame (with
+    /// or without a trailer) is ignored, a palette index beyond the color table is black, and the pixels a
+    /// frame's LZW data does not reach keep the content of the canvas.
+    /// </remarks>
     internal static bool TryExtractFrames(ReadOnlySpan<byte> data, [NotNullWhen(true)] out List<Image>? frames)
     {
         frames = null;
@@ -15,8 +21,7 @@ internal static class GifImageLoader
 
         if (!TryReadUInt16(data, 6, out var logicalWidth) ||
             !TryReadUInt16(data, 8, out var logicalHeight) ||
-            logicalWidth == 0 ||
-            logicalHeight == 0)
+            !ImageLimits.IsValidSize(logicalWidth, logicalHeight))
         {
             return false;
         }
@@ -38,7 +43,7 @@ internal static class GifImageLoader
             backgroundColor = globalColorTable[backgroundColorIndex];
         }
 
-        var canvas = new Argb[checked(logicalWidth * logicalHeight)];
+        var canvas = new Argb[logicalWidth * logicalHeight];
         var canvasInitialized = false;
         var extractedFrames = new List<Image>();
         var transparentColorIndex = -1;
@@ -51,13 +56,6 @@ internal static class GifImageLoader
 
             switch (blockType)
             {
-                case 0x3B: // Trailer
-                    if (offset != data.Length || extractedFrames.Count == 0)
-                        return false;
-
-                    frames = extractedFrames;
-                    return true;
-
                 case 0x21: // Extension block
                     if (!TryReadExtensionBlock(data, ref offset, ref transparentColorIndex, ref disposalMethod))
                         return false;
@@ -73,6 +71,11 @@ internal static class GifImageLoader
                         Array.Fill(canvas, frameBackground);
                         canvasInitialized = true;
                     }
+
+                    // Every frame is a full copy of the canvas, so a few bytes per frame could otherwise make a
+                    // large logical screen allocate far more memory than any snapshot needs.
+                    if ((extractedFrames.Count + 1L) * canvas.Length > ImageLimits.MaxPixelCount)
+                        return false;
 
                     if (!TryReadImage(
                         data,
@@ -95,11 +98,20 @@ internal static class GifImageLoader
                     break;
 
                 default:
-                    return false;
+                    // The trailer (0x3B) ends the file. Like browsers, anything else that is not a block is
+                    // extraneous data after the last frame and is handled as if the file had been terminated.
+                    return TryGetFrames(extractedFrames, out frames);
             }
         }
 
-        return false;
+        // The file ends without a trailer
+        return TryGetFrames(extractedFrames, out frames);
+
+        static bool TryGetFrames(List<Image> extractedFrames, [NotNullWhen(true)] out List<Image>? frames)
+        {
+            frames = extractedFrames.Count > 0 ? extractedFrames : null;
+            return frames is not null;
+        }
     }
 
     private static bool TryReadImage(
@@ -123,7 +135,7 @@ internal static class GifImageLoader
             return false;
         }
 
-        if (imageWidth == 0 || imageHeight == 0)
+        if (!ImageLimits.IsValidSize(imageWidth, imageHeight))
             return false;
 
         if (offset + 9 > data.Length)
@@ -151,8 +163,7 @@ internal static class GifImageLoader
         if (!TryReadSubBlocks(data, ref offset, out var compressedData))
             return false;
 
-        var expectedPixelCount = checked(imageWidth * imageHeight);
-        if (!TryDecodeLzw(compressedData, lzwMinimumCodeSize, expectedPixelCount, out var colorIndexes))
+        if (!TryDecodeLzw(compressedData, lzwMinimumCodeSize, imageWidth * imageHeight, out var colorIndexes, out var decodedPixelCount))
             return false;
 
         var previousCanvas = disposalMethod is DisposalMethod.RestoreToPrevious ? (Argb[])canvas.Clone() : null;
@@ -174,14 +185,18 @@ internal static class GifImageLoader
                 if (targetX < 0 || targetX >= logicalWidth)
                     continue;
 
-                var paletteIndex = colorIndexes[sourceRowOffset + x];
-                if (paletteIndex >= activeColorTable.Length)
-                    return false;
+                // The LZW data ended before this pixel: it keeps what the canvas already shows
+                var sourceOffset = sourceRowOffset + x;
+                if (sourceOffset >= decodedPixelCount)
+                    continue;
 
+                var paletteIndex = colorIndexes[sourceOffset];
                 if (paletteIndex == transparentColorIndex)
                     continue;
 
-                canvas[destinationRowOffset + targetX] = activeColorTable[paletteIndex];
+                // An index beyond the color table is black, as in Pillow: the table behaves as if it were
+                // padded with zeros up to 256 entries.
+                canvas[destinationRowOffset + targetX] = paletteIndex < activeColorTable.Length ? activeColorTable[paletteIndex] : new Argb(0xFF, 0, 0, 0);
             }
         }
 
@@ -245,9 +260,15 @@ internal static class GifImageLoader
         }
     }
 
-    private static bool TryDecodeLzw(ReadOnlySpan<byte> compressedData, byte minimumCodeSize, int expectedPixelCount, [NotNullWhen(true)] out byte[]? colorIndexes)
+    /// <summary>
+    /// Decodes the color indexes of a frame. Decoding stops at the end code, at the end of the data, at a code
+    /// that is not in the table yet, or once the frame is full; <paramref name="decodedPixelCount" /> tells
+    /// how many leading pixels were decoded, and browsers leave the others untouched.
+    /// </summary>
+    private static bool TryDecodeLzw(ReadOnlySpan<byte> compressedData, byte minimumCodeSize, int expectedPixelCount, [NotNullWhen(true)] out byte[]? colorIndexes, out int decodedPixelCount)
     {
         colorIndexes = null;
+        decodedPixelCount = 0;
         if (minimumCodeSize is < 2 or > 8)
             return false;
 
@@ -280,40 +301,31 @@ internal static class GifImageLoader
                 continue;
             }
 
-            if (code == endCode)
-            {
-                colorIndexes = outputOffset == output.Length ? output : null;
-                return outputOffset == output.Length;
-            }
-
-            if (code > availableCode || code >= 4096)
-                return false;
+            if (code == endCode || code > availableCode || code >= 4096)
+                break;
 
             var currentCode = code;
             var stackLength = 0;
             byte firstPixel;
             if (code == availableCode)
             {
+                // The code is not in the table yet: it stands for the previous string followed by that
+                // string's own first character. The stack holds the string in reverse, so the character that
+                // comes last goes in at the bottom, below the expansion of the previous code.
+                stackLength = 1;
                 if (previousCode < 0 || !TryExpandCode(previousCode, clearCode, prefix, suffix, stack, ref stackLength, out firstPixel))
-                    return false;
+                    break;
 
-                if (stackLength >= stack.Length)
-                    return false;
-
-                stack[stackLength] = firstPixel;
-                stackLength++;
+                stack[0] = firstPixel;
             }
-            else
+            else if (!TryExpandCode(code, clearCode, prefix, suffix, stack, ref stackLength, out firstPixel))
             {
-                if (!TryExpandCode(code, clearCode, prefix, suffix, stack, ref stackLength, out firstPixel))
-                    return false;
+                break;
             }
 
-            for (var i = stackLength - 1; i >= 0; i--)
+            // Pixels beyond the frame are ignored
+            for (var i = stackLength - 1; i >= 0 && outputOffset < output.Length; i--)
             {
-                if (outputOffset >= output.Length)
-                    return false;
-
                 output[outputOffset] = stack[i];
                 outputOffset++;
             }
@@ -334,13 +346,12 @@ internal static class GifImageLoader
 
             previousCode = currentCode;
             if (outputOffset == output.Length)
-            {
-                colorIndexes = output;
-                return true;
-            }
+                break;
         }
 
-        return false;
+        colorIndexes = output;
+        decodedPixelCount = outputOffset;
+        return true;
     }
 
     private static bool TryExpandCode(

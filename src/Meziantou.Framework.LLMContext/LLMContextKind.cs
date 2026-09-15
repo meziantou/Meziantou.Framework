@@ -14,7 +14,6 @@ public enum LLMContextKind
     QwenCode,
     Droid,
     OpenCode,
-    ZedAI,
     KimiCLI,
     OpenHands,
     Goose,

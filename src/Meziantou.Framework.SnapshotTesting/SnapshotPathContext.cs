@@ -112,4 +112,11 @@ public sealed record SnapshotPathContext
 
     /// <summary>Indicates whether reading a name walked the call stack. Used by the tests.</summary>
     internal bool StackWalkPerformed => _callerContext?.StackWalkPerformed ?? false;
+
+    /// <summary>
+    /// 1-based position of the assertion among the assertions of its test that share its name, see
+    /// <see cref="SnapshotCallerContext.CallOrdinal" />. A context created through the public constructor does
+    /// not belong to an assertion and is always the first one.
+    /// </summary>
+    internal int CallOrdinal => _callerContext?.CallOrdinal ?? 1;
 }

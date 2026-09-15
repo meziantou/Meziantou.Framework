@@ -30,11 +30,11 @@ public static class LLMContextDetector
         AddIf(LLMContextKind.Codex, IsAnyPresent("CODEX_CLI", "CODEX_SANDBOX"));
         AddIf(LLMContextKind.Aider, HasValue("OR_APP_NAME", "Aider"));
         AddIf(LLMContextKind.Plandex, HasValue("OR_APP_NAME", "plandex"));
-        AddIf(LLMContextKind.Amp, IsAnyPresent("AMP_HOME"));
+        // AMP_HOME is a configuration variable a developer can set in any shell; Amp sets the thread id in the commands it runs.
+        AddIf(LLMContextKind.Amp, IsAnyPresent("AMP_CURRENT_THREAD_ID"));
         AddIf(LLMContextKind.QwenCode, IsAnyPresent("QWEN_CODE"));
         AddIf(LLMContextKind.Droid, IsBoolean("DROID_CLI"));
         AddIf(LLMContextKind.OpenCode, IsAnyPresent("OPENCODE_AI"));
-        AddIf(LLMContextKind.ZedAI, IsAnyPresent("ZED_ENVIRONMENT", "ZED_TERM"));
         AddIf(LLMContextKind.KimiCLI, IsBoolean("KIMI_CLI"));
         AddIf(LLMContextKind.OpenHands, HasValue("OR_APP_NAME", "OpenHands"));
         AddIf(LLMContextKind.Goose, IsAnyPresent("GOOSE_TERMINAL"));

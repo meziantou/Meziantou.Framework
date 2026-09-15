@@ -75,7 +75,24 @@ public abstract class SnapshotUpdateStrategy
         var fi = new FileInfo(sourcePath);
         fi.TrySetReadOnly(false);
 
-        File.Move(sourcePath, destinationPath, overwrite: true);
+        // An editor or another test process can hold the source file open for a moment, which is a sharing violation on Windows.
+        const int MaxAttemptCount = 8;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Move(sourcePath, destinationPath, overwrite: true);
+                return;
+            }
+            catch (IOException ex) when (ex is not FileNotFoundException && attempt < MaxAttemptCount)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxAttemptCount)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+            }
+        }
     }
 
     private protected static void TryDeleteFile(string path)

@@ -301,8 +301,75 @@ public sealed class YamlCSharpUnionTests
     [InlineData(true)]
     public void StructuralClassifierSelectsTheStringCaseForAQuotedNumberReadableFromString(bool useSourceGeneration)
     {
-        Assert.Equal("42", Deserialize<IdOrNameUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
-        Assert.Equal(42, Deserialize<IdOrNameUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal("42", Deserialize<StringNumberOrTextUnion>("\"42\"\n", useSourceGeneration, StructuralOptions).Value);
+        Assert.Equal(42, Deserialize<StringNumberOrTextUnion>("42\n", useSourceGeneration, StructuralOptions).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingOnUnionWritesNumbersAsStrings(bool useSourceGeneration)
+    {
+        var yaml = Serialize(new StringNumberUnion(42), useSourceGeneration);
+
+        Assert.Equal("\"42\"\n", yaml);
+        Assert.Equal(42, Deserialize<StringNumberUnion>(yaml, useSourceGeneration).Value);
+        Assert.Equal(true, Deserialize<StringNumberUnion>("true\n", useSourceGeneration).Value);
+        Assert.Equal("\"42\"\n", Serialize(new StringNullableNumberUnion((int?)42), useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingOnUnionReadsNumbersFromStrings(bool useSourceGeneration)
+    {
+        Assert.Equal(42, Deserialize<StringNumberUnion>("\"42\"\n", useSourceGeneration).Value);
+        Assert.Equal(42, Deserialize<StringNumberUnion>("42\n", useSourceGeneration).Value);
+
+        var exception = Assert.Throws<YamlException>(() => Deserialize<StringNumberUnion>("\"hello\"\n", useSourceGeneration));
+        Assert.Contains("does not define a case", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingOnUnionHonorsNamedFloatingPointLiterals(bool useSourceGeneration)
+    {
+        var yaml = Serialize(new NamedFloatUnion(double.NaN), useSourceGeneration);
+
+        Assert.Equal("\"NaN\"\n", yaml);
+        Assert.Equal(double.NaN, Deserialize<NamedFloatUnion>(yaml, useSourceGeneration).Value);
+        Assert.Equal(double.PositiveInfinity, Deserialize<NamedFloatUnion>("\"Infinity\"\n", useSourceGeneration).Value);
+        Assert.Equal(1.5, Deserialize<NamedFloatUnion>("1.5\n", useSourceGeneration).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingOnUnionMakesNumericStringsAmbiguous(bool useSourceGeneration)
+    {
+        var exception = Assert.Throws<YamlException>(() => Deserialize<StringNumberOrTextUnion>("\"42\"\n", useSourceGeneration));
+
+        Assert.Contains("multiple cases", exception.Message);
+        Assert.Equal("hello", Deserialize<StringNumberOrTextUnion>("\"hello\"\n", useSourceGeneration).Value);
+        Assert.Equal(42, Deserialize<StringNumberOrTextUnion>("42\n", useSourceGeneration).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingOnUnionLetsClassifierResolveNumericStrings(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions { TypeClassifiers = [new NumberOrTextUnionClassifier()] };
+
+        Assert.Equal(42, Deserialize<StringNumberOrTextUnion>("\"42\"\n", useSourceGeneration, options).Value);    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NumberHandlingWithoutAllowReadingFromStringKeepsStringsUnambiguous(bool useSourceGeneration)
+    {
+        Assert.Equal("42", Deserialize<WriteAsStringNumberOrTextUnion>("\"42\"\n", useSourceGeneration).Value);
     }
 
     private static YamlSerializerOptions StructuralOptions { get; } = new() { TypeClassifiers = [new YamlUnionTypeStructuralClassifier()] };
@@ -350,8 +417,29 @@ public sealed class YamlCSharpUnionTests
     internal union LabelOrAnyUnion(UnionLabel, object);
     internal union TextOrAnyUnion(string, object);
 
+    [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString | YamlNumberHandling.WriteAsString)]
+    internal union StringNumberUnion(int, bool);
+
+    [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString | YamlNumberHandling.WriteAsString)]
+    internal union StringNullableNumberUnion(int?, bool);
+
     [YamlNumberHandling(YamlNumberHandling.AllowReadingFromString)]
-    internal union IdOrNameUnion(int, string);
+    internal union StringNumberOrTextUnion(int, string);
+
+    [YamlNumberHandling(YamlNumberHandling.WriteAsString)]
+    internal union WriteAsStringNumberOrTextUnion(int, string);
+
+    [YamlNumberHandling(YamlNumberHandling.AllowNamedFloatingPointLiterals)]
+    internal union NamedFloatUnion(double, bool);
+
+    private sealed class NumberOrTextUnionClassifier : YamlTypeClassifierFactory
+    {
+        public override bool CanClassify(YamlTypeClassifierContext context)
+            => context.DeclaringType == typeof(StringNumberOrTextUnion);
+
+        public override YamlTypeClassifier CreateYamlClassifier(YamlTypeClassifierContext context, YamlSerializerOptions options)
+            => reader => YamlScalar.TryParseInt32(reader, out _) ? typeof(int) : typeof(string);
+    }
 
     internal sealed class UnionPoint
     {
@@ -415,7 +503,11 @@ public sealed class YamlCSharpUnionTests
 [YamlSerializable(typeof(YamlCSharpUnionTests.PointOrLabelUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.LabelOrAnyUnion))]
 [YamlSerializable(typeof(YamlCSharpUnionTests.TextOrAnyUnion))]
-[YamlSerializable(typeof(YamlCSharpUnionTests.IdOrNameUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.StringNumberUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.StringNullableNumberUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.StringNumberOrTextUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.WriteAsStringNumberOrTextUnion))]
+[YamlSerializable(typeof(YamlCSharpUnionTests.NamedFloatUnion))]
 internal sealed partial class CSharpUnionYamlContext : YamlSerializerContext
 {
     public CSharpUnionYamlContext()

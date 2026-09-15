@@ -12,7 +12,11 @@ internal static class PngImageEncoder
     {
         ArgumentNullException.ThrowIfNull(image);
 
-        var rowStride = checked(image.Width * 4 + 1);
+        // A 16-bit source (e.g. a PNG entry of an ICO file) is written back with 16 bits per sample, so the
+        // snapshot keeps the precision that exact comparisons use.
+        var highPrecisionSamples = image.HighPrecisionSamples.Span;
+        var bytesPerSample = highPrecisionSamples.IsEmpty ? 1 : 2;
+        var rowStride = checked(image.Width * 4 * bytesPerSample + 1);
         var imageData = new byte[checked(rowStride * image.Height)];
         var pixels = image.Pixels.Span;
 
@@ -22,12 +26,25 @@ internal static class PngImageEncoder
             imageData[rowOffset] = 0; // No filter
             for (var x = 0; x < image.Width; x++)
             {
-                var pixel = pixels[y * image.Width + x];
-                var destinationOffset = rowOffset + 1 + x * 4;
-                imageData[destinationOffset] = pixel.R;
-                imageData[destinationOffset + 1] = pixel.G;
-                imageData[destinationOffset + 2] = pixel.B;
-                imageData[destinationOffset + 3] = pixel.A;
+                var pixelIndex = y * image.Width + x;
+                var destinationOffset = rowOffset + 1 + x * 4 * bytesPerSample;
+                if (highPrecisionSamples.IsEmpty)
+                {
+                    var pixel = pixels[pixelIndex];
+                    imageData[destinationOffset] = pixel.R;
+                    imageData[destinationOffset + 1] = pixel.G;
+                    imageData[destinationOffset + 2] = pixel.B;
+                    imageData[destinationOffset + 3] = pixel.A;
+                }
+                else
+                {
+                    var samples = highPrecisionSamples.Slice(pixelIndex * 4, 4); // A, R, G, B
+                    var destination = imageData.AsSpan(destinationOffset, 8);
+                    BinaryPrimitives.WriteUInt16BigEndian(destination, samples[1]);
+                    BinaryPrimitives.WriteUInt16BigEndian(destination[2..], samples[2]);
+                    BinaryPrimitives.WriteUInt16BigEndian(destination[4..], samples[3]);
+                    BinaryPrimitives.WriteUInt16BigEndian(destination[6..], samples[0]);
+                }
             }
         }
 
@@ -48,7 +65,7 @@ internal static class PngImageEncoder
         Span<byte> ihdrData = stackalloc byte[13];
         BinaryPrimitives.WriteUInt32BigEndian(ihdrData, checked((uint)image.Width));
         BinaryPrimitives.WriteUInt32BigEndian(ihdrData[4..], checked((uint)image.Height));
-        ihdrData[8] = 8;  // Bit depth
+        ihdrData[8] = (byte)(8 * bytesPerSample); // Bit depth
         ihdrData[9] = 6;  // RGBA
         ihdrData[10] = 0; // Compression method
         ihdrData[11] = 0; // Filter method

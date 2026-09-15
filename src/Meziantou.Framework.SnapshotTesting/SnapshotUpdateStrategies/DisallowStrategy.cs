@@ -7,4 +7,6 @@ internal sealed class DisallowStrategy : SnapshotUpdateStrategy
     public override bool MustReportError(SnapshotSettings settings, string path) => true;
 
     public override void UpdateFile(SnapshotSettings settings, string currentFilePath, string newFilePath) => throw new InvalidOperationException();
+
+    public override string ToString() => nameof(Disallow);
 }

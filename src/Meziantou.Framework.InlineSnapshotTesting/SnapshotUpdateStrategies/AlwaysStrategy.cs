@@ -11,4 +11,6 @@ internal sealed class AlwaysStrategy : SnapshotUpdateStrategy
     {
         MoveFile(newFilePath, currentFilePath);
     }
+
+    public override string ToString() => nameof(Overwrite);
 }

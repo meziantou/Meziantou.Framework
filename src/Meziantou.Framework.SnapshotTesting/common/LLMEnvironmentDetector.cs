@@ -10,5 +10,8 @@ namespace Meziantou.Framework;
 /// </summary>
 internal static class LLMEnvironmentDetector
 {
-    public static bool Detected { get; } = LLMContextDetector.IsLLMContext();
+    /// <summary>Gets the detected contexts, in a stable order.</summary>
+    public static IReadOnlyList<LLMContextKind> DetectedContexts { get; } = LLMContextDetector.Detect();
+
+    public static bool Detected => DetectedContexts.Count > 0;
 }

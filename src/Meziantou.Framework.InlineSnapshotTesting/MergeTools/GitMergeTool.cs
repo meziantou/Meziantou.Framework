@@ -1,62 +1,41 @@
-using System.Diagnostics;
-using Meziantou.Framework.InlineSnapshotTesting.Utils;
-
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 internal sealed class GitMergeTool : GitTool
 {
-    public override MergeToolResult? Start(string currentFilePath, string newFilePath)
+    public override MergeToolResult? Start(string currentFilePath, string newFilePath) => Start(currentFilePath, newFilePath, waitForMerge: false);
+
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var workingDirectory = FullPath.FromPath(currentFilePath).Parent;
-        var toolName = GetGitConfiguration(workingDirectory, "merge.tool");
-        if (toolName is not null)
+        var workingDirectory = Path.GetDirectoryName(currentFilePath);
+        var command = GetToolCommand(workingDirectory, "merge.tool", "mergetool");
+        if (command is null)
+            return null;
+
+        // The variables have the meaning git gives them: LOCAL is "ours", the verified file as it is now, REMOTE is
+        // "theirs", the new snapshot, and MERGED is the file the tool writes the result to. The verified file as it is
+        // now is also the common ancestor of both sides, so BASE is the same copy as LOCAL. The copy keeps LOCAL and
+        // BASE intact while the tool writes MERGED.
+        var originalCopy = CopyFileToTemp(currentFilePath);
+        try
         {
-            var cmd = GetGitConfiguration(workingDirectory, $"mergetool.{toolName}.cmd");
-            if (cmd is not null)
-            {
-                var originalCopy = CopyFileToTemp(currentFilePath);
-                var (filename, args) = ParseCommandFromConfiguration(cmd
-                         .Replace("$LOCAL", originalCopy, StringComparison.Ordinal)
-                         .Replace("$REMOTE", newFilePath, StringComparison.Ordinal)
-                         .Replace("$BASE", currentFilePath, StringComparison.Ordinal)
-                         .Replace("$MERGED", currentFilePath, StringComparison.Ordinal));
+            var startInfo = CreateCommandStartInfo(command, workingDirectory,
+            [
+                new("LOCAL", originalCopy),
+                new("REMOTE", newFilePath),
+                new("BASE", originalCopy),
+                new("MERGED", currentFilePath),
+            ]);
 
-                var process = Process.Start(filename, args);
-
-                // Exited is only raised when EnableRaisingEvents is set. Without it the handler below never ran,
-                // so every merge left a full copy of the source file behind under the temp directory.
-                process.EnableRaisingEvents = true;
-
-                var cleanedUp = 0;
-                process.Exited += (sender, args) => DeleteOriginalCopy();
-
-                // The tool may already have exited before the handler was attached.
-                if (process.HasExited)
-                {
-                    DeleteOriginalCopy();
-                }
-
-                return new ProcessMergeToolResult(process);
-
-                void DeleteOriginalCopy()
-                {
-                    // Exited and the HasExited check above can both reach this.
-                    if (Interlocked.Exchange(ref cleanedUp, 1) is not 0)
-                        return;
-
-                    try
-                    {
-                        var fi = new FileInfo(originalCopy);
-                        fi.TrySetReadOnly(false);
-                        fi.Delete();
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
+            // git waits for the command to exit before it deletes its own copies, so a merge tool command is
+            // expected to block until the merge is done.
+            return ProcessMergeToolResult.Start(startInfo, onExited: () => DeleteTemporaryCopy(originalCopy));
         }
-
-        return null;
+        catch
+        {
+            DeleteTemporaryCopy(originalCopy);
+            throw;
+        }
     }
+
+    public override string ToString() => nameof(MergeTool.GitMergeTool);
 }

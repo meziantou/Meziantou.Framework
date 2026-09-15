@@ -10,6 +10,7 @@ namespace Meziantou.Framework.Win32
         public static void RemoveFileZone(string filePath) { }
         public static Meziantou.Framework.Win32.UrlZone GetFileZone(string filePath) => throw null;
         public static string? GetFileZoneContent(string filePath) => throw null;
+        public static Meziantou.Framework.Win32.ZoneIdentifier? GetFileZoneIdentifier(string filePath) => throw null;
         public static void SetFileZone(string filePath, Meziantou.Framework.Win32.UrlZone zone, string? referrerUrl = null, string? hostUrl = null) { }
         public static bool IsUntrusted(string filePath) => throw null;
     }
@@ -22,5 +23,13 @@ namespace Meziantou.Framework.Win32
         Trusted = 2,
         Internet = 3,
         Untrusted = 4
+    }
+
+    public sealed class ZoneIdentifier
+    {
+        public Meziantou.Framework.Win32.UrlZone Zone { get => throw null; }
+        public string? ReferrerUrl { get => throw null; }
+        public string? HostUrl { get => throw null; }
+        public static Meziantou.Framework.Win32.ZoneIdentifier Parse(string content) => throw null;
     }
 }

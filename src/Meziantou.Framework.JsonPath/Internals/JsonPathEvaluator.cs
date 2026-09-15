@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -14,12 +16,6 @@ internal static class JsonPathEvaluator
     /// of 64 that bounds any document produced by System.Text.Json's own parsers.
     /// </summary>
     private const int MaxRecursionDepth = 256;
-
-    /// <summary>
-    /// Stand-in path used when path tracking is off. Filter subqueries discard paths, so they all share this
-    /// instance instead of each allocating and copying their own.
-    /// </summary>
-    private static readonly List<PathComponent> UntrackedPath = [];
 
     /// <summary>
     /// Backstop for a single <c>match()</c>/<c>search()</c> evaluation. <see cref="RegexOptions.NonBacktracking"/>
@@ -51,14 +47,12 @@ internal static class JsonPathEvaluator
         JsonPathNavigator<TValue> navigator,
         JsonPathEvaluationMode mode)
     {
-        var currentNodes = new List<(TValue? Node, List<PathComponent> Path)>
-        {
-            (root, []),
-        };
+        var context = new SegmentContext<TValue>(root, navigator, mode, trackPaths: true, limit: int.MaxValue);
+        List<(TValue? Node, PathNode? Path)> currentNodes = [(root, null)];
 
         foreach (var segment in expression.Segments)
         {
-            currentNodes = ApplySegment(segment, currentNodes, root, navigator, mode, trackPaths: true);
+            currentNodes = ApplySegment(segment, currentNodes, in context);
         }
 
         var matches = new List<JsonPathMatch<TValue>>(currentNodes.Count);
@@ -70,104 +64,115 @@ internal static class JsonPathEvaluator
         return new JsonPathResult<TValue>(matches);
     }
 
-    private static List<(TValue? Node, List<PathComponent> Path)> ApplySegment<TValue>(
+    private static List<(TValue? Node, PathNode? Path)> ApplySegment<TValue>(
         Segment segment,
-        List<(TValue? Node, List<PathComponent> Path)> inputNodes,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        bool trackPaths)
+        List<(TValue? Node, PathNode? Path)> inputNodes,
+        in SegmentContext<TValue> context)
     {
-        var result = new List<(TValue? Node, List<PathComponent> Path)>();
+        var result = new List<(TValue? Node, PathNode? Path)>();
 
         foreach (var (node, path) in inputNodes)
         {
-            if (segment.Kind is SegmentKind.Child)
+            if (result.Count >= context.Limit)
             {
-                ApplyChildSegment(segment.Selectors, node, path, root, navigator, mode, result, strictFailure: true, trackPaths);
+                break;
             }
-            else
-            {
-                ApplyDescendantSegment(segment.Selectors, node, path, root, navigator, mode, result, trackPaths);
-            }
+
+            ApplySegment(segment, node, path, in context, result);
         }
 
         return result;
     }
 
-    private static void ApplyChildSegment<TValue>(
-        Selector[] selectors,
+    private static void ApplySegment<TValue>(
+        Segment segment,
         TValue? node,
-        List<PathComponent> path,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result)
     {
-        foreach (var selector in selectors)
+        if (segment.Kind is SegmentKind.Child)
         {
-            ApplySelector(selector, node, path, root, navigator, mode, result, strictFailure, trackPaths);
+            ApplyChildSegment(segment.Selectors, node, path, in context, result, strictFailure: true);
+        }
+        else
+        {
+            VisitDescendants(node, path, segment.Selectors, in context, result, depth: 0);
         }
     }
 
-    private static void ApplyDescendantSegment<TValue>(
+    private static void ApplyChildSegment<TValue>(
         Selector[] selectors,
         TValue? node,
-        List<PathComponent> path,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
-        VisitDescendants(node, path, selectors, root, navigator, mode, result, depth: 0, trackPaths);
+        foreach (var selector in selectors)
+        {
+            if (result.Count >= context.Limit)
+            {
+                return;
+            }
+
+            ApplySelector(selector, node, path, in context, result, strictFailure);
+        }
     }
 
     private static void VisitDescendants<TValue>(
         TValue? node,
-        List<PathComponent> path,
+        PathNode? path,
         Selector[] selectors,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        int depth,
-        bool trackPaths)
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        int depth)
     {
         if (depth > MaxRecursionDepth)
         {
-            // Only name a location when paths are being tracked; otherwise 'path' is the shared empty
-            // placeholder and would misreport the root.
-            var location = trackPaths ? $" at {NormalizedPathBuilder.Build(path)}" : "";
+            // Only name a location when paths are being tracked; otherwise 'path' is always the root and would
+            // misreport where the limit was hit.
+            var location = context.TrackPaths ? $" at {NormalizedPathBuilder.Build(path)}" : "";
             throw new JsonPathEvaluationException($"Maximum recursion depth of {MaxRecursionDepth} exceeded{location}. The value is too deeply nested, or the navigator exposes a cycle.");
         }
 
-        ApplyChildSegment(selectors, node, path, root, navigator, mode, result, strictFailure: false, trackPaths);
+        ApplyChildSegment(selectors, node, path, in context, result, strictFailure: false);
 
+        var navigator = context.Navigator;
         switch (navigator.GetKind(node))
         {
             case JsonPathNodeKind.Object:
                 foreach (var property in navigator.GetProperties(node))
                 {
-                    var childPath = Extend(path, PathComponent.FromName(property.Name), trackPaths);
-                    VisitDescendants(property.Value, childPath, selectors, root, navigator, mode, result, depth + 1, trackPaths);
+                    if (result.Count >= context.Limit)
+                    {
+                        return;
+                    }
+
+                    var childPath = ExtendWithName(path, property.Name, context.TrackPaths);
+                    VisitDescendants(property.Value, childPath, selectors, in context, result, depth + 1);
                 }
 
                 break;
 
             case JsonPathNodeKind.Array:
-                var length = navigator.GetArrayLength(node);
-                for (var i = 0; i < length; i++)
+                using (var elements = new ArrayElements<TValue>(navigator, node))
                 {
-                    if (!navigator.TryGetElement(node, i, out var value))
+                    for (var i = 0; i < elements.Length; i++)
                     {
-                        continue;
-                    }
+                        if (result.Count >= context.Limit)
+                        {
+                            return;
+                        }
 
-                    var childPath = Extend(path, PathComponent.FromIndex(i), trackPaths);
-                    VisitDescendants(value, childPath, selectors, root, navigator, mode, result, depth + 1, trackPaths);
+                        if (!elements.TryGet(i, out var value))
+                        {
+                            continue;
+                        }
+
+                        var childPath = ExtendWithIndex(path, i, context.TrackPaths);
+                        VisitDescendants(value, childPath, selectors, in context, result, depth + 1);
+                    }
                 }
 
                 break;
@@ -177,30 +182,27 @@ internal static class JsonPathEvaluator
     private static void ApplySelector<TValue>(
         Selector selector,
         TValue? node,
-        List<PathComponent> path,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
         switch (selector)
         {
             case NameSelector nameSelector:
-                ApplyNameSelector(nameSelector, node, path, navigator, mode, result, strictFailure, trackPaths);
+                ApplyNameSelector(nameSelector, node, path, in context, result, strictFailure);
                 break;
             case WildcardSelector:
-                ApplyWildcardSelector(node, path, navigator, mode, result, strictFailure, trackPaths);
+                ApplyWildcardSelector(node, path, in context, result, strictFailure);
                 break;
             case IndexSelector indexSelector:
-                ApplyIndexSelector(indexSelector, node, path, navigator, mode, result, strictFailure, trackPaths);
+                ApplyIndexSelector(indexSelector, node, path, in context, result, strictFailure);
                 break;
             case SliceSelector sliceSelector:
-                ApplySliceSelector(sliceSelector, node, path, navigator, mode, result, strictFailure, trackPaths);
+                ApplySliceSelector(sliceSelector, node, path, in context, result, strictFailure);
                 break;
             case FilterSelector filterSelector:
-                ApplyFilterSelector(filterSelector, node, path, root, navigator, mode, result, strictFailure, trackPaths);
+                ApplyFilterSelector(filterSelector, node, path, in context, result, strictFailure);
                 break;
         }
     }
@@ -208,66 +210,73 @@ internal static class JsonPathEvaluator
     private static void ApplyNameSelector<TValue>(
         NameSelector selector,
         TValue? node,
-        List<PathComponent> path,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
+        var navigator = context.Navigator;
         if (navigator.GetKind(node) is JsonPathNodeKind.Object)
         {
             if (!navigator.TryGetPropertyValue(node, selector.Name, out var value))
             {
-                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Object member '{selector.Name}' does not exist");
+                ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, $"Object member '{selector.Name}' does not exist");
                 return;
             }
 
-            var newPath = Extend(path, PathComponent.FromName(selector.Name), trackPaths);
-            result.Add((value, newPath));
+            result.Add((value, ExtendWithName(path, selector.Name, context.TrackPaths)));
             return;
         }
 
-        ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Name selector '{selector.Name}' requires an object");
+        ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, $"Name selector '{selector.Name}' requires an object");
     }
 
     private static void ApplyWildcardSelector<TValue>(
         TValue? node,
-        List<PathComponent> path,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
+        var navigator = context.Navigator;
         switch (navigator.GetKind(node))
         {
             case JsonPathNodeKind.Object:
                 foreach (var property in navigator.GetProperties(node))
                 {
-                    var newPath = Extend(path, PathComponent.FromName(property.Name), trackPaths);
-                    result.Add((property.Value, newPath));
+                    if (result.Count >= context.Limit)
+                    {
+                        return;
+                    }
+
+                    result.Add((property.Value, ExtendWithName(path, property.Name, context.TrackPaths)));
                 }
 
                 break;
 
             case JsonPathNodeKind.Array:
-                var length = navigator.GetArrayLength(node);
-                for (var i = 0; i < length; i++)
+                using (var elements = new ArrayElements<TValue>(navigator, node))
                 {
-                    if (!navigator.TryGetElement(node, i, out var value))
+                    for (var i = 0; i < elements.Length; i++)
                     {
-                        continue;
-                    }
+                        if (result.Count >= context.Limit)
+                        {
+                            return;
+                        }
 
-                    var newPath = Extend(path, PathComponent.FromIndex(i), trackPaths);
-                    result.Add((value, newPath));
+                        if (!elements.TryGet(i, out var value))
+                        {
+                            continue;
+                        }
+
+                        result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
+                    }
                 }
 
                 break;
 
             default:
-                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Wildcard selector requires an object or an array");
+                ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, "Wildcard selector requires an object or an array");
                 break;
         }
     }
@@ -275,48 +284,45 @@ internal static class JsonPathEvaluator
     private static void ApplyIndexSelector<TValue>(
         IndexSelector selector,
         TValue? node,
-        List<PathComponent> path,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
+        var navigator = context.Navigator;
         if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
-            ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Index selector [{selector.Index}] requires an array");
+            ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, $"Index selector [{selector.Index}] requires an array");
             return;
         }
 
+        // A single element is read directly: copying the array to reach it would cost more than any indexer does.
         var length = navigator.GetArrayLength(node);
         var index = NormalizeIndex(selector.Index, length);
         if (index >= 0 && index < length && navigator.TryGetElement(node, (int)index, out var value))
         {
-            var newPath = Extend(path, PathComponent.FromIndex(index), trackPaths);
-            result.Add((value, newPath));
+            result.Add((value, ExtendWithIndex(path, index, context.TrackPaths)));
             return;
         }
 
-        ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, $"Array index [{selector.Index}] is out of range");
+        ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, $"Array index [{selector.Index}] is out of range");
     }
 
     private static void ApplySliceSelector<TValue>(
         SliceSelector selector,
         TValue? node,
-        List<PathComponent> path,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
+        var navigator = context.Navigator;
         if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
         {
-            ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Slice selector requires an array");
+            ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, "Slice selector requires an array");
             return;
         }
 
-        var len = navigator.GetArrayLength(node);
         var step = selector.Step ?? 1;
 
         if (step == 0)
@@ -324,6 +330,8 @@ internal static class JsonPathEvaluator
             return;
         }
 
+        using var elements = new ArrayElements<TValue>(navigator, node);
+        var len = elements.Length;
         var start = selector.Start ?? (step >= 0 ? 0 : len - 1);
         var end = selector.End ?? (step >= 0 ? len : -len - 1);
 
@@ -346,26 +354,34 @@ internal static class JsonPathEvaluator
         {
             for (var i = lower; i < upper; i += step)
             {
-                if (!navigator.TryGetElement(node, (int)i, out var value))
+                if (result.Count >= context.Limit)
+                {
+                    return;
+                }
+
+                if (!elements.TryGet((int)i, out var value))
                 {
                     continue;
                 }
 
-                var newPath = Extend(path, PathComponent.FromIndex(i), trackPaths);
-                result.Add((value, newPath));
+                result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
             }
         }
         else
         {
             for (var i = upper; lower < i; i += step)
             {
-                if (!navigator.TryGetElement(node, (int)i, out var value))
+                if (result.Count >= context.Limit)
+                {
+                    return;
+                }
+
+                if (!elements.TryGet((int)i, out var value))
                 {
                     continue;
                 }
 
-                var newPath = Extend(path, PathComponent.FromIndex(i), trackPaths);
-                result.Add((value, newPath));
+                result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
             }
         }
     }
@@ -373,70 +389,84 @@ internal static class JsonPathEvaluator
     private static void ApplyFilterSelector<TValue>(
         FilterSelector selector,
         TValue? node,
-        List<PathComponent> path,
-        TValue? root,
-        JsonPathNavigator<TValue> navigator,
-        JsonPathEvaluationMode mode,
-        List<(TValue? Node, List<PathComponent> Path)> result,
-        bool strictFailure,
-        bool trackPaths)
+        PathNode? path,
+        in SegmentContext<TValue> context,
+        List<(TValue? Node, PathNode? Path)> result,
+        bool strictFailure)
     {
+        var navigator = context.Navigator;
+        var root = context.Root;
         switch (navigator.GetKind(node))
         {
             case JsonPathNodeKind.Object:
                 foreach (var property in navigator.GetProperties(node))
                 {
+                    if (result.Count >= context.Limit)
+                    {
+                        return;
+                    }
+
                     if (EvaluateLogicalExpression(selector.Expression, property.Value, root, navigator))
                     {
-                        var newPath = Extend(path, PathComponent.FromName(property.Name), trackPaths);
-                        result.Add((property.Value, newPath));
+                        result.Add((property.Value, ExtendWithName(path, property.Name, context.TrackPaths)));
                     }
                 }
 
                 break;
 
             case JsonPathNodeKind.Array:
-                var length = navigator.GetArrayLength(node);
-                for (var i = 0; i < length; i++)
+                using (var elements = new ArrayElements<TValue>(navigator, node))
                 {
-                    if (!navigator.TryGetElement(node, i, out var value))
+                    for (var i = 0; i < elements.Length; i++)
                     {
-                        continue;
-                    }
+                        if (result.Count >= context.Limit)
+                        {
+                            return;
+                        }
 
-                    if (EvaluateLogicalExpression(selector.Expression, value, root, navigator))
-                    {
-                        var newPath = Extend(path, PathComponent.FromIndex(i), trackPaths);
-                        result.Add((value, newPath));
+                        if (!elements.TryGet(i, out var value))
+                        {
+                            continue;
+                        }
+
+                        if (EvaluateLogicalExpression(selector.Expression, value, root, navigator))
+                        {
+                            result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
+                        }
                     }
                 }
 
                 break;
 
             default:
-                ThrowPathEvaluationErrorIfStrict(mode, strictFailure, path, "Filter selector requires an object or an array");
+                ThrowPathEvaluationErrorIfStrict(in context, strictFailure, path, "Filter selector requires an object or an array");
                 break;
         }
     }
 
-    /// <summary>Appends a component to a path, or returns it untouched when path tracking is off.</summary>
+    /// <summary>Extends a path with a member name, or returns it untouched when path tracking is off.</summary>
     /// <param name="path">The path so far.</param>
-    /// <param name="component">The component to append.</param>
+    /// <param name="name">The member name.</param>
     /// <param name="trackPaths">Whether the caller will read the resulting paths.</param>
     /// <returns>The extended path, or <paramref name="path"/> when tracking is off.</returns>
-    private static List<PathComponent> Extend(List<PathComponent> path, PathComponent component, bool trackPaths)
+    private static PathNode? ExtendWithName(PathNode? path, string name, bool trackPaths)
     {
-        if (!trackPaths)
-        {
-            return path;
-        }
-
-        return new List<PathComponent>(path) { component };
+        return trackPaths ? PathNode.FromName(path, name) : path;
     }
 
-    private static void ThrowPathEvaluationErrorIfStrict(JsonPathEvaluationMode mode, bool strictFailure, List<PathComponent> path, string error)
+    /// <summary>Extends a path with an array index, or returns it untouched when path tracking is off.</summary>
+    /// <param name="path">The path so far.</param>
+    /// <param name="index">The array index.</param>
+    /// <param name="trackPaths">Whether the caller will read the resulting paths.</param>
+    /// <returns>The extended path, or <paramref name="path"/> when tracking is off.</returns>
+    private static PathNode? ExtendWithIndex(PathNode? path, long index, bool trackPaths)
     {
-        if (mode is not JsonPathEvaluationMode.Strict || !strictFailure)
+        return trackPaths ? PathNode.FromIndex(path, index) : path;
+    }
+
+    private static void ThrowPathEvaluationErrorIfStrict<TValue>(in SegmentContext<TValue> context, bool strictFailure, PathNode? path, string error)
+    {
+        if (context.Mode is not JsonPathEvaluationMode.Strict || !strictFailure)
         {
             return;
         }
@@ -504,7 +534,8 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator)
     {
-        var nodes = EvaluateFilterQuery(test.Query, currentNode, root, navigator);
+        // Only whether a node exists matters, so stop at the first one.
+        var nodes = EvaluateFilterQuery(test.Query, currentNode, root, navigator, limit: 1);
         return nodes.Count > 0;
     }
 
@@ -615,13 +646,9 @@ internal static class JsonPathEvaluator
 
             case SingularQueryComparable sq:
                 {
-                    var nodes = EvaluateSingularQuery(sq.Query, currentNode, root, navigator);
-                    if (nodes.Count is 1)
-                    {
-                        return ResolvedValue<TValue>.FromNode(nodes[0]);
-                    }
-
-                    return ResolvedValue<TValue>.FromNothing();
+                    return TryEvaluateSingularQuery(sq.Query, currentNode, root, navigator, out var node)
+                        ? ResolvedValue<TValue>.FromNode(node)
+                        : ResolvedValue<TValue>.FromNothing();
                 }
 
             case FunctionCallComparable fc:
@@ -804,15 +831,16 @@ internal static class JsonPathEvaluator
 
     private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
     {
-        var length = navigator.GetArrayLength(left);
-        if (navigator.GetArrayLength(right) != length)
+        if (navigator.GetArrayLength(left) != navigator.GetArrayLength(right))
         {
             return false;
         }
 
-        for (var i = 0; i < length; i++)
+        using var leftElements = new ArrayElements<TValue>(navigator, left);
+        using var rightElements = new ArrayElements<TValue>(navigator, right);
+        for (var i = 0; i < leftElements.Length; i++)
         {
-            if (!navigator.TryGetElement(left, i, out var leftValue) || !navigator.TryGetElement(right, i, out var rightValue))
+            if (!leftElements.TryGet(i, out var leftValue) || !rightElements.TryGet(i, out var rightValue))
             {
                 return false;
             }
@@ -892,82 +920,94 @@ internal static class JsonPathEvaluator
         return false;
     }
 
-    private static List<TValue?> EvaluateFilterQuery<TValue>(
+    /// <summary>Evaluates a filter query, stopping once it has produced <paramref name="limit"/> nodes.</summary>
+    /// <param name="query">The query.</param>
+    /// <param name="currentNode">The node <c>@</c> stands for.</param>
+    /// <param name="root">The node <c>$</c> stands for.</param>
+    /// <param name="navigator">The navigator.</param>
+    /// <param name="limit">
+    /// How many nodes the caller needs: 1 to test for existence, 2 to tell a single node from several. Nodes past it
+    /// cannot change the caller's answer, so they are not searched for.
+    /// </param>
+    /// <returns>The nodes, in document order, up to <paramref name="limit"/>. Their paths are not tracked.</returns>
+    private static List<(TValue? Node, PathNode? Path)> EvaluateFilterQuery<TValue>(
         FilterQuery query,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        JsonPathNavigator<TValue> navigator,
+        int limit)
     {
         var startNode = query.Kind is FilterQueryKind.Relative ? currentNode : root;
-        var nodes = new List<(TValue? Node, List<PathComponent> Path)>
+        var segments = query.Segments;
+        if (segments.Length is 0)
         {
-            (startNode, UntrackedPath),
-        };
-
-        // The paths are projected away below, so don't build them.
-        foreach (var segment in query.Segments)
-        {
-            nodes = ApplySegment(segment, nodes, root, navigator, JsonPathEvaluationMode.Lax, trackPaths: false);
+            return [(startNode, null)];
         }
 
-        var result = new List<TValue?>(nodes.Count);
-        foreach (var (node, _) in nodes)
+        // Only the last segment produces the query's nodes, so it alone may stop early; an intermediate segment
+        // that stopped would drop nodes the next segments could still select from.
+        var intermediate = new SegmentContext<TValue>(root, navigator, JsonPathEvaluationMode.Lax, trackPaths: false, limit: int.MaxValue);
+        var last = new SegmentContext<TValue>(root, navigator, JsonPathEvaluationMode.Lax, trackPaths: false, limit);
+
+        // The first segment starts from a single node, so apply it directly rather than through a one-item list.
+        var nodes = new List<(TValue? Node, PathNode? Path)>();
+        if (segments.Length is 1)
         {
-            result.Add(node);
+            ApplySegment(segments[0], startNode, path: null, in last, nodes);
+            return nodes;
         }
 
-        return result;
+        ApplySegment(segments[0], startNode, path: null, in intermediate, nodes);
+        for (var i = 1; i < segments.Length - 1; i++)
+        {
+            nodes = ApplySegment(segments[i], nodes, in intermediate);
+        }
+
+        nodes = ApplySegment(segments[^1], nodes, in last);
+
+        return nodes;
     }
 
-    private static List<TValue?> EvaluateSingularQuery<TValue>(
+    private static bool TryEvaluateSingularQuery<TValue>(
         SingularQuery query,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        JsonPathNavigator<TValue> navigator,
+        out TValue? node)
     {
-        var node = query.IsRelative ? currentNode : root;
+        node = query.IsRelative ? currentNode : root;
 
         foreach (var segment in query.Segments)
         {
             switch (segment.Kind)
             {
                 case SingularQuerySegmentKind.Name:
-                    if (navigator.GetKind(node) is JsonPathNodeKind.Object
-                        && navigator.TryGetPropertyValue(node, segment.Name!, out var propertyValue))
+                    if (navigator.GetKind(node) is not JsonPathNodeKind.Object
+                        || !navigator.TryGetPropertyValue(node, segment.Name!, out node))
                     {
-                        node = propertyValue;
-                    }
-                    else
-                    {
-                        return [];
+                        return false;
                     }
 
                     break;
 
                 case SingularQuerySegmentKind.Index:
-                    if (navigator.GetKind(node) is JsonPathNodeKind.Array)
+                    if (navigator.GetKind(node) is not JsonPathNodeKind.Array)
                     {
-                        var length = navigator.GetArrayLength(node);
-                        var index = NormalizeIndex(segment.Index, length);
-                        if (index >= 0 && index < length && navigator.TryGetElement(node, (int)index, out var elementValue))
-                        {
-                            node = elementValue;
-                        }
-                        else
-                        {
-                            return [];
-                        }
+                        return false;
                     }
-                    else
+
+                    var length = navigator.GetArrayLength(node);
+                    var index = NormalizeIndex(segment.Index, length);
+                    if (index < 0 || index >= length || !navigator.TryGetElement(node, (int)index, out node))
                     {
-                        return [];
+                        return false;
                     }
 
                     break;
             }
         }
 
-        return [node];
+        return true;
     }
 
     private static bool EvaluateFunctionAsLogical<TValue>(
@@ -988,7 +1028,7 @@ internal static class JsonPathEvaluator
 
         if (func.ResultType is FunctionExpressionType.NodesType)
         {
-            var nodes = EvaluateFunctionAsNodes(func, currentNode, root, navigator);
+            var nodes = EvaluateFunctionAsNodes(func, currentNode, root, navigator, limit: 1);
             return nodes.Count > 0;
         }
 
@@ -1012,16 +1052,18 @@ internal static class JsonPathEvaluator
         };
     }
 
-    private static List<TValue?> EvaluateFunctionAsNodes<TValue>(
+    private static List<(TValue? Node, PathNode? Path)> EvaluateFunctionAsNodes<TValue>(
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        JsonPathNavigator<TValue> navigator,
+        int limit)
     {
         _ = func;
         _ = currentNode;
         _ = root;
         _ = navigator;
+        _ = limit;
         return [];
     }
 
@@ -1060,7 +1102,7 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator)
     {
-        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
+        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator, limit: int.MaxValue);
         return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(nodes.Count));
     }
 
@@ -1070,10 +1112,10 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator)
     {
-        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator);
+        var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator, limit: 2);
         if (nodes.Count is 1)
         {
-            return ResolvedValue<TValue>.FromNode(nodes[0]);
+            return ResolvedValue<TValue>.FromNode(nodes[0].Node);
         }
 
         return ResolvedValue<TValue>.FromNothing();
@@ -1142,7 +1184,7 @@ internal static class JsonPathEvaluator
     private static bool IsRegexMatch(FunctionCallExpression func, string input, string iRegexp, bool anchored)
     {
         // Translating and compiling a NonBacktracking regex costs far more than matching one, so reuse the
-        // last pattern this call compiled rather than rebuilding it for every node the filter visits.
+        // patterns this call compiled recently rather than rebuilding one for every node the filter visits.
         var regex = func.GetOrCreateRegex(iRegexp, anchored, CreateRegex).Regex;
 
         if (regex is null)
@@ -1209,10 +1251,10 @@ internal static class JsonPathEvaluator
             case FunctionArgumentKind.FilterQuery:
                 {
                     var query = (FilterQuery)arg.Value!;
-                    var nodes = EvaluateFilterQuery(query, currentNode, root, navigator);
+                    var nodes = EvaluateFilterQuery(query, currentNode, root, navigator, limit: 2);
                     if (nodes.Count is 1)
                     {
-                        return ResolvedValue<TValue>.FromNode(nodes[0]);
+                        return ResolvedValue<TValue>.FromNode(nodes[0].Node);
                     }
 
                     return ResolvedValue<TValue>.FromNothing();
@@ -1229,22 +1271,23 @@ internal static class JsonPathEvaluator
         }
     }
 
-    private static List<TValue?> ResolveFunctionArgumentAsNodes<TValue>(
+    private static List<(TValue? Node, PathNode? Path)> ResolveFunctionArgumentAsNodes<TValue>(
         FunctionArgument arg,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        JsonPathNavigator<TValue> navigator,
+        int limit)
     {
         if (arg.Kind is FunctionArgumentKind.FilterQuery)
         {
             var query = (FilterQuery)arg.Value!;
-            return EvaluateFilterQuery(query, currentNode, root, navigator);
+            return EvaluateFilterQuery(query, currentNode, root, navigator, limit);
         }
 
         if (arg.Kind is FunctionArgumentKind.FunctionCall)
         {
             var func = (FunctionCallExpression)arg.Value!;
-            return EvaluateFunctionAsNodes(func, currentNode, root, navigator);
+            return EvaluateFunctionAsNodes(func, currentNode, root, navigator, limit);
         }
 
         return [];
@@ -1307,5 +1350,75 @@ internal static class JsonPathEvaluator
         }
 
         return count;
+    }
+
+    /// <summary>The parts of a segment evaluation that do not change from one node to the next.</summary>
+    private readonly struct SegmentContext<TValue>
+    {
+        public SegmentContext(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationMode mode, bool trackPaths, int limit)
+        {
+            Root = root;
+            Navigator = navigator;
+            Mode = mode;
+            TrackPaths = trackPaths;
+            Limit = limit;
+        }
+
+        public TValue? Root { get; }
+
+        public JsonPathNavigator<TValue> Navigator { get; }
+
+        public JsonPathEvaluationMode Mode { get; }
+
+        /// <summary>Gets whether the caller reads the paths of the resulting nodes.</summary>
+        public bool TrackPaths { get; }
+
+        /// <summary>Gets the number of result nodes after which the evaluation stops.</summary>
+        public int Limit { get; }
+    }
+
+    /// <summary>
+    /// Reads the elements of an array in constant time each. When the navigator's indexer is slower than that, the
+    /// elements are first copied to a pooled buffer, which the caller must return by disposing this instance.
+    /// </summary>
+    private readonly struct ArrayElements<TValue> : IDisposable
+    {
+        private readonly JsonPathNavigator<TValue> _navigator;
+        private readonly TValue? _array;
+        private readonly TValue?[]? _buffer;
+
+        public ArrayElements(JsonPathNavigator<TValue> navigator, TValue? array)
+        {
+            _navigator = navigator;
+            _array = array;
+            Length = navigator.GetArrayLength(array);
+            if (!navigator.HasConstantTimeElementAccess && Length > 1)
+            {
+                _buffer = ArrayPool<TValue?>.Shared.Rent(Length);
+                navigator.CopyElements(array, _buffer);
+            }
+        }
+
+        public int Length { get; }
+
+        public bool TryGet(int index, out TValue? value)
+        {
+            if (_buffer is not null)
+            {
+                value = _buffer[index];
+                return true;
+            }
+
+            return _navigator.TryGetElement(_array, index, out value);
+        }
+
+        public void Dispose()
+        {
+            if (_buffer is not null)
+            {
+                // Clear the buffer so the pool does not keep the values, and whatever they reference, alive.
+                ArrayPool<TValue?>.Shared.Return(_buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<TValue>());
+            }
+        }
     }
 }

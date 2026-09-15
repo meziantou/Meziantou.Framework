@@ -11,17 +11,17 @@ namespace Meziantou.Framework.Json.Internals;
 /// </remarks>
 internal sealed class NormalizedPath
 {
-    private readonly List<PathComponent> _components;
+    private readonly PathNode? _path;
     private string? _value;
 
-    public NormalizedPath(List<PathComponent> components)
+    public NormalizedPath(PathNode? path)
     {
-        _components = components;
+        _path = path;
     }
 
     /// <summary>Gets the normalized path, building it on first access.</summary>
     /// <remarks>
     /// A benign race can render the same string twice; both are equal, so no lock is needed.
     /// </remarks>
-    public string Value => _value ??= NormalizedPathBuilder.Build(_components);
+    public string Value => _value ??= NormalizedPathBuilder.Build(_path);
 }

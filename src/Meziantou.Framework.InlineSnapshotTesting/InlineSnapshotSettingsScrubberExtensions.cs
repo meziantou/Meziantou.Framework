@@ -35,7 +35,7 @@ public static class InlineSnapshotSettingsScrubberExtensions
 
     /// <summary>Adds a scrubber that removes lines matching the specified regular expression pattern with options and timeout.</summary>
     public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options, TimeSpan matchTimeout)
-        => settings.Scrubbers.Add(new LineFilterScrubber(line => Regex.IsMatch(line, pattern, options, matchTimeout)));
+        => ScrubLinesMatching(settings, new Regex(pattern, options, matchTimeout));
 
     /// <summary>Adds a scrubber that replaces each line using the specified function.</summary>
     public static void ScrubLinesWithReplace(this InlineSnapshotSettings settings, Func<string, string?> replaceLine) => settings.Scrubbers.Add(new LineReplaceScrubber(replaceLine));

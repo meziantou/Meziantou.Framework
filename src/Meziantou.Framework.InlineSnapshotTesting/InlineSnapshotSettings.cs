@@ -102,7 +102,8 @@ public sealed record InlineSnapshotSettings
     /// </summary>
     /// <remarks>
     /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools
-    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent.
+    /// are also never launched on a continuous integration server, in a continuous testing runner, or in an LLM agent while
+    /// <see cref="AutoDetectContinuousEnvironment" /> is enabled.
     /// </remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; } = DefaultMergeTools;
 
@@ -178,10 +179,14 @@ public sealed record InlineSnapshotSettings
     internal void AssertSnapshot(string? expected, string? actual)
     {
         var errorMessage =
-            "Snapshots do not match:\n" +
-            ErrorMessageFormatter.FormatMessage(expected, actual) +
+            FormatSnapshotDifference(expected, actual) +
             "\n\n" +
             GetResolutionGuidanceMessage();
+
+        if (SnapshotUpdateStrategy.GetUnknownStrategyEnvironmentVariableMessage() is { } unknownStrategyMessage)
+        {
+            errorMessage += "\n\n" + unknownStrategyMessage;
+        }
 
         // Without this, the guidance above suggests a strategy that the environment detection silently ignores.
         if (AutoDetectContinuousEnvironment && ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is { } environment)
@@ -191,6 +196,8 @@ public sealed record InlineSnapshotSettings
 
         throw new InlineSnapshotAssertionException(errorMessage);
     }
+
+    internal string FormatSnapshotDifference(string? expected, string? actual) => "Snapshots do not match:\n" + ErrorMessageFormatter.FormatMessage(expected, actual);
 
     private static string GetResolutionGuidanceMessage() =>
         """

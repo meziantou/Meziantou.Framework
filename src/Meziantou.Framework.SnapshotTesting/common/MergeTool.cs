@@ -41,10 +41,10 @@ public abstract class MergeTool
     public static MergeTool VisualStudioMerge { get; } = new VisualStudioMergeTool();
     public static MergeTool WinMerge { get; } = new DiffEngineTool(DiffTool.WinMerge);
 
-    public static MergeTool RiderIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(Rider, ["rider64", "rider64.exe"]);
-    public static MergeTool VisualStudioIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudio, ["devenv", "devenv.exe"]);
-    public static MergeTool VisualStudioCodeIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudioCode, ["code", "code.exe"]);
-    public static MergeTool VisualStudioMergeIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudioMerge, ["devenv", "devenv.exe"]);
+    public static MergeTool RiderIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(Rider, MergeToolIfCurrentProcess.RiderProcessNames);
+    public static MergeTool VisualStudioIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudio, MergeToolIfCurrentProcess.VisualStudioProcessNames);
+    public static MergeTool VisualStudioCodeIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudioCode, MergeToolIfCurrentProcess.VisualStudioCodeProcessNames);
+    public static MergeTool VisualStudioMergeIfCurrentProcess { get; } = new MergeToolIfCurrentProcess(VisualStudioMerge, MergeToolIfCurrentProcess.VisualStudioProcessNames);
 
     public static MergeTool DiffToolFromEnvironmentVariable { get; } = new MergeToolFromEnvironment();
     public static MergeTool GitDiffTool { get; } = new GitDiffTool();

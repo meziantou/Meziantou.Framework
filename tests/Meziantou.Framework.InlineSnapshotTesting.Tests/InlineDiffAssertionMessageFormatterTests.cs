@@ -51,4 +51,16 @@ public sealed class InlineDiffAssertionMessageFormatterTests
     {
         Test("line1\nline2", "", "- line1\n- line2\n+ ");
     }
+
+    [Fact]
+    public void TrailingWhitespace()
+    {
+        Test("line1\nline2 ", "line1\nline2", "  line1\n- line2 \n+ line2\n\nNote: some lines differ only by trailing whitespace, which is not visible above.");
+    }
+
+    [Fact]
+    public void TrailingWhitespace_OtherChanges_NoNote()
+    {
+        Test("line1 ", "line2", "- line1 \n+ line2");
+    }
 }

@@ -11,12 +11,13 @@ namespace Meziantou.Framework.SnapshotTesting.MergeTools;
 
 internal sealed class MergeToolIfCurrentProcess(MergeTool tool, string[] processNames) : MergeTool
 {
-    private static readonly HashSet<string> IdeProcessNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "devenv.exe", "devenv",
-        "rider64.exe", "rider64",
-        "code.exe", "code",
-    };
+    // Windows: devenv, rider64, code. Linux: rider, code. macOS: rider, and the helper processes of Visual Studio Code,
+    // such as the extension host that starts the test runner and the host of the integrated terminal.
+    internal static readonly string[] VisualStudioProcessNames = ["devenv", "devenv.exe"];
+    internal static readonly string[] RiderProcessNames = ["rider64", "rider64.exe", "rider"];
+    internal static readonly string[] VisualStudioCodeProcessNames = ["code", "code.exe", "Code Helper", "Code Helper (Plugin)"];
+
+    private static readonly HashSet<string> IdeProcessNames = new([.. VisualStudioProcessNames, .. RiderProcessNames, .. VisualStudioCodeProcessNames], StringComparer.OrdinalIgnoreCase);
 
     // PublicationOnly: a failure to inspect the process tree is not cached, so the next assertion tries again.
     private static readonly Lazy<string?> CurrentProcessName = new(GetContextProcessName, LazyThreadSafetyMode.PublicationOnly);
@@ -35,9 +36,9 @@ internal sealed class MergeToolIfCurrentProcess(MergeTool tool, string[] process
         return null;
     }
 
-    private static string? GetContextProcessName()
+    internal static string? GetContextProcessName()
     {
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
             return null;
 
         using var currentProcess = Process.GetCurrentProcess();

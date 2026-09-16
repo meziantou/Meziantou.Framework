@@ -1,6 +1,6 @@
 # Meziantou.Framework.Http.Hsts
 
-This package provides an `HttpClientHandler` that automatically upgrades HTTP requests to HTTPS when the server supports HSTS. It comes with a list of preloaded HSTS hosts.
+This package provides a `DelegatingHandler`, `HstsClientHandler`, that automatically upgrades HTTP requests to HTTPS when the server supports HSTS. It comes with a list of preloaded HSTS hosts.
 
 ```c#
 var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
@@ -28,13 +28,15 @@ policies.MustUpgradeRequest("sub.github.com"); // still true, now and after the 
 
 ## Learned policies are bounded
 
-A collection keeps at most `MaxLearnedPolicies` policies learned from response headers (`DefaultMaxLearnedPolicies`, 10,000). When the limit is reached, expired policies are dropped first and then the ones closest to expiring. Preloaded entries do not count towards the limit. Raise it for an application that legitimately talks to many HSTS hosts:
+A collection keeps at most `MaxLearnedPolicies` policies learned from response headers (`DefaultMaxLearnedPolicies`, 10,000). When the limit is exceeded, expired policies are dropped first. If that is not enough, the collection evicts down to 90% of the limit, so a full store does not pay for a sweep on every new host. Preloaded entries do not count towards the limit. Raise it for an application that legitimately talks to many HSTS hosts:
 
 ```c#
 var policies = new HstsDomainPolicyCollection(includePreloadDomains: true, maxLearnedPolicies: 100_000);
 ```
 
 The limit exists because any server can add an entry: a service that fetches user-supplied URLs would otherwise let a remote peer grow the store without bound.
+
+The server also chooses the `max-age`, so eviction ignores it. The policies are grouped by domain, from the top-level domain down, and every level shares what it may keep evenly between its subdomains. A peer answering for thousands of subdomains of its own domain only displaces its own policies; displacing the policies of other sites takes as many distinct domains as the policies it means to push out.
 
 ## The shared collection
 
@@ -91,10 +93,10 @@ The rules match `SocketsHttpHandler`: a redirect from HTTPS to HTTP is never fol
 services.AddTransient(_ => new HstsClientHandler(policies));
 services.AddHttpClient("api")
         .AddHttpMessageHandler<HstsClientHandler>()
-        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler());
 ```
 
-Configure the primary handler not to follow redirects, or pass `maxAutomaticRedirections`; otherwise the first request throws once the factory has built the pipeline, because the primary handler it created is already in use.
+The primary handler the factory creates belongs to that pipeline, so the take-over described above reconfigures it on the first request without affecting anything else. Configure it not to follow redirects only if the client must not follow them at all.
 
 ## Dropping the preload list
 

@@ -656,6 +656,106 @@ public sealed class HstsDomainPolicyCollectionTests
         Assert.DoesNotContain(hsts, policy => policy.Host == "forgotten.example");
     }
 
+    [Fact]
+    public void HstsCollection_LearnedPolicies_AreEvictedBelowTheLimit()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false, maxLearnedPolicies: 100);
+        for (var i = 0; i <= 100; i++)
+        {
+            hsts.Add($"host{i.ToString(CultureInfo.InvariantCulture)}.example{i.ToString(CultureInfo.InvariantCulture)}", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+        }
+
+        // Evicting only down to the limit would make every following new host sweep the whole store again
+        Assert.HasCount(90, hsts);
+    }
+
+    [Fact]
+    public void HstsCollection_LearnedPolicies_ASubdomainFloodDoesNotEvictOtherDomains()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false, maxLearnedPolicies: 100);
+        hsts.Add("bank.example", TimeSpan.FromDays(365), includeSubdomains: true);
+        hsts.Add("shop.test", TimeSpan.FromDays(30), includeSubdomains: false);
+
+        // The server chooses max-age, so a peer answering for many hosts of its own with the longest one must not
+        // push out the policies of other sites
+        for (var i = 0; i < 1_000; i++)
+        {
+            hsts.Add($"a{i.ToString(CultureInfo.InvariantCulture)}.b{(i % 7).ToString(CultureInfo.InvariantCulture)}.attacker.example", TimeSpan.FromDays(36_500), includeSubdomains: false);
+        }
+
+        Assert.True(hsts.MustUpgradeRequest("bank.example"));
+        Assert.True(hsts.MustUpgradeRequest("login.bank.example"));
+        Assert.True(hsts.MustUpgradeRequest("shop.test"));
+        Assert.InRange(hsts.Count(), 1, 100);
+    }
+
+    [Fact]
+    public void HstsCollection_LearnedPolicies_EvictionKeepsTheParentDomainPolicy()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false, maxLearnedPolicies: 20);
+        hsts.Add("example.com", TimeSpan.FromDays(1), includeSubdomains: true);
+        for (var i = 0; i < 100; i++)
+        {
+            hsts.Add($"sub{i.ToString(CultureInfo.InvariantCulture)}.example.com", TimeSpan.FromDays(365), includeSubdomains: false);
+        }
+
+        // When a domain cannot keep all of its subdomains, its own policy is the one that may cover them
+        Assert.True(hsts.TryGetPolicy("example.com", out _));
+        Assert.True(hsts.MustUpgradeRequest("sub99999.example.com"));
+    }
+
+    [Fact]
+    public void HstsCollection_TryGetPolicy_IgnoresAnExpiredPolicy()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+        hsts.Add("example.com", TimeSpan.FromDays(1), includeSubdomains: false);
+
+        timeProvider.Advance(TimeSpan.FromDays(2));
+
+        // MustUpgradeRequest and TryGetPolicy are documented to agree on whether a host is covered
+        Assert.False(hsts.MustUpgradeRequest("example.com"));
+        Assert.False(hsts.TryGetPolicy("example.com", out _));
+    }
+
+    [Fact]
+    public void HstsCollection_TryGetPolicy_AnExpiredPolicyDoesNotWidenAPreloadedHost()
+    {
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse("2024-01-01T00:00:00Z", CultureInfo.InvariantCulture));
+        var hsts = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: true);
+        var host = hsts.First(policy => policy.IsPreloaded && !policy.IncludeSubdomains).Host;
+        hsts.Add(host, TimeSpan.FromDays(1), includeSubdomains: true);
+
+        timeProvider.Advance(TimeSpan.FromDays(2));
+
+        Assert.False(hsts.MustUpgradeRequest("sub." + host));
+        Assert.True(hsts.TryGetPolicy(host, out var policy));
+        Assert.False(policy.IncludeSubdomains);
+    }
+
+    [Theory]
+    [InlineData("Example.COM", "example.com")]
+    [InlineData("EXAMPLE.com.", "example.com")]
+    [InlineData("XN--VT3A.JP", "xn--vt3a.jp")]
+    public void HstsCollection_Add_ReportsTheLowerCaseHost(string host, string expected)
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add(host, TimeSpan.FromDays(1), includeSubdomains: false);
+
+        Assert.Equal(expected, Assert.Single(hsts).Host);
+        Assert.True(hsts.TryGetPolicy(host.ToUpperInvariant(), out var policy));
+        Assert.Equal(expected, policy.Host);
+    }
+
+    [Fact]
+    public void HstsCollection_TryGetPolicy_ReportsTheLowerCaseHostOfAPreloadedHost()
+    {
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: true);
+
+        Assert.True(hsts.TryGetPolicy("GitHub.COM", out var policy));
+        Assert.Equal("github.com", policy.Host);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]

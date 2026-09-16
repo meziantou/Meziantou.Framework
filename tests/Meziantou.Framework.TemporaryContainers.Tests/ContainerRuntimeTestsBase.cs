@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -22,6 +23,10 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
     // A runtime that boots on demand needs a few probes before it answers, but a genuinely missing one must still fail fast enough to be readable.
     private static readonly TimeSpan RuntimeStartupTimeout = TimeSpan.FromMinutes(2);
+
+    // Whether a runtime answers is decided once: waiting for a runtime that never comes up (wslc boots a virtual machine,
+    // and the runners sometimes never finish installing it) would otherwise cost that wait in every test of the class.
+    private static readonly ConcurrentDictionary<ContainerRuntime, Task<bool>> RuntimeAvailability = new();
 
     private bool _useWindowsContainerImages;
 
@@ -48,13 +53,17 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     /// <summary>Checking that the runtime answers is asynchronous, so the skip gate cannot live in the constructor.</summary>
     public async ValueTask InitializeAsync()
     {
+        var available = await RuntimeAvailability.GetOrAdd(Runtime, runtime => IsRuntimeRequired
+            ? WaitUntilRuntimeAnswersAsync(runtime)
+            : runtime.IsSupportedAsync(CancellationToken.None));
+
         if (IsRuntimeRequired)
         {
-            global::Xunit.Assert.True(await WaitUntilRuntimeAnswersAsync(XunitCancellationToken), $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
+            global::Xunit.Assert.True(available, $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
         }
         else
         {
-            global::Xunit.Assert.SkipUnless(await Runtime.IsSupportedAsync(XunitCancellationToken), $"The '{Runtime}' container runtime is not available on this system.");
+            global::Xunit.Assert.SkipUnless(available, $"The '{Runtime}' container runtime is not available on this system.");
         }
 
         _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);
@@ -62,19 +71,19 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    /// <summary>Waits for a required runtime to answer. It can still be starting when the first test of the class runs: wslc boots its WSL virtual machine on demand and the probe fails until it is up, so a single failed probe would report a broken setup for what is only a cold start.</summary>
-    private async Task<bool> WaitUntilRuntimeAnswersAsync(CancellationToken cancellationToken)
+    /// <summary>Waits for a required runtime to answer. It can still be starting when the first test of the class runs: wslc boots its WSL virtual machine on demand and the probe fails until it is up, so a single failed probe would report a broken setup for what is only a cold start. The answer is shared by every test of the runtime, so a runtime that never comes up is waited for once.</summary>
+    private static async Task<bool> WaitUntilRuntimeAnswersAsync(ContainerRuntime runtime)
     {
         var stopwatch = Stopwatch.StartNew();
         while (true)
         {
-            if (await Runtime.IsSupportedAsync(cancellationToken))
+            if (await runtime.IsSupportedAsync(CancellationToken.None))
                 return true;
 
             if (stopwatch.Elapsed >= RuntimeStartupTimeout)
                 return false;
 
-            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None);
         }
     }
 

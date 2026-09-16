@@ -71,6 +71,25 @@ public sealed class JpgImageLoaderTests
         Assert.True(allocated < 1024 * 1024, $"Decoding allocated {allocated} bytes.");
     }
 
+    [Theory]
+    [InlineData(0, 1, 2)]
+    [InlineData(1, 2, 3)]
+    [InlineData(66, 71, 82)]
+    public async Task Image_Load_AssumesYcbcrWithoutColorMarkerUnlessTheComponentsAreRgb(byte firstId, byte secondId, byte thirdId)
+    {
+        var data = RemoveJfifMarkerAndRenameComponents(ImageTestData.ReadImageFixture("ycbcr-444-baseline.jpg"), [firstId, secondId, thirdId]);
+
+        Assert.Equal(await ImageTestData.LoadImageFixtureAsync("ycbcr-444-baseline.from-jpg.png"), Image.Load(data));
+    }
+
+    [Fact]
+    public void Image_Load_ThrowsNotSupportedForRgbComponentsWithoutColorMarker()
+    {
+        var data = RemoveJfifMarkerAndRenameComponents(ImageTestData.ReadImageFixture("ycbcr-444-baseline.jpg"), [(byte)'R', (byte)'G', (byte)'B']);
+
+        Assert.Throws<NotSupportedException>(() => Image.Load(data));
+    }
+
     [Fact]
     public async Task Image_LoadAsync_ThrowsWhenJpegIsProgressive()
     {
@@ -81,5 +100,58 @@ public sealed class JpgImageLoaderTests
     public async Task Image_LoadAsync_ThrowsWhenJpegUsesCmyk()
     {
         await Assert.ThrowsAsync<NotSupportedException>(() => Image.LoadAsync(new MemoryStream(ImageTestData.CreateJpegCmyk())));
+    }
+
+    /// <summary>
+    /// Removes the JFIF APP0 segment of a 3-component JPEG, and renames its components in the frame header and in
+    /// the scan headers, so the decoder can only infer the color model from the component identifiers.
+    /// </summary>
+    private static byte[] RemoveJfifMarkerAndRenameComponents(byte[] data, byte[] componentIds)
+    {
+        const byte App0Marker = 0xE0;
+        const byte StartOfFrameMarker = 0xC0;
+        const byte StartOfScanMarker = 0xDA;
+
+        var result = new List<byte>(data.Length) { data[0], data[1] };
+        byte[] originalIds = [];
+        var offset = 2;
+        while (offset < data.Length)
+        {
+            Assert.Equal(0xFF, data[offset]);
+            var marker = data[offset + 1];
+            var segmentLength = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(offset + 2));
+            var segment = data.AsSpan(offset, 2 + segmentLength).ToArray();
+            offset += segment.Length;
+
+            switch (marker)
+            {
+                case App0Marker:
+                    continue;
+
+                case StartOfFrameMarker:
+                    Assert.Equal(3, segment[9]);
+                    originalIds = [segment[10], segment[13], segment[16]];
+                    segment[10] = componentIds[0];
+                    segment[13] = componentIds[1];
+                    segment[16] = componentIds[2];
+                    break;
+
+                case StartOfScanMarker:
+                    for (var i = 0; i < segment[4]; i++)
+                    {
+                        var idOffset = 5 + (i * 2);
+                        segment[idOffset] = componentIds[Array.IndexOf(originalIds, segment[idOffset])];
+                    }
+
+                    // The entropy-coded data and everything after it are kept as they are
+                    result.AddRange(segment);
+                    result.AddRange(data.AsSpan(offset));
+                    return [.. result];
+            }
+
+            result.AddRange(segment);
+        }
+
+        throw new InvalidOperationException("The JPEG has no scan.");
     }
 }

@@ -9,11 +9,26 @@ To add the Mark of the Web to a file, you can use the `MarkOfTheWeb` class provi
 
 ```csharp
 // Add the Mark of the Web to a file
-MarkOfTheWeb.SetFileZone(path, UrlZone.Internet);
+MarkOfTheWeb.SetFileZone(path, UrlZone.Internet, referrerUrl: "https://example.com/", hostUrl: "https://example.com/file.zip");
 
-// Get the Mark of the Web zone of a file
+// Get the zone Windows assigns to a file
 var zone = MarkOfTheWeb.GetFileZone(path);
+
+// Check whether a file comes from the Internet or Restricted Sites zones
+if (MarkOfTheWeb.IsUntrusted(path))
+{
+    // ...
+}
+
+// Read what the Zone.Identifier stream records
+var zoneIdentifier = MarkOfTheWeb.GetFileZoneIdentifier(path); // null when the file has no Mark of the Web
+Console.WriteLine($"{zoneIdentifier?.Zone} {zoneIdentifier?.HostUrl} {zoneIdentifier?.ReferrerUrl}");
+
+// Read the raw content of the Zone.Identifier stream
+var content = MarkOfTheWeb.GetFileZoneContent(path);
 
 // Remove the Mark of the Web from a file
 MarkOfTheWeb.RemoveFileZone(path);
 ```
+
+Use `GetFileZone` or `IsUntrusted` to make a security decision. `GetFileZoneIdentifier` and `GetFileZoneContent` report what the stream contains, which is not always the zone Windows applies to the file.

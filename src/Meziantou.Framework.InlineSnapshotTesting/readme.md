@@ -234,7 +234,7 @@ When a snapshot is updated, a diff tool is used to compare the expected value an
 - The merge tool from the local git configuration
 - The diff tool from the local git configuration
 - The diff tool from the current IDE (support VS Code, VS, Rider). This relies on inspecting the ancestor processes, which is supported on Windows, Linux and macOS.
-- The first available diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md))
+- The first available GUI diff tool (rely on [Meziantou.Framework.DiffEngine](../Meziantou.Framework.DiffEngine/readme.md)). Terminal tools such as Vim and Neovim are skipped, as they cannot run without a terminal; they are still used when named explicitly, for example with `MergeTool.Vim` or `DiffEngine_Tool=Vim`.
 
 Merge tools are not started when `InlineSnapshotSettings.MergeTools` is `null` or empty, when the `DiffEngine_Disabled` environment variable is `true` or `1`, nor, while `AutoDetectContinuousEnvironment` is enabled, in a non-interactive environment (build server, container, WSL), under a test runner (NCrunch, ReSharper, Visual Studio Live Unit Testing), or in an LLM agent. The snapshot difference is then reported as a regular assertion failure. When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
 

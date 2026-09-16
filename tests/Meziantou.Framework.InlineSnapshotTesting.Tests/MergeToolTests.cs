@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using Meziantou.Framework.DiffEngine;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class MergeToolTests
@@ -46,12 +48,9 @@ public sealed class MergeToolTests
         Assert.Equal(@"""C:\dir with spaces\local.cs"" C:\dir\remote.cs ""C:\a \""quoted\"" dir\base.cs"" C:\dir\merged.cs $LOCALS /flag", arguments);
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GitTool_CreateCommandStartInfo_PassesThePathsVerbatim()
     {
-        if (OperatingSystem.IsWindows())
-            return;
-
         using var directory = TemporaryDirectory.Create();
         var local = directory.GetFullPath("dir with spaces/local 'quoted' \"file\".cs");
         var remote = directory.GetFullPath("dir $HOME `pwd`/remote.cs");
@@ -76,12 +75,11 @@ public sealed class MergeToolTests
         Assert.Equal(expectedLines, File.ReadAllLines(output));
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GitMergeTool_RunsTheConfiguredCommandAndDeletesTheCopyOfTheSourceFile()
     {
         var gitPath = ExecutableFinder.GetFullExecutablePath("git");
-        if (OperatingSystem.IsWindows() || gitPath is null)
-            return;
+        global::Xunit.Assert.SkipWhen(gitPath is null, "git is not installed.");
 
         using var directory = TemporaryDirectory.Create();
         var repository = directory.GetFullPath("repo with spaces");
@@ -142,6 +140,28 @@ public sealed class MergeToolTests
         var failure = Assert.Single(failures);
         Assert.Same(failingTool, failure.Tool);
         Assert.Equal("The merge tool is broken.", failure.Exception.Message);
+    }
+
+    [Fact]
+    public void AutoDiffEngineTool_SkipsTerminalTools()
+    {
+        var selectedTool = AutoDiffEngineTool.SelectTool(".cs",
+        [
+            (DiffTool.Vim, true, []),
+            (DiffTool.Neovim, true, []),
+            (DiffTool.Meld, true, []),
+        ]);
+
+        Assert.Equal(DiffTool.Meld, selectedTool);
+    }
+
+    [Fact]
+    public void DiffEngineTool_CreateStartInfo_EscapesTheArgumentsOfABatchFileForCmd()
+    {
+        var startInfo = DiffEngineTool.CreateStartInfo(@"C:\Tools\code.cmd", CommandLineBuilder.WindowsQuotedArguments("--diff", @"C:\src\R&D\a b.cs", @"C:\100%\b.cs"));
+
+        Assert.Equal("cmd.exe", Path.GetFileName(startInfo.FileName));
+        Assert.Equal("/d /e:on /v:off /s /c \"" + CommandLineBuilder.WindowsCmdArguments(@"C:\Tools\code.cmd", "--diff", @"C:\src\R&D\a b.cs", @"C:\100%\b.cs") + "\"", startInfo.Arguments);
     }
 
     private static void RunGit(string gitPath, string workingDirectory, params string[] arguments)

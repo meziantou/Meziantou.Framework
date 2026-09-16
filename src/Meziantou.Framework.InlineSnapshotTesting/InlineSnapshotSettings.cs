@@ -93,11 +93,12 @@ public sealed record InlineSnapshotSettings
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
-    /// Gets or sets the ordered list of merge tools tried by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
-    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first one that starts is used. By default: the tool named by
-    /// the <c>DiffEngine_Tool</c> environment variable, the merge tool and the diff tool of the git configuration, the
-    /// current IDE (Visual Studio, Visual Studio Code, Rider) when the tests run from it, and then the tools detected by DiffEngine.
-    /// If <see langword="null" /> or empty, no merge tool is launched and the snapshot difference is reported as an assertion failure.
+    /// Gets or sets the ordered list of tools used by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
+    /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first tool that can be started is used.
+    /// The default list tries the <c>DiffEngine_Tool</c> environment variable, the git merge and diff tools, the current IDE
+    /// (Visual Studio, Visual Studio Code, Rider), and then the GUI tools detected by DiffEngine. Terminal tools such as Vim
+    /// are only used when they are named explicitly.
+    /// If <see langword="null" /> or empty, no merge tool is launched and the assertion failure is reported.
     /// </summary>
     /// <remarks>
     /// The <c>DiffEngine_Disabled</c> environment variable disables all merge tools, even the ones set explicitly. Merge tools

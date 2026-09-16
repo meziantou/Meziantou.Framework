@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
+using Windows.Win32.System.Com.Urlmon;
 
 namespace Meziantou.Framework.Win32;
 
@@ -26,19 +27,23 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows")]
 public static class MarkOfTheWeb
 {
+    private const string ZoneIdentifierStreamSuffix = ":Zone.Identifier";
+
     private static readonly UTF8Encoding ZoneIdentifierEncoding = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>Removes the Mark of the Web zone information from a file by deleting the Zone.Identifier alternate data stream.</summary>
     /// <param name="filePath">The path to the file from which to remove the zone information.</param>
-    /// <remarks>Does nothing when the file carries no zone information, or when the file or its directory does not exist.</remarks>
+    /// <remarks>
+    /// Does nothing when the file carries no zone information, or when the file or its directory does not exist.
+    /// The zone information of a read-only file is removed too, and the file stays read-only.
+    /// </remarks>
     public static void RemoveFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
         filePath = Path.GetFullPath(filePath);
-        var adsPath = filePath + ":Zone.Identifier";
         try
         {
-            File.Delete(adsPath);
+            ChangeZoneIdentifierStream(filePath, File.Delete);
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
@@ -47,7 +52,10 @@ public static class MarkOfTheWeb
 
     /// <summary>Gets the security zone of a file using the Windows Security Manager COM API.</summary>
     /// <param name="filePath">The path to the file to query.</param>
-    /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.</returns>
+    /// <returns>
+    /// The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.
+    /// Windows can also report a custom zone, numbered 1000 and above, that has no named <see cref="UrlZone"/> member.
+    /// </returns>
     public static UrlZone GetFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -59,14 +67,15 @@ public static class MarkOfTheWeb
 
         try
         {
-            var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
-            if (hr.Failed || securityManager is null)
+            var securityManager = CreateSecurityManager();
+            if (securityManager is null)
                 return UrlZone.Invalid;
 
             try
             {
-                securityManager.MapUrlToZone(filePath, out var zone, dwFlags: 0);
-                return (UrlZone)zone;
+                // Without this flag, Windows can skip the zone information of a file stored on a network share
+                // and report the zone of the share instead.
+                return (UrlZone)MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK);
             }
             finally
             {
@@ -94,7 +103,7 @@ public static class MarkOfTheWeb
         ArgumentNullException.ThrowIfNull(filePath);
 
         filePath = Path.GetFullPath(filePath);
-        var adsPath = filePath + ":Zone.Identifier";
+        var adsPath = filePath + ZoneIdentifierStreamSuffix;
 
         try
         {
@@ -109,13 +118,31 @@ public static class MarkOfTheWeb
         return null;
     }
 
+    /// <summary>Gets the zone information stored in the Zone.Identifier alternate data stream of a file.</summary>
+    /// <param name="filePath">The path to the file to read.</param>
+    /// <returns>The parsed content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information, or if the file or its directory does not exist.</returns>
+    /// <remarks>
+    /// This reports what the stream records, not the zone Windows assigns to the file.
+    /// Use <see cref="GetFileZone(string)"/> or <see cref="IsUntrusted(string)"/> to make a security decision.
+    /// </remarks>
+    public static ZoneIdentifier? GetFileZoneIdentifier(string filePath)
+    {
+        var content = GetFileZoneContent(filePath);
+        if (content is null)
+            return null;
+
+        return ZoneIdentifier.Parse(content);
+    }
+
     /// <summary>Sets the Mark of the Web zone information for a file by writing to the Zone.Identifier alternate data stream.</summary>
     /// <param name="filePath">The path to the file to mark.</param>
     /// <param name="zone">The security zone to assign to the file.</param>
-    /// <param name="referrerUrl">Optional URL of the page that linked to the file.</param>
-    /// <param name="hostUrl">Optional URL of the host from which the file was downloaded.</param>
+    /// <param name="referrerUrl">Optional URL of the page that linked to the file. An empty string is treated as no URL.</param>
+    /// <param name="hostUrl">Optional URL of the host from which the file was downloaded. An empty string is treated as no URL.</param>
+    /// <remarks>The zone information of a read-only file is set too, and the file stays read-only.</remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="zone"/> is not one of <see cref="UrlZone.LocalMachine"/>, <see cref="UrlZone.Intranet"/>, <see cref="UrlZone.Trusted"/>, <see cref="UrlZone.Internet"/>, or <see cref="UrlZone.Untrusted"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="referrerUrl"/> or <paramref name="hostUrl"/> contains a carriage return, a line feed, or a null character.</exception>
+    /// <exception cref="FileNotFoundException"><paramref name="filePath"/> does not point to an existing file. A directory is not a file.</exception>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
@@ -129,23 +156,30 @@ public static class MarkOfTheWeb
         EnsureSingleLine(referrerUrl, nameof(referrerUrl));
         EnsureSingleLine(hostUrl, nameof(hostUrl));
 
+        // Creating a stream on a missing file creates the file, so a mistyped path would silently
+        // leave behind an empty file carrying the mark.
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("File not found", filePath);
+
         filePath = Path.GetFullPath(filePath);
-        var adsPath = filePath + ":Zone.Identifier";
 
-        // Windows and web browsers write the stream as ASCII. UTF-8 without a byte order mark produces
-        // the same bytes for the ASCII that URLs are normally made of, while still preserving the rest.
-        using var writer = new StreamWriter(adsPath, append: false, ZoneIdentifierEncoding);
-        writer.WriteLine("[ZoneTransfer]");
-        writer.WriteLine("ZoneId=" + ((int)zone).ToString(CultureInfo.InvariantCulture));
-        if (referrerUrl is not null)
+        ChangeZoneIdentifierStream(filePath, adsPath =>
         {
-            writer.WriteLine("ReferrerUrl=" + referrerUrl);
-        }
+            // Windows and web browsers write the stream as ASCII. UTF-8 without a byte order mark produces
+            // the same bytes for the ASCII that URLs are normally made of, while still preserving the rest.
+            using var writer = new StreamWriter(adsPath, append: false, ZoneIdentifierEncoding);
+            writer.WriteLine("[ZoneTransfer]");
+            writer.WriteLine("ZoneId=" + ((int)zone).ToString(CultureInfo.InvariantCulture));
+            if (!string.IsNullOrEmpty(referrerUrl))
+            {
+                writer.WriteLine("ReferrerUrl=" + referrerUrl);
+            }
 
-        if (hostUrl is not null)
-        {
-            writer.WriteLine("HostUrl=" + hostUrl);
-        }
+            if (!string.IsNullOrEmpty(hostUrl))
+            {
+                writer.WriteLine("HostUrl=" + hostUrl);
+            }
+        });
     }
 
     // Zone.Identifier is an INI-shaped stream and Windows resolves a repeated key to its last occurrence.
@@ -162,7 +196,10 @@ public static class MarkOfTheWeb
     /// Files outside of the Local Machine, Trusted, and Intranet zones are considered untrusted.
     /// </summary>
     /// <param name="filePath">The path to the file to check.</param>
-    /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> if the file is from an untrusted zone (Internet or Restricted), or if Windows cannot evaluate its zone;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
     /// <exception cref="FileNotFoundException"><paramref name="filePath"/> does not point to an existing file. A directory is not a file.</exception>
     public static bool IsUntrusted(string filePath)
     {
@@ -175,26 +212,82 @@ public static class MarkOfTheWeb
 
         filePath = Path.GetFullPath(filePath);
 
-        var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
-        if (hr.Failed || securityManager is null)
+        var securityManager = CreateSecurityManager();
+        if (securityManager is null)
             return true;
 
         try
         {
-            securityManager.MapUrlToZone(filePath, out var zone, dwFlags: PInvoke.MUTZ_NOSAVEDFILECHECK);
-            if (zone >= (int)UrlZone.Internet)
+            if (MapFileToZone(securityManager, filePath, PInvoke.MUTZ_NOSAVEDFILECHECK) >= (uint)UrlZone.Internet)
                 return true;
 
             // For files currently stored in trusted locations, ensure we also look for any MotW storing the original source location
-            securityManager.MapUrlToZone(filePath, out zone, dwFlags: PInvoke.MUTZ_REQUIRESAVEDFILECHECK);
-            if (zone >= (int)UrlZone.Internet)
-                return true;
-
-            return false;
+            return MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK) >= (uint)UrlZone.Internet;
+        }
+        catch (COMException)
+        {
+            // The security manager could not evaluate the path, for example because it is longer than a URL can be.
+            // A file whose origin cannot be established is not a trusted one.
+            return true;
         }
         finally
         {
             Marshal.ReleaseComObject(securityManager);
+        }
+    }
+
+    private static IInternetSecurityManager? CreateSecurityManager()
+    {
+        var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
+        if (hr.Failed)
+            return null;
+
+        return securityManager;
+    }
+
+    private static uint MapFileToZone(IInternetSecurityManager securityManager, string fullPath, uint flags)
+    {
+        // MapUrlToZone expects a URL. Without these flags, a '%' in a file name is decoded as an escape sequence
+        // and a '#' starts a fragment, so Windows would evaluate a different path than the file being checked.
+        securityManager.MapUrlToZone(fullPath, out var zone, flags | PInvoke.MUTZ_ISFILE | PInvoke.MUTZ_DONT_UNESCAPE);
+        return zone;
+    }
+
+    // The read-only attribute applies to every stream of a file, so it also prevents changing Zone.Identifier.
+    // The mark describes where the file came from rather than its content, so clear the attribute for the
+    // duration of the change and restore it afterwards.
+    private static void ChangeZoneIdentifierStream(string fullPath, Action<string> change)
+    {
+        var adsPath = fullPath + ZoneIdentifierStreamSuffix;
+        try
+        {
+            change(adsPath);
+        }
+        catch (UnauthorizedAccessException) when (TryGetReadOnlyAttributes(fullPath, out var attributes))
+        {
+            File.SetAttributes(fullPath, attributes & ~FileAttributes.ReadOnly);
+            try
+            {
+                change(adsPath);
+            }
+            finally
+            {
+                File.SetAttributes(fullPath, attributes);
+            }
+        }
+    }
+
+    private static bool TryGetReadOnlyAttributes(string fullPath, out FileAttributes attributes)
+    {
+        try
+        {
+            attributes = File.GetAttributes(fullPath);
+            return attributes.HasFlag(FileAttributes.ReadOnly);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            attributes = default;
+            return false;
         }
     }
 }

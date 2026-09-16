@@ -1,9 +1,12 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.DiffEngine;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
+using Meziantou.Xunit;
 using GifFrameData = Meziantou.Framework.SnapshotTesting.Tests.ImageTestData.GifFrameData;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
@@ -351,6 +354,10 @@ public sealed partial class SnapshotTests
     [Theory]
     [InlineData("snapshot.verified")]
     [InlineData("snapshot.actual")]
+    [InlineData("Parse.actual.value")]
+    [InlineData("Parse.verified.value")]
+    [InlineData("Parse.ACTUAL.value")]
+    [InlineData("a.actual.verified.actual.b")]
     public void SnapshotPathStrategy_UsesHashAndIndexPatternForReservedNames(string testName)
     {
         var settings = new SnapshotSettings();
@@ -369,6 +376,73 @@ public sealed partial class SnapshotTests
         var path = settings.SnapshotPathStrategy(context);
         Assert.Matches(SnapshotNameWithHashAndIndexRegex(), path.Name);
         Assert.HasCountLessThanOrEqual(settings.MaxSnapshotFileNameLength, path.Name);
+
+        // The name part never contains a marker, so the approval tool can never take the verified file for an actual file.
+        var nameWithoutMarker = path.Name[..^".verified.png".Length].ToUpperInvariant();
+        Assert.DoesNotContain(".ACTUAL.", nameWithoutMarker);
+        Assert.DoesNotContain(".VERIFIED.", nameWithoutMarker);
+    }
+
+    [Theory]
+    [InlineData("NUL", true)]
+    [InlineData("nul", true)]
+    [InlineData("Con.Parse", true)]
+    [InlineData("aux", true)]
+    [InlineData("PRN", true)]
+    [InlineData("COM1", true)]
+    [InlineData("com0", true)]
+    [InlineData("LPT9", true)]
+    [InlineData("Console", false)]
+    [InlineData("COM10", false)]
+    [InlineData("Null", false)]
+    public void SnapshotPathStrategy_AddsAHashToWindowsDeviceNames(string testName, bool isDeviceName)
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: "SampleTests",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: new SnapshotTestContext(TestName: testName),
+            Settings: settings);
+
+        var path = settings.SnapshotPathStrategy(context);
+
+        if (isDeviceName)
+        {
+            Assert.Matches(SnapshotNameWithHashSuffixRegex(), path.Name);
+        }
+        else
+        {
+            Assert.Equal(testName + ".verified.txt", path.Name);
+        }
+    }
+
+    [Fact]
+    public void Validate_SupportsExtensionsContainingADot()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var context = CreateDetectedTestContext("C", "Generate", "Generate");
+        var type = SnapshotType.Create("g.cs");
+
+        // A file left behind when the snapshot was stored as text.
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllText(snapshotDirectory / "C_Generate.verified.txt", "text");
+
+        ValidateWithDefaultNaming("class A;", context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.OverwriteWithoutFailure, type);
+        Assert.Equal(["C_Generate.verified.g.cs"], GetSnapshotFileNames(directory));
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => ValidateWithDefaultNaming("class B;", context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.Disallow, type));
+        Assert.Contains((snapshotDirectory / "C_Generate.actual.g.cs").Value, exception.Message);
+        Assert.Equal(["C_Generate.actual.g.cs", "C_Generate.verified.g.cs"], GetSnapshotFileNames(directory));
+
+        // Another test using the same name is reported.
+        Assert.Throws<SnapshotException>(() => ValidateWithDefaultNaming("class A;", CreateDetectedTestContext("C", "Other", "Generate"), sourceFile, lineNumber: 20, SnapshotUpdateStrategy.Disallow, type));
     }
 
     [Fact]
@@ -519,6 +593,53 @@ public sealed partial class SnapshotTests
         Assert.Single(files);
         Assert.Equal(nameof(SnapshotTests) + "_" + nameof(Validate_WalksTheStack_WhenTheTestContextDoesNotProvideTheNames) + ".verified.txt", Path.GetFileName(files[0]));
     }
+
+    [Fact]
+    public void Validate_WalksTheStack_RecognizesAttributesDerivedFromATestAttribute()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
+            },
+        };
+
+        // The explicit context carries no names, so the call stack is walked. The walk must stop at the method marked
+        // with an attribute deriving from a test attribute ([DataTestMethod], [SkippableFact]...) rather than at the
+        // helper it calls, or at this test method further up the stack.
+        using (new SnapshotTestContextScope(new SnapshotTestContext(TestName: "custom")))
+        {
+            MethodWithDerivedTestAttribute(settings);
+        }
+
+        Assert.NotNull(capturedContext);
+        Assert.True(capturedContext.StackWalkPerformed);
+        Assert.Equal(nameof(MethodWithDerivedTestAttribute), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+    }
+
+    [DerivedTestMethod]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void MethodWithDerivedTestAttribute(SnapshotSettings settings)
+    {
+        ValidateThroughHelper("sample", settings);
+    }
+
+    private static class FakeTestFramework
+    {
+        // Only the name of the attribute is known to the stack walk, as it does not reference any test framework.
+        [AttributeUsage(AttributeTargets.Method)]
+        public abstract class TestMethodAttribute : Attribute;
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    private sealed class DerivedTestMethodAttribute : FakeTestFramework.TestMethodAttribute;
 
     [Fact]
     public void Validate_UsesTheNamesOfAnExplicitTestContext_OverTheCallStack()
@@ -1364,6 +1485,194 @@ public sealed partial class SnapshotTests
         Assert.False(similarity.Equals(new SnapshotData("jpg", jpeg), new SnapshotData("jpg", tooLargeJpeg)));
     }
 
+    [Theory]
+    [InlineData(ImageBackend.BuiltIn)]
+    [InlineData(ImageBackend.ImageSharp)]
+    [InlineData(ImageBackend.SkiaSharp)]
+    public void ImageBackends_ExactComparisonSeesEveryBitOf16BitSamples(ImageBackend backend)
+    {
+        var comparer = CreateImageBackendComparer(backend, similarityThreshold: null);
+        var expected = CreatePngSnapshot(bitDepth: 16, colorType: 6, [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xFF, 0xFF]);
+
+        // Only the low byte of the red sample differs
+        Assert.False(comparer.Equals(expected, CreatePngSnapshot(bitDepth: 16, colorType: 6, [0x12, 0x35, 0x56, 0x78, 0x9A, 0xBC, 0xFF, 0xFF])));
+
+        // The same pixel, stored without the alpha channel
+        Assert.True(comparer.Equals(expected, CreatePngSnapshot(bitDepth: 16, colorType: 2, [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC])));
+
+        // The 8-bit sample v is the 16-bit sample v × 257
+        var exact16Bit = CreatePngSnapshot(bitDepth: 16, colorType: 2, [0x12, 0x12, 0x56, 0x56, 0x9A, 0x9A]);
+        Assert.True(comparer.Equals(exact16Bit, CreatePngSnapshot(bitDepth: 8, colorType: 2, [0x12, 0x56, 0x9A])));
+        Assert.False(comparer.Equals(expected, CreatePngSnapshot(bitDepth: 8, colorType: 2, [0x12, 0x56, 0x9A])));
+    }
+
+    [Theory]
+    [InlineData(ImageBackend.BuiltIn)]
+    [InlineData(ImageBackend.ImageSharp)]
+    [InlineData(ImageBackend.SkiaSharp)]
+    public void ImageBackends_SimilarityKeepsTheHighByteOf16BitSamples(ImageBackend backend)
+    {
+        // A checkerboard of 0x00FF and 0x0000 samples is flat once reduced to 8 bits by keeping the high byte, but
+        // not when the samples are rounded (0x00FF becomes 1)
+        var comparer = CreateImageBackendComparer(backend, similarityThreshold: 1f);
+        var flat = CreateGray16Checkerboard(0x0000, 0x0000);
+
+        Assert.True(comparer.Equals(flat, CreateGray16Checkerboard(0x0000, 0x00FF)));
+        Assert.False(comparer.Equals(flat, CreateGray16Checkerboard(0x0000, 0x0100)));
+    }
+
+    [Theory]
+    [InlineData(ImageBackend.BuiltIn)]
+    [InlineData(ImageBackend.ImageSharp)]
+    [InlineData(ImageBackend.SkiaSharp)]
+    public void ImageBackends_ExplainWhyImagesDoNotMatch(ImageBackend backend)
+    {
+        var white = CreateSnapshotData(CreateSolidImage(16, 16, 0xFFFFFFFFu));
+        var black = CreateSnapshotData(CreateSolidImage(16, 16, 0xFF000000u));
+        var exact = CreateImageBackendComparer(backend, similarityThreshold: null);
+        var similarity = CreateImageBackendComparer(backend, similarityThreshold: 0.95f);
+
+        Assert.True(exact.Equals(white, white, out var reason));
+        Assert.Null(reason);
+
+        Assert.False(exact.Equals(white, black, out reason));
+        Assert.Equal("The images have different pixels.", reason);
+
+        Assert.False(similarity.Equals(white, black, out reason));
+        Assert.StartsWith("The SSIM score 0", reason);
+        Assert.EndsWith(" is below the threshold 0.95.", reason);
+
+        Assert.False(similarity.Equals(white, CreateSnapshotData(CreateSolidImage(16, 17, 0xFFFFFFFFu)), out reason));
+        Assert.Equal("The images have different sizes: expected 16x16, actual 16x17.", reason);
+
+        Assert.False(exact.Equals(white, new SnapshotData("png", [.. white.Data.AsSpan(0, 20)]), out reason));
+        Assert.StartsWith("The actual snapshot cannot be decoded as an image", reason);
+        Assert.False(exact.Equals(new SnapshotData("png", [1, 2, 3]), white, out reason));
+        Assert.StartsWith("The expected snapshot cannot be decoded as an image", reason);
+    }
+
+    [Fact]
+    public void ImageComparer_ExplainsWhichHashCheckFailed()
+    {
+        var expected = CreateSnapshotData(CreatePatternImage(width: 32, height: 32, inverted: false));
+        var actual = CreateSnapshotData(CreatePatternImage(width: 32, height: 32, inverted: true));
+        var dHashDistance = ImageHash.ComputeDHashDistance(CreatePatternImage(32, 32, inverted: false), CreatePatternImage(32, 32, inverted: true));
+        var pHashDistance = ImageHash.ComputePHashDistance(CreatePatternImage(32, 32, inverted: false), CreatePatternImage(32, 32, inverted: true));
+        var comparer = new ImageComparer(new ImageComparisonSettings { DHashThreshold = 0, PHashThreshold = 0 });
+
+        Assert.False(comparer.Equals(expected, actual, out var reason));
+        Assert.Equal($"The dHash distance {dHashDistance} is above the threshold 0. The pHash distance {pHashDistance} is above the threshold 0.", reason);
+
+        Assert.False(new ImageComparer(new ImageComparisonSettings { DHashThreshold = 64, PHashThreshold = 0 }).Equals(expected, actual, out reason));
+        Assert.Equal($"The pHash distance {pHashDistance} is above the threshold 0.", reason);
+    }
+
+    [Fact]
+    public void Validate_ReportsWhyImagesDoNotMatch()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = _ => directory / "snapshot.verified.png",
+        };
+        settings.Comparers.AddImageComparer(new ImageComparisonSettings { SimilarityThreshold = 0.99f });
+        var verifiedPath = directory.GetFullPath("snapshot.verified.png");
+        File.WriteAllBytes(verifiedPath, PngImageEncoder.Encode(CreateSolidImage(16, 16, 0xFFFFFFFFu)));
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate(PngImageEncoder.Encode(CreateSolidImage(16, 16, 0xFF000000u)), SnapshotType.Png, settings));
+
+        Assert.Matches(@"Changed snapshot files:\r?\n  \* " + Regex.Escape(verifiedPath.Value) + @"\r?\n    The SSIM score -?[0-9.]+ is below the threshold 0\.99\.", exception.Message);
+    }
+
+    [Fact]
+    public void Validate_ReportsTheMismatchReasonOfEachChangedFile()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = CreateIndexedSnapshotPathStrategy(directory),
+        };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+        settings.Comparers.Set(SnapshotType.Default, new ExplainingSnapshotComparer());
+        File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
+        var changedPath = directory.GetFullPath("snapshot_1.verified.txt");
+        File.WriteAllText(changedPath, "other");
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
+
+        Assert.Matches(@"Changed snapshot files:\r?\n  \* " + Regex.Escape(changedPath.Value) + @"\r?\n    'other' is not 'value_1'\r?\n", exception.Message);
+        Assert.DoesNotContain("value_0'", exception.Message);
+    }
+
+    private sealed class ExplainingSnapshotComparer : ISnapshotComparer
+    {
+        public bool Equals(SnapshotData expected, SnapshotData actual) => Equals(expected, actual, out _);
+
+        public bool Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)
+        {
+            if (expected.Data.AsSpan().SequenceEqual(actual.Data))
+            {
+                mismatchReason = null;
+                return true;
+            }
+
+            mismatchReason = $"'{Encoding.UTF8.GetString(expected.Data)}' is not '{Encoding.UTF8.GetString(actual.Data)}'";
+            return false;
+        }
+    }
+
+    public enum ImageBackend
+    {
+        BuiltIn,
+        ImageSharp,
+        SkiaSharp,
+    }
+
+    private static ISnapshotComparer CreateImageBackendComparer(ImageBackend backend, float? similarityThreshold)
+    {
+        var settings = new SnapshotSettings();
+        switch (backend)
+        {
+            case ImageBackend.BuiltIn:
+                settings.Comparers.AddImageComparer(new ImageComparisonSettings { SimilarityThreshold = similarityThreshold });
+                break;
+
+            case ImageBackend.ImageSharp:
+                ImageSharp.SnapsthotSettingsImageSharpExtensions.AddImageSharp(settings, new ImageSharp.ImageComparisonSettings { SimilarityThreshold = similarityThreshold });
+                break;
+
+            case ImageBackend.SkiaSharp:
+                SkiaSharp.SnapshotSettingsSkiaSharpExtensions.AddSkiaSharp(settings, new SkiaSharp.ImageComparisonSettings { SimilarityThreshold = similarityThreshold });
+                break;
+        }
+
+        return settings.Comparers.Get(SnapshotType.Png);
+    }
+
+    private static SnapshotData CreatePngSnapshot(byte bitDepth, byte colorType, byte[] samples)
+    {
+        return new SnapshotData("png", ImageTestData.CreatePng(width: 1, height: 1, bitDepth, colorType, samples));
+    }
+
+    private static SnapshotData CreateGray16Checkerboard(ushort first, ushort second)
+    {
+        const int Size = 16;
+        var samples = new byte[Size * Size * 2];
+        for (var y = 0; y < Size; y++)
+        {
+            for (var x = 0; x < Size; x++)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(samples.AsSpan((y * Size + x) * 2), (x + y) % 2 is 0 ? first : second);
+            }
+        }
+
+        return new SnapshotData("png", ImageTestData.CreatePng(Size, Size, bitDepth: 16, colorType: 0, samples));
+    }
+
     private static byte[] CreateJpegAnnouncingAnImageTooLargeToAllocate(byte[] jpeg)
     {
         // 37182 × 57756 pixels is a valid int, but more elements than an array can hold
@@ -1456,7 +1765,7 @@ public sealed partial class SnapshotTests
     // The expected hashes come from an independent Python implementation that computes the area-weighted thumbnail
     // with arbitrary-precision integers. 13×5 is smaller than the pHash thumbnail, so each pixel spans several cells.
     [Theory]
-    [InlineData(1000, 700, 12535113866061784501UL, 49351211466053371UL)]
+    [InlineData(1000, 700, 1125899973951492UL, 48225311559189755UL)]
     [InlineData(13, 5, 872590157973323776UL, 14782499366000441473UL)]
     public void ImageHash_MatchesAReferenceImplementation(int width, int height, ulong expectedDHash, ulong expectedPHash)
     {
@@ -1487,11 +1796,92 @@ public sealed partial class SnapshotTests
     {
         // With area averaging, darkening a single pixel darkens its thumbnail cell. Bilinear sampling only read
         // the pixels around the center of each cell, and never this one.
-        var expected = CreateSolidImage(900, 800, 0xFFFFFFFFu);
-        var actual = CreateSolidImage(900, 800, 0xFFFFFFFFu);
-        actual = FillRectangle(actual, x: 120, y: 420, width: 1, height: 1, 0xFF000000u);
+        var expected = CreateSolidImage(90, 80, 0xFFFFFFFFu);
+        var actual = CreateSolidImage(90, 80, 0xFFFFFFFFu);
+        actual = FillRectangle(actual, x: 12, y: 42, width: 1, height: 1, 0xFF000000u);
 
         Assert.Equal(1, ImageHash.ComputeHammingDistance(ImageHash.ComputeDHash(expected), ImageHash.ComputeDHash(actual)));
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public void ImageHash_IgnoresAOneLevelChangeInASinglePixel(bool useDHash, bool gradient)
+    {
+        // Such a change is invisible (SSIM 1.000000), but it used to flip about half the pHash bits of flat images
+        var expected = gradient ? CreateGradientImage(400, 300) : CreateSolidImage(400, 300, 0xFF808080u);
+        var pixels = expected.Pixels.ToArray();
+        var pixel = pixels[150 * 400 + 200];
+        pixels[150 * 400 + 200] = new Argb(pixel.A, (byte)(pixel.R + 1), pixel.G, pixel.B);
+        var actual = Image.Create(400, 300, pixels);
+
+        Assert.Equal(0, ComputeHashDistance(useDHash, expected, actual));
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public void ImageHash_IgnoresScatteredOneLevelNoise(bool useDHash, bool gradient)
+    {
+        // 109 pixels changed by ±1 used to give a dHash distance of 25
+        var expected = gradient ? CreateGradientImage(400, 300) : CreateSolidImage(400, 300, 0xFF808080u);
+        var pixels = expected.Pixels.ToArray();
+        for (var i = 0; i < 109; i++)
+        {
+            // Scattered over the whole image, a few pixels per thumbnail cell
+            var index = (int)((i * 1_103_515_245L + 12_345) % pixels.Length);
+            var pixel = pixels[index];
+            var delta = i % 2 is 0 ? 1 : -1;
+
+            // The images are gray, and clamping keeps black and white pixels from wrapping around
+            var value = (byte)Math.Clamp(pixel.R + delta, 0, 255);
+            pixels[index] = new Argb(pixel.A, value, value, value);
+        }
+
+        var actual = Image.Create(400, 300, pixels);
+
+        Assert.InRange(ComputeHashDistance(useDHash, expected, actual), 0, 1);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ImageHash_DifferentStructuresAreFarApart(bool useDHash)
+    {
+        // Same mean luminance, so the distance comes from the hashes only
+        var blackLeftHalf = FillRectangle(CreateSolidImage(400, 300, 0xFFFFFFFFu), x: 0, y: 0, width: 200, height: 300, 0xFF000000u);
+        var blackRightHalf = FillRectangle(CreateSolidImage(400, 300, 0xFFFFFFFFu), x: 200, y: 0, width: 200, height: 300, 0xFF000000u);
+        var pattern = CreatePatternImage(400, 300, inverted: false);
+        var invertedPattern = CreatePatternImage(400, 300, inverted: true);
+        var gradient = CreateGradientImage(400, 300);
+
+        Assert.True(ComputeHashDistance(useDHash, blackLeftHalf, blackRightHalf) >= 4);
+        Assert.True(ComputeHashDistance(useDHash, pattern, invertedPattern) >= 16);
+        Assert.True(ComputeHashDistance(useDHash, pattern, gradient) >= 16);
+    }
+
+    private static int ComputeHashDistance(bool useDHash, Image expected, Image actual)
+    {
+        return useDHash ? ImageHash.ComputeDHashDistance(expected, actual) : ImageHash.ComputePHashDistance(expected, actual);
+    }
+
+    private static Image CreateGradientImage(int width, int height)
+    {
+        var pixels = new Argb[checked(width * height)];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var value = (byte)(x * 255 / (width - 1));
+                pixels[y * width + x] = new Argb(255, value, value, value);
+            }
+        }
+
+        return Image.Create(width, height, pixels);
     }
 
     [Fact]
@@ -1509,36 +1899,37 @@ public sealed partial class SnapshotTests
         Assert.Equal("actual", File.ReadAllText(actualPath));
     }
 
-    // The lock is released after 250ms and SnapshotEngine.WriteAllBytesWithRetry gives up after ~840ms. The
-    // release runs on the thread pool, so tests running beside this one can delay it past that budget and let
-    // the IOException escape.
+    // Replaces the process-wide retry notification, so it must not run beside any other test
     [Fact(DisableParallelization = true)]
-    public async Task Validate_RetriesWhenActualFileIsLocked()
+    public void Validate_RetriesWhenActualFileIsLocked()
     {
         using var directory = TemporaryDirectory.Create();
         var settings = CreateDeterministicSnapshotSettings(directory, "actual");
         var expectedPath = directory.GetFullPath("snapshot.verified.txt");
         var actualPath = directory.GetFullPath("snapshot.actual.txt");
-        await File.WriteAllTextAsync(expectedPath, "expected");
-        await File.WriteAllTextAsync(actualPath, "locked");
+        File.WriteAllText(expectedPath, "expected");
+        File.WriteAllText(actualPath, "locked");
 
-        await using var lockStream = new FileStream(actualPath, FileMode.Open, FileAccess.Read, FileShare.None);
-        var releaseTask = Task.Run(() =>
+        var retryCount = 0;
+        using var lockStream = new FileStream(actualPath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        // The lock is released when the first attempt fails, so the retry succeeds whatever the load of the machine.
+        SnapshotUpdateStrategy.RetryingFileOperation = _ =>
         {
-            Thread.Sleep(250);
+            retryCount++;
             lockStream.Dispose();
-        });
-
+        };
         try
         {
             Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
         }
         finally
         {
-            await releaseTask;
+            SnapshotUpdateStrategy.RetryingFileOperation = null;
         }
 
-        Assert.Equal("actual", await File.ReadAllTextAsync(actualPath));
+        Assert.Equal(1, retryCount);
+        Assert.Equal("actual", File.ReadAllText(actualPath));
     }
 
     [Fact]
@@ -1711,6 +2102,73 @@ public sealed partial class SnapshotTests
         Snapshot.Validate("sample", settings);
 
         Assert.Equal(["Line1", "Line3"], ReadVerifiedSnapshotLines(directory));
+    }
+
+    [Theory]
+    [InlineData("a\nb\n", "// a\n// b\n")]
+    [InlineData("a\r\nb\r\n", "// a\r\n// b\r\n")]
+    [InlineData("a\nb", "// a\n// b")]
+    [InlineData("a\r\rb", "// a\r// \r// b")]
+    [InlineData("\n", "// \n")]
+    [InlineData("", "")]
+    [InlineData("a\u2028b\fc\u0085d\u2029e", "// a\u2028b\fc\u0085d\u2029e")]
+    public void ScrubLinesWithReplace_SplitsOnlyOnLineBreaks(string text, string expected)
+    {
+        var settings = new SnapshotSettings();
+        settings.ScrubLinesWithReplace(line => "// " + line);
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
+    [Theory]
+    [InlineData("Name: x\u2028Password: y\nOther", "Other")]
+    [InlineData("Line1\nName: x\n", "Line1\n")]
+    [InlineData("Line1\nName: x", "Line1\n")]
+    public void ScrubLinesContaining_RemovesWholeLines(string text, string expected)
+    {
+        var settings = new SnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "Name");
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
+    [Theory]
+    [InlineData("/home/runner/work", "/home/TheUserName/work")]
+    [InlineData(@"C:\Users\Runner\.nuget", @"C:\Users\TheUserName\.nuget")]
+    [InlineData("runner@host runner", "TheUserName@host TheUserName")]
+    [InlineData("Built by runner.", "Built by TheUserName.")]
+    [InlineData("xunit.runner.visualstudio", "xunit.runner.visualstudio")]
+    [InlineData("runners test-runner runner_1 runner-2 myrunner", "runners test-runner runner_1 runner-2 myrunner")]
+    [InlineData("", "")]
+    public void ScrubUserName_ReplacesOnlyWholeWords(string text, string expected)
+    {
+        var settings = new SnapshotSettings();
+        SnapshotSettingsScrubberExtensions.AddWholeWordScrubber(settings, "runner", "TheUserName");
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
+    [Fact]
+    public void ScrubUserName_ReplacesTheCurrentUserName()
+    {
+        var userNameSettings = new SnapshotSettings();
+        userNameSettings.ScrubUserName();
+        Assert.Equal("user TheUserName end", Assert.Single(userNameSettings.Scrubbers).Scrub($"user {Environment.UserName} end"));
+
+        var machineNameSettings = new SnapshotSettings();
+        machineNameSettings.ScrubMachineName();
+        Assert.Equal("host TheMachineName end", Assert.Single(machineNameSettings.Scrubbers).Scrub($"host {Environment.MachineName} end"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ScrubUserName_DoesNothingWhenTheNameIsEmpty(string? name)
+    {
+        var settings = new SnapshotSettings();
+        SnapshotSettingsScrubberExtensions.AddWholeWordScrubber(settings, name, "TheUserName");
+
+        Assert.Empty(settings.Scrubbers);
     }
 
     [Fact]
@@ -2008,8 +2466,7 @@ public sealed partial class SnapshotTests
     [Fact]
     public void GitTool_GetGitConfiguration_ReadsTheValueWithoutDeadlocking()
     {
-        if (ExecutableFinder.GetFullExecutablePath("git") is null)
-            return;
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
 
         using var directory = TemporaryDirectory.Create();
         RunGit(directory.FullPath, "init");
@@ -2046,6 +2503,8 @@ public sealed partial class SnapshotTests
 
         public static ProcessStartInfo CreateStartInfo(string command, string? workingDirectory, IReadOnlyList<KeyValuePair<string, string>> variables) => CreateCommandStartInfo(command, workingDirectory, variables);
 
+        public static ProcessStartInfo CreateStartInfoWithoutShell(string command, IReadOnlyList<KeyValuePair<string, string>> variables) => CreateCommandStartInfoWithoutShell(command, variables);
+
         public static (string Command, string Arguments) Expand(string command, IReadOnlyList<KeyValuePair<string, string>> variables) => ExpandCommandWithoutShell(command, variables);
     }
 
@@ -2074,6 +2533,43 @@ public sealed partial class SnapshotTests
         Snapshot.Validate(gif, SnapshotType.Gif, compareSettings);
 
         Assert.True(comparer.InvocationCount > 0, "The comparer registered for PNG was not used.");
+    }
+
+    [Theory]
+    [InlineData("gif")]
+    [InlineData("ico")]
+    public void Validate_ComparesGifAndIcoFramesByPixelsByDefault(string format)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var snapshotType = SnapshotType.Create(format);
+        var payload = format is "gif" ? CreateTwoFrameGif() : CreateTwoEntryIco();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context => directory / ("snapshot_" + context.Index.ToString(CultureInfo.InvariantCulture) + ".verified.png"),
+        };
+        settings.Serializers.AddGifSerializer();
+        settings.Serializers.AddIcoSerializer();
+        Snapshot.Validate(payload, snapshotType, settings);
+
+        // Rewrite each frame with the same pixels but stored deflate blocks, as another zlib could compress them
+        var framePaths = Directory.GetFiles(directory.FullPath, "*.verified.png");
+        Assert.HasCount(2, framePaths);
+        foreach (var framePath in framePaths)
+        {
+            var encodedFrame = File.ReadAllBytes(framePath);
+            var frame = Image.Load(encodedFrame);
+            var storedFrame = ImageTestData.CreatePngRgba32(frame.Width, frame.Height, [.. frame.Pixels.ToArray().Select(pixel => pixel.PackedValue)], compressionLevel: CompressionLevel.NoCompression);
+            Assert.NotEqual(encodedFrame, storedFrame);
+            File.WriteAllBytes(framePath, storedFrame);
+        }
+
+        Snapshot.Validate(payload, snapshotType, settings with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow });
+
+        var byteSettings = settings with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        byteSettings.Comparers.Set(snapshotType, new RecordingSnapshotComparer());
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate(payload, snapshotType, byteSettings));
     }
 
     [Fact]
@@ -2147,6 +2643,52 @@ public sealed partial class SnapshotTests
         Assert.Equal(initialCount, settings.Serializers.Count);
         Assert.Equal(initialOrder, settings.Serializers.Select(serializer => serializer.GetType()).ToList());
         Assert.Equal(3, settings.Serializers.OfType<HumanReadableSnapshotSerializer>().Single().Options.MaxDepth);
+    }
+
+    [Fact]
+    public async Task AddConverter_ConcurrentCallsAllApplyAndKeepTheSerializerOrder()
+    {
+        for (var iteration = 0; iteration < 20; iteration++)
+        {
+            var settings = new SnapshotSettings();
+            var initialOrder = settings.Serializers.Select(serializer => serializer.GetType()).ToList();
+            var converters = Enumerable.Range(0, 64).Select(_ => new ProbeConverter()).ToArray();
+
+            using (var barrier = new Barrier(Math.Max(4, Environment.ProcessorCount)))
+            {
+                var tasks = Enumerable.Range(0, barrier.ParticipantCount).Select(participant => Task.Factory.StartNew(() =>
+                {
+                    barrier.SignalAndWait(XunitCancellationToken);
+                    for (var i = participant; i < converters.Length; i += barrier.ParticipantCount)
+                    {
+                        settings.AddConverter(converters[i]);
+                    }
+                }, XunitCancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+
+                await Task.WhenAll(tasks);
+            }
+
+            Assert.Equal(initialOrder, settings.Serializers.Select(serializer => serializer.GetType()).ToList());
+            var options = Assert.Single(settings.Serializers.OfType<HumanReadableSnapshotSerializer>()).Options;
+            Assert.HasCount(converters.Length, options.Converters.OfType<ProbeConverter>());
+            foreach (var converter in converters)
+            {
+                Assert.Contains(converter, options.Converters);
+            }
+
+            // A HumanReadable serializer appended after the binary serializers would serialize byte arrays as text.
+            var bytes = "binary-data"u8.ToArray();
+            var snapshot = Assert.Single(settings.Serializers.Serialize(SnapshotType.Png, bytes).Data);
+            Assert.Equal(bytes, snapshot.Data);
+        }
+    }
+
+    private sealed class ProbeConverter : Meziantou.Framework.HumanReadable.HumanReadableConverter<SerializerProbe>
+    {
+        protected override void WriteValue(Meziantou.Framework.HumanReadable.HumanReadableTextWriter writer, SerializerProbe? value, Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions options)
+        {
+            writer.WriteValue("probe");
+        }
     }
 
     [Fact]
@@ -2301,7 +2843,7 @@ public sealed partial class SnapshotTests
         var settings = CreateDeterministicSnapshotSettings(directory, "sample") with
         {
             SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
-            MergeTools = [],
+            MergeTools = [new UnavailableMergeTool()],
         };
 
         Assert.Throws<SnapshotException>(() => Snapshot.Validate("value", settings));
@@ -2323,12 +2865,33 @@ public sealed partial class SnapshotTests
         var settings = CreateDeterministicSnapshotSettings(directory, "sample") with
         {
             SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
-            MergeTools = [],
+            MergeTools = [new UnavailableMergeTool()],
         };
 
         Assert.Throws<SnapshotException>(() => Snapshot.Validate("value", settings));
 
         Assert.Equal("recorded", File.ReadAllText(verifiedPath));
+    }
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool), false)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool), true)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync), false)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync), true)]
+    public void Validate_MergeToolStrategy_WithoutMergeTools_ReportsTheSnapshotDifference(string strategyName, bool emptyList)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "sample") with
+        {
+            SnapshotUpdateStrategy = GetSnapshotUpdateStrategy(strategyName),
+            MergeTools = emptyList ? [] : null,
+        };
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("value", settings));
+
+        Assert.StartsWith("Snapshots do not match.", exception.Message);
+        Assert.False(File.Exists(directory / "snapshot.verified.txt"));
+        Assert.Equal("sample", File.ReadAllText(directory / "snapshot.actual.txt"));
     }
 
     [Fact]
@@ -2491,6 +3054,60 @@ public sealed partial class SnapshotTests
         Assert.False(MergeTool.IsDisabled(autoDetectContinuousEnvironment: false));
     }
 
+    // Sets the process-wide DiffEngine_Disabled variable and replaces the environment detection, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void MergeTool_IsDisabled_UsesTheContinuousEnvironmentDetection()
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+        try
+        {
+            ContinuousEnvironmentDetector.DescriptionOverride = () => null;
+            Assert.False(MergeTool.IsDisabled(autoDetectContinuousEnvironment: true));
+
+            ContinuousEnvironmentDetector.DescriptionOverride = () => "an LLM agent (ClaudeCode)";
+            Assert.True(MergeTool.IsDisabled(autoDetectContinuousEnvironment: true));
+            Assert.False(MergeTool.IsDisabled(autoDetectContinuousEnvironment: false));
+        }
+        finally
+        {
+            ContinuousEnvironmentDetector.DescriptionOverride = null;
+        }
+    }
+
+    // Sets the process-wide DiffEngine_Disabled variable and replaces the environment detection, so it must not run beside any other test
+    [Theory(DisableParallelization = true)]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeTool))]
+    [InlineData(nameof(SnapshotUpdateStrategy.MergeToolSync))]
+    public void MergeToolStrategy_DoesNotStartTheMergeToolWhenAnEnvironmentIsDetected(string strategyName)
+    {
+        using var _ = new EnvironmentVariableScope("DiffEngine_Disabled", value: null);
+        using var directory = TemporaryDirectory.Create();
+        var verifiedPath = directory / "snapshot.verified.txt";
+        var actualPath = directory / "snapshot.actual.txt";
+        File.WriteAllText(verifiedPath, "recorded");
+        File.WriteAllText(actualPath, "sample");
+        var mergeTool = new RecordingMergeTool();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = true,
+            MergeTools = [mergeTool],
+        };
+
+        ContinuousEnvironmentDetector.DescriptionOverride = () => "an LLM agent (ClaudeCode)";
+        try
+        {
+            GetSnapshotUpdateStrategy(strategyName).UpdateFile(settings, verifiedPath, actualPath);
+        }
+        finally
+        {
+            ContinuousEnvironmentDetector.DescriptionOverride = null;
+        }
+
+        Assert.Equal(0, mergeTool.StartCount);
+        Assert.Equal("recorded", File.ReadAllText(verifiedPath));
+        Assert.Equal("sample", File.ReadAllText(actualPath));
+    }
+
     [Fact]
     public void Validate_MergeToolSync_KeepsThePlaceholderWhenTheLauncherDoesNotWaitForTheMerge()
     {
@@ -2589,12 +3206,9 @@ public sealed partial class SnapshotTests
         result.WaitForExit();
     }
 
-    [Fact]
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GitTool_CreateCommandStartInfo_PassesThePathsVerbatim()
     {
-        if (OperatingSystem.IsWindows())
-            return;
-
         using var directory = TemporaryDirectory.Create();
         var local = directory.GetFullPath("dir with spaces/local 'quoted' \"file\".txt");
         var remote = directory.GetFullPath("dir $HOME `pwd`/remote.txt");
@@ -2619,6 +3233,64 @@ public sealed partial class SnapshotTests
         Assert.Equal(expectedLines, File.ReadAllLines(output));
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GitTool_CreateCommandStartInfo_UsesTheShellOfGitForWindows()
+    {
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        var local = directory.GetFullPath("dir with spaces/local 'quoted' file.txt");
+        var remote = directory.GetFullPath("dir $HOME `pwd` & %PATH%/remote.txt");
+        var output = directory.GetFullPath("output dir/merged.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+
+        var startInfo = TestGitTool.CreateStartInfo("""printf '%s\n' "$LOCAL" "${REMOTE}" "$BASE" > "$MERGED" """, directory.FullPath,
+        [
+            new("LOCAL", local),
+            new("REMOTE", remote),
+            new("BASE", local),
+            new("MERGED", output),
+        ]);
+
+        global::Xunit.Assert.SkipUnless(string.Equals(Path.GetFileName(startInfo.FileName), "sh.exe", StringComparison.OrdinalIgnoreCase), "The shell of Git for Windows cannot be found.");
+        using (var process = Process.Start(startInfo)!)
+        {
+            process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
+        }
+
+        string[] expectedLines = [local.Value, remote.Value, local.Value];
+        Assert.Equal(expectedLines, File.ReadAllLines(output));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GitTool_CreateCommandStartInfoWithoutShell_PassesEachPathAsASingleArgument()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var remote = directory.GetFullPath("dir with spaces/remote file.txt");
+        var output = directory.GetFullPath("output dir/merged file.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(remote)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+        File.WriteAllText(remote, "sample");
+
+        var command = "\"" + Path.Combine(Environment.SystemDirectory, "cmd.exe") + "\" /d /c copy /y \"$REMOTE\" $MERGED";
+        var startInfo = TestGitTool.CreateStartInfoWithoutShell(command,
+        [
+            new("REMOTE", remote),
+            new("MERGED", output),
+        ]);
+        startInfo.RedirectStandardOutput = true;
+
+        using (var process = Process.Start(startInfo)!)
+        {
+            _ = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+            Assert.Equal(0, process.ExitCode);
+        }
+
+        Assert.Equal("sample", File.ReadAllText(output));
+    }
+
     [Fact]
     public void GitTool_ExpandCommandWithoutShell_QuotesEachPlaceholder()
     {
@@ -2637,10 +3309,93 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void AutoDiffEngineTool_SkipsTerminalTools()
+    {
+        var selectedTool = AutoDiffEngineTool.SelectTool(".txt",
+        [
+            (DiffTool.Vim, true, []),
+            (DiffTool.Neovim, true, []),
+            (DiffTool.Meld, true, []),
+            (DiffTool.VisualStudioCode, true, [".svg", ".bin"]),
+        ]);
+
+        Assert.Equal(DiffTool.Meld, selectedTool);
+    }
+
+    [Fact]
+    public void AutoDiffEngineTool_PrefersTheToolDedicatedToTheExtension()
+    {
+        (DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)[] availableTools =
+        [
+            (DiffTool.Vim, true, [".png"]),
+            (DiffTool.Meld, true, []),
+            (DiffTool.WinMerge, true, [".png"]),
+        ];
+
+        Assert.Equal(DiffTool.WinMerge, AutoDiffEngineTool.SelectTool(".PNG", availableTools));
+        Assert.Equal(DiffTool.Meld, AutoDiffEngineTool.SelectTool("", availableTools));
+    }
+
+    [Fact]
+    public void AutoDiffEngineTool_ReturnsNullWhenOnlyTerminalToolsAreAvailable()
+    {
+        Assert.Null(AutoDiffEngineTool.SelectTool(".txt", [(DiffTool.Vim, true, []), (DiffTool.Neovim, true, []), (DiffTool.MsWordDiff, false, [".docx"])]));
+    }
+
+    [Fact]
+    public void DiffEngineTool_CreateStartInfo_StartsAnExecutableWithTheArguments()
+    {
+        var startInfo = DiffEngineTool.CreateStartInfo(@"C:\Program Files\Tool\tool.exe", @"""C:\R&D\a b.txt"" C:\R&D\c.txt");
+
+        Assert.Equal(@"C:\Program Files\Tool\tool.exe", startInfo.FileName);
+        Assert.Equal(@"""C:\R&D\a b.txt"" C:\R&D\c.txt", startInfo.Arguments);
+        Assert.True(startInfo.UseShellExecute);
+    }
+
+    [Theory]
+    [InlineData(@"C:\Tools\code.cmd")]
+    [InlineData(@"C:\Tools\CODE.BAT")]
+    public void DiffEngineTool_CreateStartInfo_EscapesTheArgumentsOfABatchFileForCmd(string executablePath)
+    {
+        var arguments = "--wait --diff " + CommandLineBuilder.WindowsQuotedArguments(@"C:\src\R&D\a b.txt", @"C:\100%\x^y|z.txt", @"C:\dir\""quoted""\", "plain");
+
+        var startInfo = DiffEngineTool.CreateStartInfo(executablePath, arguments);
+
+        Assert.Equal("cmd.exe", Path.GetFileName(startInfo.FileName));
+        Assert.False(startInfo.UseShellExecute);
+        var expectedCommandLine = CommandLineBuilder.WindowsCmdArguments(executablePath, "--wait", "--diff", @"C:\src\R&D\a b.txt", @"C:\100%\x^y|z.txt", @"C:\dir\""quoted""\", "plain");
+        Assert.Equal("/d /e:on /v:off /s /c \"" + expectedCommandLine + "\"", startInfo.Arguments);
+        Assert.Contains(@"^""C:\src\R^&D\a b.txt^""", startInfo.Arguments);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("a b")]
+    [InlineData("a \"b c\" d")]
+    [InlineData(@"C:\dir with spaces\")]
+    [InlineData(@"C:\a ""quoted"" dir\b.txt")]
+    [InlineData(@"\\server\share\x\\")]
+    [InlineData("tab\tseparated")]
+    public void DiffEngineTool_SplitWindowsArguments_ReversesWindowsQuoting(string value)
+    {
+        string[] values = [value, "--diff", value + "suffix"];
+
+        Assert.Equal(values, DiffEngineTool.SplitWindowsArguments(CommandLineBuilder.WindowsQuotedArguments(values)));
+    }
+
+    [Fact]
+    public void DiffEngineTool_SplitWindowsArguments_HandlesDoubledQuotesAndRepeatedSpaces()
+    {
+        string[] expected = ["a\"b", "c", @"d\\e"];
+
+        Assert.Equal(expected, DiffEngineTool.SplitWindowsArguments("  \"a\"\"b\"   c\td\\\\e  "));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public void GitMergeTool_RunsTheConfiguredCommandAndDeletesTheCopyOfTheVerifiedFile()
     {
-        if (OperatingSystem.IsWindows() || ExecutableFinder.GetFullExecutablePath("git") is null)
-            return;
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
 
         using var directory = TemporaryDirectory.Create();
         var repository = directory.GetFullPath("repo with spaces");
@@ -2723,7 +3478,7 @@ public sealed partial class SnapshotTests
 
     private sealed class CompletedMergeToolResult(bool waitsForMerge) : MergeToolResult
     {
-        internal override bool WaitsForMerge => waitsForMerge;
+        public override bool WaitsForMerge => waitsForMerge;
 
         public override void Dispose()
         {
@@ -2739,6 +3494,11 @@ public sealed partial class SnapshotTests
         public override MergeToolResult? Start(string currentFilePath, string newFilePath) => throw new InvalidOperationException("The merge tool is broken.");
 
         public override string ToString() => "BrokenMergeTool";
+    }
+
+    private sealed class UnavailableMergeTool : MergeTool
+    {
+        public override MergeToolResult? Start(string currentFilePath, string newFilePath) => null;
     }
 
     [GeneratedRegex("Line[2]", RegexOptions.None, matchTimeoutMilliseconds: 10000)]
@@ -2856,6 +3616,7 @@ public sealed partial class SnapshotTests
         };
         settings.Serializers.Add(new FixedValueSerializer("value"));
 
+        // 'snapshot.verified.txt' does not exist yet: this is the run where the assertion went from two snapshots to one.
         File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
         File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "value_1");
 
@@ -2864,6 +3625,61 @@ public sealed partial class SnapshotTests
         Assert.Equal("value", File.ReadAllText(directory.GetFullPath("snapshot.verified.txt")));
         Assert.False(File.Exists(directory.GetFullPath("snapshot_0.verified.txt")));
         Assert.False(File.Exists(directory.GetFullPath("snapshot_1.verified.txt")));
+    }
+
+    [Theory]
+    [InlineData(nameof(SnapshotUpdateStrategy.Disallow))]
+    [InlineData(nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure))]
+    public void Validate_KeepsTheIndexedSnapshotsOfAnotherTest_WhenTheSingleSnapshotExists(string strategyName)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+
+        // The tests 'Render_0' and 'Render_1' - the cases of '[TestCase(0)] Render(int)' next to 'Render()' - did not run
+        // in this process: a filtered run, or the other target framework's process.
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllText(snapshotDirectory / "C_Render.verified.txt", "value");
+        File.WriteAllText(snapshotDirectory / "C_Render_0.verified.txt", "other_0");
+        File.WriteAllText(snapshotDirectory / "C_Render_1.verified.txt", "other_1");
+        File.WriteAllText(snapshotDirectory / "C_Render_1.actual.txt", "pending");
+        File.SetLastWriteTimeUtc(snapshotDirectory / "C_Render_1.actual.txt", DateTime.UtcNow.AddDays(-1));
+
+        ValidateWithDefaultNaming("value", CreateDetectedTestContext("C", "Render", "Render"), sourceFile, lineNumber: 10, GetSnapshotUpdateStrategy(strategyName));
+
+        Assert.Equal(["C_Render.verified.txt", "C_Render_0.verified.txt", "C_Render_1.actual.txt", "C_Render_1.verified.txt"], GetSnapshotFileNames(directory));
+    }
+
+    [Fact]
+    public void Validate_KeepsTheIndexedSnapshotsOfAnotherTestOfTheProcess_WhenTheSingleSnapshotDoesNotExist()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+
+        ValidateWithDefaultNaming("other_0", CreateDetectedTestContext("C", "Render", "Render_0"), sourceFile, lineNumber: 20, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+        ValidateWithDefaultNaming("other_1", CreateDetectedTestContext("C", "Render", "Render_1"), sourceFile, lineNumber: 20, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+        ValidateWithDefaultNaming("value", CreateDetectedTestContext("C", "Render", "Render"), sourceFile, lineNumber: 10, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+
+        Assert.Equal(["C_Render.verified.txt", "C_Render_0.verified.txt", "C_Render_1.verified.txt"], GetSnapshotFileNames(directory));
+    }
+
+    [Fact]
+    public void Validate_ReportsATestNamedAfterAFileOfAnAssertionThatProducesSeveralSnapshots()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "Frames", "Frames")))
+        {
+            Snapshot.Validate("sample", type: null, settings, sourceFile.Value, callerLineNumber: 10);
+        }
+
+        // 'Frames' stores its snapshots in 'C_Frames_0.verified.txt' and 'C_Frames_1.verified.txt'.
+        var exception = Assert.Throws<SnapshotException>(() => ValidateWithDefaultNaming("other", CreateDetectedTestContext("C", "Frames", "Frames_0"), sourceFile, lineNumber: 20, SnapshotUpdateStrategy.OverwriteWithoutFailure));
+
+        Assert.Contains("'C_Frames_0'", exception.Message);
+        Assert.Equal("value_0", File.ReadAllText(directory / "__snapshots__" / "C_Frames_0.verified.txt"));
     }
 
     [Fact]
@@ -3102,6 +3918,86 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void TestNames_NUnit_IncludeTheArgumentsOfAParameterizedFixture()
+    {
+        // [TestFixture("en-US")] [TestFixture("fr-FR")]: the instances run the same tests under the same names.
+        var enUs = SnapshotTestContext.GetNUnitTestNames("Format", "Format", "Ns.C(\"en-US\").Format", [], fixtureArguments: ["en-US"]);
+        var frFr = SnapshotTestContext.GetNUnitTestNames("Format", "Format", "Ns.C(\"fr-FR\").Format", [], fixtureArguments: ["fr-FR"]);
+        AssertTestNames("Format_en-US", enUs, expectedLegacyTestName: "Format");
+        AssertTestNames("Format_fr-FR", frFr, expectedLegacyTestName: "Format");
+        Assert.False(enUs.HasAmbiguousArguments);
+
+        AssertTestNames("Alpha_alpha_en-US_2", SnapshotTestContext.GetNUnitTestNames("Alpha(\"alpha\")", "Alpha", "Ns.C(\"en-US\",2).Alpha(\"alpha\")", ["alpha"], fixtureArguments: ["en-US", 2]), expectedLegacyTestName: "Alpha_alpha");
+        AssertTestNames("Case_alpha_1.5", SnapshotTestContext.GetNUnitTestNames("Case_alpha", "Named", "Ns.C(1.5d).Case_alpha", [1], fixtureArguments: [1.5]), expectedLegacyTestName: "Case_alpha");
+
+        // A fixture without arguments keeps its name.
+        AssertTestNames("Format", SnapshotTestContext.GetNUnitTestNames("Format", "Format", "Ns.C.Format", [], fixtureArguments: []));
+
+        // '_' also separates the fixture arguments from the rest of the name.
+        Assert.True(SnapshotTestContext.GetNUnitTestNames("M(\"a_b\")", "M", "Ns.C(\"c\").M(\"a_b\")", ["a_b"], fixtureArguments: ["c"]).HasAmbiguousArguments);
+        Assert.True(SnapshotTestContext.GetNUnitTestNames("M(\"a\")", "M", "Ns.C(\"b_c\").M(\"a\")", ["a"], fixtureArguments: ["b_c"]).HasAmbiguousArguments);
+    }
+
+    [Fact]
+    public void TestNames_TUnit_IncludeTheArgumentsOfTheClass()
+    {
+        AssertTestNames("Format_en-US", SnapshotTestContext.GetTUnitTestNames(hasTestDetails: true, "Format", "Format", [], classArguments: ["en-US"]), expectedLegacyTestName: "Format");
+        AssertTestNames("Dbl_1.5_en-US", SnapshotTestContext.GetTUnitTestNames(hasTestDetails: true, "Dbl(1.5)", "Dbl", [1.5], classArguments: ["en-US"]), expectedLegacyTestName: "Dbl_1.5");
+        AssertTestNames("Custom 1_en-US", SnapshotTestContext.GetTUnitTestNames(hasTestDetails: true, "Custom 1", "Custom", [1], classArguments: ["en-US"]), expectedLegacyTestName: "Custom 1");
+    }
+
+    [Fact]
+    public void TestNames_FormatDatesWithTheRoundTripFormat()
+    {
+        var first = new DateTime(2024, 1, 2, 3, 4, 5, 100, DateTimeKind.Utc);
+        var second = new DateTime(2024, 1, 2, 3, 4, 5, 200, DateTimeKind.Utc);
+
+        AssertTestNames("M_2024-01-02T03:04:05.1000000Z", SnapshotTestContext.GetNUnitTestNames("M(2024-01-02 03:04:05)", "M", "Ns.C.M(2024-01-02 03:04:05)", [first]), expectedLegacyTestName: "M_01/02/2024 03:04:05");
+        AssertTestNames("M_2024-01-02T03:04:05.2000000Z", SnapshotTestContext.GetNUnitTestNames("M(2024-01-02 03:04:05)", "M", "Ns.C.M(2024-01-02 03:04:05)", [second]), expectedLegacyTestName: "M_01/02/2024 03:04:05");
+
+        Assert.Equal("2024-01-02T03:04:05.1000000", SnapshotTestContext.FormatArguments([DateTime.SpecifyKind(first, DateTimeKind.Unspecified)], out _));
+        Assert.Equal("2024-01-02T03:04:05.1000000+02:00", SnapshotTestContext.FormatArguments([new DateTimeOffset(2024, 1, 2, 3, 4, 5, 100, TimeSpan.FromHours(2))], out _));
+        Assert.Equal("03:04:05.1000000", SnapshotTestContext.FormatArguments([new TimeOnly(3, 4, 5, 100)], out _));
+    }
+
+    [Fact]
+    public void TestNames_FlagTheCasesWhoseArgumentsOnlyDifferByType()
+    {
+        // An object parameter receiving 1, 1L and "1" names the three cases alike. Unique names keep the test apart
+        // from the other tests using the process-wide registry.
+        var methodName = "M_" + Guid.NewGuid().ToString("N");
+        Assert.False(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_1", [1]));
+        Assert.True(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_1", [1L]));
+        Assert.True(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_1", ["1"]));
+        Assert.False(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_[1]", [new object[] { 1 }]));
+        Assert.True(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_[1]", [new object[] { 1L }]));
+
+        // The case that ran first, running again, is not flagged.
+        Assert.False(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_1", [1]));
+
+        // Other names and tests without arguments are not affected.
+        Assert.False(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M_2", [2L]));
+        Assert.False(SnapshotTestContext.HasArgumentsOfAnotherType("C", methodName, "M", []));
+    }
+
+    [Fact]
+    public void GetContext_CachesATestFrameworkThatIsNotAvailable()
+    {
+        Func<SnapshotTestContext?>? cachedFactory = null;
+        var probeCount = 0;
+        Func<Func<SnapshotTestContext?>?> probe = () =>
+        {
+            probeCount++;
+            return null;
+        };
+
+        Assert.Null(SnapshotTestContext.GetContext(ref cachedFactory, probe).Invoke());
+        Assert.Null(SnapshotTestContext.GetContext(ref cachedFactory, probe).Invoke());
+
+        Assert.Equal(1, probeCount);
+    }
+
+    [Fact]
     public void TestNames_FormatListsElementByElement()
     {
         AssertTestNames("Arr_[1, 2]", SnapshotTestContext.GetXunitV3TestNames("Ns.C.Arr(value: [1, 2])", testMethodNameOfTest: null, hasTestCase: true, "Ns.C.Arr", "Ns.C", "Arr", [new[] { 1, 2 }]), expectedLegacyTestName: "Arr_System.Int32[]");
@@ -3222,6 +4118,50 @@ public sealed partial class SnapshotTests
         ValidateWithDefaultNaming(new byte[] { 1, 2, 3 }, context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.OverwriteWithoutFailure, SnapshotType.Png);
 
         Assert.Equal(["C_M.verified.png"], GetSnapshotFileNames(directory));
+    }
+
+    [Fact]
+    public void Validate_KeepsTheSnapshotOfAnotherTypeOfATestWithSeveralCalls()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+
+        // 'if (OperatingSystem.IsWindows()) Validate(png); Validate(text);' created these files on Windows. Elsewhere, the
+        // text call is the first one of the test, so it is named 'C_M'.
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllBytes(snapshotDirectory / "C_M.verified.png", [1, 2, 3]);
+        File.WriteAllText(snapshotDirectory / "C_M~2.verified.txt", "text");
+
+        ValidateWithDefaultNaming("text", CreateDetectedTestContext("C", "M", "M"), sourceFile, lineNumber: 20, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+
+        Assert.Equal(["C_M.verified.png", "C_M.verified.txt", "C_M~2.verified.txt"], GetSnapshotFileNames(directory));
+    }
+
+    [Fact]
+    public void Validate_ReportsAndRenamesASnapshotFileWhoseNameDiffersByCase()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var context = CreateDetectedTestContext("C", "ValidateURL", "ValidateURL");
+
+        // The test used to be called 'ValidateUrl'.
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllText(snapshotDirectory / "C_ValidateUrl.verified.txt", "value");
+
+        var exception = Assert.Throws<SnapshotAssertionException>(() => ValidateWithDefaultNaming("value", context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.Disallow));
+        Assert.Contains("differ from the snapshot name by case only", exception.Message);
+        Assert.Contains("C_ValidateUrl.verified.txt => C_ValidateURL.verified.txt", exception.Message);
+
+        // On a case-sensitive file system, the snapshot is also reported as missing, so an actual file is written too.
+        Assert.Equal(["C_ValidateUrl.verified.txt"], GetSnapshotFileNames(directory).Where(name => name.Contains(".verified.", StringComparison.Ordinal)).ToArray());
+
+        ValidateWithDefaultNaming("value", context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+        Assert.Equal(["C_ValidateURL.verified.txt"], GetSnapshotFileNames(directory));
+        Assert.Equal("value", File.ReadAllText(snapshotDirectory / "C_ValidateURL.verified.txt"));
+
+        ValidateWithDefaultNaming("value", context, sourceFile, lineNumber: 10, SnapshotUpdateStrategy.Disallow);
     }
 
     [Fact]
@@ -3388,6 +4328,30 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void Validate_DoesNotDeleteTheActualFileOfAnIndexedSnapshotThatMayBelongToAnotherTest()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var otherTestPath = directory / "__snapshots__" / "C_Render_b_2.verified.txt";
+        var otherTestActualPath = directory / "__snapshots__" / "C_Render_b_2.actual.txt";
+        otherTestPath.CreateParentDirectory();
+        File.WriteAllText(otherTestPath, "other");
+        File.WriteAllText(otherTestActualPath, "pending");
+
+        // Written by an earlier run, so only the ownership of the verified file protects it.
+        File.SetLastWriteTimeUtc(otherTestActualPath, DateTime.UtcNow.AddDays(-1));
+
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "Render_b", "Render_b")))
+        {
+            Snapshot.Validate("sample", type: null, settings, sourceFile.Value, callerLineNumber: 10);
+        }
+
+        Assert.Equal("pending", File.ReadAllText(otherTestActualPath));
+    }
+
+    [Fact]
     public void Validate_IgnoresAnIndexedSnapshotOfAnotherTestOfTheProcess()
     {
         using var directory = TemporaryDirectory.Create();
@@ -3403,6 +4367,103 @@ public sealed partial class SnapshotTests
         }
 
         Assert.Equal(["C_Render_a_0.verified.txt", "C_Render_a_1.verified.txt", "C_Render_a_2.verified.txt"], GetSnapshotFileNames(directory));
+    }
+
+    [Fact]
+    public void Validate_KeepsTheIndexedSnapshots_WhenTheAssertionNowProducesASingleSnapshotAndUpdatesAreDisallowed()
+    {
+        // The assertion used to produce two snapshots and now produces one, so the indexed files it left
+        // behind are reported as unexpected and the file it produces now is reported as missing.
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllText(snapshotDirectory / "C_M_0.verified.txt", "value_0");
+        File.WriteAllText(snapshotDirectory / "C_M_1.verified.txt", "value_1");
+
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        settings.Serializers.Add(new FixedCountSerializer(count: 1));
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "M", "M")))
+        {
+            Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", type: null, settings, sourceFile.Value, callerLineNumber: 10));
+        }
+
+        Assert.Equal(["C_M.actual.txt", "C_M_0.verified.txt", "C_M_1.verified.txt"], GetSnapshotFileNames(directory));
+        Assert.Equal("value_0", File.ReadAllText(snapshotDirectory / "C_M.actual.txt"));
+        Assert.Equal("value_0", File.ReadAllText(snapshotDirectory / "C_M_0.verified.txt"));
+        Assert.Equal("value_1", File.ReadAllText(snapshotDirectory / "C_M_1.verified.txt"));
+    }
+
+    [Fact]
+    public void Validate_WritesAnActualFileForTheNewSnapshot_WhenTheAssertionNowProducesMoreSnapshotsAndUpdatesAreDisallowed()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var snapshotDirectory = directory / "__snapshots__";
+        Directory.CreateDirectory(snapshotDirectory);
+        File.WriteAllText(snapshotDirectory / "C_M_0.verified.txt", "value_0");
+
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        settings.Serializers.Add(new FixedCountSerializer(count: 2));
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "M", "M")))
+        {
+            Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", type: null, settings, sourceFile.Value, callerLineNumber: 10));
+        }
+
+        Assert.Equal(["C_M_0.verified.txt", "C_M_1.actual.txt"], GetSnapshotFileNames(directory));
+        Assert.Equal("value_0", File.ReadAllText(snapshotDirectory / "C_M_0.verified.txt"));
+        Assert.Equal("value_1", File.ReadAllText(snapshotDirectory / "C_M_1.actual.txt"));
+    }
+
+    [Fact]
+    public void Validate_NamesBinarySnapshotsAfterTheirType()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure };
+
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "ByteArrayWithTypeName", "ByteArrayWithTypeName")))
+        {
+            Snapshot.Validate(new byte[] { 0x42, 0x00, 0x43 }, "png", settings, sourceFile.Value, callerLineNumber: 10);
+        }
+
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "ByteArray", "ByteArray")))
+        {
+            Snapshot.Validate(new byte[] { 0x42, 0x00, 0x43 }, SnapshotType.Png, settings, sourceFile.Value, callerLineNumber: 20);
+        }
+
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "Stream", "Stream")))
+        {
+            using var stream = new MemoryStream([0x01, 0x02, 0x03, 0x04]);
+            Snapshot.Validate(stream, SnapshotType.Png, settings, sourceFile.Value, callerLineNumber: 30);
+        }
+
+        Assert.Equal(["C_ByteArray.verified.png", "C_ByteArrayWithTypeName.verified.png", "C_Stream.verified.png"], GetSnapshotFileNames(directory));
+        Assert.Equal([0x42, 0x00, 0x43], File.ReadAllBytes(directory / "__snapshots__" / "C_ByteArrayWithTypeName.verified.png"));
+        Assert.Equal([0x42, 0x00, 0x43], File.ReadAllBytes(directory / "__snapshots__" / "C_ByteArray.verified.png"));
+        Assert.Equal([0x01, 0x02, 0x03, 0x04], File.ReadAllBytes(directory / "__snapshots__" / "C_Stream.verified.png"));
+    }
+
+    [Fact]
+    public void Validate_MatchesABmpSnapshotWhoseMetadataDiffers_WhenTheImageComparerIsEnabled()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var verifiedPath = directory / "__snapshots__" / "C_M.verified.bmp";
+        var verifiedData = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF010203u], pixelsPerMeter: 2835);
+        verifiedPath.CreateParentDirectory();
+        File.WriteAllBytes(verifiedPath, verifiedData);
+
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false, SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        settings.Comparers.AddImageComparer();
+        using (new SnapshotTestContextScope(CreateDetectedTestContext("C", "M", "M")))
+        {
+            var actualData = ImageTestData.CreateBmp24(width: 1, height: 1, pixels: [0xFF010203u], pixelsPerMeter: 3780);
+            Snapshot.Validate(actualData, SnapshotType.Bmp, settings, sourceFile.Value, callerLineNumber: 10);
+        }
+
+        Assert.Equal(["C_M.verified.bmp"], GetSnapshotFileNames(directory));
+        Assert.Equal(verifiedData, File.ReadAllBytes(verifiedPath));
     }
 
     [Fact]
@@ -3471,12 +4532,76 @@ public sealed partial class SnapshotTests
         var settings = CreateDeterministicSnapshotSettings(directory, "correct");
         File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "correct");
         File.WriteAllText(directory.GetFullPath("snapshot.actual.txt"), "wrong");
+        File.SetLastWriteTimeUtc(directory.GetFullPath("snapshot.actual.txt"), DateTime.UtcNow.AddDays(-1));
 
         Snapshot.Validate("sample", settings);
 
         // Approving the actual files would otherwise replace the correct snapshot with the stale output.
         Assert.False(File.Exists(directory.GetFullPath("snapshot.actual.txt")));
         Assert.Equal("correct", File.ReadAllText(directory.GetFullPath("snapshot.verified.txt")));
+    }
+
+    [Fact]
+    public void Validate_DeletesTheActualFileThisProcessWrote_WhenTheSnapshotMatchesAgain()
+    {
+        using var directory = TemporaryDirectory.Create();
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "correct");
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", CreateDeterministicSnapshotSettings(directory, "wrong")));
+        Assert.Equal("wrong", File.ReadAllText(directory.GetFullPath("snapshot.actual.txt")));
+
+        Snapshot.Validate("sample", CreateDeterministicSnapshotSettings(directory, "correct"));
+
+        Assert.False(File.Exists(directory.GetFullPath("snapshot.actual.txt")));
+    }
+
+    // A test project that targets several frameworks runs one test process per framework. When the output differs by
+    // framework, the process whose snapshot matches must not delete the actual file the other one just wrote.
+    [Fact]
+    public void Validate_KeepsTheActualFileAnotherProcessWrote_WhenTheSnapshotMatches()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateDeterministicSnapshotSettings(directory, "correct");
+        File.WriteAllText(directory.GetFullPath("snapshot.verified.txt"), "correct");
+        File.WriteAllText(directory.GetFullPath("snapshot.actual.txt"), "output of the other process");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("output of the other process", File.ReadAllText(directory.GetFullPath("snapshot.actual.txt")));
+    }
+
+    [Fact]
+    public void Validate_OverwriteWithoutFailure_UpdatesTheSnapshotWhenAnotherProcessRemovedTheActualFile()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
+        var settings = CreateDeterministicSnapshotSettings(directory, "new") with { SnapshotUpdateStrategy = new RemoveActualFilesStrategy(SnapshotUpdateStrategy.OverwriteWithoutFailure) };
+        File.WriteAllText(verifiedPath, "old");
+
+        Snapshot.Validate("sample", settings);
+
+        Assert.Equal("new", File.ReadAllText(verifiedPath));
+        Assert.False(File.Exists(directory.GetFullPath("snapshot.actual.txt")));
+    }
+
+    /// <summary>Removes the actual files before the update, as another process validating the same snapshot may do.</summary>
+    private sealed class RemoveActualFilesStrategy(SnapshotUpdateStrategy strategy) : SnapshotUpdateStrategy
+    {
+        public override bool CanUpdateSnapshot(SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot) => strategy.CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
+
+        public override bool MustReportError(SnapshotSettings settings, string path) => strategy.MustReportError(settings, path);
+
+        public override void UpdateFiles(SnapshotSettings settings, IReadOnlyList<SnapshotUpdateFile> filesToUpdate, IReadOnlyList<string> filesToDelete)
+        {
+            foreach (var file in filesToUpdate)
+            {
+                File.Delete(file.ActualFilePath);
+            }
+
+            strategy.UpdateFiles(settings, filesToUpdate, filesToDelete);
+        }
+
+        public override void UpdateFile(SnapshotSettings settings, string verifiedFilePath, string actualFilePath) => throw new InvalidOperationException();
     }
 
     [Theory]
@@ -3516,6 +4641,7 @@ public sealed partial class SnapshotTests
 
         File.WriteAllText(directory.GetFullPath("snapshot_0.verified.txt"), "value_0");
         File.WriteAllText(directory.GetFullPath("snapshot_0.actual.txt"), "stale");
+        File.SetLastWriteTimeUtc(directory.GetFullPath("snapshot_0.actual.txt"), DateTime.UtcNow.AddDays(-1));
         File.WriteAllText(directory.GetFullPath("snapshot_1.verified.txt"), "outdated");
 
         Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("sample", settings));
@@ -3578,6 +4704,29 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void Validate_TreatsASnapshotWithoutFormatAsBinary()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var comparer = new RecordingSnapshotComparer();
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context => directory / ("snapshot.verified." + context.Extension),
+        };
+        settings.ScrubLinesContaining("x");
+        settings.Comparers.Set(SnapshotType.Create("bin"), comparer);
+
+        // The default path strategy stores such a snapshot as a 'bin' file, whose content is never scrubbed.
+        var utf8Bytes = "x\nkept"u8.ToArray();
+        Snapshot.Validate(utf8Bytes, SnapshotType.None, settings);
+        Assert.Equal(utf8Bytes, File.ReadAllBytes(directory.GetFullPath("snapshot.verified.bin")));
+
+        Snapshot.Validate(utf8Bytes, SnapshotType.None, settings);
+        Assert.True(comparer.InvocationCount > 0, "The comparer registered for 'bin' was not used.");
+    }
+
+    [Fact]
     public void Validate_AppliesScrubbersToTextSnapshotsOfAnyTextFormat()
     {
         using var directory = TemporaryDirectory.Create();
@@ -3592,6 +4741,19 @@ public sealed partial class SnapshotTests
         Snapshot.Validate("line1\nsecret\nline3"u8.ToArray(), SnapshotType.Create("json"), settings);
 
         Assert.Equal("line1\nline3", File.ReadAllText(directory.GetFullPath("snapshot.verified.json")));
+    }
+
+    [Fact]
+    public void Validate_AppliesScrubbersToTheFirstLineOfATextWithAByteOrderMark()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateScrubberSnapshotSettings(directory);
+        settings.ScrubLinesMatching("^Date:");
+
+        byte[] content = [0xEF, 0xBB, 0xBF, .. "Date: 2026-09-15\nkept"u8];
+        Snapshot.Validate(content, SnapshotType.Default, settings);
+
+        Assert.Equal("kept"u8.ToArray(), File.ReadAllBytes(directory.GetFullPath("snapshot.verified.txt")));
     }
 
     [Theory]

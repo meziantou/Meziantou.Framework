@@ -41,26 +41,24 @@ public static class InlineSnapshotSettingsScrubberExtensions
     public static void ScrubLinesWithReplace(this InlineSnapshotSettings settings, Func<string, string?> replaceLine) => settings.Scrubbers.Add(new LineReplaceScrubber(replaceLine));
 
     /// <summary>Adds a scrubber that replaces the machine name with a consistent value.</summary>
-    /// <remarks>Does nothing when <see cref="Environment.MachineName"/> is empty.</remarks>
-    public static void ScrubMachineName(this InlineSnapshotSettings settings)
-    {
-        // string.Replace throws on an empty search value, and the machine name can be empty in a container.
-        var machineName = Environment.MachineName;
-        if (string.IsNullOrEmpty(machineName))
-            return;
-
-        settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(machineName, "TheMachineName", StringComparison.OrdinalIgnoreCase)));
-    }
+    /// <remarks>Only whole words are replaced, ignoring case. Does nothing when <see cref="Environment.MachineName"/> is empty.</remarks>
+    public static void ScrubMachineName(this InlineSnapshotSettings settings) => AddWholeWordScrubber(settings, Environment.MachineName, "TheMachineName");
 
     /// <summary>Adds a scrubber that replaces the user name with a consistent value.</summary>
-    /// <remarks>Does nothing when <see cref="Environment.UserName"/> is empty.</remarks>
-    public static void ScrubUserName(this InlineSnapshotSettings settings)
+    /// <remarks>Only whole words are replaced, ignoring case. Does nothing when <see cref="Environment.UserName"/> is empty.</remarks>
+    public static void ScrubUserName(this InlineSnapshotSettings settings) => AddWholeWordScrubber(settings, Environment.UserName, "TheUserName");
+
+    /// <summary>
+    /// Adds a scrubber that replaces <paramref name="value"/> where it forms a whole word. A user or a machine name is
+    /// often a common word - <c>runner</c> on GitHub Actions, <c>root</c> in a container - so replacing every substring
+    /// would also change <c>xunit.runner.visualstudio</c> or <c>chroot</c>, only on the machines using that name.
+    /// </summary>
+    internal static void AddWholeWordScrubber(InlineSnapshotSettings settings, string? value, string replacement)
     {
-        // string.Replace throws on an empty search value, and the user name can be empty in a container.
-        var userName = Environment.UserName;
-        if (string.IsNullOrEmpty(userName))
+        // The machine name and the user name can be empty in a container.
+        if (string.IsNullOrEmpty(value))
             return;
 
-        settings.Scrubbers.Add(new LineReplaceScrubber(line => line.Replace(userName, "TheUserName", StringComparison.OrdinalIgnoreCase)));
+        settings.Scrubbers.Add(new LineReplaceScrubber(line => ScrubberUtilities.ReplaceWholeWord(line, value, replacement)));
     }
 }

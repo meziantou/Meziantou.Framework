@@ -22,6 +22,9 @@ public sealed class TiffImageLoaderTests
     [InlineData("tiff-rgb24-none")]
     [InlineData("tiff-rgb24-packbits")]
     [InlineData("tiff-rgb24-lzw")]
+    [InlineData("tiff-rgb24-lzw-predictor")]
+    [InlineData("tiff-rgb24-big-endian")]
+    [InlineData("tiff-gray8-white-is-zero")]
     public async Task Image_LoadAsync_TiffAndConvertedPng_AreIdentical(string scenario)
     {
         var tiffImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".tiff");
@@ -73,6 +76,19 @@ public sealed class TiffImageLoaderTests
         var image = Image.Load(tiffData);
 
         Assert.Equal(CreateGrayscalePixels("ABABABA"), image.Pixels.ToArray());
+    }
+
+    [Fact]
+    public void Image_Load_IgnoresLzwDataThatDecodesPastTheEndOfTheStrip()
+    {
+        // 258 ("AB") only partly fits in the 3 pixels of the strip, and 'C' does not fit at all. libtiff keeps
+        // what fits and ignores the rest.
+        var stripData = ImageTestData.EncodeTiffLzwCodes([256, 'A', 'B', 258, 'C', 257]);
+        var tiffData = CreateGrayscaleTiff(width: 3, height: 1, stripData, CompressionLzw);
+
+        var image = Image.Load(tiffData);
+
+        Assert.Equal(CreateGrayscalePixels("ABA"), image.Pixels.ToArray());
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text.Json.Nodes;
 using System.Text.Json;
 using Meziantou.Framework.HumanReadable.Converters;
@@ -154,54 +155,16 @@ public sealed class JsonFormatter : ValueFormatter
                 HumanReadableSerializer.Serialize(writer, value.GetValue<string>(), options);
                 break;
             case JsonValueKind.Number:
-                var jsonValue = value.AsValue();
-                if (jsonValue.TryGetValue<decimal>(out var decimalValue))
+                // decimal.Parse silently rounds the numbers it cannot represent (e.g. 1e-30 becomes 0), and double loses precision,
+                // so the number is written as it appears in the JSON text when decimal cannot represent it exactly
+                var rawText = value.ToJsonString();
+                if (TryParseExactDecimal(rawText, out var decimalValue))
                 {
                     HumanReadableSerializer.Serialize(writer, decimalValue, options);
                 }
-                else if (jsonValue.TryGetValue<double>(out var doubleValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, doubleValue, options);
-                }
-                else if (jsonValue.TryGetValue<float>(out var floatValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, floatValue, options);
-                }
-                else if (jsonValue.TryGetValue<long>(out var longValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, longValue, options);
-                }
-                else if (jsonValue.TryGetValue<ulong>(out var ulongValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, ulongValue, options);
-                }
-                else if (jsonValue.TryGetValue<int>(out var intValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, intValue, options);
-                }
-                else if (jsonValue.TryGetValue<uint>(out var uintValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, uintValue, options);
-                }
-                else if (jsonValue.TryGetValue<short>(out var shortValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, shortValue, options);
-                }
-                else if (jsonValue.TryGetValue<ushort>(out var ushortValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, ushortValue, options);
-                }
-                else if (jsonValue.TryGetValue<byte>(out var byteValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, byteValue, options);
-                }
-                else if (jsonValue.TryGetValue<sbyte>(out var sbyteValue))
-                {
-                    HumanReadableSerializer.Serialize(writer, sbyteValue, options);
-                }
                 else
                 {
-                    HumanReadableSerializer.Serialize(writer, value.ToJsonString(JsonElementConverter.IndentedOptions), options);
+                    HumanReadableSerializer.Serialize(writer, rawText, options);
                 }
 
                 break;
@@ -215,5 +178,48 @@ public sealed class JsonFormatter : ValueFormatter
                 writer.WriteNullValue();
                 break;
         }
+    }
+
+    private static bool TryParseExactDecimal(string text, out decimal value)
+    {
+        if (!decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+            return false;
+
+        // JSON numbers: -?digits(.digits)?([eE][+-]?digits)?
+        var span = text.AsSpan();
+        var isNegative = span.StartsWith("-");
+        if (isNegative)
+        {
+            span = span[1..];
+        }
+
+        var exponent = 0;
+        var exponentIndex = span.IndexOfAny('e', 'E');
+        if (exponentIndex >= 0)
+        {
+            if (!int.TryParse(span[(exponentIndex + 1)..], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out exponent))
+                return false;
+
+            span = span[..exponentIndex];
+        }
+
+        var dotIndex = span.IndexOf('.');
+        var textMantissa = dotIndex >= 0 ? BigInteger.Parse(string.Concat(span[..dotIndex], span[(dotIndex + 1)..]), NumberStyles.None, CultureInfo.InvariantCulture) : BigInteger.Parse(span, NumberStyles.None, CultureInfo.InvariantCulture);
+        var textExponent = (long)exponent - (dotIndex >= 0 ? span.Length - dotIndex - 1 : 0);
+
+        Span<int> bits = stackalloc int[4];
+        decimal.GetBits(value, bits);
+        var decimalMantissa = ((BigInteger)(uint)bits[2] << 64) | ((BigInteger)(uint)bits[1] << 32) | (uint)bits[0];
+        long decimalExponent = -((bits[3] >> 16) & 0xFF);
+
+        if (textMantissa.IsZero || decimalMantissa.IsZero)
+            return textMantissa.IsZero && decimalMantissa.IsZero;
+
+        if (isNegative != bits[3] < 0)
+            return false;
+
+        // Compare textMantissa * 10^textExponent with decimalMantissa * 10^decimalExponent
+        var minExponent = Math.Min(textExponent, decimalExponent);
+        return textMantissa * BigInteger.Pow(10, (int)(textExponent - minExponent)) == decimalMantissa * BigInteger.Pow(10, (int)(decimalExponent - minExponent));
     }
 }

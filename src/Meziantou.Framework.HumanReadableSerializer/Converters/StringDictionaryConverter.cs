@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
 
@@ -10,40 +9,21 @@ internal sealed class StringDictionaryConverter : HumanReadableConverter<StringD
     {
         Debug.Assert(value is not null);
 
-        if (options.DictionaryKeyOrder is not null)
+        // StringDictionary is backed by a Hashtable, so its enumeration order depends on the randomized string hash codes
+        var keys = value.Keys.Cast<string>().Order(options.DictionaryKeyOrder ?? StringComparer.Ordinal).ToArray();
+        if (keys.Length is 0)
         {
-            var dict = new Dictionary<string, string?>(StringComparer.Ordinal);
-            foreach (string item in value.Keys)
-            {
-                dict.Add(item, value[item]);
-            }
-
-            HumanReadableSerializer.Serialize(writer, dict, options);
+            writer.WriteEmptyObject();
+            return;
         }
-        else
+
+        writer.StartObject();
+        foreach (var key in keys)
         {
-            var hasItem = false;
-            var enumerator = (IDictionaryEnumerator)value.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                if (!hasItem)
-                {
-                    writer.StartObject();
-                    hasItem = true;
-                }
-
-                writer.WritePropertyName((string)enumerator.Key);
-                HumanReadableSerializer.Serialize(writer, enumerator.Value, options);
-            }
-
-            if (hasItem)
-            {
-                writer.EndObject();
-            }
-            else
-            {
-                writer.WriteEmptyObject();
-            }
+            writer.WritePropertyName(key);
+            HumanReadableSerializer.Serialize(writer, value[key], typeof(string), options);
         }
+
+        writer.EndObject();
     }
 }

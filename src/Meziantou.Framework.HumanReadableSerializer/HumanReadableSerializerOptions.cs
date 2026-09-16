@@ -26,7 +26,9 @@ public sealed record HumanReadableSerializerOptions
     private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfoCache;
 
     private readonly List<(Func<Type, bool> Condition, HumanReadableAttribute Attribute)> _typeAttributes;
-    private readonly List<(Func<MemberInfo, bool> Condition, HumanReadableAttribute Attribute)> _memberAttributes;
+    // The condition receives the type being serialized and one of its members.
+    // The owner identifies the attributes registered by a configuration method, so a later call can replace them.
+    private readonly List<(Func<Type, MemberInfo, bool> Condition, HumanReadableAttribute Attribute, object? Owner)> _memberAttributes;
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
     private string _newLine = DefaultNewLine;
 
@@ -85,7 +87,7 @@ public sealed record HumanReadableSerializerOptions
     }
 
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
-    internal IDisposable BeginScope()
+    internal SerializationContext.ScopeContext BeginScope()
     {
         s_currentContext ??= new SerializationContext();
         return s_currentContext.BeginScope();
@@ -108,7 +110,8 @@ public sealed record HumanReadableSerializerOptions
     /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
     /// <remarks>
     /// Every value and property name is affected, including single-line ones. A space is kept between other characters,
-    /// but written as <c>␠</c> at the start or the end of a line. The other space characters, which have no control picture,
+    /// but written as <c>␠</c> at the start or the end of a line. The other space characters, the zero-width characters, the format characters
+    /// (for example soft hyphens and bidirectional marks) and the C1 control characters, which have no control picture,
     /// are written as their code point, for example <c>&lt;U+00A0&gt;</c> for a no-break space.
     /// </remarks>
     public bool ShowInvisibleCharactersInValues
@@ -153,6 +156,12 @@ public sealed record HumanReadableSerializerOptions
     }
 
     /// <summary>Gets or sets the comparer used to sort dictionary keys when serializing dictionaries.</summary>
+    /// <remarks>
+    /// When <see langword="null"/>, the keys of dictionaries that keep an order (for example <see cref="Dictionary{TKey, TValue}"/>) are written in enumeration order.
+    /// The keys of hash-based collections that have no meaningful order (<see cref="System.Collections.Hashtable"/>, <see cref="System.Collections.Specialized.HybridDictionary"/>
+    /// and <see cref="System.Collections.Specialized.StringDictionary"/>) are always sorted, using <see cref="StringComparer.Ordinal"/> by default,
+    /// so the output does not depend on the process. The comparer also applies to the other non-generic <see cref="System.Collections.IDictionary"/> implementations.
+    /// </remarks>
     public IComparer<string>? DictionaryKeyOrder
     {
         get;
@@ -211,54 +220,136 @@ public sealed record HumanReadableSerializerOptions
     /// <summary>Adds an attribute to the specified type.</summary>
     /// <param name="type">The type to add the attribute to.</param>
     /// <param name="attribute">The attribute to add.</param>
+    /// <remarks>The attribute also applies to the types that derive from <paramref name="type"/> or implement it, as an attribute declared on the type would.</remarks>
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(attribute);
 
         VerifyMutable();
-        _typeAttributes.Add((t => t == type, attribute));
+        _typeAttributes.Add((type.IsAssignableFrom, attribute));
     }
 
     /// <summary>Adds an attribute to a member of the specified type.</summary>
     /// <param name="type">The type containing the member.</param>
     /// <param name="memberName">The name of the member.</param>
     /// <param name="attribute">The attribute to add.</param>
-    public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
+    /// <remarks>
+    /// The member can be declared in <paramref name="type"/> or in one of its base types, including private members of the base types.
+    /// The attribute applies when serializing <paramref name="type"/> or a type deriving from it, including to the members that override the member.
+    /// </remarks>
+    public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute) => AddAttribute(type, memberName, attribute, owner: null);
+
+    internal void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute, object? owner)
     {
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(memberName);
-
-        VerifyMutable();
-
-        var members = type.GetMember(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (members.Length == 0)
-            throw new ArgumentException($"Cannot find an instance member named '{memberName}' in type '{type.AssemblyQualifiedName}'.", nameof(memberName));
-
-        foreach (var member in members)
-        {
-            AddAttribute(member, attribute);
-        }
-    }
-
-    private void AddAttribute(MemberInfo member, HumanReadableAttribute attribute)
-    {
-        ArgumentNullException.ThrowIfNull(member);
         ArgumentNullException.ThrowIfNull(attribute);
 
         VerifyMutable();
-        _memberAttributes.Add((m => m.Module == member.Module && m.MetadataToken == member.MetadataToken, attribute));
+
+        // Type.GetMember never returns the private members of the base types, which are serialized when they are included
+        const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+        IEnumerable<Type> types = type.IsInterface ? [type, .. type.GetInterfaces()] : GetTypeHierarchy(type);
+
+        var found = false;
+        foreach (var current in types)
+        {
+            foreach (var member in current.GetMember(memberName, Flags))
+            {
+                AddMemberAttribute(type, member, attribute, owner);
+                found = true;
+            }
+        }
+
+        if (!found)
+            throw new ArgumentException($"Cannot find an instance member named '{memberName}' in type '{type.AssemblyQualifiedName}'.", nameof(memberName));
+
+        static IEnumerable<Type> GetTypeHierarchy(Type type)
+        {
+            for (var current = type; current is not null; current = current.BaseType)
+            {
+                yield return current;
+            }
+        }
+    }
+
+    private void AddMemberAttribute(Type ownerType, MemberInfo member, HumanReadableAttribute attribute, object? owner = null)
+    {
+        VerifyMutable();
+
+        var definition = GetRootDefinition(member);
+        _memberAttributes.Add(((type, candidate) => ownerType.IsAssignableFrom(type) && IsSameMember(type, candidate, definition), attribute, owner));
+    }
+
+    internal void RemoveMemberAttributes(object owner)
+    {
+        VerifyMutable();
+        _memberAttributes.RemoveAll(item => item.Owner == owner);
+    }
+
+    // Identifies a member independently of the type it is reflected from, and of the overrides of a virtual property
+    private static MemberInfo GetRootDefinition(MemberInfo member)
+    {
+        if (member is PropertyInfo property && (property.GetMethod ?? property.SetMethod) is { } accessor)
+            return accessor.GetBaseDefinition();
+
+        return member;
+    }
+
+    private static bool IsSameMember(Type type, MemberInfo candidate, MemberInfo definition)
+    {
+        var candidateDefinition = GetRootDefinition(candidate);
+        if (IsSameDefinition(candidateDefinition, definition))
+            return true;
+
+        // A property declared by an interface is implemented by a property of the class
+        if (definition is MethodInfo { DeclaringType: { IsInterface: true } interfaceType } interfaceMethod && !type.IsInterface && candidateDefinition is MethodInfo candidateMethod && interfaceType.IsAssignableFrom(type))
+        {
+            var map = type.GetInterfaceMap(interfaceType);
+            for (var i = 0; i < map.InterfaceMethods.Length; i++)
+            {
+                if (IsSameDefinition(map.InterfaceMethods[i], interfaceMethod))
+                    return IsSameDefinition(map.TargetMethods[i].GetBaseDefinition(), candidateMethod);
+            }
+        }
+
+        return false;
+
+        // Members of different instantiations of a generic type share their metadata token
+        static bool IsSameDefinition(MemberInfo a, MemberInfo b)
+            => a.MetadataToken == b.MetadataToken && a.Module == b.Module && a.DeclaringType == b.DeclaringType;
     }
 
     /// <summary>Adds an attribute to the specified field.</summary>
     /// <param name="member">The field to add the attribute to.</param>
     /// <param name="attribute">The attribute to add.</param>
-    public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
+    /// <remarks>The attribute applies when serializing the type the field is retrieved from (<see cref="MemberInfo.ReflectedType"/>) or a type deriving from it.</remarks>
+    public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(attribute);
+
+        AddMemberAttribute(GetOwnerType(member), member, attribute);
+    }
 
     /// <summary>Adds an attribute to the specified property.</summary>
     /// <param name="member">The property to add the attribute to.</param>
     /// <param name="attribute">The attribute to add.</param>
-    public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
+    /// <remarks>
+    /// The attribute applies when serializing the type the property is retrieved from (<see cref="MemberInfo.ReflectedType"/>) or a type deriving from it,
+    /// including to the properties that override it.
+    /// </remarks>
+    public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute)
+    {
+        ArgumentNullException.ThrowIfNull(member);
+        ArgumentNullException.ThrowIfNull(attribute);
+
+        AddMemberAttribute(GetOwnerType(member), member, attribute);
+    }
+
+    private static Type GetOwnerType(MemberInfo member)
+        => member.ReflectedType ?? member.DeclaringType ?? throw new ArgumentException($"Member '{member.Name}' is not declared by a type.", nameof(member));
 
     /// <summary>Adds an attribute to all properties matching the specified condition.</summary>
     /// <param name="condition">A function that determines which properties to add the attribute to.</param>
@@ -269,13 +360,18 @@ public sealed record HumanReadableSerializerOptions
         ArgumentNullException.ThrowIfNull(attribute);
 
         VerifyMutable();
-        _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
+        _memberAttributes.Add((Condition: (type, member) => member is PropertyInfo property && condition(property), attribute, Owner: null));
     }
 
     /// <summary>Adds an attribute to a member identified by an expression.</summary>
     /// <typeparam name="T">The type containing the member.</typeparam>
-    /// <param name="member">An expression identifying the member.</param>
+    /// <param name="member">An expression identifying the member, such as <c>x =&gt; x.Name</c>, or several members, such as <c>x =&gt; new { x.Name, x.Age }</c>.</param>
     /// <param name="attribute">The attribute to add.</param>
+    /// <remarks>
+    /// The attribute applies to the member when serializing the type it is accessed on, or a type deriving from it, including to the members that override it.
+    /// For <c>x =&gt; x.Name</c>, this is <typeparamref name="T"/>. An attribute belongs to a member, not to a path in the object graph:
+    /// for <c>x =&gt; x.Address.City</c>, the attribute applies to the <c>City</c> member of every <c>Address</c> instance, wherever it is.
+    /// </remarks>
     public void AddAttribute<T>(Expression<Func<T, object>> member, HumanReadableAttribute attribute)
     {
         ArgumentNullException.ThrowIfNull(member);
@@ -286,21 +382,9 @@ public sealed record HumanReadableSerializerOptions
         if (memberInfos.Count is 0)
             throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
 
-        foreach (var memberInfo in memberInfos)
+        foreach (var (ownerType, memberInfo) in memberInfos)
         {
-            if (memberInfo is PropertyInfo propertyInfo)
-            {
-                AddAttribute(propertyInfo, attribute);
-                continue;
-            }
-
-            if (memberInfo is FieldInfo fieldInfo)
-            {
-                AddAttribute(fieldInfo, attribute);
-                continue;
-            }
-
-            throw new ArgumentException($"Member '{member.Name}' does not refer to a field or a property", nameof(member));
+            AddMemberAttribute(ownerType, memberInfo, attribute);
         }
     }
 
@@ -312,7 +396,7 @@ public sealed record HumanReadableSerializerOptions
         ArgumentNullException.ThrowIfNull(condition);
         ArgumentNullException.ThrowIfNull(attribute);
         VerifyMutable();
-        _memberAttributes.Add((Condition: member => member is FieldInfo field && condition(field), attribute));
+        _memberAttributes.Add((Condition: (type, member) => member is FieldInfo field && condition(field), attribute, Owner: null));
     }
 
     /// <summary>Adds an attribute to all types matching the specified condition.</summary>
@@ -340,11 +424,24 @@ public sealed record HumanReadableSerializerOptions
                 return result;
         }
 
-        return type.GetCustomAttribute<T>();
+        var typeAttribute = type.GetCustomAttribute<T>();
+        if (typeAttribute is not null)
+            return typeAttribute;
+
+        // Attributes declared on an interface are never inherited by the types implementing it
+        var interfaces = type.GetInterfaces().Where(iface => iface.GetCustomAttribute<T>() is not null).ToArray();
+        var mostSpecificInterfaces = interfaces.Where(iface => !interfaces.Any(other => other != iface && iface.IsAssignableFrom(other))).ToArray();
+        return mostSpecificInterfaces switch
+        {
+            [] => null,
+            [var iface] => iface.GetCustomAttribute<T>(),
+            _ => throw new HumanReadableSerializerException($"The type '{type}' inherits '{typeof(T).Name}' from several interfaces ({string.Join(", ", mostSpecificInterfaces.Select(iface => iface.FullName))}). Add the attribute to the type to remove the ambiguity."),
+        };
     }
 
-    internal T? GetCustomAttribute<T>(MemberInfo member) where T : HumanReadableAttribute
+    internal T? GetCustomAttribute<T>(Type type, MemberInfo member) where T : HumanReadableAttribute
     {
+        ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(member);
         MakeReadOnly();
 
@@ -352,26 +449,27 @@ public sealed record HumanReadableSerializerOptions
         for (var i = _memberAttributes.Count - 1; i >= 0; i--)
         {
             var attribute = _memberAttributes[i];
-            if (attribute.Attribute is T result && attribute.Condition(member))
+            if (attribute.Attribute is T result && attribute.Condition(type, member))
                 return result;
         }
 
         return member.GetCustomAttribute<T>();
     }
 
-    internal IEnumerable<T> GetCustomAttributes<T>(MemberInfo member) where T : HumanReadableAttribute
+    internal IEnumerable<T> GetCustomAttributes<T>(Type type, MemberInfo member) where T : HumanReadableAttribute
     {
+        ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(member);
         MakeReadOnly();
 
-        return GetCustomAttributes(member);
-        IEnumerable<T> GetCustomAttributes(MemberInfo member)
+        return GetCustomAttributes(type, member);
+        IEnumerable<T> GetCustomAttributes(Type type, MemberInfo member)
         {
             // Read reverse, so attributes set by the user override the default attributes
             for (var i = _memberAttributes.Count - 1; i >= 0; i--)
             {
                 var attribute = _memberAttributes[i];
-                if (attribute.Attribute is T result && attribute.Condition(member))
+                if (attribute.Attribute is T result && attribute.Condition(type, member))
                     yield return result;
             }
 
@@ -386,7 +484,27 @@ public sealed record HumanReadableSerializerOptions
 
         // Make sure the instance is readonly on the first usage
         MakeReadOnly();
-        return _convertersCache.GetOrAdd(type, type => FindConverter(type, Converters));
+        return _convertersCache.GetOrAdd(type, static (type, options) => options.FindConverter(type), this);
+    }
+
+    private HumanReadableConverter FindConverter(Type type)
+    {
+        // Priority 1: Attempt to get custom converter from the Converters list
+        var converter = TryGetFromList(type, Converters, this);
+        if (converter is not null)
+            return converter;
+
+        // Priority 2: Attempt to get converter from [HumanReadableConverterAttribute] on the type being converted.
+        var converterAttribute = GetCustomAttribute<HumanReadableConverterAttribute>(type);
+        if (converterAttribute is not null)
+            return HumanReadableConverter.CreateFromAttribute(converterAttribute, type, this);
+
+        // Priority 3: Query the built-in converters.
+        converter = TryGetFromList(type, ConverterList.DefaultConverters, this);
+        if (converter is not null)
+            return converter;
+
+        throw new InvalidOperationException($"No converter for type '{type}'");
 
         static HumanReadableConverter WrapConverter(HumanReadableConverter converter)
             => converter.HandleNull ? converter : new NullConverterWrapper(converter);
@@ -405,42 +523,22 @@ public sealed record HumanReadableSerializerOptions
             return WrapConverter(converter);
         }
 
-        HumanReadableConverter FindConverter(Type type, IList<HumanReadableConverter> converters)
+        static HumanReadableConverter? TryGetFromList(Type type, IEnumerable<HumanReadableConverter> converters, HumanReadableSerializerOptions options)
         {
-            // Priority 1: Attempt to get custom converter from the Converters list
-            var converter = TryGetFromList(type, converters, this);
-            if (converter is not null)
-                return converter;
-
-            // Priority 2: Attempt to get converter from [HumanReadableConverterAttribute] on the type being converted.
-            var converterAttribute = GetCustomAttribute<HumanReadableConverterAttribute>(type);
-            if (converterAttribute is not null)
-                return HumanReadableConverter.CreateFromAttribute(converterAttribute, type);
-
-            // Priority 3: Query the built-in converters.
-            converter = TryGetFromList(type, ConverterList.DefaultConverters, this);
-            if (converter is not null)
-                return converter;
-
-            throw new InvalidOperationException($"No converter for type '{type}'");
-
-            static HumanReadableConverter? TryGetFromList(Type type, IEnumerable<HumanReadableConverter> converters, HumanReadableSerializerOptions options)
+            foreach (var converter in converters)
             {
-                foreach (var converter in converters)
+                if (converter is null)
+                    continue;
+
+                if (converter.CanConvert(type))
                 {
-                    if (converter is null)
-                        continue;
-
-                    if (converter.CanConvert(type))
-                    {
-                        var result = TryGetConverter(converter, type, options);
-                        if (result is not null)
-                            return result;
-                    }
+                    var result = TryGetConverter(converter, type, options);
+                    if (result is not null)
+                        return result;
                 }
-
-                return null;
             }
+
+            return null;
         }
     }
 
@@ -493,7 +591,10 @@ public sealed record HumanReadableSerializerOptions
 
             static bool IsUrlEncodedForm(string mediaType) => string.Equals(mediaType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase);
 
-            static bool IsJson(string mediaType) => string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase) || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+            static bool IsJson(string mediaType)
+                => string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "text/json", StringComparison.OrdinalIgnoreCase)
+                || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
 
             static bool IsXml(string mediaType)
                 => string.Equals(mediaType, "application/xml", StringComparison.OrdinalIgnoreCase)
@@ -509,7 +610,14 @@ public sealed record HumanReadableSerializerOptions
     }
 
     /// <summary>Makes this instance read-only, preventing further modifications.</summary>
-    public void MakeReadOnly() => IsReadOnly = true;
+    public void MakeReadOnly()
+    {
+        // Avoid writing the field on every call, as a shared instance is read by many threads
+        if (!IsReadOnly)
+        {
+            IsReadOnly = true;
+        }
+    }
 
     private sealed class ConverterList : ConfigurationList<HumanReadableConverter>
     {
@@ -593,13 +701,15 @@ public sealed record HumanReadableSerializerOptions
             new MultiDimensionalArrayConverter(),
             new AsyncEnumerableKeyValuePairConverterFactory(),
             new AsyncEnumerableConverterFactory(),
+            new GroupingConverterFactory(),
             new EnumerableKeyValuePairConverterFactory(),
             new EnumerableConverterFactory(),
+            new DictionaryConverter(),
             new EnumerableConverter(),
             new CSharpUnionConverterFactory(),
             new FSharpOptionConverterFactory(),
             new FSharpValueOptionConverterFactory(),
-            new FSharpDiscriminatedUnionConverter(),
+            new FSharpDiscriminatedUnionConverterFactory(),
             new ObjectConverterFactory(),
         ];
 

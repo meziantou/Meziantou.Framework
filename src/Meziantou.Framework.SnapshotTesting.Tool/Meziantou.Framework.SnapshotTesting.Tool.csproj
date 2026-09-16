@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/SnapshotFileName.cs" Link="SnapshotFileName.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="2.0.12" />
   </ItemGroup>
 

@@ -11,6 +11,7 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 {
     private static readonly Version VersionZero = new(0, 0, 0, 0);
     private static readonly Version VersionOne = new(1, 0, 0, 0);
+    private static readonly string[] ProjectFilePatterns = ["*.csproj", "*.vbproj", "*.fsproj"];
 
     private static readonly XName PackageXName = XName.Get("package");
     private static readonly XName IdXName = XName.Get("id");
@@ -70,11 +71,21 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         if (directory is null)
             return [];
 
-        var files = context.FileSystem.GetFiles(directory, "*.csproj", SearchOption.TopDirectoryOnly);
+        var files = ProjectFilePatterns.SelectMany(pattern => context.FileSystem.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly));
         var result = new List<AssociatedProject>();
         foreach (var file in files)
         {
-            var stream = context.FileSystem.OpenRead(file);
+            Stream stream;
+            try
+            {
+                stream = context.FileSystem.OpenRead(file);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // An unreadable project file (e.g. a dangling symbolic link) must not prevent reporting the packages.config dependencies
+                continue;
+            }
+
             try
             {
                 var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(stream, context.CancellationToken).ConfigureAwait(false);

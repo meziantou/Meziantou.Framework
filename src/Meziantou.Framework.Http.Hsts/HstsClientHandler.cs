@@ -350,14 +350,21 @@ public sealed class HstsClientHandler : DelegatingHandler
                 if (hasMaxAge)
                     return false;
 
-                // The directive value may be a quoted-string
+                // The directive value may be a quoted-string, holding the same delta-seconds as a token would
                 if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
                 {
-                    value = value[1..^1].Trim();
+                    value = value[1..^1];
                 }
 
                 if (!long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
-                    return false;
+                {
+                    // delta-seconds is a run of digits with no upper bound, so one too large for a long is still a
+                    // valid max-age and means as long as possible. Chromium clamps it the same way.
+                    if (value.IsEmpty || value.ContainsAnyExceptInRange('0', '9'))
+                        return false;
+
+                    seconds = MaxMaxAgeInSeconds;
+                }
 
                 // Clamp so computing the expiration date cannot overflow
                 maxAge = TimeSpan.FromSeconds(Math.Min(seconds, MaxMaxAgeInSeconds));

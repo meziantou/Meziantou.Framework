@@ -1,4 +1,5 @@
 using System.Reflection;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed class HumanReadableSerializerOptionsTests
@@ -230,5 +231,105 @@ public sealed class HumanReadableSerializerOptionsTests
     {
         public override bool CanConvert(Type type) => false;
         public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) { }
+    }
+
+    public static TheoryData<string> Mutators() => [.. MutatorActions.Keys];
+
+    private static readonly Dictionary<string, Action<HumanReadableSerializerOptions>> MutatorActions = new(StringComparer.Ordinal)
+    {
+        [nameof(HumanReadableSerializerOptions.MaxDepth)] = options => options.MaxDepth = 1,
+        [nameof(HumanReadableSerializerOptions.ShowInvisibleCharactersInValues)] = options => options.ShowInvisibleCharactersInValues = true,
+        [nameof(HumanReadableSerializerOptions.NewLine)] = options => options.NewLine = "\r\n",
+        [nameof(HumanReadableSerializerOptions.PropertyOrder)] = options => options.PropertyOrder = StringComparer.Ordinal,
+        [nameof(HumanReadableSerializerOptions.DictionaryKeyOrder)] = options => options.DictionaryKeyOrder = StringComparer.Ordinal,
+        [nameof(HumanReadableSerializerOptions.IncludeFields)] = options => options.IncludeFields = true,
+        [nameof(HumanReadableSerializerOptions.IncludeObsoleteMembers)] = options => options.IncludeObsoleteMembers = true,
+        [nameof(HumanReadableSerializerOptions.DefaultIgnoreCondition)] = options => options.DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
+        ["Converters.Add"] = options => options.Converters.Add(new DummyConverter()),
+        ["Converters.Insert"] = options => options.Converters.Insert(0, new DummyConverter()),
+        ["Converters.Clear"] = options => options.Converters.Clear(),
+        [nameof(HumanReadableSerializerOptions.AddFormatter)] = options => options.AddFormatter("text/plain", new Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatter()),
+        ["AddAttribute(Type)"] = options => options.AddAttribute(typeof(Payload), new HumanReadableConverterAttribute(typeof(DummyConverter))),
+        ["AddAttribute(Type, string)"] = options => options.AddAttribute(typeof(Payload), nameof(Payload.Id), new HumanReadableIgnoreAttribute()),
+        ["AddAttribute(PropertyInfo)"] = options => options.AddAttribute(typeof(Payload).GetProperty(nameof(Payload.Id))!, new HumanReadableIgnoreAttribute()),
+        ["AddAttribute(Expression)"] = options => options.AddAttribute<Payload>(payload => payload.Id, new HumanReadableIgnoreAttribute()),
+        [nameof(HumanReadableSerializerOptions.AddPropertyAttribute)] = options => options.AddPropertyAttribute(property => true, new HumanReadableIgnoreAttribute()),
+        [nameof(HumanReadableSerializerOptions.AddFieldAttribute)] = options => options.AddFieldAttribute(field => true, new HumanReadableIgnoreAttribute()),
+        [nameof(HumanReadableSerializerOptions.AddTypeAttribute)] = options => options.AddTypeAttribute(type => true, new HumanReadableConverterAttribute(typeof(DummyConverter))),
+    };
+
+    [Theory]
+    [MemberData(nameof(Mutators))]
+    public void ReadOnly_MutatorsThrow(string mutator)
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.MakeReadOnly();
+
+        Assert.Throws<InvalidOperationException>(() => MutatorActions[mutator](options));
+    }
+
+    [Theory]
+    [MemberData(nameof(Mutators))]
+    public void Serialize_MakesOptionsReadOnly(string mutator)
+    {
+        var options = new HumanReadableSerializerOptions();
+        HumanReadableSerializer.Serialize(new Payload(), options);
+
+        Assert.True(options.IsReadOnly);
+        Assert.Throws<InvalidOperationException>(() => MutatorActions[mutator](options));
+    }
+
+    [Fact]
+    public void CloneShouldCopyFormattersAndAttributes()
+    {
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions { WriteIndented = true });
+        options.IgnoreMember<Payload>(payload => payload.Tags);
+        options.AddAttribute(typeof(Payload), nameof(Payload.Name), new HumanReadablePropertyNameAttribute("DisplayName"));
+        options.AddTypeAttribute(type => type == typeof(DateTime), new HumanReadableConverterAttribute(new ConstantConverter()));
+        HumanReadableSerializer.Serialize(new Payload(), options);
+
+        var clone = options with { };
+        using var content = new StringContent("""{"a":1}""", encoding: null, "application/json");
+
+        Assert.Equal("Id: 1\nDisplayName: test\nWhen: constant", HumanReadableSerializer.Serialize(new Payload(), clone));
+        Assert.Equal("Headers:\n  Content-Type: application/json; charset=utf-8\nValue:\n  {\n    \"a\": 1\n  }", HumanReadableSerializer.Serialize(content, clone));
+    }
+
+    [Theory]
+    [InlineData("application/json")]
+    [InlineData("APPLICATION/JSON")]
+    [InlineData("text/json")]
+    [InlineData("application/problem+json")]
+    public void GetFormatter_Json(string mediaType)
+    {
+        var options = new HumanReadableSerializerOptions().AddJsonFormatter();
+
+        Assert.IsType<Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatter>(options.GetFormatter(mediaType));
+    }
+
+    [Theory]
+    [InlineData("application/xml")]
+    [InlineData("TEXT/XML")]
+    [InlineData("application/atom+xml")]
+    public void GetFormatter_Xml(string mediaType)
+    {
+        var options = new HumanReadableSerializerOptions().AddXmlFormatter();
+
+        Assert.IsType<Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatter>(options.GetFormatter(mediaType));
+    }
+
+    [Fact]
+    public void GetFormatter_Unknown()
+    {
+        var options = new HumanReadableSerializerOptions().AddJsonFormatter().AddXmlFormatter();
+
+        Assert.Null(options.GetFormatter("text/plain"));
+    }
+
+    private sealed class ConstantConverter : HumanReadableConverter
+    {
+        public override bool CanConvert(Type type) => true;
+        public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => writer.WriteValue("constant");
     }
 }

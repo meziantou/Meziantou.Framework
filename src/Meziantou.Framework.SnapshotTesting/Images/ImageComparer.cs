@@ -10,10 +10,15 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
 {
     internal static ImageComparer Instance { get; } = new();
 
-    public bool Equals(SnapshotData expected, SnapshotData actual)
+    public bool Equals(SnapshotData expected, SnapshotData actual) => Equals(expected, actual, out _);
+
+    /// <inheritdoc/>
+    public bool Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)
     {
         ArgumentNullException.ThrowIfNull(expected);
         ArgumentNullException.ThrowIfNull(actual);
+
+        mismatchReason = null;
 
         // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0 and both
         // hash distances are 0 - every configured threshold is satisfied. This is the case for every passing
@@ -21,32 +26,39 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
         if (expected.Data.AsSpan().SequenceEqual(actual.Data))
             return true;
 
-        Image expectedImage;
-        Image actualImage;
-        try
+        // The bytes differ and a snapshot that is not a decodable image does not match
+        if (!TryLoad(expected, out var expectedImage, out var expectedError))
         {
-            expectedImage = Image.Load(expected.Data);
-            actualImage = Image.Load(actual.Data);
-        }
-        catch (InvalidDataException)
-        {
-            // The bytes differ and at least one snapshot is not a decodable image, so they do not match
+            mismatchReason = ImageMismatchReasons.CannotDecode("expected", expectedError);
             return false;
         }
-        catch (NotSupportedException)
+
+        if (!TryLoad(actual, out var actualImage, out var actualError))
         {
+            mismatchReason = ImageMismatchReasons.CannotDecode("actual", actualError);
             return false;
         }
 
         var similarityThreshold = settings?.SimilarityThreshold;
         var dHashThreshold = settings?.DHashThreshold;
         var pHashThreshold = settings?.PHashThreshold;
-        if (similarityThreshold is null && dHashThreshold is null && pHashThreshold is null)
-            return expectedImage.Equals(actualImage);
-
         if (expectedImage.Width != actualImage.Width || expectedImage.Height != actualImage.Height)
+        {
+            mismatchReason = ImageMismatchReasons.DifferentSizes(expectedImage.Width, expectedImage.Height, actualImage.Width, actualImage.Height);
             return false;
+        }
 
+        if (similarityThreshold is null && dHashThreshold is null && pHashThreshold is null)
+        {
+            if (expectedImage.Equals(actualImage))
+                return true;
+
+            mismatchReason = ImageMismatchReasons.DifferentPixels;
+            return false;
+        }
+
+        // Every configured check is evaluated, so the message reports all the ones that failed
+        List<string>? reasons = null;
         if (similarityThreshold is not null)
         {
             var ssim = SsimAccumulator.Compute(
@@ -55,15 +67,49 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
                 expectedImage.Width,
                 expectedImage.Height);
             if (ssim < similarityThreshold.Value)
-                return false;
+            {
+                (reasons ??= []).Add(ImageMismatchReasons.SimilarityBelowThreshold(ssim, similarityThreshold.Value));
+            }
         }
 
-        if (dHashThreshold is not null && ImageHash.ComputeDHashDistance(expectedImage, actualImage) > dHashThreshold.Value)
-            return false;
+        if (dHashThreshold is not null)
+        {
+            var distance = ImageHash.ComputeDHashDistance(expectedImage, actualImage);
+            if (distance > dHashThreshold.Value)
+            {
+                (reasons ??= []).Add(string.Create(CultureInfo.InvariantCulture, $"The dHash distance {distance} is above the threshold {dHashThreshold.Value}."));
+            }
+        }
 
-        if (pHashThreshold is not null && ImageHash.ComputePHashDistance(expectedImage, actualImage) > pHashThreshold.Value)
-            return false;
+        if (pHashThreshold is not null)
+        {
+            var distance = ImageHash.ComputePHashDistance(expectedImage, actualImage);
+            if (distance > pHashThreshold.Value)
+            {
+                (reasons ??= []).Add(string.Create(CultureInfo.InvariantCulture, $"The pHash distance {distance} is above the threshold {pHashThreshold.Value}."));
+            }
+        }
 
-        return true;
+        if (reasons is null)
+            return true;
+
+        mismatchReason = string.Join(' ', reasons);
+        return false;
+    }
+
+    private static bool TryLoad(SnapshotData snapshot, [NotNullWhen(true)] out Image? image, [NotNullWhen(false)] out Exception? error)
+    {
+        try
+        {
+            image = Image.Load(snapshot.Data);
+            error = null;
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
+        {
+            image = null;
+            error = ex;
+            return false;
+        }
     }
 }

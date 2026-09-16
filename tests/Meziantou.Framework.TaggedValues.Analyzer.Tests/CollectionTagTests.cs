@@ -471,4 +471,61 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task CollectionInitializer_ReportsElementsWithDifferentTags()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    _ = new List<Guid> { orderId, {|MFTV0003:projectId|} };
+                    _ = new Dictionary<Guid, Guid> { { orderId, projectId }, { {|MFTV0003:projectId|}, projectId } };
+                    _ = new Dictionary<Guid, Guid> { [orderId] = projectId, [orderId] = {|MFTV0003:orderId|} };
+                    _ = new List</* ValueTag=OrderId */ Guid> { orderId, {|MFTV0002:projectId|} };
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CollectionInitializer_TakesTheTagsOfItsElements()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    var ids = new List<Guid> { projectId };
+                    LoadOrder({|MFTV0002:ids[0]|});
+
+                    var map = new Dictionary<Guid, Guid> { [orderId] = projectId };
+                    LoadOrder(map.Keys.First());
+                    LoadOrder({|MFTV0002:map.Values.First()|});
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LongCallChain_KeepsTheElementTag()
+    {
+        var chain = string.Concat(Enumerable.Repeat(".Select(x => x)", 40));
+        await VerifyAsync($$"""
+            class Sample
+            {
+                static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
+
+                void M([ValueTag("ProjectId")] List<Guid> projectIds)
+                {
+                    var ids = projectIds{{chain}};
+                    LoadOrder({|MFTV0002:ids.First()|});
+                    LoadOrder({|MFTV0002:projectIds{{chain}}.First()|});
+                }
+            }
+            """);
+    }
 }

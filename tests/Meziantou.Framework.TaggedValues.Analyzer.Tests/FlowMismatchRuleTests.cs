@@ -424,4 +424,35 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
             """);
     }
 
+    [Fact]
+    public async Task InstanceCompoundAssignmentOperator_ChecksItsParameter()
+    {
+        await VerifyAsync("""
+            class Distance
+            {
+                public void operator +=([ValueTag("Meters")] double value) { }
+            }
+
+            class Sample
+            {
+                void M(Distance distance, [ValueTag("Feet")] double feet) => distance += {|MFTV0002:feet|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task RecordProperty_IsNotTaggedByTheParametersOfOtherConstructors()
+    {
+        await VerifyAsync("""
+            record Order(Guid Id)
+            {
+                public Order([ValueTag("ProjectId")] Guid Id, int version) : this(Id) { }
+            }
+
+            class Sample
+            {
+                bool M(Order order, [ValueTag("OrderId")] Guid orderId) => order.Id == orderId;
+            }
+            """);
+    }
 }

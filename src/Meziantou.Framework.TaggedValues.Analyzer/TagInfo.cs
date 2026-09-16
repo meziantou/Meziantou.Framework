@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Meziantou.Framework.TaggedValues.Analyzer;
 
@@ -145,36 +146,88 @@ internal sealed class TagInfo
 
         static void AppendString(StringBuilder sb, string value)
         {
-            sb.Append('"');
-            foreach (var c in value)
-            {
-                if (c is '"' or '\\')
-                {
-                    sb.Append('\\');
-                }
-
-                sb.Append(c);
-            }
-
-            sb.Append('"');
+            sb.Append(SymbolDisplay.FormatLiteral(value, quote: true));
         }
     }
 
     /// <summary>
     /// Serializes the tags so a code fix can rebuild them from the diagnostic properties.
     /// </summary>
+    /// <remarks>
+    /// Tags are separated by <c>|</c> and the three parts by a line feed. A tag can contain any character, so <c>\</c>, <c>|</c>,
+    /// and line feeds are escaped.
+    /// </remarks>
     public string Serialize()
     {
-        return string.Join("|", Tags) + "\n" + string.Join("|", Key) + "\n" + string.Join("|", Value);
+        var sb = new StringBuilder();
+        AppendPart(sb, Tags);
+        sb.Append('\n');
+        AppendPart(sb, Key);
+        sb.Append('\n');
+        AppendPart(sb, Value);
+        return sb.ToString();
+
+        static void AppendPart(StringBuilder sb, ImmutableArray<string> tags)
+        {
+            for (var i = 0; i < tags.Length; i++)
+            {
+                if (i > 0)
+                    sb.Append('|');
+
+                foreach (var c in tags[i])
+                {
+                    if (c is '\\' or '|')
+                    {
+                        sb.Append('\\').Append(c);
+                    }
+                    else if (c is '\n')
+                    {
+                        sb.Append(@"\n");
+                    }
+                    else
+                    {
+                        sb.Append(c);
+                    }
+                }
+            }
+        }
     }
 
     public static TagInfo Deserialize(string value)
     {
-        var parts = value.Split('\n');
-        if (parts.Length is not 3)
+        var parts = new List<List<string>> { new() };
+        var current = new StringBuilder();
+        for (var i = 0; i < value.Length; i++)
+        {
+            switch (value[i])
+            {
+                case '\\' when i + 1 < value.Length:
+                    i++;
+                    current.Append(value[i] is 'n' ? '\n' : value[i]);
+                    break;
+
+                case '|':
+                    parts[parts.Count - 1].Add(current.ToString());
+                    current.Clear();
+                    break;
+
+                case '\n':
+                    parts[parts.Count - 1].Add(current.ToString());
+                    current.Clear();
+                    parts.Add([]);
+                    break;
+
+                default:
+                    current.Append(value[i]);
+                    break;
+            }
+        }
+
+        parts[parts.Count - 1].Add(current.ToString());
+        if (parts.Count is not 3)
             return None;
 
-        return Create(parts[0].Split('|'), parts[1].Split('|'), parts[2].Split('|'), isExplicit: true);
+        return Create(parts[0], parts[1], parts[2], isExplicit: true);
     }
 
     private static ImmutableArray<string> Normalize(IEnumerable<string> tags)

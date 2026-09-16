@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -14,15 +16,23 @@ namespace Meziantou.Framework.TaggedValues.Analyzer;
 /// </summary>
 internal sealed class TagResolver
 {
-    private const int MaxDepth = 32;
+    private const int MaxDepth = 100;
+
+    /// <summary>
+    /// Set when a computation reached <see cref="MaxDepth"/>, so its result depends on the depth it started from.
+    /// The computations of a resolver are synchronous, so the flag of the current thread describes the current computation.
+    /// </summary>
+    [ThreadStatic]
+    private static bool s_truncated;
 
     private readonly Compilation _compilation;
     private readonly AnalyzerConfigOptionsProvider _optionsProvider;
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _declaredTags = new(SymbolEqualityComparer.Default);
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _localTags = new(SymbolEqualityComparer.Default);
+    private readonly ConditionalWeakTable<IOperation, OperationTagCache> _operationTags = new();
     private readonly ConcurrentDictionary<SyntaxTree, bool> _conventionsEnabled = new();
     private readonly ConcurrentDictionary<SyntaxTree, bool> _strictModeEnabled = new();
-    private readonly Lazy<Dictionary<(ITypeSymbol Type, string MemberName), TagInfo>> _externalTags;
+    private readonly Lazy<ExternalTags> _externalTags;
 
     public TagResolver(Compilation compilation, AnalyzerConfigOptionsProvider optionsProvider)
     {
@@ -253,7 +263,10 @@ internal sealed class TagResolver
         return !type.DeclaringSyntaxReferences.IsEmpty && AreConventionsEnabled(type.DeclaringSyntaxReferences[0].SyntaxTree);
     }
 
-    private static bool IsRecordPrimaryConstructorProperty(ISymbol symbol)
+    /// <summary>
+    /// Returns whether the symbol is a property generated from a parameter of the primary constructor of a record, e.g. <c>Id</c> in <c>record Order(Guid Id)</c>.
+    /// </summary>
+    public static bool IsRecordPrimaryConstructorProperty(ISymbol symbol)
     {
         return symbol is IPropertySymbol { ContainingType.IsRecord: true } property &&
             property.DeclaringSyntaxReferences.Length > 0 &&
@@ -368,11 +381,18 @@ internal sealed class TagResolver
         if (!property.ContainingType.IsRecord)
             return TagInfo.None;
 
+        // In source, the property and its parameter share their declaration, so only the primary constructor matches.
+        // In metadata, the primary constructor cannot be told apart from the other constructors, so the parameters are matched by name.
+        var propertySyntax = property.DeclaringSyntaxReferences.FirstOrDefault();
         foreach (var constructor in property.ContainingType.InstanceConstructors)
         {
             foreach (var parameter in constructor.Parameters)
             {
-                if (parameter.Name == property.Name && SymbolEqualityComparer.Default.Equals(parameter.Type, property.Type))
+                var isPrimaryConstructorParameter = propertySyntax is null
+                    ? parameter.Name == property.Name && SymbolEqualityComparer.Default.Equals(parameter.Type, property.Type)
+                    : parameter.DeclaringSyntaxReferences.Any(reference => reference.SyntaxTree == propertySyntax.SyntaxTree && reference.Span == propertySyntax.Span);
+
+                if (isPrimaryConstructorParameter)
                 {
                     var tags = GetExplicitTags(parameter.GetAttributes());
                     if (!tags.IsEmpty)
@@ -384,9 +404,9 @@ internal sealed class TagResolver
         return TagInfo.None;
     }
 
-    private Dictionary<(ITypeSymbol Type, string MemberName), TagInfo> LoadExternalTags()
+    private ExternalTags LoadExternalTags()
     {
-        var result = new Dictionary<(ITypeSymbol Type, string MemberName), TagInfo>(ExternalTagKeyComparer.Instance);
+        var result = new ExternalTags();
         AddAssembly(_compilation.Assembly);
         foreach (var assembly in _compilation.SourceModule.ReferencedAssemblySymbols)
         {
@@ -402,7 +422,8 @@ internal sealed class TagResolver
                 if (TryReadExternalAttribute(attribute, out var type, out var memberName, out var tags) && !tags.IsEmpty)
                 {
                     var key = (type.OriginalDefinition, memberName);
-                    result[key] = result.TryGetValue(key, out var existing) ? TagInfo.Union(existing, tags) : tags;
+                    result.Tags[key] = result.Tags.TryGetValue(key, out var existing) ? TagInfo.Union(existing, tags) : tags;
+                    result.MemberNames.Add(memberName);
                 }
             }
         }
@@ -427,15 +448,16 @@ internal sealed class TagResolver
 
     private TagInfo GetExternalTags(ISymbol member, ITypeSymbol? receiverType)
     {
+        // Most members are not tagged, so check the name before walking the type hierarchy
         var externalTags = _externalTags.Value;
-        if (externalTags.Count is 0)
+        if (!externalTags.MemberNames.Contains(member.Name))
             return TagInfo.None;
 
         var result = TagInfo.None;
         var startType = receiverType as INamedTypeSymbol ?? member.ContainingType;
         for (var type = startType; type is not null; type = type.BaseType)
         {
-            if (externalTags.TryGetValue((type.OriginalDefinition, member.Name), out var tags))
+            if (externalTags.Tags.TryGetValue((type.OriginalDefinition, member.Name), out var tags))
             {
                 result = TagInfo.Union(result, tags);
             }
@@ -445,7 +467,7 @@ internal sealed class TagResolver
         {
             foreach (var @interface in startType.AllInterfaces)
             {
-                if (externalTags.TryGetValue((@interface.OriginalDefinition, member.Name), out var tags))
+                if (externalTags.Tags.TryGetValue((@interface.OriginalDefinition, member.Name), out var tags))
                 {
                     result = TagInfo.Union(result, tags);
                 }
@@ -464,9 +486,25 @@ internal sealed class TagResolver
             return cached;
 
         var tags = GetLocalCommentTags(local);
-        if (tags.IsEmpty && semanticModel is not null && depth < MaxDepth)
+        if (tags.IsEmpty)
         {
+            if (semanticModel is null)
+                return tags;
+
+            if (depth >= MaxDepth)
+            {
+                s_truncated = true;
+                return tags;
+            }
+
+            // A truncated inference depends on the depth it started from, so it is not cached
+            var wasTruncated = s_truncated;
+            s_truncated = false;
             tags = InferLocalTags(local, semanticModel, depth);
+            var truncated = s_truncated;
+            s_truncated = wasTruncated || truncated;
+            if (truncated)
+                return tags;
         }
 
         _localTags.TryAdd(local, tags);
@@ -585,25 +623,163 @@ internal sealed class TagResolver
                 case SingleVariableDesignationSyntax { Parent: DeclarationExpressionSyntax declarationExpression } when semanticModel.GetOperation(declarationExpression) is { Parent: IArgumentOperation argument }:
                     return GetExpectedArgumentTags(argument, depth + 1);
 
-                case SingleVariableDesignationSyntax { Parent: (DeclarationPatternSyntax or VarPatternSyntax) and { } patternSyntax }:
-                    for (var operation = semanticModel.GetOperation(patternSyntax); operation is not null; operation = operation.Parent)
+                case SingleVariableDesignationSyntax designation:
+                    return InferDesignationTags(local, designation, semanticModel, depth);
+            }
+        }
+
+        return TagInfo.None;
+    }
+
+    /// <summary>
+    /// Returns the tags of a variable declared by a pattern, e.g. <c>value is { } id</c> or <c>order is { Id: var id }</c>,
+    /// or by a deconstruction, e.g. <c>var (orderId, projectId) = ...</c> or <c>foreach (var (key, value) in map)</c>.
+    /// </summary>
+    private TagInfo InferDesignationTags(ILocalSymbol local, SingleVariableDesignationSyntax designation, SemanticModel semanticModel, int depth)
+    {
+        for (var node = designation.Parent; node is not null; node = node.Parent)
+        {
+            switch (node)
+            {
+                case PatternSyntax patternSyntax:
+                    if (semanticModel.GetOperation(patternSyntax) is not IPatternOperation patternOperation)
+                        return TagInfo.None;
+
+                    foreach (var pattern in patternOperation.DescendantsAndSelf().OfType<IPatternOperation>())
                     {
-                        switch (operation)
+                        if (SymbolEqualityComparer.Default.Equals(GetDeclaredSymbol(pattern), local))
                         {
-                            case IIsPatternOperation isPattern:
-                                return GetTag(isPattern.Value, depth + 1);
-                            case ISwitchExpressionOperation switchExpression:
-                                return GetTag(switchExpression.Value, depth + 1);
-                            case ISwitchOperation switchStatement:
-                                return GetTag(switchStatement.Value, depth + 1);
+                            var input = GetPatternInput(pattern, depth + 1);
+                            return input.Tags ?? GetTag(input.Value, depth + 1);
                         }
                     }
 
+                    return TagInfo.None;
+
+                case AssignmentExpressionSyntax assignment when semanticModel.GetOperation(assignment) is IDeconstructionAssignmentOperation deconstruction:
+                    return GetDeconstructedVariableTags(deconstruction.Target, local, deconstruction.Value, tags: null, deconstruction.Value.Type, depth);
+
+                case ForEachVariableStatementSyntax forEach when semanticModel.GetOperation(forEach) is IForEachLoopOperation { LoopControlVariable: { } loopControlVariable } loop:
+                    return GetDeconstructedVariableTags(loopControlVariable, local, value: null, GetTag(loop.Collection, depth + 1), semanticModel.GetForEachStatementInfo(forEach).ElementType, depth);
+
+                case StatementSyntax or AnonymousFunctionExpressionSyntax:
                     return TagInfo.None;
             }
         }
 
         return TagInfo.None;
+
+        static ISymbol? GetDeclaredSymbol(IPatternOperation pattern)
+        {
+            return pattern switch
+            {
+                IDeclarationPatternOperation declarationPattern => declarationPattern.DeclaredSymbol,
+                IRecursivePatternOperation recursivePattern => recursivePattern.DeclaredSymbol,
+                IListPatternOperation listPattern => listPattern.DeclaredSymbol,
+                _ => null,
+            };
+        }
+    }
+
+    /// <summary>
+    /// Returns the tags of <paramref name="local"/> in the target of a deconstruction, e.g. <c>b</c> in <c>var (a, (b, c)) = value</c>.
+    /// </summary>
+    private TagInfo GetDeconstructedVariableTags(IOperation target, ILocalSymbol local, IOperation? value, TagInfo? tags, ITypeSymbol? type, int depth)
+    {
+        var reference = target.DescendantsAndSelf().OfType<ILocalReferenceOperation>().FirstOrDefault(reference => SymbolEqualityComparer.Default.Equals(reference.Local, local));
+        if (reference is null)
+            return TagInfo.None;
+
+        var path = new List<int>();
+        for (IOperation current = reference; current != target && current.Parent is { } parent; current = parent)
+        {
+            if (parent is ITupleOperation tuple)
+            {
+                path.Add(tuple.Elements.IndexOf(current));
+            }
+        }
+
+        for (var i = path.Count - 1; i >= 0; i--)
+        {
+            (value, tags, type) = GetDeconstructedElement(value, tags, type, path[i], depth + 1);
+        }
+
+        return tags ?? GetTag(value, depth + 1);
+    }
+
+    /// <summary>
+    /// Returns the element at <paramref name="index"/> of a deconstructed value: an element of a tuple literal, or the key or the value of a <c>KeyValuePair</c>.
+    /// </summary>
+    /// <param name="value">The deconstructed value, when it is an operation.</param>
+    /// <param name="tags">The tags of the deconstructed value, or <see langword="null"/> to read them from <paramref name="value"/>.</param>
+    /// <param name="type">The type of the deconstructed value.</param>
+    private (IOperation? Value, TagInfo? Tags, ITypeSymbol? Type) GetDeconstructedElement(IOperation? value, TagInfo? tags, ITypeSymbol? type, int index, int depth)
+    {
+        if (tags is null && value?.UnwrapImplicitConversions() is ITupleOperation tuple)
+            return index >= 0 && index < tuple.Elements.Length ? (tuple.Elements[index], null, tuple.Elements[index].Type) : (null, TagInfo.None, null);
+
+        if (type is INamedTypeSymbol namedType && KnownTypes.IsKeyValuePair(namedType) && index is 0 or 1)
+        {
+            var keyValueTags = tags ?? GetTag(value, depth + 1);
+            return (null, index is 0 ? keyValueTags.GetKey() : keyValueTags.GetValue(), namedType.TypeArguments[index]);
+        }
+
+        return (null, TagInfo.None, null);
+    }
+
+    /// <summary>
+    /// Returns the value a pattern matches: the operand of <c>is</c> or <c>switch</c>, a property of a property pattern, an element of a list pattern,
+    /// or an element of a positional pattern.
+    /// </summary>
+    /// <returns>The matched value, and its tags when they cannot be read from the value.</returns>
+    public (IOperation? Value, TagInfo? Tags) GetPatternInput(IPatternOperation pattern)
+    {
+        return GetPatternInput(pattern, depth: 0);
+    }
+
+    private (IOperation? Value, TagInfo? Tags) GetPatternInput(IPatternOperation pattern, int depth)
+    {
+        if (depth > MaxDepth)
+        {
+            s_truncated = true;
+            return (null, TagInfo.None);
+        }
+
+        switch (pattern.Parent)
+        {
+            case IIsPatternOperation isPattern:
+                return (isPattern.Value, null);
+
+            case ISwitchExpressionArmOperation { Parent: ISwitchExpressionOperation switchExpression }:
+                return (switchExpression.Value, null);
+
+            case IPatternCaseClauseOperation { Parent: ISwitchCaseOperation { Parent: ISwitchOperation switchStatement } }:
+                return (switchStatement.Value, null);
+
+            // not x, x and y, and the slice of a list pattern match the same value
+            case INegatedPatternOperation or IBinaryPatternOperation or ISlicePatternOperation:
+                return GetPatternInput((IPatternOperation)pattern.Parent, depth + 1);
+
+            // The tags of a collection describe its elements, so an element and a slice have the tags of the collection
+            case IListPatternOperation listPattern:
+                return GetPatternInput(listPattern, depth + 1);
+
+            // The member reads the pattern input, see the PatternInput instance reference in GetTag
+            case IPropertySubpatternOperation propertySubpattern:
+                return (propertySubpattern.Member, null);
+
+            case IRecursivePatternOperation recursivePattern:
+                var index = recursivePattern.DeconstructionSubpatterns.IndexOf(pattern);
+                if (index < 0)
+                    return (null, TagInfo.None);
+
+                var input = GetPatternInput(recursivePattern, depth + 1);
+                var element = GetDeconstructedElement(input.Value, input.Tags, recursivePattern.MatchedType, index, depth + 1);
+                return (element.Value, element.Tags);
+
+            default:
+                return (null, TagInfo.None);
+        }
     }
 
     public TagInfo GetTag(IOperation? operation)
@@ -611,11 +787,41 @@ internal sealed class TagResolver
         return GetTag(operation, depth: 0);
     }
 
+    /// <remarks>
+    /// The tags of an operation are cached, as the tags of a call chain such as <c>ids.Select(x =&gt; x).Select(x =&gt; x)</c> read the tags
+    /// of the receiver more than once. A computation that reaches <see cref="MaxDepth"/> is cached with the depth it had left, and reused only
+    /// by computations that have no more depth left.
+    /// </remarks>
     private TagInfo GetTag(IOperation? operation, int depth)
     {
-        if (operation is null || depth > MaxDepth)
+        if (operation is null)
             return TagInfo.None;
 
+        if (depth > MaxDepth)
+        {
+            s_truncated = true;
+            return TagInfo.None;
+        }
+
+        var budget = MaxDepth - depth;
+        var cache = _operationTags.GetValue(operation, _ => new OperationTagCache());
+        if (cache.Result is { } cached && cached.Budget >= budget)
+        {
+            s_truncated |= cached.Budget is not int.MaxValue;
+            return cached.Tags;
+        }
+
+        var wasTruncated = s_truncated;
+        s_truncated = false;
+        var tags = ComputeOperationTag(operation, depth);
+        var truncated = s_truncated;
+        s_truncated = wasTruncated || truncated;
+        cache.Result = new OperationTagResult(tags, truncated ? budget : int.MaxValue);
+        return tags;
+    }
+
+    private TagInfo ComputeOperationTag(IOperation operation, int depth)
+    {
         switch (operation)
         {
             case IConversionOperation conversion:
@@ -700,7 +906,24 @@ internal sealed class TagResolver
                 if (!creationTags.IsEmpty)
                     return creationTags;
 
-                return GetBoundTag(objectCreation.Constructor.OriginalDefinition.ContainingType, objectCreation.Constructor, instance: null, objectCreation.Arguments, depth);
+                creationTags = GetBoundTag(objectCreation.Constructor.OriginalDefinition.ContainingType, objectCreation.Constructor, instance: null, objectCreation.Arguments, depth);
+                if (!creationTags.IsEmpty)
+                    return creationTags;
+
+                return GetCollectionInitializerTags(objectCreation, depth);
+
+            // The value matched by a property pattern, e.g. order in order is { Id: var id }
+            case IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.PatternInput } patternInput:
+                for (var parent = patternInput.Parent; parent is not null; parent = parent.Parent)
+                {
+                    if (parent is IRecursivePatternOperation recursivePattern)
+                    {
+                        var input = GetPatternInput(recursivePattern, depth + 1);
+                        return input.Tags ?? GetTag(input.Value, depth + 1);
+                    }
+                }
+
+                return TagInfo.None;
 
             // The receiver of the Add calls of a collection initializer, and of the assignments of an object initializer
             case IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ImplicitReceiver } implicitReceiver:
@@ -822,6 +1045,74 @@ internal sealed class TagResolver
         second = null;
         secondTags = TagInfo.None;
         return false;
+    }
+
+    /// <summary>
+    /// Returns the tags of a collection created with a collection initializer, from the tags of the elements it adds, e.g. <c>new List&lt;Guid&gt; { orderId }</c>,
+    /// or of the keys and the values of a dictionary, e.g. <c>new Dictionary&lt;Guid, Guid&gt; { [orderId] = projectId }</c>.
+    /// </summary>
+    private TagInfo GetCollectionInitializerTags(IObjectCreationOperation objectCreation, int depth)
+    {
+        if (objectCreation.Initializer is null || objectCreation.Type is null || !KnownTypes.IsCollectionType(objectCreation.Type))
+            return TagInfo.None;
+
+        var elements = new List<IOperation>();
+        var keys = new List<IOperation>();
+        var values = new List<IOperation>();
+        GetCollectionInitializerElements(objectCreation.Initializer, elements, keys, values);
+        if (keys.Count is 0)
+            return Combine(elements, depth);
+
+        if (elements.Count is 0 && KnownTypes.IsKeyValueShaped(objectCreation.Type))
+            return TagInfo.KeyValue(Combine(keys, depth), Combine(values, depth));
+
+        return TagInfo.None;
+    }
+
+    /// <summary>
+    /// Collects the values a collection initializer adds: the argument of <c>Add(value)</c>, and the keys and the values of <c>Add(key, value)</c> and of <c>[key] = value</c>.
+    /// </summary>
+    public static void GetCollectionInitializerElements(IObjectOrCollectionInitializerOperation initializer, List<IOperation> elements, List<IOperation> keys, List<IOperation> values)
+    {
+        foreach (var operation in initializer.Initializers)
+        {
+            switch (operation)
+            {
+                case IInvocationOperation invocation:
+                    // The receiver is the first argument of an extension Add method
+                    var arguments = invocation.Arguments.Where(argument => argument.Value is not IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ImplicitReceiver }).ToArray();
+                    if (arguments.Length is 1)
+                    {
+                        elements.Add(arguments[0].Value);
+                    }
+                    else if (arguments.Length is 2)
+                    {
+                        keys.Add(arguments[0].Value);
+                        values.Add(arguments[1].Value);
+                    }
+
+                    break;
+
+                case ISimpleAssignmentOperation { Target: IPropertyReferenceOperation { Property.IsIndexer: true, Arguments.Length: 1 } indexer } assignment:
+                    keys.Add(indexer.Arguments[0].Value);
+                    values.Add(assignment.Value);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns the tags declared for the collection a collection initializer adds to: the comments in the type arguments of the <c>new</c> expression,
+    /// or the tags of the member a nested initializer adds to, e.g. <c>Lines</c> in <c>new Order { Lines = { line } }</c>.
+    /// </summary>
+    public TagInfo GetCollectionInitializerTargetTags(IObjectOrCollectionInitializerOperation initializer)
+    {
+        return initializer.Parent switch
+        {
+            IObjectCreationOperation objectCreation => GetObjectCreationTypeArgumentTags(objectCreation),
+            IMemberInitializerOperation memberInitializer => GetTag(memberInitializer.InitializedMember),
+            _ => TagInfo.None,
+        };
     }
 
     private TagInfo GetObjectCreationTypeArgumentTags(IObjectCreationOperation objectCreation)
@@ -989,7 +1280,10 @@ internal sealed class TagResolver
     private Dictionary<ITypeParameterSymbol, TagInfo>? BindTypeParameters(ISymbol member, IOperation? instance, ImmutableArray<IArgumentOperation> arguments, int argumentCount, int depth)
     {
         if (depth > MaxDepth)
+        {
+            s_truncated = true;
             return null;
+        }
 
         Dictionary<ITypeParameterSymbol, TagInfo>? typeParameters = null;
         var definition = member.OriginalDefinition;
@@ -1020,7 +1314,8 @@ internal sealed class TagResolver
             switch (value)
             {
                 case IAnonymousFunctionOperation anonymousFunction:
-                    if (KnownTypes.GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } invokeMethod)
+                    // The returned values only matter when they bind a type parameter, e.g. Select(x => x.Id) but not Where(x => x.IsValid)
+                    if (KnownTypes.GetDelegateType(parameter.Type)?.DelegateInvokeMethod is { } invokeMethod && ContainsTypeParameter(invokeMethod.ReturnType))
                     {
                         Bind(invokeMethod.ReturnType, GetAnonymousFunctionReturnTags(anonymousFunction, depth + 1), ref typeParameters);
                     }
@@ -1148,6 +1443,29 @@ internal sealed class TagResolver
     private static bool IsObjectOrDynamic(ITypeSymbol? type)
     {
         return type is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic };
+    }
+
+    /// <summary>
+    /// The tags declared by <c>[assembly: ValueTag(typeof(Type), "Member", "Tag")]</c> attributes.
+    /// </summary>
+    private sealed class ExternalTags
+    {
+        public Dictionary<(ITypeSymbol Type, string MemberName), TagInfo> Tags { get; } = new(ExternalTagKeyComparer.Instance);
+
+        public HashSet<string> MemberNames { get; } = new(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// The tags of an operation, and whether they are complete.
+    /// </summary>
+    /// <param name="Tags">The tags of the operation.</param>
+    /// <param name="Budget">The depth that was left when the tags were computed, or <see cref="int.MaxValue"/> when the computation did not reach <see cref="MaxDepth"/>.</param>
+    private sealed record OperationTagResult(TagInfo Tags, int Budget);
+
+    private sealed class OperationTagCache
+    {
+        // Replaced as a whole, so a concurrent reader sees either result. A stale read only computes the tags again.
+        public OperationTagResult? Result { get; set; }
     }
 
     private sealed class ExternalTagKeyComparer : IEqualityComparer<(ITypeSymbol Type, string MemberName)>

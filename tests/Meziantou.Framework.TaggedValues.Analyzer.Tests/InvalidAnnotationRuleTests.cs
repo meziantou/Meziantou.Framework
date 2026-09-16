@@ -358,4 +358,35 @@ public sealed class InvalidAnnotationRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Theory]
+    [InlineData("// ValueTag is not used here because the id comes from another system")]
+    [InlineData("/* ValueTag attributes cannot be applied to locals */")]
+    public async Task NoDiagnostic_ForProseThatStartsWithValueTag(string comment)
+    {
+        await VerifyAsync($$"""
+            class Sample
+            {
+                void M()
+                {
+                    {{comment}}
+                    var id = Guid.Empty;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheFieldTargetOfAProperty()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [field: {|MFTV0005:ValueTag("OrderId")|}]
+                public Guid Id { get; set; }
+            }
+
+            record Order([field: {|MFTV0005:ValueTag("OrderId")|}] Guid Id);
+            """);
+    }
 }

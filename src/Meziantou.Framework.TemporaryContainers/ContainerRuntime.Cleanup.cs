@@ -4,19 +4,19 @@ namespace Meziantou.Framework.TemporaryContainers;
 
 public partial class ContainerRuntime
 {
-    /// <summary>Removes the containers and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
+    /// <summary>Removes the containers, images and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The removed resources.</returns>
     /// <exception cref="InvalidOperationException">The runtime is not available.</exception>
     public Task<ContainerCleanupResult> CleanupAsync(CancellationToken cancellationToken = default)
         => CleanupAsync(new ContainerCleanupOptions(), cancellationToken);
 
-    /// <summary>Removes the containers and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
+    /// <summary>Removes the containers, images and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
     /// <param name="options">What to remove. By default, only the resources whose creating process is gone.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The removed resources.</returns>
     /// <exception cref="InvalidOperationException">The runtime is not available.</exception>
-    /// <remarks>The resources of the current process are never removed, whatever the scope: a cleanup at the beginning of a test run cannot break the containers that run is about to use.</remarks>
+    /// <remarks>The resources of the current process are never removed, whatever the scope: a cleanup at the beginning of a test run cannot break the containers that run is about to use, nor its reaper.</remarks>
     public async Task<ContainerCleanupResult> CleanupAsync(ContainerCleanupOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -25,6 +25,7 @@ public partial class ContainerRuntime
         var runtime = await GetEffectiveRuntimeAsync(cancellationToken).ConfigureAwait(false);
 
         var removedContainers = new List<string>();
+        var removedImages = new List<string>();
         var removedVolumes = new List<string>();
         var errors = new List<Exception>();
         var now = DateTimeOffset.UtcNow;
@@ -48,8 +49,27 @@ public partial class ContainerRuntime
             }
         }
 
-        // Volumes come last: a volume a container still references cannot be removed, and the containers that
-        // referenced these volumes have just been removed.
+        // Images and volumes come after the containers: a runtime refuses to remove an image or a volume a container
+        // still uses, and the containers that used these ones have just been removed.
+        if (options.IncludeImages && runtime.SupportsImageCleanup)
+        {
+            foreach (var image in await ListSafeAsync(runtime.ListManagedImagesAsync, errors, cancellationToken).ConfigureAwait(false))
+            {
+                if (!ShouldRemove(image, options, now))
+                    continue;
+
+                try
+                {
+                    await runtime.DeleteImageAsync(image.Id, cancellationToken).ConfigureAwait(false);
+                    removedImages.Add(image.Id);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    errors.Add(ex);
+                }
+            }
+        }
+
         if (options.IncludeVolumes && runtime.SupportsVolumes)
         {
             foreach (var volume in await ListSafeAsync(runtime.ListManagedVolumesAsync, errors, cancellationToken).ConfigureAwait(false))
@@ -75,7 +95,7 @@ public partial class ContainerRuntime
             }
         }
 
-        return new ContainerCleanupResult(removedContainers, removedVolumes, errors);
+        return new ContainerCleanupResult(removedContainers, removedImages, removedVolumes, errors);
     }
 
     /// <summary>Lists the containers created by this library, whichever process created them.</summary>
@@ -86,7 +106,14 @@ public partial class ContainerRuntime
     internal virtual Task<IReadOnlyList<ManagedResource>> ListManagedVolumesAsync(CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
+    /// <summary>Lists the images built by this library, whichever process built them.</summary>
+    internal virtual Task<IReadOnlyList<ManagedResource>> ListManagedImagesAsync(CancellationToken cancellationToken)
+        => throw CreateNotSupportedException();
+
     internal virtual bool SupportsVolumes => true;
+
+    /// <summary>Whether the images the runtime builds carry the labels of the library, so the cleanup can find them.</summary>
+    internal virtual bool SupportsImageCleanup => false;
 
     /// <summary>Runs a listing without letting a failure on one kind of resource abort the whole cleanup.</summary>
     private static async Task<IReadOnlyList<ManagedResource>> ListSafeAsync(Func<CancellationToken, Task<IReadOnlyList<ManagedResource>>> list, List<Exception> errors, CancellationToken cancellationToken)
@@ -108,8 +135,12 @@ public partial class ContainerRuntime
         if (!labels.ContainsKey(ResourceLabels.Managed))
             return false;
 
-        // The containers of the current run are what the caller is about to use.
+        // The containers of the current run are what the caller is about to use. The session is not enough to recognize
+        // them: the reaper of the current run and its reused containers belong to no session.
         if (labels.TryGetValue(ResourceLabels.SessionId, out var sessionId) && string.Equals(sessionId, SessionIdentity.Current.SessionId, StringComparison.Ordinal))
+            return false;
+
+        if (ResourceOwnership.IsCreatedByCurrentProcess(labels))
             return false;
 
         if (!options.IncludeReusedResources && labels.ContainsKey(ResourceLabels.ReuseId))

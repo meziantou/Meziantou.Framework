@@ -38,13 +38,22 @@ internal static class ContainerTestHelper
         _ => false,
     };
 
+    /// <summary>Recognizes the failures of the runtime and of the transport to it, which a new attempt can get past. A failure of the library itself (a wait strategy that gives up, an invalid response it cannot parse) is not one: retrying it would let an intermittent defect pass most of the time.</summary>
+    private static bool IsTransientStartFailure(Exception exception) => exception switch
+    {
+        ContainerRuntimeException or ProcessExecutionException or HttpRequestException or IOException or System.Net.Sockets.SocketException => true,
+        AggregateException aggregate => aggregate.InnerExceptions.Any(IsTransientStartFailure),
+        _ => false,
+    };
+
     public static Task<TemporaryContainer> StartWithRetryAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
         return StartWithRetryAsync(definition.CreateContainer, cancellationToken);
     }
 
     /// <param name="isPermanentFailure">Recognizes a failure that no retry can fix, so it is reported as-is instead of being attempted <see cref="MaxStartAttempts"/> times.</param>
-    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken, Func<Exception, bool>? isPermanentFailure = null)
+    /// <param name="isTransientFailure">Recognizes a failure of the environment this container is known for, on top of the runtime and transport failures every container retries.</param>
+    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken, Func<Exception, bool>? isPermanentFailure = null, Func<Exception, bool>? isTransientFailure = null)
         where TContainer : TemporaryContainer
     {
         var failures = new List<Exception>();
@@ -62,8 +71,10 @@ internal static class ContainerTestHelper
                 await DisposeSafeAsync(container);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (isPermanentFailure?.Invoke(ex) is true)
+                if (isPermanentFailure?.Invoke(ex) is true || (!IsTransientStartFailure(ex) && isTransientFailure?.Invoke(ex) is not true))
                     throw;
+
+                TestContext.Current.TestOutputHelper?.WriteLine($"Starting the container failed on attempt {attempt}, retrying: {ex}");
 
                 failures.Add(ex);
 

@@ -98,8 +98,14 @@ public sealed class SqlServerContainerTests
 
     private static Task<SqlServerContainer> StartWithRetryAsync(SqlServerContainerDefinition definition)
     {
-        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken);
+        return ContainerTestHelper.StartWithRetryAsync(definition.CreateContainer, XunitCancellationToken, isTransientFailure: IsStartupThatDiedOnTheAgent);
     }
+
+    /// <summary>Recognizes a SQL Server that exited while starting up. The image needs a couple of gigabytes and a while
+    /// to start, and gives up on a CI agent that is busy running the containers of the other tests. A defect of the
+    /// library fails every attempt, so retrying only hides the agent.</summary>
+    private static bool IsStartupThatDiedOnTheAgent(Exception exception)
+        => exception is InvalidOperationException && exception.Message.Contains("The container is Exited", StringComparison.Ordinal);
 
     private static async Task<SqlConnection> OpenConnectionWithRetryAsync(string connectionString)
     {

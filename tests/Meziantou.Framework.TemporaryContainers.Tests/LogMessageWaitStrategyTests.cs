@@ -23,7 +23,7 @@ public sealed class LogMessageWaitStrategyTests
                 attachCount++;
                 return attachCount < 3 ? CreateLogsAsync() : CreateLogsAsync("SERVER READY");
             },
-            () => Task.FromResult<ContainerInfo?>(RunningContainer),
+            _ => Task.FromResult<ContainerInfo?>(RunningContainer),
             XunitCancellationToken);
 
         Assert.Equal(3, attachCount);
@@ -43,7 +43,7 @@ public sealed class LogMessageWaitStrategyTests
                 attachCount++;
                 return CreateLogsAsync("SERVER READY");
             },
-            () => Task.FromResult<ContainerInfo?>(attachCount < 2 ? RunningContainer : ExitedContainer),
+            _ => Task.FromResult<ContainerInfo?>(attachCount < 2 ? RunningContainer : ExitedContainer),
             XunitCancellationToken));
 
         Assert.Equal(2, attachCount);
@@ -57,7 +57,7 @@ public sealed class LogMessageWaitStrategyTests
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await strategy.WaitCoreAsync(
             _ => CreateLogsAsync("the entrypoint gave up"),
-            () => Task.FromResult<ContainerInfo?>(ExitedContainer),
+            _ => Task.FromResult<ContainerInfo?>(ExitedContainer),
             XunitCancellationToken));
 
         Assert.Contains("matched 0 time(s)", exception.Message);
@@ -73,35 +73,111 @@ public sealed class LogMessageWaitStrategyTests
         var attachCount = 0;
         var strategy = CreateStrategy("SERVER READY", occurrences: 1);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
-        cts.CancelAfter(TimeSpan.FromSeconds(1));
 
+        // The wait is cancelled once it has re-attached a few times, rather than after a fixed delay: a busy thread pool
+        // can delay the re-attachments well past any budget.
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await strategy.WaitCoreAsync(
             _ =>
             {
                 attachCount++;
+                if (attachCount == 3)
+                    cts.Cancel();
+
                 return CreateLogsAsync();
             },
-            () => Task.FromResult<ContainerInfo?>(RunningContainer),
+            _ => Task.FromResult<ContainerInfo?>(RunningContainer),
             cts.Token));
 
-        Assert.True(attachCount > 1, $"The log stream was attached {attachCount} time(s).");
+        Assert.Equal(3, attachCount);
     }
 
     [Fact]
     public async Task WaitAsync_ReportsAContainerThatCannotBeInspected()
     {
+        var inspections = 0;
         var strategy = CreateStrategy("SERVER READY", occurrences: 1);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await strategy.WaitCoreAsync(
             _ => CreateLogsAsync(),
-            () => Task.FromResult<ContainerInfo?>(null),
+            _ =>
+            {
+                inspections++;
+                return Task.FromResult<ContainerInfo?>(null);
+            },
             XunitCancellationToken));
 
+        Assert.Equal(LogMessageWaitStrategy.MaxFailedInspections, inspections);
+        Assert.Contains("The state of the container could not be read.", exception.Message);
         Assert.Contains("The container did not write anything to its log streams.", exception.Message);
+    }
+
+    [Fact]
+    public async Task WaitAsync_KeepsWaitingWhenAnInspectFailsOnce()
+    {
+        // A busy runtime can fail to answer an inspect while the container is perfectly healthy. That says nothing about
+        // the container, so the wait must not fail it.
+        var attachCount = 0;
+        var strategy = CreateStrategy("SERVER READY", occurrences: 1);
+
+        await strategy.WaitCoreAsync(
+            _ =>
+            {
+                attachCount++;
+                return attachCount < 3 ? CreateLogsAsync() : CreateLogsAsync("SERVER READY");
+            },
+            _ => Task.FromResult<ContainerInfo?>(attachCount == 1 ? null : RunningContainer),
+            XunitCancellationToken);
+
+        Assert.Equal(3, attachCount);
+    }
+
+    [Fact]
+    public async Task WaitAsync_ReattachesWhenTheLogStreamFaultsWhileTheContainerIsRunning()
+    {
+        // A runtime that drops the connection in the middle of a frame faults the stream instead of ending it.
+        var attachCount = 0;
+        var strategy = CreateStrategy("SERVER READY", occurrences: 1);
+
+        await strategy.WaitCoreAsync(
+            _ =>
+            {
+                attachCount++;
+                return attachCount == 1 ? CreateFaultingLogsAsync(new EndOfStreamException("Unexpected end of stream.")) : CreateLogsAsync("SERVER READY");
+            },
+            _ => Task.FromResult<ContainerInfo?>(RunningContainer),
+            XunitCancellationToken);
+
+        Assert.Equal(2, attachCount);
+    }
+
+    [Fact]
+    public async Task WaitAsync_PassesTheCancellationTokenToTheInspection()
+    {
+        var strategy = CreateStrategy("SERVER READY", occurrences: 1);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        CancellationToken observed = default;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await strategy.WaitCoreAsync(
+            _ => CreateLogsAsync(),
+            token =>
+            {
+                observed = token;
+                return Task.FromResult<ContainerInfo?>(ExitedContainer);
+            },
+            cts.Token));
+
+        Assert.Equal(cts.Token, observed);
     }
 
     private static LogMessageWaitStrategy CreateStrategy(string substring, int occurrences)
         => new(new Regex(Regex.Escape(substring), RegexOptions.None, TimeSpan.FromSeconds(1)), occurrences);
+
+    private static async IAsyncEnumerable<LogEntry> CreateFaultingLogsAsync(Exception exception)
+    {
+        await Task.Yield();
+        yield return new LogEntry(LogStream.Stdout, "starting", Timestamp: null);
+        throw exception;
+    }
 
     private static async IAsyncEnumerable<LogEntry> CreateLogsAsync(params string[] messages)
     {

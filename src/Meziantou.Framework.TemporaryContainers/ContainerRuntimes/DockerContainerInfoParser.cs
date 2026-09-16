@@ -43,7 +43,9 @@ internal static class DockerContainerInfoParser
     public static ContainerInfo ParseInspectResult(DockerInspectResult result)
     {
         var ports = new Dictionary<int, int>();
-        var portBindings = result.NetworkSettings?.Ports ?? result.Ports;
+        // docker and podman report the bindings under NetworkSettings, wslc at the top level. An empty dictionary in one
+        // place does not hide the bindings reported in the other.
+        var portBindings = result.NetworkSettings?.Ports is { Count: > 0 } networkPorts ? networkPorts : result.Ports ?? result.NetworkSettings?.Ports;
         if (portBindings is not null)
         {
             foreach (var (key, bindings) in portBindings)
@@ -56,8 +58,15 @@ internal static class DockerContainerInfoParser
                 if (!int.TryParse(portText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var containerPort))
                     continue;
 
-                if (int.TryParse(bindings[0].HostPort, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hostPort))
-                    ports[containerPort] = hostPort;
+                // A port published on every interface is reported once per address family, with the same host port.
+                foreach (var binding in bindings)
+                {
+                    if (int.TryParse(binding.HostPort, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hostPort))
+                    {
+                        ports.TryAdd(containerPort, hostPort);
+                        break;
+                    }
+                }
             }
         }
 
@@ -74,7 +83,22 @@ internal static class DockerContainerInfoParser
             IPAddress = result.NetworkSettings?.IPAddress,
             Ports = ports,
             Labels = result.Config?.Labels ?? result.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
+            Environment = ParseEnvironment(result.Config?.Env),
         };
+    }
+
+    /// <summary>Reads a list of <c>NAME=value</c> entries. A variable listed twice takes the last value, as it does in the process.</summary>
+    public static IReadOnlyDictionary<string, string> ParseEnvironment(IEnumerable<string>? variables)
+    {
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var variable in variables ?? [])
+        {
+            var separator = variable.IndexOf('=', StringComparison.Ordinal);
+            if (separator > 0)
+                environment[variable[..separator]] = variable[(separator + 1)..];
+        }
+
+        return environment;
     }
 
     public static ContainerState ParseState(string? status)

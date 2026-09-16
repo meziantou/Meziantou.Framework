@@ -27,4 +27,10 @@ public sealed class PodmanContainerTests() : ContainerRuntimeTestsBase(Container
 
     [Fact]
     public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
+
+    [Fact]
+    public Task Reaper_WatchesTheSessionAndStopsWithIt() => AssertReaperLifecycleAsync();
+
+    [Fact]
+    public Task Reaper_RemovesTheSessionWhenTheProcessIsGone() => AssertReaperRemovesTheSessionWhenTheProcessIsGoneAsync();
 }

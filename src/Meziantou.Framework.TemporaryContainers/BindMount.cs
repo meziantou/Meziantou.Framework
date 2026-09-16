@@ -4,4 +4,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 /// <param name="Source">The path on the host.</param>
 /// <param name="Target">The path inside the container.</param>
 /// <param name="ReadOnly">Whether the mount is read-only.</param>
-public sealed record BindMount(string Source, string Target, bool ReadOnly = false) : IMount;
+public sealed record BindMount(string Source, string Target, bool ReadOnly = false) : IMount
+{
+    string IMount.ContainerPath => Target;
+}

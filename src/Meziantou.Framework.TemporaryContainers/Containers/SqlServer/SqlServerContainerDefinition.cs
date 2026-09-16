@@ -8,7 +8,10 @@ public sealed class SqlServerContainerDefinition : ContainerDefinition
     internal SqlServerContainerDefinition(ImageSource image)
         : base(image)
     {
-        SaPassword = GenerateStrongPassword();
+        // Generated rather than set, so a container adopted through ReuseId is reached with the password it was created with.
+        var password = GenerateStrongPassword();
+        SetGeneratedEnvironmentValue("MSSQL_SA_PASSWORD", password);
+        SetGeneratedEnvironmentValue("SA_PASSWORD", password);
     }
 
     /// <summary>Gets or sets the SQL Server SA password. Setting this value updates <c>MSSQL_SA_PASSWORD</c> and <c>SA_PASSWORD</c> in <see cref="ContainerDefinition.Environment"/>.</summary>

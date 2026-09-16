@@ -28,8 +28,8 @@ public sealed class DockerCreateArgumentBuilderTests
         Assert.Contains("--hostname", args);
         Assert.Contains("KEY=VALUE", args);
         Assert.Contains("label=labelvalue", args);
-        Assert.Contains("6379", args);
-        Assert.Contains("15432:5432", args);
+        Assert.Contains("127.0.0.1::6379", args);
+        Assert.Contains("127.0.0.1:15432:5432", args);
         Assert.Contains("type=bind,source=/host,target=/container,readonly", args);
         Assert.Contains("536870912b", args);
         Assert.Contains("--pull", args);
@@ -50,6 +50,30 @@ public sealed class DockerCreateArgumentBuilderTests
         var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
 
         Assert.Contains($"{ResourceLabels.ReuseId}=my-reuse-id", args);
+    }
+
+    [Fact]
+    public void AddsTheHashOfTheConfigurationToAReusedContainer()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8")) { ReuseId = "my-reuse-id" };
+        var other = new ContainerDefinition(definition);
+        other.Environment.Add("MODE", "other");
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.Contains($"{ResourceLabels.ConfigurationHash}={ContainerConfigurationHash.Compute(definition)}", args);
+        Assert.NotEqual(ContainerConfigurationHash.Compute(definition), ContainerConfigurationHash.Compute(other));
+    }
+
+    [Fact]
+    public void OmitsTheHostAddressWhenTheRuntimeCannotBindOne()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Ports.Add(6379);
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true, hostIpSupported: false);
+
+        Assert.Contains("6379", args);
     }
 
     [Fact]

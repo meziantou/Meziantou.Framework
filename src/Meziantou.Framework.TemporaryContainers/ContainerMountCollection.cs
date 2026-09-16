@@ -7,6 +7,7 @@ namespace Meziantou.Framework.TemporaryContainers;
 public sealed class ContainerMountCollection : IEnumerable<IMount>
 {
     private readonly List<IMount> _mounts;
+    private bool _isReadOnly;
 
     internal ContainerMountCollection()
     {
@@ -26,7 +27,7 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     public void Add(IMount mount)
     {
         ArgumentNullException.ThrowIfNull(mount);
-        _mounts.Add(mount);
+        AddCore(mount);
     }
 
     /// <summary>Adds a bind mount that maps a host path into the container.</summary>
@@ -35,7 +36,7 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     /// <param name="readOnly">Whether the mount is read-only.</param>
     public void AddBindMount(string hostPath, string containerPath, bool readOnly = false)
     {
-        _mounts.Add(new BindMount(hostPath, containerPath, readOnly));
+        AddCore(new BindMount(hostPath, containerPath, readOnly));
     }
 
     /// <summary>Adds a named volume mount.</summary>
@@ -43,7 +44,7 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     /// <param name="containerPath">The path inside the container.</param>
     public void AddVolume(string volumeName, string containerPath)
     {
-        _mounts.Add(new VolumeMount(volumeName, containerPath));
+        AddCore(new VolumeMount(volumeName, containerPath));
     }
 
     /// <summary>Adds a named volume mount.</summary>
@@ -52,7 +53,7 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     /// <param name="readOnly">Whether the mount is read-only.</param>
     public void AddVolume(string volumeName, string containerPath, bool readOnly)
     {
-        _mounts.Add(new VolumeMount(volumeName, containerPath, readOnly));
+        AddCore(new VolumeMount(volumeName, containerPath, readOnly));
     }
 
     /// <summary>Adds a mount for a <see cref="TemporaryVolume"/>. The volume is created, if needed, when the container is created.</summary>
@@ -62,14 +63,14 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     public void AddVolume(TemporaryVolume volume, string containerPath, bool readOnly = false)
     {
         ArgumentNullException.ThrowIfNull(volume);
-        _mounts.Add(new OwnedVolumeMount(volume, containerPath, readOnly));
+        AddCore(new OwnedVolumeMount(volume, containerPath, readOnly));
     }
 
     /// <summary>Adds a tmpfs (in-memory) mount.</summary>
     /// <param name="containerPath">The path inside the container.</param>
     public void AddTmpfs(string containerPath)
     {
-        _mounts.Add(new TmpfsMount(containerPath));
+        AddCore(new TmpfsMount(containerPath));
     }
 
     /// <summary>Returns an enumerator over the mounts.</summary>
@@ -77,4 +78,12 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
     public IEnumerator<IMount> GetEnumerator() => _mounts.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    internal void MakeReadOnly() => _isReadOnly = true;
+
+    private void AddCore(IMount mount)
+    {
+        DefinitionReadOnly.ThrowIf(_isReadOnly);
+        _mounts.Add(mount);
+    }
 }

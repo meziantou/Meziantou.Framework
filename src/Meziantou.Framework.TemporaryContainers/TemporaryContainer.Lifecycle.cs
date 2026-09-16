@@ -19,9 +19,10 @@ public partial class TemporaryContainer
     {
         var id = RequireId();
         await StopForwardingLogsAsync().ConfigureAwait(false);
+        await PrepareLogsForStartAsync(restarting: true, cancellationToken).ConfigureAwait(false);
         await Runtime.RestartAsync(id, cancellationToken).ConfigureAwait(false);
+        await RefreshStateAsync(cancellationToken).ConfigureAwait(false);
         StartForwardingLogs();
-        await RefreshPortsAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Pauses the container.</summary>
@@ -54,7 +55,7 @@ public partial class TemporaryContainer
         await Runtime.KillAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Removes the container.</summary>
+    /// <summary>Removes the container, and the image built for it. A later <see cref="StartAsync"/> or <see cref="EnsureCreatedAsync"/> creates a new container.</summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes once the container is removed.</returns>
     public async Task DeleteAsync(CancellationToken cancellationToken = default)
@@ -63,9 +64,23 @@ public partial class TemporaryContainer
         if (_id is null)
             return;
 
+        await DeleteCoreAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task DeleteCoreAsync(CancellationToken cancellationToken)
+    {
         await StopForwardingLogsAsync().ConfigureAwait(false);
-        await Runtime.DeleteAsync(_id, cancellationToken).ConfigureAwait(false);
+        await Runtime.DeleteAsync(Id, cancellationToken).ConfigureAwait(false);
+        await DeleteBuiltImageAsync(cancellationToken).ConfigureAwait(false);
+
+        // The container is gone, so nothing about it is kept: the next start creates a new one instead of trying to start
+        // an id that no longer exists.
+        _id = null;
+        _name = null;
+        _created = false;
         _portMap = null;
+        _startedAt = null;
+        _logEntriesToSkip = 0;
     }
 
     /// <summary>Determines whether the container still exists.</summary>

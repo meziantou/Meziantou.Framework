@@ -13,6 +13,10 @@ public sealed class ContainerCleanupOptions
     /// <summary>Gets or sets a value indicating whether containers are removed. Defaults to <see langword="true"/>.</summary>
     public bool IncludeContainers { get; set; } = true;
 
+    /// <summary>Gets or sets a value indicating whether the images built from a Dockerfile are removed. Defaults to <see langword="true"/>. Images are removed after the containers, so an image a removed container used is no longer in use.</summary>
+    /// <remarks><c>wslc</c> does not label the images it builds, so they are not found.</remarks>
+    public bool IncludeImages { get; set; } = true;
+
     /// <summary>Gets or sets a value indicating whether volumes are removed. Defaults to <see langword="true"/>. Volumes are removed after the containers, so a volume a removed container used is no longer in use.</summary>
     public bool IncludeVolumes { get; set; } = true;
 

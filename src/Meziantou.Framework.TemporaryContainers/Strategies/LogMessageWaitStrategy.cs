@@ -3,7 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.TemporaryContainers.Strategies;
 
-internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences) : IWaitStrategy
+/// <param name="pattern">The pattern a log line must match.</param>
+/// <param name="occurrences">The number of matching lines to wait for.</param>
+/// <param name="text">The text the pattern was built from, which describes the strategy better than its escaped pattern.</param>
+internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences, string? text = null) : IWaitStrategy
 {
     // A container that dies while starting up closes its log stream, so the wait ends without the message it was
     // looking for. Only the tail is kept: it is where the failure is reported, and a chatty image must not be
@@ -18,39 +21,67 @@ internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences) : I
     private const int InitialReattachDelayInMilliseconds = 100;
     private const int MaxReattachDelayInMilliseconds = 1000;
 
+    // A runtime that does not answer an inspect says nothing about the container, so the wait asks again, but a runtime
+    // that never answers ends it rather than letting it spin until the startup timeout.
+    internal const int MaxFailedInspections = 3;
+
     public Task WaitAsync(TemporaryContainer container, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(container);
 
-        return WaitCoreAsync(container.GetLogsAsync, () => TryInspectAsync(container), cancellationToken);
+        // Only the logs of the current run count: a container started again keeps the ready message of its earlier run.
+        return WaitCoreAsync(ct => container.GetCurrentRunLogsAsync(follow: true, ct), ct => TryInspectAsync(container, ct), cancellationToken);
     }
 
     /// <summary>The wait itself, taking the log stream and the container state as delegates so both can be faked.</summary>
-    internal async Task WaitCoreAsync(Func<CancellationToken, IAsyncEnumerable<LogEntry>> getLogs, Func<Task<ContainerInfo?>> inspect, CancellationToken cancellationToken)
+    internal async Task WaitCoreAsync(Func<CancellationToken, IAsyncEnumerable<LogEntry>> getLogs, Func<CancellationToken, Task<ContainerInfo?>> inspect, CancellationToken cancellationToken)
     {
+        var failedInspections = 0;
         for (var attempt = 0; ; attempt++)
         {
             // Attaching to the logs replays them from the beginning, so every attempt counts the matches from scratch.
             var count = 0;
             var tail = new Queue<string>(MaxReportedLines);
-            await foreach (var entry in getLogs(cancellationToken).ConfigureAwait(false))
+            Exception? streamFailure = null;
+            try
             {
-                if (tail.Count == MaxReportedLines)
-                    tail.Dequeue();
-
-                tail.Enqueue(entry.Stream is LogStream.Stderr ? "[stderr] " + entry.Message : entry.Message);
-
-                if (pattern.IsMatch(entry.Message))
+                await foreach (var entry in getLogs(cancellationToken).ConfigureAwait(false))
                 {
-                    count++;
-                    if (count >= occurrences)
-                        return;
+                    if (tail.Count == MaxReportedLines)
+                        tail.Dequeue();
+
+                    tail.Enqueue(entry.Stream is LogStream.Stderr ? "[stderr] " + entry.Message : entry.Message);
+
+                    if (pattern.IsMatch(entry.Message))
+                    {
+                        count++;
+                        if (count >= occurrences)
+                            return;
+                    }
                 }
             }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                // The runtime dropped the stream in the middle of an entry. That says no more about the container than a
+                // stream that ends, so it is handled the same way.
+                streamFailure = ex;
+            }
 
-            var info = await inspect().ConfigureAwait(false);
-            if (info?.State is not ContainerState.Running)
-                throw new InvalidOperationException(BuildFailureMessage(info, count, tail));
+            var info = await inspect(cancellationToken).ConfigureAwait(false);
+            if (info is null)
+            {
+                failedInspections++;
+                if (failedInspections >= MaxFailedInspections)
+                    throw new InvalidOperationException(BuildFailureMessage(info, count, tail), streamFailure);
+            }
+            else if (info.State is not ContainerState.Running)
+            {
+                throw new InvalidOperationException(BuildFailureMessage(info, count, tail), streamFailure);
+            }
+            else
+            {
+                failedInspections = 0;
+            }
 
             // The container is still alive, so the message it was supposed to print may still come: re-attach and
             // keep waiting until the startup timeout cancels the wait or the container actually exits.
@@ -68,7 +99,7 @@ internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences) : I
     private string BuildFailureMessage(ContainerInfo? info, int count, Queue<string> tail)
     {
         var message = new StringBuilder();
-        message.Append(CultureInfo.InvariantCulture, $"The log pattern '{pattern}' matched {count} time(s) before the log stream ended (expected {occurrences}).");
+        message.Append(CultureInfo.InvariantCulture, $"The log pattern '{text ?? pattern.ToString()}' matched {count} time(s) before the log stream ended (expected {occurrences}).");
 
         if (info is not null)
         {
@@ -84,6 +115,10 @@ internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences) : I
             }
 
             message.Append('.');
+        }
+        else
+        {
+            message.Append(" The state of the container could not be read.");
         }
 
         if (tail.Count == 0)
@@ -101,18 +136,18 @@ internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences) : I
         return message.ToString();
     }
 
-    /// <summary>Inspects the container without ever throwing: the container may already be gone, and a failure to
-    /// describe it must not replace the log-pattern failure with an unrelated one.</summary>
-    private static async Task<ContainerInfo?> TryInspectAsync(TemporaryContainer container)
+    /// <summary>Inspects the container without ever throwing: the container may already be gone, and a failure to describe it must not replace the log-pattern failure with an unrelated one. The wait's own token bounds it, since a busy runtime can take a while to answer.</summary>
+    private static async Task<ContainerInfo?> TryInspectAsync(TemporaryContainer container, CancellationToken cancellationToken)
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            return await container.InspectAsync(cts.Token).ConfigureAwait(false);
+            return await container.InspectAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             return null;
         }
     }
+
+    public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"log message '{text ?? pattern.ToString()}' ({occurrences} occurrence(s))");
 }

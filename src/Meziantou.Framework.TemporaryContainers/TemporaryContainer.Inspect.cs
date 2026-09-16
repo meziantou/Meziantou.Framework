@@ -11,7 +11,8 @@ public partial class TemporaryContainer
         return await Runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task RefreshPortsAsync(CancellationToken cancellationToken)
+    /// <summary>Reads what a start changed: the host ports, and the time the container started, which tells its current logs from the ones of an earlier run.</summary>
+    private async Task RefreshStateAsync(CancellationToken cancellationToken)
     {
         var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
         var portMap = Runtime.ResolvePortMap(info, _definition);
@@ -21,5 +22,6 @@ public partial class TemporaryContainer
             map[containerPort] = hostPort;
 
         _portMap = map;
+        _startedAt = info.StartedAt;
     }
 }

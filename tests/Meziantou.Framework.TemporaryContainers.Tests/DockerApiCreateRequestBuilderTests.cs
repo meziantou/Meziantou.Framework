@@ -47,7 +47,9 @@ public sealed class DockerApiCreateRequestBuilderTests
         Assert.Contains("6379/tcp", payload.ExposedPorts!.Keys);
         Assert.Contains("5432/tcp", payload.ExposedPorts.Keys);
         Assert.Equal("", payload.HostConfig!.PortBindings!["6379/tcp"]![0]!.HostPort);
+        Assert.Equal("127.0.0.1", payload.HostConfig.PortBindings["6379/tcp"]![0]!.HostIp);
         Assert.Equal("15432", payload.HostConfig.PortBindings["5432/tcp"]![0]!.HostPort);
+        Assert.Equal(ContainerConfigurationHash.Compute(definition), payload.Labels[ResourceLabels.ConfigurationHash]);
         var mounts = Assert.IsType<List<DockerApiModels.Mount>>(payload.HostConfig.Mounts);
         Assert.Single(mounts, mount => mount.Type == "bind" && mount.Source == "/host" && mount.Target == "/container" && mount.ReadOnly);
         Assert.Single(mounts, mount => mount.Type == "volume" && mount.Source == "volume-name" && mount.Target == "/var/lib/data" && !mount.ReadOnly);
@@ -58,6 +60,17 @@ public sealed class DockerApiCreateRequestBuilderTests
         Assert.Equal(1_500_000_000, payload.HostConfig.NanoCpus);
         Assert.Equal("my-network", payload.HostConfig.NetworkMode);
         Assert.Equal(["my-alias"], payload.NetworkingConfig!.EndpointsConfig!["my-network"].Aliases);
+    }
+
+    [Fact]
+    public void Build_OmitsTheHostAddressForAWindowsDaemon()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Ports.Add(6379);
+
+        var payload = DockerApiCreateRequestBuilder.Build(definition, "redis:8", hostIpSupported: false);
+
+        Assert.Null(payload.HostConfig!.PortBindings!["6379/tcp"]![0]!.HostIp);
     }
 
     [Fact]

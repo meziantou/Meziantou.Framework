@@ -3,16 +3,23 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 internal sealed class TemporaryFileStream : Stream
 {
     private readonly string _path;
+    private readonly string? _directory;
     private readonly FileStream _stream;
     private bool _disposed;
 
-    public TemporaryFileStream(string path)
+    /// <param name="path">The file to read, deleted when the stream is disposed.</param>
+    /// <param name="directory">A temporary directory holding the file, deleted with it.</param>
+    public TemporaryFileStream(string path, string? directory = null)
     {
         ArgumentNullException.ThrowIfNull(path);
 
         _path = path;
+        _directory = directory;
         _stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
     }
+
+    /// <summary>Gets the path of the temporary file.</summary>
+    public string FilePath => _path;
 
     public override bool CanRead => _stream.CanRead;
 
@@ -63,7 +70,7 @@ internal sealed class TemporaryFileStream : Stream
         }
         finally
         {
-            File.Delete(_path);
+            DeleteFiles();
         }
 
         base.Dispose(disposing);
@@ -81,9 +88,16 @@ internal sealed class TemporaryFileStream : Stream
         }
         finally
         {
-            File.Delete(_path);
+            DeleteFiles();
         }
 
         await base.DisposeAsync().ConfigureAwait(false);
+    }
+
+    private void DeleteFiles()
+    {
+        File.Delete(_path);
+        if (_directory is not null)
+            PrivateTemporaryFile.DeleteDirectory(_directory);
     }
 }

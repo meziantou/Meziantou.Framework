@@ -501,6 +501,33 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Environment_ValuesWithSeparatorsReachTheContainer()
+    {
+        // The values are passed through a file rather than on the command line, and every runtime reads that file its own
+        // way: a password holding a separator, a quote or a comment marker must still arrive as it was set.
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The variables are read with a POSIX shell.");
+
+        var definition = CreateHttpServerDefinition();
+        definition.Environment.Add("PASSWORD", "Pa;ss=w0rd!");
+        definition.Environment.Add("SPACED", " leading and trailing ");
+        definition.Environment.Add("HASH", "a#b");
+        definition.Environment.Add("QUOTED", "\"quoted\"");
+        definition.Environment.Add("MULTILINE", "first\nsecond");
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("printf '[%s][%s][%s][%s][%s]' \"$PASSWORD\" \"$SPACED\" \"$HASH\" \"$QUOTED\" \"$MULTILINE\"");
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Equal("[Pa;ss=w0rd!][ leading and trailing ][a#b][\"quoted\"][first\nsecond]", exec.StandardOutput.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public async Task ExecAsync_SendsTheStandardInputAndKeepsTheCharactersOfTheOutput()
     {
         global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");

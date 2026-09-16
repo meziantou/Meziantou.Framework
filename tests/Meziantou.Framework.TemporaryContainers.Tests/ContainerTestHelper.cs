@@ -52,7 +52,8 @@ internal static class ContainerTestHelper
     }
 
     /// <param name="isPermanentFailure">Recognizes a failure that no retry can fix, so it is reported as-is instead of being attempted <see cref="MaxStartAttempts"/> times.</param>
-    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken, Func<Exception, bool>? isPermanentFailure = null)
+    /// <param name="isTransientFailure">Recognizes a failure of the environment this container is known for, on top of the runtime and transport failures every container retries.</param>
+    public static async Task<TContainer> StartWithRetryAsync<TContainer>(Func<TContainer> containerFactory, CancellationToken cancellationToken, Func<Exception, bool>? isPermanentFailure = null, Func<Exception, bool>? isTransientFailure = null)
         where TContainer : TemporaryContainer
     {
         var failures = new List<Exception>();
@@ -70,7 +71,7 @@ internal static class ContainerTestHelper
                 await DisposeSafeAsync(container);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (isPermanentFailure?.Invoke(ex) is true || !IsTransientStartFailure(ex))
+                if (isPermanentFailure?.Invoke(ex) is true || (!IsTransientStartFailure(ex) && isTransientFailure?.Invoke(ex) is not true))
                     throw;
 
                 TestContext.Current.TestOutputHelper?.WriteLine($"Starting the container failed on attempt {attempt}, retrying: {ex}");

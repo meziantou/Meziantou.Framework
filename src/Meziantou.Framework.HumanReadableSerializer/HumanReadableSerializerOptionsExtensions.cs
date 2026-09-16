@@ -42,26 +42,11 @@ public static class HumanReadableSerializerOptionsExtensions
     /// <summary>Configures the options to ignore the specified member.</summary>
     /// <typeparam name="T">The type containing the member.</typeparam>
     /// <param name="options">The serialization options.</param>
-    /// <param name="member">An expression identifying the member to ignore.</param>
+    /// <param name="member">An expression identifying the member to ignore, such as <c>x =&gt; x.Name</c>, or several members, such as <c>x =&gt; new { x.Name, x.Age }</c>.</param>
+    /// <remarks>See <see cref="HumanReadableSerializerOptions.AddAttribute{T}(Expression{Func{T, object}}, HumanReadableAttribute)"/> for the types the member is ignored on.</remarks>
     public static void IgnoreMember<T>(this HumanReadableSerializerOptions options, Expression<Func<T, object>> member)
     {
-        var memberInfos = member.GetMemberInfos();
-        if (memberInfos.Count is 0)
-            throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
-
-        foreach (var memberInfo in memberInfos)
-        {
-            if (memberInfo is PropertyInfo propertyInfo)
-            {
-                IgnoreMember(options, propertyInfo);
-                continue;
-            }
-            if (memberInfo is FieldInfo fieldInfo)
-            {
-                IgnoreMember(options, fieldInfo);
-                continue;
-            }
-        }
+        options.AddAttribute(member, new HumanReadableIgnoreAttribute());
     }
 
     /// <summary>Configures the options to ignore the specified member by name.</summary>

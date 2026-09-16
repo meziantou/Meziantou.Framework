@@ -381,6 +381,75 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         Assert.Null(_taskScheduler.WorkerException);
     }
 
+    [Fact]
+    public async Task WaitOnTheWorkerThread_RunsTheWaitedTaskInline()
+    {
+        // The worker is the only thread allowed to run the inner task, so waiting for it there used to block forever.
+        using var scheduler = new MonoThreadedTaskScheduler("inline");
+        var executed = 0;
+
+        var outer = Task.Factory.StartNew(
+            () =>
+            {
+                var inner = Task.Factory.StartNew(
+                    () =>
+                    {
+                        Interlocked.Increment(ref executed);
+                        return Environment.CurrentManagedThreadId;
+                    },
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    scheduler);
+
+                return (OuterThreadId: Environment.CurrentManagedThreadId, InnerThreadId: inner.Result);
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        var (outerThreadId, innerThreadId) = await outer.WaitAsync(TimeSpan.FromMinutes(1));
+
+        // The inlined task is still queued. Once the worker dequeues it, it must be skipped rather than run again.
+        await Task.Factory.StartNew(() => { }, CancellationToken.None, TaskCreationOptions.None, scheduler).WaitAsync(TimeSpan.FromMinutes(1));
+
+        Assert.Equal(outerThreadId, innerThreadId);
+        Assert.Equal(1, executed);
+    }
+
+    [Fact]
+    public async Task WaitOnAnotherThread_DoesNotRunTheTaskInline()
+    {
+        using var started = new ManualResetEventSlim(initialState: false);
+        using var release = new ManualResetEventSlim(initialState: false);
+        using var scheduler = new MonoThreadedTaskScheduler("no-inline");
+
+        // Occupy the worker thread so the task below stays queued while this thread waits for it.
+        _ = Task.Factory.StartNew(
+            () =>
+            {
+                started.Set();
+                release.Wait();
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        started.Wait();
+
+        var task = Task.Factory.StartNew(
+            () => Thread.CurrentThread.Name,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        // Task.Wait tries to run the task inline before blocking.
+        var completedDuringWait = await Task.Run(() => task.Wait(TimeSpan.FromMilliseconds(100))).WaitAsync(TimeSpan.FromMinutes(1));
+
+        release.Set();
+        Assert.False(completedDuringWait);
+        Assert.Equal("no-inline", await task.WaitAsync(TimeSpan.FromMinutes(1)));
+    }
+
     private Task EnqueueTask()
     {
         return Task.Factory.StartNew(() =>

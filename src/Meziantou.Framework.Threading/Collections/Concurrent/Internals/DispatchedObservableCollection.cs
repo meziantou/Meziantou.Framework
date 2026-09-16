@@ -178,10 +178,9 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         EnqueueEvent(PendingEvent.AddRange(items));
     }
 
-    internal bool EnqueueRemove(T item)
+    internal void EnqueueRemove(T item)
     {
         EnqueueEvent(PendingEvent.Remove(item));
-        return true;
     }
 
     internal void EnqueueRemoveAt(int index)

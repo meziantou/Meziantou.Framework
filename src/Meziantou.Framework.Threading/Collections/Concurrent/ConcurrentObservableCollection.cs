@@ -153,7 +153,9 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
 
     int ICollection.Count => Count;
 
-    object ICollection.SyncRoot => ((ICollection)Items).SyncRoot;
+    // The underlying immutable list is replaced on every modification, so its SyncRoot would be a different object each
+    // time and locking on it would synchronize nothing.
+    object ICollection.SyncRoot => throw new NotSupportedException("The SyncRoot property may not be used for the synchronization of concurrent collections.");
 
     bool ICollection.IsSynchronized => ((ICollection)Items).IsSynchronized;
 

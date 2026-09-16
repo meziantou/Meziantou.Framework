@@ -55,7 +55,18 @@ public sealed class KeyedLock<TKey> where TKey : notnull
     public IDisposable Lock(TKey key)
     {
         var entry = _locks.Reserve(key);
-        entry.Lock.Enter();
+        try
+        {
+            entry.Lock.Enter();
+        }
+        catch
+        {
+            // The lock was not acquired (e.g. the waiting thread was interrupted), so undo the reservation.
+            // Otherwise the entry is never evicted.
+            _locks.Release(key, entry);
+            throw;
+        }
+
         return new LockLease(this, key, entry);
     }
 

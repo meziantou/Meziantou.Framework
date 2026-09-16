@@ -229,7 +229,7 @@ input::placeholder { color: gray; }
 .a { color: red; b { color: $color; } }
 """,
 """
-.a { color: red; b { color: $color; } }
+<span class="hljs-selector-class">.a</span> { <span class="hljs-attribute">color</span>: red; <span class="hljs-selector-tag">b</span> { <span class="hljs-attribute">color</span>: $color; } }
 """);
     }
 

@@ -14,8 +14,9 @@ public static class SyntaxHighlighter
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(language);
 
-        var compiled = LanguageRegistry.Get(language);
-        return Tokenizer.Highlight(text, compiled, options ?? HighlightOptions.Default);
+        options ??= HighlightOptions.Default;
+        var compiled = LanguageRegistry.Get(language, options.MatchTimeout);
+        return Tokenizer.Highlight(text, compiled, options);
     }
 
     /// <summary>
@@ -27,13 +28,14 @@ public static class SyntaxHighlighter
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(language);
 
-        if (!LanguageRegistry.TryGet(language, out var compiled))
+        options ??= HighlightOptions.Default;
+        if (!LanguageRegistry.TryGet(language, options.MatchTimeout, out var compiled))
         {
             html = null;
             return false;
         }
 
-        html = Tokenizer.Highlight(text, compiled, options ?? HighlightOptions.Default);
+        html = Tokenizer.Highlight(text, compiled, options);
         return true;
     }
 

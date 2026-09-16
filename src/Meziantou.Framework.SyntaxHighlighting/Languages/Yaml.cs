@@ -20,12 +20,16 @@ internal static class Yaml
         // the scan linear.
         const string KeyRun = @"[\w*@ :()\./-]{0,1024}";
 
+        // Even bounded, the scan still costs up to 1024 steps from each position of a long run. A key
+        // is only highlighted when it starts at the first non-blank character (any other start is
+        // inside the plain scalar that begins there), so an unquoted key is only tried from the first
+        // position of the run where it can start.
         var key = new Mode
         {
             Scope = "attr",
             Variants =
             [
-                new Mode { Begin = @"[\w*@]" + KeyRun + @":(?=[ \t]|$)" },
+                new Mode { Begin = CommonModes.RunStart(@"\w*@ :()\./-", @"\w*@") + @"[\w*@]" + KeyRun + @":(?=[ \t]|$)" },
                 new Mode { Begin = @"""[\w*@]" + KeyRun + @""":(?=[ \t]|$)" },
                 new Mode { Begin = @"'[\w*@]" + KeyRun + @"':(?=[ \t]|$)" },
             ],

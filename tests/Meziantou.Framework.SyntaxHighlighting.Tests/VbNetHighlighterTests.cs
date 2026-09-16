@@ -1483,9 +1483,9 @@ Function Create(Of T As {Class, New})() As T
 End Function
 """,
 """
-Function Create(Of T As {Class, New})() As T
-    Return New T()
-End Function
+<span class="hljs-keyword">Function</span> Create(<span class="hljs-keyword">Of</span> T <span class="hljs-keyword">As</span> {<span class="hljs-keyword">Class</span>, <span class="hljs-built_in">New</span>})() <span class="hljs-keyword">As</span> T
+    <span class="hljs-keyword">Return</span> <span class="hljs-built_in">New</span> T()
+<span class="hljs-keyword">End</span> <span class="hljs-keyword">Function</span>
 """);
     }
 
@@ -1499,9 +1499,9 @@ Function Process(Of T As {IComparable(Of T), Class})(value As T) As T
 End Function
 """,
 """
-Function Process(Of T As {IComparable(Of T), Class})(value As T) As T
-    Return value
-End Function
+<span class="hljs-keyword">Function</span> Process(<span class="hljs-keyword">Of</span> T <span class="hljs-keyword">As</span> {IComparable(<span class="hljs-keyword">Of</span> T), <span class="hljs-keyword">Class</span>})(value <span class="hljs-keyword">As</span> T) <span class="hljs-keyword">As</span> T
+    <span class="hljs-keyword">Return</span> value
+<span class="hljs-keyword">End</span> <span class="hljs-keyword">Function</span>
 """);
     }
 
@@ -1688,8 +1688,8 @@ Public Class Calculator(Of T As {Structure, IConvertible})
 End Class
 """,
 """
-Public Class Calculator(Of T As {Structure, IConvertible})
-End Class
+<span class="hljs-keyword">Public</span> <span class="hljs-keyword">Class</span> Calculator(<span class="hljs-keyword">Of</span> T <span class="hljs-keyword">As</span> {<span class="hljs-keyword">Structure</span>, IConvertible})
+<span class="hljs-keyword">End</span> <span class="hljs-keyword">Class</span>
 """);
     }
 
@@ -1832,14 +1832,14 @@ Public Structure Money
 End Structure
 """,
 """
-Public Structure Money
-    Public Amount As Decimal
-    Public Currency As String
+<span class="hljs-keyword">Public</span> <span class="hljs-keyword">Structure</span> Money
+    <span class="hljs-keyword">Public</span> Amount <span class="hljs-keyword">As</span> <span class="hljs-type">Decimal</span>
+    <span class="hljs-keyword">Public</span> Currency <span class="hljs-keyword">As</span> <span class="hljs-type">String</span>
 
-    Public Function Add(other As Money) As Money
-        Return New Money With { .Amount = Amount + other.Amount, .Currency = Currency }
-    End Function
-End Structure
+    <span class="hljs-keyword">Public</span> <span class="hljs-keyword">Function</span> Add(other <span class="hljs-keyword">As</span> Money) <span class="hljs-keyword">As</span> Money
+        <span class="hljs-keyword">Return</span> <span class="hljs-built_in">New</span> Money <span class="hljs-keyword">With</span> { .Amount = Amount + other.Amount, .Currency = Currency }
+    <span class="hljs-keyword">End</span> <span class="hljs-keyword">Function</span>
+<span class="hljs-keyword">End</span> <span class="hljs-keyword">Structure</span>
 """);
     }
 
@@ -2377,7 +2377,7 @@ Dim fetch = Async Function() As Task(Of String)
 Dim arr() As Integer = {1, 2, 3}
 """,
 """
-Dim arr() As Integer = {1, 2, 3}
+<span class="hljs-keyword">Dim</span> arr() <span class="hljs-keyword">As</span> <span class="hljs-type">Integer</span> = {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>}
 """);
     }
 
@@ -2401,7 +2401,7 @@ Dim arr(9) As Integer
 Dim grid(,) As Integer = {{1, 2}, {3, 4}}
 """,
 """
-Dim grid(,) As Integer = {{1, 2}, {3, 4}}
+<span class="hljs-keyword">Dim</span> grid(,) <span class="hljs-keyword">As</span> <span class="hljs-type">Integer</span> = {{<span class="hljs-number">1</span>, <span class="hljs-number">2</span>}, {<span class="hljs-number">3</span>, <span class="hljs-number">4</span>}}
 """);
     }
 
@@ -2413,7 +2413,7 @@ Dim grid(,) As Integer = {{1, 2}, {3, 4}}
 Dim jagged()() As Integer = New Integer(2)() {New Integer() {1, 2}, New Integer() {3, 4, 5}, New Integer() {6}}
 """,
 """
-Dim jagged()() As Integer = New Integer(2)() {New Integer() {1, 2}, New Integer() {3, 4, 5}, New Integer() {6}}
+<span class="hljs-keyword">Dim</span> jagged()() <span class="hljs-keyword">As</span> <span class="hljs-type">Integer</span> = <span class="hljs-built_in">New</span> <span class="hljs-type">Integer</span>(<span class="hljs-number">2</span>)() {<span class="hljs-built_in">New</span> <span class="hljs-type">Integer</span>() {<span class="hljs-number">1</span>, <span class="hljs-number">2</span>}, <span class="hljs-built_in">New</span> <span class="hljs-type">Integer</span>() {<span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>}, <span class="hljs-built_in">New</span> <span class="hljs-type">Integer</span>() {<span class="hljs-number">6</span>}}
 """);
     }
 
@@ -2425,7 +2425,7 @@ Dim jagged()() As Integer = New Integer(2)() {New Integer() {1, 2}, New Integer(
 Dim arr = New Integer(9) {}
 """,
 """
-Dim arr = New Integer(9) {}
+<span class="hljs-keyword">Dim</span> arr = <span class="hljs-built_in">New</span> <span class="hljs-type">Integer</span>(<span class="hljs-number">9</span>) {}
 """);
     }
 
@@ -2461,7 +2461,7 @@ Dim first = arr(0)
 Dim names As New List(Of String) From {"alice", "bob"}
 """,
 """
-Dim names As New List(Of String) From {&quot;alice&quot;, &quot;bob&quot;}
+<span class="hljs-keyword">Dim</span> names <span class="hljs-keyword">As</span> <span class="hljs-built_in">New</span> List(<span class="hljs-keyword">Of</span> <span class="hljs-type">String</span>) <span class="hljs-keyword">From</span> {<span class="hljs-string">&quot;alice&quot;</span>, <span class="hljs-string">&quot;bob&quot;</span>}
 """);
     }
 
@@ -2473,7 +2473,7 @@ Dim names As New List(Of String) From {&quot;alice&quot;, &quot;bob&quot;}
 Dim ages As New Dictionary(Of String, Integer) From {{"alice", 30}, {"bob", 25}}
 """,
 """
-Dim ages As New Dictionary(Of String, Integer) From {{&quot;alice&quot;, 30}, {&quot;bob&quot;, 25}}
+<span class="hljs-keyword">Dim</span> ages <span class="hljs-keyword">As</span> <span class="hljs-built_in">New</span> Dictionary(<span class="hljs-keyword">Of</span> <span class="hljs-type">String</span>, <span class="hljs-type">Integer</span>) <span class="hljs-keyword">From</span> {{<span class="hljs-string">&quot;alice&quot;</span>, <span class="hljs-number">30</span>}, {<span class="hljs-string">&quot;bob&quot;</span>, <span class="hljs-number">25</span>}}
 """);
     }
 
@@ -2485,7 +2485,7 @@ Dim ages As New Dictionary(Of String, Integer) From {{&quot;alice&quot;, 30}, {&
 Dim user = New User With { .Name = "alice", .Age = 30 }
 """,
 """
-Dim user = New User With { .Name = &quot;alice&quot;, .Age = 30 }
+<span class="hljs-keyword">Dim</span> user = <span class="hljs-built_in">New</span> User <span class="hljs-keyword">With</span> { .Name = <span class="hljs-string">&quot;alice&quot;</span>, .Age = <span class="hljs-number">30</span> }
 """);
     }
 
@@ -2497,7 +2497,7 @@ Dim user = New User With { .Name = &quot;alice&quot;, .Age = 30 }
 Dim p = New With { .X = 1, .Y = 2 }
 """,
 """
-Dim p = New With { .X = 1, .Y = 2 }
+<span class="hljs-keyword">Dim</span> p = <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> { .X = <span class="hljs-number">1</span>, .Y = <span class="hljs-number">2</span> }
 """);
     }
 
@@ -2509,7 +2509,7 @@ Dim p = New With { .X = 1, .Y = 2 }
 Dim p = New With { Key .Name = "alice", .Age = 30 }
 """,
 """
-Dim p = New With { Key .Name = &quot;alice&quot;, .Age = 30 }
+<span class="hljs-keyword">Dim</span> p = <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> { <span class="hljs-keyword">Key</span> .Name = <span class="hljs-string">&quot;alice&quot;</span>, .Age = <span class="hljs-number">30</span> }
 """);
     }
 
@@ -2535,9 +2535,9 @@ Dim q = From u In users
         Select New With { .Country = Country, .Count = g.Count() }
 """,
 """
-Dim q = From u In users
-        Group u By u.Country Into g = Group
-        Select New With { .Country = Country, .Count = g.Count() }
+<span class="hljs-keyword">Dim</span> q = <span class="hljs-keyword">From</span> u <span class="hljs-keyword">In</span> users
+        <span class="hljs-keyword">Group</span> u <span class="hljs-keyword">By</span> u.Country <span class="hljs-keyword">Into</span> g = <span class="hljs-keyword">Group</span>
+        <span class="hljs-keyword">Select</span> <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> { .Country = Country, .Count = g.Count() }
 """);
     }
 
@@ -2551,9 +2551,9 @@ Dim q = From u In users
         Select New With { u.Name, o.Total }
 """,
 """
-Dim q = From u In users
-        Join o In orders On u.Id Equals o.UserId
-        Select New With { u.Name, o.Total }
+<span class="hljs-keyword">Dim</span> q = <span class="hljs-keyword">From</span> u <span class="hljs-keyword">In</span> users
+        <span class="hljs-keyword">Join</span> o <span class="hljs-keyword">In</span> orders <span class="hljs-keyword">On</span> u.Id <span class="hljs-keyword">Equals</span> o.UserId
+        <span class="hljs-keyword">Select</span> <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> { u.Name, o.Total }
 """);
     }
 
@@ -2580,10 +2580,10 @@ Dim q = From u In users
         Select New With { u.Name, total }
 """,
 """
-Dim q = From u In users
-        Let total = u.Orders.Sum(Function(o) o.Total)
-        Where total &gt; 100
-        Select New With { u.Name, total }
+<span class="hljs-keyword">Dim</span> q = <span class="hljs-keyword">From</span> u <span class="hljs-keyword">In</span> users
+        <span class="hljs-keyword">Let</span> total = u.Orders.Sum(<span class="hljs-keyword">Function</span>(o) o.Total)
+        <span class="hljs-keyword">Where</span> total &gt; <span class="hljs-number">100</span>
+        <span class="hljs-keyword">Select</span> <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> { u.Name, total }
 """);
     }
 
@@ -3459,19 +3459,19 @@ For Each row In summary
 Next
 """,
 """
-Dim summary = From u In users
-              Where u.IsActive
-              Group u By u.Country Into g = Group
-              Order By Country
-              Select New With {
+<span class="hljs-keyword">Dim</span> summary = <span class="hljs-keyword">From</span> u <span class="hljs-keyword">In</span> users
+              <span class="hljs-keyword">Where</span> u.IsActive
+              <span class="hljs-keyword">Group</span> u <span class="hljs-keyword">By</span> u.Country <span class="hljs-keyword">Into</span> g = <span class="hljs-keyword">Group</span>
+              <span class="hljs-keyword">Order</span> <span class="hljs-keyword">By</span> Country
+              <span class="hljs-keyword">Select</span> <span class="hljs-built_in">New</span> <span class="hljs-keyword">With</span> {
                   .Country = Country,
                   .Users = g.Count(),
-                  .AvgAge = g.Average(Function(x) x.Age)
+                  .AvgAge = g.Average(<span class="hljs-keyword">Function</span>(x) x.Age)
               }
 
-For Each row In summary
-    Console.WriteLine($&quot;{row.Country}: {row.Users} users, avg age {row.AvgAge:F1}&quot;)
-Next
+<span class="hljs-keyword">For</span> <span class="hljs-keyword">Each</span> row <span class="hljs-keyword">In</span> summary
+    Console.WriteLine($<span class="hljs-string">&quot;{row.Country}: {row.Users} users, avg age {row.AvgAge:F1}&quot;</span>)
+<span class="hljs-keyword">Next</span>
 """);
     }
 
@@ -3496,20 +3496,20 @@ Public Class MainForm
 End Class
 """,
 """
-Public Class MainForm
-    Inherits Form
+<span class="hljs-keyword">Public</span> <span class="hljs-keyword">Class</span> MainForm
+    <span class="hljs-keyword">Inherits</span> Form
 
-    Private WithEvents _button As Button
+    <span class="hljs-keyword">Private</span> <span class="hljs-keyword">WithEvents</span> _button <span class="hljs-keyword">As</span> Button
 
-    Public Sub New()
-        _button = New Button With { .Text = &quot;Click me&quot; }
+    <span class="hljs-keyword">Public</span> <span class="hljs-keyword">Sub</span> <span class="hljs-built_in">New</span>()
+        _button = <span class="hljs-built_in">New</span> Button <span class="hljs-keyword">With</span> { .<span class="hljs-keyword">Text</span> = <span class="hljs-string">&quot;Click me&quot;</span> }
         Controls.Add(_button)
-    End Sub
+    <span class="hljs-keyword">End</span> <span class="hljs-keyword">Sub</span>
 
-    Private Sub OnButtonClick(sender As Object, e As EventArgs) Handles _button.Click
-        MessageBox.Show(&quot;Hello, world!&quot;)
-    End Sub
-End Class
+    <span class="hljs-keyword">Private</span> <span class="hljs-keyword">Sub</span> OnButtonClick(sender <span class="hljs-keyword">As</span> <span class="hljs-type">Object</span>, e <span class="hljs-keyword">As</span> EventArgs) <span class="hljs-keyword">Handles</span> _button.Click
+        MessageBox.Show(<span class="hljs-string">&quot;Hello, world!&quot;</span>)
+    <span class="hljs-keyword">End</span> <span class="hljs-keyword">Sub</span>
+<span class="hljs-keyword">End</span> <span class="hljs-keyword">Class</span>
 """);
     }
 

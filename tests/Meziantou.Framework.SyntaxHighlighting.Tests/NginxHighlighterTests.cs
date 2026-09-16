@@ -441,7 +441,7 @@ if (-f $request_filename) {
 }
 """,
 """
-if (-f $request_filename) {
+<span class="hljs-attribute">if</span> (-f <span class="hljs-variable">$request_filename</span>) {
   break;
 }
 """);
@@ -718,11 +718,11 @@ upstream backend {
 }
 """,
 """
-upstream backend {
+<span class="hljs-section">upstream</span> backend {
   least_conn;
-  server backend1.example.com weight=3;
-  server backend2.example.com weight=1 max_fails=2 fail_timeout=30s;
-  server backend3.example.com backup;
+  <span class="hljs-attribute">server</span> backend1.example.com weight=<span class="hljs-number">3</span>;
+  <span class="hljs-attribute">server</span> backend2.example.com weight=<span class="hljs-number">1</span> max_fails=<span class="hljs-number">2</span> fail_timeout=<span class="hljs-number">30s</span>;
+  <span class="hljs-attribute">server</span> backend3.example.com backup;
 }
 """);
     }
@@ -739,10 +739,10 @@ upstream backend {
 }
 """,
 """
-upstream backend {
+<span class="hljs-section">upstream</span> backend {
   ip_hash;
-  server 10.0.0.1:8080;
-  server 10.0.0.2:8080;
+  <span class="hljs-attribute">server</span> <span class="hljs-number">10.0.0.1:8080</span>;
+  <span class="hljs-attribute">server</span> <span class="hljs-number">10.0.0.2:8080</span>;
 }
 """);
     }
@@ -794,11 +794,11 @@ map $http_user_agent $is_bot {
 }
 """,
 """
-map $http_user_agent $is_bot {
-  default       0;
-  ~*googlebot   1;
-  ~*bingbot     1;
-  ~*duckduckbot 1;
+<span class="hljs-attribute">map</span> <span class="hljs-variable">$http_user_agent</span> <span class="hljs-variable">$is_bot</span> {
+  <span class="hljs-attribute">default</span>       <span class="hljs-number">0</span>;
+  ~*<span class="hljs-attribute">googlebot</span>   <span class="hljs-number">1</span>;
+  ~*<span class="hljs-attribute">bingbot</span>     <span class="hljs-number">1</span>;
+  ~*<span class="hljs-attribute">duckduckbot</span> <span class="hljs-number">1</span>;
 }
 """);
     }
@@ -816,11 +816,11 @@ map $http_host $backend {
 }
 """,
 """
-map $http_host $backend {
+<span class="hljs-attribute">map</span> <span class="hljs-variable">$http_host</span> <span class="hljs-variable">$backend</span> {
   hostnames;
-  *.example.com         app;
-  api.example.com       api;
-  default               app;
+  *.example.<span class="hljs-attribute">com</span>         app;
+  api.example.<span class="hljs-attribute">com</span>       api;
+  <span class="hljs-attribute">default</span>               app;
 }
 """);
     }
@@ -1476,34 +1476,34 @@ server {
 }
 """,
 """
-upstream app_backend {
+<span class="hljs-section">upstream</span> app_backend {
   least_conn;
-  server 10.0.0.10:8080 max_fails=2 fail_timeout=30s;
-  server 10.0.0.11:8080 max_fails=2 fail_timeout=30s;
-  keepalive 32;
+  <span class="hljs-attribute">server</span> <span class="hljs-number">10.0.0.10:8080</span> max_fails=<span class="hljs-number">2</span> fail_timeout=<span class="hljs-number">30s</span>;
+  <span class="hljs-attribute">server</span> <span class="hljs-number">10.0.0.11:8080</span> max_fails=<span class="hljs-number">2</span> fail_timeout=<span class="hljs-number">30s</span>;
+  <span class="hljs-attribute">keepalive</span> <span class="hljs-number">32</span>;
 }
 
-server {
-  listen      443 ssl http2;
-  server_name app.example.com;
+<span class="hljs-section">server</span> {
+  <span class="hljs-attribute">listen</span>      <span class="hljs-number">443</span> ssl http2;
+  <span class="hljs-attribute">server_name</span> app.example.com;
 
-  ssl_certificate     /etc/ssl/app.crt;
-  ssl_certificate_key /etc/ssl/app.key;
-  ssl_protocols       TLSv1.2 TLSv1.3;
+  <span class="hljs-attribute">ssl_certificate</span>     /etc/ssl/app.crt;
+  <span class="hljs-attribute">ssl_certificate_key</span> /etc/ssl/app.key;
+  <span class="hljs-attribute">ssl_protocols</span>       TLSv1.<span class="hljs-number">2</span> TLSv1.<span class="hljs-number">3</span>;
 
-  client_max_body_size 50M;
+  <span class="hljs-attribute">client_max_body_size</span> <span class="hljs-number">50M</span>;
 
-  location / {
-    proxy_pass http://app_backend;
+  <span class="hljs-section">location</span> / {
+    <span class="hljs-attribute">proxy_pass</span> http://app_backend;
 
-    proxy_http_version 1.1;
-    proxy_set_header Host              $host;
-    proxy_set_header X-Real-IP         $remote_addr;
-    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+    <span class="hljs-attribute">proxy_http_version</span> <span class="hljs-number">1</span>.<span class="hljs-number">1</span>;
+    <span class="hljs-attribute">proxy_set_header</span> Host              <span class="hljs-variable">$host</span>;
+    <span class="hljs-attribute">proxy_set_header</span> X-Real-IP         <span class="hljs-variable">$remote_addr</span>;
+    <span class="hljs-attribute">proxy_set_header</span> X-Forwarded-For   <span class="hljs-variable">$proxy_add_x_forwarded_for</span>;
+    <span class="hljs-attribute">proxy_set_header</span> X-Forwarded-Proto <span class="hljs-variable">$scheme</span>;
 
-    proxy_connect_timeout 5s;
-    proxy_read_timeout    60s;
+    <span class="hljs-attribute">proxy_connect_timeout</span> <span class="hljs-number">5s</span>;
+    <span class="hljs-attribute">proxy_read_timeout</span>    <span class="hljs-number">60s</span>;
   }
 }
 """);

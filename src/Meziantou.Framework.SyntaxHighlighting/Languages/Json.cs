@@ -9,10 +9,13 @@ internal static class Json
 
     private static Mode CreateMode()
     {
+        // A key never starts right after a backslash: outside of a string or a comment, a backslash is
+        // illegal. Skipping those quotes keeps the escaped quotes of a long string value from each
+        // rescanning the rest of the line.
         var attribute = new Mode
         {
             Scope = "attr",
-            Begin = @"""(\\.|[^\\""\r\n])*""(?=\s*:)",
+            Begin = @"(?:\G|(?<!\\))""(\\.|[^\\""\r\n])*""(?=\s*:)",
         };
 
         var punctuation = new Mode

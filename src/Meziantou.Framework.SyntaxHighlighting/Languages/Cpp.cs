@@ -16,8 +16,31 @@ internal static class Cpp
         + "(?:" + TemplateArgumentRe + ")?"
         + ")";
 
-    private const string FunctionTitleRe =
-        "(?:" + NamespaceRe + ")?" + CommonModes.IdentRe + @"\s*\(";
+    private const string DecimalStartRe = @"(?:\G|(?<![0-9](?:(?!\G)')?))";
+
+    private const string FunctionTypeNoCaptureRe =
+        "(?!struct)(?:" + DeclTypeAutoRe + "|"
+        + "(?:" + NamespaceRe + ")?"
+        + @"[a-zA-Z_]\w*"
+        + "(?:" + TemplateArgumentRe + ")?"
+        + ")";
+
+    // The namespace and the identifier are both runs of word characters that are searched for: only try
+    // each of them from the first position of the run where it can start.
+    private static readonly string ScopedIdentifierRe =
+        "(?:" + CommonModes.RunStart(@"\w", "a-zA-Z_") + NamespaceRe + ")?" + CommonModes.IdentRe;
+
+    private static readonly string FunctionTitleRe =
+        "(?:" + CommonModes.RunStart(@"\w", "a-zA-Z_") + NamespaceRe + ")?" + CommonModes.RunStart(@"\w", "a-zA-Z") + CommonModes.IdentRe + @"\s*\(";
+
+    // A declaration is a sequence of types followed by the function name. A type that follows another
+    // type of the sequence can also be matched from the start of the sequence, so it can never be the
+    // leftmost match and is skipped: otherwise, each type of a long sequence would rescan it. The
+    // previous type does not count when the scan starts after it (e.g. after a preprocessor directive).
+    private static readonly string FunctionDeclarationRe =
+        CommonModes.RunStart(@"\w", "a-zA-Z_", "(?!struct)")
+        + @"(?:\G|(?<!" + FunctionTypeNoCaptureRe + @"(?:(?!\G)[\*&\s])+))"
+        + "(" + FunctionTypeRe + @"[\*&\s]+)+" + FunctionTitleRe;
 
     private static readonly string[] ReservedKeywords =
     [
@@ -101,13 +124,16 @@ internal static class Cpp
             [
                 new Mode
                 {
+                    // A decimal part that follows a digit (or a digit and a separator) can also be matched
+                    // from that digit, so only the first digit of a run may start one: otherwise, each
+                    // digit of a long run would rescan it.
                     Begin =
                         @"[+-]?(?:" +
                         @"(?:" +
-                            @"[0-9](?:'?[0-9])*\.(?:[0-9](?:'?[0-9])*)?" +
+                            DecimalStartRe + @"[0-9](?:'?[0-9])*\.(?:[0-9](?:'?[0-9])*)?" +
                             @"|\.[0-9](?:'?[0-9])*" +
                         @")(?:[Ee][+-]?[0-9](?:'?[0-9])*)?" +
-                        @"|[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*" +
+                        @"|" + DecimalStartRe + @"[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*" +
                         @"|0[Xx](?:" +
                             @"[0-9A-Fa-f](?:'?[0-9A-Fa-f])*(?:\.(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)?)?" +
                             @"|\.[0-9A-Fa-f](?:'?[0-9A-Fa-f])*" +
@@ -151,13 +177,14 @@ internal static class Cpp
             [
                 new() { Begin = @"\\\n" },
                 strings,
-                new() { Scope = "string", Begin = "<.*?>" },
+                // A `<` that follows an unclosed `<` of the same line would end on the same `>`.
+                new() { Scope = "string", Begin = @"(?=<)(?:\G|(?<!<(?:(?!\G)[^>\n])*?))<.*?>" },
                 cLineComment,
                 CommonModes.CBlockCommentMode,
             ],
         };
 
-        var titleMode = new Mode { Scope = "title", Begin = "(?:" + NamespaceRe + ")?" + CommonModes.IdentRe };
+        var titleMode = new Mode { Scope = "title", Begin = ScopedIdentifierRe };
 
         var functionDispatch = new Mode
         {
@@ -229,7 +256,7 @@ internal static class Cpp
         var functionDeclaration = new Mode
         {
             Scope = "function",
-            Begin = "(" + FunctionTypeRe + @"[\*&\s]+)+" + FunctionTitleRe,
+            Begin = FunctionDeclarationRe,
             ReturnBegin = true,
             End = "[{;=]",
             ExcludeEnd = true,
@@ -302,7 +329,7 @@ internal static class Cpp
         contains.AddRange(expressionContains);
         contains.Add(preprocessor);
         contains.Add(containerTemplates);
-        contains.Add(new Mode { Begin = CommonModes.IdentRe + "::", Keywords = keywords });
+        contains.Add(new Mode { Begin = CommonModes.RunStart(@"\w", "a-zA-Z") + CommonModes.IdentRe + "::", Keywords = keywords });
         contains.Add(classDeclaration);
 
         return new Mode

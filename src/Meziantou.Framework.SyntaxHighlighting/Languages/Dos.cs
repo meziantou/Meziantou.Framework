@@ -29,8 +29,8 @@ internal static class Dos
 
     private static Mode CreateMode()
     {
-        var comment = CommonModes.Comment(@"^\s*@?rem\b", "$");
-        const string LabelBegin = @"^\s*[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\s+label)";
+        var comment = CommonModes.Comment(CommonModes.IndentedLineStartRe + @"@?rem\b", "$");
+        const string LabelBegin = CommonModes.IndentedLineStartRe + @"[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\s+label)";
 
         return new Mode
         {

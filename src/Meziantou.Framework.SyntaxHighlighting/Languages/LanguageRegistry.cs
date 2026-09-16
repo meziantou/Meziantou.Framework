@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using Meziantou.Framework.SyntaxHighlighting.Engine;
 
@@ -5,12 +6,6 @@ namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
 internal static class LanguageRegistry
 {
-    static LanguageRegistry()
-    {
-        // Wire up sub-language resolution (e.g. bash inside Dockerfile RUN, css inside <style>).
-        Tokenizer.SubLanguageResolver = Get;
-    }
-
     // The values are factories rather than compiled grammars so that looking a language up — or
     // merely asking whether it is supported — does not compile every other grammar.
     private static readonly FrozenDictionary<string, Func<CompiledMode>> Languages =
@@ -99,22 +94,35 @@ internal static class LanguageRegistry
             ["cil"] = () => Msil.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
-    public static CompiledMode Get(string language) =>
-        TryGet(language, out var mode) ? mode : throw new NotSupportedException($"Language '{language}' is not supported.");
+    // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.
+    private static readonly ConcurrentDictionary<(CompiledMode Grammar, TimeSpan MatchTimeout), Lazy<CompiledMode>> GrammarsByTimeout = new();
 
-    public static bool TryGet(string language, [NotNullWhen(true)] out CompiledMode? mode)
+    public static CompiledMode Get(string language) => Get(language, Compiler.DefaultMatchTimeout);
+
+    public static CompiledMode Get(string language, TimeSpan matchTimeout) =>
+        TryGet(language, matchTimeout, out var mode) ? mode : throw new NotSupportedException($"Language '{language}' is not supported.");
+
+    public static bool TryGet(string language, TimeSpan matchTimeout, [NotNullWhen(true)] out CompiledMode? mode)
     {
-        if (Languages.TryGetValue(language, out var factory))
+        if (!Languages.TryGetValue(language, out var factory))
         {
-            mode = factory();
-            return true;
+            mode = null;
+            return false;
         }
 
-        mode = null;
-        return false;
+        mode = factory();
+        if (matchTimeout != mode.MatchTimeout)
+        {
+            // Regex timeouts are fixed when a regex is created, so another timeout needs its own copy of the grammar.
+            mode = GrammarsByTimeout.GetOrAdd((mode, matchTimeout), key => new Lazy<CompiledMode>(() => Compiler.Compile(key.Grammar.Source, key.MatchTimeout))).Value;
+        }
+
+        return true;
     }
 
     public static bool IsSupported(string language) => Languages.ContainsKey(language);
 
-    public static IEnumerable<string> GetSupportedLanguages() => Languages.Keys.Order(StringComparer.Ordinal);
+    private static readonly IReadOnlyList<string> SortedLanguages = Array.AsReadOnly(Languages.Keys.Order(StringComparer.Ordinal).ToArray());
+
+    public static IReadOnlyList<string> GetSupportedLanguages() => SortedLanguages;
 }

@@ -350,7 +350,7 @@ second line
 """
 """",
 """
-desc = &quot;&quot;&quot;
+<span class="hljs-attr">desc</span> = &quot;&quot;&quot;
 first line
 second line
 &quot;&quot;&quot;
@@ -825,7 +825,7 @@ list = [
 ]
 """,
 """
-list = [
+<span class="hljs-attr">list</span> = [
   1,
   2,
   3,

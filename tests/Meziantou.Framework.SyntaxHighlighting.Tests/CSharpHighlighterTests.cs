@@ -85,7 +85,7 @@ public enum FileAccess { None = 0, Read = 1, Write = 2, All = Read | Write }
 record Foo(int X, int Y);
 """,
 """
-record Foo(int X, int Y);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Foo</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X, <span class="hljs-built_in">int</span> Y</span>)</span>;
 """);
     }
 
@@ -97,7 +97,7 @@ record Foo(int X, int Y);
 record class Foo(int X);
 """,
 """
-record class Foo(int X);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Foo</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X</span>)</span>;
 """);
     }
 
@@ -109,7 +109,7 @@ record class Foo(int X);
 record struct Point(int X, int Y);
 """,
 """
-record struct Point(int X, int Y);
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-keyword">struct</span> <span class="hljs-title">Point</span>(<span class="hljs-params"><span class="hljs-built_in">int</span> X, <span class="hljs-built_in">int</span> Y</span>)</span>;
 """);
     }
 
@@ -4172,6 +4172,106 @@ class C { global::System.Int32 Value { get; set; } }
 """,
 """
 <span class="hljs-keyword">class</span> <span class="hljs-title">C</span> { <span class="hljs-keyword">global</span>::System.Int32 Value { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; } }
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordStructWithoutParameters()
+    {
+        AssertHighlighter("csharp",
+"""
+record struct Point { }
+""",
+"""
+<span class="hljs-keyword">record</span> <span class="hljs-keyword">struct</span> <span class="hljs-title">Point</span> { }
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordGeneric()
+    {
+        AssertHighlighter("csharp",
+"""
+record Pair<TKey, TValue>(TKey Key, TValue Value);
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Pair</span>&lt;<span class="hljs-title">TKey</span>, <span class="hljs-title">TValue</span>&gt;(<span class="hljs-params">TKey Key, TValue Value</span>)</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordWithAttributeAndDefaultValue()
+    {
+        AssertHighlighter("csharp",
+"""
+record Person([property: JsonPropertyName("name")] string Name, int Age = 42);
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">record</span> <span class="hljs-title">Person</span>(<span class="hljs-params">[property: JsonPropertyName(<span class="hljs-string">&quot;name&quot;</span>)] <span class="hljs-built_in">string</span> Name, <span class="hljs-built_in">int</span> Age = <span class="hljs-number">42</span></span>)</span>;
+""");
+    }
+
+    [Fact]
+    public void Keyword_RecordWithSeveralBaseTypes()
+    {
+        AssertHighlighter("csharp",
+"""
+record Person : IEquatable<Person>, IComparable<Person>;
+""",
+"""
+<span class="hljs-keyword">record</span> <span class="hljs-title">Person</span> : <span class="hljs-title">IEquatable</span>&lt;<span class="hljs-title">Person</span>&gt;, <span class="hljs-title">IComparable</span>&lt;<span class="hljs-title">Person</span>&gt;;
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_Class()
+    {
+        AssertHighlighter("csharp",
+"""
+class Service(ILogger<Service> logger) : IService { }
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">class</span> <span class="hljs-title">Service</span>(<span class="hljs-params">ILogger&lt;Service&gt; logger</span>) : IService</span> { }
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_GenericClass()
+    {
+        AssertHighlighter("csharp",
+"""
+class Repository<T>(DbContext context) where T : class
+{
+}
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">class</span> <span class="hljs-title">Repository</span>&lt;<span class="hljs-title">T</span>&gt;(<span class="hljs-params">DbContext context</span>) <span class="hljs-keyword">where</span> T : <span class="hljs-keyword">class</span></span>
+{
+}
+""");
+    }
+
+    [Fact]
+    public void PrimaryConstructor_Struct()
+    {
+        AssertHighlighter("csharp",
+"""
+struct Vector(double x, double y) { }
+""",
+"""
+<span class="hljs-function"><span class="hljs-keyword">struct</span> <span class="hljs-title">Vector</span>(<span class="hljs-params"><span class="hljs-built_in">double</span> x, <span class="hljs-built_in">double</span> y</span>)</span> { }
+""");
+    }
+
+    [Fact]
+    public void Keyword_ClassWithNewConstraint()
+    {
+        AssertHighlighter("csharp",
+"""
+class Factory<T> where T : new() { }
+""",
+"""
+<span class="hljs-keyword">class</span> <span class="hljs-title">Factory</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword">where</span> <span class="hljs-title">T</span> : <span class="hljs-keyword">new</span>() { }
 """);
     }
 }

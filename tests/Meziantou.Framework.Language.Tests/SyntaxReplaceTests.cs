@@ -563,8 +563,8 @@ public sealed class SyntaxReplaceTests
         var root = TestSyntax.ParseRoot("(a)");
         var only = Assert.IsType<TestListSyntax>(root.Value).Values[0];
 
-        Assert.Throws<ArgumentException>(() => root.InsertNodesAfter(root.Value!, [TestSyntax.Atom("b")]));
-        Assert.Throws<ArgumentException>(() => root.ReplaceNode(root.Value!, [TestSyntax.Atom("b")]));
+        Assert.Throws<ArgumentException>(() => root.InsertNodesAfter(root.Value, [TestSyntax.Atom("b")]));
+        Assert.Throws<ArgumentException>(() => root.ReplaceNode(root.Value, [TestSyntax.Atom("b")]));
 
         // The only element of a list is still in a list, and takes as many nodes as ever.
         Assert.Equal("(a,b)", root.InsertNodesAfter(only, [TestSyntax.Atom("b")]).ToFullString());

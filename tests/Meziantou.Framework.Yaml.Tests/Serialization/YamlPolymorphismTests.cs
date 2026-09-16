@@ -55,6 +55,179 @@ internal sealed partial class SubclassPetYamlContext : YamlSerializerContext
     }
 }
 
+[YamlPolymorphic]
+[YamlDerivedType(typeof(StrictCircle), "circle")]
+internal abstract class StrictShape
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+[YamlUnmappedMemberHandling(YamlUnmappedMemberHandling.Disallow)]
+internal sealed class StrictCircle : StrictShape
+{
+    public int Radius { get; set; }
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(ExtensibleCircle), "circle")]
+internal abstract class ExtensibleShape
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+internal sealed class ExtensibleCircle : ExtensibleShape
+{
+    [YamlExtensionData]
+    public Dictionary<string, object?>? Extra { get; set; }
+}
+
+/// <summary>A hierarchy where a registered derived type is polymorphic itself.</summary>
+[YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Both)]
+[YamlDerivedType(typeof(MultiLevelDog), "dog", Tag = "!dog")]
+[YamlDerivedType(typeof(MultiLevelPuppy), "puppy", Tag = "!puppy")]
+internal class MultiLevelAnimal
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+[YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Both)]
+[YamlDerivedType(typeof(MultiLevelPuppy), "puppy", Tag = "!puppy")]
+internal class MultiLevelDog : MultiLevelAnimal
+{
+    public int BarkVolume { get; set; }
+}
+
+internal sealed class MultiLevelPuppy : MultiLevelDog
+{
+    public int AgeInWeeks { get; set; }
+}
+
+/// <summary>A concrete base type registering itself, so it has a discriminator too.</summary>
+[YamlPolymorphic]
+[YamlDerivedType(typeof(SelfRegisteredVehicle), "vehicle")]
+[YamlDerivedType(typeof(SelfRegisteredCar), "car")]
+internal class SelfRegisteredVehicle
+{
+    public int Wheels { get; set; }
+}
+
+internal sealed class SelfRegisteredCar : SelfRegisteredVehicle
+{
+    public int Doors { get; set; }
+}
+
+/// <summary>The discriminator property is not written with the tag style, so a member can use its name.</summary>
+[YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag, TypeDiscriminatorPropertyName = "kind")]
+[YamlDerivedType(typeof(TaggedKindDocument), Tag = "!doc")]
+internal abstract class TaggedKindItem
+{
+}
+
+internal sealed class TaggedKindDocument : TaggedKindItem
+{
+    [YamlPropertyName("kind")]
+    public string Kind { get; set; } = string.Empty;
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(KindPropertyDocument), "doc", Tag = "!doc")]
+internal abstract class KindPropertyItem
+{
+}
+
+internal sealed class KindPropertyDocument : KindPropertyItem
+{
+    [YamlPropertyName("$type")]
+    public string Kind { get; set; } = string.Empty;
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(BoxedPoint), "point")]
+internal interface IBoxedShape
+{
+}
+
+internal struct BoxedPoint : IBoxedShape
+{
+    public int X { get; set; }
+}
+
+internal sealed class AliasedShapes
+{
+    public StrictShape? Shape { get; set; }
+
+    public StrictShape? SameShape { get; set; }
+
+    public ExtensibleShape? OtherShape { get; set; }
+}
+
+/// <summary>A hierarchy where a registered derived type registers a default derived type of its own.</summary>
+[YamlPolymorphic]
+[YamlDerivedType(typeof(NestedDefaultDocument), "document")]
+internal class NestedDefaultItem
+{
+    public string Name { get; set; } = string.Empty;
+}
+
+[YamlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[YamlDerivedType(typeof(NestedDefaultReport))]
+[YamlDerivedType(typeof(NestedDefaultInvoice), "invoice")]
+internal class NestedDefaultDocument : NestedDefaultItem
+{
+    public int Pages { get; set; }
+}
+
+internal sealed class NestedDefaultReport : NestedDefaultDocument
+{
+    public string Author { get; set; } = string.Empty;
+}
+
+internal sealed class NestedDefaultInvoice : NestedDefaultDocument
+{
+    public int Total { get; set; }
+}
+
+/// <summary>An abstract registered derived type cannot be read as itself, so it keeps its default derived type.</summary>
+[YamlPolymorphic]
+[YamlDerivedType(typeof(NestedAbstractShape), "shape")]
+internal abstract class NestedAbstractRoot
+{
+}
+
+[YamlPolymorphic]
+[YamlDerivedType(typeof(NestedAbstractSquare))]
+internal abstract class NestedAbstractShape : NestedAbstractRoot
+{
+}
+
+internal sealed class NestedAbstractSquare : NestedAbstractShape
+{
+    public int Side { get; set; }
+}
+
+[YamlSerializable(typeof(StrictShape))]
+[YamlSerializable(typeof(ExtensibleShape))]
+[YamlSerializable(typeof(NestedDefaultItem))]
+[YamlSerializable(typeof(NestedAbstractRoot))]
+[YamlSerializable(typeof(MultiLevelAnimal))]
+[YamlSerializable(typeof(SelfRegisteredVehicle))]
+[YamlSerializable(typeof(TaggedKindItem))]
+[YamlSerializable(typeof(KindPropertyItem))]
+[YamlSerializable(typeof(List<IBoxedShape>))]
+[YamlSerializable(typeof(AliasedShapes))]
+[YamlSerializable(typeof(Dictionary<string, StrictShape>))]
+internal sealed partial class PolymorphismEdgeCaseYamlContext : YamlSerializerContext
+{
+    public PolymorphismEdgeCaseYamlContext()
+    {
+    }
+
+    public PolymorphismEdgeCaseYamlContext(YamlSerializerOptions options)
+        : base(options)
+    {
+    }
+}
+
 public class YamlPolymorphismTests
 {
     [YamlPolymorphic]
@@ -1099,6 +1272,317 @@ public class YamlPolymorphismTests
         Assert.Equal(3, labrador.BarkVolume);
         Assert.Equal("yellow", labrador.Coat);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadingADerivedTypeDoesNotReportTheDiscriminatorAsAnUnmappedMember(bool useSourceGeneration)
+    {
+        StrictShape value = new StrictCircle { Name = "c", Radius = 3 };
+
+        var yaml = SerializeEdgeCase(value, useSourceGeneration);
+        var circle = Assert.IsType<StrictCircle>(DeserializeEdgeCase<StrictShape>(yaml, useSourceGeneration));
+
+        Assert.Equal("$type: circle\nName: c\nRadius: 3\n", yaml);
+        Assert.Equal("c", circle.Name);
+        Assert.Equal(3, circle.Radius);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadingADerivedTypeDoesNotCaptureTheDiscriminatorInExtensionData(bool useSourceGeneration)
+    {
+        var circle = Assert.IsType<ExtensibleCircle>(DeserializeEdgeCase<ExtensibleShape>("Name: c\n$type: circle\nColor: red\n", useSourceGeneration));
+
+        Assert.NotNull(circle.Extra);
+        Assert.Equal(["Color"], circle.Extra.Keys);
+        Assert.Equal("$type: circle\nName: c\nColor: red\n", SerializeEdgeCase<ExtensibleShape>(circle, useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WritingDoesNotDuplicateTheDiscriminatorFromExtensionData(bool useSourceGeneration)
+    {
+        ExtensibleShape value = new ExtensibleCircle { Name = "c", Extra = new() { ["$type"] = "square", ["Color"] = "red" } };
+
+        Assert.Equal("$type: circle\nName: c\nColor: red\n", SerializeEdgeCase(value, useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false, "$type: dog\nName: Rex\nBarkVolume: 3\n")]
+    [InlineData(true, "$type: dog\nName: Rex\nBarkVolume: 3\n")]
+    [InlineData(false, "!dog\nName: Rex\nBarkVolume: 3\n")]
+    [InlineData(true, "!dog\nName: Rex\nBarkVolume: 3\n")]
+    public void ReadingADerivedTypeThatIsPolymorphicItselfConsumesTheDiscriminatorOnce(bool useSourceGeneration, string yaml)
+    {
+        var dog = Assert.IsType<MultiLevelDog>(DeserializeEdgeCase<MultiLevelAnimal>(yaml, useSourceGeneration));
+
+        Assert.Equal("Rex", dog.Name);
+        Assert.Equal(3, dog.BarkVolume);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ADerivedTypeThatIsPolymorphicItselfRoundTrips(bool useSourceGeneration)
+    {
+        MultiLevelAnimal value = new MultiLevelDog { Name = "Rex", BarkVolume = 3 };
+
+        var yaml = SerializeEdgeCase(value, useSourceGeneration);
+        var dog = Assert.IsType<MultiLevelDog>(DeserializeEdgeCase<MultiLevelAnimal>(yaml, useSourceGeneration));
+
+        Assert.Equal("!dog\n$type: dog\nName: Rex\nBarkVolume: 3\n", yaml);
+        Assert.Equal(3, dog.BarkVolume);
+        Assert.IsType<MultiLevelPuppy>(DeserializeEdgeCase<MultiLevelAnimal>("!puppy\n$type: puppy\nAgeInWeeks: 2\n", useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WritingARegisteredBaseTypeEmitsItsDiscriminator(bool useSourceGeneration)
+    {
+        var yaml = SerializeEdgeCase(new SelfRegisteredVehicle { Wheels = 2 }, useSourceGeneration);
+        var value = DeserializeEdgeCase<SelfRegisteredVehicle>(yaml, useSourceGeneration);
+
+        Assert.Equal("$type: vehicle\nWheels: 2\n", yaml);
+        Assert.Equal(typeof(SelfRegisteredVehicle), value!.GetType());
+        Assert.Equal(2, value.Wheels);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TagStyleWritesAMemberNamedLikeTheDiscriminatorProperty(bool useSourceGeneration)
+    {
+        TaggedKindItem value = new TaggedKindDocument { Kind = "report" };
+
+        var yaml = SerializeEdgeCase(value, useSourceGeneration);
+        var document = Assert.IsType<TaggedKindDocument>(DeserializeEdgeCase<TaggedKindItem>(yaml, useSourceGeneration));
+
+        Assert.Equal("!doc\nkind: report\n", yaml);
+        Assert.Equal("report", document.Kind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TagStyleFromOptionsWritesAMemberNamedLikeTheDiscriminatorProperty(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions { PolymorphismOptions = new YamlPolymorphismOptions { DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag } };
+        KindPropertyItem value = new KindPropertyDocument { Kind = "report" };
+
+        var yaml = SerializeEdgeCase(value, useSourceGeneration, options);
+        var document = Assert.IsType<KindPropertyDocument>(DeserializeEdgeCase<KindPropertyItem>(yaml, useSourceGeneration, options));
+
+        Assert.Equal("!doc\n$type: report\n", yaml);
+        Assert.Equal("report", document.Kind);
+    }
+
+    [Theory]
+    [InlineData(false, "first:\n  Name: c\n", "(Lin: 1, Col: 2, Chr: 9) - (Lin: 1, Col: 2, Chr: 9): Cannot deserialize abstract type 'Meziantou.Framework.Yaml.Tests.Serialization.StrictShape' without a known derived type discriminator.")]
+    [InlineData(true, "first:\n  Name: c\n", "(Lin: 1, Col: 2, Chr: 9) - (Lin: 1, Col: 2, Chr: 9): Cannot deserialize abstract type 'Meziantou.Framework.Yaml.Tests.Serialization.StrictShape' without a known derived type discriminator.")]
+    [InlineData(false, "first:\n  $type: square\n", "(Lin: 1, Col: 2, Chr: 9) - (Lin: 1, Col: 2, Chr: 9): Unknown type discriminator 'square' for 'Meziantou.Framework.Yaml.Tests.Serialization.StrictShape'.")]
+    [InlineData(true, "first:\n  $type: square\n", "(Lin: 1, Col: 2, Chr: 9) - (Lin: 1, Col: 2, Chr: 9): Unknown type discriminator 'square' for 'Meziantou.Framework.Yaml.Tests.Serialization.StrictShape'.")]
+    public void ReadingAPolymorphicTypeReportsTheErrorAtThePolymorphicNode(bool useSourceGeneration, string yaml, string expectedMessage)
+    {
+        var exception = Assert.Throws<YamlException>(() => DeserializeEdgeCase<Dictionary<string, StrictShape>>(yaml, useSourceGeneration));
+
+        Assert.Equal(expectedMessage, exception.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BoxedStructsAreNotAnchored(bool useSourceGeneration)
+    {
+        IBoxedShape point = new BoxedPoint { X = 1 };
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal };
+
+        var yaml = SerializeEdgeCase(new List<IBoxedShape> { point, point }, useSourceGeneration, options);
+
+        Assert.Equal("- $type: point\n  X: 1\n- $type: point\n  X: 1\n", yaml);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnAliasToAnIncompatibleTypeThrowsAYamlException(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+
+        var exception = Assert.Throws<YamlException>(() => DeserializeEdgeCase<AliasedShapes>("Shape: &shape\n  $type: circle\nOtherShape: *shape\n", useSourceGeneration, options));
+
+        Assert.IsType<InvalidCastException>(exception.InnerException);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnAnchoredDerivedTypeWithOnlyADiscriminatorCanBeAliased(bool useSourceGeneration)
+    {
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+
+        var value = DeserializeEdgeCase<AliasedShapes>("Shape: &shape\n  $type: circle\nSameShape: *shape\n", useSourceGeneration, options);
+
+        Assert.NotNull(value);
+        Assert.Same(Assert.IsType<StrictCircle>(value.Shape), value.SameShape);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadingADerivedTypeSelectedByItsDiscriminatorIgnoresItsOwnDefaultDerivedType(bool useSourceGeneration)
+    {
+        var value = DeserializeEdgeCase<NestedDefaultItem>("$type: document\nName: n\nPages: 2\n", useSourceGeneration);
+
+        Assert.Equal(typeof(NestedDefaultDocument), value!.GetType());
+        Assert.Equal("n", value.Name);
+        Assert.Equal(2, ((NestedDefaultDocument)value).Pages);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ADerivedTypeWithItsOwnDefaultDerivedTypeRoundTrips(bool useSourceGeneration)
+    {
+        NestedDefaultItem value = new NestedDefaultDocument { Name = "n", Pages = 2 };
+
+        var yaml = SerializeEdgeCase(value, useSourceGeneration);
+        var roundTripped = DeserializeEdgeCase<NestedDefaultItem>(yaml, useSourceGeneration);
+
+        Assert.Equal("$type: document\nName: n\nPages: 2\n", yaml);
+        Assert.Equal(typeof(NestedDefaultDocument), roundTripped!.GetType());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ADerivedTypeSelectedByItsDiscriminatorStillReadsItsOwnDiscriminator(bool useSourceGeneration)
+    {
+        var invoice = Assert.IsType<NestedDefaultInvoice>(DeserializeEdgeCase<NestedDefaultItem>("$type: document\nkind: invoice\nTotal: 3\n", useSourceGeneration));
+
+        Assert.Equal(3, invoice.Total);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadingAPolymorphicTypeWithoutDiscriminatorStillSelectsItsDefaultDerivedType(bool useSourceGeneration)
+    {
+        Assert.IsType<NestedDefaultReport>(DeserializeEdgeCase<NestedDefaultItem>("$type: document\nkind: unknown\nAuthor: a\n", useSourceGeneration));
+        Assert.IsType<NestedDefaultReport>(DeserializeEdgeCase<NestedDefaultDocument>("Author: a\n", useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnAbstractDerivedTypeSelectedByItsDiscriminatorKeepsItsDefaultDerivedType(bool useSourceGeneration)
+    {
+        var square = Assert.IsType<NestedAbstractSquare>(DeserializeEdgeCase<NestedAbstractRoot>("$type: shape\nSide: 2\n", useSourceGeneration));
+
+        Assert.Equal(2, square.Side);
+    }
+
+    [YamlDerivedType(typeof(DuplicateTypeDerived), "one")]
+    [YamlDerivedType(typeof(DuplicateTypeDerived), "two")]
+    private class DuplicateTypeBase
+    {
+    }
+
+    private sealed class DuplicateTypeDerived : DuplicateTypeBase
+    {
+    }
+
+    [YamlDerivedType(typeof(DuplicateDiscriminatorFirst), "same")]
+    [YamlDerivedType(typeof(DuplicateDiscriminatorSecond), "same")]
+    private class DuplicateDiscriminatorBase
+    {
+    }
+
+    private sealed class DuplicateDiscriminatorFirst : DuplicateDiscriminatorBase
+    {
+    }
+
+    private sealed class DuplicateDiscriminatorSecond : DuplicateDiscriminatorBase
+    {
+    }
+
+    [YamlPolymorphic(DiscriminatorStyle = YamlTypeDiscriminatorStyle.Tag)]
+    [YamlDerivedType(typeof(DuplicateTagFirst), Tag = "!same")]
+    [YamlDerivedType(typeof(DuplicateTagSecond), Tag = "!same")]
+    private class DuplicateTagBase
+    {
+    }
+
+    private sealed class DuplicateTagFirst : DuplicateTagBase
+    {
+    }
+
+    private sealed class DuplicateTagSecond : DuplicateTagBase
+    {
+    }
+
+    [YamlDerivedType(typeof(DuplicateDefaultFirst))]
+    [YamlDerivedType(typeof(DuplicateDefaultSecond))]
+    private class DuplicateDefaultBase
+    {
+    }
+
+    private sealed class DuplicateDefaultFirst : DuplicateDefaultBase
+    {
+    }
+
+    private sealed class DuplicateDefaultSecond : DuplicateDefaultBase
+    {
+    }
+
+    [Fact]
+    public void RegisteringTheSameDerivedTypeTwiceThrows()
+    {
+        var writeException = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize<DuplicateTypeBase>(new DuplicateTypeDerived()));
+        var readException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<DuplicateTypeBase>("$type: two\n"));
+
+        Assert.Contains("registers the derived type", writeException.Message);
+        Assert.IsType<InvalidOperationException>(readException.InnerException);
+    }
+
+    [Fact]
+    public void RegisteringTheSameDiscriminatorTwiceThrows()
+    {
+        var writeException = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize<DuplicateDiscriminatorBase>(new DuplicateDiscriminatorSecond()));
+        var readException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<DuplicateDiscriminatorBase>("$type: same\n"));
+
+        Assert.Contains("registers the discriminator 'same'", writeException.Message);
+        Assert.IsType<InvalidOperationException>(readException.InnerException);
+    }
+
+    [Fact]
+    public void RegisteringTheSameTagTwiceThrows()
+    {
+        var readException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<DuplicateTagBase>("!same\n{}\n"));
+
+        Assert.Contains("registers the tag '!same'", readException.InnerException!.Message);
+    }
+
+    [Fact]
+    public void RegisteringTwoDefaultDerivedTypesThrows()
+    {
+        var writeException = Assert.Throws<InvalidOperationException>(() => YamlSerializer.Serialize<DuplicateDefaultBase>(new DuplicateDefaultFirst()));
+
+        Assert.Contains("as its default derived type", writeException.Message);
+    }
+
+    private static string SerializeEdgeCase<T>(T value, bool useSourceGeneration, YamlSerializerOptions? options = null)
+        => useSourceGeneration
+            ? YamlSerializer.Serialize(value, typeof(T), new PolymorphismEdgeCaseYamlContext(options ?? new YamlSerializerOptions()))
+            : YamlSerializer.Serialize(value, typeof(T), options);
+
+    private static T? DeserializeEdgeCase<T>(string yaml, bool useSourceGeneration, YamlSerializerOptions? options = null)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, new PolymorphismEdgeCaseYamlContext(options ?? new YamlSerializerOptions()))
+            : YamlSerializer.Deserialize<T>(yaml, options);
 
     private static string Serialize(SubclassPet value, bool useSourceGeneration)
         => useSourceGeneration

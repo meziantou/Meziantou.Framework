@@ -245,12 +245,23 @@ public sealed record YamlSerializerOptions
     } = new();
 
     /// <summary>Gets polymorphism options.</summary>
+    /// <remarks>
+    /// The assigned instance becomes read-only: its <see cref="YamlPolymorphismOptions.DerivedTypeMappings"/> are
+    /// copied, and changing them afterwards throws <see cref="NotSupportedException"/>. This keeps options that are
+    /// already in use, and the copies made from them with a <see langword="with"/> expression, from changing.
+    /// </remarks>
     /// <exception cref="ArgumentNullException">Value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A derived type mapping has a <see langword="null"/> list or a <see langword="null"/> entry.</exception>
     public YamlPolymorphismOptions PolymorphismOptions
     {
         get;
-        init => field = value ?? throw new ArgumentNullException(nameof(value));
-    } = new();
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            value.MakeReadOnly(nameof(value));
+            field = value;
+        }
+    } = YamlPolymorphismOptions.ReadOnlyDefault;
 
     /// <summary>Gets or sets object reference handling behavior.</summary>
     public YamlReferenceHandling ReferenceHandling { get; init; }

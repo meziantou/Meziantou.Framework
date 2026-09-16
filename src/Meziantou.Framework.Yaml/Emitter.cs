@@ -33,6 +33,9 @@ public partial class Emitter : IEmitter
 
     private bool _isOpenEnded;
 
+    // Whether the last document ended without a "..." marker, so a directive that follows would be read as its content.
+    private bool _isDocumentEndImplicit;
+
     private readonly MutableStringLookAheadBuffer _buffer = new MutableStringLookAheadBuffer();
 
 
@@ -286,7 +289,9 @@ public partial class Emitter : IEmitter
 
             AnalyzeAnchor(nodeEvent.Anchor, false);
 
-            if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical))
+            // The non-specific tag "!" is implicit for the parser, but it still makes a plain scalar a string, so
+            // dropping it would change how the scalar resolves.
+            if (!string.IsNullOrEmpty(nodeEvent.Tag) && (_isCanonical || nodeEvent.IsCanonical || nodeEvent.Tag == "!"))
             {
                 AnalyzeTag(nodeEvent.Tag);
             }
@@ -525,7 +530,10 @@ public partial class Emitter : IEmitter
     /// <summary>Check if a tag is valid.</summary>
     private void AnalyzeTag(string tag)
     {
-        _tagData.Handle = tag;
+        // A tag that no directive can shorten is written in the verbatim form "!<...>". Writing it as is would
+        // produce text such as "tag:example.com,2000:app/foo", which reads as a plain scalar.
+        _tagData.Handle = null;
+        _tagData.Suffix = tag;
         if (tag.StartsWith("!", StringComparison.Ordinal))
         {
             foreach (var directive in _tagDirectives)
@@ -656,7 +664,12 @@ public partial class Emitter : IEmitter
             bool isImplicit = documentStart.IsImplicit && isFirst && !_isCanonical;
 
 
-            if (documentStart.Version != null && _isOpenEnded)
+            // The default directives are always in effect, so only the other ones need to be written.
+            var explicitTags = documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
+            var hasDirectives = documentStart.Version != null || explicitTags is { Count: > 0 };
+
+            // A directive is only recognized after a document is explicitly ended.
+            if (hasDirectives && (_isOpenEnded || (!isFirst && _isDocumentEndImplicit)))
             {
                 WriteIndicator("...", true, false, false);
                 WriteIndent();
@@ -685,10 +698,10 @@ public partial class Emitter : IEmitter
                 AppendTagDirective(tagDirective, true);
             }
 
-            if (documentStart.Tags != null && documentStart.Tags.Count != 0)
+            if (explicitTags is { Count: > 0 })
             {
                 isImplicit = false;
-                foreach (var tagDirective in documentStart.Tags)
+                foreach (var tagDirective in explicitTags)
                 {
                     WriteIndicator("%TAG", true, false, false);
                     WriteTagHandle(tagDirective.Handle);
@@ -954,7 +967,7 @@ public partial class Emitter : IEmitter
         {
             Debug.Assert(_tagData.Suffix is not null);
             WriteIndicator("!<", true, false, false);
-            WriteTagContent(_tagData.Suffix, false);
+            WriteTagContent(_tagData.Suffix, false, allowFlowIndicators: true);
             WriteIndicator(">", false, false, false);
         }
     }
@@ -1326,6 +1339,13 @@ public partial class Emitter : IEmitter
             }
         }
 
+        // A line break at the end of the value leaves the closing quote at the start of a line, where it must still
+        // be indented like any other continuation line.
+        if (previous_break)
+        {
+            WriteIndent();
+        }
+
         WriteIndicator("'", false, false, false);
 
         _isWhitespace = false;
@@ -1518,6 +1538,8 @@ public partial class Emitter : IEmitter
                 WriteIndicator("...", true, false, false);
                 WriteIndent();
             }
+
+            _isDocumentEndImplicit = documentEnd.IsImplicit;
 
             _state = EmitterState.YAML_EMIT_DOCUMENT_START_STATE;
 

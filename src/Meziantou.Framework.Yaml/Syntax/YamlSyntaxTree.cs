@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Yaml.Tokens;
 
 namespace Meziantou.Framework.Yaml.Syntax;
@@ -186,16 +187,18 @@ public sealed class YamlSyntaxTree
 
     private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, List<(int Start, int End)> ranges)
     {
+        // The ranges are in source order, so the position of each one is computed from the previous one. Computing it
+        // from the start of the text for every range would make parsing quadratic in the size of the document.
+        var cursor = new MarkCursor();
         foreach (var range in ranges)
         {
-            AddTriviaTokens(yaml, target, range.Start, range.End);
+            AddTriviaTokens(yaml, target, range.Start, range.End, cursor.MoveTo(yaml, range.Start));
         }
     }
 
-    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, int rangeStart, int rangeEnd)
+    private static void AddTriviaTokens(string yaml, List<YamlSyntaxToken> target, int rangeStart, int rangeEnd, Mark startMark)
     {
         var index = rangeStart;
-        var startMark = CreateMark(yaml, rangeStart);
         var line = startMark.Line;
         var column = startMark.Column;
 
@@ -278,34 +281,38 @@ public sealed class YamlSyntaxTree
 
     private static Mark CreateMark(string yaml, int index)
     {
-        var line = 0;
-        var column = 0;
-        for (var cursor = 0; cursor < index && cursor < yaml.Length; cursor++)
+        return new MarkCursor().MoveTo(yaml, index);
+    }
+
+    /// <summary>Tracks the line and column of a position that only moves forward.</summary>
+    /// <remarks>A <c>\r\n</c> pair is a single line break, and a lone <c>\r</c> or <c>\n</c> is one too.</remarks>
+    [StructLayout(LayoutKind.Auto)]
+    private struct MarkCursor
+    {
+        private int _index;
+        private int _line;
+        private int _column;
+
+        public Mark MoveTo(string yaml, int index)
         {
-            var ch = yaml[cursor];
-            if (ch == '\r')
+            while (_index < index && _index < yaml.Length)
             {
-                if (cursor + 1 < index && cursor + 1 < yaml.Length && yaml[cursor + 1] == '\n')
+                var ch = yaml[_index];
+                if (ch == '\r' || (ch == '\n' && (_index == 0 || yaml[_index - 1] != '\r')))
                 {
-                    cursor++;
+                    _line++;
+                    _column = 0;
+                }
+                else if (ch != '\n')
+                {
+                    _column++;
                 }
 
-                line++;
-                column = 0;
-                continue;
+                _index++;
             }
 
-            if (ch == '\n')
-            {
-                line++;
-                column = 0;
-                continue;
-            }
-
-            column++;
+            return new Mark(index, _line, _column);
         }
-
-        return new Mark(index, line, column);
     }
 
     private static YamlSyntaxKind MapTokenKind(Token token)

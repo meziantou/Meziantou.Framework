@@ -160,12 +160,23 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
 
     bool ICollection<KeyValuePair<YamlElement, YamlElement?>>.Contains(KeyValuePair<YamlElement, YamlElement?> item)
     {
-        return _contents.ContainsKey(item.Key);
+        return _contents.TryGetValue(item.Key, out var value) && EqualityComparer<YamlElement?>.Default.Equals(value, item.Value);
     }
 
     void ICollection<KeyValuePair<YamlElement, YamlElement?>>.CopyTo(KeyValuePair<YamlElement, YamlElement?>[] array, int arrayIndex)
     {
-        ((ICollection<KeyValuePair<YamlElement, YamlElement?>>)_contents).CopyTo(array, arrayIndex);
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        if (array.Length - arrayIndex < _keys.Count)
+        {
+            throw new ArgumentException("The destination array is not long enough.", nameof(array));
+        }
+
+        // Copy in key order, which is the order the mapping is enumerated and written in.
+        for (var i = 0; i < _keys.Count; i++)
+        {
+            array[arrayIndex + i] = new KeyValuePair<YamlElement, YamlElement?>(_keys[i], _contents[_keys[i]]);
+        }
     }
 
     bool ICollection<KeyValuePair<YamlElement, YamlElement?>>.Remove(KeyValuePair<YamlElement, YamlElement?> item)
@@ -308,9 +319,24 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets keys.</summary>
-    public ICollection<YamlElement> Keys { get { return _keys; } }
+    /// <remarks>The collection is read-only; use the mapping members to add or remove entries.</remarks>
+    public ICollection<YamlElement> Keys { get { return _keys.AsReadOnly(); } }
+
     /// <summary>Gets values.</summary>
-    public ICollection<YamlElement?> Values { get { return _contents.Values; } }
+    /// <remarks>The values are listed in the same order as <see cref="Keys"/>.</remarks>
+    public ICollection<YamlElement?> Values
+    {
+        get
+        {
+            var values = new YamlElement?[_keys.Count];
+            for (var i = 0; i < _keys.Count; i++)
+            {
+                values[i] = _contents[_keys[i]];
+            }
+
+            return Array.AsReadOnly(values);
+        }
+    }
 
     /// <summary>Gets the zero-based index of the specified item.</summary>
     public int IndexOf(KeyValuePair<YamlElement, YamlElement?> item)
@@ -341,11 +367,19 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         _keys.RemoveAt(index);
         _contents.Remove(key);
 
-        if (_stringKeys != null && key is YamlValue value1)
+        if (key is YamlValue value1)
         {
-            _stringKeys.Remove(value1.Value);
+            RemoveStringKey(value1);
         }
+    }
 
+    /// <summary>Removes the string lookup entry of <paramref name="key"/>, unless it designates another key with the same text.</summary>
+    private void RemoveStringKey(YamlValue key)
+    {
+        if (_stringKeys is not null && _stringKeys.TryGetValue(key.Value, out var current) && ReferenceEquals(current, key))
+        {
+            _stringKeys.Remove(key.Value);
+        }
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
@@ -359,14 +393,15 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
 
             var oldKey = _keys[index];
 
-            if (_keys[index] != value.Key)
+            if (oldKey != value.Key)
             {
-                _contents.Remove(_keys[index]);
-            }
+                _contents.Remove(oldKey);
 
-            if (_stringKeys != null && oldKey is YamlValue yamlValue)
-            {
-                _stringKeys[yamlValue.Value] = yamlValue;
+                // The replaced key is no longer part of the mapping, so it must not be found by its text anymore.
+                if (oldKey is YamlValue yamlValue)
+                {
+                    RemoveStringKey(yamlValue);
+                }
             }
 
             if (_stringKeys != null && value.Key is YamlValue key)
@@ -376,7 +411,6 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
 
             _keys[index] = value.Key;
             _contents[value.Key] = value.Value;
-
         }
     }
 

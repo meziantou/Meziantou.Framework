@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
@@ -9,23 +10,8 @@ internal static class YamlDictionaryConverterHelper
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(referenceValue);
 
-        if (writer.ReferenceWriter is null)
-        {
-            return false;
-        }
-
-        if (writer.ReferenceWriter.TryGetAnchor(referenceValue, out var existing))
-        {
-            writer.WriteAlias(existing);
-            return true;
-        }
-
-        var anchor = writer.ReferenceWriter.GetOrAddAnchor(referenceValue);
-        if (anchor is not null)
-        {
-            writer.WriteAnchor(anchor);
-        }
-        return false;
+        // The runtime type decides whether the value is tracked: a boxed value type is not an identity worth preserving.
+        return writer.TryWriteReference(referenceValue);
     }
 
     internal static void WriteEntries<TValue>(YamlWriter writer, IEnumerable<KeyValuePair<string, TValue>> entries, YamlConverter valueConverter)
@@ -50,6 +36,7 @@ internal static class YamlDictionaryConverterHelper
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(valueConverter);
+        EnsureSupportedKeyType(writer, typeof(TKey));
 
         writer.WriteStartMapping();
         foreach (var pair in entries)
@@ -61,6 +48,56 @@ internal static class YamlDictionaryConverterHelper
         writer.WriteEndMapping();
     }
 
+    /// <summary>Throws when the keys of <paramref name="keyType"/> cannot be written as scalars and read back.</summary>
+    /// <remarks>
+    /// A key is written with its invariant text representation and read by the converter of its type, which only
+    /// round-trips for the scalar types the serializer knows, for <see cref="object"/>, and for a type handled by a
+    /// custom converter. Any other key, such as an object, used to be written as the text returned by
+    /// <see cref="object.ToString"/> and could not be read back. The source generator reports the same key types.
+    /// </remarks>
+    internal static void EnsureSupportedKeyType(YamlReaderWriterBase readerOrWriter, Type keyType)
+    {
+        if (IsSupportedKeyType(keyType) ||
+            keyType.GetCustomAttribute<YamlConverterAttribute>(inherit: false) is not null ||
+            readerOrWriter.TryGetCustomConverter(keyType, out _))
+        {
+            return;
+        }
+
+        throw new NotSupportedException($"Dictionary key type '{keyType}' is not supported. Use a string, an enum, a scalar type such as int or Guid, or object.");
+    }
+
+    internal static bool IsSupportedKeyType(Type keyType)
+    {
+        keyType = Nullable.GetUnderlyingType(keyType) ?? keyType;
+        return keyType.IsPrimitive ||
+               keyType.IsEnum ||
+               keyType == typeof(string) ||
+               keyType == typeof(object) ||
+               keyType == typeof(decimal) ||
+               keyType == typeof(DateTime) ||
+               keyType == typeof(DateTimeOffset) ||
+               keyType == typeof(DateOnly) ||
+               keyType == typeof(TimeOnly) ||
+               keyType == typeof(TimeSpan) ||
+               keyType == typeof(Guid) ||
+               keyType == typeof(Uri) ||
+               keyType == typeof(CultureInfo) ||
+               keyType == typeof(Half) ||
+               keyType == typeof(Int128) ||
+               keyType == typeof(UInt128) ||
+               keyType == typeof(System.Numerics.BigInteger) ||
+               keyType == typeof(System.Version) ||
+               keyType == typeof(System.Text.Rune)
+#if NET11_0_OR_GREATER
+               || keyType == typeof(BFloat16)
+               || keyType == typeof(Decimal32)
+               || keyType == typeof(Decimal64)
+               || keyType == typeof(Decimal128)
+#endif
+               ;
+    }
+
     internal static void WriteKey<TKey>(YamlWriter writer, TKey key)
     {
         if (key is null)
@@ -70,7 +107,25 @@ internal static class YamlDictionaryConverterHelper
 
         if (key is string textKey)
         {
-            writer.WritePropertyName(writer.ConvertDictionaryKey(textKey));
+            var name = writer.ConvertDictionaryKey(textKey);
+
+            // The key of a dictionary of any other key type is read by the converter of that type: a plain "1" key
+            // of a Dictionary<object, TValue> would be read back as a number.
+            if (typeof(TKey) != typeof(string) && writer.ShouldQuoteAmbiguousScalar(name))
+            {
+                writer.WritePropertyName(name, ScalarStyle.DoubleQuoted);
+                return;
+            }
+
+            writer.WritePropertyName(name);
+            return;
+        }
+
+        // An enum key is read through the enum converter, which accepts the YamlEnumMemberName names, so it is
+        // written with the same names as an enum value.
+        if (key is Enum && writer.GetConverter(key.GetType()) is IYamlEnumNameFormatter enumNameFormatter)
+        {
+            writer.WritePropertyName(enumNameFormatter.FormatName(key));
             return;
         }
 
@@ -285,7 +340,12 @@ internal static class YamlDictionaryConverterHelper
             throw YamlThrowHelper.ThrowExpectedMapping(reader);
         }
 
-        keyConverter ??= reader.GetConverter(typeof(TKey));
+        if (keyConverter is null)
+        {
+            EnsureSupportedKeyType(reader, typeof(TKey));
+            keyConverter = reader.GetConverter(typeof(TKey));
+        }
+
         valueConverter ??= reader.GetConverter(typeof(TValue));
 
         dictionary ??= createDictionary();

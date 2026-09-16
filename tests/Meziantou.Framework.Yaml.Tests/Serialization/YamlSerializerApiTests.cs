@@ -464,4 +464,28 @@ public class YamlSerializerApiTests
         Assert.Equal("value", roundTrip.Name);
         Assert.Equal(7, roundTrip.Rank);
     }
+
+    [Fact]
+    public void EmptyPayload_NonNullableValueType_ReturnsDefault()
+    {
+        Assert.Equal(0, YamlSerializer.Deserialize<int>(""));
+        Assert.Equal(0, YamlSerializer.Deserialize<int>(new StringReader("# comment only")));
+        Assert.Equal(0, YamlSerializer.Deserialize<int>(new MemoryStream()));
+        Assert.Null(YamlSerializer.Deserialize<int?>(""));
+        Assert.True(YamlSerializer.TryDeserialize<int>("", out var value));
+        Assert.Equal(0, value);
+    }
+
+    [Fact]
+    public void ReflectionContext_YamlNodeMember_KeepsTagsStylesAndKeyAnchors()
+    {
+        var node = YamlSerializer.Deserialize<YamlNode>("tagged: !!str 1\nquoted: '2'\nlocal: !foo x\n&k key: v\nalias: *k\n");
+
+        var yaml = YamlSerializer.Serialize(node);
+
+        Assert.Equal("tagged: !!str 1\nquoted: '2'\nlocal: !foo x\n&k key: v\nalias: key\n", yaml);
+        var values = YamlSerializer.Deserialize<Dictionary<string, object>>(yaml)!;
+        Assert.Equal("1", values["tagged"]);
+        Assert.Equal("2", values["quoted"]);
+    }
 }

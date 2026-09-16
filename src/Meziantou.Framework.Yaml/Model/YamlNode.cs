@@ -98,24 +98,26 @@ public abstract class YamlNode
     /// <summary>Writes to.</summary>
     public void WriteTo(IEmitter emitter, bool suppressDocumentTags = false)
     {
-        var events = EnumerateEvents().ToList();
+        ArgumentNullException.ThrowIfNull(emitter);
 
-        // Emitter will throw an exception if we attempt to use it without
-        // starting StremStart and DocumentStart events.
-        if (events[0] is not StreamStart)
-            events.Insert(0, new StreamStart());
-
-        if (events[1] is not DocumentStart)
-            events.Insert(1, new DocumentStart());
-
-        foreach (var evnt in events)
+        // The emitter expects a stream, and a node inside a document. A stream provides both, even when it has no
+        // document at all, and a document provides the latter.
+        if (this is not YamlStream)
         {
-            if (suppressDocumentTags)
+            emitter.Emit(new StreamStart());
+            if (this is not YamlDocument)
             {
-                if (evnt is DocumentStart document && document.Tags != null)
-                {
-                    document.Tags.Clear();
-                }
+                emitter.Emit(new DocumentStart());
+            }
+        }
+
+        foreach (var evnt in EnumerateEvents())
+        {
+            if (suppressDocumentTags && evnt is DocumentStart { Tags.Count: > 0 } document)
+            {
+                // The event belongs to the document, so clearing its directives would remove them from the model.
+                emitter.Emit(new DocumentStart(document.Version, tags: null, document.IsImplicit, document.Start, document.End));
+                continue;
             }
 
             emitter.Emit(evnt);
@@ -125,9 +127,19 @@ public abstract class YamlNode
     /// <summary>Returns a string representation of the current instance.</summary>
     public override string ToString()
     {
+        return ToYaml().Trim();
+    }
+
+    /// <summary>Writes this node as a YAML document.</summary>
+    /// <remarks>
+    /// Unlike <see cref="ToString"/>, the text is not trimmed: the trailing line breaks of a "keep" block scalar and
+    /// the indentation of its content are part of the value.
+    /// </remarks>
+    private string ToYaml()
+    {
         var sb = new StringBuilder();
-        WriteTo(new StringWriter(sb), true);
-        return sb.ToString().Trim();
+        WriteTo(new StringWriter(sb, CultureInfo.InvariantCulture), suppressDocumentTags: true);
+        return sb.ToString();
     }
 
     /// <summary>Converts this node to an instance of <typeparamref name="T"/>.</summary>
@@ -140,7 +152,7 @@ public abstract class YamlNode
     public object? ToObject(Type type, YamlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(type);
-        return YamlSerializer.Deserialize(ToString(), type, options);
+        return YamlSerializer.Deserialize(ToYaml(), type, options);
     }
 
     /// <summary>Creates a YAML element from an object.</summary>

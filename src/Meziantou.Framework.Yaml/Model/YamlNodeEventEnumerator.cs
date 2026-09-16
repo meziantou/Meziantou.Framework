@@ -79,7 +79,11 @@ public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumer
                     return true;
                 }
 
+                // A document always has a root node. An empty document is read as an empty plain scalar, so that
+                // is what a document without contents produces.
+                Current = new Scalar(string.Empty);
                 _currentIndex++;
+                return true;
             }
 
             Current = document.DocumentEnd;
@@ -99,7 +103,7 @@ public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumer
             if (_currentIndex < mapping.Count * 2)
             {
                 if (_currentIndex % 2 == 0)
-                    Push(((List<YamlElement>)mapping.Keys)[_currentIndex / 2]);
+                    Push(mapping[_currentIndex / 2].Key);
                 else
                 {
                     var mappingValue = mapping[(_currentIndex - 1) / 2].Value;

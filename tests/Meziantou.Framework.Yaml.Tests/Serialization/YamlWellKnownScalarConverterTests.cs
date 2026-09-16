@@ -1,6 +1,7 @@
 #if NET11_0_OR_GREATER
 using System.Numerics;
 #endif
+using Meziantou.Framework.Yaml.Serialization;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -311,4 +312,205 @@ public sealed class YamlWellKnownScalarConverterTests
         Assert.Contains("WhenUtc: 2027-04-19T12:00:00.0000000Z", yaml);
         Assert.Contains("WhenOffset: 2027-04-19T12:00:00.0000000Z", yaml);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuiltInScalarRoots_RoundTrip(bool useSourceGeneration)
+    {
+        AssertRoundTrip(new Guid("a4b7b0e6-8d2e-4d33-9d8e-6a8e0e4a1d2c"), "a4b7b0e6-8d2e-4d33-9d8e-6a8e0e4a1d2c\n", useSourceGeneration);
+        AssertRoundTrip(new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc), "2024-01-02T03:04:05.0000000Z\n", useSourceGeneration);
+        AssertRoundTrip(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), "2024-01-02T03:04:05.0000000+02:00\n", useSourceGeneration);
+        AssertRoundTrip(TimeSpan.FromMinutes(90), "01:30:00\n", useSourceGeneration);
+        AssertRoundTrip(new DateOnly(2024, 1, 2), "2024-01-02\n", useSourceGeneration);
+        AssertRoundTrip(new TimeOnly(3, 4, 5), "03:04:05.0000000\n", useSourceGeneration);
+        AssertRoundTrip((Half)1.5f, "1.5\n", useSourceGeneration);
+        AssertRoundTrip(Int128.MaxValue, "170141183460469231731687303715884105727\n", useSourceGeneration);
+        AssertRoundTrip(UInt128.MaxValue, "340282366920938463463374607431768211455\n", useSourceGeneration);
+        AssertRoundTrip(new Uri("relative/path", UriKind.Relative), "relative/path\n", useSourceGeneration);
+        AssertRoundTrip(CultureInfo.InvariantCulture, "''\n", useSourceGeneration);
+        Assert.Null(Deserialize<Uri>("~\n", useSourceGeneration));
+        Assert.Equal(Half.PositiveInfinity, Deserialize<Half>(".inf\n", useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Char_TildeIsNotReadAsNull(bool useSourceGeneration)
+    {
+        var yaml = Serialize(new List<char?> { '~', null }, useSourceGeneration);
+
+        Assert.Equal("- \"~\"\n- null\n", yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal(new char?[] { '~', null }, Deserialize<List<char?>>(yaml, useSourceGeneration)!);
+        Assert.Equal('~', Deserialize<char?>(Serialize<char?>('~', useSourceGeneration), useSourceGeneration));
+        Assert.Equal("\"~\"\n", YamlSerializer.Serialize<object>('~'), ignoreLineEndingDifferences: true);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BigIntegerVersionAndRune_RoundTripAsScalars(bool useSourceGeneration)
+    {
+        var big = System.Numerics.BigInteger.Parse("-123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", CultureInfo.InvariantCulture);
+        AssertRoundTrip(big, "-123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\n", useSourceGeneration);
+        AssertRoundTrip(new System.Version(1, 2, 3), "1.2.3\n", useSourceGeneration);
+        AssertRoundTrip(new System.Text.Rune(0x1F600), "\"\U0001F600\"\n", useSourceGeneration);
+        AssertRoundTrip(new System.Text.Rune('~'), "\"~\"\n", useSourceGeneration);
+        Assert.Null(Deserialize<System.Version>("~\n", useSourceGeneration));
+
+        var model = new ExtendedScalarModel
+        {
+            Big = System.Numerics.BigInteger.MinusOne,
+            OptionalBig = null,
+            Version = new System.Version(2, 0),
+            Rune = new System.Text.Rune('a'),
+            OptionalRune = new System.Text.Rune('b'),
+            VersionKeys = new Dictionary<System.Version, System.Numerics.BigInteger> { [new System.Version(3, 1)] = System.Numerics.BigInteger.One },
+            RuneKeys = new Dictionary<System.Text.Rune, int> { [new System.Text.Rune('~')] = 1 },
+        };
+
+        var yaml = Serialize(model, useSourceGeneration);
+        var roundTrip = Deserialize<ExtendedScalarModel>(yaml, useSourceGeneration)!;
+
+        Assert.Equal("Big: -1\nOptionalBig: null\nVersion: 2.0\nRune: a\nOptionalRune: b\nVersionKeys:\n  3.1: 1\nRuneKeys:\n  \"~\": 1\n", yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal(model.Big, roundTrip.Big);
+        Assert.Null(roundTrip.OptionalBig);
+        Assert.Equal(model.Version, roundTrip.Version);
+        Assert.Equal(model.Rune, roundTrip.Rune);
+        Assert.Equal(model.OptionalRune, roundTrip.OptionalRune);
+        Assert.Equal(model.VersionKeys, roundTrip.VersionKeys!);
+        Assert.Equal(model.RuneKeys, roundTrip.RuneKeys!);
+
+        Assert.Throws<YamlException>(() => Deserialize<System.Numerics.BigInteger>("1.5\n", useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<System.Version>("one\n", useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<System.Text.Rune>("ab\n", useSourceGeneration));
+        Assert.Throws<YamlException>(() => Deserialize<System.Text.Rune>("''\n", useSourceGeneration));
+    }
+
+    [Theory, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NegativeBigInteger_IsWrittenWithInvariantCulture(bool useSourceGeneration)
+    {
+        var currentCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            // The negative sign of ar-SA starts with a directional mark.
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("ar-SA");
+
+            var yaml = Serialize(new ExtendedScalarModel { Big = -12, OptionalBig = -3 }, useSourceGeneration);
+
+            Assert.Contains("Big: -12\nOptionalBig: -3\n", yaml);
+            Assert.Equal(-12, Deserialize<ExtendedScalarModel>(yaml, useSourceGeneration)!.Big);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = currentCulture;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UriWhoseTextIsNull_IsNotReadAsNull(bool useSourceGeneration)
+    {
+        foreach (var text in new[] { "null", "Null", "NULL", "~" })
+        {
+            var uri = new Uri(text, UriKind.Relative);
+            var yaml = Serialize(uri, useSourceGeneration);
+
+            Assert.Equal("\"" + text + "\"\n", yaml, ignoreLineEndingDifferences: true);
+            Assert.Equal(uri, Deserialize<Uri>(yaml, useSourceGeneration));
+            Assert.Equal([uri], Deserialize<List<Uri>>(Serialize(new List<Uri> { uri }, useSourceGeneration), useSourceGeneration)!);
+        }
+    }
+
+    [Fact]
+    public void CustomConverterWritingNullText_IsNotReadAsNull()
+    {
+        var options = new YamlSerializerOptions { Converters = [new NullTextConverter()] };
+
+        var yaml = YamlSerializer.Serialize(new NullTextHolder { Value = new NullText() }, options);
+
+        Assert.Equal("Value: \"null\"\n", yaml, ignoreLineEndingDifferences: true);
+        Assert.NotNull(YamlSerializer.Deserialize<NullTextHolder>(yaml, options)!.Value);
+    }
+
+    private sealed class NullText
+    {
+    }
+
+    private sealed class NullTextHolder
+    {
+        public NullText? Value { get; set; }
+    }
+
+    private sealed class NullTextConverter : YamlConverter<NullText>
+    {
+        public override NullText? Read(YamlReader reader)
+        {
+            reader.Read();
+            return new NullText();
+        }
+
+        public override void Write(YamlWriter writer, NullText value) => writer.WriteScalar("null");
+    }
+
+    private static void AssertRoundTrip<T>(T value, string expectedYaml, bool useSourceGeneration)
+    {
+        var yaml = Serialize(value, useSourceGeneration);
+
+        Assert.Equal(expectedYaml, yaml, ignoreLineEndingDifferences: true);
+        Assert.Equal(value, Deserialize<T>(yaml, useSourceGeneration));
+    }
+
+    private static string Serialize<T>(T value, bool useSourceGeneration)
+        => useSourceGeneration
+            ? YamlSerializer.Serialize(value, WellKnownScalarRootYamlContext.Default)
+            : YamlSerializer.Serialize(value);
+
+    private static T? Deserialize<T>(string yaml, bool useSourceGeneration)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, WellKnownScalarRootYamlContext.Default)
+            : YamlSerializer.Deserialize<T>(yaml);
+}
+
+#pragma warning disable MA0048 // File name must match type name
+internal sealed class ExtendedScalarModel
+{
+    public System.Numerics.BigInteger Big { get; set; }
+
+    public System.Numerics.BigInteger? OptionalBig { get; set; }
+
+    public System.Version? Version { get; set; }
+
+    public System.Text.Rune Rune { get; set; }
+
+    public System.Text.Rune? OptionalRune { get; set; }
+
+    public Dictionary<System.Version, System.Numerics.BigInteger>? VersionKeys { get; set; }
+
+    public Dictionary<System.Text.Rune, int>? RuneKeys { get; set; }
+}
+
+[YamlSerializable(typeof(ExtendedScalarModel))]
+[YamlSerializable(typeof(System.Numerics.BigInteger))]
+[YamlSerializable(typeof(System.Version))]
+[YamlSerializable(typeof(System.Text.Rune))]
+[YamlSerializable(typeof(List<Uri>))]
+[YamlSerializable(typeof(Guid))]
+[YamlSerializable(typeof(DateTime))]
+[YamlSerializable(typeof(DateTimeOffset))]
+[YamlSerializable(typeof(TimeSpan))]
+[YamlSerializable(typeof(DateOnly))]
+[YamlSerializable(typeof(TimeOnly))]
+[YamlSerializable(typeof(Half))]
+[YamlSerializable(typeof(Int128))]
+[YamlSerializable(typeof(UInt128))]
+[YamlSerializable(typeof(Uri))]
+[YamlSerializable(typeof(CultureInfo))]
+[YamlSerializable(typeof(char?))]
+[YamlSerializable(typeof(List<char?>))]
+internal sealed partial class WellKnownScalarRootYamlContext : YamlSerializerContext
+{
 }

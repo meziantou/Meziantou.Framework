@@ -48,6 +48,36 @@ public sealed class YamlReaderBufferingTests
     }
 
     [Theory]
+    [InlineData(false, "&a !dog\nName: Rex\n$type: dog\nOwner:\n  $type: person\n", "dog", "&a !dog\nName: Rex\nOwner:\n  $type: person\n")]
+    [InlineData(true, "&a !dog\nName: Rex\n$type: dog\nOwner:\n  $type: person\n", "dog", "&a\nName: Rex\nOwner:\n  $type: person\n")]
+    [InlineData(true, "&a !dog\n$type: dog\n", "dog", "&a {}\n")]
+    public void BufferCurrentNodeToStringAndRemoveDiscriminator_RemovesTheRootDiscriminator(bool removeTag, string yaml, string expectedDiscriminator, string expectedBuffered)
+    {
+        var options = new YamlSerializerOptions();
+        var reader = YamlReader.Create(yaml, options);
+        Assert.True(reader.Read());
+
+        var buffered = YamlReader.BufferCurrentNodeToStringAndRemoveDiscriminator(reader, "$type", removeTag, out var discriminator);
+
+        Assert.Equal(expectedDiscriminator, discriminator);
+        Assert.Equal(YamlTokenType.None, reader.TokenType);
+        Assert.Equal(ReadTokens(expectedBuffered, options), ReadTokens(buffered, options));
+    }
+
+    [Fact]
+    public void BufferCurrentNodeToStringAndRemoveDiscriminator_KeepsEveryEntryWithoutADiscriminatorPropertyName()
+    {
+        var options = new YamlSerializerOptions();
+        var reader = YamlReader.Create("$type: dog\nName: Rex\n", options);
+        Assert.True(reader.Read());
+
+        var buffered = YamlReader.BufferCurrentNodeToStringAndRemoveDiscriminator(reader, discriminatorPropertyName: null, removeTag: false, out var discriminator);
+
+        Assert.Null(discriminator);
+        Assert.Equal(ReadTokens("$type: dog\nName: Rex\n", options), ReadTokens(buffered, options));
+    }
+
+    [Theory]
     [InlineData("\"42\"\n")]
     [InlineData("'true'\n")]
     [InlineData("42\n")]
@@ -65,6 +95,10 @@ public sealed class YamlReaderBufferingTests
     [InlineData("!<tag:example.com,2024:x> value\n")]
     [InlineData("- !<tag:example.com,2024:a%21b%3E%20c> 1\n- !local%21tag x\n- !%E2%9C%93 y\n- ! 42\n- !<!verbatim-local> z\n- &a !!str b\n")]
     [InlineData("%TAG !e! tag:example.com,2024:app/\n---\n- !e!foo bar\n- !e!%5Bx%5D baz\n")]
+    [InlineData("&a {}\n")]
+    [InlineData("!tag []\n")]
+    [InlineData("&a !tag {}\n")]
+    [InlineData("&k key: v\nother: *k\n!!str 23: !!bool false\n? !local &q 'quoted'\n: x\n")]
     public void BufferCurrentNodeToString_PreservesScalarStyles(string yaml)
     {
         foreach (var writeIndented in new[] { true, false })

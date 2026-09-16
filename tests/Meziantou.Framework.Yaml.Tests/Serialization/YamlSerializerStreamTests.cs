@@ -48,5 +48,15 @@ public sealed class YamlSerializerStreamTests
         Assert.Equal("Bob", roundtripped.FirstName);
         Assert.Equal(42, roundtripped.Age);
     }
-}
 
+    [Fact]
+    public void Deserialize_StreamWithInvalidUtf8_ThrowsYamlException()
+    {
+        byte[] payload = [(byte)'a', (byte)':', (byte)' ', 0xFF, (byte)'\n'];
+
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Dictionary<string, string>>(new MemoryStream(payload)));
+        Assert.IsType<DecoderFallbackException>(exception.InnerException);
+        Assert.False(YamlSerializer.TryDeserialize<Dictionary<string, string>>(new MemoryStream(payload), out _));
+        Assert.False(YamlSerializer.TryDeserialize(new MemoryStream(payload), typeof(Dictionary<string, string>), out _));
+    }
+}

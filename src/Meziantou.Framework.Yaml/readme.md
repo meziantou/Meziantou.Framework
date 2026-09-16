@@ -103,25 +103,50 @@ When a stream contains several documents, `YamlSerializer.Deserialize` binds the
 
 | Category | Types |
 | --- | --- |
-| Text | `string`, `char` |
+| Text | `string`, `char`, `Rune` |
 | Boolean | `bool` |
-| Integers | `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `Int128`, `UInt128` |
+| Integers | `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `Int128`, `UInt128`, `BigInteger` |
 | Floating point | `float`, `double`, `decimal`, `Half` |
 | Date and time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TimeSpan` |
-| Other scalars | `Guid`, `Uri`, `CultureInfo`, enums |
+| Other scalars | `Guid`, `Uri`, `CultureInfo`, `Version`, enums |
 | net11.0 only | `BFloat16`, `Decimal32`, `Decimal64`, `Decimal128` |
-| Collections | arrays, `List<>`, `HashSet<>`, `ImmutableArray<>`, `ImmutableList<>`, `ImmutableHashSet<>`, `IEnumerable<>`, `ICollection<>`, `IList<>`, `IReadOnlyCollection<>`, `IReadOnlyList<>`, `ISet<>`, `IReadOnlySet<>` |
-| Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>`, with `string` or non-`string` keys |
+| Collections | arrays, `List<>`, `HashSet<>`, `ImmutableArray<>`, `ImmutableList<>`, `ImmutableHashSet<>`, `FrozenSet<>`, `Queue<>`, `Stack<>`, `ConcurrentQueue<>`, `ConcurrentStack<>`, `ConcurrentBag<>`, `ArraySegment<>`, `IEnumerable<>`, `ICollection<>`, `IList<>`, `IReadOnlyCollection<>`, `IReadOnlyList<>`, `ISet<>`, `IReadOnlySet<>` |
+| Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `FrozenDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>`, with `string` or non-`string` keys |
+| Pairs | `KeyValuePair<,>`, as a mapping with a `Key` and a `Value` entry |
 | Untyped | `object`, `object[]`, `List<object>`, `Dictionary<string, object>` |
 | Documents | any `YamlNode` (`YamlMapping`, `YamlSequence`, `YamlValue`, …) |
 | Unions | [C# unions](#c-unions) |
 
 Every value type in the table also works as its `Nullable<T>` counterpart. Any type implementing a single
+`IDictionary<TKey, TValue>` and exposing a parameterless constructor (`SortedDictionary<,>`, `ConcurrentDictionary<,>`,
+a class deriving from `Dictionary<,>`, …) is treated as a dictionary. Any other type implementing a single
 `ICollection<T>` and exposing a parameterless constructor is treated as a collection. Anything else is serialized as a
 mapping of its properties, using the object contract described below.
 
+A dictionary key is written as a scalar, so its type must be `string`, `object`, an enum, or one of the scalar types of
+the table. A key of any other type, which could not be read back, throws a `NotSupportedException` (the source generator
+reports `MFY002` or `MFY007`), unless a custom converter handles the key type. The keys of a dictionary whose key type is
+`object` keep their type: a string key such as `"1"` or `"true"` is quoted so it is not read back as a number or a
+boolean, and `YamlWriter.WriteDictionaryKey` writes a key the same way from a custom converter.
+
+The other collections of the base class library, such as `ArrayList`, `Hashtable`, `ReadOnlyCollection<>`, or the
+immutable collections not listed above, and the types that cannot be serialized at all, such as `Type`, delegates, and
+`IAsyncEnumerable<>`, are not written as a mapping of their properties, which could not be read back: they throw a
+`NotSupportedException`, and the source generator reports them.
+
+A stack (`Stack<>`, `ConcurrentStack<>`) is written from its top and read back in the same order. `ArraySegment<>` is
+written as the elements of the segment, a default segment as `null`, and is read over a new array. `KeyValuePair<,>`
+entry names follow `PropertyNamingPolicy`. `BigInteger` is written as an integer, `Version` using its string
+representation, and `Rune` as a one-character scalar.
+
 Enums are written using their member name and read case-insensitively, with a numeric fallback. Use
 `YamlEnumMemberNameAttribute` to control the name of an individual member.
+
+Apart from a string written with `PreferQuotedForAmbiguousScalars` disabled, a value that is not null is never written as a
+null scalar: an enum member named `Null`, a relative `Uri` such as `~`, a dictionary key, or a custom converter calling
+`YamlWriter.WriteScalar("null")` are quoted. Their text is still written plain when it reads as a boolean or a number
+(an enum member named `True`, the `Version` `1.2`), which a typed member reads back unchanged, but which an `object`
+member or a union resolves as a boolean or a number.
 
 `Uri` is written using its original string and read with `UriKind.RelativeOrAbsolute`, so both absolute and relative
 URIs round-trip. `CultureInfo` is written using its culture name (`CultureInfo.InvariantCulture` writes an empty
@@ -129,7 +154,16 @@ name), and read back through `CultureInfo.GetCultureInfo`.
 
 Object contracts support parameterless constructors, parameterized constructors, records, `init` accessors, the
 `required` keyword, and non-public members annotated with `YamlIncludeAttribute`. When a type declares several public
-constructors, annotate the one to use with `YamlConstructorAttribute`.
+constructors, annotate the one to use with `YamlConstructorAttribute`. A struct is created without calling a constructor
+unless one is annotated with `YamlConstructorAttribute`.
+
+A null scalar, such as `~`, assigns `null` to a member whose type accepts it. A custom converter of the member reads the
+null scalar itself, and a non-nullable value type rejects it, as it does for a root value or a collection element:
+`Value: ~` throws a `YamlException` for an `int` or a struct member instead of assigning its default value.
+
+Members are listed from the base-most type down to the type itself and, within a type, properties come before fields,
+each in declaration order. A member that overrides or hides a member of a base type takes its position, and inherits the
+attributes of the member it overrides. Two members mapping to the same YAML name throw an `InvalidOperationException`.
 
 ## Configure serialization
 
@@ -525,6 +559,20 @@ Name: Rex
 
 The same settings are available on `YamlSerializerOptions.PolymorphismOptions` for the whole serializer.
 
+The discriminator is consumed while reading: the selected type does not see it, so it is neither an unmapped member nor
+an extension data entry, and a selected type that is polymorphic itself does not resolve it a second time. Such a type is
+read as itself unless the mapping also carries a discriminator or tag of its own: its default derived type and type
+classifiers do not replace a type the discriminator selected explicitly. With the `Property` and `Both` styles, a member
+or extension data entry named like the discriminator property is not written. A base type registered as one of its own
+derived types is written with its discriminator.
+
+The discriminator is only read from the mapping itself: a discriminator provided by a mapping merged into it with `<<` is
+not taken into account.
+
+A type cannot register the same derived type, discriminator, or tag twice, nor two derived types with neither a
+discriminator nor a tag. Reflection-based serialization throws an `InvalidOperationException` when the type is first
+used, and the source generator reports the `MFY026` diagnostic.
+
 `UnknownDerivedTypeHandling` applies while reading. While writing, the runtime type must match a registration exactly:
 serializing a subclass of a registered derived type that is not registered itself throws `NotSupportedException` rather
 than writing it under the discriminator of its closest registered base, which would silently drop the members it
@@ -534,7 +582,9 @@ declares. This holds for both the reflection-based serializer and a source-gener
 
 `PolymorphismOptions.DerivedTypeMappings` registers derived types without touching the base type, which enables
 polymorphism across assemblies (plugin systems, clean architecture). Runtime entries are merged with attribute-based
-ones, and attributes win on conflicts.
+ones, and attributes win on conflicts. The mappings are copied when the `YamlPolymorphismOptions` instance is assigned to
+`YamlSerializerOptions.PolymorphismOptions`, and the instance becomes read-only: changing the mappings afterwards throws
+`NotSupportedException`, so options already in use, and the copies made from them with `with`, cannot change.
 
 ```csharp
 var options = new YamlSerializerOptions
@@ -648,8 +698,17 @@ YamlSerializer.Serialize(new Setting(42)); // 42
 ```
 
 Cases are selected by YAML shape when deserializing, so a union whose cases use distinct shapes needs no configuration.
+A case matching the shape of the value exactly wins: `Setting` reads `42` as an `int` and `"42"` as a `string`. When no
+case matches exactly, the cases that can still read the value are used instead: a `string` case reads a plain `42` or
+`true`, a `char` or enum case reads a number, and a case whose type has a custom converter &mdash; declared with
+`[YamlConverter]`, on the options, or on the generation options &mdash; reads any value. A nested union case matches the
+shapes of its own cases, and a case referencing the union itself, such as `union Node(bool, Node?)`, never matches. The
+`YamlSequence`, `YamlMapping`, and `YamlValue` cases match sequences, mappings, and scalars; `object`, `YamlNode`, and
+`YamlElement` cases match any value.
+
 A payload matching several cases &mdash; two cases that both serialize as a mapping, for instance &mdash; fails unless a
-type classifier is registered. `YamlUnionTypeStructuralClassifier` tells mapping cases apart by their keys:
+type classifier is registered. The classifier can only select one of the matching cases. `YamlUnionTypeStructuralClassifier`
+tells mapping cases apart by their keys:
 
 ```csharp
 internal union Shape(Circle, Rectangle);
@@ -757,6 +816,10 @@ First: &id001
 Second: *id001
 ```
 
+With `PreserveMinimal`, `IYamlOnSerializing` and `IYamlOnSerialized` are still invoked once per object. Converters are
+called by both passes, though: a converter with side effects can check `YamlWriter.IsCollectingReferences`, which is
+`true` during the pre-serialization pass, whose output is discarded.
+
 ### Merge keys
 
 A merge key whose value is a mapping, or a sequence of mappings, is applied when reading. Later keys win over merged
@@ -834,6 +897,17 @@ the context as its resolver:
 var options = AppYamlContext.Default.CreateOptions(o => o with { SourceName = "config.yaml" });
 ```
 
+The attribute values initialize the options of `AppYamlContext.Default`, and the generated code reads most options at run
+time, so an options instance with other values is honored. A few options shape the generated code instead, and an options
+instance cannot change them:
+
+- `PropertyNamingPolicy` is always applied at build time: the member names are generated from the policy set on the
+  attribute, and the policy of an options instance is ignored. `DictionaryKeyPolicy` is read at run time.
+- `DefaultIgnoreCondition`, `UnmappedMemberHandling`, `PreferredObjectCreationHandling`, `DuplicateKeyHandling`,
+  `MappingOrder`, `PropertyNameCaseInsensitive`, `DiscriminatorStyle`, `TypeDiscriminatorPropertyName`,
+  `UnknownDerivedTypeHandling`, and whether `Schema` applies merge keys are applied at build time when the attribute sets
+  them, and read from the options at run time otherwise.
+
 `YamlSerializableAttribute.TypeInfoPropertyName` renames the generated property when the default name collides.
 
 Non-public members annotated with `YamlIncludeAttribute` and non-public constructors annotated with
@@ -850,12 +924,14 @@ NativeAOT and trimming understand.
 | `MFY004` | Error | A type declares several `[YamlExtensionData]` members. |
 | `MFY005` | Error | A `[YamlSourceGenerationOptions]` value is invalid. |
 | `MFY006` | Error | A converter type is invalid. |
+| `MFY007` | Error | A serializable type, or the element or key type of a serializable collection, is not supported. |
 | `MFY020` | Error | `[YamlDerivedTypeMapping]` declares a type that is not assignable to the base type. |
 | `MFY021` | Warning | The base type of a `[YamlDerivedTypeMapping]` has no `[YamlPolymorphic]`; serializer defaults are used. |
 | `MFY022` | Warning | An open generic derived type cannot be closed for the base type and is ignored. |
 | `MFY023` | Error | `InferClosedTypePolymorphism` is enabled on a type that is not `closed`. |
 | `MFY024` | Warning | Inference is replaced by the explicit `[YamlDerivedType]` registrations of the type. |
 | `MFY025` | Warning | An inferred derived type is ignored (visibility, or duplicate discriminator). |
+| `MFY026` | Error | A type registers the same derived type, discriminator, or tag twice, or two default derived types. |
 
 ## NativeAOT and trimming
 

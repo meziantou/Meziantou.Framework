@@ -18,6 +18,6 @@ public enum YamlUnionCaseShape
     /// <summary>The case is represented by a mapping.</summary>
     Mapping,
 
-    /// <summary>The case can be represented by any YAML shape.</summary>
+    /// <summary>The case can be represented by any YAML shape, or by several shapes, such as a nested union whose cases use different shapes.</summary>
     Any,
 }

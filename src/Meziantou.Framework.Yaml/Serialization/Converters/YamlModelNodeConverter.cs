@@ -169,25 +169,38 @@ internal sealed class YamlModelNodeConverter : YamlConverter
         }
     }
 
+    private static void WriteNodeProperties(YamlWriter writer, YamlElement element)
+    {
+        if (element.Anchor is not null)
+        {
+            writer.WriteAnchor(element.Anchor);
+        }
+
+        if (element.Tag is { } tag)
+        {
+            // A parsed tag is resolved, such as "tag:yaml.org,2002:str", which is not valid YAML syntax on its own.
+            // A tag set on the model can also use the "!!" shorthand.
+            if (tag.StartsWith("!!", StringComparison.Ordinal))
+            {
+                tag = "tag:yaml.org,2002:" + tag[2..];
+            }
+
+            writer.WriteResolvedTag(tag);
+        }
+    }
+
     private static void WriteNode(YamlWriter writer, YamlNode node)
     {
         if (node is YamlElement element)
         {
-            if (element.Anchor is not null)
-            {
-                writer.WriteAnchor(element.Anchor);
-            }
-
-            if (element.Tag is not null)
-            {
-                writer.WriteTag(element.Tag);
-            }
+            WriteNodeProperties(writer, element);
         }
 
         switch (node)
         {
             case YamlValue scalar:
-                writer.WriteScalar(scalar.Value);
+                // The style tells a quoted "42", which is a string, from the plain number 42.
+                writer.WriteScalar(scalar.Value, scalar.Style);
                 return;
 
             case YamlSequence sequence:
@@ -209,7 +222,8 @@ internal sealed class YamlModelNodeConverter : YamlConverter
                         throw new YamlException(Mark.Empty, Mark.Empty, "Only scalar mapping keys are supported when serializing a YamlMapping.");
                     }
 
-                    writer.WritePropertyName(keyValue.Value);
+                    WriteNodeProperties(writer, keyValue);
+                    writer.WritePropertyName(keyValue.Value, keyValue.Style);
 
                     if (pair.Value is null)
                     {

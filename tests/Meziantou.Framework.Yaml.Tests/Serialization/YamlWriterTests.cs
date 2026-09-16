@@ -931,6 +931,58 @@ public sealed class YamlWriterTests
         }
     }
 
+    [Theory]
+    [InlineData("null")]
+    [InlineData("Null")]
+    [InlineData("NULL")]
+    [InlineData("~")]
+    public void WriteScalar_TextReadAsNull_IsQuoted(string value)
+    {
+        var writer = CreateWriter(new YamlSerializerOptions(), out var buffer);
+        writer.WriteStartSequence();
+        writer.WriteScalar(value);
+        writer.WriteScalar(value.AsSpan());
+        writer.WriteNullValue();
+        writer.WriteStartMapping();
+        writer.WritePropertyName(value);
+        writer.WriteScalar("true");
+        writer.WriteEndMapping();
+        writer.WriteEndSequence();
+
+        Assert.Equal($"- \"{value}\"\n- \"{value}\"\n- null\n- \"{value}\": true", buffer.ToString());
+    }
+
+    [Fact]
+    public void WriteScalar_FormattableValueLongerThanTheFormattingBuffer_IsWritten()
+    {
+        var value = System.Numerics.BigInteger.Pow(10, 100);
+        var writer = CreateWriter(new YamlSerializerOptions(), out var buffer);
+
+        writer.WriteScalar(value);
+
+        Assert.Equal("1" + new string('0', 100), buffer.ToString());
+    }
+
+    [Fact]
+    public void WriteDictionaryKey_WritesKeysLikeTheDictionaryConverters()
+    {
+        var writer = CreateWriter(new YamlSerializerOptions { DictionaryKeyPolicy = YamlNamingPolicy.CamelCase }, out var buffer);
+        writer.WriteStartMapping();
+        writer.WriteDictionaryKey("MyKey");
+        writer.WriteScalar(1);
+        writer.WriteDictionaryKey("123");
+        writer.WriteScalar(2);
+        writer.WriteDictionaryKey(123);
+        writer.WriteScalar(3);
+        writer.WriteDictionaryKey(double.PositiveInfinity);
+        writer.WriteScalar(4);
+        writer.WriteDictionaryKey(DayOfWeek.Monday);
+        writer.WriteScalar(5);
+        writer.WriteEndMapping();
+
+        Assert.Equal("myKey: 1\n\"123\": 2\n123: 3\n.inf: 4\nMonday: 5", buffer.ToString());
+    }
+
     private static YamlSerializerOptions StringStyleOptions(ScalarStyle style)
         => new() { ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = style } };
 
@@ -1099,5 +1151,72 @@ public sealed class YamlWriterTests
         var roundTrip = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml);
         Assert.NotNull(roundTrip);
         Assert.Equal("hello", roundTrip["<<"]);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RootEmptyCollection_WithNodeProperties_SeparatesThemFromTheCollection(bool isMapping)
+    {
+        var writer = CreateWriter(new YamlSerializerOptions(), out var buffer);
+        writer.WriteAnchor("a");
+        writer.WriteTag("!t");
+        if (isMapping)
+        {
+            writer.WriteStartMapping();
+            writer.WriteEndMapping();
+        }
+        else
+        {
+            writer.WriteStartSequence();
+            writer.WriteEndSequence();
+        }
+
+        Assert.Equal(isMapping ? "&a !t {}" : "&a !t []", buffer.ToString());
+    }
+
+    [Fact]
+    public void RootEmptyCollection_WithReferenceHandling_RoundTrips()
+    {
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+
+        var yaml = YamlSerializer.Serialize(new List<int>(), options);
+
+        Assert.Equal("&id001 []\n", yaml);
+        Assert.Empty(YamlSerializer.Deserialize<List<int>>(yaml, options)!);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void NodePropertiesBeforePropertyName_ApplyToTheKey(bool writeIndented)
+    {
+        var writer = CreateWriter(new YamlSerializerOptions { WriteIndented = writeIndented }, out var buffer);
+        writer.WriteStartMapping();
+        writer.WriteAnchor("k");
+        writer.WriteTag("!t");
+        writer.WritePropertyName("key");
+        writer.WriteScalar("value");
+        writer.WritePropertyName("other");
+        writer.WriteAlias("k");
+        writer.WriteEndMapping();
+
+        Assert.Equal(writeIndented ? "&k !t key: value\nother: *k" : "{&k !t key: value, other: *k}", buffer.ToString());
+    }
+
+    [Theory]
+    [InlineData("~")]
+    [InlineData("null")]
+    [InlineData("true")]
+    [InlineData("42")]
+    [InlineData("1.5")]
+    public void PlainStringStyle_AmbiguousString_IsQuotedAndRoundTrips(string value)
+    {
+        var options = new YamlSerializerOptions { ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Plain } };
+
+        var yaml = YamlSerializer.Serialize(new Dictionary<string, object> { ["value"] = value }, options);
+
+        Assert.Equal($"value: \"{value}\"\n", yaml);
+        Assert.Equal(value, YamlSerializer.Deserialize<Dictionary<string, object>>(yaml, options)!["value"]);
     }
 }

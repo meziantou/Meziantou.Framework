@@ -39,7 +39,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     {
         if (reader.TryReadAlias(out var rootAliasValue))
         {
-            return (T)rootAliasValue!;
+            return YamlThrowHelper.CastAliasValue<T>(reader, rootAliasValue);
         }
 
         if (reader.TokenType == YamlTokenType.Alias)
@@ -47,7 +47,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             throw new YamlException(reader.SourceName, reader.Start, reader.End, $"Aliases are not supported when deserializing into '{typeof(T)}' unless ReferenceHandling is Preserve.");
         }
 
-        if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
+        // A null scalar cannot be read into a value type, as for any other non-nullable value type.
+        if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader) && !typeof(T).IsValueType)
         {
             reader.Read();
             return default;
@@ -152,22 +153,16 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var contract = _contract ??= Contract.Create(typeof(T), writer);
 
-        if (writer.ReferenceWriter is not null && value is not string && !typeof(T).IsValueType)
+        // The runtime type decides whether the value is tracked: a struct declared as an interface is boxed, and the
+        // box is not an identity worth preserving.
+        if (!typeof(T).IsValueType && writer.TryWriteReference(value))
         {
-            if (writer.ReferenceWriter.TryGetAnchor(value, out var existing))
-            {
-                writer.WriteAlias(existing);
-                return;
-            }
-
-            var anchor = writer.ReferenceWriter.GetOrAddAnchor(value);
-            if (anchor is not null)
-            {
-                writer.WriteAnchor(anchor);
-            }
+            return;
         }
 
-        if (value is IYamlOnSerializing onSerializing)
+        // Box a value type once, so a mutation made by a lifecycle callback is visible to the members written next.
+        object boxedValue = value;
+        if (boxedValue is IYamlOnSerializing onSerializing && writer.ShouldInvokeOnSerializing(boxedValue))
         {
             try
             {
@@ -183,17 +178,18 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        var runtimeType = value.GetType();
-        if (contract.Polymorphism is not null && runtimeType != typeof(T))
+        // A registered type is written with its discriminator, even when it is the declared type itself.
+        var runtimeType = boxedValue.GetType();
+        if (contract.Polymorphism is not null && (runtimeType != typeof(T) || contract.Polymorphism.TryGetDerivedTypeInfo(runtimeType, out _)))
         {
-            YamlObjectConverter<T>.WritePolymorphic(writer, value, runtimeType, contract);
+            YamlObjectConverter<T>.WritePolymorphic(writer, boxedValue, runtimeType, contract);
         }
         else
         {
-            YamlObjectConverter<T>.WriteObjectCore(writer, value, contract);
+            YamlObjectConverter<T>.WriteObjectCore(writer, boxedValue, contract);
         }
 
-        if (value is IYamlOnSerialized onSerialized)
+        if (boxedValue is IYamlOnSerialized onSerialized && !writer.IsCollectingReferences)
         {
             try
             {
@@ -217,10 +213,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return ReadObjectCoreWithConstructor(reader, contract);
         }
 
-        T instance;
+        // The instance is kept boxed while its members are assigned: a value type would otherwise be copied by each
+        // assignment and lifecycle callback, and the deserialized value would lose every member.
+        object instance;
         try
         {
-            instance = (T)contract.CreateInstance();
+            instance = contract.CreateInstance();
         }
         catch (YamlException)
         {
@@ -255,7 +253,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
-        HashSet<Member>? seenMembers = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<Member>();
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(reader.PropertyNameComparer);
         var mappingStart = reader.Start;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -281,6 +279,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             explicitKeys?.Add(key);
 
+            // A duplicate key is detected whether it maps to a member, to the extension data, or to nothing, as for a
+            // type deserialized through its constructor.
+            var wasSeen = seenKeys is not null && !seenKeys.Add(key);
+            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
+            {
+                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
+            }
+
+            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
+            {
+                reader.Skip();
+                continue;
+            }
+
             if (!contract.TryGetMember(key, out var member))
             {
                 if (contract.ExtensionData is null)
@@ -289,18 +301,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                try
-                {
-                    ReadExtensionData(reader, instance!, contract.ExtensionData, key);
-                }
-                catch (YamlException)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
-                }
+                ReadExtensionData(reader, instance!, contract.ExtensionData, key, keyStart, keyEnd);
                 continue;
             }
 
@@ -310,18 +311,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
 
             if (member.ShouldIgnoreOnRead)
-            {
-                reader.Skip();
-                continue;
-            }
-
-            var wasSeen = seenMembers is not null && !seenMembers.Add(member);
-            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
-            {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
-            }
-
-            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
             {
                 reader.Skip();
                 continue;
@@ -344,11 +333,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw new YamlException(reader.SourceName, mappingStart, reader.End, $"Missing required mapping key(s) for '{typeof(T)}': {string.Join(", ", missing)}.");
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, typeof(T), missing);
             }
         }
-
-        reader.Read();
 
         if (instance is IYamlOnDeserialized onDeserialized)
         {
@@ -366,7 +353,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        return instance;
+        reader.Read();
+
+        return (T)instance;
     }
 
     private static void PopulateObjectCore(YamlReader reader, Contract contract, object instance)
@@ -394,7 +383,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
         HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
-        HashSet<Member>? seenMembers = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<Member>();
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(reader.PropertyNameComparer);
         var mappingStart = reader.Start;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -420,6 +409,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             explicitKeys?.Add(key);
 
+            // A duplicate key is detected whether it maps to a member, to the extension data, or to nothing, as for a
+            // type deserialized through its constructor.
+            var wasSeen = seenKeys is not null && !seenKeys.Add(key);
+            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
+            {
+                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
+            }
+
+            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
+            {
+                reader.Skip();
+                continue;
+            }
+
             if (!contract.TryGetMember(key, out var member))
             {
                 if (contract.ExtensionData is null)
@@ -428,19 +431,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                try
-                {
-                    ReadExtensionData(reader, instance, contract.ExtensionData, key);
-                }
-                catch (YamlException)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
-                }
-
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
                 continue;
             }
 
@@ -450,18 +441,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
 
             if (member.ShouldIgnoreOnRead)
-            {
-                reader.Skip();
-                continue;
-            }
-
-            var wasSeen = seenMembers is not null && !seenMembers.Add(member);
-            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
-            {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
-            }
-
-            if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
             {
                 reader.Skip();
                 continue;
@@ -484,11 +463,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw new YamlException(reader.SourceName, mappingStart, reader.End, $"Missing required mapping key(s) for '{instance.GetType()}': {string.Join(", ", missing)}.");
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, instance.GetType(), missing);
             }
         }
-
-        reader.Read();
 
         if (instance is IYamlOnDeserialized onDeserialized)
         {
@@ -505,6 +482,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw new YamlException(reader.SourceName, reader.Start, reader.End, $"An error occurred while invoking '{nameof(IYamlOnDeserialized)}.{nameof(IYamlOnDeserialized.OnDeserialized)}' on '{instance.GetType()}'.", exception);
             }
         }
+
+        reader.Read();
     }
 
     private T? ReadObjectCoreWithConstructor(YamlReader reader, Contract contract)
@@ -574,7 +553,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             if (constructor.TryGetParameterIndex(key, out var parameterIndex))
             {
                 var parameterType = constructor.GetParameterType(parameterIndex);
-                var converter = reader.GetConverter(parameterType);
+                var converter = constructor.GetParameterConverter(parameterIndex) ?? reader.GetConverter(parameterType);
                 object? value;
                 try
                 {
@@ -612,21 +591,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                var converter = member.Converter ??= reader.GetConverter(member.MemberType);
-                object? value;
-                try
-                {
-                    value = converter.Read(reader, member.MemberType);
-                }
-                catch (YamlException)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
-                }
-
+                var value = ReadBufferedMemberValue(reader, member, keyStart, keyEnd);
                 ThrowIfNullForNonNullableMember(reader, contract, member, value);
                 memberValues[member] = new BufferedMemberAssignment(member, value, keyStart, keyEnd);
                 continue;
@@ -664,10 +629,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             args[i] = null;
         }
 
-        T instance;
+        // The instance is kept boxed while its members are assigned: a value type would otherwise be copied by each
+        // assignment and lifecycle callback, and the deserialized value would lose them.
+        object instance;
         try
         {
-            instance = (T)constructor.CreateInstance(args);
+            instance = constructor.CreateInstance(args);
         }
         catch (YamlException)
         {
@@ -680,7 +647,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         if (reader.ReferenceReader is not null && mappingAnchor is not null)
         {
-            reader.ReferenceReader.Register(mappingAnchor, instance!);
+            reader.ReferenceReader.Register(mappingAnchor, instance);
         }
 
         if (instance is IYamlOnDeserializing onDeserializing)
@@ -695,7 +662,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
             catch (Exception exception)
             {
-                throw new YamlException(reader.SourceName, mappingStart, reader.End, $"An error occurred while invoking '{nameof(IYamlOnDeserializing)}.{nameof(IYamlOnDeserializing.OnDeserializing)}' on '{typeof(T)}'.", exception);
+                throw new YamlException(reader.SourceName, reader.Start, reader.End, $"An error occurred while invoking '{nameof(IYamlOnDeserializing)}.{nameof(IYamlOnDeserializing.OnDeserializing)}' on '{typeof(T)}'.", exception);
             }
         }
 
@@ -703,7 +670,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         {
             try
             {
-                assignment.Member.SetValue(instance!, assignment.Value);
+                assignment.Member.SetValue(instance, assignment.Value);
             }
             catch (YamlException)
             {
@@ -722,7 +689,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 var entry = extensionEntries[i];
                 try
                 {
-                    AddExtensionDataValue(instance!, contract.ExtensionData!, entry.Key, entry.Value);
+                    AddExtensionDataValue(instance, contract.ExtensionData!, entry.Key, entry.Value);
                 }
                 catch (YamlException)
                 {
@@ -749,11 +716,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw new YamlException(reader.SourceName, mappingStart, reader.End, $"Missing required mapping key(s) for '{typeof(T)}': {string.Join(", ", missing)}.");
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, typeof(T), missing);
             }
         }
-
-        reader.Read();
 
         if (instance is IYamlOnDeserialized onDeserialized)
         {
@@ -771,7 +736,41 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        return instance;
+        reader.Read();
+
+        return (T)instance;
+    }
+
+    /// <summary>
+    /// Indicates a null scalar read into a member of type <paramref name="type"/> assigns <see langword="null"/> without
+    /// going through a converter: the type accepts <see langword="null"/> and no custom converter handles it.
+    /// </summary>
+    private static bool ReadsNullScalarAsNull(Type type, YamlReaderWriterBase readerWriter)
+        => (!type.IsValueType || Nullable.GetUnderlyingType(type) is not null) &&
+           !type.IsDefined(typeof(YamlConverterAttribute), inherit: false) &&
+           !readerWriter.TryGetCustomConverter(type, out _);
+
+    private static object? ReadBufferedMemberValue(YamlReader reader, Member member, Mark keyStart, Mark keyEnd)
+    {
+        if (member.ReadsNullScalarAsNull && reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
+        {
+            reader.Read();
+            return null;
+        }
+
+        var converter = member.Converter ??= reader.GetConverter(member.MemberType);
+        try
+        {
+            return converter.Read(reader, member.MemberType);
+        }
+        catch (YamlException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+        }
     }
 
     private static void SkipOrThrowUnmappedMember(YamlReader reader, Contract contract, string key)
@@ -890,7 +889,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
                 continue;
             }
 
@@ -1006,7 +1005,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
                 continue;
             }
 
@@ -1026,7 +1025,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var effectiveHandling = member.GetEffectiveObjectCreationHandling(contract.PreferredObjectCreationHandling);
         var preferPopulate = effectiveHandling == YamlObjectCreationHandling.Populate;
 
-        if (reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
+        // A null scalar replaces the value: there is nothing to populate.
+        var isNullScalar = reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader);
+        if (isNullScalar)
         {
             if (preferPopulate && !member.CanWrite)
             {
@@ -1037,7 +1038,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             {
                 if (contract.ExtensionData is not null)
                 {
-                    ReadExtensionData(reader, instance, contract.ExtensionData, key);
+                    ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
                 }
                 else
                 {
@@ -1047,29 +1048,33 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 return;
             }
 
-            ThrowIfNullForNonNullableMember(reader, contract, member, null);
-            reader.Read();
-            try
+            if (member.ReadsNullScalarAsNull)
             {
-                member.SetValue(instance, null);
+                ThrowIfNullForNonNullableMember(reader, contract, member, null);
+                reader.Read();
+                try
+                {
+                    member.SetValue(instance, null);
+                }
+                catch (YamlException)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                }
+
+                return;
             }
-            catch (YamlException)
-            {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
-            }
-            return;
         }
 
         var converter = member.Converter ??= reader.GetConverter(member.MemberType);
-        var canPopulate = converter.CanPopulate(member.MemberType);
+        var canPopulate = !isNullScalar && converter.CanPopulate(member.MemberType);
         var canPopulateMember = canPopulate && (!member.MemberType.IsValueType || member.CanWrite);
         var explicitPopulate = member.ObjectCreationHandling == YamlObjectCreationHandling.Populate;
 
-        if (preferPopulate && explicitPopulate && !canPopulateMember)
+        if (preferPopulate && explicitPopulate && !canPopulateMember && !isNullScalar)
         {
             if (member.MemberType.IsValueType && !member.CanWrite)
             {
@@ -1132,7 +1137,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         {
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
             }
             else
             {
@@ -1287,7 +1292,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             if (constructor.TryGetParameterIndex(key, out var parameterIndex))
             {
                 var parameterType = constructor.GetParameterType(parameterIndex);
-                var converter = reader.GetConverter(parameterType);
+                var converter = constructor.GetParameterConverter(parameterIndex) ?? reader.GetConverter(parameterType);
                 object? value;
                 try
                 {
@@ -1325,21 +1330,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                var converter = member.Converter ??= reader.GetConverter(member.MemberType);
-                object? value;
-                try
-                {
-                    value = converter.Read(reader, member.MemberType);
-                }
-                catch (YamlException)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
-                }
-
+                var value = ReadBufferedMemberValue(reader, member, keyStart, keyEnd);
                 ThrowIfNullForNonNullableMember(reader, contract, member, value);
                 memberValues[member] = new BufferedMemberAssignment(member, value, keyStart, keyEnd);
                 continue;
@@ -1645,7 +1636,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             converter.Write(writer, memberValue);
         }
 
-        WriteExtensionData(writer, value, contract);
+        WriteExtensionData(writer, value, contract, skippedKey: null);
         writer.WriteEndMapping();
     }
 
@@ -1685,15 +1676,27 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     {
         var polymorphism = contract.Polymorphism!;
         var rootTag = reader.Tag;
+        var nodeStart = reader.Start;
+        var nodeEnd = reader.End;
 
-        var buffered = YamlReader.BufferCurrentNodeToStringAndFindDiscriminator(reader, polymorphism.DiscriminatorPropertyName, out var discriminatorValue);
+        // The node is the payload of this type, selected by a discriminator an enclosing polymorphic type consumed.
+        var derivedTypeResolved = reader.IsCurrentNodeDerivedTypeResolved;
+
+        // The discriminator is consumed here, so the selected type does not see it as one of its own entries.
+        var buffered = YamlReader.BufferCurrentNodeToStringAndRemoveDiscriminator(
+            reader,
+            polymorphism.AcceptsPropertyDiscriminator ? polymorphism.DiscriminatorPropertyName : null,
+            removeTag: polymorphism.AcceptsTagDiscriminator,
+            out var discriminatorValue);
 
         Type? targetType = null;
+        var isExplicitlySelected = false;
         if (polymorphism.AcceptsPropertyDiscriminator && discriminatorValue is not null)
         {
             if (polymorphism.TryGetDerivedTypeFromDiscriminator(discriminatorValue, out var derived))
             {
                 targetType = derived;
+                isExplicitlySelected = true;
             }
             else if (polymorphism.DefaultDerivedType is not null)
             {
@@ -1701,7 +1704,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
             else if (polymorphism.UnknownDerivedTypeHandling == YamlUnknownDerivedTypeHandling.Fail)
             {
-                throw YamlThrowHelper.ThrowUnknownTypeDiscriminator(reader, discriminatorValue, typeof(T));
+                throw YamlThrowHelper.ThrowUnknownTypeDiscriminator(reader, nodeStart, nodeEnd, discriminatorValue, typeof(T));
             }
         }
 
@@ -1710,6 +1713,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             if (polymorphism.TryGetDerivedTypeFromTag(rootTag, out var derivedFromTag))
             {
                 targetType = derivedFromTag;
+                isExplicitlySelected = true;
             }
             else if (polymorphism.DefaultDerivedType is not null)
             {
@@ -1717,8 +1721,15 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
             else if (polymorphism.UnknownDerivedTypeHandling == YamlUnknownDerivedTypeHandling.Fail)
             {
-                throw YamlThrowHelper.ThrowUnknownTypeTag(reader, rootTag, typeof(T));
+                throw YamlThrowHelper.ThrowUnknownTypeTag(reader, nodeStart, nodeEnd, rootTag, typeof(T));
             }
+        }
+
+        // An enclosing polymorphic type already selected this type, so neither the default derived type nor a
+        // classifier can replace it. An abstract type cannot be read as itself, so it keeps selecting a derived type.
+        if (targetType is null && derivedTypeResolved && !typeof(T).IsAbstract)
+        {
+            targetType = typeof(T);
         }
 
         // A registered classifier selects a derived type from the payload itself. It never overrides an explicit
@@ -1735,7 +1746,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         if (targetType == typeof(T))
         {
+            if (typeof(T).IsAbstract)
+            {
+                throw YamlThrowHelper.ThrowAbstractTypeWithoutDiscriminator(reader, nodeStart, nodeEnd, typeof(T));
+            }
+
             return ReadObjectCore(bufferedReader, contract);
+        }
+
+        if (isExplicitlySelected)
+        {
+            bufferedReader.MarkCurrentNodeDerivedTypeResolved();
         }
 
         var converter = bufferedReader.GetConverter(targetType);
@@ -1764,6 +1785,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             writer.WriteScalar(derivedInfo.Discriminator);
         }
 
+        // An entry named like the discriminator property could not be read back, as it is consumed as the discriminator.
+        var skippedPropertyName = polymorphism.EmitsPropertyDiscriminator ? polymorphism.DiscriminatorPropertyName : null;
+
         var options = writer.Options;
         var derivedContract = Contract.Create(runtimeType, writer);
         var members = options.MappingOrder == YamlMappingOrderPolicy.Sorted
@@ -1778,7 +1802,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            if (string.Equals(member.Name, polymorphism.DiscriminatorPropertyName, StringComparison.Ordinal))
+            if (string.Equals(member.Name, skippedPropertyName, StringComparison.Ordinal))
             {
                 continue;
             }
@@ -1797,7 +1821,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             converter.Write(writer, memberValue);
         }
 
-        WriteExtensionData(writer, value, derivedContract);
+        WriteExtensionData(writer, value, derivedContract, skippedPropertyName);
         writer.WriteEndMapping();
     }
 
@@ -1851,6 +1875,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public YamlObjectCreationHandling PreferredObjectCreationHandling { get; }
 
+        internal const string EnumerableWithoutMembersReason = "it is enumerable, but it is not a supported collection and has no serializable member, so its elements would be lost. Implement ICollection<T> with a public parameterless constructor, use a supported collection, or register a converter.";
+
         [UnconditionalSuppressMessage(
             "Trimming",
             "IL2070",
@@ -1859,6 +1885,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             "Trimming",
             "IL2067",
             Justification = "Contract discovery and instance creation use reflection and are only exercised by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2075",
+            Justification = "Contract discovery walks the base types using reflection and is only exercised by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
         public static Contract Create(Type type, YamlReaderWriterBase readerWriter)
         {
             ArgumentNullException.ThrowIfNull(readerWriter);
@@ -1871,25 +1901,55 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             var requiredMembers = new List<Member>();
             ExtensionDataInfo? extensionData = null;
 
-            const BindingFlags AllInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            foreach (var property in type.GetProperties(AllInstance))
+            // Members are discovered from the base type down to the declaring type, in declaration order. A member that
+            // overrides or hides a member with the same name takes the position of the member it replaces, so the
+            // contract keeps a single member per name and matches the order used by the source generator.
+            var discoveredMembers = new List<MemberInfo?>();
+            var discoveredMemberIndexByName = new Dictionary<string, int>(StringComparer.Ordinal);
+            MemberInfo? extensionDataMember = null;
+            foreach (var currentType in GetTypeHierarchy(type))
             {
-                if (property.GetIndexParameters().Length != 0)
+                const BindingFlags DeclaredInstance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+                foreach (var property in currentType.GetProperties(DeclaredInstance))
                 {
-                    continue;
-                }
-
-                var hasIncludeAttr = property.IsDefined(typeof(YamlIncludeAttribute), inherit: true);
-                var canRead = property.GetMethod is not null && (property.GetMethod.IsPublic || hasIncludeAttr);
-                var canWrite = property.SetMethod is not null && (property.SetMethod.IsPublic || hasIncludeAttr);
-
-                if (IsExtensionData(property))
-                {
-                    if (extensionData is not null)
+                    if (property.GetIndexParameters().Length != 0)
                     {
-                        throw new NotSupportedException($"Type '{type}' defines multiple extension data members.");
+                        continue;
                     }
 
+                    if (IsExtensionData(property))
+                    {
+                        extensionDataMember = SelectExtensionDataMember(type, extensionDataMember, property);
+                        continue;
+                    }
+
+                    var canRead = property.GetMethod is not null && (property.GetMethod.IsPublic || IsIncluded(property));
+                    if (canRead)
+                    {
+                        AddDiscoveredMember(discoveredMembers, discoveredMemberIndexByName, property, isIgnored: GetIgnoreCondition(property, type) == YamlIgnoreCondition.Always);
+                    }
+                }
+
+                foreach (var field in currentType.GetFields(DeclaredInstance))
+                {
+                    if (IsExtensionData(field))
+                    {
+                        extensionDataMember = SelectExtensionDataMember(type, extensionDataMember, field);
+                        continue;
+                    }
+
+                    var canRead = IsIncluded(field) || (options.IncludeFields && field.IsPublic);
+                    if (canRead)
+                    {
+                        AddDiscoveredMember(discoveredMembers, discoveredMemberIndexByName, field, isIgnored: GetIgnoreCondition(field, type) == YamlIgnoreCondition.Always);
+                    }
+                }
+            }
+
+            switch (extensionDataMember)
+            {
+                case PropertyInfo property:
+                {
                     if (GetIgnoreCondition(property) is not null and not YamlIgnoreCondition.Never)
                     {
                         throw new NotSupportedException($"Extension data member '{property.Name}' on '{type}' cannot be ignored.");
@@ -1900,67 +1960,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                         throw new NotSupportedException($"Extension data member '{property.Name}' on '{type}' cannot be required.");
                     }
 
-                    if (!canRead)
+                    var hasIncludeAttr = IsIncluded(property);
+                    if (property.GetMethod is null || !(property.GetMethod.IsPublic || hasIncludeAttr))
                     {
                         throw new NotSupportedException($"Extension data member '{property.Name}' on '{type}' must be readable.");
                     }
 
-                    var extensionMember = new Member(property.Name, order: 0, declarationOrder: property.MetadataToken, property.PropertyType, property, ignoreCondition: null, isRequired: false, canWrite, objectCreationHandling: null);
+                    var canWrite = property.SetMethod is not null && (property.SetMethod.IsPublic || hasIncludeAttr);
+                    var extensionMember = new Member(property.Name, order: 0, declarationOrder: 0, property.PropertyType, property, ignoreCondition: null, isRequired: false, canWrite, objectCreationHandling: null);
                     extensionData = ExtensionDataInfo.Create(type, extensionMember, property.PropertyType);
-                    continue;
+                    break;
                 }
 
-                if (!canRead)
+                case FieldInfo field:
                 {
-                    continue;
-                }
-
-                var ignoreCondition = GetIgnoreCondition(property, type);
-                if (ignoreCondition == YamlIgnoreCondition.Always)
-                {
-                    continue;
-                }
-
-                var name = GetMemberName(property, type, readerWriter);
-                var order = GetMemberOrder(property);
-                var token = property.MetadataToken;
-
-                var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(property);
-                var stringStyle = GetStringStyle(property);
-                var member = new Member(
-                    name,
-                    order,
-                    token,
-                    property.PropertyType,
-                    property,
-                    ignoreCondition,
-                    IsRequired(property),
-                    canWrite,
-                    GetObjectCreationHandling(property),
-                    mappingStyle,
-                    sequenceStyle,
-                    stringStyle,
-                    DisallowNullOnSerialize(nullabilityContext, property),
-                    DisallowNullOnDeserialize(nullabilityContext, property),
-                    isReadOnlyProperty: !canWrite);
-                member.Converter = CreateConverterFromAttribute(property, property.PropertyType, options)
-                    ?? CreateNumberHandlingConverter(property, property.PropertyType, type, readerWriter);
-                members.Add(member);
-                if (member.IsRequired && !member.ShouldIgnoreOnRead)
-                {
-                    requiredMembers.Add(member);
-                }
-            }
-
-            foreach (var field in type.GetFields(AllInstance))
-            {
-                if (IsExtensionData(field))
-                {
-                    if (extensionData is not null)
-                    {
-                        throw new NotSupportedException($"Type '{type}' defines multiple extension data members.");
-                    }
-
                     if (GetIgnoreCondition(field) is not null and not YamlIgnoreCondition.Never)
                     {
                         throw new NotSupportedException($"Extension data member '{field.Name}' on '{type}' cannot be ignored.");
@@ -1971,53 +1984,100 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                         throw new NotSupportedException($"Extension data member '{field.Name}' on '{type}' cannot be required.");
                     }
 
-                    var extensionMember = new Member(field.Name, order: 0, declarationOrder: field.MetadataToken, field.FieldType, field, ignoreCondition: null, isRequired: false, canWrite: !field.IsInitOnly, objectCreationHandling: null);
+                    var extensionMember = new Member(field.Name, order: 0, declarationOrder: 0, field.FieldType, field, ignoreCondition: null, isRequired: false, canWrite: !field.IsInitOnly, objectCreationHandling: null);
                     extensionData = ExtensionDataInfo.Create(type, extensionMember, field.FieldType);
-                    continue;
+                    break;
                 }
+            }
 
-                var hasIncludeAttr = field.IsDefined(typeof(YamlIncludeAttribute), inherit: true);
-                var canRead = hasIncludeAttr || (options.IncludeFields && field.IsPublic);
-                if (!canRead)
+            for (var declarationOrder = 0; declarationOrder < discoveredMembers.Count; declarationOrder++)
+            {
+                Member member;
+                switch (discoveredMembers[declarationOrder])
                 {
-                    continue;
+                    case null:
+                        continue;
+
+                    case PropertyInfo property:
+                    {
+                        var canWrite = property.SetMethod is not null && (property.SetMethod.IsPublic || IsIncluded(property));
+                        var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(property);
+                        member = new Member(
+                            GetMemberName(property, type, readerWriter),
+                            GetMemberOrder(property),
+                            declarationOrder,
+                            property.PropertyType,
+                            property,
+                            GetIgnoreCondition(property, type),
+                            IsRequired(property),
+                            canWrite,
+                            GetObjectCreationHandling(property),
+                            mappingStyle,
+                            sequenceStyle,
+                            GetStringStyle(property),
+                            DisallowNullOnSerialize(nullabilityContext, property),
+                            DisallowNullOnDeserialize(nullabilityContext, property),
+                            isReadOnlyProperty: !canWrite);
+                        member.Converter = CreateConverterFromAttribute(property, property.PropertyType, options)
+                            ?? CreateNumberHandlingConverter(property, property.PropertyType, type, readerWriter);
+                        break;
+                    }
+
+                    case FieldInfo field:
+                    {
+                        var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(field);
+                        member = new Member(
+                            GetMemberName(field, type, readerWriter),
+                            GetMemberOrder(field),
+                            declarationOrder,
+                            field.FieldType,
+                            field,
+                            GetIgnoreCondition(field, type),
+                            IsRequired(field),
+                            canWrite: !field.IsInitOnly,
+                            GetObjectCreationHandling(field),
+                            mappingStyle,
+                            sequenceStyle,
+                            GetStringStyle(field),
+                            DisallowNullOnSerialize(nullabilityContext, field),
+                            DisallowNullOnDeserialize(nullabilityContext, field),
+                            isReadOnlyField: field.IsInitOnly);
+                        member.Converter = CreateConverterFromAttribute(field, field.FieldType, options)
+                            ?? CreateNumberHandlingConverter(field, field.FieldType, type, readerWriter);
+                        break;
+                    }
+
+                    default:
+                        throw new InvalidOperationException($"Unexpected member '{discoveredMembers[declarationOrder]}'.");
                 }
 
-                var ignoreCondition = GetIgnoreCondition(field, type);
-                if (ignoreCondition == YamlIgnoreCondition.Always)
-                {
-                    continue;
-                }
-
-                var name = GetMemberName(field, type, readerWriter);
-                var order = GetMemberOrder(field);
-                var token = field.MetadataToken;
-
-                var (mappingStyle, sequenceStyle) = GetBlockSequenceItemStyles(field);
-                var stringStyle = GetStringStyle(field);
-                var member = new Member(
-                    name,
-                    order,
-                    token,
-                    field.FieldType,
-                    field,
-                    ignoreCondition,
-                    IsRequired(field),
-                    canWrite: !field.IsInitOnly,
-                    GetObjectCreationHandling(field),
-                    mappingStyle,
-                    sequenceStyle,
-                    stringStyle,
-                    DisallowNullOnSerialize(nullabilityContext, field),
-                    DisallowNullOnDeserialize(nullabilityContext, field),
-                    isReadOnlyField: field.IsInitOnly);
-                member.Converter = CreateConverterFromAttribute(field, field.FieldType, options)
-                    ?? CreateNumberHandlingConverter(field, field.FieldType, type, readerWriter);
+                member.ReadsNullScalarAsNull = member.Converter is null && ReadsNullScalarAsNull(member.MemberType, readerWriter);
                 members.Add(member);
                 if (member.IsRequired && !member.ShouldIgnoreOnRead)
                 {
                     requiredMembers.Add(member);
                 }
+            }
+
+            // An enumerable type that no collection converter handles is serialized as an object. Without any member, it
+            // would be written as an empty mapping and its elements silently lost. The source generator reports it too.
+            if (members.Count == 0 && extensionData is null && typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                throw new NotSupportedException($"Type '{type}' is not supported: {EnumerableWithoutMembersReason}");
+            }
+
+            // Two members cannot share a YAML name: the mapping would contain the key twice. Members whose names only differ
+            // by case are allowed; when names are matched case-insensitively, the first declared member wins.
+            var map = new Dictionary<string, Member>(members.Count, readerWriter.PropertyNameComparer);
+            var membersByOrdinalName = new Dictionary<string, Member>(members.Count, StringComparer.Ordinal);
+            foreach (var member in members)
+            {
+                if (!membersByOrdinalName.TryAdd(member.Name, member))
+                {
+                    throw new InvalidOperationException($"Members '{membersByOrdinalName[member.Name].ClrName}' and '{member.ClrName}' of '{type}' both map to the YAML member name '{member.Name}'.");
+                }
+
+                map.TryAdd(member.Name, member);
             }
 
             var selectedConstructor = SelectDeserializationConstructor(type);
@@ -2090,13 +2150,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 var nameCompare = string.CompareOrdinal(x.Name, y.Name);
                 return nameCompare != 0 ? nameCompare : x.DeclarationOrder.CompareTo(y.DeclarationOrder);
             });
-
-            var map = new Dictionary<string, Member>(membersDeclaration.Length, readerWriter.PropertyNameComparer);
-            for (var i = 0; i < membersDeclaration.Length; i++)
-            {
-                var member = membersDeclaration[i];
-                map[member.Name] = member;
-            }
 
             var polymorphism = PolymorphismModel.TryCreate(type, options);
             for (var i = 0; i < requiredMembers.Count; i++)
@@ -2309,6 +2362,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         private readonly ParameterInfo[] _parameters;
         private readonly Type[] _parameterTypes;
         private readonly bool[] _parametersDisallowNull;
+        private readonly YamlConverter?[] _parameterConverters;
         private readonly Dictionary<string, int> _parameterIndexByYamlName;
 
         public ConstructorModel(ConstructorInfo constructor, Type declaringType, IReadOnlyList<Member> members, YamlReaderWriterBase readerWriter, NullabilityInfoContext? nullabilityContext)
@@ -2322,15 +2376,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             _parameters = constructor.GetParameters();
             _parameterTypes = new Type[_parameters.Length];
             _parametersDisallowNull = new bool[_parameters.Length];
+            _parameterConverters = new YamlConverter?[_parameters.Length];
 
-            var clrNameToSerialized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var clrNameToMember = new Dictionary<string, Member>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < members.Count; i++)
             {
                 var member = members[i];
-                if (!clrNameToSerialized.ContainsKey(member.ClrName))
-                {
-                    clrNameToSerialized.Add(member.ClrName, member.Name);
-                }
+                clrNameToMember.TryAdd(member.ClrName, member);
             }
 
             var declaredPolicy = GetDeclaredNamingPolicy(declaringType);
@@ -2340,8 +2392,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 var parameter = _parameters[i];
                 var parameterName = parameter.Name ?? throw new NotSupportedException($"Constructor '{constructor}' defines a parameter without a name.");
 
-                var yamlName = clrNameToSerialized.TryGetValue(parameterName, out var memberName)
-                    ? memberName
+                var boundMember = clrNameToMember.GetValueOrDefault(parameterName);
+                var yamlName = boundMember is not null
+                    ? boundMember.Name
                     : declaredPolicy is not null
                         ? ApplyNamingPolicy(parameterName, declaredPolicy.GetValueOrDefault())
                         : readerWriter.ConvertName(parameterName);
@@ -2354,6 +2407,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 _parameterIndexByYamlName.Add(yamlName, i);
                 _parameterTypes[i] = parameter.ParameterType;
                 _parametersDisallowNull[i] = DisallowNullOnDeserialize(nullabilityContext, parameter);
+
+                // The member a parameter binds to is written with its [YamlConverter] or [YamlNumberHandling], so the
+                // parameter is read with it too. Other members only get a converter once they are read.
+                if (boundMember?.MemberType == parameter.ParameterType)
+                {
+                    _parameterConverters[i] = boundMember.Converter;
+                }
             }
         }
 
@@ -2368,12 +2428,22 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public bool DisallowNull(int index) => _parametersDisallowNull[index];
 
+        public YamlConverter? GetParameterConverter(int index) => _parameterConverters[index];
+
         public bool TryGetDefaultValue(int index, out object? value)
         {
             var parameter = _parameters[index];
             if (parameter.HasDefaultValue)
             {
                 value = parameter.DefaultValue;
+
+                // The default value of a nullable enum parameter is reported as its underlying integral value, which
+                // cannot be passed to the constructor.
+                if (value is not null && Nullable.GetUnderlyingType(parameter.ParameterType) is { IsEnum: true } enumType && value.GetType() != enumType)
+                {
+                    value = Enum.ToObject(enumType, value);
+                }
+
                 return true;
             }
 
@@ -2522,6 +2592,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             var typeToDerived = new Dictionary<Type, DerivedTypeInfo>();
             Type? defaultDerivedType = null;
 
+            // Registrations from the same source must not overlap: which registration would win is not obvious, and
+            // the discriminator written for a type registered twice could not be told from the one read back.
             foreach (YamlDerivedTypeAttribute attribute in yamlDerived)
             {
                 var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, attribute.DerivedType);
@@ -2530,29 +2602,18 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
                 }
 
-                if (attribute.Discriminator is null)
-                {
-                    if (attribute.Tag is null)
-                    {
-                        defaultDerivedType = derivedType;
-                    }
-
-                    typeToDerived[derivedType] = new DerivedTypeInfo(null, attribute.Tag);
-                }
-                else
-                {
-                    discriminatorToType.Add(attribute.Discriminator, derivedType);
-                    typeToDerived[derivedType] = new DerivedTypeInfo(attribute.Discriminator, attribute.Tag);
-                }
-
-                if (attribute.Tag is not null)
-                {
-                    tagToType.Add(attribute.Tag, derivedType);
-                }
+                ThrowIfDuplicateRegistration(type, derivedType, attribute.Discriminator, attribute.Tag, defaultDerivedType, discriminatorToType, tagToType, typeToDerived);
+                AddRegistration(derivedType, attribute.Discriminator, attribute.Tag, ref defaultDerivedType, discriminatorToType, tagToType, typeToDerived);
             }
 
             if (hasRuntimeMappings)
             {
+                // A runtime mapping overlapping an attribute registration is skipped, as attributes take precedence.
+                // Runtime mappings overlapping each other are rejected, like attribute registrations are.
+                var runtimeDiscriminatorToType = new Dictionary<string, Type>(StringComparer.Ordinal);
+                var runtimeTagToType = new Dictionary<string, Type>(StringComparer.Ordinal);
+                var runtimeTypeToDerived = new Dictionary<Type, DerivedTypeInfo>();
+                Type? runtimeDefaultDerivedType = null;
                 foreach (var entry in runtimeDerived!)
                 {
                     var derivedType = YamlDerivedTypeHelper.ResolveDerivedType(type, entry.DerivedType);
@@ -2561,50 +2622,21 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                         throw new InvalidOperationException($"Derived type '{derivedType}' is not assignable to '{type}'.");
                     }
 
-                    if (entry.Discriminator is null)
-                    {
-                        var isDefaultMapping = entry.Tag is null;
-                        if (ShouldAddLowerPrecedenceMapping(
-                            derivedType,
-                            discriminator: null,
-                            entry.Tag,
-                            isDefaultMapping,
-                            defaultDerivedType,
-                            discriminatorToType,
-                            tagToType,
-                            typeToDerived))
-                        {
-                            if (isDefaultMapping)
-                            {
-                                defaultDerivedType ??= derivedType;
-                            }
+                    ThrowIfDuplicateRegistration(type, derivedType, entry.Discriminator, entry.Tag, runtimeDefaultDerivedType, runtimeDiscriminatorToType, runtimeTagToType, runtimeTypeToDerived);
+                    AddRegistration(derivedType, entry.Discriminator, entry.Tag, ref runtimeDefaultDerivedType, runtimeDiscriminatorToType, runtimeTagToType, runtimeTypeToDerived);
 
-                            typeToDerived.Add(derivedType, new DerivedTypeInfo(null, entry.Tag));
-                            if (entry.Tag is not null)
-                            {
-                                tagToType.Add(entry.Tag, derivedType);
-                            }
-                        }
-                    }
-                    else
+                    var isDefaultMapping = entry.Discriminator is null && entry.Tag is null;
+                    if (ShouldAddLowerPrecedenceMapping(
+                        derivedType,
+                        entry.Discriminator,
+                        entry.Tag,
+                        isDefaultMapping,
+                        defaultDerivedType,
+                        discriminatorToType,
+                        tagToType,
+                        typeToDerived))
                     {
-                        if (ShouldAddLowerPrecedenceMapping(
-                            derivedType,
-                            entry.Discriminator,
-                            entry.Tag,
-                            isDefaultMapping: false,
-                            defaultDerivedType,
-                            discriminatorToType,
-                            tagToType,
-                            typeToDerived))
-                        {
-                            discriminatorToType.Add(entry.Discriminator, derivedType);
-                            typeToDerived.Add(derivedType, new DerivedTypeInfo(entry.Discriminator, entry.Tag));
-                            if (entry.Tag is not null)
-                            {
-                                tagToType.Add(entry.Tag, derivedType);
-                            }
-                        }
+                        AddRegistration(derivedType, entry.Discriminator, entry.Tag, ref defaultDerivedType, discriminatorToType, tagToType, typeToDerived);
                     }
                 }
             }
@@ -2653,6 +2685,64 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
 
             return new PolymorphismModel(discriminatorPropertyName, style, unknownHandling, discriminatorToType, tagToType, typeToDerived, defaultDerivedType);
+        }
+
+        private static void ThrowIfDuplicateRegistration(
+            Type type,
+            Type derivedType,
+            string? discriminator,
+            string? tag,
+            Type? defaultDerivedType,
+            Dictionary<string, Type> discriminatorToType,
+            Dictionary<string, Type> tagToType,
+            Dictionary<Type, DerivedTypeInfo> typeToDerived)
+        {
+            if (typeToDerived.ContainsKey(derivedType))
+            {
+                throw new InvalidOperationException($"The polymorphic type '{type}' registers the derived type '{derivedType}' more than once.");
+            }
+
+            if (discriminator is not null && discriminatorToType.TryGetValue(discriminator, out var discriminatorType))
+            {
+                throw new InvalidOperationException($"The polymorphic type '{type}' registers the discriminator '{discriminator}' for both '{discriminatorType}' and '{derivedType}'.");
+            }
+
+            if (tag is not null && tagToType.TryGetValue(tag, out var tagType))
+            {
+                throw new InvalidOperationException($"The polymorphic type '{type}' registers the tag '{tag}' for both '{tagType}' and '{derivedType}'.");
+            }
+
+            if (discriminator is null && tag is null && defaultDerivedType is not null)
+            {
+                throw new InvalidOperationException($"The polymorphic type '{type}' registers both '{defaultDerivedType}' and '{derivedType}' as its default derived type, without a discriminator or a tag.");
+            }
+        }
+
+        private static void AddRegistration(
+            Type derivedType,
+            string? discriminator,
+            string? tag,
+            ref Type? defaultDerivedType,
+            Dictionary<string, Type> discriminatorToType,
+            Dictionary<string, Type> tagToType,
+            Dictionary<Type, DerivedTypeInfo> typeToDerived)
+        {
+            if (discriminator is null && tag is null)
+            {
+                defaultDerivedType = derivedType;
+            }
+
+            if (discriminator is not null)
+            {
+                discriminatorToType.Add(discriminator, derivedType);
+            }
+
+            if (tag is not null)
+            {
+                tagToType.Add(tag, derivedType);
+            }
+
+            typeToDerived.Add(derivedType, new DerivedTypeInfo(discriminator, tag));
         }
 
         private static bool ShouldAddLowerPrecedenceMapping(
@@ -2821,6 +2911,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public YamlConverter? Converter { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether a null scalar assigns <see langword="null"/> without being read by a converter.
+        /// </summary>
+        /// <remarks>
+        /// This is the case of a member that accepts <see langword="null"/> and has no custom converter: the built-in
+        /// converter of its type is not used, because the node converter, for instance, reads a null scalar as a
+        /// <see cref="YamlValue"/>. A custom converter decides what a null scalar means, and the converter of a
+        /// non-nullable value type rejects it, as it does for a root value or a collection element.
+        /// </remarks>
+        public bool ReadsNullScalarAsNull { get; set; }
+
         public YamlObjectCreationHandling GetEffectiveObjectCreationHandling(YamlObjectCreationHandling preferredObjectCreationHandling)
             => ObjectCreationHandling ?? preferredObjectCreationHandling;
 
@@ -2934,15 +3035,27 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         public Mark KeyEnd { get; }
     }
 
-    private static void ReadExtensionData(YamlReader reader, object instance, ExtensionDataInfo extensionData, string key)
+    private static void ReadExtensionData(YamlReader reader, object instance, ExtensionDataInfo extensionData, string key, Mark keyStart, Mark keyEnd)
     {
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(extensionData);
         ArgumentNullException.ThrowIfNull(key);
 
-        var value = ReadExtensionDataValue(reader, extensionData);
-        AddExtensionDataValue(instance, extensionData, key, value);
+        try
+        {
+            var value = ReadExtensionDataValue(reader, extensionData);
+            AddExtensionDataValue(instance, extensionData, key, value);
+        }
+        catch (YamlException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            // The failure is reported at the key, whether it is declared by the mapping or provided by a merge.
+            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+        }
     }
 
     private static object? ReadExtensionDataValue(YamlReader reader, ExtensionDataInfo extensionData)
@@ -3071,7 +3184,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
     }
 
-    private static void WriteExtensionData(YamlWriter writer, object instance, Contract contract)
+    private static void WriteExtensionData(YamlWriter writer, object instance, Contract contract, string? skippedKey)
     {
         ArgumentNullException.ThrowIfNull(writer);
         ArgumentNullException.ThrowIfNull(instance);
@@ -3093,11 +3206,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         switch (extensionData.Kind)
         {
             case ExtensionDataKind.Dictionary:
-                WriteExtensionDictionary(writer, container, extensionData.DictionaryValueType ?? typeof(object));
+                WriteExtensionDictionary(writer, container, extensionData.DictionaryValueType ?? typeof(object), skippedKey);
                 return;
 
             case ExtensionDataKind.ReadOnlyDictionary:
-                WriteExtensionEntries(writer, extensionData.EnumerateEntries!(container), extensionData.DictionaryValueType ?? typeof(object));
+                WriteExtensionEntries(writer, extensionData.EnumerateEntries!(container), extensionData.DictionaryValueType ?? typeof(object), skippedKey);
                 return;
 
             case ExtensionDataKind.Mapping:
@@ -3106,7 +3219,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     throw new YamlException(Mark.Empty, Mark.Empty, $"Extension data member '{member.Name}' on '{instance.GetType()}' must be a '{typeof(YamlMapping)}'.");
                 }
 
-                WriteExtensionMapping(writer, mapping);
+                WriteExtensionMapping(writer, mapping, skippedKey);
                 return;
 
             default:
@@ -3114,7 +3227,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
     }
 
-    private static void WriteExtensionDictionary(YamlWriter writer, object container, Type valueType)
+    private static void WriteExtensionDictionary(YamlWriter writer, object container, Type valueType, string? skippedKey)
     {
         if (container is not IDictionary dictionary)
         {
@@ -3137,7 +3250,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             items.Sort(static (x, y) => string.CompareOrdinal(x.Key, y.Key));
             for (var i = 0; i < items.Count; i++)
             {
-                WriteExtensionEntry(writer, items[i].Key, items[i].Value, valueType);
+                WriteExtensionEntry(writer, items[i].Key, items[i].Value, valueType, skippedKey);
             }
 
             return;
@@ -3150,11 +3263,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw new YamlException(Mark.Empty, Mark.Empty, "Extension data dictionary keys must be strings.");
             }
 
-            WriteExtensionEntry(writer, key, entry.Value, valueType);
+            WriteExtensionEntry(writer, key, entry.Value, valueType, skippedKey);
         }
     }
 
-    private static void WriteExtensionEntries(YamlWriter writer, IEnumerable<KeyValuePair<string, object?>> entries, Type valueType)
+    private static void WriteExtensionEntries(YamlWriter writer, IEnumerable<KeyValuePair<string, object?>> entries, Type valueType, string? skippedKey)
     {
         if (writer.Options.MappingOrder == YamlMappingOrderPolicy.Sorted)
         {
@@ -3162,7 +3275,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             items.Sort(static (x, y) => string.CompareOrdinal(x.Key, y.Key));
             for (var i = 0; i < items.Count; i++)
             {
-                WriteExtensionEntry(writer, items[i].Key, items[i].Value, valueType);
+                WriteExtensionEntry(writer, items[i].Key, items[i].Value, valueType, skippedKey);
             }
 
             return;
@@ -3170,11 +3283,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         foreach (var entry in entries)
         {
-            WriteExtensionEntry(writer, entry.Key, entry.Value, valueType);
+            WriteExtensionEntry(writer, entry.Key, entry.Value, valueType, skippedKey);
         }
     }
 
-    private static void WriteExtensionMapping(YamlWriter writer, YamlMapping mapping)
+    private static void WriteExtensionMapping(YamlWriter writer, YamlMapping mapping, string? skippedKey)
     {
         if (writer.Options.MappingOrder == YamlMappingOrderPolicy.Sorted)
         {
@@ -3193,7 +3306,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             items.Sort(static (x, y) => string.CompareOrdinal(x.Key, y.Key));
             for (var i = 0; i < items.Count; i++)
             {
-                WriteExtensionEntry(writer, items[i].Key, items[i].Value, typeof(YamlNode));
+                WriteExtensionEntry(writer, items[i].Key, items[i].Value, typeof(YamlNode), skippedKey);
             }
 
             return;
@@ -3207,12 +3320,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw new YamlException(Mark.Empty, Mark.Empty, "Only scalar mapping keys are supported for extension data.");
             }
 
-            WriteExtensionEntry(writer, keyValue.Value, pair.Value, typeof(YamlNode));
+            WriteExtensionEntry(writer, keyValue.Value, pair.Value, typeof(YamlNode), skippedKey);
         }
     }
 
-    private static void WriteExtensionEntry(YamlWriter writer, string key, object? value, Type valueType)
+    private static void WriteExtensionEntry(YamlWriter writer, string key, object? value, Type valueType, string? skippedKey)
     {
+        if (string.Equals(key, skippedKey, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         writer.WritePropertyName(key);
         if (value is null)
         {
@@ -3243,7 +3361,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
     private static bool IsRequired(MemberInfo member)
     {
-        if (member.IsDefined(typeof(YamlRequiredAttribute), inherit: true))
+        if (Attribute.IsDefined(member, typeof(YamlRequiredAttribute), inherit: true))
         {
             return true;
         }
@@ -3276,7 +3394,50 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
     private static bool IsExtensionData(MemberInfo member)
     {
-        return member.IsDefined(typeof(YamlExtensionDataAttribute), inherit: true);
+        return Attribute.IsDefined(member, typeof(YamlExtensionDataAttribute), inherit: true);
+    }
+
+    private static bool IsIncluded(MemberInfo member)
+    {
+        return Attribute.IsDefined(member, typeof(YamlIncludeAttribute), inherit: true);
+    }
+
+    /// <summary>Gets the type hierarchy of <paramref name="type"/>, from its base-most type down to <paramref name="type"/> itself.</summary>
+    private static List<Type> GetTypeHierarchy(Type type)
+    {
+        var hierarchy = new List<Type>();
+        for (var current = type; current is not null && current != typeof(object) && current != typeof(ValueType); current = current.BaseType)
+        {
+            hierarchy.Add(current);
+        }
+
+        hierarchy.Reverse();
+        return hierarchy;
+    }
+
+    private static void AddDiscoveredMember(List<MemberInfo?> members, Dictionary<string, int> indexByName, MemberInfo member, bool isIgnored)
+    {
+        // An ignored member still hides the member it overrides or hides, so neither is part of the contract.
+        var entry = isIgnored ? null : member;
+        if (indexByName.TryGetValue(member.Name, out var existingIndex))
+        {
+            members[existingIndex] = entry;
+            return;
+        }
+
+        indexByName.Add(member.Name, members.Count);
+        members.Add(entry);
+    }
+
+    private static MemberInfo SelectExtensionDataMember(Type type, MemberInfo? existing, MemberInfo candidate)
+    {
+        // A member overriding or hiding the extension data member of a base type replaces it.
+        if (existing is not null && !string.Equals(existing.Name, candidate.Name, StringComparison.Ordinal))
+        {
+            throw new NotSupportedException($"Type '{type}' defines multiple extension data members.");
+        }
+
+        return candidate;
     }
 
     private static YamlUnmappedMemberHandling GetUnmappedMemberHandling(Type type, YamlSerializerOptions options)
@@ -3410,7 +3571,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        if (type.IsAbstract || type.IsInterface || type.IsValueType)
+        if (type.IsAbstract || type.IsInterface)
         {
             return null;
         }
@@ -3431,7 +3592,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
         }
 
-        if (attributed is not null)
+        // A value type can always be created without calling a constructor, so it only uses the one it opts into.
+        if (attributed is not null || type.IsValueType)
         {
             return attributed;
         }

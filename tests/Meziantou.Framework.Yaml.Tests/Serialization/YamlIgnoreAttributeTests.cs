@@ -78,6 +78,21 @@ public sealed class YamlIgnoreAttributeTests
         Assert.Contains("extra: value", yaml);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WhenWritingNull_SkipsNullNullableValueTypes(bool useSourceGeneration)
+    {
+        var value = new NullableValueTypeIgnoreModel { FirstValue = null, SecondValue = null, ThirdValue = 3 };
+        var options = new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull };
+
+        var yaml = useSourceGeneration
+            ? YamlSerializer.Serialize(value, new IgnoreConditionContext(options))
+            : YamlSerializer.Serialize(value, options);
+
+        Assert.Equal("ThirdValue: 3\n", yaml);
+    }
+
     [Fact]
     public void SourceGenerated_TypeLevel_AppliesConditionToAllMembers()
     {
@@ -188,6 +203,16 @@ internal sealed class TypeWhenReadingIgnoreModel
     public int FirstValue { get; set; }
 }
 
+internal sealed class NullableValueTypeIgnoreModel
+{
+    public int? FirstValue { get; set; }
+
+    [YamlIgnore(Condition = YamlIgnoreCondition.WhenWritingNull)]
+    public int? SecondValue { get; set; }
+
+    public int? ThirdValue { get; set; }
+}
+
 [YamlIgnore]
 internal sealed class TypeAlwaysIgnoreExtensionDataModel
 {
@@ -203,6 +228,7 @@ internal sealed class TypeAlwaysIgnoreExtensionDataModel
 [YamlSerializable(typeof(TypeAlwaysIgnoreModel))]
 [YamlSerializable(typeof(DerivedIgnoreModel))]
 [YamlSerializable(typeof(TypeWhenReadingIgnoreModel))]
+[YamlSerializable(typeof(NullableValueTypeIgnoreModel))]
 internal sealed partial class IgnoreConditionContext : YamlSerializerContext
 {
     public IgnoreConditionContext()

@@ -139,4 +139,17 @@ public class YamlSyntaxTreeTests
             Assert.Equal(Yaml[trivia.Span.Start.Index..trivia.Span.End.Index], trivia.Text);
         }
     }
+
+    [Fact]
+    public void ParseComputesTriviaPositionsAcrossLineBreakKinds()
+    {
+        const string Yaml = "a: 1 # one\r\nb: 2 # two\rc: 3 # three\nd: 4 # four\n";
+        var tree = YamlSyntaxTree.Parse(Yaml);
+
+        var comments = tree.Tokens.Where(token => token.Kind is YamlSyntaxKind.CommentTrivia).ToArray();
+
+        Assert.Equal(new[] { "# one", "# two", "# three", "# four" }, comments.Select(token => token.Text).ToArray());
+        Assert.Equal(new[] { 0, 1, 2, 3 }, comments.Select(token => token.Span.Start.Line).ToArray());
+        Assert.Equal(new[] { 5, 5, 5, 5 }, comments.Select(token => token.Span.Start.Column).ToArray());
+    }
 }

@@ -341,4 +341,93 @@ public class EmitterTests : YamlTest
         // This should pass - the content should be preserved
         Assert.Equal(input, scalar.Value, "Folded scalar content should be preserved during round-trip");
     }
+
+    [Fact]
+    public void WriteTo_TagWithoutMatchingDirective_IsWrittenVerbatim()
+    {
+        var yaml = SaveAndReload("--- !<tag:example.com,2000:app/invoice> x\n", out var reloaded);
+
+        Assert.Equal("--- !<tag:example.com,2000:app/invoice> x\n...\n", yaml);
+        Assert.Equal("tag:example.com,2000:app/invoice", ((YamlValue)reloaded[0].Contents!).Tag);
+    }
+
+    [Fact]
+    public void WriteTo_NonSpecificTag_IsKept()
+    {
+        var yaml = SaveAndReload("- ! 12\n- 12\n", out var reloaded);
+
+        Assert.Equal("- ! 12\n- 12\n", yaml);
+        Assert.Equal("!", ((YamlValue)((YamlSequence)reloaded[0].Contents!)[0]).Tag);
+    }
+
+    [Fact]
+    public void WriteTo_DefaultTagDirectives_AreNotWritten()
+    {
+        var yaml = SaveAndReload("a: 1\n", out _);
+
+        Assert.Equal("a: 1\n", yaml);
+    }
+
+    [Theory]
+    [InlineData("a: 1\n---\nb: 2\n", "a: 1\n---\nb: 2\n")]
+    [InlineData("a: 1\n...\n%TAG !e! tag:example.com,2000:\n--- !e!x b\n", "a: 1\n...\n%TAG !e! tag:example.com,2000:\n--- !e!x b\n...\n")]
+    [InlineData("a\n...\n%YAML 1.2\n---\nb\n", "a\n...\n%YAML 1.2\n--- b\n...\n")]
+    public void WriteTo_MultipleDocuments_RoundTrips(string input, string expected)
+    {
+        var yaml = SaveAndReload(input, out var reloaded);
+
+        Assert.Equal(expected, yaml);
+        Assert.HasCount(2, reloaded);
+    }
+
+    [Fact]
+    public void WriteTo_SingleQuotedScalarEndingWithLineBreak_IndentsClosingQuote()
+    {
+        SaveAndReload("a: '\n\n  '\nb: 'x\n\n  '\n", out var reloaded);
+
+        var mapping = (YamlMapping)reloaded[0].Contents!;
+        Assert.Equal("\n", ((YamlValue)mapping["a"]!).Value);
+        Assert.Equal("x\n", ((YamlValue)mapping["b"]!).Value);
+    }
+
+    [Fact]
+    public void WriteTo_EmptyStream_WritesNothing()
+    {
+        Assert.Equal(string.Empty, Save(new YamlStream()));
+        Assert.Equal(string.Empty, new YamlStream().ToString());
+    }
+
+    [Fact]
+    public void WriteTo_DocumentWithoutContents_WritesEmptyDocument()
+    {
+        var stream = new YamlStream { new YamlDocument() };
+
+        var reloaded = YamlStream.Load(new StringReader(Save(stream)));
+        Assert.HasCount(1, reloaded);
+        Assert.Equal(string.Empty, ((YamlValue)reloaded[0].Contents!).Value);
+    }
+
+    [Fact]
+    public void WriteTo_SuppressDocumentTags_DoesNotRemoveDirectivesFromTheModel()
+    {
+        var stream = YamlStream.Load(new StringReader("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n"));
+
+        Assert.Equal("--- !<tag:example.com,2000:foo> bar\n...", stream.ToString().ReplaceLineEndings("\n"));
+        Assert.Contains(stream[0].DocumentStart.Tags!, tag => tag.Handle == "!e!");
+        Assert.Equal("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n...\n", Save(stream));
+    }
+
+    private static string Save(YamlNode node)
+    {
+        using var writer = new StringWriter { NewLine = "\n" };
+        node.WriteTo(writer);
+        return writer.ToString();
+    }
+
+    private static string SaveAndReload(string yaml, out YamlStream reloaded)
+    {
+        var output = Save(YamlStream.Load(new StringReader(yaml)));
+        reloaded = YamlStream.Load(new StringReader(output));
+        return output;
+    }
 }

@@ -105,6 +105,37 @@ public sealed class YamlReader : YamlReaderWriterBase
 
     internal YamlReferenceReader? ReferenceReader => _state.ReferenceReader;
 
+    /// <summary>
+    /// Gets a value indicating whether the derived type of the current node was already selected by its type
+    /// discriminator or tag.
+    /// </summary>
+    /// <remarks>
+    /// A polymorphic type reading a node flagged by <see cref="MarkCurrentNodeDerivedTypeResolved"/> is the derived type
+    /// the node explicitly named. When the node has no type discriminator or tag of its own, the polymorphic type reads
+    /// the node as itself instead of selecting its default derived type or running a type classifier.
+    /// </remarks>
+    public bool IsCurrentNodeDerivedTypeResolved => _state.CurrentEvent is not null && ReferenceEquals(_state.CurrentEvent, _state.DerivedTypeResolvedEvent);
+
+    /// <summary>
+    /// Records that the derived type of the current node was selected by its type discriminator or tag, which
+    /// polymorphic deserialization consumed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Polymorphic deserialization removes the discriminator from the node before reading it as the selected derived
+    /// type. When that type is polymorphic itself, the node no longer tells it which type was selected, so without
+    /// this flag it would select its own default derived type instead of itself.
+    /// </para>
+    /// <para>
+    /// The flag only applies to the current node, not to the nodes it contains. It is intended for generated
+    /// serializers and custom polymorphic converters. See <see cref="IsCurrentNodeDerivedTypeResolved"/>.
+    /// </para>
+    /// </remarks>
+    public void MarkCurrentNodeDerivedTypeResolved()
+    {
+        _state.DerivedTypeResolvedEvent = _state.CurrentEvent;
+    }
+
     /// <summary>Attempts to resolve the current alias token into an anchored object value.</summary>
     /// <param name="value">When successful, receives the resolved anchored object.</param>
     /// <returns><see langword="true"/> when the current token is an alias and reference handling is enabled; otherwise <see langword="false"/>.</returns>
@@ -170,7 +201,51 @@ public sealed class YamlReader : YamlReaderWriterBase
         var builder = new StringBuilder();
         var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
-        WriteBufferedNode(reader, yamlWriter, comparer, discriminatorPropertyName, isRootMapping: true, ref discriminatorValue);
+        WriteBufferedNode(reader, yamlWriter, comparer, discriminatorPropertyName, isRootMapping: true, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Buffers the current YAML node to a string, extracting the type discriminator of the root mapping and removing it,
+    /// along with the tag of the root mapping when requested, from the buffered YAML.
+    /// </summary>
+    /// <param name="reader">The reader positioned at the start of the node.</param>
+    /// <param name="discriminatorPropertyName">
+    /// The mapping key holding the discriminator, or <see langword="null"/> to keep every entry of the root mapping.
+    /// </param>
+    /// <param name="removeTag">Whether the tag of the root mapping is removed from the buffered YAML.</param>
+    /// <param name="discriminatorValue">Receives the discriminator scalar value when present on the root mapping.</param>
+    /// <returns>The buffered YAML for the node, without its type discriminator.</returns>
+    /// <remarks>
+    /// Polymorphic deserialization consumes the type discriminator to select the type to deserialize, so the selected
+    /// type must not see it again: it is not a member of that type, and a type that is itself polymorphic would try to
+    /// resolve it against its own derived types. Only the first matching entry of the root mapping is removed.
+    /// This method consumes the buffered node from <paramref name="reader"/> and advances it past the node.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <see langword="null"/>.</exception>
+    public static string BufferCurrentNodeToStringAndRemoveDiscriminator(
+        YamlReader reader,
+        string? discriminatorPropertyName,
+        bool removeTag,
+        out string? discriminatorValue)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        var comparer = reader.Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        discriminatorValue = null;
+
+        var builder = new StringBuilder();
+        var yamlWriter = CreateBufferWriter(builder, reader.Options);
+
+        WriteBufferedNode(
+            reader,
+            yamlWriter,
+            comparer,
+            discriminatorPropertyName ?? string.Empty,
+            isRootMapping: discriminatorPropertyName is not null,
+            removeDiscriminator: true,
+            removeRootTag: removeTag,
+            ref discriminatorValue);
         return builder.ToString();
     }
 
@@ -189,7 +264,7 @@ public sealed class YamlReader : YamlReaderWriterBase
         var yamlWriter = CreateBufferWriter(builder, reader.Options);
 
         string? unused = null;
-        WriteBufferedNode(reader, yamlWriter, StringComparer.Ordinal, discriminatorPropertyName: string.Empty, isRootMapping: false, ref unused);
+        WriteBufferedNode(reader, yamlWriter, StringComparer.Ordinal, discriminatorPropertyName: string.Empty, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref unused);
         return builder.ToString();
     }
 
@@ -227,6 +302,8 @@ public sealed class YamlReader : YamlReaderWriterBase
         StringComparer keyComparer,
         string discriminatorPropertyName,
         bool isRootMapping,
+        bool removeDiscriminator,
+        bool removeRootTag,
         ref string? discriminatorValue)
     {
         switch (reader.TokenType)
@@ -266,7 +343,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                 reader.Read();
                 while (reader.TokenType != YamlTokenType.EndSequence)
                 {
-                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, ref discriminatorValue);
+                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
                 }
                 writer.WriteEndSequence();
                 reader.Read();
@@ -278,7 +355,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     writer.WriteAnchor(reader.Anchor);
                 }
 
-                if (reader.Tag is not null)
+                if (reader.Tag is not null && !removeRootTag)
                 {
                     writer.WriteResolvedTag(reader.Tag);
                 }
@@ -292,8 +369,18 @@ public sealed class YamlReader : YamlReaderWriterBase
                         throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
                     }
 
+                    if (reader.Anchor is not null)
+                    {
+                        writer.WriteAnchor(reader.Anchor);
+                    }
+
+                    if (reader.Tag is not null)
+                    {
+                        writer.WriteResolvedTag(reader.Tag);
+                    }
+
                     var key = reader.ScalarValue ?? string.Empty;
-                    writer.WritePropertyName(key, reader.ScalarStyle);
+                    var keyStyle = reader.ScalarStyle;
                     reader.Read();
 
                     if (isRootMapping && discriminatorValue is null && keyComparer.Equals(key, discriminatorPropertyName))
@@ -304,9 +391,16 @@ public sealed class YamlReader : YamlReaderWriterBase
                         }
 
                         discriminatorValue = reader.ScalarValue ?? string.Empty;
+                        if (removeDiscriminator)
+                        {
+                            reader.Read();
+                            continue;
+                        }
                     }
 
-                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, ref discriminatorValue);
+                    writer.WritePropertyName(key, keyStyle);
+
+                    WriteBufferedNode(reader, writer, keyComparer, discriminatorPropertyName, isRootMapping: false, removeDiscriminator: false, removeRootTag: false, ref discriminatorValue);
                 }
                 writer.WriteEndMapping();
                 reader.Read();
@@ -342,6 +436,7 @@ public sealed class YamlReader : YamlReaderWriterBase
         public Mark Start { get; private set; } = Mark.Empty;
         public Mark End { get; private set; } = Mark.Empty;
         public ParsingEvent? CurrentEvent { get; private set; }
+        public ParsingEvent? DerivedTypeResolvedEvent { get; set; }
         public YamlReferenceReader? ReferenceReader { get; }
         public string? SourceName { get; }
 

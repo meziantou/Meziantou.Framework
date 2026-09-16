@@ -53,6 +53,35 @@ public partial class Assert
         }
     }
 
+    // The value returned by the function is discarded: the Func<object?> overloads only let a lambda such as
+    // "() => sut.Value" compile, as a property access is not a valid statement for an Action lambda.
+    public static void DoesNotThrow(Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    {
+        DoesNotThrow(() => { _ = action(); }, message, actionExpression);
+    }
+
+    public static void DoesNotThrow<T>(Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : Exception
+    {
+        DoesNotThrow(typeof(T), () => { _ = action(); }, message, actionExpression);
+    }
+
+    public static void DoesNotThrow(Type exceptionType, Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    {
+        DoesNotThrow(exceptionType, () => { _ = action(); }, message, actionExpression);
+    }
+
+    public static void DoesNotThrowAny<T>(Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+        where T : Exception
+    {
+        DoesNotThrowAny(typeof(T), () => { _ = action(); }, message, actionExpression);
+    }
+
+    public static void DoesNotThrowAny(Type exceptionType, Func<object?> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
+    {
+        DoesNotThrowAny(exceptionType, () => { _ = action(); }, message, actionExpression);
+    }
+
     [OverloadResolutionPriority(1)]
     public static async Task DoesNotThrow(Func<Task> action, string? message = null, [CallerArgumentExpression(nameof(action))] string? actionExpression = null)
     {

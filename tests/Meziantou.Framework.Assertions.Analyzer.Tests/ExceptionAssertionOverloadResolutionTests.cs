@@ -5,8 +5,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Meziantou.Framework.Tests;
 
-// Pins the overload each delegate shape binds to. Adding an overload to these method groups can silently change the
-// binding of existing call sites (for instance an async lambda converting to both Func<Task> and Func<ValueTask>).
+// Pins the overload each delegate shape binds to for the exception and event assertions. Adding an overload to these
+// method groups can silently change the binding of existing call sites (for instance an async lambda converting to both
+// Func<Task> and Func<ValueTask>).
 public sealed class ExceptionAssertionOverloadResolutionTests : AssertionsAnalyzerTestBase
 {
     private static readonly string[] Shapes =
@@ -50,7 +51,8 @@ public sealed class ExceptionAssertionOverloadResolutionTests : AssertionsAnalyz
             "Throws<InvalidOperationException>({0})",
             "Throws(typeof(InvalidOperationException), {0})",
             "ThrowsAny<InvalidOperationException>({0})",
-            "ThrowsAny(typeof(InvalidOperationException), {0})");
+            "ThrowsAny(typeof(InvalidOperationException), {0})",
+            "Throws<ArgumentException>(\"paramName\", {0})");
 
         // A ValueTask<int> converts neither to ValueTask<object?> nor to Task, and the exception type argument cannot be
         // combined with an inferred result type argument, so "() => ValueTaskIntMethod()" still binds to Func<object?>
@@ -98,7 +100,57 @@ public sealed class ExceptionAssertionOverloadResolutionTests : AssertionsAnalyz
             "DoesNotThrowAny<InvalidOperationException>({0})",
             "DoesNotThrowAny(typeof(InvalidOperationException), {0})");
 
-        // A ValueTask<T> converts neither to ValueTask nor to Task, so "() => ValueTaskIntMethod()" still binds to Action
+        // A ValueTask<T> converts neither to ValueTask nor to Task, so "() => ValueTaskIntMethod()" binds to Func<object?> and
+        // the ValueTask is never awaited (MFAS0057 reports it)
+        Assert.Equal("""
+            () => { } => Action
+            () => { throw new InvalidOperationException(); } => Func<Task>
+            () => throw new InvalidOperationException() => Func<Task>
+            () => VoidMethod() => Action
+            () => IntMethod() => Func<object?>
+            () => ObjectMethod() => Func<object?>
+            () => TaskMethod() => Func<Task>
+            () => TaskIntMethod() => Func<Task>
+            () => TaskObjectMethod() => Func<Task>
+            () => ValueTaskMethod() => Func<ValueTask>
+            () => ValueTaskIntMethod() => Func<object?>
+            () => ValueTaskObjectMethod() => Func<object?>
+            async () => { await Task.Yield(); } => Func<Task>
+            async () => { await Task.Yield(); throw new InvalidOperationException(); } => Func<Task>
+            async () => await TaskMethod() => Func<Task>
+            async () => await ValueTaskMethod() => Func<Task>
+            async () => await TaskIntMethod() => Func<Task>
+            async () => await ValueTaskIntMethod() => Func<Task>
+            VoidMethod => Action
+            IntMethod => compilation error
+            ObjectMethod => Func<object?>
+            TaskMethod => Func<Task>
+            TaskIntMethod => Func<Task>
+            TaskObjectMethod => Func<Task>
+            ValueTaskMethod => Func<ValueTask>
+            ValueTaskIntMethod => compilation error
+            ValueTaskObjectMethod => compilation error
+            actionVariable => Action
+            funcTaskVariable => Func<Task>
+            funcValueTaskVariable => Func<ValueTask>
+            """, actual, ignoreLineEndingDifferences: true);
+    }
+
+    [Fact]
+    public async Task EventAssertions_BindEachDelegateShapeToTheExpectedOverload()
+    {
+        var actual = await GetBindings(
+            "Raise(handler => Changed += handler, handler => Changed -= handler, {0})",
+            "Raise<EventArgs>(handler => GenericChanged += handler, handler => GenericChanged -= handler, {0})",
+            "RaiseAny(handler => Changed += handler, handler => Changed -= handler, {0})",
+            "RaiseAny<EventArgs>(handler => GenericChanged += handler, handler => GenericChanged -= handler, {0})",
+            "DoesNotRaise(handler => Changed += handler, handler => Changed -= handler, {0})",
+            "DoesNotRaise<EventArgs>(handler => GenericChanged += handler, handler => GenericChanged -= handler, {0})",
+            "DoesNotRaiseAny(handler => Changed += handler, handler => Changed -= handler, {0})",
+            "DoesNotRaiseAny<EventArgs>(handler => GenericChanged += handler, handler => GenericChanged -= handler, {0})");
+
+        // A ValueTask<T> converts neither to ValueTask nor to Task, so "() => ValueTaskIntMethod()" binds to Action and the
+        // ValueTask is never awaited (MFAS0057 reports it)
         Assert.Equal("""
             () => { } => Action
             () => { throw new InvalidOperationException(); } => Func<Task>
@@ -173,6 +225,9 @@ public sealed class ExceptionAssertionOverloadResolutionTests : AssertionsAnalyz
                     await Task.Yield();
                     Assert.{{call}};
                 }
+
+                private static event EventHandler? Changed;
+                private static event EventHandler<EventArgs>? GenericChanged;
 
                 private static void VoidMethod() { }
                 private static int IntMethod() => 0;

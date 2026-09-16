@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Xunit;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
@@ -8,18 +9,98 @@ public sealed class AssertionFormatterTests
     [Fact]
     public void AssertExposesFormatterOptions()
     {
-        var originalOptions = AssertionsAssert.FormatterOptions;
-        var options = new FormatterOptions();
+        // Tests run in parallel and many of them depend on the options set by the module initializer, so the global
+        // options are set back to the same instance instead of being swapped for another one.
+        var options = AssertionsAssert.FormatterOptions;
+        AssertionsAssert.FormatterOptions = options;
 
-        try
+        AssertionsAssert.Same(options, AssertionsAssert.FormatterOptions);
+        AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.FormatterOptions = null!);
+        AssertionsAssert.Throws<ArgumentNullException>(() => AssertionsAssert.UseFormatterOptions(null!));
+    }
+
+    [Fact]
+    public void UseFormatterOptions_AppliesOnlyInsideTheScope()
+    {
+        using (AssertionsAssert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 2 }))
         {
-            AssertionsAssert.FormatterOptions = options;
+            AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+                Assert.Empty() assertion failed.
+                Expression: new[] { 1, 2, 3, 4 }
+                Actual: [1̲, 2, ...]
+                """);
 
-            AssertionsAssert.Same(options, AssertionsAssert.FormatterOptions);
+            using (AssertionsAssert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 3 }))
+            {
+                AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+                    Assert.Empty() assertion failed.
+                    Expression: new[] { 1, 2, 3, 4 }
+                    Actual: [1̲, 2, 3, ...]
+                    """);
+            }
+
+            AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+                Assert.Empty() assertion failed.
+                Expression: new[] { 1, 2, 3, 4 }
+                Actual: [1̲, 2, ...]
+                """);
         }
-        finally
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+            Assert.Empty() assertion failed.
+            Expression: new[] { 1, 2, 3, 4 }
+            Actual: [1̲, 2, 3, 4]
+            """);
+    }
+
+    [Fact]
+    public async Task UseFormatterOptions_DoesNotLeakOutOfTheAsynchronousFlow()
+    {
+        await UseOptionsWithoutDisposing();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+            Assert.Empty() assertion failed.
+            Expression: new[] { 1, 2, 3, 4 }
+            Actual: [1̲, 2, 3, 4]
+            """);
+
+        static async Task UseOptionsWithoutDisposing()
         {
-            AssertionsAssert.FormatterOptions = originalOptions;
+            await Task.Yield();
+            _ = AssertionsAssert.UseFormatterOptions(new FormatterOptions { MaxFormattedItems = 1 });
+            await Task.Yield();
+
+            AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(new[] { 1, 2, 3, 4 }), """
+                Assert.Empty() assertion failed.
+                Expression: new[] { 1, 2, 3, 4 }
+                Actual: [1̲, ...]
+                """);
+        }
+    }
+
+    [Fact]
+    public void FormatterOptions_AreReadOnceForTheWholeMessage()
+    {
+        var options = new FormatterOptions { MaxFormattedItems = 3 };
+        using var scope = AssertionsAssert.UseFormatterOptions(options);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Empty(ChangeOptionsWhileEnumerating(options)), """
+            Assert.Empty() assertion failed.
+            Expression: ChangeOptionsWhileEnumerating(options)
+            Actual: [0̲, 1, 2, ...]
+            """);
+
+        static IEnumerable<int> ChangeOptionsWhileEnumerating(FormatterOptions options)
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                if (i == 2)
+                {
+                    options.MaxFormattedItems = 100;
+                }
+
+                yield return i;
+            }
         }
     }
 
@@ -32,6 +113,7 @@ public sealed class AssertionFormatterTests
         AssertionsAssert.Throws<ArgumentOutOfRangeException>(() => options.PrefixItemCount = -1);
         AssertionsAssert.Throws<ArgumentOutOfRangeException>(() => options.SuffixItemCount = -1);
         AssertionsAssert.Throws<ArgumentOutOfRangeException>(() => options.HighlightedContextItemCount = -1);
+        AssertionsAssert.Throws<ArgumentOutOfRangeException>(() => options.MaxFormattedStringLength = 0);
     }
 
     [Fact]
@@ -43,6 +125,26 @@ public sealed class AssertionFormatterTests
         AssertionsAssert.Equal(6, options.PrefixItemCount);
         AssertionsAssert.Equal(0, options.SuffixItemCount);
         AssertionsAssert.Equal(4, options.HighlightedContextItemCount);
+        AssertionsAssert.Equal(10_000, options.MaxFormattedStringLength);
+    }
+
+    [Fact]
+    public void FormatterOptions_SetToMaxValueDoNotOverflow()
+    {
+        var contextFormatter = new TestAssertionFormatter { MaxFormattedItems = 3, HighlightedContextItemCount = int.MaxValue };
+        AssertionsAssert.Equal("[0, 1, 2, 3, 4̲]", contextFormatter.FormatValueForTest(Enumerable.Range(0, 5).ToArray(), highlightedIndex: 4));
+        AssertionsAssert.Equal("[0, 1, 2, 3, 4̲]", contextFormatter.FormatSpanForTest<int>(Enumerable.Range(0, 5).ToArray(), highlightedIndex: 4));
+
+        var suffixFormatter = new TestAssertionFormatter { MaxFormattedItems = 3, SuffixItemCount = int.MaxValue };
+        AssertionsAssert.Equal("[0, 1̲, 2, 3, 4]", suffixFormatter.FormatValueForTest(Enumerable.Range(0, 5).ToArray(), highlightedIndex: 1));
+
+        var prefixFormatter = new TestAssertionFormatter { MaxFormattedItems = 1, PrefixItemCount = int.MaxValue, HighlightedContextItemCount = int.MaxValue };
+        using var snapshot = CollectionSnapshot.Create(LazyRange(5));
+        snapshot.TryGetItem(1, out _);
+        AssertionsAssert.EndsWith("Actual: [0, 1̲, 2, 3, 4]", prefixFormatter.Format(new CollectionSingleAssertionError<int>(snapshot, "actual")));
+
+        var stringFormatter = new TestAssertionFormatter { MaxFormattedStringLength = int.MaxValue };
+        AssertionsAssert.Equal("\"abc̲\"", stringFormatter.FormatValueForTest("abc", highlightedIndex: 2));
     }
 
     [Fact]
@@ -120,7 +222,168 @@ public sealed class AssertionFormatterTests
             Actual expression:   new ThrowingToString()
             Expected: <ToString() threw System.InvalidOperationException: line 1\nline 2>
             Actual:   <ToString() threw System.InvalidOperationException: line 1\nline 2>
+            Note: The values differ but are formatted identically.
             """);
+    }
+
+    [Fact]
+    public void UnequalValuesFormattedIdenticallyShowTheirTypes()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal((object)0.1f, (object)0.1), """
+            Assert.Equal() assertion failed.
+            Expected expression: (object)0.1f
+            Actual expression:   (object)0.1
+            Expected: 0.1
+            Actual:   0.1
+            Expected type: System.Single
+            Actual type:   System.Double
+            """);
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(new object[] { 1, 0.1f }, new object[] { 1, 0.1 }), """
+            Assert.Equal() assertion failed: Item at index 1 differs.
+            Expected expression: new object[] { 1, 0.1f }
+            Actual expression:   new object[] { 1, 0.1 }
+            Index of first difference: 1
+            Expected item: [1, 0̲.̲1̲]
+            Actual item:   [1, 0̲.̲1̲]
+            Expected item type: System.Single
+            Actual item type:   System.Double
+            """);
+    }
+
+    [Fact]
+    public void UnequalValuesOfTheSameTypeFormattedIdenticallyAreExplained()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(new RecordWithString(null), new RecordWithString("")), """
+            Assert.Equal() assertion failed.
+            Expected expression: new RecordWithString(null)
+            Actual expression:   new RecordWithString("")
+            Expected: RecordWithString { Value =  }
+            Actual:   RecordWithString { Value =  }
+            Note: The values differ but are formatted identically.
+            """);
+    }
+
+    [Fact]
+    public void EscapesLineBreaksAndInvisibleCharactersInToString()
+    {
+        var formatter = new TestAssertionFormatter();
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(new RecordWithString("a\r\nb"), new RecordWithString("a\nb")), """
+            Assert.Equal() assertion failed.
+            Expected expression: new RecordWithString("a\r\nb")
+            Actual expression:   new RecordWithString("a\nb")
+            Expected: RecordWithString { Value = a\r\nb }
+            Actual:   RecordWithString { Value = a\nb }
+            """);
+        AssertionsAssert.Equal("RecordWithString { Value = a\\u200Bb\\U000E007F }", formatter.FormatValueForTest(new RecordWithString("a\u200Bb\U000E007F")));
+
+        // Backslashes and quotes are not escaped, so ordinary values are written exactly as their ToString.
+        AssertionsAssert.Equal("RecordWithString { Value = C:\\temp \"x\" }", formatter.FormatValueForTest(new RecordWithString("C:\\temp \"x\"")));
+    }
+
+    [Fact]
+    public void EscapesInvisibleCharactersOutsideTheBasicMultilingualPlane()
+    {
+        var formatter = new TestAssertionFormatter();
+
+        AssertionsAssert.Equal("\"admin\\U000E007F\"", formatter.FormatValueForTest("admin\U000E007F"));
+        AssertionsAssert.Equal("\"\\U0001D173\\U0001D17A\"", formatter.FormatValueForTest("\U0001D173\U0001D17A"));
+        AssertionsAssert.Equal("\"a\\\u0332U\u03320\u03320\u03320\u0332E\u03320\u03320\u03324\u03321\u0332\"", formatter.FormatValueForTest("a\U000E0041", highlightedIndex: 2));
+        AssertionsAssert.Equal("\"😀𝄞\"", formatter.FormatValueForTest("😀𝄞"));
+    }
+
+    [Fact]
+    public void TruncatesLongStringsAroundTheHighlightedCharacter()
+    {
+        var formatter = new TestAssertionFormatter { MaxFormattedStringLength = 10 };
+
+        AssertionsAssert.Equal("\"0123456789\"", formatter.FormatValueForTest("0123456789"));
+        AssertionsAssert.Equal("\"0123456789\"... (length: 16)", formatter.FormatValueForTest("0123456789ABCDEF"));
+        AssertionsAssert.Equal("\"0123̲456789\"... (length: 16)", formatter.FormatValueForTest("0123456789ABCDEF", highlightedIndex: 3));
+        AssertionsAssert.Equal("...\"ABCDEF̲GHIJ\"... (length: 30)", formatter.FormatValueForTest("0123456789ABCDEFGHIJKLMNOPQRST", highlightedIndex: 15));
+        AssertionsAssert.Equal("...\"6789ABCDEF\" (length: 16)", formatter.FormatValueForTest("0123456789ABCDEF", highlightedIndex: 16));
+        AssertionsAssert.Equal("...\"6789ABCDEF̲\" (length: 16)", formatter.FormatValueForTest("0123456789ABCDEF", highlightedIndex: 15));
+        AssertionsAssert.Equal("\"012345678\\n\"... (length: 16)", formatter.FormatValueForTest("012345678\nABCDEF".AsMemory()));
+        AssertionsAssert.Equal("RecordWith...", formatter.FormatValueForTest(new RecordWithString("0123456789")));
+
+        // A surrogate pair at the edge of the window is kept whole.
+        var surrogateFormatter = new TestAssertionFormatter { MaxFormattedStringLength = 3 };
+        AssertionsAssert.Equal("\"ab😀\"... (length: 6)", surrogateFormatter.FormatValueForTest("ab😀cd"));
+        AssertionsAssert.Equal("...\"😀cd\" (length: 6)", surrogateFormatter.FormatValueForTest("ab😀cd", highlightedIndex: 6));
+    }
+
+    [Fact]
+    public void TruncatesLongStringsInAssertionMessages()
+    {
+        var expected = new string('a', 100) + "b" + new string('c', 100);
+        var actual = new string('a', 100) + "X" + new string('c', 50);
+
+        using var scope = AssertionsAssert.UseFormatterOptions(new FormatterOptions { MaxFormattedStringLength = 10 });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(expected, actual), """
+            Assert.Equal() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 100
+            Expected: ..."aaaaab̲cccc"... (length: 201)
+            Actual:   ..."aaaaaX̲cccc"... (length: 151)
+            """);
+    }
+
+    [Fact]
+    public void HugeStringsProduceABoundedMessage()
+    {
+        var expected = new string('a', 1_000_000) + "b";
+        var actual = new string('a', 1_000_000) + "c";
+
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual));
+
+        AssertionsAssert.HasCountLessThan(25_000, exception.Message);
+        AssertionsAssert.Contains("aaaab̲\" (length: 1000001)", exception.Message);
+        AssertionsAssert.Contains("aaaac̲\" (length: 1000001)", exception.Message);
+    }
+
+    [Fact]
+    public void EnumerableYieldingNewInstancesOfItselfStopsAtMaxDepth()
+    {
+        const int MaxDepth = 16;
+
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Null(new InfinitelyNestedEnumerable()), $"""
+            Assert.Null() assertion failed.
+            Expression: new InfinitelyNestedEnumerable()
+            Expected: <null>
+            Actual:   {new string('[', MaxDepth)}<max depth reached>{new string(']', MaxDepth)}
+            """);
+    }
+
+    [Fact]
+    public void StackTraceStartsAtTheCallingMethod()
+    {
+        var exception = AssertionsAssert.Throws<AssertionException>(ThrowAssertionFailure);
+
+        var firstFrame = exception.StackTrace!.Split('\n')[0];
+        AssertionsAssert.Contains(nameof(ThrowAssertionFailure), firstFrame);
+    }
+
+    [Fact]
+    public void StackTraceOfUserExceptionsIsKept()
+    {
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.DoesNotThrow(ThrowUserException));
+
+        var innerException = AssertionsAssert.IsType<InvalidOperationException>(exception.InnerException);
+        AssertionsAssert.Contains(nameof(ThrowUserException), innerException.StackTrace!.Split('\n')[0]);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowAssertionFailure()
+    {
+        AssertionsAssert.True(false);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowUserException()
+    {
+        throw new InvalidOperationException("user code");
     }
 
     [Fact]
@@ -427,6 +690,18 @@ public sealed class AssertionFormatterTests
     }
 
     private sealed record RecordWithDouble(double Value);
+
+    private sealed record RecordWithString(string? Value);
+
+    private sealed class InfinitelyNestedEnumerable : IEnumerable<InfinitelyNestedEnumerable>
+    {
+        public IEnumerator<InfinitelyNestedEnumerable> GetEnumerator()
+        {
+            yield return new InfinitelyNestedEnumerable();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
 
     private sealed class ThrowingEnumerable : System.Collections.IEnumerable
     {

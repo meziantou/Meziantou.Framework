@@ -12,7 +12,8 @@ internal static class CollectionSnapshot
 
     public static CollectionSnapshot<object?> Create(IEnumerable source)
     {
-        if (source is IList list)
+        // The IList indexer of a multidimensional array throws, so such an array is read through its enumerator.
+        if (source is IList list && (source is not Array || source.GetType().IsSZArray))
             return new NonGenericListSnapshot(list);
 
         return CollectionSnapshot<object?>.Create(EnumerateObjects(source));
@@ -21,6 +22,53 @@ internal static class CollectionSnapshot
     public static AsyncCollectionSnapshot<T> Create<T>(IAsyncEnumerable<T> source)
     {
         return new AsyncCollectionSnapshot<T>(source);
+    }
+
+    /// <summary>
+    /// Creates a snapshot for an assertion that reads the sequence once, in order, and reports a failure about the last
+    /// observed item (or about no item). A lazy sequence is not buffered entirely: only the items a failure message can
+    /// show are retained. Call <see cref="CollectionSnapshot{T}.StopDiscardingItems"/> before formatting the failure.
+    /// </summary>
+    public static CollectionSnapshot<T> CreateSinglePass<T>(IEnumerable<T> source)
+    {
+        if (source is IReadOnlyList<T> or IList<T>)
+            return CollectionSnapshot<T>.Create(source);
+
+        var (prefixCapacity, recentCapacity) = GetSinglePassRetention();
+
+        return CollectionSnapshot<T>.CreateWindowed(source, prefixCapacity, recentCapacity);
+    }
+
+    /// <inheritdoc cref="CreateSinglePass{T}(IEnumerable{T})"/>
+    public static AsyncCollectionSnapshot<T> CreateSinglePass<T>(IAsyncEnumerable<T> source)
+    {
+        var (prefixCapacity, recentCapacity) = GetSinglePassRetention();
+
+        return new AsyncCollectionSnapshot<T>(source, prefixCapacity, recentCapacity);
+    }
+
+    /// <summary>
+    /// Computes the items to retain so the formatter finds every item it writes when the highlighted item is the last
+    /// observed one. Without a highlighted item, or when it is within the leading range, the formatter writes items from
+    /// the start, up to the largest of <see cref="FormatterOptions.MaxFormattedItems"/> and
+    /// <see cref="FormatterOptions.SuffixItemCount"/>; items after the highlighted one are read after the failure.
+    /// Otherwise it writes <see cref="FormatterOptions.PrefixItemCount"/> leading items and
+    /// <see cref="FormatterOptions.HighlightedContextItemCount"/> items before the highlighted one.
+    /// </summary>
+    private static (int PrefixCapacity, int RecentCapacity) GetSinglePassRetention()
+    {
+        var options = Assert.ErrorFormatter.CurrentOptions;
+        var prefixCapacity = Math.Max(options.MaxFormattedItems, Math.Max(options.PrefixItemCount, options.SuffixItemCount));
+        var recentCapacity = (int)Math.Min((long)options.HighlightedContextItemCount + 1, int.MaxValue);
+
+        return (prefixCapacity, recentCapacity);
+    }
+
+    internal static string FormatCount(int observedCount, bool isComplete)
+    {
+        var count = observedCount.ToString(CultureInfo.InvariantCulture);
+
+        return isComplete ? count : "at least " + count;
     }
 
     private static IEnumerable<object?> EnumerateObjects(IEnumerable value)
@@ -92,7 +140,23 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
         return new LazySnapshot(source);
     }
 
+    public static CollectionSnapshot<T> CreateWindowed(IEnumerable<T> source, int prefixCapacity, int recentCapacity)
+    {
+        return new WindowedLazySnapshot(source, new WindowedItemBuffer<T>(prefixCapacity, recentCapacity));
+    }
+
     public abstract bool TryGetItem(int index, out T item);
+
+    /// <summary>Formats the number of items, as a lower bound when the sequence was not read to its end.</summary>
+    public string GetCountText()
+    {
+        return CollectionSnapshot.FormatCount(ObservedCount, IsComplete);
+    }
+
+    /// <summary>Keeps every item observed from now on, and the items currently retained, available to the formatter.</summary>
+    public virtual void StopDiscardingItems()
+    {
+    }
 
     public void EnsureComplete()
     {
@@ -295,6 +359,72 @@ internal abstract class CollectionSnapshot<T> : IEnumerable<T>, IDisposable
             }
 
             CompleteEnumeration();
+        }
+
+        public override void Dispose()
+        {
+            _enumerator?.Dispose();
+            _enumerator = null;
+            base.Dispose();
+        }
+
+        private void CompleteEnumeration()
+        {
+            _isComplete = true;
+            _enumerator?.Dispose();
+            _enumerator = null;
+        }
+    }
+
+    private sealed class WindowedLazySnapshot(IEnumerable<T> source, WindowedItemBuffer<T> items) : CollectionSnapshot<T>
+    {
+        private IEnumerator<T>? _enumerator;
+        private bool _isComplete;
+
+        public override bool IsComplete => _isComplete;
+
+        public override int ObservedCount => items.Count;
+
+        public override IReadOnlyList<T> Items => items;
+
+        public override bool TryGetItem(int index, out T item)
+        {
+            if (index < items.Count)
+            {
+                if (items.TryGetItem(index, out item))
+                    return true;
+
+                throw new InvalidOperationException($"The item at index {index.ToString(CultureInfo.InvariantCulture)} was discarded.");
+            }
+
+            if (_isComplete)
+            {
+                item = default!;
+                return false;
+            }
+
+            _enumerator ??= source.GetEnumerator();
+
+            Debug.Assert(_enumerator is not null);
+            while (items.Count <= index && _enumerator.MoveNext())
+            {
+                items.Add(_enumerator.Current);
+            }
+
+            if (index < items.Count)
+            {
+                return items.TryGetItem(index, out item);
+            }
+
+            CompleteEnumeration();
+            item = default!;
+
+            return false;
+        }
+
+        public override void StopDiscardingItems()
+        {
+            items.RetainAll();
         }
 
         public override void Dispose()

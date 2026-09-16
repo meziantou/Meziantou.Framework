@@ -58,4 +58,5 @@ internal static class RuleIdentifiers
     internal const string UseContainsWithExpectedValueDiagnosticId = "MFAS0054";
     internal const string UseDoesNotContainWithExpectedValueDiagnosticId = "MFAS0055";
     internal const string UseAssertionReturnValueDiagnosticId = "MFAS0056";
+    internal const string AwaitableDelegateDiagnosticId = "MFAS0057";
 }

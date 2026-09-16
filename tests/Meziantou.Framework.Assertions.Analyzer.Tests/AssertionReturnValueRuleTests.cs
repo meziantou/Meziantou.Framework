@@ -633,6 +633,8 @@ public sealed partial class AssertionReturnValueRuleTests : AssertionsAnalyzerTe
     [InlineData("Assert.IsType<Derived>(value); _ = (Converted)value;")]
     [InlineData("Assert.IsType<Derived>(value); Derived d = (Derived)other;")]
     [InlineData("Assert.IsType<Derived>(value); value = other; _ = (Derived)value;")]
+    [InlineData("Assert.NotNull(value); _ = (Derived)value;")]
+    [InlineData("Assert.NotNull(value); _ = (Converted)value;")]
     public async Task Analyzer_NoDiagnostic_ForIsType(string statements)
     {
         var source = $$"""

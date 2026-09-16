@@ -9,7 +9,7 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <typeparam name="T">The expected type.</typeparam>
     /// <returns>The value cast to <typeparamref name="T"/>.</returns>
-    public static T IsType<T>(object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static T IsType<T>([NotNull] object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         if (IsExactType(typeof(T), actual))
             return (T)actual;
@@ -22,7 +22,7 @@ public partial class Assert
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <returns>The value.</returns>
-    public static object IsType(Type expectedType, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static object IsType(Type expectedType, [NotNull] object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         if (IsExactType(expectedType, actual))
             return actual;
@@ -46,7 +46,7 @@ public partial class Assert
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <typeparam name="T">The expected assignable type.</typeparam>
     /// <returns>The value cast to <typeparamref name="T"/>.</returns>
-    public static T IsAssignableTo<T>(object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static T IsAssignableTo<T>([NotNull] object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
         if (actual is T value)
             return value;
@@ -59,9 +59,10 @@ public partial class Assert
     /// <param name="actual">The value to inspect.</param>
     /// <param name="actualExpression">The expression that produced the actual value.</param>
     /// <returns>The value.</returns>
-    public static object IsAssignableTo(Type expectedType, object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
+    public static object IsAssignableTo(Type expectedType, [NotNull] object? actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null)
     {
-        if (actual is not null && expectedType.IsAssignableFrom(actual.GetType()))
+        // IsInstanceOfType matches "actual is T", which also considers COM objects and IDynamicInterfaceCastable
+        if (expectedType.IsInstanceOfType(actual))
             return actual;
 
         throw new AssertionException(ErrorFormatter.Format(new IsAssignableToAssertionError(expectedType, actual, actualExpression, message)));

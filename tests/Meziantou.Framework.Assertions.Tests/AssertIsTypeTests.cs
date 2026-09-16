@@ -25,6 +25,18 @@ public sealed class AssertIsTypeTests
     }
 
     [Fact]
+    public void ActualIsNotNullAfterTheAssertion()
+    {
+        object? generic = Environment.TickCount64 >= 0 ? "Hello" : null;
+        object? type = Environment.TickCount64 >= 0 ? "Hello" : null;
+
+        AssertionsAssert.IsType<string>(generic);
+        AssertionsAssert.IsType(typeof(string), type);
+
+        AssertionsAssert.Equal(generic.GetHashCode(), type.GetHashCode());
+    }
+
+    [Fact]
     public void FailsWhenTypeDiffers()
     {
         object actual = "Hello";

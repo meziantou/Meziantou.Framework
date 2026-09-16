@@ -14,6 +14,7 @@ public sealed class AssertApiTests
             .Where(method => !method.IsSpecialName)
             .Where(method => !IsObjectGuardMethod(method))
             .Where(method => !IsSkipMethod(method))
+            .Where(method => !IsConfigurationMethod(method))
             .OrderBy(method => method.Name, StringComparer.Ordinal)
             .ThenBy(method => string.Join(",", method.GetParameters().Select(parameter => parameter.ParameterType.FullName)), StringComparer.Ordinal);
 
@@ -52,5 +53,11 @@ public sealed class AssertApiTests
     private static bool IsSkipMethod(MethodInfo method)
     {
         return string.Equals(method.Name, nameof(AssertionsAssert.XunitSkip), StringComparison.Ordinal);
+    }
+
+    // Configuration methods do not assert anything, so they have no message.
+    private static bool IsConfigurationMethod(MethodInfo method)
+    {
+        return string.Equals(method.Name, nameof(AssertionsAssert.UseFormatterOptions), StringComparison.Ordinal);
     }
 }

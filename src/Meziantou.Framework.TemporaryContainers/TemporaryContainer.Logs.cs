@@ -18,7 +18,6 @@ public partial class TemporaryContainer
     internal async IAsyncEnumerable<LogEntry> GetCurrentRunLogsAsync(bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var id = RequireId();
-        var startedAt = _startedAt;
         var entriesToSkip = _logEntriesToSkip;
         var index = 0;
         await foreach (var entry in Runtime.GetLogsAsync(id, follow, cancellationToken).ConfigureAwait(false))
@@ -26,26 +25,22 @@ public partial class TemporaryContainer
             if (index++ < entriesToSkip)
                 continue;
 
-            if (startedAt is { } start && entry.Timestamp is { } timestamp && timestamp < start)
-                continue;
-
             yield return entry;
         }
     }
 
-    /// <summary>Prepares <see cref="GetCurrentRunLogsAsync"/> for a start. A runtime that time-stamps its log entries needs nothing: the start time reported by the runtime separates the runs. For the others, the entries of the earlier runs are counted, so they can be skipped.</summary>
+    /// <summary>Prepares <see cref="GetCurrentRunLogsAsync"/> for a start by counting the entries the earlier runs of the container left behind, so they can be skipped.</summary>
+    /// <remarks>The entries are counted rather than compared with the time the container started: the timestamps of the entries and that time do not always come from the same clock (wslc reports the time of its virtual machine), and an entry that looks older than the start of its own run would be skipped.</remarks>
     private async Task PrepareLogsForStartAsync(bool restarting, CancellationToken cancellationToken)
     {
         _logEntriesToSkip = 0;
-        if (Runtime.LogsIncludeTimestamps)
-            return;
 
         if (!restarting)
         {
-            // A container that never ran has no earlier run, and one that is already running (adopted through a reuse
-            // identifier) is not started again, so its logs are all current.
+            // A container that never ran has nothing to skip, and starting one that already runs (adopted through a
+            // reuse identifier) changes nothing: what it logged belongs to the run that is still going.
             var info = await InspectAsync(cancellationToken).ConfigureAwait(false);
-            if (info.State is ContainerState.Created or ContainerState.Running)
+            if (info.State is ContainerState.Created or ContainerState.Running or ContainerState.Paused)
                 return;
         }
 

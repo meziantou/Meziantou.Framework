@@ -375,13 +375,13 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     {
         if (_flavor is Flavor.Podman)
         {
-            // The watchdog drives the socket of the podman service, which is not running on every machine.
-            var info = await Cli.RunBufferedAsync(["info", "--format", "{{.Host.RemoteSocket.Path}} {{.Host.RemoteSocket.Exists}}"], cancellationToken).ConfigureAwait(false);
-            var parts = info.StandardOutput.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var socketPath = parts.Length > 0 ? StripUnixScheme(parts[0]) : "";
-            var exists = parts.Length > 1 && string.Equals(parts[1], "true", StringComparison.OrdinalIgnoreCase);
-            if (string.IsNullOrEmpty(socketPath) || !exists)
-                throw new NotSupportedException("The socket of the podman service is not available. Start it with 'podman system service', or set ContainerReaperOptions.SocketPath.");
+            // The watchdog drives the socket of the podman service, which is not running on every machine. podman reports
+            // the socket it is configured with rather than one that exists, so on Linux, where that socket is a file of
+            // this machine, it is the file that decides.
+            var info = await Cli.RunBufferedAsync(["info", "--format", "{{.Host.RemoteSocket.Path}}"], cancellationToken).ConfigureAwait(false);
+            var socketPath = StripUnixScheme(info.StandardOutput.Trim());
+            if (string.IsNullOrEmpty(socketPath) || (OperatingSystem.IsLinux() && !File.Exists(socketPath)))
+                throw new NotSupportedException($"The socket of the podman service ('{socketPath}') is not available. Start it with 'podman system service', or set ContainerReaperOptions.SocketPath.");
 
             return socketPath;
         }

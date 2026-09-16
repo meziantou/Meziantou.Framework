@@ -17,7 +17,7 @@ var hostPort = container.GetMappedPort(6379);
 // connect to 127.0.0.1:hostPort
 ```
 
-`StartAsync` creates the container, starts it, and runs the registered wait strategies before returning. A wait strategy only sees the logs of the current run, so a container that is stopped and started again is not reported ready by the message of its earlier run. When `ContainerDefinition.StartupTimeout` elapses, the `TimeoutException` names the strategy that did not complete, the state of the container, and the last lines it logged.
+`StartAsync` creates the container, starts it, and runs the registered wait strategies before returning. A wait strategy only sees the logs of the current run (the entries the earlier runs left behind are counted and skipped), so a container that is stopped and started again is not reported ready by the message of its earlier run. When `ContainerDefinition.StartupTimeout` elapses, the `TimeoutException` names the strategy that did not complete, the state of the container, and the last lines it logged.
 The container is removed when disposed. Set `ContainerDefinition.ReuseId` to reuse an existing container across runs; reused containers are not removed on dispose.
 
 `CreateContainer` copies the definition, and the copy the container owns is read-only: changing `container.Definition` throws, since the container reads it at every step of its life. A container with neither a `Name` nor a `ReuseId` is given a random name, so a container created by a request that failed can still be found and removed.

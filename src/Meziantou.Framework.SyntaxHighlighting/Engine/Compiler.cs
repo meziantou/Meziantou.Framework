@@ -254,7 +254,7 @@ internal static class Compiler
     /// </remarks>
     private static int CountCapturingGroups(string pattern)
     {
-        var regex = new Regex(pattern, RegexOptions.None, TimeSpan.FromSeconds(1));
+        var regex = new Regex(pattern, RegexOptions.None, DefaultMatchTimeout);
         var names = regex.GetGroupNames();
         if (names.Any(name => !int.TryParse(name, NumberStyles.None, CultureInfo.InvariantCulture, out _)))
             throw new InvalidOperationException($"BeginParts entries cannot contain named groups: '{pattern}'");

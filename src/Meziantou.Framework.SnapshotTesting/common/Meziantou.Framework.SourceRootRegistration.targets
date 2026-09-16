@@ -1,23 +1,44 @@
 <Project>
-  <Target Name="_MeziantouGenerateSourceRootsCore">
+  <!--
+    This file is packed in both SnapshotTesting and InlineSnapshotTesting, so a project referencing both packages imports
+    it twice. The package targets files only import it when this property is not set yet.
+    Each package declares a _MeziantouSourceRootRegistration item describing the file to generate, so the core target
+    generates one file per referenced package, even though MSBuild runs it only once per project.
+  -->
+  <PropertyGroup>
+    <_MeziantouSourceRootRegistrationTargetsImported>true</_MeziantouSourceRootRegistrationTargetsImported>
+  </PropertyGroup>
+
+  <Target Name="_MeziantouGenerateSourceRootFiles"
+          DependsOnTargets="InitializeSourceRootMappedPaths"
+          Condition="'$(Language)' == 'C#' and '$(DeterministicSourcePaths)' == 'true' and '@(_MeziantouSourceRootRegistration)' != ''"
+          Outputs="%(_MeziantouSourceRootRegistration.Identity)">
 
     <PropertyGroup>
-      <_MeziantouSourceRootFile>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(_MeziantouSourceRootGeneratedFileName)'))</_MeziantouSourceRootFile>
+      <_MeziantouSourceRootGeneratedFileName>@(_MeziantouSourceRootRegistration->'%(GeneratedFileName)')</_MeziantouSourceRootGeneratedFileName>
+      <_MeziantouSourceRootRegistrationMethod>@(_MeziantouSourceRootRegistration->'%(RegistrationMethod)')</_MeziantouSourceRootRegistrationMethod>
+      <_MeziantouSourceRootAssemblyMetadataName>@(_MeziantouSourceRootRegistration->'%(AssemblyMetadataName)')</_MeziantouSourceRootAssemblyMetadataName>
+      <_MeziantouSourceRootInitializerClassName>@(_MeziantouSourceRootRegistration->'%(InitializerClassName)')</_MeziantouSourceRootInitializerClassName>
+      <!-- Like the SDK generated files, the path is not made absolute: the compiler rejects paths containing a double quote -->
+      <_MeziantouSourceRootFile>$(IntermediateOutputPath)$(_MeziantouSourceRootGeneratedFileName)</_MeziantouSourceRootFile>
       <_MeziantouSourceRootNamespaceHash>$([MSBuild]::StableStringHash('$(MSBuildProjectFullPath)|$(_MeziantouSourceRootGeneratedFileName)|$(_MeziantouSourceRootAssemblyMetadataName)|$(_MeziantouSourceRootInitializerClassName)', 'SHA256'))</_MeziantouSourceRootNamespaceHash>
       <_MeziantouSourceRootNamespace>Meziantou.Framework.SourceRootRegistration.N$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootNamespace>
       <_MeziantouSourceRootInitializerMethodName>Initialize$(_MeziantouSourceRootNamespaceHash)</_MeziantouSourceRootInitializerMethodName>
     </PropertyGroup>
 
+    <!--
+      The paths are written as C# verbatim string literals, so the only character to escape is the double quote.
+      They must not be embedded in a quoted property function argument, as a path containing an apostrophe would break the
+      expression. Item functions operate on the item value directly.
+    -->
     <ItemGroup>
-      <_MeziantouSourceRoot Include="@(SourceRoot)"
-          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''">
-        <NormalizedIdentity>$([System.String]::Copy('%(Identity)').Replace('\', '/'))</NormalizedIdentity>
-      </_MeziantouSourceRoot>
+      <_MeziantouSourceRoot Include="@(SourceRoot->Replace('\', '/')->Replace('%22', '%22%22'))"
+          Condition="'%(SourceRoot.NestedRoot)' == '' and '%(SourceRoot.MappedPath)' != ''" />
     </ItemGroup>
 
     <ItemGroup>
       <_MeziantouSourceRootRegistrationLines
-          Include="@(_MeziantouSourceRoot->'        $(_MeziantouSourceRootRegistrationMethod)(%22%(MappedPath)%22, %22%(NormalizedIdentity)%22)%3B')" />
+          Include="@(_MeziantouSourceRoot->'        $(_MeziantouSourceRootRegistrationMethod)(@%22%(MappedPath)%22, @%22%(Identity)%22)%3B')" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(_MeziantouSourceRootRegistrationLines)' != ''">

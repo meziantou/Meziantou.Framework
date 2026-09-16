@@ -54,6 +54,7 @@ public sealed class BmpImageLoaderTests
     [Theory]
     [InlineData("bmp-rgb24-baseline")]
     [InlineData("bmp-rgba32-baseline")]
+    [InlineData("bmp-rgb24-top-down")]
     public async Task Image_LoadAsync_BmpAndConvertedPng_AreIdentical(string scenario)
     {
         var bmpImage = await ImageTestData.LoadImageFixtureAsync(scenario + ".bmp");

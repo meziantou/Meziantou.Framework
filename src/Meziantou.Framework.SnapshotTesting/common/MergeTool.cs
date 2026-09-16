@@ -1,9 +1,15 @@
 using Meziantou.Framework.DiffEngine;
-using Meziantou.Framework.LLMContext;
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
+
+namespace Meziantou.Framework.InlineSnapshotTesting;
+#else
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Meziantou.Framework.SnapshotTesting.Utils;
 
 namespace Meziantou.Framework.SnapshotTesting;
+#endif
 
 /// <summary>Represents a merge tool that can be used to compare and update snapshots.</summary>
 public abstract class MergeTool
@@ -57,17 +63,18 @@ public abstract class MergeTool
     internal virtual MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge) => Start(currentFilePath, newFilePath);
 
     /// <summary>
-    /// Indicates whether merge tools must not be started. <c>DiffEngine_Disabled</c> always wins. The build server,
-    /// continuous testing and LLM detections only apply when <paramref name="autoDetectContinuousEnvironment" /> is
-    /// set, so that turning <see cref="SnapshotSettings.AutoDetectContinuousEnvironment" /> off re-enables them.
+    /// Indicates whether merge tools must not be started. <c>DiffEngine_Disabled</c> always wins. The environments
+    /// detected by <see cref="ContinuousEnvironmentDetector" /> - a build server, a continuous testing runner or an LLM
+    /// agent - only apply when <paramref name="autoDetectContinuousEnvironment" /> is set, so that turning the
+    /// <c>AutoDetectContinuousEnvironment</c> setting off re-enables them. Snapshot updates are blocked by the same
+    /// detection, so both always agree on the environment.
     /// </summary>
     internal static bool IsDisabled(bool autoDetectContinuousEnvironment)
     {
         if (IsDisabledByEnvironmentVariable())
             return true;
 
-        return autoDetectContinuousEnvironment &&
-               (BuildServerDetector.Detected || ContinuousTestingDetector.Detected || LLMEnvironmentDetector.Detected);
+        return autoDetectContinuousEnvironment && ContinuousEnvironmentDetector.GetDetectedEnvironmentDescription() is not null;
     }
 
     internal static bool IsDisabledByEnvironmentVariable()
@@ -112,12 +119,13 @@ public abstract class MergeTool
     /// </summary>
     private protected static FullPath CopyFileToTemp(string path)
     {
-        var temp = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
-        Directory.CreateDirectory(temp);
-        var filePath = temp / Path.GetFileName(path);
+        var sourcePath = FullPath.FromPath(path);
+        var tempDirectory = FullPath.GetTempPath() / Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(tempDirectory);
+        var filePath = tempDirectory / sourcePath.Name;
         try
         {
-            File.Copy(path, filePath, overwrite: false);
+            File.Copy(sourcePath, filePath, overwrite: false);
         }
         catch
         {

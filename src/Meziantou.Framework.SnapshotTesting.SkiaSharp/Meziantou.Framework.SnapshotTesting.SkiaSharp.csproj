@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.SnapshotTesting/Images/SsimAccumulator.cs" Link="Images/SsimAccumulator.cs" />
+    <Compile Include="../Meziantou.Framework.SnapshotTesting/Images/ImageMismatchReasons.cs" Link="Images/ImageMismatchReasons.cs" />
   </ItemGroup>
 
   <ItemGroup>

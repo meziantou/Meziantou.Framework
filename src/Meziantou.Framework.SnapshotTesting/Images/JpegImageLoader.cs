@@ -545,10 +545,9 @@ internal static class JpegImageLoader
             if (_sawJfifMarker || _adobeTransform == 1)
                 return;
 
-            var hasY = Array.Exists(_frameComponents, component => component.Id == 1);
-            var hasCb = Array.Exists(_frameComponents, component => component.Id == 2);
-            var hasCr = Array.Exists(_frameComponents, component => component.Id == 3);
-            if (!hasY || !hasCb || !hasCr)
+            // Without a JFIF or Adobe marker, libjpeg only treats the components as RGB when their identifiers
+            // are 'R', 'G' and 'B'; any other identifiers, such as 0, 1 and 2, are assumed to be YCbCr.
+            if (_frameComponents[0].Id == 'R' && _frameComponents[1].Id == 'G' && _frameComponents[2].Id == 'B')
                 throw new NotSupportedException("Only YCbCr JPEG images are supported.");
         }
 

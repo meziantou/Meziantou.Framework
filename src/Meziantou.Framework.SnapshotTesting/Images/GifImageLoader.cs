@@ -163,42 +163,12 @@ internal static class GifImageLoader
         if (!TryReadSubBlocks(data, ref offset, out var compressedData))
             return false;
 
-        if (!TryDecodeLzw(compressedData, lzwMinimumCodeSize, imageWidth * imageHeight, out var colorIndexes, out var decodedPixelCount))
-            return false;
-
         var previousCanvas = disposalMethod is DisposalMethod.RestoreToPrevious ? (Argb[])canvas.Clone() : null;
 
         var interlaced = (packedFields & 0b0100_0000) != 0;
-        var rowOrder = interlaced ? BuildInterlaceRowOrder(imageHeight) : null;
-        for (var sourceRow = 0; sourceRow < imageHeight; sourceRow++)
-        {
-            var imageRow = rowOrder is null ? sourceRow : rowOrder[sourceRow];
-            var targetY = imageTop + imageRow;
-            if (targetY < 0 || targetY >= logicalHeight)
-                continue;
-
-            var sourceRowOffset = sourceRow * imageWidth;
-            var destinationRowOffset = targetY * logicalWidth;
-            for (var x = 0; x < imageWidth; x++)
-            {
-                var targetX = imageLeft + x;
-                if (targetX < 0 || targetX >= logicalWidth)
-                    continue;
-
-                // The LZW data ended before this pixel: it keeps what the canvas already shows
-                var sourceOffset = sourceRowOffset + x;
-                if (sourceOffset >= decodedPixelCount)
-                    continue;
-
-                var paletteIndex = colorIndexes[sourceOffset];
-                if (paletteIndex == transparentColorIndex)
-                    continue;
-
-                // An index beyond the color table is black, as in Pillow: the table behaves as if it were
-                // padded with zeros up to 256 entries.
-                canvas[destinationRowOffset + targetX] = paletteIndex < activeColorTable.Length ? activeColorTable[paletteIndex] : new Argb(0xFF, 0, 0, 0);
-            }
-        }
+        var raster = new FrameRaster(imageLeft, imageTop, imageWidth, imageHeight, interlaced, logicalWidth, logicalHeight, canvas, activeColorTable, transparentColorIndex);
+        if (!TryDecodeLzw(compressedData, lzwMinimumCodeSize, in raster))
+            return false;
 
         image = Image.Create(logicalWidth, logicalHeight, (Argb[])canvas.Clone());
 
@@ -223,52 +193,32 @@ internal static class GifImageLoader
 
     private static void FillRectangle(Argb[] canvas, int logicalWidth, int logicalHeight, int left, int top, int width, int height, Argb color)
     {
-        for (var y = top; y < top + height; y++)
+        // A frame can be far larger than the logical screen, so only the part of the rectangle on the canvas is visited
+        var right = Math.Min(left + width, logicalWidth);
+        var bottom = Math.Min(top + height, logicalHeight);
+        for (var y = top; y < bottom; y++)
         {
-            if (y < 0 || y >= logicalHeight)
-                continue;
-
             var rowOffset = y * logicalWidth;
-            for (var x = left; x < left + width; x++)
+            for (var x = left; x < right; x++)
             {
-                if (x < 0 || x >= logicalWidth)
-                    continue;
-
                 canvas[rowOffset + x] = color;
             }
         }
     }
 
-    private static int[] BuildInterlaceRowOrder(int height)
-    {
-        var rows = new int[height];
-        var index = 0;
-
-        AddRows(start: 0, step: 8);
-        AddRows(start: 4, step: 8);
-        AddRows(start: 2, step: 4);
-        AddRows(start: 1, step: 2);
-        return rows;
-
-        void AddRows(int start, int step)
-        {
-            for (var row = start; row < height; row += step)
-            {
-                rows[index] = row;
-                index++;
-            }
-        }
-    }
-
     /// <summary>
-    /// Decodes the color indexes of a frame. Decoding stops at the end code, at the end of the data, at a code
-    /// that is not in the table yet, or once the frame is full; <paramref name="decodedPixelCount" /> tells
-    /// how many leading pixels were decoded, and browsers leave the others untouched.
+    /// Decodes the color indexes of a frame and draws them onto the canvas. Decoding stops at the end code, at
+    /// the end of the data, at a code that is not in the table yet, or once no remaining pixel of the frame can
+    /// land on the canvas; like browsers, the pixels the data does not reach keep what the canvas shows.
     /// </summary>
-    private static bool TryDecodeLzw(ReadOnlySpan<byte> compressedData, byte minimumCodeSize, int expectedPixelCount, [NotNullWhen(true)] out byte[]? colorIndexes, out int decodedPixelCount)
+    /// <remarks>
+    /// Nothing clips a frame to the logical screen, so a few bytes can describe a frame of hundreds of millions
+    /// of pixels over a tiny canvas. The work is bounded by what can be drawn: the string of a code is only
+    /// expanded when part of it is visible, and decoding ends after the last visible pixel.
+    /// </remarks>
+    private static bool TryDecodeLzw(ReadOnlySpan<byte> compressedData, byte minimumCodeSize, in FrameRaster raster)
     {
-        colorIndexes = null;
-        decodedPixelCount = 0;
+        const int MaxCodeCount = 4096;
         if (minimumCodeSize is < 2 or > 8)
             return false;
 
@@ -277,21 +227,25 @@ internal static class GifImageLoader
         var availableCode = endCode + 1;
         var codeSize = minimumCodeSize + 1;
 
-        Span<short> prefix = stackalloc short[4096];
-        Span<byte> suffix = stackalloc byte[4096];
-        Span<byte> stack = stackalloc byte[4096];
+        // Each string is its prefix string followed by one pixel. Its length and first pixel are kept too, so
+        // a string that is not drawn never has to be expanded.
+        Span<short> prefixes = stackalloc short[MaxCodeCount];
+        Span<byte> suffixes = stackalloc byte[MaxCodeCount];
+        Span<byte> firstPixels = stackalloc byte[MaxCodeCount];
+        Span<short> lengths = stackalloc short[MaxCodeCount];
         for (var i = 0; i < clearCode; i++)
         {
-            prefix[i] = -1;
-            suffix[i] = (byte)i;
+            prefixes[i] = -1;
+            suffixes[i] = (byte)i;
+            firstPixels[i] = (byte)i;
+            lengths[i] = 1;
         }
 
-        var output = new byte[expectedPixelCount];
+        var pixelLimit = raster.VisiblePixelEnd;
         var outputOffset = 0;
-
         var bitReader = new GifBitReader(compressedData);
         var previousCode = -1;
-        while (bitReader.TryRead(codeSize, out var code))
+        while (outputOffset < pixelLimit && bitReader.TryRead(codeSize, out var code))
         {
             if (code == clearCode)
             {
@@ -301,92 +255,72 @@ internal static class GifImageLoader
                 continue;
             }
 
-            if (code == endCode || code > availableCode || code >= 4096)
+            if (code == endCode || code > availableCode || code >= MaxCodeCount)
                 break;
 
-            var currentCode = code;
-            var stackLength = 0;
+            int stringLength;
             byte firstPixel;
             if (code == availableCode)
             {
                 // The code is not in the table yet: it stands for the previous string followed by that
-                // string's own first character. The stack holds the string in reverse, so the character that
-                // comes last goes in at the bottom, below the expansion of the previous code.
-                stackLength = 1;
-                if (previousCode < 0 || !TryExpandCode(previousCode, clearCode, prefix, suffix, stack, ref stackLength, out firstPixel))
+                // string's own first pixel.
+                if (previousCode < 0)
                     break;
 
-                stack[0] = firstPixel;
+                stringLength = lengths[previousCode] + 1;
+                firstPixel = firstPixels[previousCode];
             }
-            else if (!TryExpandCode(code, clearCode, prefix, suffix, stack, ref stackLength, out firstPixel))
+            else
             {
-                break;
-            }
-
-            // Pixels beyond the frame are ignored
-            for (var i = stackLength - 1; i >= 0 && outputOffset < output.Length; i--)
-            {
-                output[outputOffset] = stack[i];
-                outputOffset++;
+                stringLength = lengths[code];
+                firstPixel = firstPixels[code];
             }
 
-            if (previousCode >= 0)
+            if (raster.IsAnyPixelVisible(outputOffset, Math.Min(stringLength, pixelLimit - outputOffset)))
             {
-                if (availableCode < 4096)
+                // Following the prefixes yields the pixels from the last one to the first
+                var position = outputOffset + stringLength - 1;
+                var current = code;
+                if (code == availableCode)
                 {
-                    prefix[availableCode] = checked((short)previousCode);
-                    suffix[availableCode] = firstPixel;
-                    availableCode++;
-                    if (availableCode == (1 << codeSize) && codeSize < 12)
+                    if (position < pixelLimit)
                     {
-                        codeSize++;
+                        raster.Draw(position, firstPixel);
                     }
+
+                    position--;
+                    current = previousCode;
+                }
+
+                for (; position >= outputOffset; position--)
+                {
+                    if (position < pixelLimit)
+                    {
+                        raster.Draw(position, suffixes[current]);
+                    }
+
+                    current = prefixes[current];
                 }
             }
 
-            previousCode = currentCode;
-            if (outputOffset == output.Length)
-                break;
+            outputOffset += stringLength;
+
+            if (previousCode >= 0 && availableCode < MaxCodeCount)
+            {
+                prefixes[availableCode] = (short)previousCode;
+                suffixes[availableCode] = firstPixel;
+                firstPixels[availableCode] = firstPixels[previousCode];
+                lengths[availableCode] = (short)(lengths[previousCode] + 1);
+                availableCode++;
+                if (availableCode == (1 << codeSize) && codeSize < 12)
+                {
+                    codeSize++;
+                }
+            }
+
+            previousCode = code;
         }
 
-        colorIndexes = output;
-        decodedPixelCount = outputOffset;
-        return true;
-    }
-
-    private static bool TryExpandCode(
-        int code,
-        int clearCode,
-        ReadOnlySpan<short> prefix,
-        ReadOnlySpan<byte> suffix,
-        Span<byte> stack,
-        ref int stackLength,
-        out byte firstPixel)
-    {
-        firstPixel = 0;
-        if (code < 0 || code >= 4096)
-            return false;
-
-        var current = code;
-        while (current >= clearCode)
-        {
-            if (current >= prefix.Length || stackLength >= stack.Length)
-                return false;
-
-            stack[stackLength] = suffix[current];
-            stackLength++;
-
-            current = prefix[current];
-            if (current < 0)
-                return false;
-        }
-
-        firstPixel = checked((byte)current);
-        if (stackLength >= stack.Length)
-            return false;
-
-        stack[stackLength] = firstPixel;
-        stackLength++;
         return true;
     }
 
@@ -515,6 +449,120 @@ internal static class GifImageLoader
         DoNotDispose = 1,
         RestoreToBackgroundColor = 2,
         RestoreToPrevious = 3,
+    }
+
+    /// <summary>Maps the pixels of a frame, in the order the LZW data codes them, onto the canvas.</summary>
+    private readonly struct FrameRaster
+    {
+        private static readonly (int Start, int Step)[] InterlacePasses = [(0, 8), (4, 8), (2, 4), (1, 2)];
+
+        private readonly int _left;
+        private readonly int _top;
+        private readonly int _width;
+        private readonly int _height;
+        private readonly bool _interlaced;
+        private readonly int _logicalWidth;
+        private readonly Argb[] _canvas;
+        private readonly Argb[] _colorTable;
+        private readonly int _transparentColorIndex;
+
+        // The frame starts at a non-negative offset, so the columns and rows on the canvas are always the first ones
+        private readonly int _visibleColumnCount;
+        private readonly int _visibleRowCount;
+
+        public FrameRaster(int left, int top, int width, int height, bool interlaced, int logicalWidth, int logicalHeight, Argb[] canvas, Argb[] colorTable, int transparentColorIndex)
+        {
+            _left = left;
+            _top = top;
+            _width = width;
+            _height = height;
+            _interlaced = interlaced;
+            _logicalWidth = logicalWidth;
+            _canvas = canvas;
+            _colorTable = colorTable;
+            _transparentColorIndex = transparentColorIndex;
+            _visibleColumnCount = Math.Clamp(logicalWidth - left, 0, width);
+            _visibleRowCount = Math.Clamp(logicalHeight - top, 0, height);
+            VisiblePixelEnd = _visibleColumnCount == 0 || _visibleRowCount == 0 ? 0 : (GetLastVisibleSourceRow() * width) + _visibleColumnCount;
+        }
+
+        /// <summary>Gets the index, in coding order, just past the last pixel that lands on the canvas.</summary>
+        public int VisiblePixelEnd { get; }
+
+        public bool IsAnyPixelVisible(int start, int length)
+        {
+            var startRow = start / _width;
+            var endRow = (start + length - 1) / _width;
+            for (var sourceRow = startRow; sourceRow <= endRow; sourceRow++)
+            {
+                // The visible columns are the first ones, so only the column the range starts at in the row matters
+                var firstColumn = sourceRow == startRow ? start - (startRow * _width) : 0;
+                if (firstColumn < _visibleColumnCount && GetImageRow(sourceRow) < _visibleRowCount)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void Draw(int index, byte paletteIndex)
+        {
+            var sourceRow = index / _width;
+            var x = index - (sourceRow * _width);
+            if (x >= _visibleColumnCount || paletteIndex == _transparentColorIndex)
+                return;
+
+            var imageRow = GetImageRow(sourceRow);
+            if (imageRow >= _visibleRowCount)
+                return;
+
+            // An index beyond the color table is black, as in Pillow: the table behaves as if it were padded
+            // with zeros up to 256 entries.
+            _canvas[((_top + imageRow) * _logicalWidth) + _left + x] = paletteIndex < _colorTable.Length ? _colorTable[paletteIndex] : new Argb(0xFF, 0, 0, 0);
+        }
+
+        private int GetImageRow(int sourceRow)
+        {
+            if (!_interlaced)
+                return sourceRow;
+
+            foreach (var (start, step) in InterlacePasses)
+            {
+                var rowCount = GetPassRowCount(_height, start, step);
+                if (sourceRow < rowCount)
+                    return start + (sourceRow * step);
+
+                sourceRow -= rowCount;
+            }
+
+            return _height;
+        }
+
+        private int GetLastVisibleSourceRow()
+        {
+            if (!_interlaced)
+                return _visibleRowCount - 1;
+
+            // The passes are coded one after the other, so the last visible row is in the last pass that has one
+            var lastVisibleSourceRow = 0;
+            var passOffset = 0;
+            foreach (var (start, step) in InterlacePasses)
+            {
+                var visibleRowsInPass = GetPassRowCount(_visibleRowCount, start, step);
+                if (visibleRowsInPass > 0)
+                {
+                    lastVisibleSourceRow = passOffset + visibleRowsInPass - 1;
+                }
+
+                passOffset += GetPassRowCount(_height, start, step);
+            }
+
+            return lastVisibleSourceRow;
+        }
+
+        private static int GetPassRowCount(int rowCount, int start, int step)
+        {
+            return rowCount > start ? (rowCount - start + step - 1) / step : 0;
+        }
     }
 
     private ref struct GifBitReader(ReadOnlySpan<byte> data)

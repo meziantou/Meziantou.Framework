@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Reflection;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -11,6 +12,9 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     private static Func<SnapshotTestContext?>? s_xunitV3GetContext;
     private static Func<SnapshotTestContext?>? s_tunitGetContext;
     private static Func<SnapshotTestContext?>? s_nunitGetContext;
+
+    // Key: class, method and test name. Value: the types of the arguments of the first case that used the name.
+    private static readonly ConcurrentDictionary<string, string> ArgumentTypeSignatures = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Simple name of the class the running test belongs to, when the test framework exposes it. When set, it
@@ -51,41 +55,107 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
 
     internal static SnapshotTestContext Get()
     {
-        return GetContext(ref s_xunitV3GetContext, TryCreateXunitV3GetContext)?.Invoke() ??
-               GetContext(ref s_tunitGetContext, TryCreateTUnitGetContext)?.Invoke() ??
-               GetContext(ref s_nunitGetContext, TryCreateNUnitGetContext)?.Invoke() ??
+        return GetContext(ref s_xunitV3GetContext, TryCreateXunitV3GetContext).Invoke() ??
+               GetContext(ref s_tunitGetContext, TryCreateTUnitGetContext).Invoke() ??
+               GetContext(ref s_nunitGetContext, TryCreateNUnitGetContext).Invoke() ??
                new SnapshotTestContext();
     }
 
-    private static Func<SnapshotTestContext?>? GetContext(ref Func<SnapshotTestContext?>? cachedFactory, Func<Func<SnapshotTestContext?>?> factory)
+    /// <summary>
+    /// Returns the cached context accessor of a test framework, creating it on first use. A test framework that is not
+    /// loaded is remembered too: probing for it again would repeat a failed type load, and fire the assembly resolve
+    /// handlers, on every assertion.
+    /// </summary>
+    internal static Func<SnapshotTestContext?> GetContext(ref Func<SnapshotTestContext?>? cachedFactory, Func<Func<SnapshotTestContext?>?> factory)
     {
         var getContext = cachedFactory;
         if (getContext is not null)
             return getContext;
 
-        getContext = factory();
-        if (getContext is not null)
-        {
-            Interlocked.CompareExchange(ref cachedFactory, getContext, comparand: null);
-        }
-
-        return getContext;
+        getContext = factory() ?? UnavailableContext;
+        return Interlocked.CompareExchange(ref cachedFactory, getContext, comparand: null) ?? getContext;
     }
 
-    private static SnapshotTestContext? Create(TestNames names, string? className, string? methodName, Func<string?> getTestId)
+    private static SnapshotTestContext? UnavailableContext() => null;
+
+    private static SnapshotTestContext? Create(TestNames names, string? className, string? methodName, object?[]? arguments, Func<string?> getTestId)
     {
         className = NormalizeClassName(className);
         if (names.TestName is null && className is null && methodName is null)
             return null;
 
+        var hasAmbiguousArguments = names.HasAmbiguousArguments || HasArgumentsOfAnotherType(className, methodName, names.TestName, arguments);
         return new SnapshotTestContext(TestName: names.TestName)
         {
             ClassName = className,
             MethodName = methodName,
             IsDetectedFromTestFramework = true,
             LegacyTestName = string.Equals(names.TestName, names.LegacyTestName, StringComparison.Ordinal) ? null : names.LegacyTestName,
-            AmbiguousTestId = names.HasAmbiguousArguments ? getTestId() : null,
+            AmbiguousTestId = hasAmbiguousArguments ? getTestId() : null,
         };
+    }
+
+    /// <summary>
+    /// Indicates whether another case of the test got the same name from arguments of other types. The name only
+    /// contains the text of the arguments, so an <see cref="object" /> parameter receiving <c>1</c>, <c>1L</c> and
+    /// <c>"1"</c> names the three cases alike. Such a case is flagged as ambiguous, so its owner contains the test
+    /// identifier and the engine reports the collision. The first case seen keeps its name without the identifier:
+    /// one differing owner is enough to detect the collision, and a test that runs again in the process keeps an
+    /// equal owner.
+    /// </summary>
+    internal static bool HasArgumentsOfAnotherType(string? className, string? methodName, string? testName, object?[]? arguments)
+    {
+        if (arguments is null || arguments.Length == 0 || testName is null)
+            return false;
+
+        var typeSignature = GetArgumentTypeSignature(arguments);
+        var key = string.Join('\0', className, methodName, testName);
+        var firstTypeSignature = ArgumentTypeSignatures.GetOrAdd(key, typeSignature);
+        return !string.Equals(firstTypeSignature, typeSignature, StringComparison.Ordinal);
+    }
+
+    private static string GetArgumentTypeSignature(object?[] arguments)
+    {
+        var result = new StringBuilder();
+        foreach (var argument in arguments)
+        {
+            AppendArgumentTypeSignature(result, argument, depth: 0);
+            result.Append(';');
+        }
+
+        return result.ToString();
+    }
+
+    private static void AppendArgumentTypeSignature(StringBuilder result, object? argument, int depth)
+    {
+        if (argument is null)
+        {
+            result.Append("null");
+            return;
+        }
+
+        result.Append(argument.GetType().AssemblyQualifiedName);
+
+        // The elements of a list are formatted one by one, so [1] and [1L] get the same name too.
+        if (argument is IList list && depth < MaxFormattedArgumentDepth)
+        {
+            result.Append('[');
+            try
+            {
+                var count = Math.Min(list.Count, 64);
+                for (var i = 0; i < count; i++)
+                {
+                    AppendArgumentTypeSignature(result, list[i], depth + 1);
+                    result.Append(',');
+                }
+            }
+            catch (Exception ex) when (ex is not OutOfMemoryException)
+            {
+                // A default ImmutableArray, for instance, cannot be enumerated.
+            }
+
+            result.Append(']');
+        }
     }
 
     /// <summary>
@@ -148,6 +218,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     // The class and the undecorated method name are only exposed by the test case.
                     var testCase = GetPropertyValue(test, "TestCase");
                     var className = testCase is null ? null : GetStringPropertyValue(testCase, "TestClassSimpleName") ?? GetStringPropertyValue(testCase, "TestClassName");
+                    var arguments = GetObjectArrayPropertyValue(test, "TestMethodArguments");
                     var names = GetXunitV3TestNames(
                         displayName,
                         testMethodNameOfTest: GetStringPropertyValue(test, "MethodName"),
@@ -155,9 +226,9 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                         testCaseDisplayName: testCase is null ? null : GetStringPropertyValue(testCase, "TestCaseDisplayName"),
                         testClassName: testCase is null ? null : GetStringPropertyValue(testCase, "TestClassName"),
                         testMethodName: testCase is null ? null : GetStringPropertyValue(testCase, "TestMethodName"),
-                        arguments: GetObjectArrayPropertyValue(test, "TestMethodArguments"));
+                        arguments);
 
-                    return Create(names, className, names.MethodName, () => GetStringPropertyValue(test, "UniqueID"));
+                    return Create(names, className, names.MethodName, arguments, () => GetStringPropertyValue(test, "UniqueID"));
                 }
                 catch
                 {
@@ -315,9 +386,10 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     var className = testDetails is null ? null : (GetPropertyValue(testDetails, "ClassType") as Type)?.Name;
                     var methodName = testDetails is null ? null : GetStringPropertyValue(testDetails, "MethodName");
                     var arguments = testDetails is null ? null : GetObjectArrayPropertyValue(testDetails, "TestMethodArguments");
+                    var classArguments = testDetails is null ? null : GetObjectArrayPropertyValue(testDetails, "TestClassArguments");
 
-                    var names = GetTUnitTestNames(hasTestDetails: testDetails is not null, displayName, methodName, arguments);
-                    return Create(names, className, methodName, () => testDetails is null ? null : GetStringPropertyValue(testDetails, "TestId"));
+                    var names = GetTUnitTestNames(hasTestDetails: testDetails is not null, displayName, methodName, arguments, classArguments);
+                    return Create(names, className, methodName, ConcatArguments(arguments, classArguments), () => testDetails is null ? null : GetStringPropertyValue(testDetails, "TestId"));
                 }
                 catch
                 {
@@ -337,7 +409,17 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     /// file name cannot keep: sanitizing them away would let two cases of one theory claim the same
     /// snapshot. A name the user chose is returned unchanged.
     /// </summary>
-    internal static TestNames GetTUnitTestNames(bool hasTestDetails, string? displayName, string? methodName, object?[]? arguments)
+    /// <param name="hasTestDetails">Indicates whether the test exposes its details.</param>
+    /// <param name="displayName">Display name of the test.</param>
+    /// <param name="methodName">Name of the test method.</param>
+    /// <param name="arguments">Arguments of the test method.</param>
+    /// <param name="classArguments">Arguments of the test class constructor.</param>
+    internal static TestNames GetTUnitTestNames(bool hasTestDetails, string? displayName, string? methodName, object?[]? arguments, object?[]? classArguments = null)
+    {
+        return AppendClassArguments(GetTUnitTestNamesWithoutClassArguments(hasTestDetails, displayName, methodName, arguments), arguments, classArguments);
+    }
+
+    private static TestNames GetTUnitTestNamesWithoutClassArguments(bool hasTestDetails, string? displayName, string? methodName, object?[]? arguments)
     {
         if (!hasTestDetails)
             return new TestNames(displayName, displayName, methodName, HasAmbiguousArguments: false);
@@ -400,8 +482,18 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                     var fullName = GetStringPropertyValue(test, "FullName");
                     var className = (GetPropertyValue(test, "Type") as Type)?.Name ?? GetStringPropertyValue(test, "ClassName");
 
-                    var names = GetNUnitTestNames(name, nunitMethodName, fullName, GetObjectArrayPropertyValue(test, "Arguments"));
-                    return Create(names, className, names.MethodName, () => GetStringPropertyValue(test, "ID"));
+                    var arguments = GetObjectArrayPropertyValue(test, "Arguments");
+                    var fixtureArguments = GetNUnitFixtureArguments(test, name, fullName, out var hasUnknownFixtureArguments);
+
+                    var names = GetNUnitTestNames(name, nunitMethodName, fullName, arguments, fixtureArguments);
+                    if (hasUnknownFixtureArguments)
+                    {
+                        // The instances of the parameterized fixture cannot be told apart, so a collision is reported
+                        // instead of letting them share a snapshot.
+                        names = names with { HasAmbiguousArguments = true };
+                    }
+
+                    return Create(names, className, names.MethodName, ConcatArguments(arguments, fixtureArguments), () => GetStringPropertyValue(test, "ID"));
                 }
                 catch
                 {
@@ -422,7 +514,13 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     /// <param name="methodName">Name of the test method.</param>
     /// <param name="fullName">Full name of the test.</param>
     /// <param name="arguments">Arguments of the test method.</param>
-    internal static TestNames GetNUnitTestNames(string? name, string? methodName, string? fullName, object?[]? arguments)
+    /// <param name="fixtureArguments">Arguments of the fixture instance the test belongs to, such as <c>"en-US"</c> for <c>[TestFixture("en-US")]</c>.</param>
+    internal static TestNames GetNUnitTestNames(string? name, string? methodName, string? fullName, object?[]? arguments, object?[]? fixtureArguments = null)
+    {
+        return AppendClassArguments(GetNUnitTestNamesWithoutFixtureArguments(name, methodName, fullName, arguments), arguments, fixtureArguments);
+    }
+
+    private static TestNames GetNUnitTestNamesWithoutFixtureArguments(string? name, string? methodName, string? fullName, object?[]? arguments)
     {
         var displayName = name ?? methodName ?? fullName;
         var legacyTestName = LegacyGetNUnitTestName(displayName, arguments);
@@ -459,6 +557,87 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
             return LegacyGetMethodName(displayName) ?? displayName;
 
         return methodName + "_" + LegacyFormatArguments(arguments);
+    }
+
+    /// <summary>
+    /// Returns the arguments of the NUnit fixture instance the test belongs to. Every instance of a parameterized
+    /// fixture, <c>[TestFixture("en-US")] [TestFixture("fr-FR")]</c>, runs the same methods under the same names, so
+    /// only these arguments tell them apart.
+    /// </summary>
+    /// <param name="test">The <c>TestContext.TestAdapter</c> of the running test.</param>
+    /// <param name="name">Name of the test.</param>
+    /// <param name="fullName">Full name of the test.</param>
+    /// <param name="hasUnknownFixtureArguments">Set when the fixture is parameterized but its arguments are not exposed.</param>
+    private static object?[]? GetNUnitFixtureArguments(object test, string? name, string? fullName, out bool hasUnknownFixtureArguments)
+    {
+        hasUnknownFixtureArguments = false;
+        try
+        {
+            var parentProperty = test.GetType().GetProperty("Parent", BindingFlags.Public | BindingFlags.Instance);
+            if (parentProperty is not null)
+            {
+                // The parent of a test case is the suite of the parameterized method, whose parent is the fixture.
+                var parent = parentProperty.GetValue(test);
+                for (var depth = 0; parent is not null && depth < 4; depth++)
+                {
+                    if (string.Equals(GetStringPropertyValue(parent, "TestType"), "TestFixture", StringComparison.Ordinal))
+                        return GetObjectArrayPropertyValue(parent, "Arguments");
+
+                    parent = GetPropertyValue(parent, "Parent");
+                }
+
+                return null;
+            }
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // The internals of NUnit may change; the full name below is the fallback.
+        }
+
+        // Older versions of NUnit do not expose the parent. The full name of a test of a parameterized fixture is
+        // 'Namespace.Fixture(arguments).Name'.
+        if (name is not null && fullName is not null && fullName.Length > name.Length + 1 && fullName.EndsWith(name, StringComparison.Ordinal))
+        {
+            var fixtureName = fullName.AsSpan(0, fullName.Length - name.Length);
+            hasUnknownFixtureArguments = fixtureName.EndsWith(").", StringComparison.Ordinal);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Appends the arguments of the test class, formatted like the arguments of the test method, to the test name.
+    /// </summary>
+    private static TestNames AppendClassArguments(TestNames names, object?[]? arguments, object?[]? classArguments)
+    {
+        if (classArguments is null || classArguments.Length == 0 || names.TestName is null)
+            return names;
+
+        // '_' separates the class arguments from the rest of the name, so a '_' in any string argument makes the name
+        // ambiguous, whatever the number of arguments.
+        var formattedClassArguments = FormatArguments(classArguments, splitsArguments: true, out var hasAmbiguousArguments);
+        if (arguments is { Length: > 0 })
+        {
+            FormatArguments(arguments, splitsArguments: true, out var hasAmbiguousMethodArguments);
+            hasAmbiguousArguments |= hasAmbiguousMethodArguments;
+        }
+
+        return names with
+        {
+            TestName = names.TestName + "_" + formattedClassArguments,
+            HasAmbiguousArguments = names.HasAmbiguousArguments || hasAmbiguousArguments,
+        };
+    }
+
+    private static object?[]? ConcatArguments(object?[]? arguments, object?[]? classArguments)
+    {
+        if (classArguments is null || classArguments.Length == 0)
+            return arguments;
+
+        if (arguments is null || arguments.Length == 0)
+            return classArguments;
+
+        return [.. arguments, .. classArguments];
     }
 
     // The parameter is deliberately not named propertyName: these are properties of the test framework
@@ -549,7 +728,8 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     /// versions gave several cases the same name:
     /// <list type="bullet">
     ///   <item>the string <c>"null"</c> is quoted, so it is not confused with <see langword="null" />;</item>
-    ///   <item>arrays and lists are formatted element by element instead of as their type name.</item>
+    ///   <item>arrays and lists are formatted element by element instead of as their type name;</item>
+    ///   <item><see cref="DateTime" />, <see cref="DateTimeOffset" /> and <see cref="TimeOnly" /> use the round-trip format, which keeps the fraction of a second and the kind.</item>
     /// </list>
     /// The characters this adds are not valid in a snapshot name, so the name gets a hash of the formatted
     /// arguments and stays distinct. The arguments that still cannot be told apart - a value whose type does not
@@ -557,6 +737,11 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
     /// <paramref name="hasAmbiguousArguments" />, so a collision is reported rather than renaming every test.
     /// </summary>
     internal static string FormatArguments(object?[] arguments, out bool hasAmbiguousArguments)
+    {
+        return FormatArguments(arguments, splitsArguments: arguments.Length > 1, out hasAmbiguousArguments);
+    }
+
+    private static string FormatArguments(object?[] arguments, bool splitsArguments, out bool hasAmbiguousArguments)
     {
         var state = new ArgumentFormattingState();
         var result = new StringBuilder();
@@ -567,7 +752,7 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                 result.Append('_');
             }
 
-            FormatArgument(result, arguments[i], splitsArguments: arguments.Length > 1, depth: 0, state);
+            FormatArgument(result, arguments[i], splitsArguments, depth: 0, state);
         }
 
         hasAmbiguousArguments = state.HasAmbiguousArguments;
@@ -596,6 +781,12 @@ public sealed record SnapshotTestContext(string? TestName = null, IReadOnlyDicti
                 }
 
                 result.Append(value);
+                break;
+
+            // The general format drops the fraction of a second, and the kind of a DateTime, so two values a few
+            // milliseconds apart would share a name. The round-trip format keeps everything.
+            case DateTime or DateTimeOffset or TimeOnly:
+                result.Append(((IFormattable)argument).ToString("O", CultureInfo.InvariantCulture));
                 break;
 
             case IFormattable value:

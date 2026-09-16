@@ -82,7 +82,8 @@ public sealed record SnapshotSettings
     /// Gets or sets the ordered list of tools used by <see cref="SnapshotUpdateStrategy.MergeTool" /> and
     /// <see cref="SnapshotUpdateStrategy.MergeToolSync" />. The first tool that can be started is used.
     /// The default list tries the <c>DiffEngine_Tool</c> environment variable, the git merge and diff tools, the current IDE
-    /// (Visual Studio, Visual Studio Code, Rider), and then the tools detected by DiffEngine.
+    /// (Visual Studio, Visual Studio Code, Rider), and then the GUI tools detected by DiffEngine. Terminal tools such as Vim
+    /// are only used when named explicitly.
     /// If <see langword="null" /> or empty, no merge tool is launched and the assertion failure is reported.
     /// </summary>
     /// <remarks>
@@ -176,7 +177,7 @@ public sealed record SnapshotSettings
         }
 
         var rawStartPart = context.Settings.SnapshotNamingStrategy(context) ?? "";
-        var startPart = SanitizeFragment(rawStartPart);
+        var startPart = RemoveSnapshotFileMarkers(SanitizeFragment(rawStartPart));
 
         // Sanitizing loses information - 'Case_a/b' and 'Case_a?b' both become 'Case_a_b' - so a name it
         // changed only stays distinct once the hash of the original name is part of the file name.
@@ -199,7 +200,8 @@ public sealed record SnapshotSettings
             isNameSanitized ||
             startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
             Encoding.UTF8.GetByteCount(startPart) + Encoding.UTF8.GetByteCount(suffixWithoutHash) > MaxFileNameByteCount ||
-            IsReservedSnapshotName(startPart);
+            IsReservedSnapshotName(startPart) ||
+            IsWindowsReservedDeviceName(startPart + ordinalPart + indexPart);
 
         var suffix = suffixWithoutHash;
         if (shouldAddHashSuffix)
@@ -255,6 +257,48 @@ public sealed record SnapshotSettings
     {
         return value.EndsWith(".verified", StringComparison.OrdinalIgnoreCase) ||
                value.EndsWith(".actual", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Replaces the dot that starts a <c>.verified.</c> or <c>.actual.</c> sequence inside a name with <c>_</c>. With a
+    /// marker in its name - a test called <c>Parse.actual.value</c> - a verified file looks like an actual file to the
+    /// approval tool, including the versions of the tool that are already installed. The case is ignored, as the tool's
+    /// file pattern matches the marker in any case on Windows and macOS.
+    /// </summary>
+    private static string RemoveSnapshotFileMarkers(string value)
+    {
+        while (true)
+        {
+            var index = value.IndexOf(SnapshotFileName.VerifiedMarker, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                index = value.IndexOf(SnapshotFileName.ActualMarker, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    return value;
+            }
+
+            value = string.Concat(value.AsSpan(0, index), "_", value.AsSpan(index + 1));
+        }
+    }
+
+    /// <summary>
+    /// Indicates whether Windows opens a device rather than the file: on the Windows versions that map a device name
+    /// followed by an extension, <c>NUL.verified.txt</c> is the <c>NUL</c> device.
+    /// </summary>
+    private static bool IsWindowsReservedDeviceName(string fileName)
+    {
+        var dotIndex = fileName.IndexOf('.', StringComparison.Ordinal);
+        var name = dotIndex < 0 ? fileName.AsSpan() : fileName.AsSpan(0, dotIndex);
+        return name.Length switch
+        {
+            3 => name.Equals("CON", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("AUX", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("NUL", StringComparison.OrdinalIgnoreCase),
+            4 => (name.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || name.StartsWith("LPT", StringComparison.OrdinalIgnoreCase)) &&
+                 name[3] is (>= '0' and <= '9') or '\u00B9' or '\u00B2' or '\u00B3',
+            _ => false,
+        };
     }
 
     internal static string FormatMetadata(IReadOnlyDictionary<string, string?>? metadata)

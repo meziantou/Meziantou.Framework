@@ -1,5 +1,6 @@
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
 using Meziantou.Framework.SnapshotTesting.Utils;
+using System.ComponentModel;
 using System.Reflection;
 
 namespace Meziantou.Framework.SnapshotTesting;
@@ -13,6 +14,10 @@ public abstract class SnapshotUpdateStrategy
     // here would re-enter the getter and recurse until the process died with an uncatchable StackOverflowException.
     private static readonly IReadOnlyList<PropertyInfo> SnapshotUpdateStrategyProperties =
         [.. typeof(SnapshotUpdateStrategy).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(property => property.Name is not nameof(Default))];
+
+    // Content of the actual files of the assertion whose snapshots are being updated on this thread, by actual file path.
+    [ThreadStatic]
+    private static Dictionary<string, byte[]>? s_actualFileContents;
 
     /// <summary>Do not update the snapshots and fail the tests if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Disallow { get; } = new DisallowStrategy();
@@ -29,10 +34,10 @@ public abstract class SnapshotUpdateStrategy
     /// </summary>
     public static SnapshotUpdateStrategy MergeToolSync { get; } = new BlockingDiffToolStrategy();
 
-    /// <summary>Overwrite the source file with the new snapshot. The test fails if the snapshots are different.</summary>
+    /// <summary>Overwrite the verified snapshot files with the new snapshots. The test fails if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Overwrite { get; } = new AlwaysStrategy();
 
-    /// <summary>Overwrite the source file with the new snapshot. The test won't fail.</summary>
+    /// <summary>Overwrite the verified snapshot files with the new snapshots. The test won't fail.</summary>
     public static SnapshotUpdateStrategy OverwriteWithoutFailure { get; } = new AlwaysWithoutFailureStrategy();
 
     public static SnapshotUpdateStrategy Default
@@ -51,6 +56,8 @@ public abstract class SnapshotUpdateStrategy
     /// Not used by file snapshots: the actual file always lives next to the verified file, and it is removed once it is
     /// no longer relevant.
     /// </summary>
+    /// <remarks>This property has no effect and will be removed in the next major version.</remarks>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public virtual bool ReuseTemporaryFile => true;
 
     internal bool CanUpdateSnapshotInternal(SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot)
@@ -61,8 +68,26 @@ public abstract class SnapshotUpdateStrategy
         return CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
     }
 
-
-    /// <summary>Indicates if an an inline snapshot must be updated</summary>
+    /// <summary>
+    /// Indicates whether the verified snapshot files of an assertion can be updated. It is called when the snapshots
+    /// differ, or when <see cref="SnapshotSettings.ForceUpdateSnapshots" /> is set.
+    /// </summary>
+    /// <param name="settings">The settings of the assertion.</param>
+    /// <param name="path">The path of the source file that contains the test.</param>
+    /// <param name="expectedSnapshot">
+    /// The paths of the verified snapshot files found on disk for the assertion, sorted and separated by <c>\n</c>. It is
+    /// not the content of the files. It is <see langword="null" /> when there is no such file, or when the snapshots do
+    /// not differ.
+    /// </param>
+    /// <param name="actualSnapshot">
+    /// The paths of the verified snapshot files the assertion produces, sorted and separated by <c>\n</c>. It is not the
+    /// content of the files. When a single snapshot changed, it is the same path as <paramref name="expectedSnapshot" />.
+    /// It is <see langword="null" /> when the snapshots do not differ.
+    /// </param>
+    /// <remarks>
+    /// Use <see cref="UpdateFiles" /> to inspect the files: it receives each verified file with the actual file that
+    /// contains the new snapshot.
+    /// </remarks>
     public abstract bool CanUpdateSnapshot(SnapshotSettings settings, string path, string? expectedSnapshot, string? actualSnapshot);
 
     /// <summary>Updates one or more snapshot files and deletes obsolete verified files.</summary>
@@ -87,17 +112,6 @@ public abstract class SnapshotUpdateStrategy
 
     /// <summary>Indicates if an exception must be thrown when the snapshots differ.</summary>
     public abstract bool MustReportError(SnapshotSettings settings, string path);
-
-    private protected static void MoveFile(string source, string destination)
-    {
-        if (source == destination)
-            return;
-
-        var fi = new FileInfo(source);
-        fi.TrySetReadOnly(false);
-
-        File.Move(source, destination, overwrite: true);
-    }
 
     /// <summary>
     /// Replaces the verified file with the content of the actual file, and removes the actual file so that a later
@@ -134,19 +148,38 @@ public abstract class SnapshotUpdateStrategy
 
     private static void PromoteFileOnce(string actualFilePath, string verifiedFilePath)
     {
-        byte[] content;
-        try
+        // During an assertion, the engine knows what it wrote to the actual file a moment ago. Another process validating
+        // the same snapshot may have replaced or removed the file since: one that promoted it first, one whose output
+        // differs, or one whose own snapshot matched and that took the file for a leftover. A missing file therefore does
+        // not mean that the verified file has this assertion's content, so the verified file is written from memory. A
+        // verified file that already has the content is left untouched.
+        if (s_actualFileContents is null || !s_actualFileContents.TryGetValue(actualFilePath, out var content))
         {
-            content = ReadAllBytesWithRetry(actualFilePath);
-        }
-        catch (FileNotFoundException) when (File.Exists(verifiedFilePath))
-        {
-            // Another process validating the same snapshot promoted the actual file first.
-            return;
+            try
+            {
+                content = ReadAllBytesWithRetry(actualFilePath);
+            }
+            catch (FileNotFoundException) when (File.Exists(verifiedFilePath))
+            {
+                // The strategy was called outside of an assertion, so nothing tells what the actual file contained.
+                // Another process validating the same snapshot most likely promoted it first.
+                return;
+            }
         }
 
         WriteAllBytesAtomically(verifiedFilePath, content);
         DeleteFileIfContentEquals(actualFilePath, content);
+    }
+
+    /// <summary>
+    /// Makes the content of the actual files available to <see cref="PromoteFile" /> while a strategy updates the
+    /// snapshots of an assertion on the current thread, and returns the previous value.
+    /// </summary>
+    internal static Dictionary<string, byte[]>? SetActualFileContents(Dictionary<string, byte[]>? contents)
+    {
+        var previous = s_actualFileContents;
+        s_actualFileContents = contents;
+        return previous;
     }
 
     /// <summary>
@@ -261,7 +294,14 @@ public abstract class SnapshotUpdateStrategy
         }
     }
 
-    private static void WaitBeforeRetry(int attempt) => Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+    /// <summary>Called with the number of the failed attempt before a file operation is retried. Only meant for tests.</summary>
+    internal static Action<int>? RetryingFileOperation { get; set; }
+
+    private static void WaitBeforeRetry(int attempt)
+    {
+        RetryingFileOperation?.Invoke(attempt);
+        Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
+    }
 
     internal static void TryDeleteFile(string path)
     {

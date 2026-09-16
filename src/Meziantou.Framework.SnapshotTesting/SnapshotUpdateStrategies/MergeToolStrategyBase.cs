@@ -25,16 +25,22 @@ internal abstract class MergeToolStrategyBase : SnapshotUpdateStrategy
     }
 
     /// <summary>
-    /// Starts the merge tool, or returns <see langword="null" /> when merge tools are switched off for this run, in which
-    /// case the caller leaves the files alone and the snapshot difference is reported as a regular assertion failure.
+    /// Starts the merge tool, or returns <see langword="null" /> when merge tools are switched off for this run - by
+    /// <c>DiffEngine_Disabled</c>, a detected environment, or a <see langword="null" /> or empty
+    /// <see cref="SnapshotSettings.MergeTools" /> - in which case the caller leaves the files alone and the snapshot
+    /// difference is reported as a regular assertion failure.
     /// </summary>
     protected static MergeToolResult? TryLaunchMergeTool(SnapshotSettings settings, string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        if (SnapshotTesting.MergeTool.IsDisabled(settings.AutoDetectContinuousEnvironment))
+        if (settings.MergeTools is null)
+            return null;
+
+        MergeTool[] mergeTools = [.. settings.MergeTools];
+        if (mergeTools.Length is 0 || SnapshotTesting.MergeTool.IsDisabled(settings.AutoDetectContinuousEnvironment))
             return null;
 
         var failures = new List<MergeToolLaunchFailure>();
-        var result = SnapshotTesting.MergeTool.Launch(settings.MergeTools, currentFilePath, newFilePath, waitForMerge, failures);
+        var result = SnapshotTesting.MergeTool.Launch(mergeTools, currentFilePath, newFilePath, waitForMerge, failures);
         if (result is not null)
             return result;
 

@@ -1132,6 +1132,29 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
     }
 
+    [Theory]
+    [InlineData("a\nb\n", "// a\n// b\n")]
+    [InlineData("a\r\nb", "// a\r\n// b")]
+    [InlineData("a\r\rb", "// a\r// \r// b")]
+    [InlineData("", "")]
+    [InlineData("a\u2028b\fc\u0085d\u2029e", "// a\u2028b\fc\u0085d\u2029e")]
+    public void ScrubLinesWithReplace_SplitsOnlyOnLineBreaks(string text, string expected)
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesWithReplace(line => "// " + line);
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_DoesNotSplitOnUnicodeLineSeparators()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "Name");
+
+        Assert.Equal("Other", Assert.Single(settings.Scrubbers).Scrub("Other\nName: x\u2028Password: y"));
+    }
+
     [Fact]
     public void Scrub_Guid()
     {

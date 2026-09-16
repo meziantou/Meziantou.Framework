@@ -1,6 +1,10 @@
 using System.Diagnostics;
 
+#if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+#else
 namespace Meziantou.Framework.SnapshotTesting.MergeTools;
+#endif
 
 /// <summary>
 /// A merge tool process, and the cleanup to run once it exits. Disposing the result does not cancel that cleanup: a
@@ -35,7 +39,7 @@ internal sealed class ProcessMergeToolResult : MergeToolResult
 
     public Process Process { get; }
 
-    internal override bool WaitsForMerge => _waitsForMerge;
+    public override bool WaitsForMerge => _waitsForMerge;
 
     /// <summary>
     /// Starts a process and runs <paramref name="onExited" /> when it exits. The exit notification is set up before the

@@ -28,12 +28,21 @@ internal static partial class Program
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids") { Description = "List of rule ids to exclude from analysis", CustomParser = ParseIntValues };
         var githubTokenOptions = new Option<string?>("--github-token") { Description = "GitHub token to authenticate requests" };
         var onlyReportErrorsOptions = new Option<bool>("--only-report-errors") { Description = "Only report errors on the output" };
+        var maxParallelismOptions = new Option<int?>("--max-parallelism") { Description = "Maximum number of packages to validate concurrently (default: number of processors)" };
+        maxParallelismOptions.Validators.Add(result =>
+        {
+            if (result.GetValueOrDefault<int?>() is <= 0)
+            {
+                result.AddError("--max-parallelism must be greater than 0");
+            }
+        });
         rootCommand.Arguments.Add(pathsArgument);
         rootCommand.Options.Add(rulesOptions);
         rootCommand.Options.Add(excludedRulesOptions);
         rootCommand.Options.Add(excludedRuleIdsOptions);
         rootCommand.Options.Add(githubTokenOptions);
         rootCommand.Options.Add(onlyReportErrorsOptions);
+        rootCommand.Options.Add(maxParallelismOptions);
         rootCommand.SetAction(async (parseResult, cancellationToken) =>
         {
             var paths = parseResult.GetValue(pathsArgument);
@@ -96,22 +105,31 @@ internal static partial class Program
                 };
             }
 
-            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths.Length, StringComparer.Ordinal);
-            var validatedPaths = new HashSet<FullPath>(capacity: paths.Length);
-            foreach (var path in paths)
+            // FullPath knows whether the file system is case-sensitive, a plain string comparison does not
+            var packagePaths = paths.Select(path => FullPath.FromPath(path)).Distinct().ToArray();
+            var packageResults = new NuGetPackageValidationResult[packagePaths.Length];
+            var parallelOptions = new ParallelOptions { CancellationToken = cancellationToken };
+            if (parseResult.GetValue(maxParallelismOptions) is { } maxParallelism)
             {
-                // FullPath knows whether the file system is case-sensitive, a plain string comparison does not
-                var packagePath = FullPath.FromPath(path);
-                if (!validatedPaths.Add(packagePath))
-                    continue;
-
-                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
-
-                if (!packageResult.IsValid || !onlyReportErrors)
-                    packageResults.Add(packagePath, packageResult);
+                parallelOptions.MaxDegreeOfParallelism = maxParallelism;
             }
 
-            var result = new Result(packageResults);
+            await Parallel.ForEachAsync(Enumerable.Range(0, packagePaths.Length), parallelOptions, async (index, cancellationToken) =>
+            {
+                packageResults[index] = await NuGetPackageValidator.ValidateAsync(packagePaths[index], options, cancellationToken).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+            // Report packages in the order they were provided, whatever the order in which their validation completed
+            var reportedResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: packagePaths.Length, StringComparer.Ordinal);
+            for (var i = 0; i < packagePaths.Length; i++)
+            {
+                if (!packageResults[i].IsValid || !onlyReportErrors)
+                {
+                    reportedResults.Add(packagePaths[i], packageResults[i]);
+                }
+            }
+
+            var result = new Result(reportedResults);
 
             var jsonOptions = new JsonSerializerOptions
             {

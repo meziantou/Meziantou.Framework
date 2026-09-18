@@ -58,6 +58,59 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         Assert.Contains(result.ValidationResults.Packages[path2].Errors, item => item.ErrorCode == 101);
     }
 
+    [Fact]
+    public async Task TestPackage_Multiple_ReportedInInputOrder()
+    {
+        string[] paths =
+        [
+            FullPath.FromPath("Packages/Release_XmlDocumentation.1.0.0.nupkg"),
+            FullPath.FromPath("Packages/Release.1.0.0.nupkg"),
+            FullPath.FromPath("Packages/Missing.1.0.0.nupkg"),
+            FullPath.FromPath("Packages/Debug.1.0.0.nupkg"),
+            FullPath.FromPath("Packages/Release_Description.1.0.0.nupkg"),
+        ];
+
+        var result = await RunValidation([.. paths, "--rules", "AssembliesMustBeOptimized"]);
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal(paths, result.ValidationResults!.Packages.Keys);
+        Assert.True(result.ValidationResults.Packages[paths[1]].IsValid);
+        Assert.Contains(result.ValidationResults.Packages[paths[2]].Errors, item => item.ErrorCode == 1);
+        Assert.Contains(result.ValidationResults.Packages[paths[3]].Errors, item => item.ErrorCode == 81);
+    }
+
+    [Fact]
+    public async Task TestPackage_Multiple_OnlyReportErrors()
+    {
+        var path1 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
+        var path2 = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
+        var result = await RunValidation(path1, path2, "--rules", "AssembliesMustBeOptimized", "--only-report-errors");
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal([(string)path2], result.ValidationResults!.Packages.Keys);
+    }
+
+    [Fact]
+    public async Task MaxParallelism()
+    {
+        var path1 = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
+        var path2 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
+        var result = await RunValidation(path1, path2, "--rules", "AssembliesMustBeOptimized", "--max-parallelism", "1");
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal([(string)path1, path2], result.ValidationResults!.Packages.Keys);
+        Assert.Contains(result.ValidationResults.Packages[path1].Errors, item => item.ErrorCode == 81);
+        Assert.True(result.ValidationResults.Packages[path2].IsValid);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    public async Task MaxParallelism_Invalid(string value)
+    {
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--max-parallelism", value);
+        Assert.Equal(1, result.ExitCode);
+        Assert.Contains("--max-parallelism must be greater than 0", result.StdError, ignoreCase: false);
+        Assert.Null(result.ValidationResult);
+    }
+
     [Theory]
     [InlineData("raw.githubusercontent.com", true)]
     [InlineData("RAW.GITHUBUSERCONTENT.COM", true)]

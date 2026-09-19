@@ -21,7 +21,7 @@ const string StepValidateTestProjects = "validate-testprojects";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
 string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom];
 string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepBom, StepValidateTestProjects];
-var updatedFiles = new ConcurrentBag<string>();
+var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -174,7 +174,7 @@ void RunTemplateStep(FullPath rootPath)
 
         if (exitCode != 0)
         {
-            updatedFiles.Add(relativeTemplatePath);
+            updatedFiles.Enqueue(relativeTemplatePath);
         }
     });
 }
@@ -203,7 +203,7 @@ void RunUpdateBomStep(FullPath rootPath)
 
             WriteIfNotLlm($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
             File.WriteAllBytes(file, normalizedContent);
-            updatedFiles.Add(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
+            updatedFiles.Enqueue(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
         }
         catch (Exception ex)
         {
@@ -312,7 +312,7 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     if (normalizedExisting != newContent)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        updatedFiles.Add("eng/Trimmable/Trimmable.csproj");
+        updatedFiles.Enqueue("eng/Trimmable/Trimmable.csproj");
         WriteIfNotLlm("WARNING: eng/Trimmable/Trimmable.csproj was not up-to-date");
     }
 }
@@ -623,7 +623,7 @@ void RunUpdateProjectSlnxStep(FullPath rootPath, string outputPath)
         }
 
         File.WriteAllText(path, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        updatedFiles.Add(FullPath.FromPath(path).MakePathRelativeTo(rootPath));
+        updatedFiles.Enqueue(FullPath.FromPath(path).MakePathRelativeTo(rootPath));
     }
 
     void UpdateMainSolution()
@@ -814,7 +814,7 @@ void RunValidateTestProjectsConfigurationStep(FullPath rootPath)
                 {
                     var errorMsg = $"Project {proj} does not target {refTfm}, but it references {refProj} which does. ({string.Join(", ", testProjectTfms)}) != ({string.Join(", ", refTfms)})";
                     Console.Error.WriteLine($"ERROR: {errorMsg}");
-                    updatedFiles.Add(FullPath.FromPath(proj).MakePathRelativeTo(rootPath));
+                    updatedFiles.Enqueue(FullPath.FromPath(proj).MakePathRelativeTo(rootPath));
                 }
             }
         }
@@ -976,7 +976,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         if (originalContent != newContent)
         {
             File.WriteAllText(readmePath, newContent);
-            updatedFiles.Add(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
+            updatedFiles.Enqueue(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
             WriteIfNotLlm("WARNING: README.md was not up-to-date");
         }
     }
@@ -994,8 +994,8 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         var scannedProjectCount = csprojFiles.Length;
         var executableProjectCount = 0;
         var commandLineProjectCount = 0;
-        var toolProjects = new ConcurrentBag<ToolProject>();
-        var missingReadmeErrors = new ConcurrentBag<string>();
+        var toolProjects = new ConcurrentQueue<ToolProject>();
+        var missingReadmeErrors = new ConcurrentQueue<string>();
         var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism };
         Parallel.ForEach(csprojFiles, parallelOptions, csproj =>
         {
@@ -1023,11 +1023,11 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
             if (!File.Exists(toolReadme))
             {
-                missingReadmeErrors.Add($"ERROR: Tool {csproj} does not have a readme.md file");
+                missingReadmeErrors.Enqueue($"ERROR: Tool {csproj} does not have a readme.md file");
                 return;
             }
 
-            toolProjects.Add(new ToolProject(csproj, toolName, toolReadme));
+            toolProjects.Enqueue(new ToolProject(csproj, toolName, toolReadme));
         });
         var orderedToolProjects = toolProjects.OrderBy(project => project.Csproj, StringComparer.OrdinalIgnoreCase).ToArray();
 
@@ -1075,7 +1075,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             if (update.HasChanges)
             {
                 File.WriteAllText(update.ToolReadme, update.NewContent);
-                updatedFiles.Add(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
+                updatedFiles.Enqueue(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
                 WriteIfNotLlm($"WARNING: {update.ToolReadme} was not up-to-date");
             }
         }
@@ -1366,7 +1366,7 @@ bool WriteFileIfChanged(FullPath filePath, string content)
     }
 
     File.WriteAllText(filePath, normalizedContent, encoding);
-    updatedFiles.Add(filePath.MakePathRelativeTo(rootPath));
+    updatedFiles.Enqueue(filePath.MakePathRelativeTo(rootPath));
     return true;
 }
 

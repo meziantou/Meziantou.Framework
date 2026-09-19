@@ -3481,7 +3481,10 @@ jobs:
                 .OrderByDescending(item => (((ILocationLineInfo)item.Location).LineNumber, ((ILocationLineInfo)item.Location).LinePosition))
                 .ToArray();
 
-            var locationWithoutLineInfo = locationsByFile.Where(item => item.Location is not ILocationLineInfo).ToArray();
+            // No line info to sort on, so fall back to the reverse of the discovery order to keep updating from the
+            // end of the file like the branch above. Relying on the scan order instead only worked by accident, back
+            // when the scanner returned a ConcurrentBag and its enumeration happened to be the reverse of insertion.
+            var locationWithoutLineInfo = locationsByFile.Where(item => item.Location is not ILocationLineInfo).Reverse().ToArray();
 
             foreach (var item in locationsWithLineInfo)
             {

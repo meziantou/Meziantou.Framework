@@ -39,11 +39,13 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
                 return;
 
             var candidateCache = new ConcurrentDictionary<ISymbol, bool>(SymbolEqualityComparer.Default);
-            var arguments = new ConcurrentBag<ArgumentUsage>();
-            var excludedMethods = new ConcurrentBag<IMethodSymbol>();
+            // Operation actions only produce; the compilation end action is the single consumer. A queue avoids the
+            // per-item node allocation of a bag and the lock-every-thread-local-list walk its enumeration does.
+            var arguments = new ConcurrentQueue<ArgumentUsage>();
+            var excludedMethods = new ConcurrentQueue<IMethodSymbol>();
 
             context.RegisterOperationAction(context => AnalyzeInvocation(context, analyzerContext, candidateCache, arguments), OperationKind.Invocation);
-            context.RegisterOperationAction(context => excludedMethods.Add(((IMethodReferenceOperation)context.Operation).Method.OriginalDefinition), OperationKind.MethodReference);
+            context.RegisterOperationAction(context => excludedMethods.Enqueue(((IMethodReferenceOperation)context.Operation).Method.OriginalDefinition), OperationKind.MethodReference);
             context.RegisterCompilationEndAction(context => Report(context, arguments, excludedMethods));
         });
     }
@@ -52,7 +54,7 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
         OperationAnalysisContext context,
         FullPathContext analyzerContext,
         ConcurrentDictionary<ISymbol, bool> candidateCache,
-        ConcurrentBag<ArgumentUsage> arguments)
+        ConcurrentQueue<ArgumentUsage> arguments)
     {
         var invocationOperation = (IInvocationOperation)context.Operation;
         var targetMethod = invocationOperation.TargetMethod.OriginalDefinition;
@@ -64,11 +66,11 @@ public sealed class ParameterShouldBeFullPathAnalyzer : DiagnosticAnalyzer
             if (argument.Parameter is not { } parameter || !IsCandidate(parameter))
                 continue;
 
-            arguments.Add(new ArgumentUsage(targetMethod, parameter.Ordinal, analyzerContext.IsFullPathType(argument.Value)));
+            arguments.Enqueue(new ArgumentUsage(targetMethod, parameter.Ordinal, analyzerContext.IsFullPathType(argument.Value)));
         }
     }
 
-    private static void Report(CompilationAnalysisContext context, ConcurrentBag<ArgumentUsage> arguments, ConcurrentBag<IMethodSymbol> excludedMethods)
+    private static void Report(CompilationAnalysisContext context, ConcurrentQueue<ArgumentUsage> arguments, ConcurrentQueue<IMethodSymbol> excludedMethods)
     {
         var excluded = new HashSet<ISymbol>(excludedMethods, SymbolEqualityComparer.Default);
 

@@ -66,9 +66,12 @@ public abstract class DependencyScanner
     /// <returns>A collection of all discovered dependencies.</returns>
     public static async Task<IReadOnlyCollection<Dependency>> ScanDirectoryAsync(string path, ScannerOptions? options, CancellationToken cancellationToken = default)
     {
-        var result = new ConcurrentBag<Dependency>();
-        await ScanDirectoryAsync(path, options, result.Add, cancellationToken).ConfigureAwait(false);
-        return result;
+        // Scanners only ever produce, and the collection is enumerated once at the end. A ConcurrentBag
+        // allocated a node per dependency and made every enumeration lock and copy each thread-local list,
+        // which the returned collection then paid again on each pass. Snapshotting once keeps the callers cheap.
+        var result = new ConcurrentQueue<Dependency>();
+        await ScanDirectoryAsync(path, options, result.Enqueue, cancellationToken).ConfigureAwait(false);
+        return result.ToArray();
     }
 
     /// <summary>Scans a directory and its subdirectories for dependencies, invoking a callback for each dependency found.</summary>
@@ -133,9 +136,9 @@ public abstract class DependencyScanner
             options.Scanners = [.. scanners];
         }
 
-        var result = new ConcurrentBag<Dependency>();
-        await ScanFileAsync(options, result.Add, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
-        return result;
+        var result = new ConcurrentQueue<Dependency>();
+        await ScanFileAsync(options, result.Enqueue, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
+        return result.ToArray();
     }
 
     /// <summary>Scans a single file from the file system for dependencies.</summary>
@@ -147,9 +150,9 @@ public abstract class DependencyScanner
     public static async Task<IReadOnlyCollection<Dependency>> ScanFileAsync(string rootDirectory, string filePath, ScannerOptions? options, CancellationToken cancellationToken = default)
     {
         options ??= ScannerOptions.Default;
-        var result = new ConcurrentBag<Dependency>();
-        await ScanFileAsync(options, result.Add, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
-        return result;
+        var result = new ConcurrentQueue<Dependency>();
+        await ScanFileAsync(options, result.Enqueue, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
+        return result.ToArray();
     }
 
     /// <summary>Scans multiple specific files for dependencies.</summary>
@@ -161,9 +164,9 @@ public abstract class DependencyScanner
     public static async Task<IReadOnlyCollection<Dependency>> ScanFilesAsync(string rootDirectory, IEnumerable<string> filePaths, ScannerOptions? options, CancellationToken cancellationToken = default)
     {
         options ??= ScannerOptions.Default;
-        var result = new ConcurrentBag<Dependency>();
-        await ScanFilesAsync(rootDirectory, filePaths, options, result.Add, cancellationToken).ConfigureAwait(false);
-        return result;
+        var result = new ConcurrentQueue<Dependency>();
+        await ScanFilesAsync(rootDirectory, filePaths, options, result.Enqueue, cancellationToken).ConfigureAwait(false);
+        return result.ToArray();
     }
 
     /// <summary>Scans multiple specific files for dependencies, invoking a callback for each dependency found.</summary>

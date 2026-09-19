@@ -182,7 +182,7 @@ internal static class Program
 
         var updaters = CreatePackageUpdaters(minimumAge);
 
-        var updatedDependencies = new ConcurrentBag<Dependency>();
+        var updatedDependencies = new ConcurrentQueue<Dependency>();
         var failureCount = 0;
         var updatableDependencies = filteredDependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true);
         await Parallel.ForEachAsync(
@@ -214,9 +214,12 @@ internal static class Program
                 if (updatedVersion is not null)
                 {
                     output.WriteLine($"Updated {dependency} -> {updatedVersion}");
-                    updatedDependencies.Add(dependency);
+                    updatedDependencies.Enqueue(dependency);
                 }
             }).ConfigureAwait(false);
+
+        // Snapshot once: every updater enumerates this, and some of them more than once
+        var updated = updatedDependencies.ToArray();
 
         if (updateLockFiles)
         {
@@ -224,7 +227,7 @@ internal static class Program
             {
                 try
                 {
-                    await updater.UpdateLockFileAsync(rootPath, updatedDependencies, cancellationToken).ConfigureAwait(false);
+                    await updater.UpdateLockFileAsync(rootPath, updated, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -241,8 +244,8 @@ internal static class Program
         }
 
         output.WriteLine(failureCount is 0
-            ? $"{updatedDependencies.Count} dependencies updated"
-            : $"{updatedDependencies.Count} dependencies updated, {failureCount} failed");
+            ? $"{updated.Length} dependencies updated"
+            : $"{updated.Length} dependencies updated, {failureCount} failed");
 
         return failureCount is 0 ? 0 : 1;
     }
@@ -305,7 +308,7 @@ internal static class Program
     {
         // Must match what 'update' would do, otherwise a version too recent to be applied is still listed
         var updaters = CreatePackageUpdaters(minimumAge);
-        var upgradableDependencies = new ConcurrentBag<Dependency>();
+        var upgradableDependencies = new ConcurrentQueue<Dependency>();
         await Parallel.ForEachAsync(
             dependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true),
             new ParallelOptions { CancellationToken = cancellationToken, MaxDegreeOfParallelism = 1 },
@@ -317,7 +320,7 @@ internal static class Program
                     {
                         if (await updater.GetUpdatedVersionAsync(dependency, localCancellationToken).ConfigureAwait(false) is not null)
                         {
-                            upgradableDependencies.Add(dependency);
+                            upgradableDependencies.Enqueue(dependency);
                             break;
                         }
                     }
@@ -334,7 +337,10 @@ internal static class Program
                 }
             }).ConfigureAwait(false);
 
-        return dependencies.Where(upgradableDependencies.Contains).ToArray();
+        // Set lookup keeps the original order without the O(n*m) scan ConcurrentBag.Contains did, which also
+        // locked every thread-local list on each probe. Dependency has reference equality, as it did before.
+        var upgradable = new HashSet<Dependency>(upgradableDependencies);
+        return dependencies.Where(upgradable.Contains).ToArray();
     }
 
     private static Dependency[] FilterDependencies(Dependency[] dependencies, HashSet<DependencyType>? dependencyTypeSet)

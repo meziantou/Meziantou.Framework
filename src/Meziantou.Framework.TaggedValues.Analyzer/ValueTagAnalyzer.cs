@@ -121,7 +121,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
                 return;
 
             var resolver = new TagResolver(context.Compilation, context.Options.AnalyzerConfigOptionsProvider);
-            var conventionIdMembers = new ConcurrentBag<ISymbol>();
+            var conventionIdMembers = new ConcurrentQueue<ISymbol>();
 
             context.RegisterOperationAction(context => AnalyzeBinary(context, resolver), OperationKind.Binary);
             context.RegisterOperationAction(context => AnalyzeTupleBinary(context, resolver), OperationKind.TupleBinary);
@@ -575,7 +575,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void AnalyzePropertyReturnedValues(SymbolStartAnalysisContext context, TagResolver resolver)
     {
         // The diagnostic is reported on the name of the property, which is outside of the getter, so it is reported when the containing type ends
-        var diagnostics = new ConcurrentBag<Diagnostic>();
+        var diagnostics = new ConcurrentQueue<Diagnostic>();
         context.RegisterOperationBlockAction(context =>
         {
             if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property })
@@ -583,7 +583,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
             foreach (var block in context.OperationBlocks)
             {
-                ReportMissingReturnTag(diagnostics.Add, resolver, property, ValueTagTargetKind.Symbol, block);
+                ReportMissingReturnTag(diagnostics.Enqueue, resolver, property, ValueTagTargetKind.Symbol, block);
             }
         });
 
@@ -1031,7 +1031,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    private static void AnalyzeSymbol(SymbolAnalysisContext context, TagResolver resolver, ConcurrentBag<ISymbol> conventionIdMembers)
+    private static void AnalyzeSymbol(SymbolAnalysisContext context, TagResolver resolver, ConcurrentQueue<ISymbol> conventionIdMembers)
     {
         switch (context.Symbol)
         {
@@ -1132,18 +1132,18 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             ValueTagDescriptions.DescribeSymbol(symbol)));
     }
 
-    private static void CollectConventionIdMember(TagResolver resolver, ISymbol symbol, ConcurrentBag<ISymbol> conventionIdMembers)
+    private static void CollectConventionIdMember(TagResolver resolver, ISymbol symbol, ConcurrentQueue<ISymbol> conventionIdMembers)
     {
         if (symbol.IsOverride || !TagResolver.IsConventionIdName(symbol) || !TagResolver.GetExplicitAndInheritedTags(symbol).IsEmpty)
             return;
 
         if (!resolver.GetConventionTags(symbol).IsEmpty)
         {
-            conventionIdMembers.Add(symbol);
+            conventionIdMembers.Enqueue(symbol);
         }
     }
 
-    private static void ReportAmbiguousConventions(CompilationAnalysisContext context, TagResolver resolver, ConcurrentBag<ISymbol> conventionIdMembers)
+    private static void ReportAmbiguousConventions(CompilationAnalysisContext context, TagResolver resolver, ConcurrentQueue<ISymbol> conventionIdMembers)
     {
         foreach (var group in conventionIdMembers.GroupBy(member => member.ContainingType.Name, StringComparer.Ordinal))
         {

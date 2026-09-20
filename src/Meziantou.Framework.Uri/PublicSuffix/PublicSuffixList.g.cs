@@ -7,11 +7,11 @@ namespace Meziantou.Framework;
 
 static partial class PublicSuffixList
 {
-    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/3955e3ec29b94c3cca7bd4509c5f14a7c0959e26/public_suffix_list.dat
-    // Commit date: 2026-09-08T12:18:25.0000000+00:00
+    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/ff02362b20e273fbcc66405b9b3c21e5dd3e4367/public_suffix_list.dat
+    // Commit date: 2026-09-18T18:42:44.0000000+00:00
     private const int EntryCount = 10325;
     private const int RuleCountValue = 10325;
-    private const long LastUpdatedTicks = 639244667050000000L;
+    private const long LastUpdatedTicks = 639253537640000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -7049,7 +7049,6 @@ static partial class PublicSuffixList
         "aliases121.com",
         "alibabacloudcs.com",
         "alp1.ae.flow.ch",
-        "alpha-myqnapcloud.com",
         "altervista.org",
         "alwaysdata.net",
         "am.leg.br",
@@ -7547,7 +7546,6 @@ static partial class PublicSuffixList
         "deus-canvas.com",
         "deuxfleurs.eu",
         "deuxfleurs.page",
-        "dev-myqnapcloud.com",
         "dev.cv",
         "dev.project-study.com",
         "development.run",
@@ -8170,6 +8168,7 @@ static partial class PublicSuffixList
         "hopto.org",
         "hoquiam.wa.us",
         "hosp.uk",
+        "hosted-by-files.com",
         "hostedpi.com",
         "hosting-cluster.nl",
         "hostyhosting.io",
@@ -10193,6 +10192,7 @@ static partial class PublicSuffixList
         "compute.amazonaws.com",
         "compute.amazonaws.com.cn",
         "compute.estate",
+        "compute.herokuapp.com",
         "cursorusercontent.com",
         "customer-oci.com",
         "d.crm.dev",

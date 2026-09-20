@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>RecurrenceRule (RFC 5545) and Cron expression parser and evaluator</Description>
     <PackageTags>cron, rrule, recurrence, rfc5545, icalendar, scheduling</PackageTags>
-    <Version>4.1.2</Version>
+    <Version>4.1.3</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

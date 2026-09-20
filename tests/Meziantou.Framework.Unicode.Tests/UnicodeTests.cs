@@ -261,7 +261,10 @@ public sealed class UnicodeTests
     [Fact]
     public void AllCharacters_MatchesGeneratedEntryCount()
     {
-        Assert.Equal(297334, Unicode.AllCharacters.Count);
+        // The count comes from the header of the binary resource, while the constant is the tally the
+        // generator kept while writing it. A hardcoded number would have to be edited by hand on every
+        // Unicode data refresh, and the refresh is done by a bot whose pull requests get no CI run.
+        Assert.Equal(UnicodeCharacterInfos.GeneratedCharacterCount, Unicode.AllCharacters.Count);
     }
 
     [Fact]

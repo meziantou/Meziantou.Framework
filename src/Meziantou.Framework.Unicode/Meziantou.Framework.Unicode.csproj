@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Compile Include="../../common/GlobalizationHelper.cs" Link="GlobalizationHelper.cs" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Unicode.Tests" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,4 +17,7 @@ namespace Meziantou.Framework;
 internal static partial class UnicodeCharacterInfos
 {
     private const int MaxSerializedStringLength = 128;
+
+    /// <summary>Number of characters written to the binary resource, as counted by the generator.</summary>
+    internal const int GeneratedCharacterCount = 310341;
 }

@@ -3,9 +3,9 @@
 // Data source: https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 // Binary resource: UnicodeData.bin (uncompressed, see UnicodeDataFormat for the layout)
 // Statistics:
-//   - Total characters: 297334
-//   - Emoji characters: 1537
-//   - Resource size: 527,176 bytes (1.77 bytes per character)
+//   - Total characters: 310341
+//   - Emoji characters: 1546
+//   - Resource size: 541,115 bytes (1.74 bytes per character)
 //   - Max serialized string length: 88 bytes
 //
 // Specification: https://www.unicode.org/reports/tr44/

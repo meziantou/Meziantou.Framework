@@ -20,8 +20,9 @@ internal static partial class UnicodeCharacterInfos
     /// <summary>Reads the Unicode Character Database out of the embedded resource, in place.</summary>
     /// <remarks>
     /// The resource is kept as a single byte array and searched rather than expanded into a
-    /// dictionary of every code point: the database describes 297,334 characters, but they only
-    /// take a few thousand distinct property tuples once contiguous ranges are kept as ranges.
+    /// dictionary of every code point: the database describes hundreds of thousands of characters,
+    /// but they only take a few thousand distinct property tuples once contiguous ranges are kept
+    /// as ranges.
     /// Only names and decomposition mappings are materialized as strings, lazily and cached, so a
     /// program that never asks for them never pays for them. See <see cref="UnicodeDataFormat"/>
     /// for the layout.

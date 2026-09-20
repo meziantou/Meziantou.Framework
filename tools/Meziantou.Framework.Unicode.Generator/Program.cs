@@ -50,8 +50,12 @@ if (outputUpdated)
     versionNode.Value = version.NextPatchVersion().ToString();
 
     var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false, Encoding = encoding, Async = true, };
-    await using var writer = XmlWriter.Create(csprojPath, xws);
-    await doc.SaveAsync(writer, CancellationToken.None);
+    // Scoped so the writer is flushed and closed before the diff below reads the file back
+    await using (var writer = XmlWriter.Create(csprojPath, xws))
+    {
+        await doc.SaveAsync(writer, CancellationToken.None);
+    }
+
     Console.WriteLine("The file has been updated");
 
     // Print git diff to show what changed
@@ -436,6 +440,9 @@ async Task WriteUnicodeCharacterInfosFile(List<(int Start, int End, string Name)
         internal static partial class UnicodeCharacterInfos
         {
             private const int MaxSerializedStringLength = {{maxStringByteLengthPowerOfTwo}};
+
+            /// <summary>Number of characters written to the binary resource, as counted by the generator.</summary>
+            internal const int GeneratedCharacterCount = {{unicodeDataEntries.Count}};
         }
         """);
 

@@ -2,8 +2,8 @@
 // Generated from Unicode Block data
 // Data source: https://www.unicode.org/Public/UCD/latest/ucd/Blocks.txt
 // Statistics:
-//   - Total blocks: 346
-//   - Total code points in blocks: 303,808
+//   - Total blocks: 353
+//   - Total code points in blocks: 316,784
 //
 // Specification: https://www.unicode.org/reports/tr44/#Blocks.txt
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool
@@ -784,6 +784,9 @@ public static class UnicodeBlocks
     /// <summary>Tolong Siki (U+11DB0..U+11DEF, 64 code points).</summary>
     public static UnicodeBlock TolongSiki { get; } = UnicodeBlock.CreateInternal("Tolong Siki", new UnicodeRange(0x11DB0, 0x11DEF));
 
+    /// <summary>Bengali Supplement (U+11DF0..U+11DFF, 16 code points).</summary>
+    public static UnicodeBlock BengaliSupplement { get; } = UnicodeBlock.CreateInternal("Bengali Supplement", new UnicodeRange(0x11DF0, 0x11DFF));
+
     /// <summary>Makasar (U+11EE0..U+11EFF, 32 code points).</summary>
     public static UnicodeBlock Makasar { get; } = UnicodeBlock.CreateInternal("Makasar", new UnicodeRange(0x11EE0, 0x11EFF));
 
@@ -804,6 +807,9 @@ public static class UnicodeBlocks
 
     /// <summary>Early Dynastic Cuneiform (U+12480..U+1254F, 208 code points).</summary>
     public static UnicodeBlock EarlyDynasticCuneiform { get; } = UnicodeBlock.CreateInternal("Early Dynastic Cuneiform", new UnicodeRange(0x12480, 0x1254F));
+
+    /// <summary>Archaic Cuneiform Numerals (U+12550..U+1268F, 320 code points).</summary>
+    public static UnicodeBlock ArchaicCuneiformNumerals { get; } = UnicodeBlock.CreateInternal("Archaic Cuneiform Numerals", new UnicodeRange(0x12550, 0x1268F));
 
     /// <summary>Cypro-Minoan (U+12F90..U+12FFF, 112 code points).</summary>
     public static UnicodeBlock CyproMinoan { get; } = UnicodeBlock.CreateInternal("Cypro-Minoan", new UnicodeRange(0x12F90, 0x12FFF));
@@ -868,6 +874,12 @@ public static class UnicodeBlocks
     /// <summary>Tangut Components Supplement (U+18D80..U+18DFF, 128 code points).</summary>
     public static UnicodeBlock TangutComponentsSupplement { get; } = UnicodeBlock.CreateInternal("Tangut Components Supplement", new UnicodeRange(0x18D80, 0x18DFF));
 
+    /// <summary>Jurchen (U+18E00..U+1919F, 928 code points).</summary>
+    public static UnicodeBlock Jurchen { get; } = UnicodeBlock.CreateInternal("Jurchen", new UnicodeRange(0x18E00, 0x1919F));
+
+    /// <summary>Jurchen Radicals (U+191A0..U+191DF, 64 code points).</summary>
+    public static UnicodeBlock JurchenRadicals { get; } = UnicodeBlock.CreateInternal("Jurchen Radicals", new UnicodeRange(0x191A0, 0x191DF));
+
     /// <summary>Kana Extended-B (U+1AFF0..U+1AFFF, 16 code points).</summary>
     public static UnicodeBlock KanaExtendedB { get; } = UnicodeBlock.CreateInternal("Kana Extended-B", new UnicodeRange(0x1AFF0, 0x1AFFF));
 
@@ -907,6 +919,9 @@ public static class UnicodeBlocks
     /// <summary>Ancient Greek Musical Notation (U+1D200..U+1D24F, 80 code points).</summary>
     public static UnicodeBlock AncientGreekMusicalNotation { get; } = UnicodeBlock.CreateInternal("Ancient Greek Musical Notation", new UnicodeRange(0x1D200, 0x1D24F));
 
+    /// <summary>Musical Symbols Supplement (U+1D250..U+1D28F, 64 code points).</summary>
+    public static UnicodeBlock MusicalSymbolsSupplement { get; } = UnicodeBlock.CreateInternal("Musical Symbols Supplement", new UnicodeRange(0x1D250, 0x1D28F));
+
     /// <summary>Kaktovik Numerals (U+1D2C0..U+1D2DF, 32 code points).</summary>
     public static UnicodeBlock KaktovikNumerals { get; } = UnicodeBlock.CreateInternal("Kaktovik Numerals", new UnicodeRange(0x1D2C0, 0x1D2DF));
 
@@ -924,6 +939,9 @@ public static class UnicodeBlocks
 
     /// <summary>Sutton SignWriting (U+1D800..U+1DAAF, 688 code points).</summary>
     public static UnicodeBlock SuttonSignWriting { get; } = UnicodeBlock.CreateInternal("Sutton SignWriting", new UnicodeRange(0x1D800, 0x1DAAF));
+
+    /// <summary>Miscellaneous Symbols and Arrows Extended (U+1DB00..U+1DBFF, 256 code points).</summary>
+    public static UnicodeBlock MiscellaneousSymbolsandArrowsExtended { get; } = UnicodeBlock.CreateInternal("Miscellaneous Symbols and Arrows Extended", new UnicodeRange(0x1DB00, 0x1DBFF));
 
     /// <summary>Latin Extended-G (U+1DF00..U+1DFFF, 256 code points).</summary>
     public static UnicodeBlock LatinExtendedG { get; } = UnicodeBlock.CreateInternal("Latin Extended-G", new UnicodeRange(0x1DF00, 0x1DFFF));
@@ -1047,6 +1065,9 @@ public static class UnicodeBlocks
 
     /// <summary>CJK Unified Ideographs Extension J (U+323B0..U+3347F, 4,304 code points).</summary>
     public static UnicodeBlock CJKUnifiedIdeographsExtensionJ { get; } = UnicodeBlock.CreateInternal("CJK Unified Ideographs Extension J", new UnicodeRange(0x323B0, 0x3347F));
+
+    /// <summary>Seal (U+3D000..U+3FC3F, 11,328 code points).</summary>
+    public static UnicodeBlock Seal { get; } = UnicodeBlock.CreateInternal("Seal", new UnicodeRange(0x3D000, 0x3FC3F));
 
     /// <summary>Tags (U+E0000..U+E007F, 128 code points).</summary>
     public static UnicodeBlock Tags { get; } = UnicodeBlock.CreateInternal("Tags", new UnicodeRange(0xE0000, 0xE007F));
@@ -1321,6 +1342,7 @@ public static class UnicodeBlocks
             >= 0x11D00 and <= 0x11D5F => MasaramGondi,
             >= 0x11D60 and <= 0x11DAF => GunjalaGondi,
             >= 0x11DB0 and <= 0x11DEF => TolongSiki,
+            >= 0x11DF0 and <= 0x11DFF => BengaliSupplement,
             >= 0x11EE0 and <= 0x11EFF => Makasar,
             >= 0x11F00 and <= 0x11F5F => Kawi,
             >= 0x11FB0 and <= 0x11FBF => LisuSupplement,
@@ -1328,6 +1350,7 @@ public static class UnicodeBlocks
             >= 0x12000 and <= 0x123FF => Cuneiform,
             >= 0x12400 and <= 0x1247F => CuneiformNumbersandPunctuation,
             >= 0x12480 and <= 0x1254F => EarlyDynasticCuneiform,
+            >= 0x12550 and <= 0x1268F => ArchaicCuneiformNumerals,
             >= 0x12F90 and <= 0x12FFF => CyproMinoan,
             >= 0x13000 and <= 0x1342F => EgyptianHieroglyphs,
             >= 0x13430 and <= 0x1345F => EgyptianHieroglyphFormatControls,
@@ -1349,6 +1372,8 @@ public static class UnicodeBlocks
             >= 0x18B00 and <= 0x18CFF => KhitanSmallScript,
             >= 0x18D00 and <= 0x18D7F => TangutSupplement,
             >= 0x18D80 and <= 0x18DFF => TangutComponentsSupplement,
+            >= 0x18E00 and <= 0x1919F => Jurchen,
+            >= 0x191A0 and <= 0x191DF => JurchenRadicals,
             >= 0x1AFF0 and <= 0x1AFFF => KanaExtendedB,
             >= 0x1B000 and <= 0x1B0FF => KanaSupplement,
             >= 0x1B100 and <= 0x1B12F => KanaExtendedA,
@@ -1362,12 +1387,14 @@ public static class UnicodeBlocks
             >= 0x1D000 and <= 0x1D0FF => ByzantineMusicalSymbols,
             >= 0x1D100 and <= 0x1D1FF => MusicalSymbols,
             >= 0x1D200 and <= 0x1D24F => AncientGreekMusicalNotation,
+            >= 0x1D250 and <= 0x1D28F => MusicalSymbolsSupplement,
             >= 0x1D2C0 and <= 0x1D2DF => KaktovikNumerals,
             >= 0x1D2E0 and <= 0x1D2FF => MayanNumerals,
             >= 0x1D300 and <= 0x1D35F => TaiXuanJingSymbols,
             >= 0x1D360 and <= 0x1D37F => CountingRodNumerals,
             >= 0x1D400 and <= 0x1D7FF => MathematicalAlphanumericSymbols,
             >= 0x1D800 and <= 0x1DAAF => SuttonSignWriting,
+            >= 0x1DB00 and <= 0x1DBFF => MiscellaneousSymbolsandArrowsExtended,
             >= 0x1DF00 and <= 0x1DFFF => LatinExtendedG,
             >= 0x1E000 and <= 0x1E02F => GlagoliticSupplement,
             >= 0x1E030 and <= 0x1E08F => CyrillicExtendedD,
@@ -1409,6 +1436,7 @@ public static class UnicodeBlocks
             >= 0x30000 and <= 0x3134F => CJKUnifiedIdeographsExtensionG,
             >= 0x31350 and <= 0x323AF => CJKUnifiedIdeographsExtensionH,
             >= 0x323B0 and <= 0x3347F => CJKUnifiedIdeographsExtensionJ,
+            >= 0x3D000 and <= 0x3FC3F => Seal,
             >= 0xE0000 and <= 0xE007F => Tags,
             >= 0xE0100 and <= 0xE01EF => VariationSelectorsSupplement,
             >= 0xF0000 and <= 0xFFFFF => SupplementaryPrivateUseAreaA,

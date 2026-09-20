@@ -2,12 +2,12 @@
 // Generated from Unicode Emoji data
 // Data source: https://www.unicode.org/Public/UCD/latest/ucd/emoji/emoji-data.txt
 // Statistics:
-//   - Emoji: 1438 code points
-//   - Emoji_Presentation: 1219 code points
+//   - Emoji: 1447 code points
+//   - Emoji_Presentation: 1228 code points
 //   - Emoji_Modifier: 5 code points
-//   - Emoji_Modifier_Base: 134 code points
+//   - Emoji_Modifier_Base: 136 code points
 //   - Emoji_Component: 146 code points
-//   - Extended_Pictographic: 2848 code points
+//   - Extended_Pictographic: 2830 code points
 //
 // Specification: https://www.unicode.org/reports/tr51/
 // DO NOT MODIFY THIS FILE MANUALLY - regenerate using the Unicode generator tool

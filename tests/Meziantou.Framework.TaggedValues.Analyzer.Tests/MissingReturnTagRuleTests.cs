@@ -220,4 +220,28 @@ public sealed class MissingReturnTagRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task NoDiagnostic_ForOverridesAndImplementations()
+    {
+        await VerifyAsync("""
+            interface IHasCode
+            {
+                string Code { get; }
+
+                string GetCode();
+            }
+
+            class Sample : IHasCode
+            {
+                [ValueTag("OrderCode")] string _code = "";
+
+                public string Code => _code;
+
+                public string GetCode() => _code;
+
+                public override string ToString() => _code;
+            }
+            """);
+    }
 }

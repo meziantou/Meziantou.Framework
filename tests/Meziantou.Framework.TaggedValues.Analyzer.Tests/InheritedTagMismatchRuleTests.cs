@@ -64,4 +64,41 @@ public sealed class InheritedTagMismatchRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForRecordParametersIndexersAndImplementationsInABaseType()
+    {
+        await VerifyAsync("""
+            interface IHasId
+            {
+                [ValueTag("OrderId")] Guid Id { get; }
+            }
+
+            record Order([ValueTag("ProjectId")] Guid {|MFTV0004:Id|}) : IHasId;
+
+            interface IStore
+            {
+                Guid this[[ValueTag("OrderId")] Guid key] { get; }
+            }
+
+            class Store : IStore
+            {
+                public Guid this[[ValueTag("ProjectId")] Guid {|MFTV0004:key|}] => Guid.Empty;
+            }
+
+            interface IRepository
+            {
+                void Load([ValueTag("OrderId")] Guid id);
+            }
+
+            class Repository
+            {
+                public void Load([ValueTag("ProjectId")] Guid id) { }
+            }
+
+            class {|MFTV0004:DerivedRepository|} : Repository, IRepository
+            {
+            }
+            """);
+    }
 }

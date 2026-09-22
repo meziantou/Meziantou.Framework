@@ -1,3 +1,7 @@
+using Meziantou.Framework.TaggedValues;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
+
 namespace Meziantou.Framework.Tests;
 
 public sealed class CrossAssemblyTests : TaggedValuesAnalyzerTestBase
@@ -110,5 +114,116 @@ public sealed class CrossAssemblyTests : TaggedValuesAnalyzerTestBase
                 bool M(User user, [ValueTag("ProjectId")] Guid projectId) => {|MFTV0001:user.Id == projectId|};
             }
             """);
+    }
+
+    [Fact]
+    public async Task TagsAreReadFromReferencedProjects()
+    {
+        var test = CreateAnalyzerTest("""
+            class Sample
+            {
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                void M(Order order)
+                {
+                    Order.Load({|MFTV0002:_projectId|});
+                    _ = {|MFTV0001:order.Id == _projectId|};
+                }
+            }
+            """);
+        AddReferencedProject(test, """
+            public class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+
+                public static void Load([ValueTag("OrderId")] Guid orderId) { }
+            }
+            """);
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task StrictMode_AcceptsTheDeclarationsOfReferencedProjects()
+    {
+        var test = CreateAnalyzerTest("""
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _orderId;
+
+                void M()
+                {
+                    Library.Save(_orderId);
+                    _orderId = Library.Create();
+                }
+            }
+            """, strict: true);
+        AddReferencedProject(test, """
+            public static class Library
+            {
+                public static void Save(Guid id) { }
+
+                public static Guid Create() => Guid.NewGuid();
+            }
+            """);
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task ConventionsDoNotApplyToReferencedProjects()
+    {
+        var test = CreateAnalyzerTest("""
+            class Sample
+            {
+                bool M(Order order, Project project) => order.Id == project.Id;
+            }
+            """, inferTagsFromNames: true);
+        AddReferencedProject(test, """
+            public class Order
+            {
+                public Guid Id { get; set; }
+            }
+
+            public class Project
+            {
+                public Guid Id { get; set; }
+            }
+            """);
+        await test.RunAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeOnAConstructedGenericTypeOnlyTagsThisType()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Box<int>), nameof(Box<int>.Value), "OrderIndex")]
+
+            class Box<T>
+            {
+                public T Value { get; set; } = default!;
+            }
+
+            class Sample
+            {
+                [ValueTag("Name")] string _name = "";
+                [ValueTag("ProjectIndex")] int _projectIndex;
+
+                bool M(Box<string> names, Box<int> indexes) => names.Value == _name || {|MFTV0001:indexes.Value == _projectIndex|};
+            }
+            """);
+    }
+
+    /// <summary>
+    /// Adds a project referenced as a compilation, as the IDE does for a project reference, so its declarations are in source but not in the analyzed compilation.
+    /// </summary>
+    private static void AddReferencedProject(AnalyzerTest<DefaultVerifier> test, string source)
+    {
+        var project = test.TestState.AdditionalProjects["Library"];
+        project.Sources.Add(("/Library/Library.cs", """
+            using System;
+            using Meziantou.Framework.TaggedValues;
+
+            """ + source));
+        project.AdditionalReferences.Add(MetadataReference.CreateFromFile(typeof(ValueTagAttribute).Assembly.Location));
+        test.TestState.AdditionalProjectReferences.Add("Library");
     }
 }

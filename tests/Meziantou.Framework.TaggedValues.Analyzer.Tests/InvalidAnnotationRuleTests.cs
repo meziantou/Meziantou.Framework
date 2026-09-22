@@ -389,4 +389,74 @@ public sealed class InvalidAnnotationRuleTests : TaggedValuesAnalyzerTestBase
             record Order([field: {|MFTV0005:ValueTag("OrderId")|}] Guid Id);
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForCommentsThatAnotherCommentOverrides()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M()
+                {
+                    /* ValueTag=OrderId */ Guid {|MFTV0005:/* ValueTag=ProjectId */|} a = Guid.Empty;
+                    /* ValueTag=OrderId */ Guid /* ValueTag=OrderId */ b = Guid.Empty;
+                    {|MFTV0005:// ValueTag=OrderId|}
+                    Guid c /* ValueTag=ProjectId */ = Guid.Empty;
+                    // ValueTag=OrderId
+                    Guid d = Guid.Empty, e /* ValueTag=ProjectId */ = Guid.Empty;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CodeFix_RemovesAdjacentCommentsInOnePass()
+    {
+        await VerifyCodeFixAsync<RemoveValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                void M()
+                {
+                    {|MFTV0005:// ValueTag=A B|}
+                    {|MFTV0005:// ValueTag=C D|}
+                    Guid a = Guid.Empty;
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                void M()
+                {
+                    Guid a = Guid.Empty;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task CodeFix_RemovesABlockCommentOnItsOwnLine()
+    {
+        await VerifyCodeFixAsync<RemoveValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                void M()
+                {
+                    {|MFTV0005:/* ValueTag=A B */|}
+                    Guid a = Guid.Empty;
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                void M()
+                {
+                    Guid a = Guid.Empty;
+                }
+            }
+            """);
+    }
 }

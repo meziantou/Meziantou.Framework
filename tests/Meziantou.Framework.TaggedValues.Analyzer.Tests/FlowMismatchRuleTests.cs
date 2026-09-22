@@ -455,4 +455,192 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForDeconstructionAssignments()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _orderId;
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    (_orderId, _projectId) = ({|MFTV0002:projectId|}, {|MFTV0002:orderId|});
+                    (_orderId, _projectId) = (orderId, projectId);
+                    (_orderId, _) = ({|MFTV0002:projectId|}, orderId);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForOutArgumentsToExistingVariables()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                static bool TryGet([ValueTag("OrderId")] out Guid id)
+                {
+                    id = Guid.NewGuid();
+                    return true;
+                }
+
+                void M()
+                {
+                    Guid /* ValueTag=ProjectId */ local = Guid.Empty;
+                    TryGet(out {|#0:local|});
+                    TryGet(out {|MFTV0002:_projectId|});
+                    Guid /* ValueTag=OrderId */ orderId = Guid.Empty;
+                    TryGet(out orderId);
+                    TryGet(out _);
+                }
+            }
+            """, inferTagsFromNames: false, Diagnostic("MFTV0002").WithLocation(0).WithLocation(18, 39).WithMessage("parameter 'id' of 'Sample.TryGet' (line 10) is [ValueTag(\"OrderId\")] and flows to local 'local', which is [ValueTag(\"ProjectId\")]"));
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheOperandsOfUserDefinedComparisonAndCompoundAssignmentOperators()
+    {
+        await VerifyAsync("""
+            readonly struct Money
+            {
+                public static bool operator <([ValueTag("EUR")] Money left, [ValueTag("EUR")] Money right) => true;
+                public static bool operator >([ValueTag("EUR")] Money left, [ValueTag("EUR")] Money right) => true;
+
+                [return: ValueTag("EUR")]
+                public static Money operator +([ValueTag("EUR")] Money left, [ValueTag("EUR")] Money right) => left;
+            }
+
+            class Sample
+            {
+                [ValueTag("USD")] Money _usd;
+                [ValueTag("EUR")] Money _eur;
+                [ValueTag("EUR")] Money _otherEur;
+
+                void M()
+                {
+                    _ = {|MFTV0001:{|MFTV0002:_usd|} < _eur|};
+                    _ = _eur < _otherEur;
+                    {|MFTV0002:{|MFTV0002:_usd|} += _eur|};
+                    _eur += _otherEur;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheTaggedParametersOfAComparer()
+    {
+        await VerifyAsync("""
+            class OrderIdComparer : IComparer<Guid>
+            {
+                public int Compare([ValueTag("OrderId")] Guid x, [ValueTag("OrderId")] Guid y) => x.CompareTo(y);
+            }
+
+            class Sample
+            {
+                int M([ValueTag("ProjectId")] Guid projectId, OrderIdComparer comparer) => comparer.Compare({|MFTV0002:projectId|}, {|MFTV0002:projectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForMembersThatImplementATaggedInterfaceMember()
+    {
+        await VerifyAsync("""
+            interface ILoader
+            {
+                void Load([ValueTag("OrderId")] Guid id);
+
+                Guid this[[ValueTag("OrderId")] Guid id] { get; }
+            }
+
+            interface IStaticLoader
+            {
+                static abstract void LoadStatic([ValueTag("OrderId")] Guid id);
+            }
+
+            class Base
+            {
+                public void Load(Guid id) { }
+
+                public Guid this[Guid id] => id;
+            }
+
+            class Derived : Base, ILoader
+            {
+            }
+
+            abstract class AbstractBase
+            {
+                public abstract void Load(Guid id);
+            }
+
+            class Overriding : AbstractBase, ILoader
+            {
+                public override void Load(Guid id) { }
+
+                public Guid this[Guid id] => id;
+            }
+
+            class StaticLoader : IStaticLoader
+            {
+                public static void LoadStatic(Guid id) { }
+            }
+
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId, Derived derived, Overriding overriding)
+                {
+                    derived.Load({|MFTV0002:projectId|});
+                    _ = derived[{|MFTV0002:projectId|}];
+                    overriding.Load({|MFTV0002:projectId|});
+                    _ = overriding[{|MFTV0002:projectId|}];
+                    StaticLoader.LoadStatic({|MFTV0002:projectId|});
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task DeconstructMethodsAndPositionalPatternsKeepTheTags()
+    {
+        await VerifyAsync("""
+            record Order([ValueTag("OrderId")] Guid Id, [ValueTag("ProjectId")] Guid ProjectId);
+
+            class Pair
+            {
+                public void Deconstruct([ValueTag("OrderId")] out Guid orderId, [ValueTag("ProjectId")] out Guid projectId)
+                {
+                    orderId = Guid.Empty;
+                    projectId = Guid.Empty;
+                }
+            }
+
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M(Order order, Pair pair)
+                {
+                    var (id, projectId) = order;
+                    Load(id);
+                    Load({|MFTV0002:projectId|});
+                    if (order is (var a, var b))
+                    {
+                        Load(a);
+                        Load({|MFTV0002:b|});
+                    }
+
+                    var (c, d) = pair;
+                    Load(c);
+                    Load({|MFTV0002:d|});
+                }
+            }
+            """);
+    }
 }

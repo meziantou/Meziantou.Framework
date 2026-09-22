@@ -422,4 +422,110 @@ public sealed class StrictModeTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task NoDiagnostic_ForValuesAndDeclarationsThatCannotBeTagged()
+    {
+        await VerifyStrictAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+                [ValueTag("OrderCode")] public string Code { get; set; } = "";
+            }
+
+            class Box<T>
+            {
+                public T Value { get; set; } = default!;
+                public T Field = default!;
+            }
+
+            record Pair([ValueTag("OrderId")] Guid OrderId, [ValueTag("ProjectId")] Guid ProjectId);
+
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _orderId;
+                [ValueTag("OrderIndex")] int _orderIndex;
+                char _separator;
+
+                static void Log(string message, params object[] args) { }
+                static bool IsSeparator(char c) => c == '-';
+                static void Load([ValueTag("OrderId")] Guid id) { }
+                static (Guid A, Guid B) Get() => default;
+
+                void M(Order order, Pair pair, string name, (Guid A, Guid B) tuple)
+                {
+                    var box = new Box<Guid>();
+                    box.Value = order.Id;
+                    box.Field = order.Id;
+                    _ = new Box<Guid> { Value = order.Id };
+                    Log("{0} {1}", order.Id, name);
+                    var copy = (order.Id, name);
+                    _ = copy.Item1 == order.Id;
+                    _ = order.Id == Get().A;
+                    _orderId = tuple.A;
+                    var (orderId, _) = pair;
+                    Load(orderId);
+                    foreach (var c in order.Code)
+                    {
+                        _ = IsSeparator(c);
+                        _ = c == _separator;
+                    }
+
+                    _ = order.Code is [var first, ..] && first == _separator;
+                    _ = order.Code == string.Empty || order.Id == new Guid();
+                    _ = int.TryParse(name, out _orderIndex);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_OnlyAsCombinedValues_ForIncompatibleBranches()
+    {
+        await VerifyStrictAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+                [ValueTag("ProjectId")] public Guid ProjectId { get; set; }
+            }
+
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M(Order order, bool flag) => Load(flag ? order.Id : {|MFTV0003:order.ProjectId|});
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForOutArgumentsToExistingVariables()
+    {
+        await VerifyStrictAsync("""
+            class Sample
+            {
+                Guid _untagged;
+                [ValueTag("OrderId")] Guid _orderId;
+
+                static bool TryGet([ValueTag("OrderId")] out Guid id)
+                {
+                    id = Guid.NewGuid();
+                    return true;
+                }
+
+                static bool TryGetUntagged(out Guid id)
+                {
+                    id = Guid.NewGuid();
+                    return true;
+                }
+
+                void M()
+                {
+                    TryGet(out {|MFTV0009:_untagged|});
+                    TryGetUntagged(out {|MFTV0009:_orderId|});
+                    TryGet(out _orderId);
+                }
+            }
+            """);
+    }
 }

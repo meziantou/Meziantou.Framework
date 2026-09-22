@@ -135,8 +135,55 @@ internal sealed class TagResolver
                     return tags;
             }
 
-            return GetConventionTags(symbol);
+            return GetConventionTagsWithOverriddenMembers(symbol);
         });
+    }
+
+    /// <summary>
+    /// Returns the conventional tag of a symbol, and for an <c>Id</c>, the conventional tags of the members it overrides or implements:
+    /// <c>Id</c> overriding <c>Entity.Id</c> is an <c>OrderId</c> and an <c>EntityId</c>, as an inherited <c>Id</c> is.
+    /// </summary>
+    private TagInfo GetConventionTagsWithOverriddenMembers(ISymbol symbol)
+    {
+        var tags = GetConventionTags(symbol);
+        if (tags.IsEmpty || !IsConventionIdName(symbol))
+            return tags;
+
+        foreach (var baseSymbol in GetOverriddenOrImplementedSymbols(symbol))
+        {
+            tags = TagInfo.Union(tags, GetConventionTagsWithOverriddenMembers(baseSymbol.OriginalDefinition));
+        }
+
+        return tags;
+    }
+
+    /// <summary>
+    /// Returns whether the symbol is declared in the source of the compilation being analyzed, as opposed to a referenced assembly or project.
+    /// </summary>
+    public bool IsDeclaredInCompilation(ISymbol symbol)
+    {
+        foreach (var reference in symbol.DeclaringSyntaxReferences)
+        {
+            if (_compilation.ContainsSyntaxTree(reference.SyntaxTree))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the first location of the symbol in the source of the compilation being analyzed. A diagnostic cannot reference
+    /// the source of a referenced project, which the IDE exposes as a compilation reference.
+    /// </summary>
+    public Location? GetLocationInCompilation(ISymbol symbol)
+    {
+        foreach (var location in symbol.Locations)
+        {
+            if (location.IsInSource && location.SourceTree is not null && _compilation.ContainsSyntaxTree(location.SourceTree))
+                return location;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -146,13 +193,13 @@ internal sealed class TagResolver
     public TagInfo GetMemberTags(ISymbol member, ITypeSymbol? receiverType)
     {
         if (member is not (IFieldSymbol or IPropertySymbol))
-            return GetDeclaredTags(member);
+            return GetDeclaredOrReceiverInterfaceTags(member, receiverType);
 
         var external = GetExternalTags(member, receiverType);
         if (!external.IsEmpty)
             return external;
 
-        var declared = GetDeclaredTags(member);
+        var declared = GetDeclaredOrReceiverInterfaceTags(member, receiverType);
         if (declared.IsEmpty || declared.IsExplicit || !IsConventionIdName(member))
             return declared;
 
@@ -165,11 +212,56 @@ internal sealed class TagResolver
 
             if (IsConventionType(type))
             {
-                result = TagInfo.Union(result, TagInfo.Create([type.Name + "Id"], isExplicit: false));
+                result = TagInfo.Union(result, TagInfo.Create([GetConventionTypeName(type) + "Id"], isExplicit: false));
             }
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns the declared tags of a member, or when it has none, the tags of the interface members it implements for the receiver,
+    /// e.g. <c>ILoader.Load</c> for <c>Base.Load</c> called on <c>class Derived : Base, ILoader</c>.
+    /// </summary>
+    private TagInfo GetDeclaredOrReceiverInterfaceTags(ISymbol member, ITypeSymbol? receiverType)
+    {
+        var tags = GetDeclaredTags(member);
+        if (!tags.IsEmpty)
+            return tags;
+
+        foreach (var interfaceMember in GetInterfaceMembersImplementedThroughReceiver(member, receiverType))
+        {
+            tags = TagInfo.Union(tags, GetDeclaredTags(interfaceMember));
+        }
+
+        return tags;
+    }
+
+    /// <summary>
+    /// Returns the declared tags of a parameter, or when it has none, the tags of the parameter of the interface members its method implements for the receiver.
+    /// </summary>
+    private TagInfo GetDeclaredOrReceiverInterfaceTags(IParameterSymbol parameter, ITypeSymbol? receiverType)
+    {
+        var tags = GetDeclaredTags(parameter);
+        if (!tags.IsEmpty || parameter.ContainingSymbol is not { } containingMember)
+            return tags;
+
+        foreach (var interfaceMember in GetInterfaceMembersImplementedThroughReceiver(containingMember, receiverType))
+        {
+            var interfaceParameters = interfaceMember switch
+            {
+                IMethodSymbol method => method.Parameters,
+                IPropertySymbol property => property.Parameters,
+                _ => [],
+            };
+
+            if (parameter.Ordinal < interfaceParameters.Length)
+            {
+                tags = TagInfo.Union(tags, GetDeclaredTags(interfaceParameters[parameter.Ordinal]));
+            }
+        }
+
+        return tags;
     }
 
     /// <summary>
@@ -185,8 +277,8 @@ internal sealed class TagResolver
         switch (symbol)
         {
             case IFieldSymbol field:
-                // s_orderId and _orderId both read as orderId
-                var name = field.Name.StartsWith("s_", StringComparison.Ordinal) ? field.Name.Substring(2) : field.Name;
+                // s_orderId, t_orderId, m_orderId, and _orderId all read as orderId
+                var name = field.Name.Length > 2 && field.Name[0] is 's' or 't' or 'm' && field.Name[1] is '_' ? field.Name.Substring(2) : field.Name;
                 name = name.TrimStart('_');
                 return name.Length is 0 ? null : name;
 
@@ -209,7 +301,9 @@ internal sealed class TagResolver
         if (symbol.IsImplicitlyDeclared && !IsRecordPrimaryConstructorProperty(symbol))
             return TagInfo.None;
 
-        if (symbol.DeclaringSyntaxReferences.IsEmpty || !AreConventionsEnabled(symbol.DeclaringSyntaxReferences[0].SyntaxTree))
+        // The options of a referenced project are not known, so only the declarations of the compilation follow the convention,
+        // whether the project is referenced as an assembly or as a compilation
+        if (symbol.DeclaringSyntaxReferences.IsEmpty || !_compilation.ContainsSyntaxTree(symbol.DeclaringSyntaxReferences[0].SyntaxTree) || !AreConventionsEnabled(symbol.DeclaringSyntaxReferences[0].SyntaxTree))
             return TagInfo.None;
 
         var (type, containingType) = symbol switch
@@ -233,7 +327,7 @@ internal sealed class TagResolver
             if (symbol is IParameterSymbol)
                 return GetIdParameterConventionTags(type);
 
-            return TagInfo.Create([containingType.Name + "Id"], isExplicit: false);
+            return TagInfo.Create([GetConventionTypeName(containingType) + "Id"], isExplicit: false);
         }
 
         if (name.Length > 2 && name.EndsWith("Id", StringComparison.Ordinal))
@@ -249,18 +343,43 @@ internal sealed class TagResolver
             type = nullableType.TypeArguments[0];
         }
 
-        // A primitive such as Guid id does not say what it identifies
-        if (type is not INamedTypeSymbol { SpecialType: SpecialType.None, TypeKind: TypeKind.Class or TypeKind.Struct or TypeKind.Interface, IsAnonymousType: false } namedType || KnownTypes.IsGuid(namedType))
+        // A primitive such as Guid id, or another type of the framework such as Int128 id or DateTimeOffset id, does not say what it identifies
+        if (type is not INamedTypeSymbol { SpecialType: SpecialType.None, TypeKind: TypeKind.Class or TypeKind.Struct or TypeKind.Interface, IsAnonymousType: false } namedType || KnownTypes.IsGuid(namedType) || IsInSystemNamespace(namedType))
             return TagInfo.None;
 
         // UserId id is a UserId, not a UserIdId
-        var tag = namedType.Name.Length > 2 && namedType.Name.EndsWith("Id", StringComparison.Ordinal) ? namedType.Name : namedType.Name + "Id";
+        var name = GetConventionTypeName(namedType);
+        var tag = name.Length > 2 && name.EndsWith("Id", StringComparison.Ordinal) ? name : name + "Id";
         return TagInfo.Create([tag], isExplicit: false);
+    }
+
+    /// <summary>
+    /// Returns the name of a type as the naming convention reads it: the name of an interface does not keep its <c>I</c> prefix, so <c>Id</c> on
+    /// <c>IEntity</c> is an <c>EntityId</c>.
+    /// </summary>
+    private static string GetConventionTypeName(INamedTypeSymbol type)
+    {
+        var name = type.Name;
+        if (type.TypeKind is TypeKind.Interface && name.Length > 1 && name[0] is 'I' && char.IsUpper(name[1]))
+            return name.Substring(1);
+
+        return name;
+    }
+
+    private static bool IsInSystemNamespace(INamedTypeSymbol type)
+    {
+        var ns = type.ContainingNamespace;
+        while (ns is { ContainingNamespace.IsGlobalNamespace: false })
+        {
+            ns = ns.ContainingNamespace;
+        }
+
+        return ns is { IsGlobalNamespace: false, Name: "System" };
     }
 
     private bool IsConventionType(INamedTypeSymbol type)
     {
-        return !type.DeclaringSyntaxReferences.IsEmpty && AreConventionsEnabled(type.DeclaringSyntaxReferences[0].SyntaxTree);
+        return !type.DeclaringSyntaxReferences.IsEmpty && _compilation.ContainsSyntaxTree(type.DeclaringSyntaxReferences[0].SyntaxTree) && AreConventionsEnabled(type.DeclaringSyntaxReferences[0].SyntaxTree);
     }
 
     /// <summary>
@@ -327,16 +446,10 @@ internal sealed class TagResolver
         switch (symbol)
         {
             case IPropertySymbol property:
-                if (property.OverriddenProperty is not null)
-                    return [property.OverriddenProperty];
-
-                return GetImplementedInterfaceMembers(property, property.ExplicitInterfaceImplementations);
+                return GetOverriddenAndImplementedMembers(property, property.OverriddenProperty, property.ExplicitInterfaceImplementations);
 
             case IMethodSymbol method:
-                if (method.OverriddenMethod is not null)
-                    return [method.OverriddenMethod];
-
-                return GetImplementedInterfaceMembers(method, method.ExplicitInterfaceImplementations);
+                return GetOverriddenAndImplementedMembers(method, method.OverriddenMethod, method.ExplicitInterfaceImplementations);
 
             case IParameterSymbol { ContainingSymbol: IMethodSymbol containingMethod } parameter:
                 return GetOverriddenOrImplementedSymbols(containingMethod)
@@ -345,30 +458,47 @@ internal sealed class TagResolver
                     .Select(baseMethod => (ISymbol)baseMethod.Parameters[parameter.Ordinal])
                     .ToArray();
 
+            // The parameter of an indexer
+            case IParameterSymbol { ContainingSymbol: IPropertySymbol containingProperty } parameter:
+                return GetOverriddenOrImplementedSymbols(containingProperty)
+                    .OfType<IPropertySymbol>()
+                    .Where(baseProperty => parameter.Ordinal < baseProperty.Parameters.Length)
+                    .Select(baseProperty => (ISymbol)baseProperty.Parameters[parameter.Ordinal])
+                    .ToArray();
+
             default:
                 return [];
         }
     }
 
-    private static ISymbol[] GetImplementedInterfaceMembers<TSymbol>(TSymbol symbol, ImmutableArray<TSymbol> explicitImplementations)
+    /// <summary>
+    /// Returns the member <paramref name="symbol"/> overrides, and the interface members it implements, including static abstract members
+    /// and the interface members of the base types that an override implements.
+    /// </summary>
+    private static ISymbol[] GetOverriddenAndImplementedMembers<TSymbol>(TSymbol symbol, TSymbol? overriddenMember, ImmutableArray<TSymbol> explicitImplementations)
         where TSymbol : class, ISymbol
     {
         if (!explicitImplementations.IsEmpty)
             return explicitImplementations.Cast<ISymbol>().ToArray();
 
-        var containingType = symbol.ContainingType;
-        if (containingType is null || symbol.IsStatic)
-            return [];
-
         List<ISymbol>? result = null;
-        foreach (var @interface in containingType.AllInterfaces)
+        if (overriddenMember is not null)
         {
-            foreach (var member in @interface.GetMembers(symbol.Name))
+            result = [overriddenMember];
+        }
+
+        var containingType = symbol.ContainingType;
+        if (containingType is not null)
+        {
+            foreach (var @interface in containingType.AllInterfaces)
             {
-                if (member is TSymbol && SymbolEqualityComparer.Default.Equals(containingType.FindImplementationForInterfaceMember(member), symbol))
+                foreach (var member in @interface.GetMembers(symbol.Name))
                 {
-                    result ??= [];
-                    result.Add(member);
+                    if (member is TSymbol && member.IsStatic == symbol.IsStatic && SymbolEqualityComparer.Default.Equals(containingType.FindImplementationForInterfaceMember(member), symbol))
+                    {
+                        result ??= [];
+                        result.Add(member);
+                    }
                 }
             }
         }
@@ -376,7 +506,32 @@ internal sealed class TagResolver
         return result?.ToArray() ?? [];
     }
 
-    private static TagInfo GetRecordPrimaryConstructorParameterTags(IPropertySymbol property)
+    /// <summary>
+    /// Returns the members of the interfaces of <paramref name="receiverType"/> that <paramref name="member"/> implements although its declaring type
+    /// does not implement them, e.g. <c>Base.Load</c> for <c>ILoader.Load</c> in <c>class Derived : Base, ILoader</c>.
+    /// </summary>
+    public static IEnumerable<ISymbol> GetInterfaceMembersImplementedThroughReceiver(ISymbol member, ITypeSymbol? receiverType)
+    {
+        if (receiverType is not INamedTypeSymbol namedReceiverType || member.ContainingType is null || member.IsStatic ||
+            SymbolEqualityComparer.Default.Equals(namedReceiverType.OriginalDefinition, member.ContainingType.OriginalDefinition))
+        {
+            yield break;
+        }
+
+        foreach (var @interface in namedReceiverType.AllInterfaces)
+        {
+            if (member.ContainingType.AllInterfaces.Contains(@interface, SymbolEqualityComparer.Default))
+                continue;
+
+            foreach (var interfaceMember in @interface.GetMembers(member.Name))
+            {
+                if (SymbolEqualityComparer.Default.Equals(namedReceiverType.FindImplementationForInterfaceMember(interfaceMember)?.OriginalDefinition, member.OriginalDefinition))
+                    yield return interfaceMember;
+            }
+        }
+    }
+
+    public static TagInfo GetRecordPrimaryConstructorParameterTags(IPropertySymbol property)
     {
         if (!property.ContainingType.IsRecord)
             return TagInfo.None;
@@ -421,7 +576,8 @@ internal sealed class TagResolver
             {
                 if (TryReadExternalAttribute(attribute, out var type, out var memberName, out var tags) && !tags.IsEmpty)
                 {
-                    var key = (type.OriginalDefinition, memberName);
+                    // typeof(Box<int>) only tags Box<int>, while typeof(Box<>) tags every Box<T>
+                    var key = (type is INamedTypeSymbol { IsGenericType: true, IsUnboundGenericType: false } ? type : type.OriginalDefinition, memberName);
                     result.Tags[key] = result.Tags.TryGetValue(key, out var existing) ? TagInfo.Union(existing, tags) : tags;
                     result.MemberNames.Add(memberName);
                 }
@@ -457,24 +613,37 @@ internal sealed class TagResolver
         var startType = receiverType as INamedTypeSymbol ?? member.ContainingType;
         for (var type = startType; type is not null; type = type.BaseType)
         {
-            if (externalTags.Tags.TryGetValue((type.OriginalDefinition, member.Name), out var tags))
-            {
-                result = TagInfo.Union(result, tags);
-            }
+            result = TagInfo.Union(result, GetExternalTags(externalTags, type, member.Name));
         }
 
         if (startType is not null)
         {
             foreach (var @interface in startType.AllInterfaces)
             {
-                if (externalTags.Tags.TryGetValue((@interface.OriginalDefinition, member.Name), out var tags))
-                {
-                    result = TagInfo.Union(result, tags);
-                }
+                result = TagInfo.Union(result, GetExternalTags(externalTags, @interface, member.Name));
             }
         }
 
         return result;
+
+        static TagInfo GetExternalTags(ExternalTags externalTags, INamedTypeSymbol type, string memberName)
+        {
+            var result = externalTags.Tags.TryGetValue((type.OriginalDefinition, memberName), out var tags) ? tags : TagInfo.None;
+            if (type.IsGenericType && !SymbolEqualityComparer.Default.Equals(type, type.OriginalDefinition) && externalTags.Tags.TryGetValue((type, memberName), out var constructedTags))
+            {
+                result = TagInfo.Union(result, constructedTags);
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether an <c>[assembly: ValueTag]</c> attribute tags the member.
+    /// </summary>
+    public bool HasExternalTags(ISymbol member)
+    {
+        return member is IFieldSymbol or IPropertySymbol && !GetExternalTags(member, receiverType: null).IsEmpty;
     }
 
     /// <summary>
@@ -562,7 +731,12 @@ internal sealed class TagResolver
         {
             case VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Parent: (LocalDeclarationStatementSyntax or ForStatementSyntax or UsingStatementSyntax or FixedStatementSyntax) and { } statement } variableDeclaration } declarator:
                 var typeArgumentTrivia = TypeArgumentComments.GetAllTrivia(variableDeclaration.Type);
+
+                // Guid a, /* ValueTag=OrderId */ b: the comment is attached to the comma before the name
+                var declaratorIndex = variableDeclaration.Variables.IndexOf(declarator);
+                var separatorTrivia = declaratorIndex > 0 ? variableDeclaration.Variables.GetSeparator(declaratorIndex - 1).TrailingTrivia.Where(trivia => trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)) : [];
                 return GetTokenTrivia(declarator.Identifier)
+                    .Concat(separatorTrivia)
                     .Concat(statement.DescendantTokens().TakeWhile(token => token.SpanStart < variableDeclaration.Variables[0].SpanStart).SelectMany(GetTokenTrivia).Where(trivia => !typeArgumentTrivia.Contains(trivia)))
                     .Concat(GetLineComments(statement.GetFirstToken()));
 
@@ -615,10 +789,11 @@ internal sealed class TagResolver
             switch (syntax)
             {
                 case VariableDeclaratorSyntax declarator when semanticModel.GetOperation(declarator) is IVariableDeclaratorOperation declaratorOperation:
-                    return GetTag(declaratorOperation.GetVariableInitializer()?.Value, depth + 1);
+                    return GetTag(SkipLocalCopies(declaratorOperation.GetVariableInitializer()?.Value, semanticModel), depth + 1);
 
+                // The tags of a string describe the string, not its characters
                 case ForEachStatementSyntax forEach when semanticModel.GetOperation(forEach) is IForEachLoopOperation forEachOperation:
-                    return GetTag(forEachOperation.Collection, depth + 1);
+                    return IsString(forEachOperation.Collection) ? TagInfo.None : GetTag(forEachOperation.Collection, depth + 1);
 
                 case SingleVariableDesignationSyntax { Parent: DeclarationExpressionSyntax declarationExpression } when semanticModel.GetOperation(declarationExpression) is { Parent: IArgumentOperation argument }:
                     return GetExpectedArgumentTags(argument, depth + 1);
@@ -629,6 +804,41 @@ internal sealed class TagResolver
         }
 
         return TagInfo.None;
+    }
+
+    /// <summary>
+    /// Follows a chain of copies such as <c>var a1 = a0; var a2 = a1;</c> to the first initializer that is not an untagged local, without consuming depth.
+    /// Otherwise, whether a long chain reaches its origin before <see cref="MaxDepth"/> would depend on which locals were analyzed first.
+    /// </summary>
+    private IOperation? SkipLocalCopies(IOperation? value, SemanticModel semanticModel)
+    {
+        HashSet<ILocalSymbol>? visited = null;
+        while (true)
+        {
+            var current = value;
+            while (current is IConversionOperation { IsImplicit: true, Conversion.IsUserDefined: false } conversion)
+            {
+                current = conversion.Operand;
+            }
+
+            if (current is not ILocalReferenceOperation { Local: var local } ||
+                _localTags.ContainsKey(local) ||
+                !GetLocalCommentTags(local).IsEmpty ||
+                local.DeclaringSyntaxReferences.Length is not 1 ||
+                local.DeclaringSyntaxReferences[0].SyntaxTree != semanticModel.SyntaxTree ||
+                local.DeclaringSyntaxReferences[0].GetSyntax() is not VariableDeclaratorSyntax declarator ||
+                semanticModel.GetOperation(declarator) is not IVariableDeclaratorOperation declaratorOperation ||
+                declaratorOperation.GetVariableInitializer()?.Value is not { } initializer)
+            {
+                return value;
+            }
+
+            visited ??= new(SymbolEqualityComparer.Default);
+            if (!visited.Add(local))
+                return value;
+
+            value = initializer;
+        }
     }
 
     /// <summary>
@@ -690,30 +900,55 @@ internal sealed class TagResolver
         if (reference is null)
             return TagInfo.None;
 
-        var path = new List<int>();
-        for (IOperation current = reference; current != target && current.Parent is { } parent; current = parent)
+        var element = GetDeconstructedElement(target, reference, value, tags, type, depth);
+        return element.Tags ?? GetTag(element.Value, depth + 1);
+    }
+
+    /// <summary>
+    /// Returns the value deconstructed into <paramref name="targetElement"/>, an element of the target of a deconstruction, e.g. <c>b</c> in <c>(a, (b, c)) = value</c>.
+    /// </summary>
+    /// <param name="target">The target of the deconstruction.</param>
+    /// <param name="targetElement">An element of <paramref name="target"/>.</param>
+    /// <param name="value">The deconstructed value, when it is an operation.</param>
+    /// <param name="tags">The tags of the deconstructed value, or <see langword="null"/> to read them from <paramref name="value"/>.</param>
+    /// <param name="type">The type of the deconstructed value.</param>
+    /// <returns>The deconstructed value, and its tags when they cannot be read from the value.</returns>
+    public (IOperation? Value, TagInfo? Tags) GetDeconstructedElement(IOperation target, IOperation targetElement, IOperation? value, TagInfo? tags, ITypeSymbol? type)
+    {
+        return GetDeconstructedElement(target, targetElement, value, tags, type, depth: 0);
+    }
+
+    private (IOperation? Value, TagInfo? Tags) GetDeconstructedElement(IOperation target, IOperation targetElement, IOperation? value, TagInfo? tags, ITypeSymbol? type, int depth)
+    {
+        var path = new List<(int Index, int Arity)>();
+        for (var current = targetElement; current != target && current.Parent is { } parent; current = parent)
         {
             if (parent is ITupleOperation tuple)
             {
-                path.Add(tuple.Elements.IndexOf(current));
+                path.Add((tuple.Elements.IndexOf(current), tuple.Elements.Length));
             }
         }
 
         for (var i = path.Count - 1; i >= 0; i--)
         {
-            (value, tags, type) = GetDeconstructedElement(value, tags, type, path[i], depth + 1);
+            (value, tags, type) = GetDeconstructedElement(value, tags, type, path[i].Index, path[i].Arity, deconstructMethod: null, depth + 1);
         }
 
-        return tags ?? GetTag(value, depth + 1);
+        return (value, tags);
     }
 
     /// <summary>
-    /// Returns the element at <paramref name="index"/> of a deconstructed value: an element of a tuple literal, or the key or the value of a <c>KeyValuePair</c>.
+    /// Returns the element at <paramref name="index"/> of a deconstructed value: an element of a tuple literal, the key or the value of a <c>KeyValuePair</c>,
+    /// or an <see langword="out"/> parameter of a <c>Deconstruct</c> method, including the one of a record.
     /// </summary>
     /// <param name="value">The deconstructed value, when it is an operation.</param>
     /// <param name="tags">The tags of the deconstructed value, or <see langword="null"/> to read them from <paramref name="value"/>.</param>
     /// <param name="type">The type of the deconstructed value.</param>
-    private (IOperation? Value, TagInfo? Tags, ITypeSymbol? Type) GetDeconstructedElement(IOperation? value, TagInfo? tags, ITypeSymbol? type, int index, int depth)
+    /// <param name="index">The index of the element.</param>
+    /// <param name="arity">The number of elements the value is deconstructed into.</param>
+    /// <param name="deconstructMethod">The <c>Deconstruct</c> method, or <see langword="null"/> to look it up on <paramref name="type"/>.</param>
+    /// <param name="depth">The current depth.</param>
+    private (IOperation? Value, TagInfo? Tags, ITypeSymbol? Type) GetDeconstructedElement(IOperation? value, TagInfo? tags, ITypeSymbol? type, int index, int arity, IMethodSymbol? deconstructMethod, int depth)
     {
         if (tags is null && value?.UnwrapImplicitConversions() is ITupleOperation tuple)
             return index >= 0 && index < tuple.Elements.Length ? (tuple.Elements[index], null, tuple.Elements[index].Type) : (null, TagInfo.None, null);
@@ -724,7 +959,75 @@ internal sealed class TagResolver
             return (null, index is 0 ? keyValueTags.GetKey() : keyValueTags.GetValue(), namedType.TypeArguments[index]);
         }
 
+        deconstructMethod ??= FindDeconstructMethod(type, arity);
+        if (deconstructMethod is not null)
+        {
+            var offset = deconstructMethod.IsExtensionMethod && deconstructMethod.ReducedFrom is null ? 1 : 0;
+            if (index >= 0 && index + offset < deconstructMethod.Parameters.Length)
+            {
+                var parameter = deconstructMethod.Parameters[index + offset];
+                return (null, GetDeconstructParameterTags(deconstructMethod, parameter, type), parameter.Type);
+            }
+        }
+
         return (null, TagInfo.None, null);
+    }
+
+    private static IMethodSymbol? FindDeconstructMethod(ITypeSymbol? type, int arity)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers("Deconstruct"))
+            {
+                if (member is IMethodSymbol { IsStatic: false } method && method.Parameters.Length == arity && method.Parameters.All(parameter => parameter.RefKind is RefKind.Out))
+                    return method;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the tags of an <see langword="out"/> parameter of a <c>Deconstruct</c> method. The parameters of the method generated for a record have the tags of its properties.
+    /// </summary>
+    private TagInfo GetDeconstructParameterTags(IMethodSymbol deconstructMethod, IParameterSymbol parameter, ITypeSymbol? type)
+    {
+        var tags = GetDeclaredTags(parameter);
+        if (!tags.IsEmpty || !deconstructMethod.IsImplicitlyDeclared || deconstructMethod.ContainingType is not { IsRecord: true } record)
+            return tags;
+
+        var property = record.GetMembers(parameter.Name).OfType<IPropertySymbol>().FirstOrDefault();
+        return property is null ? TagInfo.None : GetMemberTags(property, type);
+    }
+
+    /// <summary>
+    /// Returns the tags of an element of a tuple, e.g. <c>pair.Item1</c>, from the tuple literal it was created with, e.g. <c>var pair = (order.Id, order.ProjectId)</c>.
+    /// </summary>
+    private TagInfo GetTupleElementTags(IFieldReferenceOperation fieldReference, int depth)
+    {
+        var field = fieldReference.Field;
+        var index = field.ContainingType.TupleElements.IndexOf(field.CorrespondingTupleField ?? field, SymbolEqualityComparer.Default);
+        if (index < 0)
+        {
+            index = field.ContainingType.TupleElements.Select(element => element.CorrespondingTupleField).ToList().FindIndex(element => SymbolEqualityComparer.Default.Equals(element, field.CorrespondingTupleField));
+        }
+
+        if (index < 0 || fieldReference.Instance is null)
+            return TagInfo.None;
+
+        var instance = fieldReference.Instance.UnwrapImplicitConversions();
+        if (instance is ILocalReferenceOperation && fieldReference.SemanticModel is { } semanticModel)
+        {
+            instance = SkipLocalCopies(instance, semanticModel)?.UnwrapImplicitConversions() ?? instance;
+            if (instance is ILocalReferenceOperation { Local: var local } && local.DeclaringSyntaxReferences is [var reference] &&
+                reference.SyntaxTree == semanticModel.SyntaxTree && semanticModel.GetOperation(reference.GetSyntax()) is IVariableDeclaratorOperation declarator &&
+                declarator.GetVariableInitializer()?.Value is { } initializer)
+            {
+                instance = initializer.UnwrapImplicitConversions();
+            }
+        }
+
+        return instance is ITupleOperation tuple && index < tuple.Elements.Length ? GetTag(tuple.Elements[index], depth + 1) : TagInfo.None;
     }
 
     /// <summary>
@@ -760,9 +1063,10 @@ internal sealed class TagResolver
             case INegatedPatternOperation or IBinaryPatternOperation or ISlicePatternOperation:
                 return GetPatternInput((IPatternOperation)pattern.Parent, depth + 1);
 
-            // The tags of a collection describe its elements, so an element and a slice have the tags of the collection
+            // The tags of a collection describe its elements, so an element and a slice have the tags of the collection.
+            // The tags of a string describe the string, not its characters.
             case IListPatternOperation listPattern:
-                return GetPatternInput(listPattern, depth + 1);
+                return listPattern.InputType.SpecialType is SpecialType.System_String ? (null, TagInfo.None) : GetPatternInput(listPattern, depth + 1);
 
             // The member reads the pattern input, see the PatternInput instance reference in GetTag
             case IPropertySubpatternOperation propertySubpattern:
@@ -774,7 +1078,7 @@ internal sealed class TagResolver
                     return (null, TagInfo.None);
 
                 var input = GetPatternInput(recursivePattern, depth + 1);
-                var element = GetDeconstructedElement(input.Value, input.Tags, recursivePattern.MatchedType, index, depth + 1);
+                var element = GetDeconstructedElement(input.Value, input.Tags, recursivePattern.MatchedType, index, recursivePattern.DeconstructionSubpatterns.Length, recursivePattern.DeconstructSymbol as IMethodSymbol, depth + 1);
                 return (element.Value, element.Tags);
 
             default:
@@ -871,7 +1175,11 @@ internal sealed class TagResolver
                 return GetTag(compoundAssignment.Target, depth + 1);
 
             case IFieldReferenceOperation fieldReference:
-                return GetMemberTags(fieldReference.Field, fieldReference.Instance?.Type);
+                var fieldTags = GetMemberTags(fieldReference.Field, fieldReference.Instance?.Type);
+                if (fieldTags.IsEmpty && fieldReference.Field.ContainingType.IsTupleType)
+                    return GetTupleElementTags(fieldReference, depth);
+
+                return fieldTags;
 
             case IPropertyReferenceOperation propertyReference:
                 var propertyTags = GetAnonymousTypePropertyTags(propertyReference, depth);
@@ -895,7 +1203,7 @@ internal sealed class TagResolver
                 return GetLocalTags(localReference.Local, localReference.SemanticModel, depth);
 
             case IInvocationOperation invocation:
-                var returnTags = GetDeclaredTags(invocation.TargetMethod);
+                var returnTags = GetDeclaredOrReceiverInterfaceTags(invocation.TargetMethod, invocation.Instance?.Type);
                 if (!returnTags.IsEmpty)
                     return returnTags;
 
@@ -1001,6 +1309,10 @@ internal sealed class TagResolver
             if (tag.IsEmpty)
                 continue;
 
+            // Most combined values share the same tags, so only the distinct ones are compared
+            if (tags.Exists(existing => existing.IsExplicit == tag.IsExplicit && existing.TagsEqual(tag)))
+                continue;
+
             foreach (var existing in tags)
             {
                 if (!TagInfo.AreCompatible(existing, tag))
@@ -1023,6 +1335,10 @@ internal sealed class TagResolver
         {
             var tag = GetTag(operation);
             if (tag.IsEmpty)
+                continue;
+
+            // Most combined values share the same tags, so only the distinct ones are compared
+            if (tagged.Exists(existing => existing.Tags.TagsEqual(tag)))
                 continue;
 
             foreach (var existing in tagged)
@@ -1225,15 +1541,15 @@ internal sealed class TagResolver
 
     private TagInfo GetExpectedArgumentTags(IArgumentOperation argument, int depth)
     {
-        if (argument.Parameter is null)
-            return TagInfo.None;
+        if (argument.Parameter is null || !TryGetArgumentOwner(argument, out var member, out var instance, out var arguments))
+            return argument.Parameter is null ? TagInfo.None : GetDeclaredTags(argument.Parameter);
 
-        var tags = GetDeclaredTags(argument.Parameter);
+        var tags = GetDeclaredOrReceiverInterfaceTags(argument.Parameter, instance?.Type);
         if (!tags.IsEmpty)
             return tags;
 
         var parameterType = argument.Parameter.OriginalDefinition.Type;
-        if (!ContainsTypeParameter(parameterType) || !TryGetArgumentOwner(argument, out var member, out var instance, out var arguments))
+        if (!ContainsTypeParameter(parameterType))
             return TagInfo.None;
 
         var typeParameters = BindTypeParameters(member, instance, arguments, arguments.IndexOf(argument), depth);
@@ -1328,6 +1644,10 @@ internal sealed class TagResolver
                         Bind(methodReferenceInvokeMethod.ReturnType, GetDeclaredTags(methodReference.Method), ref typeParameters);
                     }
 
+                    break;
+
+                // The tags of a string describe the string, not the characters of the IEnumerable<char> parameter
+                case { } when parameter.Type is not ITypeParameterSymbol && IsString(value):
                     break;
 
                 default:
@@ -1433,11 +1753,36 @@ internal sealed class TagResolver
             SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Int64 or SpecialType.System_UInt64 or
             SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal or SpecialType.System_IntPtr or SpecialType.System_UIntPtr))
         {
-            return false;
+            // Int128, UInt128, Half, and BigInteger are numbers of the framework whose operators are methods
+            return resultType is INamedTypeSymbol namedType && operatorMethod is not null &&
+                SymbolEqualityComparer.Default.Equals(operatorMethod.ContainingType, namedType) &&
+                IsFrameworkNumberType(namedType);
         }
 
         // decimal operators are exposed as methods of System.Decimal
         return operatorMethod is null || operatorMethod.ContainingType.SpecialType == resultType.SpecialType;
+    }
+
+    private static bool IsFrameworkNumberType(INamedTypeSymbol type)
+    {
+        if (type.ContainingNamespace is not { Name: "System" or "Numerics" } ns || ns.ContainingNamespace is not { } parent ||
+            !(ns.Name is "System" ? parent.IsGlobalNamespace : parent is { Name: "System", ContainingNamespace.IsGlobalNamespace: true }))
+        {
+            return false;
+        }
+
+        foreach (var @interface in type.AllInterfaces)
+        {
+            if (@interface is { MetadataName: "INumberBase`1", ContainingNamespace: { Name: "Numerics", ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } } })
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsString(IOperation operation)
+    {
+        return operation.UnwrapImplicitConversions().Type?.SpecialType is SpecialType.System_String;
     }
 
     private static bool IsObjectOrDynamic(ITypeSymbol? type)

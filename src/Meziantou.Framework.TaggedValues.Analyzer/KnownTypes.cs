@@ -28,6 +28,8 @@ internal sealed class KnownTypes
             compilation,
             "System.Threading.Tasks.Task`1",
             "System.Threading.Tasks.ValueTask`1",
+            "System.Runtime.CompilerServices.ConfiguredTaskAwaitable`1",
+            "System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1",
             "System.Lazy`1");
 
         // Types whose tag describes their elements, and that do not implement IEnumerable<T>
@@ -38,7 +40,8 @@ internal sealed class KnownTypes
             "System.Memory`1",
             "System.ReadOnlyMemory`1",
             "System.Collections.Generic.IAsyncEnumerable`1",
-            "System.Collections.Generic.IAsyncEnumerator`1");
+            "System.Collections.Generic.IAsyncEnumerator`1",
+            "System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable`1");
     }
 
     public bool IsGuid(ITypeSymbol type)
@@ -73,7 +76,7 @@ internal sealed class KnownTypes
 
     /// <summary>
     /// Returns the type of the value a tag describes for a wrapper type: the element of a collection, or the value of a
-    /// <c>Nullable&lt;T&gt;</c>, a <c>Task&lt;T&gt;</c>, a <c>ValueTask&lt;T&gt;</c>, a <c>Lazy&lt;T&gt;</c>, a span, or a memory.
+    /// <c>Nullable&lt;T&gt;</c>, a <c>Task&lt;T&gt;</c>, a <c>ValueTask&lt;T&gt;</c>, a <c>Lazy&lt;T&gt;</c>, a span, a memory, or the result of <c>ConfigureAwait</c> or <c>WithCancellation</c>.
     /// </summary>
     public bool TryGetWrappedType(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? wrappedType)
     {

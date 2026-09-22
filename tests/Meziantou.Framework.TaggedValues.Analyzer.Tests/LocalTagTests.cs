@@ -656,4 +656,65 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task CommentAfterTheCommaTagsTheNextVariable()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] Guid orderId)
+                {
+                    Guid a = Guid.Empty, /* ValueTag=ProjectId */ b = Guid.Empty;
+                    _ = {|MFTV0001:b == orderId|};
+                    _ = a == orderId;
+                    for (int i = 0, /* ValueTag=OrderIndex */ j = 0; i < j; i++)
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_WhenTheCommentOfADeconstructedVariableDisagreesWithItsValue()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("ProjectId")] Guid projectId, [ValueTag(Key = "ProjectId", Value = "ProjectId")] Dictionary<Guid, Guid> map)
+                {
+                    var (a /* ValueTag=OrderId */, b) = ({|MFTV0002:projectId|}, projectId);
+                    (var c /* ValueTag=ProjectId */, var d) = (projectId, projectId);
+                    foreach (var ({|MFTV0002:e|} /* ValueTag=OrderId */, f) in map)
+                    {
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task LongChainsOfCopiesKeepTheTags()
+    {
+        var statements = new System.Text.StringBuilder();
+        for (var i = 1; i < 200; i++)
+        {
+            statements.Append("        var a").Append(i).Append(" = a").Append(i - 1).AppendLine(";");
+        }
+
+        await VerifyAsync($$"""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid id) { }
+
+                void M([ValueTag("OrderId")] Guid orderId)
+                {
+                    var a0 = orderId;
+            {{statements}}
+                    Load({|MFTV0002:a199|});
+                }
+            }
+            """);
+    }
 }

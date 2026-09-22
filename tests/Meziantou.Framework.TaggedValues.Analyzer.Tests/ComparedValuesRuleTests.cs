@@ -318,4 +318,55 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForEqualsWithAComparisonType()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderCode")] string orderCode, [ValueTag("ProjectCode")] string projectCode)
+                    => {|MFTV0001:orderCode.Equals(projectCode, StringComparison.Ordinal)|} || orderCode.Equals(orderCode, StringComparison.Ordinal);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForTheCharactersOfTaggedStrings()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderCode")] string orderCode, [ValueTag("ProjectCode")] string projectCode)
+                    => orderCode.First() == projectCode.First() || orderCode[0] == projectCode[0] || orderCode.Last() == projectCode.Max();
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForArithmeticOnNumbersOfTheFramework()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderIndex")] Int128 order, [ValueTag("ProjectIndex")] Int128 project, [ValueTag("OrderIndex")] System.Numerics.BigInteger orderNumber, [ValueTag("ProjectIndex")] System.Numerics.BigInteger projectNumber)
+                    => {|MFTV0001:order + 1 == project|} || {|MFTV0001:orderNumber * 2 == projectNumber|};
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheElementsOfATuple()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                bool M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    var pair = (orderId, projectId);
+                    return pair.Item1 == orderId && {|MFTV0001:pair.projectId == orderId|};
+                }
+            }
+            """);
+    }
 }

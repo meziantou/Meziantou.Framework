@@ -195,7 +195,7 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
                 void M([ValueTag("ProjectId")] Guid projectId) => Repository.Load({|#0:projectId|});
             }
             """);
-        test.TestState.Sources.Add(("/0/Repository.cs", """
+        test.TestState.Sources.Add(("/0/Data/Repository.cs", """
             using System;
             using Meziantou.Framework.TaggedValues;
 
@@ -204,7 +204,7 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
                 public static void Load([ValueTag("OrderId")] Guid orderId) { }
             }
             """));
-        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0002").WithLocation(0).WithLocation("/0/Repository.cs", 6, 56).WithMessage("parameter 'projectId' of 'Sample.M' is [ValueTag(\"ProjectId\")] and flows to parameter 'orderId' of 'Repository.Load' (/0/Repository.cs:6), which is [ValueTag(\"OrderId\")]"));
+        test.ExpectedDiagnostics.Add(Diagnostic("MFTV0002").WithLocation(0).WithLocation("/0/Data/Repository.cs", 6, 56).WithMessage("parameter 'projectId' of 'Sample.M' is [ValueTag(\"ProjectId\")] and flows to parameter 'orderId' of 'Repository.Load' (Repository.cs:6), which is [ValueTag(\"OrderId\")]"));
         await test.RunAsync(XunitCancellationToken);
     }
 
@@ -220,5 +220,36 @@ public sealed class MessageTests : TaggedValuesAnalyzerTestBase
             """,
             inferTagsFromNames: false,
             Diagnostic("MFTV0001").WithLocation(0).WithMessage("the value is [ValueTag(\"Order\\\"Id\")] and is compared with parameter 'projectId' of 'Sample.M', which is [ValueTag(\"ProjectId\")]"));
+    }
+
+    [Fact]
+    public async Task ComparisonMessage_NamesTheExpressionWhenTheTagsComeFromTheReceiver()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] List<Guid> _orderIds = [];
+                [ValueTag("ProjectId")] List<Guid> _projectIds = [];
+
+                bool M() => {|#0:_orderIds[0] == _projectIds.First()|};
+            }
+            """,
+            inferTagsFromNames: false,
+            Diagnostic("MFTV0001").WithLocation(0).WithMessage("'_orderIds[0]' is [ValueTag(\"OrderId\")] and is compared with '_projectIds.First()', which is [ValueTag(\"ProjectId\")]"));
+    }
+
+    [Fact]
+    public async Task FlowMismatchMessage_ForAParamsArgument()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Delete([ValueTag("OrderId")] params Guid[] ids) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId) => Delete(Guid.Empty, {|#0:projectId|});
+            }
+            """,
+            inferTagsFromNames: false,
+            Diagnostic("MFTV0002").WithLocation(0).WithLocation(8, 60).WithMessage("parameter 'projectId' of 'Sample.M' is [ValueTag(\"ProjectId\")] and flows to parameter 'ids' of 'Sample.Delete' (line 8), which is [ValueTag(\"OrderId\")]"));
     }
 }

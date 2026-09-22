@@ -22,7 +22,8 @@ internal static class ValueTagDescriptions
             case IFieldReferenceOperation fieldReference:
                 return DescribeSymbol(fieldReference.Field);
 
-            case IPropertyReferenceOperation propertyReference:
+            // The tags of list[0] come from list, so 'indexer List.this[]' would not say which list
+            case IPropertyReferenceOperation propertyReference when !TagResolver.ContainsTypeParameter(propertyReference.Property.OriginalDefinition.Type):
                 return DescribeSymbol(propertyReference.Property);
 
             case IParameterReferenceOperation parameterReference:
@@ -31,15 +32,28 @@ internal static class ValueTagDescriptions
             case ILocalReferenceOperation localReference:
                 return DescribeSymbol(localReference.Local);
 
-            case IInvocationOperation invocation:
+            // The tags of ids.First() come from ids, so 'the return value of Enumerable.First' would not say which collection
+            case IInvocationOperation invocation when !TagResolver.ContainsTypeParameter(invocation.TargetMethod.OriginalDefinition.ReturnType):
                 return DescribeSymbol(invocation.TargetMethod);
+
+            case IPropertyReferenceOperation or IInvocationOperation:
+                return DescribeExpression(operation, operation switch
+                {
+                    IPropertyReferenceOperation propertyReference => DescribeSymbol(propertyReference.Property),
+                    _ => DescribeSymbol(((IInvocationOperation)operation).TargetMethod),
+                });
         }
 
+        return DescribeExpression(operation, "the value");
+    }
+
+    private static string DescribeExpression(IOperation operation, string fallback)
+    {
         var text = operation.Syntax.ToString();
         if (text.Length <= MaxExpressionLength && text.IndexOf("\n", StringComparison.Ordinal) < 0)
             return "'" + text + "'";
 
-        return "the value";
+        return fallback;
     }
 
     public static string DescribeSymbol(ISymbol symbol, bool qualified = false)
@@ -61,6 +75,7 @@ internal static class ValueTagDescriptions
 
     /// <summary>
     /// Returns where the declaration of <paramref name="symbol"/> is, relative to the file the diagnostic is reported in.
+    /// Another file is named without its directory, so the message does not depend on the machine that builds the code.
     /// </summary>
     public static string GetSite(ISymbol symbol, SyntaxTree? reportTree)
     {
@@ -73,10 +88,17 @@ internal static class ValueTagDescriptions
             if (location.SourceTree == reportTree)
                 return " (line " + line.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
 
-            return " (" + location.SourceTree.FilePath + ":" + line.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
+            return " (" + GetFileName(location.SourceTree.FilePath) + ":" + line.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")";
         }
 
         return "";
+    }
+
+    private static string GetFileName(string path)
+    {
+        // Path.GetFileName only splits on the separators of the current platform
+        var index = path.LastIndexOfAny(['/', '\\']);
+        return index < 0 ? path : path.Substring(index + 1);
     }
 
     private static string GetContainingTypeName(ISymbol symbol, bool qualified)

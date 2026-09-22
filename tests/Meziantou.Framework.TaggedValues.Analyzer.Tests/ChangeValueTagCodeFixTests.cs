@@ -348,4 +348,197 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ChangesTheTagOfEveryPartOfAPartialMethod()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            partial class Sample
+            {
+                static partial void Load(Guid id);
+                static partial void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId) => Load({|MFTV0002:projectId|});
+            }
+            """,
+            """
+            partial class Sample
+            {
+                static partial void Load([ValueTag("ProjectId")] Guid id);
+                static partial void Load(Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId) => Load(projectId);
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_WhenTheTagIsDeclaredByAnAssemblyAttribute()
+    {
+        const string Source = """
+            [assembly: ValueTag(typeof(Order), nameof(Order.Id), "OrderId")]
+
+            class Order
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Order order, [ValueTag("ProjectId")] Guid projectId) => order.Id = {|MFTV0002:projectId|};
+            }
+            """;
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(Source, Source);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_WhenTheTagIsInheritedFromTheBaseMember()
+    {
+        const string Source = """
+            class Base
+            {
+                [ValueTag("OrderId")]
+                public virtual Guid Id { get; set; }
+            }
+
+            class Derived : Base
+            {
+                public override Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Derived derived, [ValueTag("ProjectId")] Guid projectId) => derived.Id = {|MFTV0002:projectId|};
+            }
+            """;
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(Source, Source);
+    }
+
+    [Fact]
+    public async Task NoCodeFix_WhenTheTagCannotBeWrittenInABlockComment()
+    {
+        const string Source = """
+            class Sample
+            {
+                void M([ValueTag("A*/B")] Guid projectId)
+                {
+                    Guid /* ValueTag=OrderId */ id = {|MFTV0002:projectId|};
+                }
+            }
+            """;
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(Source, Source);
+    }
+
+    [Fact]
+    public async Task AddsACommentToTheVariable_WhenTheCommentIsSharedWithOtherVariables()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Guid /* ValueTag=OrderId */ a = Guid.Empty, b = Guid.Empty;
+                    a = {|MFTV0002:projectId|};
+                    Load(b);
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Guid /* ValueTag=OrderId */ a /* ValueTag=ProjectId */ = Guid.Empty, b = Guid.Empty;
+                    a = projectId;
+                    Load(b);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task KeepsTheCommentsOfTheAttributes()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load(
+                    [ValueTag("OrderId")] // the order
+                    Guid id) { }
+
+                [Obsolete] // keep me
+                [ValueTag("OrderId")]
+                public Guid Id { get; set; }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Load({|MFTV0002:projectId|});
+                    Id = {|MFTV0002:projectId|};
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load(
+                    [ValueTag("ProjectId")] // the order
+                    Guid id) { }
+
+                [Obsolete] // keep me
+                [ValueTag("ProjectId")]
+                public Guid Id { get; set; }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Load(projectId);
+                    Id = projectId;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ChangesTheTagOfTheVariable_ForAnOutArgument()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid id)
+                {
+                    id = Guid.NewGuid();
+                    return true;
+                }
+
+                void M()
+                {
+                    Guid /* ValueTag=ProjectId */ id = Guid.Empty;
+                    TryGet(out {|MFTV0002:id|});
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static bool TryGet([ValueTag("OrderId")] out Guid id)
+                {
+                    id = Guid.NewGuid();
+                    return true;
+                }
+
+                void M()
+                {
+                    Guid /* ValueTag=OrderId */ id = Guid.Empty;
+                    TryGet(out id);
+                }
+            }
+            """);
+    }
 }

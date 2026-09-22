@@ -279,4 +279,119 @@ public sealed class NamingConventionTests : TaggedValuesAnalyzerTestBase
             """,
             inferTagsFromNames: true);
     }
+
+    [Fact]
+    public async Task IdOfAnInterfaceIsAnIdOfTheInterfaceWithoutItsPrefix()
+    {
+        await VerifyAsync("""
+            interface IEntity
+            {
+                Guid Id { get; }
+            }
+
+            class Order : IEntity
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                static void Load(Guid entityId) { }
+                static void LoadProject(Guid projectId) { }
+
+                void M(IEntity entity, Order order)
+                {
+                    Load(entity.Id);
+                    Load(order.Id);
+                    LoadProject({|MFTV0002:entity.Id|});
+                    _ = entity.Id == order.Id;
+                }
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
+    public async Task OverriddenIdIsAnIdOfTheBaseTypeToo()
+    {
+        await VerifyAsync("""
+            abstract class Entity
+            {
+                public abstract Guid Id { get; }
+            }
+
+            class Order : Entity
+            {
+                public override Guid Id => Guid.Empty;
+            }
+
+            class Sample
+            {
+                static void Load(Guid orderId, Guid entityId) { }
+                static void LoadProject(Guid projectId) { }
+
+                void M(Order order)
+                {
+                    Load(order.Id, order.Id);
+                    LoadProject({|MFTV0002:order.Id|});
+                }
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
+    public async Task IdParametersOfFrameworkTypesAreNotTagged()
+    {
+        await VerifyAsync("""
+            class Order
+            {
+                public Int128 Id { get; set; }
+            }
+
+            class Sample
+            {
+                static void Load(Int128 id) { }
+                static void Find(DateTimeOffset id) { }
+
+                void M(Order order) => Load(order.Id);
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
+    public async Task ThreadStaticAndMemberFieldPrefixesAreIgnored()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ThreadStatic] static Guid t_orderId;
+                Guid m_orderId;
+
+                static void Load(Guid orderId) { }
+                static void LoadProject(Guid projectId) { }
+
+                void M()
+                {
+                    Load(t_orderId);
+                    Load(m_orderId);
+                    LoadProject({|MFTV0002:m_orderId|});
+                }
+            }
+            """, inferTagsFromNames: true);
+    }
+
+    [Fact]
+    public async Task NoRedundantTag_WhenTheAttributeReplacesAnInheritedTag()
+    {
+        await VerifyAsync("""
+            interface IRepository
+            {
+                void Load([ValueTag("OrderId", "ProjectId")] Guid key);
+            }
+
+            class Repository : IRepository
+            {
+                public void Load([ValueTag("orderId")] Guid orderId) { }
+            }
+            """, inferTagsFromNames: true);
+    }
 }

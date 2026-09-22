@@ -47,14 +47,24 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
             var token = root.FindToken(targetLocation.SourceSpan.Start);
             if (targetKind is ValueTagTargetKind.Local)
             {
-                // A comment cannot declare every tag an attribute can, e.g. a tag that contains a space
-                if (FindLocalComment(token) is not { } comment || !ValueTagComment.CanFormat(tags))
+                if (FindLocalComment(token) is not { } comment)
                     continue;
 
-                var newComment = ValueTagComment.Format(tags, isLineComment: comment.IsKind(SyntaxKind.SingleLineCommentTrivia));
+                // Guid /* ValueTag=OrderId */ a, b: changing the shared comment would also change b, so a comment is added next to a instead
+                var isShared = IsSharedComment(comment, token);
+                var isLineComment = !isShared && comment.IsKind(SyntaxKind.SingleLineCommentTrivia);
+
+                // A comment cannot declare every tag an attribute can, e.g. a tag that contains a space
+                if (!ValueTagComment.CanFormat(tags, isLineComment))
+                    continue;
+
+                var newComment = ValueTagComment.Format(tags, isLineComment);
                 var title = "Change the tag of '" + token.ValueText + "' to " + newComment;
+                var newRoot = isShared
+                    ? root.ReplaceToken(token, token.WithTrailingTrivia(token.TrailingTrivia.InsertRange(0, [SyntaxFactory.Space, SyntaxFactory.Comment(newComment)])))
+                    : root.ReplaceTrivia(comment, SyntaxFactory.Comment(newComment));
                 context.RegisterCodeFix(
-                    CodeAction.Create(title, _ => Task.FromResult(document.WithSyntaxRoot(root.ReplaceTrivia(comment, SyntaxFactory.Comment(newComment)))), equivalenceKey: title),
+                    CodeAction.Create(title, _ => Task.FromResult(document.WithSyntaxRoot(newRoot)), equivalenceKey: title),
                     diagnostic);
             }
             else
@@ -71,6 +81,21 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
                     diagnostic);
             }
         }
+    }
+
+    /// <summary>
+    /// Returns whether a comment tags the other variables of the declaration too, i.e. it is not next to the name of the variable.
+    /// </summary>
+    private static bool IsSharedComment(SyntaxTrivia comment, SyntaxToken identifier)
+    {
+        if (identifier.Parent is not VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax { Variables.Count: > 1 } variableDeclaration } declarator)
+            return false;
+
+        if (identifier.LeadingTrivia.Contains(comment) || identifier.TrailingTrivia.Contains(comment))
+            return false;
+
+        var index = variableDeclaration.Variables.IndexOf(declarator);
+        return index is 0 || !variableDeclaration.Variables.GetSeparator(index - 1).TrailingTrivia.Contains(comment);
     }
 
     private static SyntaxTrivia? FindLocalComment(SyntaxToken identifier)
@@ -93,6 +118,10 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         {
             switch (node)
             {
+                // The element of a tuple cannot have attributes, and the declaration that contains the tuple is another value
+                case TupleElementSyntax:
+                    return null;
+
                 case ParameterSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or MethodDeclarationSyntax or LocalFunctionStatementSyntax:
                     return node;
 
@@ -107,12 +136,13 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         return null;
     }
 
-    private static async Task<Document> ChangeAttributeAsync(Document document, int position, TagInfo tags, string targetKind, CancellationToken cancellationToken)
+    private static async Task<Solution> ChangeAttributeAsync(Document document, int position, TagInfo tags, string targetKind, CancellationToken cancellationToken)
     {
-        var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+        var solutionEditor = new SolutionEditor(document.Project.Solution);
+        var editor = await solutionEditor.GetDocumentEditorAsync(document.Id, cancellationToken).ConfigureAwait(false);
         var declaration = GetDeclaration(editor.OriginalRoot.FindToken(position));
         if (declaration is null)
-            return document;
+            return document.Project.Solution;
 
         // The attributes of a record primary constructor parameter tag its property, unless the property has its own [property: ValueTag]
         SyntaxKind? targetKeyword = targetKind switch
@@ -140,38 +170,102 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         }
 
         var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
-        var newAttributeList = (AttributeListSyntax)generator.Attribute(attributeName, arguments);
+        // Without elastic trivia, so the formatter does not reindent the code around the attribute
+        var newAttributeList = ((AttributeListSyntax)generator.Attribute(attributeName, arguments)).NormalizeWhitespace();
         if (targetKeyword is { } keyword)
         {
             newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(keyword)));
         }
 
         var lists = new List<AttributeListSyntax>();
-        var insertIndex = -1;
+        var replaced = false;
         foreach (var attributeList in GetAttributeLists(declaration))
         {
-            var isTargetList = targetKeyword is { } targetListKeyword ? attributeList.Target?.Identifier.IsKind(targetListKeyword) is true : attributeList.Target is null;
             var attributes = attributeList.Attributes
-                .Where(attribute => !isTargetList || !IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))
+                .Where(attribute => !IsTargetList(attributeList, targetKeyword) || !IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))
                 .ToList();
 
-            // The new attribute replaces the first list that only contained value tags
-            if (attributes.Count is 0)
+            if (attributes.Count == attributeList.Attributes.Count)
             {
-                if (insertIndex < 0)
-                {
-                    insertIndex = lists.Count;
-                }
-
-                continue;
+                lists.Add(attributeList);
             }
-
-            lists.Add(attributes.Count == attributeList.Attributes.Count ? attributeList : attributeList.WithAttributes(SyntaxFactory.SeparatedList(attributes)));
+            else if (attributes.Count > 0)
+            {
+                lists.Add(attributeList.WithAttributes(SyntaxFactory.SeparatedList(attributes)));
+            }
+            else if (!replaced)
+            {
+                // The new attribute replaces the first list that only contained value tags, and keeps its comments and its layout
+                lists.Add(newAttributeList.WithTriviaFrom(attributeList));
+                replaced = true;
+            }
         }
 
-        lists.Insert(insertIndex < 0 ? lists.Count : insertIndex, newAttributeList);
-        editor.ReplaceNode(declaration, SetAttributeLists(declaration, lists));
-        return editor.GetChangedDocument();
+        editor.ReplaceNode(declaration, replaced ? WithAttributeLists(declaration, lists) : InsertAttributeList(declaration, lists, newAttributeList));
+
+        // The attributes of the parts of a partial member are merged, so the tags of the other part are removed too
+        foreach (var otherPart in await GetOtherPartialDeclarationsAsync(document, declaration, cancellationToken).ConfigureAwait(false))
+        {
+            if (document.Project.Solution.GetDocument(otherPart.SyntaxTree) is not { } otherDocument)
+                continue;
+
+            var otherEditor = await solutionEditor.GetDocumentEditorAsync(otherDocument.Id, cancellationToken).ConfigureAwait(false);
+            var otherDeclaration = otherPart.GetSyntax(cancellationToken);
+            foreach (var attributeList in GetAttributeLists(otherDeclaration))
+            {
+                if (!IsTargetList(attributeList, targetKeyword))
+                    continue;
+
+                foreach (var attribute in attributeList.Attributes)
+                {
+                    if (IsValueTagAttribute(otherEditor.SemanticModel, attribute, cancellationToken))
+                    {
+                        otherEditor.RemoveNode(attribute);
+                    }
+                }
+            }
+        }
+
+        return solutionEditor.GetChangedSolution();
+
+        static bool IsTargetList(AttributeListSyntax attributeList, SyntaxKind? targetKeyword)
+        {
+            return targetKeyword is { } targetListKeyword ? attributeList.Target?.Identifier.IsKind(targetListKeyword) is true : attributeList.Target is null;
+        }
+    }
+
+    /// <summary>
+    /// Returns the declarations of the other part of a partial method or property, or of the parameter at the same position.
+    /// </summary>
+    private static async Task<IEnumerable<SyntaxReference>> GetOtherPartialDeclarationsAsync(Document document, SyntaxNode declaration, CancellationToken cancellationToken)
+    {
+        var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+        if (semanticModel is null)
+            return [];
+
+        var symbol = semanticModel.GetDeclaredSymbol(declaration, cancellationToken);
+        var otherPart = symbol switch
+        {
+            IParameterSymbol { ContainingSymbol: IMethodSymbol method } parameter => GetParameter(method.PartialImplementationPart ?? method.PartialDefinitionPart, parameter.Ordinal),
+            IParameterSymbol { ContainingSymbol: IPropertySymbol property } parameter => GetParameter(property.PartialImplementationPart ?? property.PartialDefinitionPart, parameter.Ordinal),
+            IMethodSymbol method => method.PartialImplementationPart ?? method.PartialDefinitionPart,
+            IPropertySymbol property => property.PartialImplementationPart ?? property.PartialDefinitionPart,
+            _ => null,
+        };
+
+        return otherPart?.DeclaringSyntaxReferences ?? [];
+
+        static ISymbol? GetParameter(ISymbol? member, int ordinal)
+        {
+            var parameters = member switch
+            {
+                IMethodSymbol method => method.Parameters,
+                IPropertySymbol property => property.Parameters,
+                _ => [],
+            };
+
+            return ordinal < parameters.Length ? parameters[ordinal] : null;
+        }
     }
 
     private static bool IsValueTagAttribute(SemanticModel semanticModel, AttributeSyntax attribute, CancellationToken cancellationToken)
@@ -179,19 +273,33 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         return semanticModel.GetSymbolInfo(attribute, cancellationToken).Symbol is IMethodSymbol constructor && TagResolver.IsValueTagAttribute(constructor.ContainingType);
     }
 
-    private static SyntaxNode SetAttributeLists(SyntaxNode declaration, List<AttributeListSyntax> lists)
+    private static SyntaxNode WithAttributeLists(SyntaxNode declaration, List<AttributeListSyntax> lists)
+    {
+        return declaration switch
+        {
+            ParameterSyntax parameter => parameter.WithAttributeLists(SyntaxFactory.List(lists)),
+            MemberDeclarationSyntax member => member.WithAttributeLists(SyntaxFactory.List(lists)),
+            LocalFunctionStatementSyntax localFunction => localFunction.WithAttributeLists(SyntaxFactory.List(lists)),
+            _ => declaration,
+        };
+    }
+
+    /// <summary>
+    /// Adds a new attribute list to a declaration, keeping the comments of its other attribute lists.
+    /// </summary>
+    private static SyntaxNode InsertAttributeList(SyntaxNode declaration, List<AttributeListSyntax> lists, AttributeListSyntax newAttributeList)
     {
         if (declaration is ParameterSyntax parameter)
         {
-            // [ValueTag("OrderId")] Guid orderId: the attributes stay on the line of the parameter
-            var parameterLeadingTrivia = parameter.GetLeadingTrivia();
-            for (var i = 0; i < lists.Count; i++)
+            // [ValueTag("OrderId")] Guid orderId: the attribute stays on the line of the parameter
+            if (lists.Count is 0)
             {
-                lists[i] = lists[i].WithLeadingTrivia(i is 0 ? parameterLeadingTrivia : SyntaxTriviaList.Empty).WithTrailingTrivia(SyntaxFactory.Space);
+                var parameterLeadingTrivia = parameter.GetLeadingTrivia();
+                return parameter.WithoutLeadingTrivia().WithAttributeLists(SyntaxFactory.SingletonList(newAttributeList.WithLeadingTrivia(parameterLeadingTrivia).WithTrailingTrivia(SyntaxFactory.Space)));
             }
 
-            var parameterWithoutAttributes = parameter.WithAttributeLists(default).WithoutLeadingTrivia();
-            return parameterWithoutAttributes.WithAttributeLists(SyntaxFactory.List(lists));
+            lists.Add(newAttributeList.WithTrailingTrivia(SyntaxFactory.Space));
+            return parameter.WithAttributeLists(SyntaxFactory.List(lists));
         }
 
         // One attribute list per line, with the indentation and the line endings of the declaration. The formatter is not used,
@@ -206,25 +314,24 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
             endOfLine = SyntaxFactory.ElasticCarriageReturnLineFeed;
         }
 
-        for (var i = 0; i < lists.Count; i++)
+        if (lists.Count > 0)
         {
-            lists[i] = lists[i].WithLeadingTrivia(i is 0 ? leadingTrivia : indentation).WithTrailingTrivia(endOfLine);
+            // After the last list when it ends its line, and before the first one otherwise, e.g. for [Obsolete] public Guid Id
+            if (lists[lists.Count - 1].GetTrailingTrivia().Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia)))
+            {
+                lists.Add(newAttributeList.WithLeadingTrivia(indentation).WithTrailingTrivia(endOfLine));
+            }
+            else
+            {
+                lists.Insert(0, newAttributeList.WithLeadingTrivia(lists[0].GetLeadingTrivia()).WithTrailingTrivia(endOfLine));
+                lists[1] = lists[1].WithLeadingTrivia(indentation);
+            }
+
+            return WithAttributeLists(declaration, lists);
         }
 
-        SyntaxNode withoutAttributes = declaration switch
-        {
-            MemberDeclarationSyntax member => member.WithAttributeLists(default),
-            LocalFunctionStatementSyntax localFunction => localFunction.WithAttributeLists(default),
-            _ => declaration,
-        };
-
-        withoutAttributes = withoutAttributes.WithLeadingTrivia(indentation);
-        return withoutAttributes switch
-        {
-            MemberDeclarationSyntax member => member.WithAttributeLists(SyntaxFactory.List(lists)),
-            LocalFunctionStatementSyntax localFunction => localFunction.WithAttributeLists(SyntaxFactory.List(lists)),
-            _ => withoutAttributes,
-        };
+        SyntaxNode withoutLeadingTrivia = declaration.WithLeadingTrivia(indentation);
+        return WithAttributeLists(withoutLeadingTrivia, [newAttributeList.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(endOfLine)]);
     }
 
     private static SyntaxList<AttributeListSyntax> GetAttributeLists(SyntaxNode declaration)

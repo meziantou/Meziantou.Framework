@@ -142,4 +142,45 @@ public sealed class CombinedValuesRuleTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task NoDiagnostic_ForParamsArgumentsAndCollectionsOfObjects()
+    {
+        await VerifyAsync("""
+            class Order
+            {
+                [ValueTag("OrderId")] public Guid Id { get; set; }
+                [ValueTag("ProjectId")] public Guid ProjectId { get; set; }
+                [ValueTag("OrderCode")] public string Code { get; set; } = "";
+                [ValueTag("ProjectCode")] public string ProjectCode { get; set; } = "";
+            }
+
+            class Sample
+            {
+                [return: ValueTag("OrderId")]
+                static Task<Guid> GetOrderIdAsync() => Task.FromResult(Guid.Empty);
+
+                [return: ValueTag("ProjectId")]
+                static Task<Guid> GetProjectIdAsync() => Task.FromResult(Guid.Empty);
+
+                static void Log(string message, params object[] args) { }
+                static void Delete(params Guid[] ids) { }
+
+                async Task M(Order order)
+                {
+                    Log("{0} {1}", order.Id, order.ProjectId);
+                    _ = string.Format("{0} {1} {2}", order.Id, order.ProjectId, order.Code);
+                    _ = string.Join("-", order.Code, order.ProjectCode);
+                    Delete(order.Id, order.ProjectId);
+                    await Task.WhenAll(GetOrderIdAsync(), GetProjectIdAsync());
+                    _ = new object[] { order.Id, order.ProjectId };
+                    object[] values = [order.Id, order.ProjectId];
+                    _ = new List<object> { order.Id, order.ProjectId };
+                    _ = new Dictionary<string, object> { ["order"] = order.Id, ["project"] = order.ProjectId };
+                    _ = new[] { order.Id, {|MFTV0003:order.ProjectId|} };
+                    Delete(new[] { order.Id, {|MFTV0003:order.ProjectId|} });
+                }
+            }
+            """);
+    }
 }

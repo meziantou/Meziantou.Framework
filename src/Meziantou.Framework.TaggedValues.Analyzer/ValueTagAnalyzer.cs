@@ -128,6 +128,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationAction(context => AnalyzeInvocation(context, resolver), OperationKind.Invocation);
             context.RegisterOperationAction(context => AnalyzeArgument(context, resolver), OperationKind.Argument);
             context.RegisterOperationAction(context => AnalyzeAssignment(context, resolver), OperationKind.SimpleAssignment, OperationKind.CoalesceAssignment);
+            context.RegisterOperationAction(context => AnalyzeDeconstruction(context, resolver), OperationKind.DeconstructionAssignment, OperationKind.Loop);
             context.RegisterOperationAction(context => AnalyzeVariableDeclarator(context, resolver), OperationKind.VariableDeclarator);
             context.RegisterOperationAction(context => AnalyzePatternVariable(context, resolver), OperationKind.DeclarationPattern, OperationKind.RecursivePattern, OperationKind.ListPattern);
             context.RegisterOperationAction(context => AnalyzeMemberInitializer(context, resolver), OperationKind.FieldInitializer, OperationKind.PropertyInitializer);
@@ -139,6 +140,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationBlockAction(context => AnalyzeReturnedValues(context, resolver));
             context.RegisterSymbolStartAction(context => AnalyzePropertyReturnedValues(context, resolver), SymbolKind.NamedType);
             context.RegisterSymbolAction(context => AnalyzeSymbol(context, resolver, conventionIdMembers), SymbolKind.Method, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeInheritedInterfaceImplementations, SymbolKind.NamedType);
             context.RegisterCompilationEndAction(context => ReportAmbiguousConventions(context, resolver, conventionIdMembers));
         });
     }
@@ -149,6 +151,14 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (operation.OperatorKind is BinaryOperatorKind.Equals or BinaryOperatorKind.NotEquals or BinaryOperatorKind.LessThan or BinaryOperatorKind.LessThanOrEqual or BinaryOperatorKind.GreaterThan or BinaryOperatorKind.GreaterThanOrEqual)
         {
             ReportComparison(context, resolver, operation.Syntax, operation.LeftOperand, operation.RightOperand);
+
+            // The operands of a user-defined comparison operator flow to its tagged parameters
+            if (operation.OperatorMethod is { Parameters.Length: 2 } comparisonOperator)
+            {
+                ReportTaggedParameterFlow(context, resolver, operation.LeftOperand, comparisonOperator.Parameters[0]);
+                ReportTaggedParameterFlow(context, resolver, operation.RightOperand, comparisonOperator.Parameters[1]);
+            }
+
             return;
         }
 
@@ -197,6 +207,31 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         {
             ReportFlow(context, resolver, operation.Value, valueParameter, resolver.GetDeclaredTags(valueParameter), ValueTagTargetKind.Symbol);
         }
+
+        if (operation.OperatorMethod is { IsStatic: true, Parameters.Length: 2 } binaryOperator)
+        {
+            // usd += eur: the target flows to the first parameter of the operator, and the result of the operator flows back to the target
+            ReportTaggedParameterFlow(context, resolver, operation.Target, binaryOperator.Parameters[0]);
+
+            var resultTags = resolver.GetDeclaredTags(binaryOperator);
+            var targetTags = resolver.GetTag(operation.Target);
+            if (!resultTags.IsEmpty && !targetTags.IsEmpty && !TagInfo.AreCompatible(resultTags, targetTags))
+            {
+                context.ReportDiagnostic(FlowMismatch, operation.Syntax, ValueTagDescriptions.DescribeSymbol(binaryOperator), resultTags.ToAttributeString(), ValueTagDescriptions.Describe(operation.Target), targetTags.ToAttributeString());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reports a value that flows to a tagged parameter of an operator. Untagged parameters are not reported in strict mode, as every use of the operator would be.
+    /// </summary>
+    private static void ReportTaggedParameterFlow(OperationAnalysisContext context, TagResolver resolver, IOperation value, IParameterSymbol parameter)
+    {
+        var tags = resolver.GetDeclaredTags(parameter);
+        if (!tags.IsEmpty)
+        {
+            ReportFlow(context, resolver, value, parameter, tags, ValueTagTargetKind.Symbol);
+        }
     }
 
     private static void AnalyzeTupleBinary(OperationAnalysisContext context, TagResolver resolver)
@@ -241,10 +276,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (leftTags.IsEmpty != rightTags.IsEmpty)
         {
             var (tagged, tags, untagged) = leftTags.IsEmpty ? (right, rightTags, left) : (left, leftTags, right);
-            if (resolver.IsStrictModeEnabled(reportNode.SyntaxTree) && !IsNeutralValue(untagged, resolver))
+            if (resolver.IsStrictModeEnabled(reportNode.SyntaxTree) && IsReportableUntaggedValue(untagged, resolver))
             {
                 ReportUntaggedValue(
                     context,
+                    resolver,
                     reportNode,
                     ValueTagDescriptions.Describe(tagged) + " is " + tags.ToAttributeString() + " and is compared with " + ValueTagDescriptions.Describe(untagged) + ", which is not tagged",
                     untagged,
@@ -287,6 +323,14 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return true;
         }
 
+        // a.Equals(b, StringComparison.Ordinal): the first argument has the type of the instance, and the next ones configure the comparison
+        if (arguments.Length > 1 && invocation.Instance is not null && !method.IsStatic &&
+            arguments[0].Parameter is { } otherParameter && SymbolEqualityComparer.Default.Equals(otherParameter.OriginalDefinition.Type, method.ContainingType.OriginalDefinition))
+        {
+            (left, right) = (invocation.Instance, arguments[0].Value);
+            return true;
+        }
+
         return false;
     }
 
@@ -296,8 +340,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (argument.Parameter is null || argument.ArgumentKind is ArgumentKind.DefaultValue)
             return;
 
-        // Reported as a comparison
-        if (argument.Parent is IInvocationOperation invocation && TryGetComparedOperands(invocation, out _, out _))
+        var parameter = argument.Parameter.OriginalDefinition;
+        var isDeclared = !resolver.GetDeclaredTags(parameter).IsEmpty;
+
+        // Reported as a comparison, unless the parameters of the comparison are tagged
+        if (!isDeclared && argument.Parent is IInvocationOperation invocation && TryGetComparedOperands(invocation, out _, out _))
             return;
 
         var value = argument.Value.UnwrapImplicitConversions();
@@ -307,16 +354,120 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (value is IDeclarationExpressionOperation or IDelegateCreationOperation or IAnonymousFunctionOperation)
+        if (value is IDeclarationExpressionOperation or IDelegateCreationOperation or IAnonymousFunctionOperation or IDiscardOperation)
             return;
+
+        // TryGet(out existing): the value flows from the parameter to the variable
+        if (argument.Parameter.RefKind is RefKind.Out)
+        {
+            ReportOutArgument(context, resolver, argument, value);
+            return;
+        }
 
         var expected = resolver.GetExpectedArgumentTags(argument);
         if (expected.IsEmpty && !resolver.IsStrictModeEnabled(argument.Syntax.SyntaxTree))
             return;
 
-        var parameter = argument.Parameter.OriginalDefinition;
-        var isDeclared = !resolver.GetDeclaredTags(parameter).IsEmpty;
+        // Delete(orderId, projectId) with params: each element flows to the parameter, whose tags describe its elements
+        if (GetParamsElements(argument) is { } elements)
+        {
+            foreach (var element in elements)
+            {
+                ReportFlow(context, resolver, element, parameter, expected, isDeclared ? ValueTagTargetKind.Symbol : null);
+            }
+
+            return;
+        }
+
         ReportFlow(context, resolver, argument.Value, parameter, expected, isDeclared ? ValueTagTargetKind.Symbol : null);
+    }
+
+    /// <summary>
+    /// Returns the elements of the array or the collection the compiler creates for a <see langword="params"/> argument.
+    /// </summary>
+    private static IEnumerable<IOperation>? GetParamsElements(IArgumentOperation argument)
+    {
+        if (argument.ArgumentKind is not (ArgumentKind.ParamArray or ArgumentKind.ParamCollection))
+            return null;
+
+        return argument.Value.UnwrapImplicitConversions() switch
+        {
+            IArrayCreationOperation { IsImplicit: true, Initializer: { } initializer } => initializer.ElementValues,
+            IArrayCreationOperation { IsImplicit: true } => [],
+            ICollectionExpressionOperation { IsImplicit: true } collectionExpression => collectionExpression.Elements,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Returns whether a collection is the implicit collection of a <see langword="params"/> argument, which the user did not write as a collection.
+    /// </summary>
+    private static bool IsParamsCollection(IOperation operation)
+    {
+        var collection = operation is IArrayInitializerOperation { Parent: IArrayCreationOperation arrayCreation } ? arrayCreation : operation;
+        if (!collection.IsImplicit)
+            return false;
+
+        var parent = collection.Parent;
+        while (parent is IConversionOperation { IsImplicit: true })
+        {
+            parent = parent.Parent;
+        }
+
+        return parent is IArgumentOperation { ArgumentKind: ArgumentKind.ParamArray or ArgumentKind.ParamCollection };
+    }
+
+    /// <summary>
+    /// Reports <c>TryGet(out existing)</c> when the parameter and the variable are tagged differently: the value flows from the parameter to the variable.
+    /// </summary>
+    private static void ReportOutArgument(OperationAnalysisContext context, TagResolver resolver, IArgumentOperation argument, IOperation variable)
+    {
+        if (argument.Parameter is null)
+            return;
+
+        var (target, targetKind) = GetAssignmentTarget(resolver, variable);
+        var parameter = argument.Parameter.OriginalDefinition;
+        var parameterTags = resolver.GetExpectedArgumentTags(argument);
+        var variableTags = resolver.GetTag(variable);
+        var reportTree = argument.Syntax.SyntaxTree;
+        var parameterDescription = ValueTagDescriptions.DescribeSymbol(parameter) + ValueTagDescriptions.GetSite(parameter, reportTree);
+        var variableDescription = ValueTagDescriptions.Describe(variable);
+        if (parameterTags.IsEmpty)
+        {
+            // Strict mode: an untagged parameter of the compilation flows to a tagged variable
+            if (!variableTags.IsEmpty && resolver.IsStrictModeEnabled(reportTree) && CanDeclareTag(parameter, resolver))
+            {
+                ReportUntaggedValue(context, resolver, variable.Syntax, parameterDescription + " is not tagged and flows to " + variableDescription + ", which is " + variableTags.ToAttributeString(), parameter, variableTags, ValueTagTargetKind.Symbol);
+            }
+
+            return;
+        }
+
+        if (variableTags.IsEmpty)
+        {
+            // Strict mode: a tagged parameter flows to an untagged variable that could be tagged
+            if (resolver.IsStrictModeEnabled(reportTree) && target is not null && CanDeclareTag(target, resolver))
+            {
+                ReportUntaggedValue(context, resolver, variable.Syntax, parameterDescription + " is " + parameterTags.ToAttributeString() + " and flows to " + variableDescription + ", which is not tagged", target is ILocalSymbol ? null : target, parameterTags, ValueTagTargetKind.Symbol);
+            }
+
+            return;
+        }
+
+        if (TagInfo.AreCompatible(parameterTags, variableTags))
+            return;
+
+        var properties = ImmutableDictionary<string, string?>.Empty;
+        var additionalLocations = new List<Location>();
+        if (targetKind is not null && target is not null && parameterTags.IsExplicit && CanChangeTagOf(target, resolver) && resolver.GetLocationInCompilation(target) is { } targetLocation)
+        {
+            properties = properties
+                .Add(ValueTagDiagnostics.TagsProperty, parameterTags.Serialize())
+                .Add(ValueTagDiagnostics.TargetKindProperty, ValueTagTargetKind.ForSymbol(target, targetKind));
+            additionalLocations.Add(targetLocation);
+        }
+
+        context.ReportDiagnostic(Diagnostic.Create(FlowMismatch, variable.Syntax.GetLocation(), additionalLocations, properties, parameterDescription, parameterTags.ToAttributeString(), variableDescription, variableTags.ToAttributeString()));
     }
 
     /// <summary>
@@ -334,7 +485,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
-        if (parameterTags.IsExplicit && local.Locations.FirstOrDefault(location => location.IsInSource) is { } localLocation)
+        if (parameterTags.IsExplicit && resolver.GetLocationInCompilation(local) is { } localLocation)
         {
             properties = properties
                 .Add(ValueTagDiagnostics.TagsProperty, parameterTags.Serialize())
@@ -363,23 +514,143 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             _ => default,
         };
 
-        if (value is null || target is null or IDeclarationExpressionOperation or ITupleOperation or IPropertyReferenceOperation { Property.ContainingType.IsAnonymousType: true })
+        if (value is null || target is null or IDeclarationExpressionOperation or ITupleOperation)
+            return;
+
+        ReportAssignment(context, resolver, target, value);
+    }
+
+    private static void ReportAssignment(OperationAnalysisContext context, TagResolver resolver, IOperation target, IOperation value)
+    {
+        if (target is IPropertyReferenceOperation { Property.ContainingType.IsAnonymousType: true } or IDiscardOperation)
             return;
 
         var expected = resolver.GetTag(target);
         if (expected.IsEmpty && !resolver.IsStrictModeEnabled(target.Syntax.SyntaxTree))
             return;
 
-        var (symbol, kind) = target switch
+        var (symbol, kind) = GetAssignmentTarget(resolver, target);
+
+        // list[0] = value: the tags of the indexer come from the list, so describe the expression rather than 'indexer List.this[]'
+        var targetDescription = symbol is null || target is IPropertyReferenceOperation { Property.IsIndexer: true } ? ValueTagDescriptions.Describe(target) : null;
+        ReportFlow(context, resolver, value, symbol, expected, kind, targetDescription);
+    }
+
+    /// <summary>
+    /// Returns the declaration an assignment writes to, and what the code fix edits to change its tags. The declaration of a member of a generic type
+    /// is its original definition, e.g. <c>T Value</c> for <c>box.Value</c>.
+    /// </summary>
+    private static (ISymbol? Symbol, string? TargetKind) GetAssignmentTarget(TagResolver resolver, IOperation target)
+    {
+        return target switch
         {
-            IFieldReferenceOperation fieldReference => (fieldReference.Field, ValueTagTargetKind.Symbol),
-            IPropertyReferenceOperation propertyReference => (propertyReference.Property, ValueTagTargetKind.Symbol),
-            IParameterReferenceOperation parameterReference => (parameterReference.Parameter, ValueTagTargetKind.Symbol),
+            IFieldReferenceOperation fieldReference => (fieldReference.Field.OriginalDefinition, ValueTagTargetKind.Symbol),
+            IPropertyReferenceOperation propertyReference => (propertyReference.Property.OriginalDefinition, ValueTagTargetKind.Symbol),
+            IParameterReferenceOperation parameterReference => (parameterReference.Parameter.OriginalDefinition, ValueTagTargetKind.Symbol),
             ILocalReferenceOperation localReference => (localReference.Local, resolver.GetLocalCommentTags(localReference.Local).IsEmpty ? null : ValueTagTargetKind.Local),
             _ => ((ISymbol?)null, (string?)null),
         };
+    }
 
-        ReportFlow(context, resolver, value, symbol, expected, kind, targetDescription: symbol is null ? ValueTagDescriptions.Describe(target) : null);
+    /// <summary>
+    /// Reports the values of a deconstruction that flow to a target with another tag: <c>(orderId, projectId) = (order.ProjectId, order.Id)</c>,
+    /// <c>var (a /* ValueTag=OrderId */, b) = value</c>, and <c>foreach (var (a /* ValueTag=OrderId */, b) in map)</c>.
+    /// </summary>
+    private static void AnalyzeDeconstruction(OperationAnalysisContext context, TagResolver resolver)
+    {
+        IOperation target;
+        IOperation? value;
+        TagInfo? tags;
+        ITypeSymbol? type;
+        switch (context.Operation)
+        {
+            case IDeconstructionAssignmentOperation deconstruction:
+                (target, value, tags, type) = (deconstruction.Target, deconstruction.Value, null, deconstruction.Value.Type);
+                break;
+
+            case IForEachLoopOperation { LoopControlVariable: not (null or IVariableDeclaratorOperation) } forEach when forEach.Syntax is ForEachVariableStatementSyntax forEachSyntax && forEach.SemanticModel is { } semanticModel:
+                (target, value, tags, type) = (forEach.LoopControlVariable, null, resolver.GetTag(forEach.Collection), semanticModel.GetForEachStatementInfo(forEachSyntax).ElementType);
+                break;
+
+            default:
+                return;
+        }
+
+        foreach (var element in GetDeconstructionTargets(target))
+        {
+            var (elementValue, elementTags) = resolver.GetDeconstructedElement(target, element, value, tags, type);
+            if (element is ILocalReferenceOperation { Local: var local } && local.DeclaringSyntaxReferences.Any(reference => target.Syntax.Span.Contains(reference.Span)))
+            {
+                // A variable declared by the deconstruction takes the tags of its value, unless it has a comment
+                var expected = resolver.GetLocalCommentTags(local);
+                if (expected.IsEmpty)
+                    continue;
+
+                if (elementTags is null)
+                {
+                    if (elementValue is not null)
+                    {
+                        ReportFlow(context, resolver, elementValue, local, expected, ValueTagTargetKind.Local);
+                    }
+                }
+                else if (!elementTags.IsEmpty && !TagInfo.AreCompatible(elementTags, expected))
+                {
+                    ReportDeconstructedValueMismatch(context, resolver, element, local, elementTags, expected);
+                }
+
+                continue;
+            }
+
+            // Only the elements of a tuple literal have an operation to report on
+            if (elementTags is null && elementValue is not null)
+            {
+                ReportAssignment(context, resolver, element, elementValue);
+            }
+        }
+    }
+
+    private static IEnumerable<IOperation> GetDeconstructionTargets(IOperation target)
+    {
+        switch (target)
+        {
+            case IDeclarationExpressionOperation declaration:
+                return GetDeconstructionTargets(declaration.Expression);
+
+            case ITupleOperation tuple:
+                return tuple.Elements.SelectMany(GetDeconstructionTargets);
+
+            case IConversionOperation { IsImplicit: true } conversion:
+                return GetDeconstructionTargets(conversion.Operand);
+
+            default:
+                return [target];
+        }
+    }
+
+    /// <summary>
+    /// Reports a deconstructed value that has no operation to report on, e.g. a key of a dictionary in <c>foreach (var (key /* ValueTag=OrderId */, value) in map)</c>.
+    /// </summary>
+    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, IOperation element, ILocalSymbol local, TagInfo elementTags, TagInfo expected)
+    {
+        var properties = ImmutableDictionary<string, string?>.Empty;
+        var additionalLocations = new List<Location>();
+        if (elementTags.IsExplicit && resolver.GetLocationInCompilation(local) is { } localLocation)
+        {
+            properties = properties
+                .Add(ValueTagDiagnostics.TagsProperty, elementTags.Serialize())
+                .Add(ValueTagDiagnostics.TargetKindProperty, ValueTagTargetKind.Local);
+            additionalLocations.Add(localLocation);
+        }
+
+        context.ReportDiagnostic(Diagnostic.Create(
+            FlowMismatch,
+            element.Syntax.GetLocation(),
+            additionalLocations,
+            properties,
+            "the deconstructed value",
+            elementTags.ToAttributeString(),
+            ValueTagDescriptions.DescribeSymbol(local),
+            expected.ToAttributeString()));
     }
 
     private static void AnalyzeVariableDeclarator(OperationAnalysisContext context, TagResolver resolver)
@@ -489,7 +760,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (expected.IsEmpty)
         {
             // Strict mode: a tagged value flows to a declaration that could be tagged
-            if (!reportUntaggedTarget || target is null || !CanDeclareTag(target) || !resolver.IsStrictModeEnabled(reportTree))
+            if (!reportUntaggedTarget || target is null || !CanDeclareTag(target, resolver) || !resolver.IsStrictModeEnabled(reportTree))
                 return;
 
             var taggedSource = resolver.GetTag(value);
@@ -498,6 +769,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
             ReportUntaggedValue(
                 context,
+                resolver,
                 value.Syntax,
                 ValueTagDescriptions.Describe(value) + " is " + taggedSource.ToAttributeString() + " and flows to " + (targetDescription ?? ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree)) + ", which is not tagged",
                 target is ILocalSymbol ? null : target,
@@ -510,10 +782,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (source.IsEmpty)
         {
             // Strict mode: an existing untagged value flows to a tagged declaration
-            if (resolver.IsStrictModeEnabled(reportTree) && !IsNeutralValue(value, resolver) && !IsNewValue(value, resolver))
+            if (resolver.IsStrictModeEnabled(reportTree) && IsReportableUntaggedValue(value, resolver) && !IsNewValue(value, resolver))
             {
                 ReportUntaggedValue(
                     context,
+                    resolver,
                     value.Syntax,
                     ValueTagDescriptions.Describe(value) + " is not tagged and flows to " + (targetDescription ?? (target is null ? "the target" : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, reportTree))) + ", which is " + expected.ToAttributeString(),
                     value,
@@ -530,7 +803,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
-        if (targetKind is not null && source.IsExplicit && target is not null && !target.IsImplicitlyDeclared && target.Locations.FirstOrDefault(location => location.IsInSource) is { } targetLocation)
+        if (targetKind is not null && source.IsExplicit && target is not null && !target.IsImplicitlyDeclared && CanChangeTagOf(target, resolver) && resolver.GetLocationInCompilation(target) is { } targetLocation)
         {
             properties = properties
                 .Add(ValueTagDiagnostics.TagsProperty, source.Serialize())
@@ -549,6 +822,21 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             expected.ToAttributeString()));
     }
 
+    /// <summary>
+    /// Returns whether the code fix can change the tags of a declaration by editing its <c>[ValueTag]</c> attribute. It cannot when the tags are inherited
+    /// from an overridden or implemented member, or declared by an <c>[assembly: ValueTag]</c> attribute, as a new attribute would not replace them.
+    /// </summary>
+    private static bool CanChangeTagOf(ISymbol target, TagResolver resolver)
+    {
+        if (target is ILocalSymbol)
+            return true;
+
+        if (resolver.HasExternalTags(target))
+            return false;
+
+        return !TagResolver.GetOwnExplicitTags(target).IsEmpty || TagResolver.GetExplicitAndInheritedTags(target).IsEmpty;
+    }
+
     private static void AnalyzeReturnedValues(OperationBlockAnalysisContext context, TagResolver resolver)
     {
         if (context.OwningSymbol is not IMethodSymbol method)
@@ -556,8 +844,9 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         foreach (var block in context.OperationBlocks)
         {
-            // Property getters are reported on the property, see AnalyzePropertyReturnedValues
-            if (method.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation && !method.ReturnsVoid)
+            // Property getters are reported on the property, see AnalyzePropertyReturnedValues. An override or an implementation, such as ToString,
+            // gets its tags from the base member, and the callers of the base member would not see a tag added to the override.
+            if (method.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation && !method.ReturnsVoid && !TagResolver.GetOverriddenOrImplementedSymbols(method).Any())
             {
                 ReportMissingReturnTag(context.ReportDiagnostic, resolver, method, ValueTagTargetKind.ReturnValue, block);
             }
@@ -578,7 +867,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         var diagnostics = new ConcurrentQueue<Diagnostic>();
         context.RegisterOperationBlockAction(context =>
         {
-            if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property })
+            if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property } || TagResolver.GetOverriddenOrImplementedSymbols(property).Any())
                 return;
 
             foreach (var block in context.OperationBlocks)
@@ -601,7 +890,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (target.IsImplicitlyDeclared || !resolver.GetDeclaredTags(target).IsEmpty)
             return;
 
-        var location = target.Locations.FirstOrDefault(location => location.IsInSource);
+        var location = resolver.GetLocationInCompilation(target);
         if (location is null)
             return;
 
@@ -649,6 +938,10 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        // Log("{0} {1}", orderId, projectId): the arguments of params are not a collection the user wrote, and each one flows to the parameter
+        if (context.Operation is IArrayInitializerOperation or ICollectionExpressionOperation && IsParamsCollection(context.Operation))
+            return;
+
         IEnumerable<IOperation>? values = context.Operation switch
         {
             IConditionalOperation { WhenFalse: not null } conditional when conditional.Syntax is ConditionalExpressionSyntax => [conditional.WhenTrue, conditional.WhenFalse],
@@ -659,10 +952,26 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
-        if (values is null)
+        if (values is null || context.Operation is IArrayInitializerOperation or ICollectionExpressionOperation && HasHeterogeneousElements(values))
             return;
 
         ReportCombinedValues(context, resolver, values);
+    }
+
+    /// <summary>
+    /// Returns whether the elements of a collection are typed <see langword="object"/> or <see langword="dynamic"/>, such as the elements of an <c>object[]</c>,
+    /// which hold values of different kinds by design.
+    /// </summary>
+    private static bool HasHeterogeneousElements(IEnumerable<IOperation> values)
+    {
+        var type = values.FirstOrDefault() switch
+        {
+            ISpreadOperation spread => spread.ElementType,
+            { } value => value.Type,
+            null => null,
+        };
+
+        return type is { SpecialType: SpecialType.System_Object } or { TypeKind: TypeKind.Dynamic };
     }
 
     /// <summary>
@@ -681,7 +990,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         List<IOperation>[] groups = [elements, keys, values];
         foreach (var group in groups)
         {
-            if (group.Count > 1)
+            if (group.Count > 1 && !HasHeterogeneousElements(group))
             {
                 ReportCombinedValues(context, resolver, group);
             }
@@ -707,10 +1016,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         foreach (var (value, tags) in taggedValues)
         {
-            if (tags.IsEmpty && !IsNeutralValue(value, resolver) && !IsNewValue(value, resolver))
+            if (tags.IsEmpty && IsReportableUntaggedValue(value, resolver) && !IsNewValue(value, resolver))
             {
                 ReportUntaggedValue(
                     context,
+                    resolver,
                     value.Syntax,
                     ValueTagDescriptions.Describe(value) + " is not tagged but " + ValueTagDescriptions.Describe(tagged.Value) + " is " + tagged.Tags.ToAttributeString(),
                     value,
@@ -720,14 +1030,41 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Returns whether strict mode accepts an untagged value anywhere: a default value, <see langword="null"/>, a constant, or <c>Guid.Empty</c>.
+    /// Returns whether strict mode accepts an untagged value anywhere: a default value, <see langword="null"/>, a constant, <c>Guid.Empty</c>,
+    /// <c>string.Empty</c>, or a parameterless struct creation such as <c>new Guid()</c>.
     /// </summary>
     private static bool IsNeutralValue(IOperation operation, TagResolver resolver)
     {
         operation = operation.UnwrapConversions();
         return operation.ConstantValue.HasValue ||
             operation is IDefaultValueOperation ||
-            (operation is IFieldReferenceOperation { Field: var field } && resolver.KnownTypes.IsGuidEmpty(field));
+            operation is IObjectCreationOperation { Arguments.Length: 0, Initializer: null, Type.IsValueType: true } ||
+            (operation is IFieldReferenceOperation { Field: var field } && (resolver.KnownTypes.IsGuidEmpty(field) || field is { Name: "Empty", IsStatic: true, ContainingType.SpecialType: SpecialType.System_String }));
+    }
+
+    /// <summary>
+    /// Returns whether strict mode reports an untagged value mixed with a tagged value. Neutral values are not reported, and neither are values
+    /// that cannot be tagged, such as an element of a tuple, nor values whose parts have incompatible tags, which are reported as combined values (MFTV0003).
+    /// </summary>
+    private static bool IsReportableUntaggedValue(IOperation operation, TagResolver resolver)
+    {
+        if (IsNeutralValue(operation, resolver))
+            return false;
+
+        var unwrapped = operation.UnwrapConversions();
+        if (unwrapped is IFieldReferenceOperation { Field.ContainingType.IsTupleType: true })
+            return false;
+
+        IEnumerable<IOperation>? parts = unwrapped switch
+        {
+            IConditionalOperation { WhenFalse: not null } conditional => [conditional.WhenTrue, conditional.WhenFalse],
+            ICoalesceOperation coalesce => [coalesce.Value, coalesce.WhenNull],
+            ISwitchExpressionOperation switchExpression => switchExpression.Arms.Select(arm => arm.Value),
+            IBinaryOperation { OperatorKind: BinaryOperatorKind.Add or BinaryOperatorKind.Subtract } binary when TagResolver.IsBuiltInNumericOperator(binary.OperatorMethod, binary.Type) => [binary.LeftOperand, binary.RightOperand],
+            _ => null,
+        };
+
+        return parts is null || !resolver.TryFindIncompatibleValues(parts, out _, out _, out _, out _);
     }
 
     /// <summary>
@@ -742,7 +1079,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         {
             IFieldReferenceOperation or IPropertyReferenceOperation or IParameterReferenceOperation or ILocalReferenceOperation or IArrayElementReferenceOperation => false,
             IAwaitOperation awaitOperation => IsNewValue(awaitOperation.Operation, resolver),
-            IInvocationOperation invocation => invocation.TargetMethod.DeclaringSyntaxReferences.IsEmpty,
+            IInvocationOperation invocation => !resolver.IsDeclaredInCompilation(invocation.TargetMethod.OriginalDefinition),
             IConditionalAccessOperation conditionalAccess => IsNewValue(conditionalAccess.WhenNotNull, resolver),
             IConditionalOperation { WhenFalse: not null } conditional => IsNewOrNeutralValue(conditional.WhenTrue) && IsNewOrNeutralValue(conditional.WhenFalse),
             ICoalesceOperation coalesce => IsNewOrNeutralValue(coalesce.Value) && IsNewOrNeutralValue(coalesce.WhenNull),
@@ -754,12 +1091,12 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Returns whether a declaration of the compilation can carry a <c>[ValueTag]</c>: it is written in the source, and its type is not
-    /// <see langword="object"/>, <see langword="dynamic"/>, or a type parameter.
+    /// Returns whether a declaration of the compilation can carry a <c>[ValueTag]</c>: it is written in the source of the compilation, it is not an element of a tuple,
+    /// and its type, or the type of its elements, is not <see langword="object"/>, <see langword="dynamic"/>, or a type parameter.
     /// </summary>
-    private static bool CanDeclareTag(ISymbol symbol)
+    private static bool CanDeclareTag(ISymbol symbol, TagResolver resolver)
     {
-        if (symbol.IsImplicitlyDeclared || !symbol.Locations.Any(location => location.IsInSource) || symbol.ContainingType is { IsAnonymousType: true })
+        if (symbol.IsImplicitlyDeclared || resolver.GetLocationInCompilation(symbol) is null || symbol.ContainingType is { IsAnonymousType: true } || symbol is IFieldSymbol { ContainingType.IsTupleType: true })
             return false;
 
         var type = symbol switch
@@ -772,10 +1109,33 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             _ => null,
         };
 
-        return type is not null && type.SpecialType is not SpecialType.System_Object && type.TypeKind is not TypeKind.Dynamic && !TagResolver.ContainsTypeParameter(type);
+        if (type is null || TagResolver.ContainsTypeParameter(type))
+            return false;
+
+        // params object[] args holds values of any kind
+        for (var depth = 0; depth < 8; depth++)
+        {
+            if (type.SpecialType is SpecialType.System_Object || type.TypeKind is TypeKind.Dynamic)
+                return false;
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                type = arrayType.ElementType;
+            }
+            else if (type is INamedTypeSymbol namedType && resolver.KnownTypes.IsCollectionType(namedType) && resolver.KnownTypes.TryGetWrappedType(namedType, out var elementType))
+            {
+                type = elementType;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return true;
     }
 
-    private static void ReportUntaggedValue(OperationAnalysisContext context, SyntaxNode reportNode, string message, IOperation untaggedValue, TagInfo tags)
+    private static void ReportUntaggedValue(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, string message, IOperation untaggedValue, TagInfo tags)
     {
         var operation = untaggedValue.UnwrapImplicitConversions();
         if (operation is IAwaitOperation awaitOperation)
@@ -792,18 +1152,18 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             _ => ((ISymbol?)null, (string?)null),
         };
 
-        ReportUntaggedValue(context, reportNode, message, symbol, tags, targetKind);
+        ReportUntaggedValue(context, resolver, reportNode, message, symbol, tags, targetKind);
     }
 
     /// <summary>
     /// Reports MFTV0009. The code fix adds <paramref name="tags"/> to <paramref name="untaggedDeclaration"/>.
     /// </summary>
-    private static void ReportUntaggedValue(OperationAnalysisContext context, SyntaxNode reportNode, string message, ISymbol? untaggedDeclaration, TagInfo tags, string? targetKind)
+    private static void ReportUntaggedValue(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, string message, ISymbol? untaggedDeclaration, TagInfo tags, string? targetKind)
     {
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
-        if (untaggedDeclaration is not null && targetKind is not null && tags.IsExplicit && CanDeclareTag(untaggedDeclaration) &&
-            untaggedDeclaration.Locations.FirstOrDefault(location => location.IsInSource) is { } location)
+        if (untaggedDeclaration is not null && targetKind is not null && tags.IsExplicit && CanDeclareTag(untaggedDeclaration, resolver) &&
+            resolver.GetLocationInCompilation(untaggedDeclaration) is { } location)
         {
             properties = properties
                 .Add(ValueTagDiagnostics.TagsProperty, tags.Serialize())
@@ -981,11 +1341,15 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
                 message = typeArgumentError;
             }
-            else if (!IsLocalDeclarationComment(trivia))
+            else if (GetLocalDeclarations(trivia) is not { Count: > 0 } declarations)
             {
                 message = isLineComment
                     ? "A // ValueTag comment only applies to the local variables declared by the statement that follows it; use the [ValueTag] attribute on fields, properties, parameters, and return values"
                     : "A value tag comment only applies to the declaration of a local variable; use the [ValueTag] attribute on fields, properties, parameters, and return values";
+            }
+            else if (GetOverridingComment(trivia, tags, declarations) is { } overridingComment)
+            {
+                message = "'" + text + "' does not tag anything, as '" + overridingComment + "' tags the same variables; remove one of the comments";
             }
             else
             {
@@ -1000,8 +1364,41 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    private static bool IsLocalDeclarationComment(SyntaxTrivia trivia)
+    /// <summary>
+    /// Returns the comment that wins over <paramref name="trivia"/> for every variable it could tag, when their tags differ,
+    /// e.g. the second comment of <c>/* ValueTag=OrderId */ Guid /* ValueTag=ProjectId */ id</c>.
+    /// </summary>
+    private static string? GetOverridingComment(SyntaxTrivia trivia, TagInfo tags, List<SyntaxNode> declarations)
     {
+        string? result = null;
+        foreach (var declaration in declarations)
+        {
+            foreach (var candidate in TagResolver.GetLocalCommentTrivia(declaration))
+            {
+                if (ValueTagComment.Parse(candidate.ToString(), out var candidateTags) is not ValueTagCommentKind.Valid)
+                    continue;
+
+                // The comment tags this variable
+                if (candidate == trivia)
+                    return null;
+
+                if (candidateTags.TagsEqual(tags))
+                    return null;
+
+                result ??= candidate.ToString();
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the declarations of the local variables a comment can tag.
+    /// </summary>
+    private static List<SyntaxNode> GetLocalDeclarations(SyntaxTrivia trivia)
+    {
+        var result = new List<SyntaxNode>();
         for (var node = trivia.Token.Parent; node is not null; node = node.Parent)
         {
             IEnumerable<SyntaxNode> declarations = node switch
@@ -1020,15 +1417,17 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
             foreach (var declaration in declarations)
             {
-                if (TagResolver.GetLocalCommentTrivia(declaration).Contains(trivia))
-                    return true;
+                if (!result.Contains(declaration) && TagResolver.GetLocalCommentTrivia(declaration).Contains(trivia))
+                {
+                    result.Add(declaration);
+                }
             }
 
             if (node is StatementSyntax or MemberDeclarationSyntax)
-                return false;
+                return result;
         }
 
-        return false;
+        return result;
     }
 
     private static void AnalyzeSymbol(SymbolAnalysisContext context, TagResolver resolver, ConcurrentQueue<ISymbol> conventionIdMembers)
@@ -1055,6 +1454,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
             case IPropertySymbol property:
                 ReportInheritedMismatch(context, property, ValueTagTargetKind.Symbol);
+                foreach (var parameter in property.Parameters)
+                {
+                    ReportInheritedMismatch(context, parameter, ValueTagTargetKind.Symbol);
+                }
+
                 ReportRedundantTag(context, resolver, property);
                 CollectConventionIdMember(resolver, property, conventionIdMembers);
                 break;
@@ -1069,6 +1473,13 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void ReportInheritedMismatch(SymbolAnalysisContext context, ISymbol symbol, string targetKind)
     {
         var ownTags = TagResolver.GetOwnExplicitTags(symbol);
+
+        // record Order([ValueTag("ProjectId")] Guid Id) : IHasId: the parameter tags the property
+        if (ownTags.IsEmpty && symbol is IPropertySymbol property && TagResolver.IsRecordPrimaryConstructorProperty(property))
+        {
+            ownTags = TagResolver.GetRecordPrimaryConstructorParameterTags(property);
+        }
+
         if (ownTags.IsEmpty)
             return;
 
@@ -1099,8 +1510,78 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         }
     }
 
+    /// <summary>
+    /// Reports <c>class Derived : Base, IRepository</c> when <c>Base.Load</c> implements <c>IRepository.Load</c> with other tags. The member is declared
+    /// in the base type, which does not know the interface, so it is reported on the type that implements the interface.
+    /// </summary>
+    private static void AnalyzeInheritedInterfaceImplementations(SymbolAnalysisContext context)
+    {
+        var type = (INamedTypeSymbol)context.Symbol;
+        if (type.TypeKind is not (TypeKind.Class or TypeKind.Struct) || type.Interfaces.IsEmpty)
+            return;
+
+        var location = type.Locations.FirstOrDefault(location => location.IsInSource);
+        if (location is null)
+            return;
+
+        foreach (var @interface in type.AllInterfaces)
+        {
+            foreach (var interfaceMember in @interface.GetMembers())
+            {
+                if (interfaceMember is not (IMethodSymbol { MethodKind: MethodKind.Ordinary } or IPropertySymbol) ||
+                    type.FindImplementationForInterfaceMember(interfaceMember) is not { } implementation ||
+                    SymbolEqualityComparer.Default.Equals(implementation.ContainingType, type) ||
+                    implementation.ContainingType.AllInterfaces.Contains(@interface, SymbolEqualityComparer.Default))
+                {
+                    continue;
+                }
+
+                foreach (var (implementationPart, interfacePart) in GetTaggedParts(implementation, interfaceMember))
+                {
+                    var ownTags = TagResolver.GetOwnExplicitTags(implementationPart);
+                    var interfaceTags = TagResolver.GetExplicitAndInheritedTags(interfacePart);
+                    if (ownTags.IsEmpty || interfaceTags.IsEmpty || TagInfo.AreCompatible(ownTags, interfaceTags))
+                        continue;
+
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        InheritedTagMismatch,
+                        location,
+                        ValueTagDescriptions.DescribeSymbol(implementationPart),
+                        ownTags.ToAttributeString(),
+                        ValueTagDescriptions.DescribeSymbol(interfacePart) + ", which it implements for '" + type.Name + "',",
+                        interfaceTags.ToAttributeString()));
+                    return;
+                }
+            }
+        }
+
+        static IEnumerable<(ISymbol Implementation, ISymbol Interface)> GetTaggedParts(ISymbol implementation, ISymbol interfaceMember)
+        {
+            yield return (implementation, interfaceMember);
+
+            var (implementationParameters, interfaceParameters) = (implementation, interfaceMember) switch
+            {
+                (IMethodSymbol method, IMethodSymbol interfaceMethod) => (method.Parameters, interfaceMethod.Parameters),
+                (IPropertySymbol property, IPropertySymbol interfaceProperty) => (property.Parameters, interfaceProperty.Parameters),
+                _ => ([], []),
+            };
+
+            for (var i = 0; i < implementationParameters.Length && i < interfaceParameters.Length; i++)
+            {
+                yield return (implementationParameters[i], interfaceParameters[i]);
+            }
+        }
+    }
+
     private static void ReportRedundantTag(SymbolAnalysisContext context, TagResolver resolver, ISymbol symbol)
     {
+        // Without the attribute, the tags of the overridden or implemented member would win over the naming convention
+        foreach (var baseSymbol in TagResolver.GetOverriddenOrImplementedSymbols(symbol))
+        {
+            if (!TagResolver.GetExplicitAndInheritedTags(baseSymbol).IsEmpty)
+                return;
+        }
+
         AttributeData? valueTagAttribute = null;
         foreach (var attribute in symbol.GetAttributes())
         {
@@ -1145,7 +1626,13 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
     private static void ReportAmbiguousConventions(CompilationAnalysisContext context, TagResolver resolver, ConcurrentQueue<ISymbol> conventionIdMembers)
     {
-        foreach (var group in conventionIdMembers.GroupBy(member => member.ContainingType.Name, StringComparer.Ordinal))
+        // The members are collected concurrently, so they are sorted for the messages not to depend on the order of the analysis
+        var sortedMembers = conventionIdMembers
+            .OrderBy(member => member.ToDisplayString(), StringComparer.Ordinal)
+            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceTree?.FilePath, StringComparer.Ordinal)
+            .ThenBy(member => member.Locations.FirstOrDefault()?.SourceSpan.Start);
+
+        foreach (var group in sortedMembers.GroupBy(member => member.ContainingType.Name, StringComparer.Ordinal))
         {
             var members = group.ToArray();
             if (members.Select(member => member.ContainingType).Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default).Count() < 2)
@@ -1154,7 +1641,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             foreach (var member in members)
             {
                 var other = members.First(candidate => !SymbolEqualityComparer.Default.Equals(candidate.ContainingType, member.ContainingType));
-                var location = member.Locations.FirstOrDefault(location => location.IsInSource);
+                var location = resolver.GetLocationInCompilation(member);
                 if (location is null)
                     continue;
 

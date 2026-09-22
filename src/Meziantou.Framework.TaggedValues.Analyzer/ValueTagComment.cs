@@ -128,12 +128,15 @@ internal static class ValueTagComment
     /// Returns whether <see cref="Format"/> can write the tags as a comment that parses back to the same tags:
     /// every tag is valid in a comment, and a dictionary has at most one key tag and one value tag.
     /// </summary>
-    public static bool CanFormat(TagInfo tagInfo)
+    public static bool CanFormat(TagInfo tagInfo, bool isLineComment = false)
     {
         if (tagInfo.HasKeyOrValue)
-            return tagInfo.Tags.IsEmpty && tagInfo.Key.Length <= 1 && tagInfo.Value.Length <= 1 && tagInfo.Key.All(IsValidTag) && tagInfo.Value.All(IsValidTag);
+            return tagInfo.Tags.IsEmpty && tagInfo.Key.Length <= 1 && tagInfo.Value.Length <= 1 && tagInfo.Key.All(CanWrite) && tagInfo.Value.All(CanWrite);
 
-        return !tagInfo.Tags.IsEmpty && tagInfo.Tags.All(IsValidTag);
+        return !tagInfo.Tags.IsEmpty && tagInfo.Tags.All(CanWrite);
+
+        // A tag that contains */ would end a block comment
+        bool CanWrite(string tag) => IsValidTag(tag) && (isLineComment || tag.IndexOf("*/", StringComparison.Ordinal) < 0);
     }
 
     /// <summary>

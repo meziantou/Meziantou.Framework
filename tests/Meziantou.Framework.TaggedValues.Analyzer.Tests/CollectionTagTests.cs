@@ -528,4 +528,75 @@ public sealed class CollectionTagTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task ConfigureAwaitAndWithCancellationKeepTheTags()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [return: ValueTag("OrderId")]
+                static Task<Guid> GetAsync() => Task.FromResult(Guid.Empty);
+
+                [return: ValueTag("OrderId")]
+                static ValueTask<Guid> GetValueAsync() => ValueTask.FromResult(Guid.Empty);
+
+                [return: ValueTag("OrderId")]
+                static async IAsyncEnumerable<Guid> GetAllAsync()
+                {
+                    await Task.Yield();
+                    yield return Guid.Empty;
+                }
+
+                static void Load([ValueTag("ProjectId")] Guid id) { }
+
+                async Task M(System.Threading.CancellationToken cancellationToken)
+                {
+                    Load({|MFTV0002:await GetAsync().ConfigureAwait(false)|});
+                    Load({|MFTV0002:await GetValueAsync().ConfigureAwait(false)|});
+                    await foreach (var id in GetAllAsync().WithCancellation(cancellationToken).ConfigureAwait(false))
+                    {
+                        Load({|MFTV0002:id|});
+                    }
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task SpansMemoriesAndAsyncStreamsHaveTheTagsOfTheirElements()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid id) { }
+
+                [return: ValueTag("OrderId")]
+                static async IAsyncEnumerable<Guid> GetAllAsync([ValueTag("ProjectId")] Guid projectId)
+                {
+                    await Task.Yield();
+                    yield return {|MFTV0002:projectId|};
+                }
+
+                void M([ValueTag("OrderId")] Span<Guid> span, [ValueTag("OrderId")] ReadOnlySpan<Guid> readOnlySpan, [ValueTag("OrderId")] Memory<Guid> memory)
+                {
+                    Load({|MFTV0002:span[0]|});
+                    foreach (var id in readOnlySpan)
+                    {
+                        Load({|MFTV0002:id|});
+                    }
+
+                    Load({|MFTV0002:memory.Span[0]|});
+                }
+
+                async Task N([ValueTag("ProjectId")] Guid projectId)
+                {
+                    await foreach (var id in GetAllAsync(projectId))
+                    {
+                        Load({|MFTV0002:id|});
+                    }
+                }
+            }
+            """);
+    }
 }

@@ -218,6 +218,8 @@ public sealed class MediaFileWriteTests
     [InlineData("basic.wav")]
     [InlineData("basic.aiff")]
     [InlineData("basic.m4a")]
+    [InlineData("basic.ogg")]
+    [InlineData("basic.opus")]
     public void WriteTags_TruncatedFile_IsRefusedAndLeavesTheFileIntact(string fixture)
     {
         // A partially downloaded file parses up to the point it was cut. Rebuilding from that partial parse
@@ -496,5 +498,28 @@ public sealed class MediaFileWriteTests
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    [Theory]
+    [InlineData("basic.m4a", MediaFormat.Mp4)]
+    [InlineData("basic.wav", MediaFormat.Wav)]
+    [InlineData("basic.aiff", MediaFormat.Aiff)]
+    public void WriteTags_PictureLargerThanTenMegabytes_IsReadBack(string fixture, MediaFormat format)
+    {
+        // A picture the reader does not load is not just hidden: the next write rebuilds the tag without it.
+        var picture = new byte[11 * 1024 * 1024];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(picture);
+        var tags = new MediaTagInfo { Title = "Title" };
+        tags.Pictures.Add(new MediaPicture { MimeType = "image/png", Data = picture });
+
+        using var input = new MemoryStream(File.ReadAllBytes(GetTestFilePath(fixture)));
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, tags, format).IsSuccess);
+
+        output.Position = 0;
+        var read = MediaFile.ReadTags(output, format);
+        Assert.True(read.IsSuccess);
+        Assert.Equal("Title", read.Value.Title);
+        Assert.Equal(picture, Assert.Single(read.Value.Pictures).Data);
     }
 }

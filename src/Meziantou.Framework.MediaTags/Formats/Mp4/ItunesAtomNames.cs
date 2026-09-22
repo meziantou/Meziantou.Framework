@@ -10,6 +10,9 @@ internal static class ItunesAtomNames
     public const string Album = "\u00A9alb";
     public const string AlbumArtist = "aART";
     public const string Genre = "\u00A9gen";
+
+    /// <summary>A standard genre, stored as its ID3v1 genre index plus one. iTunes writes this for its built-in genres.</summary>
+    public const string GenreId = "gnre";
     public const string Year = "\u00A9day";
     public const string TrackNumber = "trkn";
     public const string DiscNumber = "disk";

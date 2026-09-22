@@ -131,6 +131,51 @@ internal static class TagFieldMapping
             yield return new KeyValuePair<string, string>(useVorbisNames ? MusicBrainzReleaseGroupIdVorbis : MusicBrainzReleaseGroupIdItunes, releaseGroupId);
     }
 
+    /// <summary>
+    /// Parses a <c>number</c>, <c>number/total</c> or <c>/total</c> value, as used for track and disc numbers.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> when the whole value is well-formed. The parts that could be parsed are returned
+    /// either way, so a lenient caller can still use them.
+    /// </returns>
+    public static bool TryParseNumberPair(string value, out int? number, out int? total)
+    {
+        number = null;
+        total = null;
+
+        var span = value.AsSpan().Trim();
+        var slashIndex = span.IndexOf('/');
+        var numberPart = (slashIndex >= 0 ? span[..slashIndex] : span).Trim();
+        var totalPart = slashIndex >= 0 ? span[(slashIndex + 1)..].Trim() : [];
+
+        var isValid = numberPart.Length > 0 || totalPart.Length > 0;
+        if (numberPart.Length > 0)
+        {
+            if (int.TryParse(numberPart, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedNumber))
+            {
+                number = parsedNumber;
+            }
+            else
+            {
+                isValid = false;
+            }
+        }
+
+        if (totalPart.Length > 0)
+        {
+            if (int.TryParse(totalPart, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedTotal))
+            {
+                total = parsedTotal;
+            }
+            else
+            {
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
     public static string FormatGain(double value) => value.ToString("F2", CultureInfo.InvariantCulture) + " dB";
 
     public static string FormatPeak(double value) => value.ToString("F6", CultureInfo.InvariantCulture);

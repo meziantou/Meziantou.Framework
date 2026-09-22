@@ -2,13 +2,17 @@ namespace Meziantou.Framework.MediaTags.Formats.Ogg;
 
 internal static class OggPacketUtilities
 {
-    /// <summary>The number of leading pages searched for a header packet.</summary>
+    /// <summary>The number of leading packets searched for a header packet.</summary>
     /// <remarks>
     /// The identification, comment and setup packets are the first packets of a logical stream, so reading the
-    /// tags never needs more than the first few pages. Reading the whole file instead would cost a full read
-    /// and several copies of the audio for an answer that is always at the front.
+    /// tags never needs more than the first few packets. Reading the whole file instead would cost a full read
+    /// and several copies of the audio for an answer that is always at the front. The limit counts packets, not
+    /// pages: a comment packet carrying artwork spans hundreds of pages, and must still be found.
     /// </remarks>
-    private const int HeaderSearchPageLimit = 64;
+    private const int HeaderSearchPacketLimit = 8;
+
+    /// <summary>The number of pages of other logical streams skipped while searching for a header packet.</summary>
+    private const int HeaderSearchForeignPageLimit = 1024;
 
     /// <summary>The size of the window searched backwards for the last page of the file.</summary>
     private const int LastPageSearchWindow = 128 * 1024;
@@ -23,7 +27,9 @@ internal static class OggPacketUtilities
         uint? serialNumber = null;
         using var currentPacket = new MemoryStream();
 
-        for (var pageIndex = 0; pageIndex < HeaderSearchPageLimit; pageIndex++)
+        var completedPackets = 0;
+        var foreignPages = 0;
+        while (completedPackets < HeaderSearchPacketLimit)
         {
             var page = OggPage.Read(stream);
             if (page is null)
@@ -31,7 +37,12 @@ internal static class OggPacketUtilities
 
             serialNumber ??= page.SerialNumber;
             if (page.SerialNumber != serialNumber)
+            {
+                if (++foreignPages > HeaderSearchForeignPageLimit)
+                    return false;
+
                 continue;
+            }
 
             var dataOffset = 0;
             foreach (var segmentLength in page.SegmentTable)
@@ -51,6 +62,8 @@ internal static class OggPacketUtilities
                     }
 
                     currentPacket.SetLength(0);
+                    if (++completedPackets >= HeaderSearchPacketLimit)
+                        return false;
                 }
             }
         }
@@ -100,6 +113,10 @@ internal static class OggPacketUtilities
     /// <summary>
     /// Reads every page of the stream.
     /// </summary>
+    /// <exception cref="InvalidDataException">
+    /// The pages do not run to the end of the stream. The writer rebuilds the file from these pages, so stopping
+    /// at a damaged page and reporting success would silently cut off all the audio after it.
+    /// </exception>
     public static List<OggPage> ReadAllPages(Stream stream)
     {
         // A page header is at least 27 bytes, so this can never reject a file that is actually made of pages.
@@ -111,9 +128,15 @@ internal static class OggPacketUtilities
             if (pages.Count > maxPageCount)
                 throw new InvalidDataException("The file declares more OGG pages than it has room for.");
 
+            var pagePosition = stream.Position;
             var page = OggPage.Read(stream);
             if (page is null)
+            {
+                if (stream.CanSeek && pagePosition != stream.Length)
+                    throw new InvalidDataException($"The OGG data at offset {pagePosition} is not a complete page.");
+
                 break;
+            }
 
             pages.Add(page);
         }
@@ -254,7 +277,12 @@ internal static class OggPacketUtilities
         {
             var packet = packets[i];
             var data = i == packetIndexToReplace ? replacementPacketData : packet.Data;
-            var granulePosition = packet.EndsAtPageEnd ? packet.FinalPageGranulePosition : -1;
+
+            // Every packet starts a new page here, so a packet that shared its last page now ends one, and that
+            // page needs a granule position. -1 would declare that no packet ends on it. The original page
+            // position applies to the last packet that ended on it; a header packet shares it, since header
+            // pages all carry 0, but an earlier audio packet does not, so it gets -1 rather than a wrong time.
+            var granulePosition = packet.EndsAtPageEnd || packet.FinalPageGranulePosition == 0 ? packet.FinalPageGranulePosition : -1;
             packetsToRewrite.Add((data, granulePosition));
         }
 

@@ -19,6 +19,10 @@ internal sealed class Mp4Atom
     /// </remarks>
     public const int MaxCount = 65536;
 
+    /// <summary>The largest moov atom a writer reads into memory.</summary>
+    /// <remarks>Only moov is materialized; the audio is streamed, so a file of any size can be tagged.</remarks>
+    public const long MaxMoovSize = 64L * 1024 * 1024;
+
     /// <summary>The chunk offset table of a track, in 32-bit and 64-bit form.</summary>
     public const string ChunkOffsetTable = "stco";
     public const string ChunkOffsetTable64 = "co64";
@@ -112,7 +116,7 @@ internal sealed class Mp4Atom
                 if (!ReadAtoms(stream, atomEnd, depth + 1, ref remainingCount, atom.Children))
                     return false;
             }
-            else if (ShouldBufferData(type) && dataSize > 0 && dataSize <= StreamHelpers.MaxRecordDataSize)
+            else if (dataSize > 0 && dataSize <= GetBufferLimit(type))
             {
                 atom.Data = new byte[dataSize];
                 if (stream.ReadAtLeast(atom.Data, (int)dataSize, throwOnEndOfStream: false) < dataSize)
@@ -127,15 +131,23 @@ internal sealed class Mp4Atom
     }
 
     /// <summary>
-    /// Whether the content of an atom is needed in memory.
+    /// Gets the size up to which the content of an atom is read into memory, or 0 when it is not needed.
     /// </summary>
     /// <remarks>
     /// <c>mdat</c> holds the audio and is not a container, so buffering every non-container atom costs a full
     /// read and a large object heap allocation per file for bytes nothing looks at.
     /// </remarks>
-    private static bool ShouldBufferData(string type)
+    private static long GetBufferLimit(string type)
     {
-        return type is "data" or "mean" or "name" or "mvhd" or "mdhd" or "hdlr" or ChunkOffsetTable or ChunkOffsetTable64;
+        return type switch
+        {
+            // Cover art is legitimately larger than any other record. Leaving it unread would not just hide it:
+            // the writer regenerates covr from the pictures it read, so it would delete it. Any data atom of a
+            // moov the writer accepts fits, and the size was already checked against the bytes in the file.
+            "data" => MaxMoovSize,
+            "mean" or "name" or "mvhd" or "mdhd" or "hdlr" or ChunkOffsetTable or ChunkOffsetTable64 => StreamHelpers.MaxRecordDataSize,
+            _ => 0,
+        };
     }
 
     public Mp4Atom? FindChild(string type)
@@ -193,7 +205,7 @@ internal sealed class Mp4Atom
     {
         return type is "moov" or "trak" or "mdia" or "minf" or "stbl" or "udta" or "meta" or "ilst"
             or ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
-            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.Year
+            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.GenreId or ItunesAtomNames.Year
             or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
             or ItunesAtomNames.Conductor or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics
             or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm

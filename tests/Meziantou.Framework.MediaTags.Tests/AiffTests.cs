@@ -240,4 +240,28 @@ public sealed class AiffTests
         Assert.False(result.IsSuccess);
         Assert.Equal(MediaTagError.UnsupportedFormat, result.Error);
     }
+
+    [Fact]
+    public void WriteTags_KeepsTheId3FramesItDoesNotRead()
+    {
+        var id3Tag = Mp3Id3v2Tests.BuildId3Tag(4, 0,
+            ("TIT2", 0, Mp3Id3v2Tests.TextBody("Title")),
+            ("TPUB", 0, Mp3Id3v2Tests.TextBody("Label")));
+        byte[] paddedTag = id3Tag.Length % 2 == 0 ? id3Tag : [.. id3Tag, 0];
+        var file = CreateAiff(("SSND", 8, new byte[8]), ("ID3 ", id3Tag.Length, paddedTag));
+
+        using var input = new MemoryStream(file);
+        var tags = MediaFile.ReadTags(input, MediaFormat.Aiff).Value;
+        Assert.Equal("Title", tags.Title);
+        tags.Title = "New title";
+
+        // The stream overloads read from the current position
+        input.Position = 0;
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, tags, MediaFormat.Aiff).IsSuccess);
+
+        Assert.True(output.ToArray().AsSpan().IndexOf("Label"u8) >= 0);
+        output.Position = 0;
+        Assert.Equal("New title", MediaFile.ReadTags(output, MediaFormat.Aiff).Value.Title);
+    }
 }

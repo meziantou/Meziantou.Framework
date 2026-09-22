@@ -7,10 +7,6 @@ internal sealed class Mp4Writer : IMediaTagWriter
 {
     private const string ItunesMean = "com.apple.iTunes";
 
-    /// <summary>The largest moov atom this writer reads into memory.</summary>
-    /// <remarks>Only moov is materialized; the audio is streamed, so a file of any size can be tagged.</remarks>
-    private const long MaxMoovSize = 64L * 1024 * 1024;
-
     public MediaTagResult WriteTags(Stream inputStream, Stream outputStream, MediaTagInfo tags, MediaTagWriteOptions options)
     {
         try
@@ -28,7 +24,7 @@ internal sealed class Mp4Writer : IMediaTagWriter
             if (moovAtom is null)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "No moov atom found.");
 
-            if (moovAtom.Size > MaxMoovSize)
+            if (moovAtom.Size > Mp4Atom.MaxMoovSize)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "The moov atom is too large to rewrite.");
 
             inputStream.Position = moovAtom.Position;
@@ -308,7 +304,8 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
         foreach (var (key, value) in tags.CustomFields)
         {
-            WriteFreeformTextAtom(ms, ItunesMean, key, value);
+            var (mean, name) = SplitCustomFieldName(key);
+            WriteFreeformTextAtom(ms, mean, name, value);
         }
 
         if (tags.Bpm is not null)
@@ -317,11 +314,7 @@ internal sealed class Mp4Writer : IMediaTagWriter
         if (tags.IsCompilation is not null)
             WriteByteAtom(ms, ItunesAtomNames.Compilation, (byte)(tags.IsCompilation.Value ? 1 : 0));
 
-        foreach (var picture in tags.Pictures)
-        {
-            var typeIndicator = string.Equals(picture.MimeType, "image/png", StringComparison.OrdinalIgnoreCase) ? 14u : 13u;
-            WriteDataAtom(ms, ItunesAtomNames.CoverArt, typeIndicator, picture.Data);
-        }
+        WriteCoverArtAtom(ms, tags.Pictures);
 
         // Items this writer does not produce — sort names, the encoder tool, the gapless flag — are the
         // user's data and are carried through instead of being dropped.
@@ -364,10 +357,33 @@ internal sealed class Mp4Writer : IMediaTagWriter
         return true;
     }
 
+    /// <summary>
+    /// Gets the namespace and the name of the freeform atom a custom field is stored in.
+    /// </summary>
+    /// <remarks>
+    /// Mp4Reader names a freeform atom outside the iTunes namespace "mean:name", as in
+    /// "org.example.tool:Name". Writing it back under the iTunes namespace would move it where the tool that
+    /// wrote it no longer finds it. A namespace is a reverse domain name, so it contains a dot and no space.
+    /// </remarks>
+    private static (string Mean, string Name) SplitCustomFieldName(string key)
+    {
+        var separator = key.IndexOf(':', StringComparison.Ordinal);
+        if (separator > 0 && separator < key.Length - 1)
+        {
+            var mean = key.AsSpan(0, separator);
+            if (mean.Contains('.') && !mean.Contains(' '))
+                return (key[..separator], key[(separator + 1)..]);
+        }
+
+        return (ItunesMean, key);
+    }
+
     private static bool IsRegeneratedItem(string atomType)
     {
+        // gnre is replaced by the ©gen text Mp4Reader read it into. Keeping it would leave a stale genre
+        // that a genre change or removal does not affect.
         return atomType is ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
-            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.Year
+            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.GenreId or ItunesAtomNames.Year
             or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
             or ItunesAtomNames.Conductor or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics
             or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm or ItunesAtomNames.Compilation
@@ -401,6 +417,39 @@ internal sealed class Mp4Writer : IMediaTagWriter
     private static void WriteByteAtom(MemoryStream ms, string atomType, byte value)
     {
         WriteDataAtom(ms, atomType, 21, [value]); // type indicator 21 = signed integer
+    }
+
+    private static void WriteCoverArtAtom(MemoryStream ms, IList<MediaPicture> pictures)
+    {
+        if (pictures.Count == 0)
+            return;
+
+        // One covr item holds a data atom per image, which is where iTunes and every other reader look for
+        // the second and later images.
+        using var content = new MemoryStream();
+        foreach (var picture in pictures)
+        {
+            var payload = new byte[8 + picture.Data.Length]; // type + locale + image
+            BinaryPrimitives.WriteUInt32BigEndian(payload, GetCoverArtTypeIndicator(picture.MimeType));
+            picture.Data.CopyTo(payload, 8);
+            content.Write(BuildAtom("data", payload));
+        }
+
+        ms.Write(BuildAtom(ItunesAtomNames.CoverArt, content.ToArray()));
+    }
+
+    private static uint GetCoverArtTypeIndicator(string? mimeType)
+    {
+        if (string.Equals(mimeType, "image/png", StringComparison.OrdinalIgnoreCase))
+            return 14;
+
+        if (string.Equals(mimeType, "image/gif", StringComparison.OrdinalIgnoreCase))
+            return 12;
+
+        if (string.Equals(mimeType, "image/bmp", StringComparison.OrdinalIgnoreCase))
+            return 27;
+
+        return 13; // JPEG
     }
 
     private static void WriteDataAtom(MemoryStream ms, string atomType, uint typeIndicator, byte[] value)

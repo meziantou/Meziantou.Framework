@@ -58,7 +58,7 @@ internal sealed class AiffChunk
                 DataPosition = dataPosition,
             };
 
-            if (IsTagChunk(chunkId) && chunkSize > 0 && chunkSize <= StreamHelpers.MaxRecordDataSize)
+            if (IsTagChunk(chunkId) && chunkSize > 0 && chunkSize <= GetBufferLimit(chunkId))
             {
                 chunk.Data = new byte[chunkSize];
                 if (stream.ReadAtLeast(chunk.Data, chunkSize, throwOnEndOfStream: false) < chunkSize)
@@ -80,4 +80,13 @@ internal sealed class AiffChunk
     }
 
     public static bool IsTagChunk(string chunkId) => Array.IndexOf(TagChunkIds, chunkId) >= 0;
+
+    public static bool IsId3Chunk(string chunkId) => chunkId is "ID3 " or "id3 ";
+
+    /// <remarks>
+    /// An ID3v2 tag holding large artwork is legitimately bigger than any other record. Leaving it unread would
+    /// not just hide the tags: the writer drops the chunk and rebuilds the tag without them. The size was
+    /// already checked against the bytes actually in the file.
+    /// </remarks>
+    private static int GetBufferLimit(string chunkId) => IsId3Chunk(chunkId) ? Id3v2.Id3v2Header.MaxTotalSize : StreamHelpers.MaxRecordDataSize;
 }

@@ -16,6 +16,11 @@ public sealed class YamlScalarTests
             ("Null", true),
             ("nil", false),
             ("0", false),
+            ("nULL", false),
+            ("NuLl", false),
+            ("\u00A0", false),
+            ("\u3000", false),
+            ("null\u3000", false),
         };
 
         foreach (var @case in cases)
@@ -35,6 +40,8 @@ public sealed class YamlScalarTests
             ("False", false, true),
             ("yes", false, false),
             ("", false, false),
+            ("tRUE", false, false),
+            ("fALSE", false, false),
         };
 
         foreach (var @case in cases)
@@ -139,6 +146,12 @@ public sealed class YamlScalarTests
             ("1.5", 1.5, true),
             ("  1_000.25  ", 1000.25, true),
             ("not-a-double", 0.0, false),
+            (".iNf", 0.0, false),
+            (".nAn", 0.0, false),
+            ("NaN", 0.0, false),
+            ("Infinity", 0.0, false),
+            ("-Infinity", 0.0, false),
+            ("1\u00A0", 0.0, false),
         };
 
         foreach (var @case in cases)
@@ -409,4 +422,215 @@ public sealed class YamlScalarTests
         Assert.Equal(5, YamlSerializer.Deserialize<object>("0b101", extended));
         Assert.Equal(1000, YamlSerializer.Deserialize<object>("1_000", extended));
     }
+
+    [Theory]
+    [InlineData("0X1F")]
+    [InlineData("0O7")]
+    [InlineData("0B1")]
+    public void TryParseInt64_RejectsUppercaseBasePrefixes(string text)
+    {
+        Assert.False(YamlScalar.TryParseInt64(text.AsSpan(), out _));
+        Assert.False(YamlScalar.TryParseUInt64(text.AsSpan(), out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_StringMember_KeepsSpellingsThatAreNotCoreNull(bool useSourceGeneration)
+    {
+        foreach (var text in new[] { "nULL", "NuLl", "\u00A0", "\u3000", "\u2028" })
+        {
+            var result = Deserialize<ScalarHolder>("Text: " + text + "\n", useSourceGeneration);
+
+            Assert.NotNull(result);
+            Assert.Equal(text, result.Text);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_UntypedMember_ResolvesPlainScalarsWithTheCoreSchemaSpellings(bool useSourceGeneration)
+    {
+        foreach (var text in new[] { "nULL", "tRUE", "fALSE", ".iNf", ".nAn", "NaN", "Infinity", "-Infinity", "0X1F", "0O7", "1\u00A0" })
+        {
+            var result = Deserialize<ScalarHolder>("Value: " + text + "\n", useSourceGeneration);
+
+            Assert.NotNull(result);
+            Assert.Equal(text, result.Value);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_UntypedMember_ReadsIntegersBeyondInt64(bool useSourceGeneration)
+    {
+        var result = Deserialize<ScalarHolder>("Value: 18446744073709551615\n", useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Equal(ulong.MaxValue, result.Value);
+        Assert.Equal(ulong.MaxValue, YamlSerializer.Deserialize<object>("18446744073709551615"));
+    }
+
+    [Theory]
+    [InlineData(false, "! 42", "42")]
+    [InlineData(false, "! true", "true")]
+    [InlineData(false, "! null", "null")]
+    [InlineData(true, "! 42", "42")]
+    [InlineData(true, "! true", "true")]
+    [InlineData(true, "! null", "null")]
+    public void Deserialize_NonSpecificTagMakesAPlainScalarAString(bool useSchema, string yaml, string expected)
+    {
+        var options = new YamlSerializerOptions { UseSchema = useSchema };
+
+        Assert.Equal(expected, YamlSerializer.Deserialize<object>(yaml, options));
+        Assert.Equal(expected, YamlSerializer.Deserialize<string>(yaml, options));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_Untyped_HonorsExplicitCoreTags(bool useSchema)
+    {
+        var options = new YamlSerializerOptions { UseSchema = useSchema };
+
+        Assert.Equal(42L, Convert.ToInt64(YamlSerializer.Deserialize<object>("!!int \"42\"", options), CultureInfo.InvariantCulture));
+        Assert.Equal(1.0, YamlSerializer.Deserialize<object>("!!float 1", options));
+        Assert.Equal(true, YamlSerializer.Deserialize<object>("!!bool 'true'", options));
+        Assert.Null(YamlSerializer.Deserialize<object>("!!null ''", options));
+        Assert.Equal("42", YamlSerializer.Deserialize<object>("!!str 42", options));
+    }
+
+    [Theory]
+    [InlineData(false, "!!int abc")]
+    [InlineData(false, "!!int 4.5")]
+    [InlineData(false, "!!bool yes")]
+    [InlineData(false, "!!null abc")]
+    [InlineData(false, "!!float 0x10")]
+    [InlineData(true, "!!int abc")]
+    [InlineData(true, "!!int 4.5")]
+    [InlineData(true, "!!bool yes")]
+    [InlineData(true, "!!null abc")]
+    [InlineData(true, "!!float 0x10")]
+    public void Deserialize_Untyped_RejectsContentThatDoesNotMatchItsExplicitTag(bool useSchema, string yaml)
+    {
+        var options = new YamlSerializerOptions { UseSchema = useSchema };
+
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<object>(yaml, options));
+    }
+
+    [Theory]
+    [InlineData(false, "!!int")]
+    [InlineData(false, "!!float")]
+    [InlineData(false, "!!bool")]
+    [InlineData(false, "!!int ~")]
+    [InlineData(true, "!!int")]
+    [InlineData(true, "!!float")]
+    [InlineData(true, "!!bool")]
+    [InlineData(true, "!!int ~")]
+    public void Deserialize_UntypedMember_RejectsNullContentWithAnotherExplicitTag(bool useSourceGeneration, string value)
+    {
+        Assert.Throws<YamlException>(() => Deserialize<ScalarHolder>("Value: " + value + "\n", useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_UntypedMember_AcceptsExplicitNullTag(bool useSourceGeneration)
+    {
+        var result = Deserialize<ScalarHolder>("Value: !!null\nText: !!null ~\n", useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Null(result.Value);
+        Assert.Null(result.Text);
+    }
+
+    [Theory]
+    [InlineData("0x1FFFFFFFFFFFFFFFF")]
+    [InlineData("0o7777777777777777777777777")]
+    [InlineData("99999999999999999999999999999999999999999999")]
+    public void Serialize_StringThatLooksLikeAnIntegerOfAnyMagnitude_IsQuoted(string value)
+    {
+        var yaml = YamlSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal) { ["k"] = value });
+
+        Assert.Equal("k: \"" + value + "\"\n", yaml);
+        Assert.Equal(value, YamlSerializer.Deserialize<Dictionary<string, object>>(yaml, new YamlSerializerOptions { UseSchema = true })!["k"]);
+    }
+
+    [Theory]
+    [InlineData("yes")]
+    [InlineData("on")]
+    [InlineData("N")]
+    [InlineData("Off")]
+    [InlineData("2001-12-14")]
+    [InlineData("0b101")]
+    [InlineData("1_000")]
+    public void Serialize_ExtendedSchema_QuotesStringsTheSchemaResolvesToAnotherType(string value)
+    {
+        var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
+
+        var yaml = YamlSerializer.Serialize(new Dictionary<string, object>(StringComparer.Ordinal) { ["a"] = value }, options);
+        var result = YamlSerializer.Deserialize<Dictionary<string, object>>(yaml, options);
+
+        Assert.NotNull(result);
+        Assert.Equal(value, result["a"]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Serialize_NegativeZero_KeepsItsSign(bool useSchema)
+    {
+        var options = new YamlSerializerOptions { UseSchema = useSchema };
+        var value = new NegativeZeroHolder { Double = -0.0, Single = -0.0f, Half = -Half.Zero, Value = -0.0 };
+
+        var yaml = YamlSerializer.Serialize(value, options);
+        var result = YamlSerializer.Deserialize<NegativeZeroHolder>(yaml, options);
+
+        Assert.Equal("Double: -0.0\nSingle: -0.0\nHalf: -0.0\nValue: -0.0\n", yaml);
+        Assert.NotNull(result);
+        Assert.True(double.IsNegative(result.Double));
+        Assert.True(float.IsNegative(result.Single));
+        Assert.True(Half.IsNegative(result.Half));
+        Assert.True(double.IsNegative(Assert.IsType<double>(result.Value)));
+    }
+
+    [Theory]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("-Infinity")]
+    public void Serialize_DotNetFloatingPointNames_AreStillQuoted(string value)
+    {
+        Assert.Equal("\"" + value + "\"\n", YamlSerializer.Serialize(value));
+    }
+
+    private static T? Deserialize<T>(string yaml, bool useSourceGeneration)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, ScalarYamlContext.Default)
+            : YamlSerializer.Deserialize<T>(yaml);
+
+    internal sealed class ScalarHolder
+    {
+        public string? Text { get; set; }
+
+        public object? Value { get; set; }
+    }
+
+    private sealed class NegativeZeroHolder
+    {
+        public double Double { get; set; }
+
+        public float Single { get; set; }
+
+        public Half Half { get; set; }
+
+        public object? Value { get; set; }
+    }
+}
+
+#pragma warning disable MA0048 // File name must match type name
+[YamlSerializable(typeof(YamlScalarTests.ScalarHolder))]
+internal sealed partial class ScalarYamlContext : YamlSerializerContext
+{
 }

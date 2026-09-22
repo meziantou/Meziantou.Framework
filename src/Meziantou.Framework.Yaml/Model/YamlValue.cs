@@ -1,5 +1,6 @@
 using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Schemas;
+using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Model;
 
@@ -45,6 +46,16 @@ public class YamlValue : YamlElement
         if (value is Enum)
         {
             return value.ToString() ?? string.Empty;
+        }
+
+        switch (value)
+        {
+            case double d:
+                return YamlScalar.FormatFloatingPoint(d);
+            case float f:
+                return YamlScalar.FormatFloatingPoint(f);
+            case Half h:
+                return YamlScalar.FormatFloatingPoint(h);
         }
 
         if (value is IFormattable formattable)

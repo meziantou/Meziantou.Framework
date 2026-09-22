@@ -73,7 +73,7 @@ if (bList[1] is not long bLong || bLong != 2)
     return 6;
 }
 
-if (bList[2] is not Dictionary<string, object?> inner || inner.Count != 1 || inner["c"] is not bool b || !b)
+if (bList[2] is not Dictionary<object, object?> inner || inner.Count != 1 || inner["c"] is not bool b || !b)
 {
     return 7;
 }

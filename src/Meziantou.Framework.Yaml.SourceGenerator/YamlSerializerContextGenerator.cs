@@ -20,7 +20,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly string ThrowHelperContent = GetEmbeddedSource("Meziantou.Framework.Yaml.Serialization.YamlThrowHelper.cs");
     private static readonly string MergeKeyContent = GetEmbeddedSource("Meziantou.Framework.Yaml.Serialization.Converters.YamlMergeKey.cs");
     internal static readonly SymbolDisplayFormat FullyQualifiedNullableFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
-        SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+        SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier | SymbolDisplayMiscellaneousOptions.ExpandValueTuple);
+
+    // Tuple syntax cannot be used in every position a type name is emitted in (e.g. 'new (int A, string B)()' is invalid), so
+    // tuple types are printed as their underlying System.ValueTuple type.
+    internal static readonly SymbolDisplayFormat FullyQualifiedTypeFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+        SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions | SymbolDisplayMiscellaneousOptions.ExpandValueTuple);
 
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
         id: "MFY001",
@@ -424,8 +429,9 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             ValidateDerivedTypeAttributes(diagnostics, named);
             ValidateClosedTypePolymorphism(diagnostics, named, derivedTypeMappings, model.SourceGenerationOptions);
 
-            // An unsupported type is reported as a whole, not through the members it would be written with.
-            if (IsYamlNodeType(named) || IsKnownScalar(named) || GetUnsupportedTypeReason(named) is not null)
+            // An unsupported type is reported as a whole, not through the members it would be written with, and a type
+            // with a type-level converter is not written with its members.
+            if (IsYamlNodeType(named) || IsKnownScalar(named) || GetUnsupportedTypeReason(named) is not null || HasYamlConverterAttribute(named))
             {
                 continue;
             }
@@ -1288,10 +1294,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             yield break;
         }
 
+        // A type-level converter reads and writes the whole value, so the members of the type are never used.
         if (type is not INamedTypeSymbol named ||
             (named.TypeKind != TypeKind.Class && named.TypeKind != TypeKind.Struct) ||
             IsYamlNodeType(named) ||
-            IsKnownScalar(named))
+            IsKnownScalar(named) ||
+            HasYamlConverterAttribute(named))
         {
             yield break;
         }
@@ -1398,8 +1406,21 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     {
         if (IsKnownScalar(type) ||
             IsYamlNodeType(type) ||
-            IsUntypedObject(type) ||
-            IsTypeHandledByConverter(type, sourceGenerationOptions.ConverterTypes, compilation))
+            IsUntypedObject(type))
+        {
+            return false;
+        }
+
+        // A type-level [YamlConverter] is honored by the generated reader and writer of the type, so the type is
+        // generated even when it is not listed, like the reflection-based serializer resolves the converter from the type.
+        if (type is INamedTypeSymbol attributedType &&
+            HasYamlConverterAttribute(attributedType) &&
+            attributedType.TypeArguments.All(static typeArgument => typeArgument.TypeKind != TypeKind.TypeParameter))
+        {
+            return true;
+        }
+
+        if (IsTypeHandledByConverter(type, sourceGenerationOptions.ConverterTypes, compilation))
         {
             return false;
         }
@@ -2445,10 +2466,15 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         return false;
     }
 
-    private static bool TrySelectDeserializationConstructor(INamedTypeSymbol type, out IMethodSymbol? selectedConstructor, out string? notSupportedMessage)
+    /// <param name="notSupportedMessageExpression">
+    /// A C# expression of the message the reflection-based converter reports, formatting the types the same way.
+    /// </param>
+    private static bool TrySelectDeserializationConstructor(INamedTypeSymbol type, out IMethodSymbol? selectedConstructor, out string? notSupportedMessageExpression)
     {
         selectedConstructor = null;
-        notSupportedMessage = null;
+        notSupportedMessageExpression = null;
+        var typeExpression = "typeof(" + type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ")";
+        const string ConstructorAttributeExpression = "typeof(global::Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute)";
 
         IMethodSymbol? attributed = null;
         foreach (var ctor in type.InstanceConstructors)
@@ -2457,7 +2483,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             {
                 if (attributed is not null)
                 {
-                    notSupportedMessage = $"Type '{type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' defines multiple constructors annotated with [YamlConstructor].";
+                    notSupportedMessageExpression = "\"Type '\" + " + typeExpression + " + \"' defines multiple constructors annotated with '\" + " + ConstructorAttributeExpression + " + \"'.\"";
                     return false;
                 }
 
@@ -2490,11 +2516,11 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         if (publicCtors.Length == 0)
         {
-            notSupportedMessage = $"Type '{type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' does not have a public constructor. Use [YamlConstructor] to opt into a non-public constructor.";
+            notSupportedMessageExpression = "\"Type '\" + " + typeExpression + " + \"' does not have a public constructor. Use '\" + " + ConstructorAttributeExpression + " + \"' to opt into a non-public constructor.\"";
             return false;
         }
 
-        notSupportedMessage = $"Type '{type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' defines multiple public constructors. Use [YamlConstructor] to select the constructor to use for deserialization.";
+        notSupportedMessageExpression = "\"Type '\" + " + typeExpression + " + \"' defines multiple public constructors. Use '\" + " + ConstructorAttributeExpression + " + \"' to select the constructor to use for deserialization.\"";
         return false;
     }
 
@@ -3437,6 +3463,12 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
                 if (member is IFieldSymbol field)
                 {
+                    // A named tuple element (e.g. 'A' in '(int A, string B)') only exists at compile time; reflection sees ItemN.
+                    if (field.CorrespondingTupleField is { } tupleField && !SymbolEqualityComparer.Default.Equals(tupleField, field))
+                    {
+                        continue;
+                    }
+
                     var hasIncludeAttr = HasAttribute(field, "Meziantou.Framework.Yaml.Serialization.YamlIncludeAttribute");
                     var canRead = field.DeclaredAccessibility == Accessibility.Public || hasIncludeAttr;
                     if (!canRead)
@@ -4208,10 +4240,18 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         // A value set on the declaration overrides the source-generation option; the option applies when unset.
         // Explicit registrations replace inference, so the closed hierarchy is only enumerated when none was declared.
-        if (derivedTypes.Count == 0 &&
-            InfersClosedTypePolymorphism(baseType, inferClosedTypePolymorphismOverride, sourceGenerationOptions))
+        // When neither the declaration nor the option decides, the hierarchy, which is known at build time, is still
+        // inferred, and the generated code applies it only when the runtime options enable inference, like the
+        // reflection-based serializer.
+        var infersDerivedTypesAtRuntime = false;
+        if (derivedTypes.Count == 0 && ClosedTypeSymbolHelper.IsClosedType(baseType))
         {
-            derivedTypes.AddRange(InferClosedTypeDerivedTypes(baseType, diagnostics: null));
+            var inferClosedTypePolymorphism = inferClosedTypePolymorphismOverride ?? sourceGenerationOptions.InferClosedTypePolymorphism;
+            if (inferClosedTypePolymorphism is not false)
+            {
+                derivedTypes.AddRange(InferClosedTypeDerivedTypes(baseType, diagnostics: null));
+                infersDerivedTypesAtRuntime = inferClosedTypePolymorphism is null;
+            }
         }
 
         if (derivedTypes.Count == 0 && discriminatorPropertyNameOverride is null && discriminatorStyleOverrideValue is null)
@@ -4225,7 +4265,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             discriminatorStyleOverrideValue,
             unknownOverrideValue,
             derivedTypes.ToImmutable(),
-            defaultDerivedType);
+            defaultDerivedType,
+            infersDerivedTypesAtRuntime);
         return true;
     }
 

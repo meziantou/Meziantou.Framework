@@ -10,13 +10,15 @@ internal sealed class PolymorphismInfoModel
         int? discriminatorStyleOverrideValue,
         int? unknownDerivedTypeHandlingOverrideValue,
         ImmutableArray<DerivedTypeInfoModel> derivedTypes,
-        ITypeSymbol? defaultDerivedType)
+        ITypeSymbol? defaultDerivedType,
+        bool infersDerivedTypesAtRuntime)
     {
         DiscriminatorPropertyNameOverride = discriminatorPropertyNameOverride;
         DiscriminatorStyleOverrideValue = discriminatorStyleOverrideValue;
         UnknownDerivedTypeHandlingOverrideValue = unknownDerivedTypeHandlingOverrideValue;
         DerivedTypes = derivedTypes;
         DefaultDerivedType = defaultDerivedType;
+        InfersDerivedTypesAtRuntime = infersDerivedTypesAtRuntime;
     }
 
     public string? DiscriminatorPropertyNameOverride { get; }
@@ -28,4 +30,11 @@ internal sealed class PolymorphismInfoModel
     public ImmutableArray<DerivedTypeInfoModel> DerivedTypes { get; }
 
     public ITypeSymbol? DefaultDerivedType { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="DerivedTypes"/> were inferred from a closed hierarchy that neither the
+    /// declaration nor the source-generation options opt into, so they only apply when the runtime options enable
+    /// <c>YamlPolymorphismOptions.InferClosedTypePolymorphism</c>.
+    /// </summary>
+    public bool InfersDerivedTypesAtRuntime { get; }
 }

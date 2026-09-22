@@ -50,4 +50,20 @@ internal static class YamlMergeKey
 
         return reader.ScalarStyle is ScalarStyle.Any or ScalarStyle.Plain;
     }
+
+    /// <summary>Positions the reader on a copy of the mapping node a merge alias refers to.</summary>
+    /// <param name="reader">The reader positioned on a merge value, or on an entry of a merge sequence.</param>
+    /// <param name="targetType">The type the merge applies to, which is reported when aliases are not supported.</param>
+    /// <remarks>
+    /// A merge copies the entries of the anchored mapping node, as they appear in the document, so an alias is read
+    /// like an inline mapping instead of taking the value the node was deserialized into. The reader does not move when
+    /// it is not positioned on an alias.
+    /// </remarks>
+    public static void ReplayAlias(YamlReader reader, global::System.Type targetType)
+    {
+        if (reader.TokenType == YamlTokenType.Alias && !reader.TryReplayMappingAlias())
+        {
+            throw YamlThrowHelper.ThrowAliasNotSupported(reader, targetType);
+        }
+    }
 }

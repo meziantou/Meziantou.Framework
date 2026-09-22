@@ -63,6 +63,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         try
         {
             contract = _contract ??= Contract.Create(typeof(T), reader);
+            contract.EnsureConstructor(reader);
         }
         catch (YamlException)
         {
@@ -116,6 +117,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         try
         {
             contract = _contract ??= Contract.Create(typeof(T), reader);
+            contract.EnsureConstructor(reader);
         }
         catch (YamlException)
         {
@@ -797,6 +799,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
+
         if (reader.TokenType == YamlTokenType.StartMapping)
         {
             ApplyMergeMappingToInstance(reader, instance, contract, explicitKeys, requiredSeen);
@@ -808,11 +812,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
-                if (reader.TokenType == YamlTokenType.Alias)
-                {
-                    ApplyMergeAliasToInstance(reader, instance, contract, explicitKeys, requiredSeen);
-                    continue;
-                }
+                YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
 
                 if (reader.TokenType != YamlTokenType.StartMapping)
                 {
@@ -826,11 +826,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
-        if (reader.TokenType == YamlTokenType.Alias)
-        {
-            ApplyMergeAliasToInstance(reader, instance, contract, explicitKeys, requiredSeen);
-            return;
-        }
 
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
@@ -913,6 +908,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
+
         if (reader.TokenType == YamlTokenType.StartMapping)
         {
             ApplyMergeMappingToPopulatedInstance(reader, instance, contract, explicitKeys, requiredSeen);
@@ -924,11 +921,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
-                if (reader.TokenType == YamlTokenType.Alias)
-                {
-                    ApplyMergeAliasToInstance(reader, instance, contract, explicitKeys, requiredSeen);
-                    continue;
-                }
+                YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
 
                 if (reader.TokenType != YamlTokenType.StartMapping)
                 {
@@ -942,11 +935,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
-        if (reader.TokenType == YamlTokenType.Alias)
-        {
-            ApplyMergeAliasToInstance(reader, instance, contract, explicitKeys, requiredSeen);
-            return;
-        }
 
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
@@ -1199,6 +1187,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
+
         if (reader.TokenType == YamlTokenType.StartMapping)
         {
             ApplyMergeMappingToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys, requiredSeen);
@@ -1210,11 +1200,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
-                if (reader.TokenType == YamlTokenType.Alias)
-                {
-                    ApplyMergeAliasToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys, requiredSeen);
-                    continue;
-                }
+                YamlMergeKey.ReplayAlias(reader, contract.DeclaringType);
 
                 if (reader.TokenType != YamlTokenType.StartMapping)
                 {
@@ -1228,11 +1214,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return;
         }
 
-        if (reader.TokenType == YamlTokenType.Alias)
-        {
-            ApplyMergeAliasToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys, requiredSeen);
-            return;
-        }
 
         throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge key value must be a mapping or a sequence of mappings.");
     }
@@ -1349,262 +1330,6 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         reader.Read();
     }
 
-    private static void ApplyMergeAliasToInstance(YamlReader reader, object instance, Contract contract, HashSet<string> explicitKeys, bool[]? requiredSeen)
-    {
-        var aliasStart = reader.Start;
-        var aliasEnd = reader.End;
-        var entries = ReadMergeAliasEntries(reader, contract, aliasStart, aliasEnd);
-        if (entries is null)
-        {
-            return;
-        }
-
-        foreach (var (key, value) in entries)
-        {
-            if (explicitKeys.Contains(key))
-            {
-                continue;
-            }
-
-            if (contract.TryGetMember(key, out var member))
-            {
-                if (requiredSeen is not null && member.RequiredIndex >= 0)
-                {
-                    requiredSeen[member.RequiredIndex] = true;
-                }
-
-                if (member.ShouldIgnoreOnRead || !member.CanWrite)
-                {
-                    continue;
-                }
-
-                var memberValue = ConvertMergedValue(reader, contract, key, value, member.MemberType, aliasStart, aliasEnd);
-                ThrowIfNullForNonNullableMember(reader, contract, member, memberValue);
-                member.SetValue(instance, memberValue);
-                continue;
-            }
-
-            if (contract.ExtensionData is not null)
-            {
-                try
-                {
-                    AddExtensionDataValue(instance, contract.ExtensionData, key, value);
-                }
-                catch (YamlException)
-                {
-                    throw;
-                }
-                catch (Exception exception)
-                {
-                    throw new YamlException(reader.SourceName, aliasStart, aliasEnd, exception.Message, exception);
-                }
-
-                continue;
-            }
-
-            ThrowIfUnmappedMemberDisallowed(reader, contract, key);
-        }
-    }
-
-    private static void ApplyMergeAliasToConstructorBuffers(
-        YamlReader reader,
-        Contract contract,
-        ConstructorModel constructor,
-        object?[] args,
-        bool[] paramSeen,
-        Dictionary<Member, BufferedMemberAssignment> memberValues,
-        List<BufferedExtensionEntry>? extensionEntries,
-        HashSet<string> explicitKeys,
-        bool[]? requiredSeen)
-    {
-        var aliasStart = reader.Start;
-        var aliasEnd = reader.End;
-        var entries = ReadMergeAliasEntries(reader, contract, aliasStart, aliasEnd);
-        if (entries is null)
-        {
-            return;
-        }
-
-        foreach (var (key, value) in entries)
-        {
-            if (explicitKeys.Contains(key))
-            {
-                continue;
-            }
-
-            if (requiredSeen is not null && contract.TryGetMember(key, out var requiredCandidate) && requiredCandidate.RequiredIndex >= 0)
-            {
-                requiredSeen[requiredCandidate.RequiredIndex] = true;
-            }
-
-            if (constructor.TryGetParameterIndex(key, out var parameterIndex))
-            {
-                var parameterValue = ConvertMergedValue(reader, contract, key, value, constructor.GetParameterType(parameterIndex), aliasStart, aliasEnd);
-                ThrowIfNullForNonNullableConstructorParameter(reader, contract, constructor, parameterIndex, parameterValue);
-                args[parameterIndex] = parameterValue;
-                paramSeen[parameterIndex] = true;
-                continue;
-            }
-
-            if (contract.TryGetMember(key, out var member))
-            {
-                if (member.ShouldIgnoreOnRead)
-                {
-                    continue;
-                }
-
-                if (member.CanWrite)
-                {
-                    var memberValue = ConvertMergedValue(reader, contract, key, value, member.MemberType, aliasStart, aliasEnd);
-                    ThrowIfNullForNonNullableMember(reader, contract, member, memberValue);
-                    memberValues[member] = new BufferedMemberAssignment(member, memberValue, aliasStart, aliasEnd);
-                    continue;
-                }
-
-                if (extensionEntries is not null)
-                {
-                    extensionEntries.Add(new BufferedExtensionEntry(key, value, aliasStart, aliasEnd));
-                }
-
-                continue;
-            }
-
-            if (extensionEntries is not null)
-            {
-                extensionEntries.Add(new BufferedExtensionEntry(key, value, aliasStart, aliasEnd));
-                continue;
-            }
-
-            ThrowIfUnmappedMemberDisallowed(reader, contract, key);
-        }
-    }
-
-    /// <summary>Resolves the merge alias the reader is positioned on into the key/value pairs of its anchored mapping.</summary>
-    /// <returns><see langword="null"/> when the alias resolves to a null value; otherwise the entries to merge.</returns>
-    private static List<KeyValuePair<string, object?>>? ReadMergeAliasEntries(YamlReader reader, Contract contract, Mark aliasStart, Mark aliasEnd)
-    {
-        if (!reader.TryReadAlias(out var aliasValue))
-        {
-            throw new YamlException(reader.SourceName, aliasStart, aliasEnd, $"Aliases are not supported when deserializing into '{contract.DeclaringType}' unless ReferenceHandling is Preserve.");
-        }
-
-        switch (aliasValue)
-        {
-            case null:
-                return null;
-
-            case IDictionary dictionary:
-            {
-                var entries = new List<KeyValuePair<string, object?>>(dictionary.Count);
-                foreach (DictionaryEntry entry in dictionary)
-                {
-                    entries.Add(new KeyValuePair<string, object?>(entry.Key as string ?? YamlDictionaryConverterHelper.FormatNonStringKey(entry.Key), entry.Value));
-                }
-
-                return entries;
-            }
-
-            case YamlMapping mapping:
-            {
-                var entries = new List<KeyValuePair<string, object?>>(mapping.Count);
-                foreach (var entry in mapping)
-                {
-                    if (entry.Key is not YamlValue key)
-                    {
-                        throw new YamlException(reader.SourceName, aliasStart, aliasEnd, "Merge alias values must resolve to a mapping with scalar keys.");
-                    }
-
-                    entries.Add(new KeyValuePair<string, object?>(key.Value ?? string.Empty, entry.Value));
-                }
-
-                return entries;
-            }
-
-            default:
-                return GetMergeAliasObjectEntries(reader, aliasValue, aliasStart, aliasEnd);
-        }
-    }
-
-    private static List<KeyValuePair<string, object?>> GetMergeAliasObjectEntries(YamlReader reader, object aliasValue, Mark aliasStart, Mark aliasEnd)
-    {
-        // Only objects can expose their entries as members; scalars and sequences have no keys to merge.
-        if (aliasValue is IEnumerable || Type.GetTypeCode(aliasValue.GetType()) is not TypeCode.Object)
-        {
-            throw new YamlException(reader.SourceName, aliasStart, aliasEnd, "Merge alias values must resolve to a mapping.");
-        }
-
-        Contract sourceContract;
-        try
-        {
-            sourceContract = Contract.Create(aliasValue.GetType(), reader);
-        }
-        catch (YamlException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            throw new YamlException(reader.SourceName, aliasStart, aliasEnd, exception.Message, exception);
-        }
-
-        // The anchored node was already materialized, so the keys it declared are no longer known: every readable
-        // member of the anchored object is merged, including the ones left at their default value.
-        var members = sourceContract.MembersDeclaration;
-        var entries = new List<KeyValuePair<string, object?>>(members.Length);
-        foreach (var member in members)
-        {
-            if (!member.CanRead)
-            {
-                continue;
-            }
-
-            entries.Add(new KeyValuePair<string, object?>(member.Name, member.GetValue(aliasValue)));
-        }
-
-        return entries;
-    }
-
-    private static object? ConvertMergedValue(YamlReader reader, Contract contract, string key, object? value, Type targetType, Mark aliasStart, Mark aliasEnd)
-    {
-        if (value is null || targetType.IsInstanceOfType(value))
-        {
-            return value;
-        }
-
-        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-        try
-        {
-            if (underlyingType.IsEnum)
-            {
-                return value is string enumText
-                    ? Enum.Parse(underlyingType, enumText, ignoreCase: true)
-                    : Enum.ToObject(underlyingType, value);
-            }
-
-            if (value is IConvertible)
-            {
-                return Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
-            }
-        }
-        catch (Exception exception) when (exception is ArgumentException or FormatException or InvalidCastException or OverflowException)
-        {
-            throw MergedValueCannotBeAssigned(reader, contract, key, value, targetType, aliasStart, aliasEnd, exception);
-        }
-
-        throw MergedValueCannotBeAssigned(reader, contract, key, value, targetType, aliasStart, aliasEnd, innerException: null);
-    }
-
-    private static YamlException MergedValueCannotBeAssigned(YamlReader reader, Contract contract, string key, object value, Type targetType, Mark aliasStart, Mark aliasEnd, Exception? innerException)
-        => new(reader.SourceName, aliasStart, aliasEnd, $"The merged value for '{key}' of type '{value.GetType()}' cannot be assigned to '{targetType}' on '{contract.DeclaringType}'.", innerException);
-
-    private static void ThrowIfUnmappedMemberDisallowed(YamlReader reader, Contract contract, string key)
-    {
-        if (contract.UnmappedMemberHandling == YamlUnmappedMemberHandling.Disallow)
-        {
-            throw YamlThrowHelper.ThrowUnmappedMember(reader, contract.DeclaringType, key);
-        }
-    }
-
     private static void WriteObjectCore(YamlWriter writer, object value, Contract contract)
     {
         writer.WriteStartMapping();
@@ -1617,7 +1342,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         for (var i = 0; i < members.Length; i++)
         {
             var member = members[i];
-            if (!member.CanRead)
+            if (!member.CanRead || member.IsIgnoredAsReadOnly(options))
             {
                 continue;
             }
@@ -1797,7 +1522,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         for (var i = 0; i < members.Length; i++)
         {
             var member = members[i];
-            if (!member.CanRead)
+            if (!member.CanRead || member.IsIgnoredAsReadOnly(options))
             {
                 continue;
             }
@@ -1828,11 +1553,12 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     private sealed class Contract
     {
         private readonly Dictionary<string, Member> _membersByName;
+        private readonly Func<YamlReaderWriterBase, ConstructorResolution> _resolveConstructor;
+        private ConstructorResolution? _constructorResolution;
 
         public Contract(
             Type declaringType,
-            Func<object> createInstance,
-            ConstructorModel? constructorModel,
+            Func<YamlReaderWriterBase, ConstructorResolution> resolveConstructor,
             Member[] membersDeclaration,
             Member[] membersSorted,
             Dictionary<string, Member> membersByName,
@@ -1843,8 +1569,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             YamlObjectCreationHandling preferredObjectCreationHandling)
         {
             DeclaringType = declaringType;
-            CreateInstance = createInstance;
-            Constructor = constructorModel;
+            _resolveConstructor = resolveConstructor;
             MembersDeclaration = membersDeclaration;
             MembersSorted = membersSorted;
             _membersByName = membersByName;
@@ -1857,9 +1582,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public Type DeclaringType { get; }
 
-        public Func<object> CreateInstance { get; }
+        public Func<object> CreateInstance => GetConstructorResolution().CreateInstance;
 
-        public ConstructorModel? Constructor { get; }
+        public ConstructorModel? Constructor => GetConstructorResolution().Model;
 
         public Member[] MembersDeclaration { get; }
 
@@ -2080,63 +1805,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 map.TryAdd(member.Name, member);
             }
 
-            var selectedConstructor = SelectDeserializationConstructor(type);
-            ConstructorModel? constructorModel = null;
-
-            Func<object> createInstance = () =>
-            {
-                if (type.IsAbstract || type.IsInterface)
-                {
-                    throw new NotSupportedException($"Type '{type}' cannot be instantiated.");
-                }
-
-                object? instance;
-                try
-                {
-                    instance = Activator.CreateInstance(type);
-                }
-                catch (MissingMethodException exception)
-                {
-                    throw new NotSupportedException($"Type '{type}' does not have a public parameterless constructor.", exception);
-                }
-
-                if (instance is null)
-                {
-                    throw new NotSupportedException($"Type '{type}' does not have a public parameterless constructor.");
-                }
-
-                return instance;
-            };
-
-            if (selectedConstructor is not null)
-            {
-                var parameters = selectedConstructor.GetParameters();
-                if (parameters.Length == 0)
-                {
-                    createInstance = () =>
-                    {
-                        if (type.IsAbstract || type.IsInterface)
-                        {
-                            throw new NotSupportedException($"Type '{type}' cannot be instantiated.");
-                        }
-
-                        return selectedConstructor.Invoke(null)
-                               ?? throw new NotSupportedException($"Type '{type}' could not be instantiated.");
-                    };
-                }
-                else
-                {
-                    constructorModel = new ConstructorModel(selectedConstructor, type, members, readerWriter, nullabilityContext);
-                    createInstance = () => throw new NotSupportedException($"Type '{type}' must be deserialized using a parameterized constructor.");
-                }
-            }
-
-            members.Sort(static (x, y) =>
+            // The members are sorted into a copy: the deserialization constructor binds its parameters to the members in
+            // discovery order.
+            var membersDeclaration = members.ToArray();
+            Array.Sort(membersDeclaration, static (x, y) =>
             {
                 var orderCompare = x.Order.CompareTo(y.Order);
                 return orderCompare != 0 ? orderCompare : x.DeclarationOrder.CompareTo(y.DeclarationOrder);
             });
-            var membersDeclaration = members.ToArray();
 
             var membersSorted = (Member[])membersDeclaration.Clone();
             Array.Sort(membersSorted, static (x, y) =>
@@ -2157,11 +1833,82 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 requiredMembers[i].RequiredIndex = i;
             }
 
-            return new Contract(type, createInstance, constructorModel, membersDeclaration, membersSorted, map, requiredMembers.ToArray(), extensionData, polymorphism, unmappedMemberHandling, preferredObjectCreationHandling);
+            return new Contract(type, ResolveConstructor, membersDeclaration, membersSorted, map, requiredMembers.ToArray(), extensionData, polymorphism, unmappedMemberHandling, preferredObjectCreationHandling);
+
+            ConstructorResolution ResolveConstructor(YamlReaderWriterBase constructorReaderWriter)
+            {
+                var selectedConstructor = SelectDeserializationConstructor(type);
+                ConstructorModel? constructorModel = null;
+
+                Func<object> createInstance = () =>
+                {
+                    if (type.IsAbstract || type.IsInterface)
+                    {
+                        throw new NotSupportedException($"Type '{type}' cannot be instantiated.");
+                    }
+
+                    object? instance;
+                    try
+                    {
+                        instance = Activator.CreateInstance(type);
+                    }
+                    catch (MissingMethodException exception)
+                    {
+                        throw new NotSupportedException($"Type '{type}' does not have a public parameterless constructor.", exception);
+                    }
+
+                    if (instance is null)
+                    {
+                        throw new NotSupportedException($"Type '{type}' does not have a public parameterless constructor.");
+                    }
+
+                    return instance;
+                };
+
+                if (selectedConstructor is not null)
+                {
+                    var parameters = selectedConstructor.GetParameters();
+                    if (parameters.Length == 0)
+                    {
+                        createInstance = () =>
+                        {
+                            if (type.IsAbstract || type.IsInterface)
+                            {
+                                throw new NotSupportedException($"Type '{type}' cannot be instantiated.");
+                            }
+
+                            return selectedConstructor.Invoke(null)
+                                   ?? throw new NotSupportedException($"Type '{type}' could not be instantiated.");
+                        };
+                    }
+                    else
+                    {
+                        // A NullabilityInfoContext is not thread-safe, and the constructor can be resolved concurrently.
+                        var constructorNullabilityContext = options.RespectNullableAnnotations ? new NullabilityInfoContext() : null;
+                        constructorModel = new ConstructorModel(selectedConstructor, type, members, constructorReaderWriter, constructorNullabilityContext);
+                        createInstance = () => throw new NotSupportedException($"Type '{type}' must be deserialized using a parameterized constructor.");
+                    }
+                }
+
+                return new ConstructorResolution(createInstance, constructorModel);
+            }
         }
 
         public bool TryGetMember(string name, out Member member) => _membersByName.TryGetValue(name, out member!);
+
+        /// <summary>Selects the deserialization constructor, which <see cref="CreateInstance"/> and <see cref="Constructor"/> use.</summary>
+        /// <remarks>
+        /// The constructor is only needed to read the type, so it is selected the first time the type is read: a type
+        /// without a usable constructor can still be serialized, like the source-generated serializer does.
+        /// </remarks>
+        public void EnsureConstructor(YamlReaderWriterBase readerWriter)
+            => _constructorResolution ??= _resolveConstructor(readerWriter);
+
+        private ConstructorResolution GetConstructorResolution()
+            => _constructorResolution ?? throw new InvalidOperationException($"The deserialization constructor of '{DeclaringType}' was not selected.");
     }
+
+    private sealed record ConstructorResolution(Func<object> CreateInstance, ConstructorModel? Model);
 
     private enum ExtensionDataKind
     {
@@ -2946,22 +2693,19 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             _field!.SetValue(instance, value);
         }
 
+        /// <summary>
+        /// Gets whether the member is skipped on write because it is read-only. The value of such a member is not read,
+        /// so it is not rejected when it is null despite being declared as non-nullable.
+        /// </summary>
+        public bool IsIgnoredAsReadOnly(YamlSerializerOptions options)
+            => (IsReadOnlyProperty && options.IgnoreReadOnlyProperties) || (IsReadOnlyField && options.IgnoreReadOnlyFields);
+
         [UnconditionalSuppressMessage(
             "Trimming",
             "IL2072",
             Justification = "Default-value comparison uses reflection and is only exercised by reflection-based serialization. NativeAOT/trimming scenarios should use source-generated metadata.")]
         public bool ShouldIgnoreOnWrite(object? value, YamlSerializerOptions options)
         {
-            if (IsReadOnlyProperty && options.IgnoreReadOnlyProperties)
-            {
-                return true;
-            }
-
-            if (IsReadOnlyField && options.IgnoreReadOnlyFields)
-            {
-                return true;
-            }
-
             var ignoreCondition = IgnoreCondition ?? options.DefaultIgnoreCondition;
 
             switch (ignoreCondition)

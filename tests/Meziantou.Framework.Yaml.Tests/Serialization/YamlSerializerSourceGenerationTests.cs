@@ -1376,6 +1376,67 @@ internal sealed partial class TransitiveYamlSerializerContext : YamlSerializerCo
 internal sealed partial class TestYamlSerializerContextWithCustomPropertyNames : YamlSerializerContext
 {
 }
+
+internal sealed class GeneratedGetOnlyPropertyPayload
+{
+    public int A { get; } = 1;
+}
+
+internal sealed class GeneratedPublicFieldPayload
+{
+    public int F;
+}
+
+internal sealed class GeneratedValueTuplePayload
+{
+    public (int A, string B) Value { get; set; }
+}
+
+[YamlSourceGenerationOptions(DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull)]
+[YamlSerializable(typeof(GeneratedGetOnlyPropertyPayload))]
+[YamlSerializable(typeof(GeneratedPublicFieldPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeIgnoreCondition : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(
+    PropertyNameCaseInsensitive = false,
+    Schema = YamlSchemaKind.Core,
+    DuplicateKeyHandling = YamlDuplicateKeyHandling.Error,
+    PreferredObjectCreationHandling = YamlObjectCreationHandling.Replace,
+    UnmappedMemberHandling = YamlUnmappedMemberHandling.Skip)]
+[YamlSerializable(typeof(GeneratedPublicFieldPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeReadOptions : YamlSerializerContext
+{
+}
+
+[YamlSerializable(typeof(GeneratedValueTuplePayload))]
+internal sealed partial class TestYamlSerializerContextWithValueTuple : YamlSerializerContext
+{
+}
+
+internal sealed class GeneratedMemberInclusionPayload
+{
+    public int Property { get; set; } = 1;
+
+    public int GetOnly { get; } = 2;
+
+    public int Field = 3;
+
+    public readonly int ReadOnlyField = 4;
+}
+
+[YamlSourceGenerationOptions(IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true)]
+[YamlSerializable(typeof(GeneratedMemberInclusionPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeMemberInclusion : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(IncludeFields = false, IgnoreReadOnlyProperties = false)]
+[YamlSerializable(typeof(GeneratedMemberInclusionPayload))]
+internal sealed partial class TestYamlSerializerContextWithBuildTimeMemberExclusion : YamlSerializerContext
+{
+}
 public class YamlSerializerSourceGenerationTests
 {
     [Fact]
@@ -1439,9 +1500,9 @@ public class YamlSerializerSourceGenerationTests
         Assert.Equal("collection", roundtripped.Bars[0].Baz?.Value);
         Assert.Equal("b", roundtripped.Matrix[1][0].Value);
         Assert.Equal(new object?[] { "node" }, (List<object?>)roundtripped.Dynamic!);
-        Assert.Equal(3L, ((Dictionary<string, object?>)roundtripped.DynamicList[2]!)["three"]);
+        Assert.Equal(3L, ((Dictionary<object, object?>)roundtripped.DynamicList[2]!)["three"]);
         Assert.Equal(new object?[] { "x", 4L }, (List<object?>)roundtripped.DynamicMap["items"]!);
-        Assert.Equal("value", ((Dictionary<string, object?>)roundtripped.DynamicMap["mapping"]!)["key"]);
+        Assert.Equal("value", ((Dictionary<object, object?>)roundtripped.DynamicMap["mapping"]!)["key"]);
     }
 
     [Fact]
@@ -3894,5 +3955,91 @@ extra_list:
         Assert.IsType<GeneratedConcreteNode>(roundtripped);
         Assert.Equal("Root", roundtripped.Name);
         Assert.Equal(4, roundtripped.Level);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeDefaultIgnoreCondition_HonorsRuntimeReadOnlyAndFieldOptions(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(Func<YamlSerializerOptions, YamlSerializerOptions> configure)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithBuildTimeIgnoreCondition.Default.CreateOptions(configure)
+                : configure(new YamlSerializerOptions { DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull });
+
+        var defaults = CreateOptions(static options => options);
+        var ignoreReadOnly = CreateOptions(static options => options with { IgnoreReadOnlyProperties = true });
+        var includeFields = CreateOptions(static options => options with { IncludeFields = true });
+
+        Assert.Equal("A: 1\n", YamlSerializer.Serialize(new GeneratedGetOnlyPropertyPayload(), defaults));
+        Assert.Equal("{}\n", YamlSerializer.Serialize(new GeneratedGetOnlyPropertyPayload(), ignoreReadOnly));
+        Assert.Equal("{}\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 2 }, defaults));
+        Assert.Equal("F: 2\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 2 }, includeFields));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", includeFields)!.F);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeReadOptions_HonorRuntimeIncludeFields(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(bool includeFields)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithBuildTimeReadOptions.Default.CreateOptions(options => options with { IncludeFields = includeFields })
+                : new YamlSerializerOptions { Schema = YamlSchemaKind.Core, IncludeFields = includeFields };
+
+        Assert.Equal(0, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", CreateOptions(includeFields: false))!.F);
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedPublicFieldPayload>("F: 3\n", CreateOptions(includeFields: true))!.F);
+        Assert.Equal("F: 4\n", YamlSerializer.Serialize(new GeneratedPublicFieldPayload { F = 4 }, CreateOptions(includeFields: true)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BuildTimeMemberInclusionOptions_AreHonored(bool useSourceGeneration)
+    {
+        var includeOptions = useSourceGeneration
+            ? TestYamlSerializerContextWithBuildTimeMemberInclusion.Default.Options
+            : new YamlSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true };
+        var excludeOptions = useSourceGeneration
+            ? TestYamlSerializerContextWithBuildTimeMemberExclusion.Default.Options
+            : new YamlSerializerOptions { IncludeFields = false, IgnoreReadOnlyProperties = false };
+
+        Assert.Equal("Property: 1\nField: 3\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), includeOptions));
+        Assert.Equal(7, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", includeOptions)!.Field);
+        Assert.Equal("Property: 1\nGetOnly: 2\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), excludeOptions));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", excludeOptions)!.Field);
+    }
+
+    [Fact]
+    public void BuildTimeMemberInclusionOptions_IgnoreRuntimeOptions()
+    {
+        var includeOptions = TestYamlSerializerContextWithBuildTimeMemberInclusion.Default.CreateOptions(
+            static options => options with { IncludeFields = false, IgnoreReadOnlyFields = false, IgnoreReadOnlyProperties = false });
+        var excludeOptions = TestYamlSerializerContextWithBuildTimeMemberExclusion.Default.CreateOptions(
+            static options => options with { IncludeFields = true, IgnoreReadOnlyProperties = true });
+
+        Assert.Equal("Property: 1\nField: 3\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), includeOptions));
+        Assert.Equal(7, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", includeOptions)!.Field);
+        Assert.Equal("Property: 1\nGetOnly: 2\n", YamlSerializer.Serialize(new GeneratedMemberInclusionPayload(), excludeOptions));
+        Assert.Equal(3, YamlSerializer.Deserialize<GeneratedMemberInclusionPayload>("Field: 7\n", excludeOptions)!.Field);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ValueTupleMember_IsSerializedLikeReflection(bool useSourceGeneration)
+    {
+        YamlSerializerOptions CreateOptions(bool includeFields)
+            => useSourceGeneration
+                ? TestYamlSerializerContextWithValueTuple.Default.CreateOptions(options => options with { IncludeFields = includeFields })
+                : new YamlSerializerOptions { IncludeFields = includeFields };
+
+        var payload = new GeneratedValueTuplePayload { Value = (1, "x") };
+
+        Assert.Equal("Value: {}\n", YamlSerializer.Serialize(payload, CreateOptions(includeFields: false)));
+        Assert.Equal("Value:\n  Item1: 1\n  Item2: x\n", YamlSerializer.Serialize(payload, CreateOptions(includeFields: true)));
+        Assert.Equal(default((int, string)), YamlSerializer.Deserialize<GeneratedValueTuplePayload>("Value:\n  Item1: 2\n  Item2: y\n", CreateOptions(includeFields: false))!.Value);
+        Assert.Equal((2, "y"), YamlSerializer.Deserialize<GeneratedValueTuplePayload>("Value:\n  Item1: 2\n  Item2: y\n", CreateOptions(includeFields: true))!.Value);
     }
 }

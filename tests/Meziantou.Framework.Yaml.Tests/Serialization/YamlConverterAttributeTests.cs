@@ -304,4 +304,87 @@ public sealed class YamlConverterAttributeTests
 
         public override void Write(YamlWriter writer, Cell<T>? value) => throw new NotSupportedException();
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RoundTrip_UsesTypeLevelConverterOfTransitiveMemberTypes(bool useSourceGeneration)
+    {
+        var value = new TransitiveConvertedModel
+        {
+            Value = new TransitiveConvertedScalar { Text = "a" },
+            List = [new TransitiveConvertedScalar { Text = "b" }, null],
+            Array = [new TransitiveConvertedScalar { Text = "c" }],
+            Map = new Dictionary<string, TransitiveConvertedScalar?>(StringComparer.Ordinal) { ["key"] = new TransitiveConvertedScalar { Text = "d" } },
+        };
+
+        var yaml = useSourceGeneration
+            ? YamlSerializer.Serialize(value, ConverterAttributeYamlContext.Default)
+            : YamlSerializer.Serialize(value);
+
+        Assert.Equal("Value: converted-a\nList:\n  - converted-b\n  - null\nArray:\n  - converted-c\nMap:\n  key: converted-d\n", yaml);
+
+        var roundTrip = useSourceGeneration
+            ? YamlSerializer.Deserialize<TransitiveConvertedModel>(yaml, ConverterAttributeYamlContext.Default)
+            : YamlSerializer.Deserialize<TransitiveConvertedModel>(yaml);
+
+        Assert.NotNull(roundTrip);
+        Assert.Equal("a", roundTrip.Value!.Text);
+        Assert.Equal("b", roundTrip.List![0]!.Text);
+        Assert.Null(roundTrip.List[1]);
+        Assert.Equal("c", roundTrip.Array![0]!.Text);
+        Assert.Equal("d", roundTrip.Map!["key"]!.Text);
+    }
+
+    internal sealed class TransitiveConvertedModel
+    {
+        public TransitiveConvertedScalar? Value { get; set; }
+
+        public List<TransitiveConvertedScalar?>? List { get; set; }
+
+        public TransitiveConvertedScalar?[]? Array { get; set; }
+
+        public Dictionary<string, TransitiveConvertedScalar?>? Map { get; set; }
+    }
+
+    [YamlConverter(typeof(TransitiveConvertedScalarConverter))]
+    internal sealed class TransitiveConvertedScalar
+    {
+        public string? Text { get; set; }
+    }
+
+    internal sealed class TransitiveConvertedScalarConverter : YamlConverter<TransitiveConvertedScalar?>
+    {
+        private const string Prefix = "converted-";
+
+        public override TransitiveConvertedScalar? Read(YamlReader reader)
+        {
+            if (reader.TokenType is YamlTokenType.Scalar && YamlScalar.IsNull(reader.ScalarValue.AsSpan()))
+            {
+                reader.Read();
+                return null;
+            }
+
+            var scalar = reader.GetScalarValue();
+            reader.Read();
+            return new TransitiveConvertedScalar { Text = scalar[Prefix.Length..] };
+        }
+
+        public override void Write(YamlWriter writer, TransitiveConvertedScalar? value)
+        {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            writer.WriteScalar(Prefix + value.Text);
+        }
+    }
+}
+
+#pragma warning disable MA0048 // File name must match type name
+[YamlSerializable(typeof(YamlConverterAttributeTests.TransitiveConvertedModel))]
+internal sealed partial class ConverterAttributeYamlContext : YamlSerializerContext
+{
 }

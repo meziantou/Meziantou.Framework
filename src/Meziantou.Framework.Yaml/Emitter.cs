@@ -1103,7 +1103,8 @@ public partial class Emitter : IEmitter
                     WriteIndent();
                     leading_spaces = IsBlank(character);
                 }
-                if (!previous_break && character == ' ' && i + 1 < value.Length && value[i + 1] != ' ' && _column > _bestWidth)
+                // Line breaks are not folded around a more-indented line, so a line starting with a blank cannot be wrapped.
+                if (!previous_break && !leading_spaces && character == ' ' && i + 1 < value.Length && value[i + 1] != ' ' && _column > _bestWidth)
                 {
                     WriteIndent();
                 }
@@ -1506,6 +1507,14 @@ public partial class Emitter : IEmitter
     private void EmitAlias()
     {
         ProcessAnchor();
+
+        // ':' is a valid anchor character, so "*a:" would read as the alias "a:". An alias used as an implicit key
+        // needs a space before the value indicator.
+        if (_isSimpleKeyContext)
+        {
+            Write(' ');
+        }
+
         _state = _states.Pop();
     }
 

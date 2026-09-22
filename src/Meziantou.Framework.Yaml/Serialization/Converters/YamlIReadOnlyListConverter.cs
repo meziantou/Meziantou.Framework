@@ -6,7 +6,7 @@ internal sealed class YamlIReadOnlyListConverter<TElement> : YamlConverter<IRead
 
     public override IReadOnlyList<TElement>? Read(YamlReader reader)
     {
-        var list = SequenceReadHelpers.ReadList<TElement>(reader, ref _elementConverter, "IReadOnlyList");
+        var list = SequenceReadHelpers.ReadList<IReadOnlyList<TElement>, TElement>(reader, ref _elementConverter, "IReadOnlyList");
         return list;
     }
 

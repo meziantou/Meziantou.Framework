@@ -100,3 +100,19 @@ with a raised `MaxDepth`, or exposed by a custom navigator.
 
 A custom `JsonPathNavigator<TValue>` should expose an acyclic view of its object model. A cycle — a parent
 back-reference, for example — is reported as this same depth error rather than recursing forever.
+
+### Number precision
+
+Filter expressions compare numbers, both the literals in the query and the values in the document, as IEEE 754
+double-precision values (`JsonPathNavigator<TValue>.TryGetNumber` returns a `double`). Numbers that a `double`
+represents exactly compare exactly. This covers every integer from -(2^53)+1 to 2^53-1, the range I-JSON
+([RFC 7493 §2.2](https://www.rfc-editor.org/rfc/rfc7493#section-2.2)) recommends for interoperability. Outside it,
+distinct numbers can compare as equal:
+
+- Integers beyond ±(2^53)-1 are rounded: `$[?@ == 9007199254740993]` matches `9007199254740992`.
+- Decimals are rounded to the nearest `double`: `$[?@ == 0.1]` matches `0.10000000000000001`.
+- Magnitudes beyond the `double` range become infinity: `$[?@ == 1e400]` matches `1e500`.
+- Magnitudes below the smallest `double` become zero: `$[?@ < 0]` does not match `-1e-400`.
+
+Index and slice selectors are not affected: the parser rejects any value outside the I-JSON integer range, as
+RFC 9535 §2.1 requires.

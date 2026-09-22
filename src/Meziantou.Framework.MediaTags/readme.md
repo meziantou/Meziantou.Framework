@@ -87,6 +87,13 @@ Other things worth knowing before writing:
   comes from the file, or from the `MediaFormat` argument of the stream overloads.
 - Multiplexed and chained OGG streams (a video stream alongside the audio, several concatenated logical
   streams) are refused rather than rewritten.
+- ID3v2 frames this library does not read (publisher, sort names, ratings, `UFID`, `PRIV`, iTunes' own `COMM`
+  frames, ...) are carried over from the existing ID3v2.3 or ID3v2.4 tag, as are the MP4 `ilst` items it does
+  not read. `RemoveTags` removes the ID3v2 frames as well.
+- A field whose value cannot be parsed, such as a Vorbis `TRACKNUMBER=A1`, is exposed in `CustomFields` so
+  that writing the tags back keeps it.
+- An ID3v2 tag that a tagger prepended to a FLAC, OGG, MP4, WAV or AIFF file is skipped when reading, and
+  copied through unchanged when writing.
 
 ## Field support by format
 
@@ -96,7 +103,7 @@ Other things worth knowing before writing:
 | `TrackNumber`, `TrackTotal`, `DiscNumber`, `DiscTotal` | yes | yes | yes | yes<sup>1</sup> | yes |
 | `Comment`, `Lyrics`, `Composer`, `Conductor`, `Copyright`, `Isrc` | yes | yes | yes | yes | yes |
 | `Bpm`, `IsCompilation` | yes | yes | yes | yes<sup>1</sup> | yes |
-| `Duration` | read and written (`TLEN`) | read only | read only | read only | read and written (`TLEN`) |
+| `Duration` | read and written (`TLEN`)<sup>3</sup> | read only | read only | read only | read and written (`TLEN`)<sup>3</sup> |
 | `Pictures` | yes | yes | yes | front cover only | yes |
 | `ReplayGain` | yes | yes | yes | yes | yes |
 | `MusicBrainz*` | yes | yes | yes | yes | yes |
@@ -106,6 +113,9 @@ Other things worth knowing before writing:
 rather than silently wrapped.
 
 <sup>2</sup> Stored in the embedded ID3v2 tag, not as native `INFO` chunks.
+
+<sup>3</sup> A duration computed from the audio is not written back, so it cannot later override the audio. A
+duration read from a `TLEN` frame, or set by the caller, is written.
 
 ## Errors
 

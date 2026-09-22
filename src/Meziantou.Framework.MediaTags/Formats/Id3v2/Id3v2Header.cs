@@ -14,6 +14,9 @@ internal readonly struct Id3v2Header
     public bool FooterPresent { get; init; }
     public int TagSize { get; init; }
 
+    /// <summary>The largest number of bytes a complete tag can occupy: header, content and footer.</summary>
+    public const int MaxTotalSize = 10 + 0x0FFFFFFF + 10;
+
     public static bool TryParse(ReadOnlySpan<byte> data, out Id3v2Header header)
     {
         header = default;

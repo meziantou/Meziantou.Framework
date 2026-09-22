@@ -32,8 +32,16 @@ internal sealed class AiffWriter : IMediaTagWriter
             if (!complete)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "The AIFF chunks do not cover the whole file.");
 
-            // Build new ID3v2 tag
-            if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, out var id3v2Tag, out var buildError))
+            // Build new ID3v2 tag, carrying over the frames of the existing one that this library does not read
+            var existingTag = chunks.Find(chunk => AiffChunk.IsId3Chunk(chunk.Id) && chunk.Data is not null);
+            List<byte[]> preservedFrames = [];
+            if (existingTag?.Data is { } existingTagData)
+            {
+                using var existingTagStream = new MemoryStream(existingTagData, writable: false);
+                preservedFrames = Id3v2.Id3v2Writer.ReadFramesToPreserve(existingTagStream, options);
+            }
+
+            if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, preservedFrames, out var id3v2Tag, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 
             var preservedChunks = new List<AiffChunk>();

@@ -299,4 +299,78 @@ public sealed class OggVorbisTests
         Assert.True(result.IsSuccess);
         Assert.True(allocated < 1024 * 1024, $"Reading a {stream.Length} byte file allocated {allocated} bytes.");
     }
+
+    [Fact]
+    public void WriteTags_DamagedPage_IsRefused()
+    {
+        // The writer rebuilds the file from the pages it read. Stopping at a damaged page and reporting success
+        // would cut off all the audio after it.
+        var bytes = File.ReadAllBytes(GetTestFilePath("basic.ogg"));
+        var pages = OggPageInspector.ReadPages(bytes);
+        var lastPageOffset = bytes.Length - pages[^1].BytesWithZeroedChecksum.Length;
+        bytes[lastPageOffset] = (byte)'X';
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.OggVorbis);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
+    public void WriteTags_CommentPacketSpanningHundredsOfPages_IsReadBack()
+    {
+        // A page holds at most 65,025 bytes, so this picture spreads the comment packet over about 90 pages.
+        var picture = new byte[4 * 1024 * 1024];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(picture);
+        var tags = new MediaTagInfo { Title = "Title" };
+        tags.Pictures.Add(new MediaPicture { MimeType = "image/png", Data = picture });
+
+        using var input = new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.ogg")));
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, tags, MediaFormat.OggVorbis).IsSuccess);
+        Assert.HasCountGreaterThan(64, OggPageInspector.ReadPages(output.ToArray()));
+
+        output.Position = 0;
+        var read = MediaFile.ReadTags(output, MediaFormat.OggVorbis);
+        Assert.True(read.IsSuccess);
+        Assert.Equal("Title", read.Value.Title);
+        Assert.Equal(picture, Assert.Single(read.Value.Pictures).Data);
+    }
+
+    [Fact]
+    public void WriteTags_PageEndingTheCommentPacketHasAGranulePosition()
+    {
+        // The comment packet shares its page with the setup packet in the original file, and gets a page of its
+        // own when rewritten. A granule position of -1 would declare that no packet ends on that page.
+        using var input = new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.ogg")));
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.OggVorbis).IsSuccess);
+
+        var pages = OggPageInspector.ReadPages(output.ToArray());
+        Assert.Equal(0, pages[1].GranulePosition);
+        Assert.Equal(0, pages[2].GranulePosition);
+    }
+
+    [Fact]
+    public void ReadAndWriteTags_FileWithALeadingId3Tag()
+    {
+        byte[] id3Tag = [(byte)'I', (byte)'D', (byte)'3', 3, 0, 0, 0, 0, 0, 0];
+        byte[] bytes = [.. id3Tag, .. File.ReadAllBytes(GetTestFilePath("basic.ogg"))];
+
+        using var input = new MemoryStream(bytes);
+        Assert.Equal(MediaFormat.OggVorbis, MediaFile.DetectFormat(input));
+        Assert.Equal("Test Title", MediaFile.ReadTags(input).Value.Title);
+
+        // The stream overloads read from the current position
+        input.Position = 0;
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "New Title" }, MediaFormat.OggVorbis).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.Equal(id3Tag, written[..id3Tag.Length]);
+        output.Position = 0;
+        Assert.Equal("New Title", MediaFile.ReadTags(output).Value.Title);
+    }
 }

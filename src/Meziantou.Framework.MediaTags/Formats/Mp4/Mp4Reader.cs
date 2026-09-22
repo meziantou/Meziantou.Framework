@@ -27,6 +27,15 @@ internal sealed class Mp4Reader : IMediaTagReader
                 ProcessIlstItem(item, tags);
             }
 
+            // iTunes stores its built-in genres as an index in gnre rather than as text in ©gen. The text
+            // wins when both are present, whatever their order.
+            if (tags.Genre is null && ilst.FindChild(ItunesAtomNames.GenreId)?.FindChild("data")?.Data is { Length: >= 10 } genreData)
+            {
+                var genreIndex = BinaryPrimitives.ReadUInt16BigEndian(genreData.AsSpan(8));
+                if (genreIndex is > 0 and <= 256)
+                    tags.Genre = Id3v1.Id3v1Genres.GetGenre((byte)(genreIndex - 1));
+            }
+
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
         catch (Exception ex) when (MediaTagErrors.TryMap(ex, out var error))
@@ -118,13 +127,24 @@ internal sealed class Mp4Reader : IMediaTagReader
 
     private static void ProcessIlstItem(Mp4Atom item, MediaTagInfo tags)
     {
+        // covr holds one data atom per image
+        if (item.Type == ItunesAtomNames.CoverArt)
+        {
+            foreach (var child in item.Children)
+            {
+                if (child.Type == "data" && child.Data is { Length: >= 8 } pictureData)
+                    AddCoverArt(pictureData, tags);
+            }
+
+            return;
+        }
+
         // Each ilst child has a "data" sub-atom
         var dataAtom = item.FindChild("data");
         if (dataAtom?.Data is null || dataAtom.Data.Length < 8)
             return;
 
         // data atom: type indicator (4 bytes) + locale (4 bytes) + value
-        var typeIndicator = BinaryPrimitives.ReadUInt32BigEndian(dataAtom.Data);
         var valueData = dataAtom.Data.AsSpan(8);
 
         switch (item.Type)
@@ -197,28 +217,32 @@ internal sealed class Mp4Reader : IMediaTagReader
                 if (tags.IsCompilation is null && valueData.Length >= 1)
                     tags.IsCompilation = valueData[0] != 0;
                 break;
-            case ItunesAtomNames.CoverArt:
-                // covr: raw image data. Type indicator tells format:
-                // 13 = JPEG, 14 = PNG
-                var mimeType = typeIndicator switch
-                {
-                    13 => "image/jpeg",
-                    14 => "image/png",
-                    _ => "image/jpeg",
-                };
-                tags.Pictures.Add(new MediaPicture
-                {
-                    PictureType = MediaPictureType.FrontCover,
-                    MimeType = mimeType,
-                    Data = valueData.ToArray(),
-                });
-                break;
             case ItunesAtomNames.Freeform:
                 // Freeform atoms: check mean/name sub-atoms
                 ProcessFreeformAtom(item, tags);
                 break;
         }
     }
+
+    private static void AddCoverArt(byte[] dataAtomData, MediaTagInfo tags)
+    {
+        // data atom: type indicator (4 bytes) + locale (4 bytes) + image
+        var typeIndicator = BinaryPrimitives.ReadUInt32BigEndian(dataAtomData);
+        tags.Pictures.Add(new MediaPicture
+        {
+            PictureType = MediaPictureType.FrontCover,
+            MimeType = GetCoverArtMimeType(typeIndicator),
+            Data = dataAtomData.AsSpan(8).ToArray(),
+        });
+    }
+
+    internal static string GetCoverArtMimeType(uint typeIndicator) => typeIndicator switch
+    {
+        12 => "image/gif",
+        14 => "image/png",
+        27 => "image/bmp",
+        _ => "image/jpeg",
+    };
 
     private static void ProcessFreeformAtom(Mp4Atom item, MediaTagInfo tags)
     {

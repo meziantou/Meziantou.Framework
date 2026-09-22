@@ -20,7 +20,9 @@ internal sealed class RiffChunk
     public const int MaxCount = 8192;
 
     public string Id { get; set; } = "";
-    public int Size { get; set; }
+
+    /// <summary>Gets or sets the size of the chunk content. RIFF sizes are unsigned: a data chunk reaches 4 GB.</summary>
+    public long Size { get; set; }
     public long DataPosition { get; set; }
     public byte[]? Data { get; set; }
     public List<RiffChunk> SubChunks { get; } = [];
@@ -60,10 +62,7 @@ internal sealed class RiffChunk
                 return false;
 
             var id = Encoding.ASCII.GetString(header[..4]);
-            var size = BinaryPrimitives.ReadInt32LittleEndian(header[4..]);
-            if (size < 0)
-                return false;
-
+            var size = (long)BinaryPrimitives.ReadUInt32LittleEndian(header[4..]);
             var chunk = new RiffChunk
             {
                 Id = id,
@@ -89,10 +88,10 @@ internal sealed class RiffChunk
                         return false;
                 }
             }
-            else if (ShouldBufferData(id, depth) && size > 0 && size <= StreamHelpers.MaxRecordDataSize)
+            else if (size > 0 && size <= GetBufferLimit(id, depth))
             {
                 chunk.Data = new byte[size];
-                if (stream.ReadAtLeast(chunk.Data, size, throwOnEndOfStream: false) < size)
+                if (stream.ReadAtLeast(chunk.Data, (int)size, throwOnEndOfStream: false) < size)
                     return false;
             }
 
@@ -109,18 +108,26 @@ internal sealed class RiffChunk
     }
 
     /// <summary>
-    /// Whether the content of a chunk is needed in memory.
+    /// Gets the size up to which the content of a chunk is read into memory, or 0 when it is not needed.
     /// </summary>
     /// <remarks>
     /// The <c>data</c> chunk holds the audio: buffering it costs a full read and a large object heap allocation
     /// per file for bytes nothing looks at. Only the chunks a tag is read from are buffered.
     /// </remarks>
-    private static bool ShouldBufferData(string id, int depth)
+    private static long GetBufferLimit(string id, int depth)
     {
-        // Sub-chunks of a LIST are the INFO tag values themselves, and are small.
-        if (depth > 0)
-            return true;
+        // An ID3v2 tag holding large artwork is legitimately bigger than any other record. Leaving it unread
+        // would not just hide the tags: the writer drops the chunk and rebuilds the tag without them. The size
+        // was already checked against the bytes actually in the file.
+        if (IsId3Chunk(id))
+            return Id3v2.Id3v2Header.MaxTotalSize;
 
-        return id is "fmt " or "fact" or "id3 " or "ID3 " or "ID32";
+        // Sub-chunks of a LIST are the INFO tag values themselves, and are small.
+        if (depth > 0 || id is "fmt " or "fact")
+            return StreamHelpers.MaxRecordDataSize;
+
+        return 0;
     }
+
+    public static bool IsId3Chunk(string id) => id is "id3 " or "ID3 " or "ID32";
 }

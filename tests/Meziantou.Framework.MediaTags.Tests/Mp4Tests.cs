@@ -587,4 +587,109 @@ public sealed class Mp4Tests
         => System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan((int)position));
 
     private static int IndexOf(byte[] haystack, ReadOnlySpan<byte> needle) => haystack.AsSpan().IndexOf(needle);
+
+    [Fact]
+    public void ReadTags_GnreAtom_IsTheGenre()
+    {
+        // iTunes stores its built-in genres as an ID3v1 genre index plus one, not as text.
+        var file = CreateMp4WithIlstItems(CreateGnreAtom(18));
+
+        Assert.Equal("Rock", ReadMp4(file).Genre);
+    }
+
+    [Fact]
+    public void ReadTags_GenreTextAndGnreAtom_TheTextWins()
+    {
+        var file = CreateMp4WithIlstItems(CreateGnreAtom(18), CreateAtom("©gen", CreateAtom("data", [0, 0, 0, 1, 0, 0, 0, 0, .. "Custom"u8])));
+
+        Assert.Equal("Custom", ReadMp4(file).Genre);
+    }
+
+    [Fact]
+    public void WriteTags_Genre_ReplacesTheGnreAtom()
+    {
+        var file = CreateMp4WithIlstItems(CreateGnreAtom(18));
+
+        var written = WriteMp4(file, new MediaTagInfo { Genre = "Jazz" });
+        Assert.Equal(-1, IndexOfAtomType(written, "gnre"));
+        Assert.Equal("Jazz", ReadMp4(written).Genre);
+
+        Assert.Null(ReadMp4(WriteMp4(file, new MediaTagInfo())).Genre);
+    }
+
+    [Fact]
+    public void WriteTags_CustomFieldOutsideTheItunesNamespace_KeepsItsNamespace()
+    {
+        var file = CreateMp4WithFreeformTags([("org.example.tool", "Name", "value", 1)]);
+        var tags = ReadMp4(file);
+        Assert.Equal("value", tags.CustomFields["org.example.tool:Name"]);
+        tags.CustomFields["Key:With colon"] = "other";
+
+        var written = WriteMp4(file, tags);
+
+        Assert.True(IndexOf(written, "org.example.tool"u8) >= 0);
+        Assert.Equal(-1, IndexOf(written, "org.example.tool:Name"u8));
+        var reread = ReadMp4(written);
+        Assert.Equal("value", reread.CustomFields["org.example.tool:Name"]);
+        Assert.Equal("other", reread.CustomFields["Key:With colon"]);
+    }
+
+    [Fact]
+    public void WriteTags_SeveralPictures_RoundTripInOneCovrAtom()
+    {
+        var tags = new MediaTagInfo();
+        tags.Pictures.Add(new MediaPicture { MimeType = "image/png", Data = [1, 2, 3] });
+        tags.Pictures.Add(new MediaPicture { MimeType = "image/gif", Data = [4, 5, 6] });
+        tags.Pictures.Add(new MediaPicture { MimeType = "image/bmp", Data = [7, 8, 9] });
+
+        var written = WriteMp4(File.ReadAllBytes(GetTestFilePath("basic.m4a")), tags);
+
+        var covr = IndexOfAtomType(written, "covr");
+        Assert.True(covr >= 0);
+        Assert.Equal(-1, IndexOfAtomType(written[(covr + 4)..], "covr"));
+
+        var pictures = ReadMp4(written).Pictures;
+        Assert.Equal(new string?[] { "image/png", "image/gif", "image/bmp" }, pictures.Select(picture => picture.MimeType).ToArray());
+        Assert.Equal(new byte[] { 4, 5, 6 }, pictures[1].Data);
+    }
+
+    [Fact]
+    public void ReadTags_FileWithALeadingId3Tag()
+    {
+        byte[] bytes = [(byte)'I', (byte)'D', (byte)'3', 3, 0, 0, 0, 0, 0, 0, .. File.ReadAllBytes(GetTestFilePath("basic.m4a"))];
+        using var stream = new MemoryStream(bytes);
+
+        var result = MediaFile.ReadTags(stream);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(MediaFormat.Mp4, result.Value.Format);
+        Assert.Equal("Test Title", result.Value.Title);
+    }
+
+    private static MediaTagInfo ReadMp4(byte[] file)
+    {
+        using var stream = new MemoryStream(file);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp4);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return result.Value;
+    }
+
+    private static byte[] WriteMp4(byte[] file, MediaTagInfo tags)
+    {
+        using var input = new MemoryStream(file);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, tags, MediaFormat.Mp4);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return output.ToArray();
+    }
+
+    private static byte[] CreateGnreAtom(ushort genreId) => CreateAtom("gnre", CreateAtom("data", [0, 0, 0, 0, 0, 0, 0, 0, (byte)(genreId >> 8), (byte)genreId]));
+
+    private static byte[] CreateMp4WithIlstItems(params byte[][] items)
+    {
+        var ilstAtom = CreateAtom("ilst", items.SelectMany(item => item).ToArray());
+        var metaPayload = new byte[4 + ilstAtom.Length];
+        ilstAtom.CopyTo(metaPayload, 4); // Full box version/flags
+        return CreateAtom("moov", CreateAtom("udta", CreateAtom("meta", metaPayload)));
+    }
 }

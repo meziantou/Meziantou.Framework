@@ -8,7 +8,13 @@ public sealed class MediaTagWriteOptions
 {
     internal static MediaTagWriteOptions Default { get; } = new();
 
-    internal static MediaTagWriteOptions Remove { get; } = new() { WriteId3v1Tag = false, Id3v2PaddingSize = 0 };
+    internal static MediaTagWriteOptions Remove { get; } = new() { WriteId3v1Tag = false, Id3v2PaddingSize = 0, PreserveUnrecognizedFrames = false };
+
+    /// <summary>
+    /// Gets a value indicating whether the ID3v2 frames this library does not read are carried over from the
+    /// existing tag. They are the user's data, but removing the tags must remove them too.
+    /// </summary>
+    internal bool PreserveUnrecognizedFrames { get; init; } = true;
 
     /// <summary>
     /// Gets or sets a value indicating whether an ID3v1 tag is appended to MP3 files. The default is <see langword="true"/>.

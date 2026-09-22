@@ -398,8 +398,10 @@ public static class MediaFile
         if (!TryGetReader(format, out var reader))
             return MediaTagResult<MediaTagInfo>.Failure(MediaTagError.UnsupportedFormat, FormatOutOfRangeMessage(format));
 
+        var origin = stream.Position + GetLeadingId3v2TagLength(stream, format);
+
         MediaTagResult<MediaTagInfo> result;
-        if (stream.Position == 0)
+        if (origin == 0)
         {
             result = reader.ReadTags(stream);
         }
@@ -407,7 +409,8 @@ public static class MediaFile
         {
             // The parsers address the file from offset 0, so the stream is shifted to show them the same bytes
             // format detection saw.
-            using var offsetStream = new OffsetStream(stream, stream.Position);
+            stream.Position = origin;
+            using var offsetStream = new OffsetStream(stream, origin);
             result = reader.ReadTags(offsetStream);
         }
 
@@ -424,11 +427,54 @@ public static class MediaFile
         if (!TryGetWriter(format, out var writer))
             return MediaTagResult.Failure(MediaTagError.UnsupportedFormat, FormatOutOfRangeMessage(format));
 
-        if (inputStream.Position == 0)
+        // A leading ID3v2 tag is not part of the format the writer understands. It is copied through unchanged,
+        // as the FLAC writer always did.
+        var start = inputStream.Position;
+        var leadingTagLength = GetLeadingId3v2TagLength(inputStream, format);
+        if (leadingTagLength > 0 && !StreamHelpers.CopyExactlyFrom(inputStream, outputStream, start, leadingTagLength))
+            return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended inside the leading ID3v2 tag.");
+
+        var origin = start + leadingTagLength;
+        if (origin == 0)
             return writer.WriteTags(inputStream, outputStream, tags, options);
 
-        using var offsetStream = new OffsetStream(inputStream, inputStream.Position);
+        inputStream.Position = origin;
+        using var offsetStream = new OffsetStream(inputStream, origin);
         return writer.WriteTags(offsetStream, outputStream, tags, options);
+    }
+
+    /// <summary>
+    /// Gets the length of the ID3v2 tag that some taggers prepend to a file of another format.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DetectFormat(Stream)"/> looks past such a tag to report the format behind it, so every parser
+    /// of that format must look past it too. Otherwise the parser finds "ID3" where it expects its own
+    /// signature, and reading reports a file with no tags. The stream position is restored.
+    /// </remarks>
+    /// <returns>The number of bytes to skip, or 0 when the format starts at the current position.</returns>
+    private static long GetLeadingId3v2TagLength(Stream stream, MediaFormat format)
+    {
+        if (format == MediaFormat.Mp3)
+            return 0;
+
+        var start = stream.Position;
+        try
+        {
+            if (!Id3v2TagLocator.TryGetAudioDataOffsets(stream, start, out var primaryOffset, out var secondaryOffset))
+                return 0;
+
+            if (TryDetectNestedFormatAtOffset(stream, primaryOffset, out var nestedFormat) && nestedFormat == format)
+                return primaryOffset - start;
+
+            if (secondaryOffset >= 0 && TryDetectNestedFormatAtOffset(stream, secondaryOffset, out nestedFormat) && nestedFormat == format)
+                return secondaryOffset - start;
+
+            return 0;
+        }
+        finally
+        {
+            stream.Position = start;
+        }
     }
 
     private static string FormatOutOfRangeMessage(MediaFormat format)

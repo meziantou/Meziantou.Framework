@@ -26,7 +26,9 @@ internal sealed class Mp3TagWriter : IMediaTagWriter
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "The ID3v2 and ID3v1 tags overlap; the file contains no audio data.");
 
             // Build new ID3v2 tag
-            if (!Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, out var id3v2Tag, out var buildError))
+            inputStream.Position = 0;
+            var preservedFrames = Id3v2Writer.ReadFramesToPreserve(inputStream, options);
+            if (!Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, preservedFrames, out var id3v2Tag, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 
             if (id3v2Tag.Length > 0)

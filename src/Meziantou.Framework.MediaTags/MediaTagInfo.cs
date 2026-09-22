@@ -127,6 +127,16 @@ public sealed class MediaTagInfo
     /// <summary>Gets or sets the source format that the tags were read from.</summary>
     public MediaFormat? Format { get; set; }
 
+    /// <summary>
+    /// Gets or sets the duration a reader computed from the audio stream rather than read from a tag.
+    /// </summary>
+    /// <remarks>
+    /// A writer must not store this value as a tag: for a variable bit rate MP3 it is only an estimate, and once
+    /// written it would take precedence over the audio on every later read. A duration the caller set differs
+    /// from it, and is written.
+    /// </remarks>
+    internal TimeSpan? DurationFromAudio { get; set; }
+
     private static int? ValidateNonNegative(int? value, [System.Runtime.CompilerServices.CallerMemberName] string? propertyName = null)
     {
         if (value < 0)

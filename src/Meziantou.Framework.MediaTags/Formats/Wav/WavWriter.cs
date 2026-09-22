@@ -32,14 +32,22 @@ internal sealed class WavWriter : IMediaTagWriter
             if (!complete)
                 return MediaTagResult.Failure(MediaTagError.CorruptFile, "The WAV chunks do not cover the whole file.");
 
-            // Build new ID3v2 tag
-            if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, out var id3v2Tag, out var buildError))
+            // Build new ID3v2 tag, carrying over the frames of the existing one that this library does not read
+            var existingTag = chunks.Find(chunk => RiffChunk.IsId3Chunk(chunk.Id) && chunk.Data is not null);
+            List<byte[]> preservedFrames = [];
+            if (existingTag?.Data is { } existingTagData)
+            {
+                using var existingTagStream = new MemoryStream(existingTagData, writable: false);
+                preservedFrames = Id3v2.Id3v2Writer.ReadFramesToPreserve(existingTagStream, options);
+            }
+
+            if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, preservedFrames, out var id3v2Tag, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 
             var preservedChunks = new List<RiffChunk>();
             foreach (var chunk in chunks)
             {
-                if (chunk.Id is "LIST-INFO" or "id3 " or "ID3 " or "ID32")
+                if (chunk.Id is "LIST-INFO" || RiffChunk.IsId3Chunk(chunk.Id))
                     continue; // Skip existing tag chunks
 
                 preservedChunks.Add(chunk);
@@ -96,15 +104,15 @@ internal sealed class WavWriter : IMediaTagWriter
         }
     }
 
-    private static void WriteChunkHeader(Stream output, string id, int size)
+    private static void WriteChunkHeader(Stream output, string id, long size)
     {
         Span<byte> header = stackalloc byte[8];
         Encoding.ASCII.GetBytes(id, header[..4]);
-        BinaryPrimitives.WriteInt32LittleEndian(header[4..], size);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[4..], (uint)size);
         output.Write(header);
     }
 
-    private static void WritePadding(Stream output, int size)
+    private static void WritePadding(Stream output, long size)
     {
         // Chunks are padded to even byte boundaries
         if (size % 2 != 0)

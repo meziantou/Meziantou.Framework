@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using Meziantou.Framework.MediaTags.Formats.Id3v2;
+
 namespace Meziantou.Framework.MediaTags.Tests;
 
 public sealed class Mp3Id3v2Tests
@@ -551,4 +554,212 @@ public sealed class Mp3Id3v2Tests
 
     private static byte[] EncodeSynchsafe(int value)
         => [(byte)((value >> 21) & 0x7F), (byte)((value >> 14) & 0x7F), (byte)((value >> 7) & 0x7F), (byte)(value & 0x7F)];
+
+    [Fact]
+    public void ReadTags_ItunesCommentFramesBeforeTheComment_AreNotTheComment()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B 00000B3C")),
+            ("COMM", 0, CommentBody("", "The comment")));
+
+        Assert.Equal("The comment", ReadMp3(bytes).Comment);
+    }
+
+    [Fact]
+    public void ReadTags_OnlyItunesCommentFrames_HasNoComment()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B 00000B3C")),
+            ("COMM", 0, CommentBody("iTunSMPB", " 00000000 00000210")));
+
+        Assert.Null(ReadMp3(bytes).Comment);
+    }
+
+    [Fact]
+    public void ReadTags_V24FrameWithADataLengthIndicator_IsDecoded()
+    {
+        var text = TextBody("Title");
+        var bytes = BuildId3Tag(4, 0, ("TIT2", 0x0001, [.. EncodeSynchsafe(text.Length), .. text]));
+
+        Assert.Equal("Title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_V24CompressedFrame_IsDecompressed()
+    {
+        var text = TextBody("Compressed title");
+        var bytes = BuildId3Tag(4, 0, ("TIT2", 0x0009, [.. EncodeSynchsafe(text.Length), .. Compress(text)]));
+
+        Assert.Equal("Compressed title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_V23CompressedAndGroupedFrame_IsDecompressed()
+    {
+        var text = TextBody("Compressed title");
+        byte[] decompressedSize = [(byte)(text.Length >> 24), (byte)(text.Length >> 16), (byte)(text.Length >> 8), (byte)text.Length];
+        var bytes = BuildId3Tag(3, 0, ("TIT2", 0x00A0, [.. decompressedSize, 1, .. Compress(text)]));
+
+        Assert.Equal("Compressed title", ReadMp3(bytes).Title);
+    }
+
+    [Fact]
+    public void ReadTags_EncryptedFrame_IsIgnored()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0x0004, [0x80, .. "not decryptable"u8]),
+            ("TPE1", 0, TextBody("Artist")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.Title);
+        Assert.Equal("Artist", tags.Artist);
+    }
+
+    [Fact]
+    public void ReadTags_V24UnsynchronisedTag_ReadsTheFramesAfterAnFFByte()
+    {
+        // In ID3v2.4 the frame size counts the unsynchronised bytes. Undoing the unsynchronisation over the
+        // whole tag first shortens the frame and misplaces every frame after it.
+        var bytes = BuildId3Tag(4, 0x80,
+            ("TIT2", 0x0002, [0, 0xFF, 0x00, (byte)'A']), // Latin-1 "ÿA", unsynchronised
+            ("TPE1", 0x0002, TextBody("Artist")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal("ÿA", tags.Title);
+        Assert.Equal("Artist", tags.Artist);
+    }
+
+    [Fact]
+    public void WriteTags_KeepsTheFramesItDoesNotRead()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0, TextBody("Title")),
+            ("TPUB", 0, TextBody("Label")),
+            ("PRIV", 0, [.. "owner"u8, 0, 1, 2, 3]),
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B")),
+            ("COMM", 0, CommentBody("", "The comment")));
+
+        var tags = ReadMp3(bytes);
+        tags.Title = "New title";
+        var written = WriteMp3(bytes, tags);
+
+        var frames = ReadFrameIds(written);
+        Assert.Contains("TPUB", frames);
+        Assert.Contains("PRIV", frames);
+        Assert.Equal(2, frames.Count(id => id == "COMM"));
+
+        var reread = ReadMp3(written);
+        Assert.Equal("New title", reread.Title);
+        Assert.Equal("The comment", reread.Comment);
+        Assert.True(written.AsSpan().IndexOf("iTunNORM"u8) >= 0);
+    }
+
+    [Fact]
+    public void WriteTags_V23Tag_ConvertsTheFramesItKeeps()
+    {
+        var bytes = BuildId3Tag(3, 0,
+            ("TYER", 0, TextBody("2020")),
+            ("TORY", 0, TextBody("1999")),
+            ("TPUB", 0, TextBody("Label")),
+            ("TENC", 0x8000, TextBody("Encoder"))); // Tag alter preservation: discard when the tag changes
+
+        var written = WriteMp3(bytes, ReadMp3(bytes));
+
+        var frames = ReadFrameIds(written);
+        Assert.Contains("TDRC", frames);
+        Assert.Contains("TDOR", frames);
+        Assert.Contains("TPUB", frames);
+        Assert.DoesNotContain("TYER", frames);
+        Assert.DoesNotContain("TORY", frames);
+        Assert.DoesNotContain("TENC", frames);
+        Assert.Equal(2020, ReadMp3(written).Year);
+    }
+
+    [Fact]
+    public void RemoveTags_AlsoRemovesTheFramesItDoesNotRead()
+    {
+        var bytes = BuildId3Tag(4, 0, ("TPUB", 0, TextBody("Label")));
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        Assert.False(output.ToArray().AsSpan().StartsWith("ID3"u8));
+    }
+
+    [Fact]
+    public void WriteTags_DurationComputedFromTheAudio_IsNotStoredInTheTag()
+    {
+        // The duration of an MP3 without TLEN is estimated from the audio. Stored as TLEN, the estimate would
+        // take precedence over the audio on every later read.
+        var bytes = CreateSyntheticMp3(100, includeId3v2Tag: true);
+        var tags = ReadMp3(bytes);
+        Assert.NotNull(tags.Duration);
+
+        var written = WriteMp3(bytes, tags);
+
+        Assert.DoesNotContain("TLEN", ReadFrameIds(written));
+        Assert.Equal(tags.Duration, ReadMp3(written).Duration);
+    }
+
+    private static MediaTagInfo ReadMp3(byte[] bytes)
+    {
+        using var stream = new MemoryStream(bytes);
+        var result = MediaFile.ReadTags(stream, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return result.Value;
+    }
+
+    private static byte[] WriteMp3(byte[] bytes, MediaTagInfo tags)
+    {
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(input, output, tags, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        return output.ToArray();
+    }
+
+    internal static List<string> ReadFrameIds(byte[] tag)
+    {
+        using var stream = new MemoryStream(tag);
+        Assert.True(Id3v2Reader.TryReadFrames(stream, out _, out var frames));
+        return frames.ConvertAll(frame => frame.Id);
+    }
+
+    /// <summary>Builds an ID3v2.3 or ID3v2.4 tag whose frames carry the given flags, followed by an MP3 frame header.</summary>
+    internal static byte[] BuildId3Tag(byte version, byte tagFlags, params (string FrameId, ushort Flags, byte[] Body)[] frames)
+    {
+        var frameBytes = new List<byte>();
+        foreach (var (frameId, flags, body) in frames)
+        {
+            frameBytes.AddRange(Encoding.ASCII.GetBytes(frameId));
+            frameBytes.AddRange(version == 4
+                ? EncodeSynchsafe(body.Length)
+                : [(byte)(body.Length >> 24), (byte)(body.Length >> 16), (byte)(body.Length >> 8), (byte)body.Length]);
+            frameBytes.AddRange([(byte)(flags >> 8), (byte)flags]);
+            frameBytes.AddRange(body);
+        }
+
+        var tag = new List<byte> { (byte)'I', (byte)'D', (byte)'3', version, 0, tagFlags };
+        tag.AddRange(EncodeSynchsafe(frameBytes.Count));
+        tag.AddRange(frameBytes);
+        tag.AddRange([0xFF, 0xFB, 0x90, 0x00]); // A frame header so the file looks like MP3 audio
+        return tag.ToArray();
+    }
+
+    internal static byte[] TextBody(string value) => [3, .. Encoding.UTF8.GetBytes(value)];
+
+    private static byte[] CommentBody(string description, string text)
+        => [3, (byte)'e', (byte)'n', (byte)'g', .. Encoding.UTF8.GetBytes(description), 0, .. Encoding.UTF8.GetBytes(text)];
+
+    private static byte[] Compress(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new ZLibStream(output, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write(data);
+        }
+
+        return output.ToArray();
+    }
 }

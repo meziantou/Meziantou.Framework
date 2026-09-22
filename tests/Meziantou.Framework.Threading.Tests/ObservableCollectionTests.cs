@@ -592,6 +592,43 @@ public sealed partial class ObservableCollectionTests : IDisposable
     }
 
     [Fact]
+    public void HandlerCanWaitForAnotherThreadModifyingTheCollection()
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            var collection = new ConcurrentObservableCollection<int>(context);
+            var observable = collection.AsObservable;
+
+            // Handlers used to run while the collection held its lock, so a modification from another thread
+            // blocked until the handler returned, and a handler waiting for it never did.
+            var modifiedFromAnotherThread = false;
+            observable.CollectionChanged += (sender, e) =>
+            {
+                if (e.NewItems?[0] is 1)
+                {
+                    var thread = new Thread(() => collection.Add(2));
+                    thread.Start();
+                    modifiedFromAnotherThread = thread.Join(TimeSpan.FromSeconds(30));
+                }
+            };
+
+            collection.Add(1);
+
+            Assert.True(modifiedFromAnotherThread);
+
+            // The notification posted by the other thread was raised by the drain that was already running
+            Assert.Equal([1, 2], observable.ToList());
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
+    [Fact]
     public void ObservableCollectionCannotBeAccessedFromAnotherThread()
     {
         var observable = CreateCollection<int>().AsObservable;

@@ -21,6 +21,10 @@ namespace Meziantou.Framework.Collections.Concurrent;
 /// handlers threw.
 /// </para>
 /// <para>
+/// The notifications are raised once the modification has released the internal lock, so a handler can wait for another
+/// thread that modifies the collection without deadlocking.
+/// </para>
+/// <para>
 /// When the synchronization context refuses the callback, for instance because the thread it is bound to is gone, the exception is
 /// propagated to the caller that modified the collection. The modification is kept, and its notification stays queued until a later
 /// modification succeeds in posting to the context.
@@ -183,11 +187,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         get => Items[index];
         set
         {
+            DispatchedObservableCollection<T>? observableCollection;
             lock (_lock)
             {
                 Items = Items.SetItem(index, value);
-                _observableCollection?.EnqueueReplace(index, value);
+                observableCollection = _observableCollection;
+                observableCollection?.EnqueueReplace(index, value);
             }
+
+            observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
         }
     }
 
@@ -195,11 +203,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="item">The item to add.</param>
     public void Add(T item)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = Items.Add(item);
-            _observableCollection?.EnqueueAdd(item);
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueAdd(item);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Adds multiple items to the collection.</summary>
@@ -213,19 +225,23 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="items">The items to add.</param>
     public void AddRange(IEnumerable<T> items)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             var count = Items.Count;
             Items = Items.AddRange(items);
+            observableCollection = _observableCollection;
             if (SupportRangeNotifications)
             {
-                _observableCollection?.EnqueueAddRange(Items.GetRange(count, Items.Count - count));
+                observableCollection?.EnqueueAddRange(Items.GetRange(count, Items.Count - count));
             }
             else
             {
-                _observableCollection?.EnqueueAddRangeAsSingleItemEvents(Items.GetRange(count, Items.Count - count));
+                observableCollection?.EnqueueAddRangeAsSingleItemEvents(Items.GetRange(count, Items.Count - count));
             }
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Inserts multiple items into the collection at the specified index.</summary>
@@ -233,30 +249,38 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="items">The items to insert.</param>
     public void InsertRange(int index, IEnumerable<T> items)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             var count = Items.Count;
             Items = Items.InsertRange(index, items);
             var addedItemsCount = Items.Count - count;
+            observableCollection = _observableCollection;
             if (SupportRangeNotifications)
             {
-                _observableCollection?.EnqueueInsertRange(index, Items.GetRange(index, addedItemsCount));
+                observableCollection?.EnqueueInsertRange(index, Items.GetRange(index, addedItemsCount));
             }
             else
             {
-                _observableCollection?.EnqueueInsertRangeAsSingleItemEvents(index, Items.GetRange(index, addedItemsCount));
+                observableCollection?.EnqueueInsertRangeAsSingleItemEvents(index, Items.GetRange(index, addedItemsCount));
             }
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Removes all items from the collection.</summary>
     public void Clear()
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = Items.Clear();
-            _observableCollection?.EnqueueClear();
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueClear();
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Inserts an item into the collection at the specified index.</summary>
@@ -264,11 +288,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="item">The item to insert.</param>
     public void Insert(int index, T item)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = Items.Insert(index, item);
-            _observableCollection?.EnqueueInsert(index, item);
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueInsert(index, item);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Removes the first occurrence of a specific item from the collection.</summary>
@@ -276,29 +304,35 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <returns><see langword="true"/> if the item was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(T item)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             var newList = Items.Remove(item);
-            if (Items != newList)
-            {
-                Items = newList;
-                _observableCollection?.EnqueueRemove(item);
-                return true;
-            }
+            if (Items == newList)
+                return false;
 
-            return false;
+            Items = newList;
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueRemove(item);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
+        return true;
     }
 
     /// <summary>Removes the item at the specified index.</summary>
     /// <param name="index">The zero-based index of the item to remove.</param>
     public void RemoveAt(int index)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = Items.RemoveAt(index);
-            _observableCollection?.EnqueueRemoveAt(index);
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueRemoveAt(index);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Returns an enumerator that iterates through the collection.</summary>
@@ -346,11 +380,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="comparer">The comparer to use when comparing elements.</param>
     public void Sort(IComparer<T>? comparer)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = Items.Sort(comparer);
-            _observableCollection?.EnqueueReset(Items);
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueReset(Items);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     /// <summary>Performs a stable sort on the collection using the default comparer.</summary>
@@ -363,11 +401,15 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
     /// <param name="comparer">The comparer to use when comparing elements.</param>
     public void StableSort(IComparer<T>? comparer)
     {
+        DispatchedObservableCollection<T>? observableCollection;
         lock (_lock)
         {
             Items = ImmutableList.CreateRange(Items.Order(comparer));
-            _observableCollection?.EnqueueReset(Items);
+            observableCollection = _observableCollection;
+            observableCollection?.EnqueueReset(Items);
         }
+
+        observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
     }
 
     int IList.Add(object? value)
@@ -377,13 +419,18 @@ public class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, ILi
         try
         {
             var item = (T)value!;
+            int index;
+            DispatchedObservableCollection<T>? observableCollection;
             lock (_lock)
             {
-                var index = Items.Count;
+                index = Items.Count;
                 Items = Items.Add(item);
-                _observableCollection?.EnqueueAdd(item);
-                return index;
+                observableCollection = _observableCollection;
+                observableCollection?.EnqueueAdd(item);
             }
+
+            observableCollection?.ProcessPendingEventsIfOnSynchronizationContextThread();
+            return index;
         }
         catch (InvalidCastException)
         {

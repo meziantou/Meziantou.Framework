@@ -10,7 +10,12 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private readonly ConcurrentObservableCollection<T> _collection;
     private readonly SynchronizationContext _synchronizationContext;
 
-    private volatile bool _isProcessingPending;
+    // Both flags are ints driven by Interlocked operations, which are full fences. Each one guards a check-then-act
+    // against the queue: a drain clears the flag and then reads the queue, while a producer writes the queue and then
+    // reads the flag. With plain volatile accesses, the store and the following load can be reordered, so the drain
+    // could miss the event while the producer still sees the flag set and skips the post, leaving the event queued
+    // until the next modification.
+    private int _isPostPending;
     private int _isDraining;
 
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
@@ -216,7 +221,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             _pendingEvents.Enqueue(PendingEvent.Add(item));
         }
 
-        ProcessPendingEventsOrPost();
+        PostIfNotOnSynchronizationContextThread();
     }
 
     /// <summary>Enqueues one <see cref="PendingEventType.Insert"/> event per item of a range committed to the source collection.</summary>
@@ -231,40 +236,49 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             index++;
         }
 
-        ProcessPendingEventsOrPost();
+        PostIfNotOnSynchronizationContextThread();
     }
 
     private void EnqueueEvent(PendingEvent<T> @event)
     {
         _pendingEvents.Enqueue(@event);
-        ProcessPendingEventsOrPost();
+        PostIfNotOnSynchronizationContextThread();
     }
 
-    private void ProcessPendingEventsOrPost()
+    /// <summary>Posts the processing of the queued events to the synchronization context, unless the current thread
+    /// can raise them itself. Called while the source collection holds its lock, so posts are serialized with the
+    /// modifications, and a post that the context refused is retried by the next modification.</summary>
+    private void PostIfNotOnSynchronizationContextThread()
     {
-        if (!_collection.IsOnSynchronizationContextThread())
-        {
-            if (!_isProcessingPending)
-            {
-                _isProcessingPending = true;
-                try
-                {
-                    _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
-                }
-                catch
-                {
-                    // The synchronization context refused the callback, so nothing will process the queue. The events stay
-                    // queued and the flag is restored, so the next modification posts again and raises every pending
-                    // notification as soon as the context accepts a callback.
-                    _isProcessingPending = false;
-                    throw;
-                }
-            }
-
+        if (_collection.IsOnSynchronizationContextThread())
             return;
-        }
 
-        ProcessPendingEvents();
+        if (Interlocked.CompareExchange(ref _isPostPending, 1, 0) is not 0)
+            return;
+
+        try
+        {
+            _synchronizationContext.Post(static state => ((DispatchedObservableCollection<T>)state!).ProcessPendingEvents(), this);
+        }
+        catch
+        {
+            // The synchronization context refused the callback, so nothing will process the queue. The events stay
+            // queued and the flag is restored, so the next modification posts again and raises every pending
+            // notification as soon as the context accepts a callback.
+            Interlocked.Exchange(ref _isPostPending, 0);
+            throw;
+        }
+    }
+
+    /// <summary>Raises the queued events when the current thread is the synchronization context thread.</summary>
+    /// <remarks>Must be called once the source collection has released its lock: the handlers may block on another
+    /// thread that modifies the collection, which would otherwise deadlock.</remarks>
+    internal void ProcessPendingEventsIfOnSynchronizationContextThread()
+    {
+        if (_collection.IsOnSynchronizationContextThread())
+        {
+            ProcessPendingEvents();
+        }
     }
 
     private void ProcessPendingEvents()
@@ -281,7 +295,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         {
             try
             {
-                _isProcessingPending = false;
+                Interlocked.Exchange(ref _isPostPending, 0);
                 while (_pendingEvents.TryDequeue(out var pendingEvent))
                 {
                     try
@@ -300,7 +314,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             }
             finally
             {
-                Volatile.Write(ref _isDraining, 0);
+                Interlocked.Exchange(ref _isDraining, 0);
             }
 
             // Events enqueued while the drain was running are processed here instead of waiting for the next

@@ -35,24 +35,30 @@ public static partial class MemoryDump
         }
 
         TryDeleteFile(filePath);
+
+        // A process cannot suspend itself while MiniDumpWriteDump reads its memory, so some dumps (e.g. WithHeap) can fail
+        // with ERROR_PARTIAL_COPY on every attempt. createdump.exe, shipped with the runtime, writes the dump from a separate process.
+        if (error is ERROR_PARTIAL_COPY or HRESULT_ERROR_PARTIAL_COPY && TryGetCreateDumpPath(out _))
+        {
+            WriteWithCreateDump(filePath, dumpType);
+            return;
+        }
+
         throw new Win32Exception(error);
     }
 
-    // Same flags as dotnet-dump, plus IgnoreInaccessibleMemory. When the process dumps itself, some private read-write regions
-    // may not be readable, and MiniDumpWriteDump then fails with ERROR_PARTIAL_COPY on every attempt instead of skipping them.
+    // Same flags as dotnet-dump
     private static MiniDumpType GetMiniDumpType(MemoryDumpType dumpType)
     {
         return dumpType switch
         {
             MemoryDumpType.Normal =>
-                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.Normal |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |
                 MiniDumpType.WithThreadInfo,
 
             MemoryDumpType.WithHeap =>
-                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |
                 MiniDumpType.WithUnloadedModules |
@@ -72,7 +78,6 @@ public static partial class MemoryDump
                 MiniDumpType.WithHandleData,
 
             MemoryDumpType.Full =>
-                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.WithFullMemory |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |

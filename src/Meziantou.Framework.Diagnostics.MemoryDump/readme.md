@@ -38,7 +38,7 @@ The types match the `DumpType` enum of `Microsoft.Diagnostics.NETCore.Client` an
 
 ## How it works
 
-- **Windows**: calls `MiniDumpWriteDump` from `dbghelp.dll`.
+- **Windows**: calls `MiniDumpWriteDump` from `dbghelp.dll`. A process cannot suspend itself while its memory is read, so this can fail with `ERROR_PARTIAL_COPY`. After a few attempts, the dump is written by the runtime's `createdump.exe` instead, which runs in a separate process.
 - **Linux and macOS**: runs the `createdump` tool shipped with the .NET runtime, looked up in the runtime directory, then in the application directory (self-contained and single-file apps).
 
 Calls are serialized: when several threads request a dump at the same time, the dumps are written one after the other.

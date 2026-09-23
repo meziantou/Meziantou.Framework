@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Win32
     public enum CredentialErrorCode
     {
         None = 0,
-        LogonFailure = 1
+        LogonFailure = 1,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Win32
     {
         Session = 1U,
         LocalMachine = 2U,
-        Enterprise = 3U
+        Enterprise = 3U,
     }
 
     public sealed class CredentialResult
@@ -68,7 +68,7 @@ namespace Meziantou.Framework.Win32
     {
         Unselected = 0,
         Selected = 1,
-        Hidden = 2
+        Hidden = 2,
     }
 
     public enum CredentialType
@@ -80,6 +80,6 @@ namespace Meziantou.Framework.Win32
         GenericCertificate = 5,
         DomainExtended = 6,
         Maximum = 7,
-        MaximumEx = 1007
+        MaximumEx = 1007,
     }
 }

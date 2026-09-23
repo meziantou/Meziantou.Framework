@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32
         Intranet = 1,
         Trusted = 2,
         Internet = 3,
-        Untrusted = 4
+        Untrusted = 4,
     }
 
     public sealed class ZoneIdentifier

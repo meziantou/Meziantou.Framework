@@ -43,7 +43,7 @@ namespace Meziantou.Framework.RobotsTxt
     {
         MalformedLine = 0,
         UnknownDirective = 1,
-        InvalidCrawlDelay = 2
+        InvalidCrawlDelay = 2,
     }
 
     public sealed class RobotsRule
@@ -59,6 +59,6 @@ namespace Meziantou.Framework.RobotsTxt
     public enum RobotsRuleKind
     {
         Allow = 0,
-        Disallow = 1
+        Disallow = 1,
     }
 }

@@ -108,7 +108,7 @@ namespace Meziantou.Framework.Language.Xml
         EndOfFileToken = 38,
         WhitespaceTrivia = 39,
         EndOfLineTrivia = 40,
-        SkippedTextTrivia = 41
+        SkippedTextTrivia = 41,
     }
 
     public sealed class XmlAttributeSyntax : Meziantou.Framework.Language.Xml.XmlSyntaxNode

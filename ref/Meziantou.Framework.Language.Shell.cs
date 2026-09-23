@@ -1153,7 +1153,7 @@ namespace Meziantou.Framework.Language.Shell
     {
         Posix = 0,
         PowerShell = 1,
-        Cmd = 2
+        Cmd = 2,
     }
 
     [System.Flags]
@@ -1176,7 +1176,7 @@ namespace Meziantou.Framework.Language.Shell
         CleanBlock = 8192,
         DelayedExpansion = 16384,
         ArithmeticExpansion = 32768,
-        ArithmeticExponentiation = 65536
+        ArithmeticExponentiation = 65536,
     }
 
     public sealed class ShellEmbeddedExpressionSyntax : Meziantou.Framework.Language.Shell.ShellWordPartSyntax
@@ -2088,7 +2088,7 @@ namespace Meziantou.Framework.Language.Shell
         PowerShellWhileStatement = 197,
         PowerShellWorkflowDefinition = 198,
         PosixRedirectedStatement = 199,
-        SemicolonPipeToken = 200
+        SemicolonPipeToken = 200,
     }
 
     public sealed class ZshAlwaysStatementSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax

@@ -38,7 +38,7 @@ namespace Meziantou.Framework.Win32
         ErrorOnStop = 16,
         ErrorOnRestart = 32,
         ShutdownMasked = 64,
-        RestartMasked = 128
+        RestartMasked = 128,
     }
 
     public enum RestartManagerApplicationType
@@ -49,7 +49,7 @@ namespace Meziantou.Framework.Win32
         Service = 3,
         Explorer = 4,
         Console = 5,
-        Critical = 1000
+        Critical = 1000,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]
@@ -73,14 +73,14 @@ namespace Meziantou.Framework.Win32
         SessionMismatch = 2,
         CriticalProcess = 4,
         CriticalService = 8,
-        DetectedSelf = 16
+        DetectedSelf = 16,
     }
 
     [System.Flags]
     public enum RestartManagerShutdownType
     {
         ForceShutdown = 1,
-        ShutdownOnlyRegistered = 16
+        ShutdownOnlyRegistered = 16,
     }
 
     public delegate void RestartManagerWriteStatusCallback(uint percentComplete);

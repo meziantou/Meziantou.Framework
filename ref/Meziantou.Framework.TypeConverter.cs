@@ -9,7 +9,7 @@ namespace Meziantou.Framework
         None = 0,
         Base16 = 1,
         Base16Prefixed = 2,
-        Base64 = 3
+        Base64 = 3,
     }
 
     public static class ConvertUtilities

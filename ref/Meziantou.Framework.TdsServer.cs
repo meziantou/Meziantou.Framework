@@ -93,7 +93,7 @@ namespace Meziantou.Framework.Tds.Handler
         Json = 19,
         Variant = 20,
         UserDefined = 21,
-        Table = 22
+        Table = 22,
     }
 
     public sealed class TdsQueryContext
@@ -137,7 +137,7 @@ namespace Meziantou.Framework.Tds.Handler
     public enum TdsQueryRequestType
     {
         SqlBatch = 0,
-        Rpc = 1
+        Rpc = 1,
     }
 
     public sealed class TdsQueryResult
@@ -196,7 +196,7 @@ namespace Meziantou.Framework.Tds.QueryEngine
     public enum TdsQueryEngineResourceKind
     {
         StoredProcedure = 0,
-        QueryRoot = 1
+        QueryRoot = 1,
     }
 
     public delegate System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<object?>> TdsQueryMaterializer(System.Linq.IQueryable query, System.Threading.CancellationToken cancellationToken);

@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Unix.ControlGroups
         Unavailable = 0,
         NotConfigured = 1,
         Configured = 2,
-        Invalid = 3
+        Invalid = 3,
     }
 
     public readonly struct CGroupValue<T> : System.IEquatable<Meziantou.Framework.Unix.ControlGroups.CGroupValue<T>>

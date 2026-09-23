@@ -170,7 +170,6 @@ internal static class PublicApiModelReader
         if (keyword == "enum")
         {
             var enumDeclaration = $"{accessibility} enum {escapedTypeName}{genericArguments}";
-            var enumBody = BuildEnumMembers(metadataReader, typeDefinition).ToArray();
             var enumBuilder = new StringBuilder();
             foreach (var attribute in typeAttributes)
             {
@@ -179,10 +178,9 @@ internal static class PublicApiModelReader
 
             enumBuilder.AppendLine(enumDeclaration);
             enumBuilder.AppendLine("{");
-            for (var i = 0; i < enumBody.Length; i++)
+            foreach (var member in BuildEnumMembers(metadataReader, typeDefinition))
             {
-                var suffix = i == enumBody.Length - 1 ? string.Empty : ",";
-                AppendIndentedLine(enumBuilder, 1, enumBody[i] + suffix);
+                AppendIndentedLine(enumBuilder, 1, member + ",");
             }
 
             enumBuilder.AppendLine("}");

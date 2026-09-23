@@ -43,7 +43,7 @@ namespace Meziantou.Framework.PublicApiGenerator
     {
         SingleFile = 0,
         OneFilePerNamespace = 1,
-        OneFilePerType = 2
+        OneFilePerType = 2,
     }
 
     public sealed class PublicApiOptions

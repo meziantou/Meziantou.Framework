@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Ntp
         NoWarning = 0,
         LastMinuteHas61Seconds = 1,
         LastMinuteHas59Seconds = 2,
-        AlarmCondition = 3
+        AlarmCondition = 3,
     }
 
     public sealed class NtpResponse
@@ -52,6 +52,6 @@ namespace Meziantou.Framework.Ntp
     public enum NtpVersion
     {
         V3 = 3,
-        V4 = 4
+        V4 = 4,
     }
 }

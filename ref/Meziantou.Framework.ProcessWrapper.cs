@@ -156,7 +156,7 @@ namespace Meziantou.Framework
     {
         None = 0,
         IncludeProcessPath = 1,
-        IncludeArguments = 2
+        IncludeArguments = 2,
     }
 
     public sealed class ProcessOutput
@@ -183,7 +183,7 @@ namespace Meziantou.Framework
     public enum ProcessOutputType
     {
         StandardOutput = 0,
-        StandardError = 1
+        StandardError = 1,
     }
 
     public sealed class ProcessPipe
@@ -215,7 +215,7 @@ namespace Meziantou.Framework
     {
         None = 0,
         FailIfNonZeroExitCode = 1,
-        FailIfStdError = 2
+        FailIfStdError = 2,
     }
 
     public sealed class ProcessWrapper

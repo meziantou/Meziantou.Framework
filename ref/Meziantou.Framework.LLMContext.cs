@@ -29,6 +29,6 @@ namespace Meziantou.Framework.LLMContext
         Cline = 14,
         RooCode = 15,
         Windsurf = 16,
-        GenericAgent = 17
+        GenericAgent = 17,
     }
 }

@@ -37,7 +37,7 @@ namespace Meziantou.Framework.DnsClient
         Tcp = 1,
         Tls = 2,
         Https = 3,
-        Quic = 4
+        Quic = 4,
     }
 
     public sealed class DnsProtocolException : System.Exception
@@ -72,7 +72,7 @@ namespace Meziantou.Framework.DnsClient
     public enum DnssecValidationMode
     {
         None = 0,
-        Local = 1
+        Local = 1,
     }
 }
 namespace Meziantou.Framework.DnsClient.Query
@@ -91,7 +91,7 @@ namespace Meziantou.Framework.DnsClient.Query
         IQuery = 1,
         Status = 2,
         Notify = 4,
-        Update = 5
+        Update = 5,
     }
 
     public enum DnsQueryClass
@@ -101,7 +101,7 @@ namespace Meziantou.Framework.DnsClient.Query
         CH = 3,
         HS = 4,
         NONE = 254,
-        ANY = 255
+        ANY = 255,
     }
 
     public sealed class DnsQueryMessage
@@ -181,7 +181,7 @@ namespace Meziantou.Framework.DnsClient.Query
         URI = 256,
         CAA = 257,
         TA = 32768,
-        DLV = 32769
+        DLV = 32769,
     }
 }
 namespace Meziantou.Framework.DnsClient.Response
@@ -222,7 +222,7 @@ namespace Meziantou.Framework.DnsClient.Response
         BadName = 20,
         BadAlgorithm = 21,
         BadTruncation = 22,
-        BadCookie = 23
+        BadCookie = 23,
     }
 
     public sealed class DnsResponseHeader
@@ -280,7 +280,7 @@ namespace Meziantou.Framework.DnsClient.Response
         TrustChainIncomplete = 14,
         InvalidData = 15,
         ChainQueryFailed = 16,
-        QueryBudgetExceeded = 17
+        QueryBudgetExceeded = 17,
     }
 
     public sealed class DnssecValidationResult
@@ -295,7 +295,7 @@ namespace Meziantou.Framework.DnsClient.Response
         Secure = 1,
         Insecure = 2,
         Bogus = 3,
-        Indeterminate = 4
+        Indeterminate = 4,
     }
 }
 namespace Meziantou.Framework.DnsClient.Response.Records

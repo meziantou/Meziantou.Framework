@@ -85,7 +85,7 @@ namespace Meziantou.Framework.Bencode
         Integer = 0,
         String = 1,
         List = 2,
-        Dictionary = 3
+        Dictionary = 3,
     }
 
     public sealed class BencodeWriter

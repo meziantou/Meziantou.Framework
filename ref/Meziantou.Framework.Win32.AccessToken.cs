@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Win32
         SE_GROUP_INTEGRITY_ENABLED = 64U,
         SE_GROUP_LOGON_ID = 3221225472U,
         SE_GROUP_RESOURCE = 536870912U,
-        SE_GROUP_VALID_ATTRIBUTES = 3758096511U
+        SE_GROUP_VALID_ATTRIBUTES = 3758096511U,
     }
 
     public enum MandatoryIntegrityLevel
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Win32
         MediumHighIntegrity = 8448,
         HighIntegrity = 12288,
         SystemIntegrity = 16384,
-        ProtectedProcess = 20480
+        ProtectedProcess = 20480,
     }
 
     [System.Flags]
@@ -61,7 +61,7 @@ namespace Meziantou.Framework.Win32
         Enabled = 2U,
         EnabledByDefault = 1U,
         Removed = 4U,
-        UsedForAccess = 2147483648U
+        UsedForAccess = 2147483648U,
     }
 
     public static class Privileges
@@ -124,7 +124,7 @@ namespace Meziantou.Framework.Win32
         SecurityAnonymous = 0,
         SecurityIdentification = 1,
         SecurityImpersonation = 2,
-        SecurityDelegation = 3
+        SecurityDelegation = 3,
     }
 
     [System.Flags]
@@ -142,7 +142,7 @@ namespace Meziantou.Framework.Win32
         Read = 131080,
         Write = 131296,
         AllAccess = 983551,
-        MaximumAllowed = 33554432
+        MaximumAllowed = 33554432,
     }
 
     public enum TokenElevationType
@@ -150,7 +150,7 @@ namespace Meziantou.Framework.Win32
         Unknown = 0,
         Default = 1,
         Full = 2,
-        Limited = 3
+        Limited = 3,
     }
 
     public sealed class TokenEntry
@@ -174,7 +174,7 @@ namespace Meziantou.Framework.Win32
     public enum TokenType
     {
         TokenPrimary = 1,
-        TokenImpersonation = 2
+        TokenImpersonation = 2,
     }
 
     public enum WellKnownSidType
@@ -273,6 +273,6 @@ namespace Meziantou.Framework.Win32
         WinCapabilityDocumentsLibrarySid = 91,
         WinCapabilitySharedUserCertificatesSid = 92,
         WinCapabilityEnterpriseAuthenticationSid = 93,
-        WinCapabilityRemovableStorageSid = 94
+        WinCapabilityRemovableStorageSid = 94,
     }
 }

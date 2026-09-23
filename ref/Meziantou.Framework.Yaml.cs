@@ -101,7 +101,7 @@ namespace Meziantou.Framework.Yaml
         SingleQuoted = 2,
         DoubleQuoted = 3,
         Literal = 4,
-        Folded = 5
+        Folded = 5,
     }
 
     public class Scanner<TBuffer> where TBuffer : Meziantou.Framework.Yaml.ILookAheadBuffer
@@ -157,7 +157,7 @@ namespace Meziantou.Framework.Yaml
     {
         Error = 0,
         LastWins = 1,
-        FirstWins = 2
+        FirstWins = 2,
     }
 
     public class YamlException : System.Exception
@@ -180,7 +180,7 @@ namespace Meziantou.Framework.Yaml
         WhenWritingDefault = 2,
         Always = 3,
         WhenWriting = 4,
-        WhenReading = 5
+        WhenReading = 5,
     }
 
     public enum YamlKnownNamingPolicy
@@ -191,13 +191,13 @@ namespace Meziantou.Framework.Yaml
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
-        PascalCase = 6
+        PascalCase = 6,
     }
 
     public enum YamlMappingOrderPolicy
     {
         Declaration = 0,
-        Sorted = 1
+        Sorted = 1,
     }
 
     public abstract class YamlNamingPolicy
@@ -217,13 +217,13 @@ namespace Meziantou.Framework.Yaml
         None = 0,
         AllowReadingFromString = 1,
         WriteAsString = 2,
-        AllowNamedFloatingPointLiterals = 4
+        AllowNamedFloatingPointLiterals = 4,
     }
 
     public enum YamlObjectCreationHandling
     {
         Replace = 0,
-        Populate = 1
+        Populate = 1,
     }
 
     public sealed class YamlPolymorphismOptions
@@ -239,7 +239,7 @@ namespace Meziantou.Framework.Yaml
     {
         None = 0,
         Preserve = 1,
-        PreserveMinimal = 2
+        PreserveMinimal = 2,
     }
 
     public sealed class YamlScalarStylePreferences
@@ -254,14 +254,14 @@ namespace Meziantou.Framework.Yaml
         Core = 0,
         Json = 1,
         Failsafe = 2,
-        Extended = 3
+        Extended = 3,
     }
 
     public enum YamlSequenceItemStyle
     {
         Default = 0,
         Expanded = 1,
-        Compact = 2
+        Compact = 2,
     }
 
     public static class YamlSerializer
@@ -371,7 +371,7 @@ namespace Meziantou.Framework.Yaml
     {
         Any = 0,
         Block = 1,
-        Flow = 2
+        Flow = 2,
     }
 
     public enum YamlTypeDiscriminatorStyle
@@ -379,7 +379,7 @@ namespace Meziantou.Framework.Yaml
         Unspecified = -1,
         Tag = 0,
         Property = 1,
-        Both = 2
+        Both = 2,
     }
 
     public abstract class YamlTypeInfo
@@ -404,13 +404,13 @@ namespace Meziantou.Framework.Yaml
     {
         Unspecified = -1,
         Fail = 0,
-        FallBackToBase = 1
+        FallBackToBase = 1,
     }
 
     public enum YamlUnmappedMemberHandling
     {
         Skip = 0,
-        Disallow = 1
+        Disallow = 1,
     }
 }
 namespace Meziantou.Framework.Yaml.Events
@@ -1061,7 +1061,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         StartSequence = 7,
         EndSequence = 8,
         Scalar = 9,
-        Alias = 10
+        Alias = 10,
     }
 
     public static class YamlTypeClassification
@@ -1093,7 +1093,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
         None = 0,
         Union = 1,
-        PolymorphicType = 2
+        PolymorphicType = 2,
     }
 
     public sealed class YamlUnionCaseInfo
@@ -1120,7 +1120,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         Text = 2,
         Sequence = 3,
         Mapping = 4,
-        Any = 5
+        Any = 5,
     }
 
     public sealed class YamlUnionTypeStructuralClassifier : Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory
@@ -1245,7 +1245,7 @@ namespace Meziantou.Framework.Yaml.Syntax
         Anchor = 21,
         AnchorAlias = 22,
         VersionDirective = 23,
-        TagDirective = 24
+        TagDirective = 24,
     }
 
     public abstract class YamlSyntaxNode

@@ -39,7 +39,7 @@ namespace Meziantou.Framework.Globbing
         Git = 1,
         MSBuild = 2,
         Posix = 3,
-        PosixPath = 4
+        PosixPath = 4,
     }
 
     public static class GlobExtensions
@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Globbing
     public enum GlobMode
     {
         Include = 0,
-        Exclude = 1
+        Exclude = 1,
     }
 
     [System.Flags]
@@ -81,7 +81,7 @@ namespace Meziantou.Framework.Globbing
     {
         None = 0,
         IgnoreCase = 1,
-        MatchLeadingDot = 2
+        MatchLeadingDot = 2,
     }
 
     public interface IGlobEvaluatable
@@ -97,6 +97,6 @@ namespace Meziantou.Framework.Globbing
     public enum PathItemType
     {
         File = 0,
-        Directory = 1
+        Directory = 1,
     }
 }

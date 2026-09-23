@@ -16,7 +16,7 @@ namespace Meziantou.Framework.UndoRedo
     public enum TransactionExecutionMode
     {
         Deferred = 0,
-        Immediate = 1
+        Immediate = 1,
     }
 
     public abstract class UndoRedoActionBase : Meziantou.Framework.UndoRedo.IUndoRedoAction

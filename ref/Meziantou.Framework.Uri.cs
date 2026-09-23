@@ -41,7 +41,7 @@ namespace Meziantou.Framework
         None = 0,
         Icann = 1,
         Private = 2,
-        All = 3
+        All = 3,
     }
 
     public sealed class QueryStringParameterCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>>, System.Collections.IEnumerable

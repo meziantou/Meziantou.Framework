@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests.csproj" />
+  </Folder>
+</Solution>

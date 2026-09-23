@@ -1,3 +1,5 @@
+using System.Runtime.Versioning;
+
 namespace Meziantou.Framework.Diagnostics;
 
 /// <summary>Creates memory dumps of the current process.</summary>
@@ -21,6 +23,9 @@ public static partial class MemoryDump
     /// <param name="filePath">The path of the dump file. The file is overwritten if it already exists.</param>
     /// <param name="dumpType">The content of the dump.</param>
     /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows, Linux, or macOS.</exception>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     public static void Write(string filePath, MemoryDumpType dumpType = MemoryDumpType.Full)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
@@ -54,6 +59,9 @@ public static partial class MemoryDump
     /// <param name="dumpType">The content of the dump.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows, Linux, or macOS.</exception>
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     public static async Task WriteAsync(string filePath, MemoryDumpType dumpType = MemoryDumpType.Full, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);

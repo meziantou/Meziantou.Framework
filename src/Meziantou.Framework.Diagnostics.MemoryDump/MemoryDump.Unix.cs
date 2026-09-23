@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Meziantou.Framework.Diagnostics;
@@ -12,11 +12,11 @@ public static partial class MemoryDump
     private const nint PR_SET_PTRACER_ANY = -1;
     private const nint PR_SET_PTRACER_NONE = 0;
 
-    // createdump is the tool used by the runtime to create dumps on crash (DOTNET_DbgEnableMiniDump).
-    // It dumps the process from a separate process, so the threads of the current process are suspended while the dump is written.
-    private static void WriteWithCreateDump(string filePath, MemoryDumpType dumpType)
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
+    private static void WriteUnix(string filePath, MemoryDumpType dumpType)
     {
-        using var process = new Process { StartInfo = CreateDumpStartInfo(GetCreateDumpPath(), filePath, dumpType) };
+        using var process = new Process { StartInfo = CreateDumpStartInfo(filePath, dumpType) };
         var output = new StringBuilder();
         AllowPtraceFromAnyProcess();
         try
@@ -32,9 +32,11 @@ public static partial class MemoryDump
         EnsureSuccess(process, filePath, output);
     }
 
-    private static async Task WriteWithCreateDumpAsync(string filePath, MemoryDumpType dumpType, CancellationToken cancellationToken)
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
+    private static async Task WriteUnixAsync(string filePath, MemoryDumpType dumpType, CancellationToken cancellationToken)
     {
-        using var process = new Process { StartInfo = CreateDumpStartInfo(GetCreateDumpPath(), filePath, dumpType) };
+        using var process = new Process { StartInfo = CreateDumpStartInfo(filePath, dumpType) };
         var output = new StringBuilder();
         AllowPtraceFromAnyProcess();
         try
@@ -59,9 +61,9 @@ public static partial class MemoryDump
         EnsureSuccess(process, filePath, output);
     }
 
-    private static ProcessStartInfo CreateDumpStartInfo(string createDumpPath, string filePath, MemoryDumpType dumpType)
+    private static ProcessStartInfo CreateDumpStartInfo(string filePath, MemoryDumpType dumpType)
     {
-        var startInfo = new ProcessStartInfo(createDumpPath)
+        var startInfo = new ProcessStartInfo(GetCreateDumpPath())
         {
             UseShellExecute = false,
             RedirectStandardInput = true,
@@ -88,33 +90,21 @@ public static partial class MemoryDump
 
     private static string GetCreateDumpPath()
     {
-        if (TryGetCreateDumpPath(out var path))
-            return path;
-
-        throw new FileNotFoundException("Cannot find the createdump tool in the .NET runtime directory or the application directory", GetCreateDumpFileName());
-    }
-
-    private static bool TryGetCreateDumpPath([NotNullWhen(true)] out string? path)
-    {
         // Framework-dependent apps use the tool from the shared runtime. Self-contained and single-file apps have it next to the application.
-        var fileName = GetCreateDumpFileName();
         var runtimeDirectory = RuntimeEnvironment.GetRuntimeDirectory();
         if (!string.IsNullOrEmpty(runtimeDirectory))
         {
-            path = Path.Combine(runtimeDirectory, fileName);
+            var path = Path.Combine(runtimeDirectory, "createdump");
             if (File.Exists(path))
-                return true;
+                return path;
         }
 
-        path = Path.Combine(AppContext.BaseDirectory, fileName);
-        if (File.Exists(path))
-            return true;
+        var appPath = Path.Combine(AppContext.BaseDirectory, "createdump");
+        if (File.Exists(appPath))
+            return appPath;
 
-        path = null;
-        return false;
+        throw new FileNotFoundException("Cannot find the createdump tool in the .NET runtime directory or the application directory", "createdump");
     }
-
-    private static string GetCreateDumpFileName() => OperatingSystem.IsWindows() ? "createdump.exe" : "createdump";
 
     private static void StartCreateDump(Process process, StringBuilder output)
     {

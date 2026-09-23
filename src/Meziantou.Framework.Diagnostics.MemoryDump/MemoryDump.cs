@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Diagnostics;
 
 /// <summary>Creates memory dumps of the current process.</summary>
 /// <remarks>
-/// <para>On Windows, the dump is written using <c>MiniDumpWriteDump</c> from <c>dbghelp.dll</c>, falling back to the <c>createdump</c> tool shipped with the .NET runtime when the memory cannot be read consistently. On Linux and macOS, the dump is written by <c>createdump</c>.</para>
+/// <para>On Windows, the dump is written from a snapshot of the process (<c>PssCaptureSnapshot</c>) using <c>MiniDumpWriteDump</c> from <c>dbghelp.dll</c>. On Linux and macOS, the dump is written by the <c>createdump</c> tool shipped with the .NET runtime.</para>
 /// <para>A memory dump may contain sensitive data such as credentials, tokens, or connection strings. Store and share it accordingly.</para>
 /// </remarks>
 /// <example>
@@ -36,7 +36,7 @@ public static partial class MemoryDump
             }
             else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
-                WriteWithCreateDump(filePath, dumpType);
+                WriteUnix(filePath, dumpType);
             }
             else
             {
@@ -70,7 +70,7 @@ public static partial class MemoryDump
             }
             else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
-                await WriteWithCreateDumpAsync(filePath, dumpType, cancellationToken).ConfigureAwait(false);
+                await WriteUnixAsync(filePath, dumpType, cancellationToken).ConfigureAwait(false);
             }
             else
             {

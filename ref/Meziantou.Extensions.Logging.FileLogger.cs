@@ -81,7 +81,7 @@ namespace Meziantou.Extensions.Logging
     {
         Wait = 0,
         DropWrite = 1,
-        DropOldest = 2
+        DropOldest = 2,
     }
 
     public sealed class JsonFileFormatter : Meziantou.Extensions.Logging.FileFormatter
@@ -96,19 +96,19 @@ namespace Meziantou.Extensions.Logging
         #if NET10_0
         None = 0,
         GZip = 1,
-        Brotli = 2
+        Brotli = 2,
         #elif NET11_0
         None = 0,
         GZip = 1,
         Brotli = 2,
-        Zstandard = 3
+        Zstandard = 3,
         #endif
     }
 
     public enum LogFileCompressionMode
     {
         Continuous = 0,
-        OnRoll = 1
+        OnRoll = 1,
     }
 
     public enum RollInterval
@@ -116,7 +116,7 @@ namespace Meziantou.Extensions.Logging
         None = 0,
         Hourly = 1,
         Daily = 2,
-        Monthly = 3
+        Monthly = 3,
     }
 
     public sealed class SimpleFileFormatter : Meziantou.Extensions.Logging.FileFormatter

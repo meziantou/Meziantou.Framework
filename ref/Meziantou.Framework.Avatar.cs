@@ -38,6 +38,6 @@ namespace Meziantou.Framework
     {
         Round = 0,
         Square = 1,
-        RoundedSquare = 2
+        RoundedSquare = 2,
     }
 }

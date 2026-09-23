@@ -285,11 +285,10 @@ internal static class PublicApiModelBuilder
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
             .OrderBy(static field => field.MetadataToken)
             .ToArray();
-        for (var i = 0; i < fields.Length; i++)
+        foreach (var field in fields)
         {
-            var separator = i == fields.Length - 1 ? string.Empty : ",";
-            var value = Convert.ChangeType(fields[i].GetRawConstantValue(), baseType, System.Globalization.CultureInfo.InvariantCulture);
-            AppendIndentedLine(sb, indentationLevel + 1, $"{EscapeIdentifier(fields[i].Name)} = {FormatConstant(value)}{separator}");
+            var value = Convert.ChangeType(field.GetRawConstantValue(), baseType, System.Globalization.CultureInfo.InvariantCulture);
+            AppendIndentedLine(sb, indentationLevel + 1, $"{EscapeIdentifier(field.Name)} = {FormatConstant(value)},");
         }
 
         AppendIndentedLine(sb, indentationLevel, "}");

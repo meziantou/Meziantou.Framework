@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32
         StandaloneVolume = 2,
         ForceUnitAccessAll = 4,
         ForceUnitAccessOnSoftCap = 8,
-        ValidFlags = 15
+        ValidFlags = 15,
     }
 
     public sealed class JobIoRateLimits
@@ -68,7 +68,7 @@ namespace Meziantou.Framework.Win32
         Terminate = 8,
         SetSecurityAttributes = 16,
         Impersonate = 32,
-        AllAccess = 2031679
+        AllAccess = 2031679,
     }
 
     public sealed class JobObjectBasicAccountingInformation : System.IEquatable<Meziantou.Framework.Win32.JobObjectBasicAccountingInformation>
@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Win32
         Disabled = 0,
         HardCap = 1,
         Weight = 2,
-        MinMaxRate = 3
+        MinMaxRate = 3,
     }
 
     public sealed class JobObjectIoCounters : System.IEquatable<Meziantou.Framework.Win32.JobObjectIoCounters>
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.Win32
         BreakawayOk = 2048,
         SilentBreakawayOk = 4096,
         KillOnJobClose = 8192,
-        SubsetAffinity = 16384
+        SubsetAffinity = 16384,
     }
 
     public sealed class JobObjectLimits
@@ -186,7 +186,7 @@ namespace Meziantou.Framework.Win32
     public enum JobObjectSecurityLimit
     {
         NoAdmin = 1,
-        RestrictedToken = 2
+        RestrictedToken = 2,
     }
 
     [System.Flags]
@@ -199,6 +199,6 @@ namespace Meziantou.Framework.Win32
         DisplaySettings = 16,
         GlobalAtoms = 32,
         Desktop = 64,
-        ExitWindows = 128
+        ExitWindows = 128,
     }
 }

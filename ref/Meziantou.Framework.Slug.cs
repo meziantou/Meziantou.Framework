@@ -8,7 +8,7 @@ namespace Meziantou.Framework
     {
         PreserveCase = 0,
         ToLowerCase = 1,
-        ToUpperCase = 2
+        ToUpperCase = 2,
     }
 
     public static class Slug

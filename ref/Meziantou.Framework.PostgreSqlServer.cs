@@ -61,7 +61,7 @@ namespace Meziantou.Framework.PostgreSql.Handler
     {
         ClearTextPassword = 0,
         Md5Password = 1,
-        ScramSha256 = 2
+        ScramSha256 = 2,
     }
 
     public sealed class PostgreSqlAuthenticationResult
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.PostgreSql.Handler
         Timestamp = 12,
         TimestampTz = 13,
         Json = 14,
-        Jsonb = 15
+        Jsonb = 15,
     }
 
     public sealed class PostgreSqlQueryContext
@@ -147,7 +147,7 @@ namespace Meziantou.Framework.PostgreSql.Handler
     {
         SimpleQuery = 0,
         ExtendedQuery = 1,
-        Describe = 2
+        Describe = 2,
     }
 
     public sealed class PostgreSqlQueryResult
@@ -171,7 +171,7 @@ namespace Meziantou.Framework.PostgreSql.Handler
     {
         Idle = 0,
         InTransaction = 1,
-        Failed = 2
+        Failed = 2,
     }
 }
 namespace Meziantou.Framework.PostgreSql.Hosting

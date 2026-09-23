@@ -28,7 +28,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
     {
         Logs = 0,
         Traces = 1,
-        Metrics = 2
+        Metrics = 2,
     }
 
     public sealed class OpenTelemetryPartialSuccess
@@ -64,7 +64,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
     {
         DropWholeTrace = 0,
         DropOldestSpans = 1,
-        DropNewestSpans = 2
+        DropNewestSpans = 2,
     }
 
     public sealed class OpenTelemetryTailSampler : Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler
@@ -94,7 +94,7 @@ namespace Meziantou.Framework.OpenTelemetryCollector
     public enum OpenTelemetryTransport
     {
         Http = 0,
-        Grpc = 1
+        Grpc = 1,
     }
 }
 namespace OpenTelemetry.Proto.Collector.Logs.V1
@@ -695,7 +695,7 @@ namespace OpenTelemetry.Proto.Common.V1
             BoolValue = 2,
             IntValue = 3,
             DoubleValue = 4,
-            BytesValue = 5
+            BytesValue = 5,
         }
     }
 

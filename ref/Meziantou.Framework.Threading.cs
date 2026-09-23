@@ -196,7 +196,7 @@ namespace Meziantou.Framework.Threading
     {
         None = 0,
         CancelOnReset = 1,
-        CancelOnDispose = 2
+        CancelOnDispose = 2,
     }
 
     public static class SemaphoreSlimExtensions

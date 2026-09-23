@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Language.Regex
         NonWordBoundary = 7,
         KeepOut = 8,
         StartOfWord = 9,
-        EndOfWord = 10
+        EndOfWord = 10,
     }
 
     public sealed class RegexAnchorSyntax : Meziantou.Framework.Language.Regex.RegexAtomSyntax
@@ -331,7 +331,7 @@ namespace Meziantou.Framework.Language.Regex
         Dotnet = 0,
         JavaScript = 1,
         Pcre = 2,
-        Posix = 3
+        Posix = 3,
     }
 
     [System.Flags]
@@ -371,7 +371,7 @@ namespace Meziantou.Framework.Language.Regex
         Recursion = 536870912L,
         BacktrackingVerbs = 1073741824L,
         IgnorePatternWhitespace = 2147483648L,
-        EscapedGroupDelimiters = 4294967296L
+        EscapedGroupDelimiters = 4294967296L,
     }
 
     public static class RegexExtensions
@@ -427,7 +427,7 @@ namespace Meziantou.Framework.Language.Regex
         PositiveLookahead = 0,
         NegativeLookahead = 1,
         PositiveLookbehind = 2,
-        NegativeLookbehind = 3
+        NegativeLookbehind = 3,
     }
 
     public sealed class RegexLookaroundSyntax : Meziantou.Framework.Language.Regex.RegexGroupSyntax
@@ -556,7 +556,7 @@ namespace Meziantou.Framework.Language.Regex
         DotAll = 256,
         Global = 512,
         Sticky = 1024,
-        HasIndices = 2048
+        HasIndices = 2048,
     }
 
     public sealed class RegexPatternSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
@@ -610,7 +610,7 @@ namespace Meziantou.Framework.Language.Regex
     {
         Greedy = 0,
         Lazy = 1,
-        Possessive = 2
+        Possessive = 2,
     }
 
     public abstract class RegexQuantifierSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
@@ -1044,6 +1044,6 @@ namespace Meziantou.Framework.Language.Regex
         EndOfPatternToken = 81,
         WhitespaceTrivia = 82,
         PatternCommentTrivia = 83,
-        InlineCommentTrivia = 84
+        InlineCommentTrivia = 84,
     }
 }

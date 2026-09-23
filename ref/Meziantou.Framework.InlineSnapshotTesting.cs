@@ -17,7 +17,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
         Raw = 4,
         LeftAlignedRaw = 8,
         DetermineFeatureFromPdb = 16,
-        Default = 23
+        Default = 23,
     }
 
     public static class HumanReadableSerializerScrubExtensions

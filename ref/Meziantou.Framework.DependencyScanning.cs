@@ -74,7 +74,7 @@ namespace Meziantou.Framework.DependencyScanning
         RenovateConfiguration = 14,
         SwiftPackage = 15,
         MSBuildProjectReference = 16,
-        DotNetAssemblyReference = 17
+        DotNetAssemblyReference = 17,
     }
 
     public delegate bool FileSystemEntryPredicate(ref System.IO.Enumeration.FileSystemEntry entry);

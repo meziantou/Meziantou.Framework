@@ -78,7 +78,7 @@ namespace Meziantou.Framework.Language
         Hidden = 0,
         Info = 1,
         Warning = 2,
-        Error = 3
+        Error = 3,
     }
 
     public readonly struct LinePosition : System.IEquatable<Meziantou.Framework.Language.LinePosition>
@@ -408,7 +408,7 @@ namespace Meziantou.Framework.Language
         KeepLeadingTrivia = 1,
         KeepTrailingTrivia = 2,
         KeepExteriorTrivia = 3,
-        KeepEndOfLine = 4
+        KeepEndOfLine = 4,
     }
 
     [System.Diagnostics.DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
@@ -600,7 +600,7 @@ namespace Meziantou.Framework.Language
     {
         Node = 0,
         Token = 1,
-        Trivia = 2
+        Trivia = 2,
     }
 
     public readonly struct TextChange : System.IEquatable<Meziantou.Framework.Language.TextChange>

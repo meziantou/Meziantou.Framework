@@ -65,7 +65,7 @@ namespace Meziantou.Framework.HumanReadable
         WhenWritingNull = 3,
         WhenWritingEmptyCollection = 4,
         WhenWritingDefaultOrEmptyCollection = 5,
-        Custom = 6
+        Custom = 6,
     }
 
     public readonly struct HumanReadableIgnoreData
@@ -185,7 +185,7 @@ namespace Meziantou.Framework.HumanReadable.Converters
     {
         NotSerialized = 0,
         MethodAndUri = 1,
-        Full = 2
+        Full = 2,
     }
 
     public static class HumanReadableHttpExtensions
@@ -262,7 +262,7 @@ namespace Meziantou.Framework.HumanReadable.ValueFormatters
     public enum HtmlAttributeQuote
     {
         DoubleQuote = 0,
-        SimpleQuote = 1
+        SimpleQuote = 1,
     }
 
     public sealed class HtmlFormatterOptions : System.IEquatable<Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions>

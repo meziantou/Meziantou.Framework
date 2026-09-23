@@ -43,6 +43,6 @@ namespace Meziantou.Framework
         Revision2A = 1,
         Revision2B = 2,
         Revision2X = 3,
-        Revision2Y = 4
+        Revision2Y = 4,
     }
 }

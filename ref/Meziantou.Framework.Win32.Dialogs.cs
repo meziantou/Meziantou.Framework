@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Win32
         Retry = 4,
         Ignore = 5,
         Yes = 6,
-        No = 7
+        No = 7,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.0.6000")]

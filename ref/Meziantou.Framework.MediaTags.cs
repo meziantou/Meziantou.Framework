@@ -26,7 +26,7 @@ namespace Meziantou.Framework.MediaTags
         Flac = 3,
         Mp4 = 4,
         Wav = 5,
-        Aiff = 6
+        Aiff = 6,
     }
 
     public sealed class MediaPicture
@@ -59,7 +59,7 @@ namespace Meziantou.Framework.MediaTags
         BrightColouredFish = 17,
         Illustration = 18,
         BandLogo = 19,
-        PublisherLogo = 20
+        PublisherLogo = 20,
     }
 
     public enum MediaTagError
@@ -69,7 +69,7 @@ namespace Meziantou.Framework.MediaTags
         UnexpectedEndOfStream = 2,
         InvalidTagData = 3,
         EncodingError = 4,
-        IoError = 5
+        IoError = 5,
     }
 
     public sealed class MediaTagInfo

@@ -32,7 +32,7 @@ namespace Meziantou.Framework
         public enum AnsiColorKind
         {
             Indexed = 0,
-            Rgb = 1
+            Rgb = 1,
         }
         public sealed class AnsiStyle : System.IEquatable<AnsiStyle>
         {

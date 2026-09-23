@@ -150,6 +150,6 @@ namespace Meziantou.Framework
         GibiByte = 1073741824L,
         TebiByte = 1099511627776L,
         PebiByte = 1125899906842624L,
-        ExbiByte = 1152921504606846976L
+        ExbiByte = 1152921504606846976L,
     }
 }

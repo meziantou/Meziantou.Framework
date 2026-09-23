@@ -32,7 +32,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         LessThan = 2,
         LessThanOrEqual = 3,
         GreaterThan = 4,
-        GreaterThanOrEqual = 5
+        GreaterThanOrEqual = 5,
     }
 
     public sealed class QueryBuilder<T>
@@ -209,7 +209,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
         OrQuery = 19,
         AndQuery = 20,
         NegatedQuery = 21,
-        ParenthesizedQuery = 22
+        ParenthesizedQuery = 22,
     }
 
     public sealed class QueryToken : Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken

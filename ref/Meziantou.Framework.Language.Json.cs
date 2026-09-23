@@ -321,6 +321,6 @@ namespace Meziantou.Framework.Language.Json
         JsonTrueLiteral = 9006,
         JsonFalseLiteral = 9007,
         JsonNullLiteral = 9008,
-        JsonSkippedText = 9009
+        JsonSkippedText = 9009,
     }
 }

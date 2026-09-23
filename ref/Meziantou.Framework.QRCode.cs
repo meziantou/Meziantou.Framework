@@ -61,7 +61,7 @@ namespace Meziantou.Framework
         Ean13 = 4,
         UpcA = 5,
         Codabar = 6,
-        Itf = 7
+        Itf = 7,
     }
 
     public readonly struct Color : System.IEquatable<Meziantou.Framework.Color>
@@ -96,20 +96,20 @@ namespace Meziantou.Framework
         L = 0,
         M = 1,
         Q = 2,
-        H = 3
+        H = 3,
     }
 
     public enum OneTimePasswordAlgorithm
     {
         SHA1 = 0,
         SHA256 = 1,
-        SHA512 = 2
+        SHA512 = 2,
     }
 
     public enum OneTimePasswordType
     {
         Totp = 0,
-        Hotp = 1
+        Hotp = 1,
     }
 
     public sealed class QRCode
@@ -196,13 +196,13 @@ namespace Meziantou.Framework
     {
         Standard = 0,
         MicroQR = 1,
-        RMQR = 2
+        RMQR = 2,
     }
 
     public enum WifiAuthentication
     {
         None = 0,
         WEP = 1,
-        WPA = 2
+        WPA = 2,
     }
 }

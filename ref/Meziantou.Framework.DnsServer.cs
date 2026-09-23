@@ -20,7 +20,7 @@ namespace Meziantou.Framework.DnsServer.Handler
         Tcp = 1,
         Tls = 2,
         Https = 3,
-        Quic = 4
+        Quic = 4,
     }
 }
 namespace Meziantou.Framework.DnsServer.Hosting
@@ -109,7 +109,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         IQuery = 1,
         Status = 2,
         Notify = 4,
-        Update = 5
+        Update = 5,
     }
 
     public sealed class DnsProtocolException : System.Exception
@@ -125,7 +125,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         CH = 3,
         HS = 4,
         NONE = 254,
-        ANY = 255
+        ANY = 255,
     }
 
     public enum DnsQueryType
@@ -195,7 +195,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         URI = 256,
         CAA = 257,
         TA = 32768,
-        DLV = 32769
+        DLV = 32769,
     }
 
     public sealed class DnsQuestion
@@ -239,7 +239,7 @@ namespace Meziantou.Framework.DnsServer.Protocol
         BadName = 20,
         BadAlgorithm = 21,
         BadTruncation = 22,
-        BadCookie = 23
+        BadCookie = 23,
     }
 }
 namespace Meziantou.Framework.DnsServer.Protocol.Records

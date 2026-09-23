@@ -16,7 +16,7 @@ namespace Meziantou.Framework.DnsFilter
         None = 0,
         Block = 1,
         Allow = 2,
-        Rewrite = 3
+        Rewrite = 3,
     }
 
     public sealed class DnsFilterEngine
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.DnsFilter
         AutoDetect = 0,
         Hosts = 1,
         DomainsOnly = 2,
-        AdBlock = 3
+        AdBlock = 3,
     }
 
     public static class DnsFilterListReader
@@ -56,7 +56,7 @@ namespace Meziantou.Framework.DnsFilter
         UnsupportedModifier = 0,
         InvalidModifierValue = 1,
         InvalidRegex = 2,
-        InvalidPattern = 3
+        InvalidPattern = 3,
     }
 
     public sealed class DnsFilterParseResult
@@ -94,7 +94,7 @@ namespace Meziantou.Framework.DnsFilter
         SPF = 99,
         ANY = 255,
         URI = 256,
-        CAA = 257
+        CAA = 257,
     }
 
     public sealed class DnsFilterResult
@@ -111,7 +111,7 @@ namespace Meziantou.Framework.DnsFilter
         NoError = 0,
         NameError = 1,
         Refused = 2,
-        ServerFailure = 3
+        ServerFailure = 3,
     }
 
     public sealed class DnsFilterRewriteRule

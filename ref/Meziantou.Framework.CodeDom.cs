@@ -76,7 +76,7 @@ namespace Meziantou.Framework.CodeDom
         Modulo = 15,
         ShiftLeft = 16,
         ShiftRight = 17,
-        Xor = 18
+        Xor = 18,
     }
 
     public class CSharpCodeGenerator
@@ -301,7 +301,7 @@ namespace Meziantou.Framework.CodeDom
     public enum CommentType
     {
         LineComment = 0,
-        InlineComment = 1
+        InlineComment = 1,
     }
 
     public class CompilationUnit : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable, Meziantou.Framework.CodeDom.INamespaceDeclarationContainer, Meziantou.Framework.CodeDom.INullableContext, Meziantou.Framework.CodeDom.ITypeDeclarationContainer, Meziantou.Framework.CodeDom.IUsingDirectiveContainer
@@ -393,7 +393,7 @@ namespace Meziantou.Framework.CodeDom
         Param = 5,
         Property = 6,
         Return = 7,
-        Type = 8
+        Type = 8,
     }
 
     public class DefaultFormatterVisitor : Meziantou.Framework.CodeDom.Visitor
@@ -423,7 +423,7 @@ namespace Meziantou.Framework.CodeDom
         In = 0,
         Out = 1,
         InOut = 2,
-        ReadOnlyRef = 3
+        ReadOnlyRef = 3,
     }
 
     public abstract class Directive : Meziantou.Framework.CodeDom.CodeObject, Meziantou.Framework.CodeDom.ICommentable
@@ -808,7 +808,7 @@ namespace Meziantou.Framework.CodeDom
         Volatile = 32768,
         Implicit = 65536,
         Explicit = 131072,
-        Ref = 262144
+        Ref = 262144,
     }
 
     public class NameofExpression : Meziantou.Framework.CodeDom.Expression
@@ -846,14 +846,14 @@ namespace Meziantou.Framework.CodeDom
     {
         NotSet = 0,
         NotNull = 1,
-        Nullable = 2
+        Nullable = 2,
     }
 
     public enum NullableContext
     {
         Default = 0,
         Enable = 1,
-        Disable = 2
+        Disable = 2,
     }
 
     public class OperatorDeclaration : Meziantou.Framework.CodeDom.MemberDeclaration, Meziantou.Framework.CodeDom.IModifiers
@@ -1038,7 +1038,7 @@ namespace Meziantou.Framework.CodeDom
         PreIncrement = 5,
         PreDecrement = 6,
         PostIncrement = 7,
-        PostDecrement = 8
+        PostDecrement = 8,
     }
 
     public class UnmanagedTypeParameterConstraint : Meziantou.Framework.CodeDom.TypeParameterConstraint

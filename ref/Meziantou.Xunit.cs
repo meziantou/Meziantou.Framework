@@ -22,7 +22,7 @@ namespace Meziantou.Xunit
     public enum ContinuousIntegrationEnvironments
     {
         None = 0,
-        GitHubActions = 1
+        GitHubActions = 1,
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
@@ -56,7 +56,7 @@ namespace Meziantou.Xunit
     {
         Any = 0,
         Invariant = 1,
-        NotInvariant = 2
+        NotInvariant = 2,
     }
 
     [System.Flags]
@@ -66,13 +66,13 @@ namespace Meziantou.Xunit
         Windows = 1,
         Linux = 2,
         MacOS = 4,
-        All = 7
+        All = 7,
     }
 
     public enum WindowsGroups
     {
         Any = 0,
         User = 1,
-        Administrator = 2
+        Administrator = 2,
     }
 }

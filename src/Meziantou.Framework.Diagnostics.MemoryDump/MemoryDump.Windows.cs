@@ -38,18 +38,21 @@ public static partial class MemoryDump
         throw new Win32Exception(error);
     }
 
-    // Same flags as dotnet-dump
+    // Same flags as dotnet-dump, plus IgnoreInaccessibleMemory. When the process dumps itself, some private read-write regions
+    // may not be readable, and MiniDumpWriteDump then fails with ERROR_PARTIAL_COPY on every attempt instead of skipping them.
     private static MiniDumpType GetMiniDumpType(MemoryDumpType dumpType)
     {
         return dumpType switch
         {
             MemoryDumpType.Normal =>
+                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.Normal |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |
                 MiniDumpType.WithThreadInfo,
 
             MemoryDumpType.WithHeap =>
+                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |
                 MiniDumpType.WithUnloadedModules |
@@ -69,6 +72,7 @@ public static partial class MemoryDump
                 MiniDumpType.WithHandleData,
 
             MemoryDumpType.Full =>
+                MiniDumpType.IgnoreInaccessibleMemory |
                 MiniDumpType.WithFullMemory |
                 MiniDumpType.WithDataSegs |
                 MiniDumpType.WithHandleData |

@@ -21,6 +21,6 @@ namespace Meziantou.Framework.Diagnostics
         Normal = 0,
         WithHeap = 1,
         Triage = 2,
-        Full = 3
+        Full = 3,
     }
 }

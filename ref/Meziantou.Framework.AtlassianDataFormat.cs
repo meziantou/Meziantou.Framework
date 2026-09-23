@@ -81,7 +81,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfCodeBlockStyle
     {
         Fenced = 0,
-        Indented = 1
+        Indented = 1,
     }
 
     public sealed class AdfCodeMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -110,7 +110,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfDecisionListStyle
     {
         BulletList = 0,
-        PlainText = 1
+        PlainText = 1,
     }
 
     public sealed class AdfDocument
@@ -149,7 +149,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfEmojiRendering
     {
         Text = 0,
-        ShortName = 1
+        ShortName = 1,
     }
 
     public sealed class AdfEmphasisMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -160,7 +160,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfEmphasisMarker
     {
         Asterisk = 0,
-        Underscore = 1
+        Underscore = 1,
     }
 
     public sealed class AdfException : System.Exception
@@ -179,7 +179,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     {
         Blockquote = 0,
         HtmlDetails = 1,
-        Heading = 2
+        Heading = 2,
     }
 
     public sealed class AdfExtension : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -206,7 +206,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfHeadingStyle
     {
         Atx = 0,
-        Setext = 1
+        Setext = 1,
     }
 
     public sealed class AdfIndentationMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -245,7 +245,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfLineBreakStyle
     {
         TrailingSpaces = 0,
-        Backslash = 1
+        Backslash = 1,
     }
 
     public sealed class AdfLinkMark : Meziantou.Framework.AtlassianDataFormat.AdfMark
@@ -284,7 +284,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         Alignment = 11,
         Indentation = 12,
         Border = 13,
-        Breakout = 14
+        Breakout = 14,
     }
 
     public sealed class AdfMedia : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -322,7 +322,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         Image = 0,
         Link = 1,
         AltText = 2,
-        Skip = 3
+        Skip = 3,
     }
 
     public sealed class AdfMediaSingle : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -339,7 +339,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         File = 1,
         Link = 2,
         External = 3,
-        Image = 4
+        Image = 4,
     }
 
     public sealed class AdfMention : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -408,7 +408,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         Mention = 36,
         Date = 37,
         Status = 38,
-        Placeholder = 39
+        Placeholder = 39,
     }
 
     public sealed class AdfOrderedList : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -431,7 +431,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         Blockquote = 0,
         GitHubAlert = 1,
         PlainText = 2,
-        Html = 3
+        Html = 3,
     }
 
     public enum AdfPanelType
@@ -443,7 +443,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
         Warning = 4,
         Error = 5,
         Success = 6,
-        Custom = 7
+        Custom = 7,
     }
 
     public sealed class AdfParagraph : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -489,7 +489,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfSubSupType
     {
         Subscript = 0,
-        Superscript = 1
+        Superscript = 1,
     }
 
     public sealed class AdfTable : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -528,7 +528,7 @@ namespace Meziantou.Framework.AtlassianDataFormat
     {
         PipeTable = 0,
         Html = 1,
-        Auto = 2
+        Auto = 2,
     }
 
     public sealed class AdfTaskItem : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -545,13 +545,13 @@ namespace Meziantou.Framework.AtlassianDataFormat
     public enum AdfTaskListStyle
     {
         Checkbox = 0,
-        PlainText = 1
+        PlainText = 1,
     }
 
     public enum AdfTaskState
     {
         ToDo = 0,
-        Done = 1
+        Done = 1,
     }
 
     public sealed class AdfText : Meziantou.Framework.AtlassianDataFormat.AdfNode
@@ -625,6 +625,6 @@ namespace Meziantou.Framework.AtlassianDataFormat
     {
         Skip = 0,
         KeepContent = 1,
-        Throw = 2
+        Throw = 2,
     }
 }

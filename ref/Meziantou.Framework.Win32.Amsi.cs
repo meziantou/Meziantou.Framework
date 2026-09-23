@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32
         NotDetected = 1,
         BlockedByAdminStart = 16384,
         BlockedByAdminEnd = 20479,
-        Detected = 32768
+        Detected = 32768,
     }
 
     public static class AmsiResultExtensions

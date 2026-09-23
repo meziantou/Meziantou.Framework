@@ -23,7 +23,7 @@ namespace Meziantou.Framework
         Myers = 0,
         Patience = 1,
         Histogram = 2,
-        HuntSzymanski = 3
+        HuntSzymanski = 3,
     }
 
     public readonly struct TextDiffEntry : System.IEquatable<Meziantou.Framework.TextDiffEntry>
@@ -56,7 +56,7 @@ namespace Meziantou.Framework
         Equal = 0,
         Insert = 1,
         Delete = 2,
-        Replace = 3
+        Replace = 3,
     }
 
     public sealed class TextDiffHierarchyResult
@@ -69,7 +69,7 @@ namespace Meziantou.Framework
     {
         Equal = 0,
         Insert = 1,
-        Delete = 2
+        Delete = 2,
     }
 
     public sealed class TextDiffOptions

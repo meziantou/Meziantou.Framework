@@ -2647,7 +2647,7 @@ public sealed class PublicApiGeneratorTests
                     First = 1,
                     Second = 2,
                     Third = 4,
-                    All = 7
+                    All = 7,
                 }
             }
             """);
@@ -2712,7 +2712,7 @@ public sealed class PublicApiGeneratorTests
                     None = 0,
                     Zebra = 1,
                     Alpha = 1,
-                    Second = 2
+                    Second = 2,
                 }
             }
             """);
@@ -2864,7 +2864,7 @@ public sealed class PublicApiGeneratorTests
             public enum Sample
             {
                 A = 0,
-                B = 1
+                B = 1,
             }
             """);
     }
@@ -2884,7 +2884,7 @@ public sealed class PublicApiGeneratorTests
             public enum Sample
             {
                 A = 1,
-                B = 3
+                B = 3,
             }
             """);
     }
@@ -2906,7 +2906,7 @@ public sealed class PublicApiGeneratorTests
             public enum Sample
             {
                 A = 1,
-                B = 2
+                B = 2,
             }
             """);
     }

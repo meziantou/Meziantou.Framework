@@ -41,7 +41,7 @@ namespace Meziantou.Framework.TemporaryContainers
     public enum ContainerCleanupScope
     {
         Orphaned = 0,
-        All = 1
+        All = 1,
     }
 
     public sealed class ContainerCommandCollection : System.Collections.Generic.IEnumerable<string>, System.Collections.IEnumerable
@@ -258,7 +258,7 @@ namespace Meziantou.Framework.TemporaryContainers
         Running = 2,
         Paused = 3,
         Exited = 4,
-        Removed = 5
+        Removed = 5,
     }
 
     public sealed class ContainerWaitStrategyCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.TemporaryContainers.IWaitStrategy>, System.Collections.IEnumerable
@@ -338,7 +338,7 @@ namespace Meziantou.Framework.TemporaryContainers
     public enum LogStream
     {
         Stdout = 0,
-        Stderr = 1
+        Stderr = 1,
     }
 
     public sealed class MongoDbContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
@@ -370,7 +370,7 @@ namespace Meziantou.Framework.TemporaryContainers
     {
         IfMissing = 0,
         Always = 1,
-        Never = 2
+        Never = 2,
     }
 
     public sealed class RedisContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer

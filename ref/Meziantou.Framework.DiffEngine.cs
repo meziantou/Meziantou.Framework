@@ -30,7 +30,7 @@ namespace Meziantou.Framework.DiffEngine
         SublimeMerge = 21,
         VisualStudioCode = 22,
         VisualStudio = 23,
-        Cursor = 24
+        Cursor = 24,
     }
 
     public static class DiffTools

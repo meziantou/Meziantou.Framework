@@ -12,7 +12,7 @@ namespace Meziantou.AspNetCore.Components
     public enum LogDetailsDisplayFormat
     {
         Table = 0,
-        Json = 1
+        Json = 1,
     }
 
     public class LogEntry
@@ -62,7 +62,7 @@ namespace Meziantou.AspNetCore.Components
         Information = 2,
         Warning = 3,
         Error = 4,
-        Critical = 5
+        Critical = 5,
     }
 
     public class LogViewer : Microsoft.AspNetCore.Components.ComponentBase
@@ -87,7 +87,7 @@ namespace Meziantou.AspNetCore.Components
         Hidden = 0,
         FullDateTime = 1,
         DateTimeThenRelativeTime = 2,
-        RelativeTimeStartingAtZero = 3
+        RelativeTimeStartingAtZero = 3,
     }
 
     public class UrlLogHighlighter : Meziantou.AspNetCore.Components.ILogHighlighter

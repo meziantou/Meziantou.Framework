@@ -66,7 +66,7 @@ namespace Meziantou.Framework.Win32
     public enum ChangeJournalFlags
     {
         None = 0U,
-        TrackModifiedRangesEnable = 1U
+        TrackModifiedRangesEnable = 1U,
     }
 
     [System.Flags]
@@ -95,7 +95,7 @@ namespace Meziantou.Framework.Win32
         SecurityChange = 2048U,
         StreamChange = 2097152U,
         TransactedChange = 4194304U,
-        All = 2164260727U
+        All = 2164260727U,
     }
 
     public readonly struct FileIdentifier : System.IEquatable<Meziantou.Framework.Win32.FileIdentifier>
@@ -138,7 +138,7 @@ namespace Meziantou.Framework.Win32
         DataManagement = 1,
         AuxiliaryData = 2,
         ReplicationManagement = 4,
-        ClientReplicationManagement = 8
+        ClientReplicationManagement = 8,
     }
 
     public readonly struct Usn : System.IComparable, System.IComparable<Meziantou.Framework.Win32.Usn>, System.IEquatable<Meziantou.Framework.Win32.Usn>

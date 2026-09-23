@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         PRJ_FILE_STATE_HYDRATED_PLACEHOLDER = 2,
         PRJ_FILE_STATE_DIRTY_PLACEHOLDER = 4,
         PRJ_FILE_STATE_FULL = 8,
-        PRJ_FILE_STATE_TOMBSTONE = 16
+        PRJ_FILE_STATE_TOMBSTONE = 16,
     }
 
     [System.Flags]
@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         FILE_HANDLE_CLOSED_FILE_MODIFIED = 1024U,
         FILE_HANDLE_CLOSED_FILE_DELETED = 2048U,
         FILE_PRE_CONVERT_TO_FULL = 4096U,
-        USE_EXISTING_MASK = 4294967295U
+        USE_EXISTING_MASK = 4294967295U,
     }
 
     [System.Flags]
@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         DIRTY_METADATA = 1,
         DIRTY_DATA = 2,
         TOMBSTONE = 4,
-        READ_ONLY = 8
+        READ_ONLY = 8,
     }
 
     [System.Flags]
@@ -67,7 +67,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         PRJ_UPDATE_ALLOW_DIRTY_DATA = 2,
         PRJ_UPDATE_ALLOW_TOMBSTONE = 4,
         PRJ_UPDATE_ALLOW_READ_ONLY = 32,
-        PRJ_UPDATE_MAX_VAL = 64
+        PRJ_UPDATE_MAX_VAL = 64,
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]

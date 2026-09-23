@@ -38,7 +38,7 @@ namespace Meziantou.Framework.Json
     public enum JsonPathEvaluationMode
     {
         Lax = 0,
-        Strict = 1
+        Strict = 1,
     }
 
     public static class JsonPathExtensions
@@ -88,7 +88,7 @@ namespace Meziantou.Framework.Json
         Number = 2,
         String = 3,
         Array = 4,
-        Object = 5
+        Object = 5,
     }
 
     public readonly struct JsonPathProperty<TValue>

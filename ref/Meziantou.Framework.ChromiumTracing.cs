@@ -7,7 +7,7 @@ namespace Meziantou.Framework.ChromiumTracing
     public enum BindingPoint
     {
         NextSlice = 0,
-        EnclosingSlice = 1
+        EnclosingSlice = 1,
     }
 
     public sealed class ChromiumTracingAsyncBeginEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncEvent
@@ -161,7 +161,7 @@ namespace Meziantou.Framework.ChromiumTracing
     {
         Global = 0,
         Process = 1,
-        Thread = 2
+        Thread = 2,
     }
 
     public sealed class ChromiumTracingLinkIdEvent : Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent

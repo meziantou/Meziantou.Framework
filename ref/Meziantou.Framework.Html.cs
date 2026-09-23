@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Html
         Tag = 4,
         Attributes = 8,
         StreamOrder = 16,
-        All = 31
+        All = 31,
     }
 
     [System.Diagnostics.DebuggerDisplay("'{Value}'")]
@@ -191,7 +191,7 @@ namespace Meziantou.Framework.Html
         None = 0,
         InnerRaw = 1,
         AutoClosed = 2,
-        NoChild = 4
+        NoChild = 4,
     }
 
     [System.Flags]
@@ -200,7 +200,7 @@ namespace Meziantou.Framework.Html
         None = 0,
         DontCloseIfEmpty = 1,
         AlwaysClose = 2,
-        NoChild = 4
+        NoChild = 4,
     }
 
     public sealed class HtmlError
@@ -222,7 +222,7 @@ namespace Meziantou.Framework.Html
         EncodingError = 2,
         EncodingMismatch = 3,
         NamespaceNotDeclared = 4,
-        DuplicateAttribute = 5
+        DuplicateAttribute = 5,
     }
 
     public sealed class HtmlException : System.Exception
@@ -243,7 +243,7 @@ namespace Meziantou.Framework.Html
         AttName = 5,
         AttValue = 6,
         Comment = 7,
-        CDataText = 8
+        CDataText = 8,
     }
 
     public static class HtmlMicroDataExtensions
@@ -462,7 +462,7 @@ namespace Meziantou.Framework.Html
         RootNode = 512,
         DepthFirst = 1024,
         UppercasedAll = 85,
-        LowercasedAll = 170
+        LowercasedAll = 170,
     }
 
     public enum HtmlNodeType
@@ -476,7 +476,7 @@ namespace Meziantou.Framework.Html
         None = 6,
         ProcessingInstruction = 7,
         DocumentType = 8,
-        XPathResult = 9
+        XPathResult = 9,
     }
 
     public sealed class HtmlOptions
@@ -512,7 +512,7 @@ namespace Meziantou.Framework.Html
         AttAssign = 11,
         Atts = 12,
         RawText = 13,
-        CData = 14
+        CData = 14,
     }
 
     public sealed class HtmlReader
@@ -633,6 +633,6 @@ namespace Meziantou.Framework.Html
     public enum ListSortDirection
     {
         Ascending = 0,
-        Descending = 1
+        Descending = 1,
     }
 }

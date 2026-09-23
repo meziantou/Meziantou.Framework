@@ -146,7 +146,7 @@ namespace Meziantou.Framework
     public enum DeterministicGuidVersion
     {
         Version3 = 3,
-        Version5 = 5
+        Version5 = 5,
     }
 
     public static class DictionaryExtensions
@@ -284,7 +284,7 @@ namespace Meziantou.Framework
     {
         Standard = 0,
         Unicode = 1,
-        UnicodeWithLegacyControls = 2
+        UnicodeWithLegacyControls = 2,
     }
 
     public static class LoremIpsumGenerator

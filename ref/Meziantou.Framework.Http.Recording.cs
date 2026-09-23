@@ -65,7 +65,7 @@ namespace Meziantou.Framework.Http.Recording
     {
         Throw = 0,
         ReturnDefault = 1,
-        Passthrough = 2
+        Passthrough = 2,
     }
 
     public sealed class HttpRecordingMissException : System.InvalidOperationException
@@ -79,7 +79,7 @@ namespace Meziantou.Framework.Http.Recording
     {
         Record = 0,
         Replay = 1,
-        Auto = 2
+        Auto = 2,
     }
 
     public sealed class HttpRecordingOptions

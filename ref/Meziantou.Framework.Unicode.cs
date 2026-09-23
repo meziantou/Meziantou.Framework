@@ -45,7 +45,7 @@ namespace Meziantou.Framework
         RightToLeftIsolate = 19,
         FirstStrongIsolate = 20,
         PopDirectionalIsolate = 21,
-        BoundaryNeutral = 22
+        BoundaryNeutral = 22,
     }
 
     public sealed class UnicodeBlock : System.IEquatable<Meziantou.Framework.UnicodeBlock>
@@ -658,7 +658,7 @@ namespace Meziantou.Framework
         WarangCiti = 175,
         Yezidi = 176,
         Yi = 177,
-        ZanabazarSquare = 178
+        ZanabazarSquare = 178,
     }
 
     public static class UnicodeScripts

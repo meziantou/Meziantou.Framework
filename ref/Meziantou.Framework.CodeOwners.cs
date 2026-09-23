@@ -20,13 +20,13 @@ namespace Meziantou.Framework.CodeOwners
     {
         Username = 0,
         EmailAddress = 1,
-        Role = 2
+        Role = 2,
     }
 
     public enum CodeOwnersDialect
     {
         GitHub = 0,
-        GitLab = 1
+        GitLab = 1,
     }
 
     public sealed class CodeOwnersEntry : System.IEquatable<Meziantou.Framework.CodeOwners.CodeOwnersEntry>
@@ -74,7 +74,7 @@ namespace Meziantou.Framework.CodeOwners
         UnterminatedRequiredReviewerCount = 2,
         InvalidRequiredReviewerCount = 3,
         EmptyOwner = 4,
-        InvalidOwner = 5
+        InvalidOwner = 5,
     }
 
     public sealed class CodeOwnersParseException : System.Exception

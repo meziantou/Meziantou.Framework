@@ -64,7 +64,7 @@ namespace Meziantou.Framework.Scheduling
     {
         Tentative = 0,
         Confirmed = 1,
-        Cancelled = 2
+        Cancelled = 2,
     }
 
     public interface IRecurrenceRule

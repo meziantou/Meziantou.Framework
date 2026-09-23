@@ -234,6 +234,6 @@ namespace Meziantou.Framework
     {
         Immediate = 0,
         FinalTarget = 1,
-        AllSymbolicLinks = 2
+        AllSymbolicLinks = 2,
     }
 }

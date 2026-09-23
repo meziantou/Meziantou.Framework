@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Numerics;
 using System.Reflection;
+using System.Text;
 using Meziantou.Framework.Annotations;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
@@ -165,6 +166,246 @@ public sealed partial class StronglyTypedIdTests
         Parse<IdInt32>("test");
         static void Parse<T>(string _) where T : ISpanParsable<IdInt32>
         { }
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_Int32()
+    {
+        Parse<IdInt32>("test");
+        static void Parse<T>(string _) where T : IUtf8SpanParsable<IdInt32>
+        { }
+    }
+
+    [Fact]
+    public void IFormattable_Int32()
+    {
+        Format<IdInt32>("test");
+        static void Format<T>(string _) where T : IFormattable, ISpanFormattable, IUtf8SpanFormattable
+        { }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetData))]
+    public void Format_WithoutFormat_IsSameAsToString(Type type, string fromMethodName, object value)
+    {
+        var from = (MethodInfo)type.GetMember(fromMethodName).Single();
+        var instance = from.Invoke(null, [value])!;
+        var expected = instance.ToString()!;
+
+        Assert.Equal(expected, ((IFormattable)instance).ToString(format: null, formatProvider: null));
+        Assert.Equal(expected, ((IFormattable)instance).ToString(format: "", CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, FormattableString.Invariant($"{instance}"));
+
+        var chars = new char[expected.Length];
+        Assert.True(((ISpanFormattable)instance).TryFormat(chars, out var charsWritten, format: default, CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, new string(chars, 0, charsWritten));
+        for (var length = 0; length < chars.Length; length++)
+        {
+            Assert.False(((ISpanFormattable)instance).TryFormat(chars.AsSpan(0, length), out charsWritten, format: default, provider: null));
+            Assert.Equal(0, charsWritten);
+        }
+
+        var bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+        Assert.True(((IUtf8SpanFormattable)instance).TryFormat(bytes, out var bytesWritten, format: default, CommaDecimalSeparatorProvider));
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+        for (var length = 0; length < bytes.Length; length++)
+        {
+            Assert.False(((IUtf8SpanFormattable)instance).TryFormat(bytes.AsSpan(0, length), out bytesWritten, format: default, provider: null));
+            Assert.Equal(0, bytesWritten);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetData))]
+    public void IUtf8SpanParsable_RoundTrip(Type type, string fromMethodName, object value)
+    {
+        var from = (MethodInfo)type.GetMember(fromMethodName).Single();
+        var instance = from.Invoke(null, [value])!;
+        var utf8Text = Encoding.UTF8.GetBytes((string)type.GetProperty("ValueAsString")!.GetValue(instance)!);
+
+        var method = typeof(StronglyTypedIdTests).GetMethod(nameof(ParseUtf8), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type);
+        Assert.Equal(instance, method.Invoke(null, [utf8Text]));
+    }
+
+    private static T ParseUtf8<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T>
+    {
+        Assert.True(T.TryParse(utf8Text, provider: null, out var result));
+        Assert.Equal(result, T.Parse(utf8Text, provider: null));
+        return result;
+    }
+
+    [Fact]
+    public void Format_WithFormat_FormatsValue()
+    {
+        var id = IdInt32.FromInt32(42);
+        Assert.Equal("00042", ((IFormattable)id).ToString("D5", formatProvider: null));
+        Assert.Equal("00042", FormattableString.Invariant($"{id:D5}"));
+        Assert.Equal("00042", FormatUtf8(id, "D5", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_IgnoresProvider()
+    {
+        var id = IdDouble.FromDouble(1.5);
+        Assert.Equal("1.50", ((IFormattable)id).ToString("F2", CommaDecimalSeparatorProvider));
+        Assert.Equal("1.50", string.Format(CommaDecimalSeparatorProvider, "{0:F2}", id));
+        Assert.Equal("1.50", FormatChars(id, "F2", CommaDecimalSeparatorProvider));
+        Assert.Equal("1.50", FormatUtf8(id, "F2", CommaDecimalSeparatorProvider));
+
+        var dateTime = IdDateTime.FromDateTime(new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+        Assert.Equal("01/02/2024", string.Format(CreateDateSeparatorProvider("-"), "{0:d}", dateTime));
+        Assert.Equal("01/02/2024", FormatChars(dateTime, "d", CreateDateSeparatorProvider("-")));
+        Assert.Equal("01/02/2024", FormatUtf8(dateTime, "d", CreateDateSeparatorProvider("-")));
+    }
+
+    [Fact]
+    public void Parse_IgnoresProvider()
+    {
+        Assert.Equal(1.5, ParseWithProvider<IdDouble>("1.5", CommaDecimalSeparatorProvider).Value);
+    }
+
+    private static T ParseWithProvider<T>(string value, IFormatProvider provider) where T : IParsable<T>, ISpanParsable<T>, IUtf8SpanParsable<T>
+    {
+        var result = T.Parse(value, provider);
+        Assert.Equal(result, T.Parse(value.AsSpan(), provider));
+        Assert.Equal(result, T.Parse(Encoding.UTF8.GetBytes(value), provider));
+
+        Assert.True(T.TryParse(value, provider, out var tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        Assert.True(T.TryParse(value.AsSpan(), provider, out tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        Assert.True(T.TryParse(Encoding.UTF8.GetBytes(value), provider, out tryParseResult));
+        Assert.Equal(result, tryParseResult);
+        return result;
+    }
+
+    [Fact]
+    public void Format_WithFormat_Guid()
+    {
+        var guid = Guid.NewGuid();
+        var id = IdGuid.FromGuid(guid);
+        Assert.Equal(guid.ToString("N"), FormattableString.Invariant($"{id:N}"));
+        Assert.Equal(guid.ToString("N"), FormatUtf8(id, "N", provider: null));
+    }
+
+    [Fact]
+    public void Format_WithFormat_BigInteger()
+    {
+        // BigInteger does not expose a public UTF-8 TryFormat method
+        var id = IdBigInteger.FromBigInteger(42);
+        Assert.Equal("00042", FormattableString.Invariant($"{id:D5}"));
+        Assert.Equal("00042", FormatUtf8(id, "D5", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_DateTimeOffset_KeepsOffset()
+    {
+        var id = IdDateTimeOffset.FromDateTimeOffset(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)));
+        Assert.Equal("IdDateTimeOffset { Value = 2024-01-02T01:04:05.0000000Z }", FormattableString.Invariant($"{id}"));
+        Assert.Equal("2024-01-02 03:04 +02:00", FormattableString.Invariant($"{id:yyyy-MM-dd HH:mm zzz}"));
+        Assert.Equal("2024-01-02 03:04 +02:00", FormatUtf8(id, "yyyy-MM-dd HH:mm zzz", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Format_WithFormat_NotFormattableValue_IgnoresFormat()
+    {
+        var id = IdString.FromString("test");
+        Assert.Equal("test", FormattableString.Invariant($"{id:X}"));
+        Assert.Equal("test", FormatUtf8(id, "X", provider: null));
+
+        var boolean = IdBoolean.FromBoolean(true);
+        Assert.Equal("True", FormattableString.Invariant($"{boolean:X}"));
+        Assert.Equal("True", FormatUtf8(boolean, "X", provider: null));
+    }
+
+    [Fact]
+    public void Format_NullString()
+    {
+        var id = IdClassString.FromString(null!);
+        Assert.Equal("IdClassString { Value = <null> }", FormattableString.Invariant($"{id}"));
+        Assert.Equal("IdClassString { Value = <null> }", FormatUtf8(id, format: null, provider: null));
+        Assert.Equal("", FormattableString.Invariant($"{id:X}"));
+
+        var raw = IdString_RawToString.FromString(null!);
+        Assert.Equal("", FormattableString.Invariant($"{raw}"));
+        Assert.Equal("", FormatUtf8(raw, format: null, provider: null));
+    }
+
+    [Fact]
+    public void Format_NonAsciiString()
+    {
+        var id = IdString_RawToString.FromString("é日本🎉");
+        Assert.Equal("é日本🎉", FormattableString.Invariant($"{id}"));
+        Assert.Equal("é日本🎉", FormatUtf8(id, format: null, provider: null));
+    }
+
+    [Fact]
+    public void Format_UserDefinedToString()
+    {
+        var id = IdToStringDefined.FromInt32(42);
+        Assert.Equal("", FormattableString.Invariant($"{id}"));
+        Assert.Equal("", FormatUtf8(id, format: null, provider: null));
+        Assert.Equal("042", FormattableString.Invariant($"{id:D3}"));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_InvalidUtf8_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdInt32>([0x34, 0xFF], out _));
+        Assert.Throws<FormatException>(() => IUtf8SpanParsableParse<IdInt32>([0x34, 0xFF]));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_InvalidValue_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdInt32>("abc"u8.ToArray(), out _));
+        Assert.Throws<FormatException>(() => IUtf8SpanParsableParse<IdInt32>("abc"u8.ToArray()));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_ValidatingConstructor_ReturnsFalse()
+    {
+        Assert.False(TryParseUtf8<IdStringValidated>([], out _));
+        Assert.False(TryParseUtf8<IdInt32Validated>("-1"u8.ToArray(), out _));
+    }
+
+    [Fact]
+    public void IUtf8SpanParsable_String()
+    {
+        Assert.True(TryParseUtf8<IdString>("é日本🎉"u8.ToArray(), out var result));
+        Assert.Equal("é日本🎉", result.Value);
+
+        // Longer than the stack-allocated buffer
+        var value = new string('a', 1000) + "é";
+        Assert.True(TryParseUtf8<IdString>(Encoding.UTF8.GetBytes(value), out result));
+        Assert.Equal(value, result.Value);
+    }
+
+    private static bool TryParseUtf8<T>(byte[] utf8Text, out T? result) where T : IUtf8SpanParsable<T> => T.TryParse(utf8Text, provider: null, out result);
+
+    private static T IUtf8SpanParsableParse<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T> => T.Parse(utf8Text, provider: null);
+
+    private static string FormatUtf8<T>(T value, string? format, IFormatProvider? provider) where T : IUtf8SpanFormattable
+    {
+        var buffer = new byte[256];
+        Assert.True(value.TryFormat(buffer, out var bytesWritten, format, provider));
+        return Encoding.UTF8.GetString(buffer, 0, bytesWritten);
+    }
+
+    private static string FormatChars<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
+    {
+        var buffer = new char[256];
+        Assert.True(value.TryFormat(buffer, out var charsWritten, format, provider));
+        return new string(buffer, 0, charsWritten);
+    }
+
+    private static readonly NumberFormatInfo CommaDecimalSeparatorProvider = new() { NumberDecimalSeparator = "," };
+
+    private static CultureInfo CreateDateSeparatorProvider(string dateSeparator)
+    {
+        var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.DateTimeFormat.DateSeparator = dateSeparator;
+        return culture;
     }
 
     [Fact]

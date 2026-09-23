@@ -112,19 +112,19 @@ public sealed class YamlMergeKeyTests
             "Defaults: &d\n" +
             "  Timeout: 30\n" +
             "  Retries: 2\n" +
-            "  Name: from-alias\n" +
             "Prod:\n" +
             "  <<:\n" +
             "    - *d\n" +
-            "    - { Retries: 5 }\n" +
+            "    - { Retries: 5, Name: from-mapping }\n" +
             "  Timeout: 60\n";
 
         var result = YamlSerializer.Deserialize<Config>(yaml, PreserveOptions);
 
+        // The alias comes first in the merge sequence, so its Retries wins over the one of the later mapping.
         Assert.NotNull(result?.Prod);
         Assert.Equal(60, result.Prod.Timeout);
-        Assert.Equal(5, result.Prod.Retries);
-        Assert.Equal("from-alias", result.Prod.Name);
+        Assert.Equal(2, result.Prod.Retries);
+        Assert.Equal("from-mapping", result.Prod.Name);
     }
 
     [Fact]
@@ -197,6 +197,96 @@ public sealed class YamlMergeKeyTests
         Assert.Contains("ReferenceHandling", exception.Message);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_MergeAlias_MergesTheEntriesOfTheAnchoredMappingNode(bool useSourceGeneration)
+    {
+        var yaml =
+            "Defaults: &d { A: 1 }\n" +
+            "Other: &e { A: 3, B: 4 }\n" +
+            "Prod: { <<: [*d, *e] }\n" +
+            "Record: { <<: *e, A: 9 }\n" +
+            "InitOnly: { <<: [*d, *e] }\n" +
+            "Map: { <<: [*d, *e] }\n" +
+            "Untyped: { <<: *e, C: 5 }\n" +
+            "Any: { <<: *d }\n";
+
+        var result = DeserializeWithPreserve<MergeAliasRoot>(yaml, useSourceGeneration);
+
+        // Defaults was deserialized with B = 0, but its mapping node has no B, so the later mapping provides it.
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Prod!.A);
+        Assert.Equal(4, result.Prod.B);
+        Assert.Equal(9, result.Record!.A);
+        Assert.Equal(4, result.Record.B);
+        Assert.Equal(1, result.InitOnly!.A);
+        Assert.Equal(4, result.InitOnly.B);
+        Assert.Equal(new Dictionary<string, int>(StringComparer.Ordinal) { ["A"] = 1, ["B"] = 4 }, result.Map!);
+        Assert.Equal(3L, result.Untyped!["A"]);
+        Assert.Equal(4L, result.Untyped["B"]);
+        Assert.Equal(5L, result.Untyped["C"]);
+        Assert.Equal(1L, Assert.IsType<Dictionary<object, object?>>(result.Any)["A"]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_MergeAlias_ReplaysNestedMergeAliases(bool useSourceGeneration)
+    {
+        var yaml =
+            "Defaults: &b { A: 1 }\n" +
+            "Other: &m { <<: *b, B: 2 }\n" +
+            "Prod: { <<: *m }\n" +
+            "Map: { <<: *m }\n";
+
+        var result = DeserializeWithPreserve<MergeAliasRoot>(yaml, useSourceGeneration);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Prod!.A);
+        Assert.Equal(2, result.Prod.B);
+        Assert.Equal(new Dictionary<string, int>(StringComparer.Ordinal) { ["A"] = 1, ["B"] = 2 }, result.Map!);
+    }
+
+    [Theory]
+    [InlineData(false, "Defaults: &d 1\nProd: { <<: *d }\n")]
+    [InlineData(false, "Map: &d { A: 1 }\nUntyped: &s [1]\nProd: { <<: *s }\n")]
+    [InlineData(false, "Prod: { <<: *unknown }\n")]
+    [InlineData(false, "Prod: &s { <<: *s }\n")]
+    [InlineData(false, "Map: &s { <<: [*s] }\n")]
+    [InlineData(true, "Defaults: &d 1\nProd: { <<: *d }\n")]
+    [InlineData(true, "Map: &d { A: 1 }\nUntyped: &s [1]\nProd: { <<: *s }\n")]
+    [InlineData(true, "Prod: { <<: *unknown }\n")]
+    [InlineData(true, "Prod: &s { <<: *s }\n")]
+    [InlineData(true, "Map: &s { <<: [*s] }\n")]
+    public void Deserialize_MergeAlias_ThatDoesNotReferToAnEarlierMappingThrows(bool useSourceGeneration, string yaml)
+    {
+        Assert.Throws<YamlException>(() => DeserializeWithPreserve<MergeAliasRoot>(yaml, useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_MergeAlias_IsBoundedByMaxAliasExpansionNodeCount(bool useSourceGeneration)
+    {
+        var yaml =
+            "a: &a { x1: 1, x2: 2, x3: 3 }\n" +
+            "b: &b { <<: [*a, *a, *a] }\n" +
+            "c: { <<: [*b, *b, *b] }\n";
+
+        var exception = Assert.Throws<YamlException>(() => DeserializeWithPreserve<Dictionary<string, Dictionary<string, int>>>(yaml, useSourceGeneration, maxAliasExpansionNodeCount: 30));
+        Assert.Contains("alias expansion", exception.Message, StringComparison.Ordinal);
+
+        var result = DeserializeWithPreserve<Dictionary<string, Dictionary<string, int>>>(yaml, useSourceGeneration, maxAliasExpansionNodeCount: 200);
+        Assert.NotNull(result);
+        Assert.Equal(3, result["c"]["x3"]);
+    }
+
+    private static T? DeserializeWithPreserve<T>(string yaml, bool useSourceGeneration, int maxAliasExpansionNodeCount = 0)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, MergeKeyYamlContext.Default.CreateOptions(o => o with { ReferenceHandling = YamlReferenceHandling.Preserve, MaxAliasExpansionNodeCount = maxAliasExpansionNodeCount }))
+            : YamlSerializer.Deserialize<T>(yaml, PreserveOptions with { MaxAliasExpansionNodeCount = maxAliasExpansionNodeCount });
+
     private static YamlSerializerOptions PreserveOptions => new() { ReferenceHandling = YamlReferenceHandling.Preserve };
 
     private static T? Deserialize<T>(string yaml, bool useSourceGeneration)
@@ -251,6 +341,25 @@ public sealed class YamlMergeKeyTests
 
         [YamlObjectCreationHandling(YamlObjectCreationHandling.Populate)]
         public Section Prod { get; } = new() { Name = "initial" };
+    }
+
+    internal sealed class MergeAliasRoot
+    {
+        public MergePayload? Defaults { get; set; }
+
+        public MergePayload? Other { get; set; }
+
+        public MergePayload? Prod { get; set; }
+
+        public MergeRecord? Record { get; set; }
+
+        public MergeInitOnlyPayload? InitOnly { get; set; }
+
+        public Dictionary<string, int>? Map { get; set; }
+
+        public Dictionary<string, object?>? Untyped { get; set; }
+
+        public object? Any { get; set; }
     }
 
     internal sealed class MergeDictionaryHolder
@@ -457,6 +566,8 @@ public sealed class YamlMergeKeyTests
 [YamlSerializable(typeof(YamlMergeKeyTests.MergeRecord))]
 [YamlSerializable(typeof(YamlMergeKeyTests.MergeInitOnlyPayload))]
 [YamlSerializable(typeof(YamlMergeKeyTests.MergeDictionaryHolder))]
+[YamlSerializable(typeof(YamlMergeKeyTests.MergeAliasRoot))]
+[YamlSerializable(typeof(Dictionary<string, Dictionary<string, int>>))]
 [YamlSerializable(typeof(Dictionary<string, string>))]
 [YamlSerializable(typeof(Dictionary<string, object?>))]
 internal sealed partial class MergeKeyYamlContext : YamlSerializerContext

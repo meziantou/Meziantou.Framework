@@ -734,7 +734,15 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        WriteFormattableScalar(value, format: "R", plainSafe: true);
+        if (value == 0 && double.IsNegative(value))
+        {
+            WritePlainScalar(NegativeZero);
+            return;
+        }
+
+        Span<char> buffer = stackalloc char[32];
+        value.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture);
+        WriteFloatingPointScalar(buffer, written);
     }
 
     /// <summary>Writes a single-precision floating-point scalar value.</summary>
@@ -759,7 +767,39 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        WriteFormattableScalar(value, format: "R", plainSafe: true);
+        if (value == 0 && float.IsNegative(value))
+        {
+            WritePlainScalar(NegativeZero);
+            return;
+        }
+
+        Span<char> buffer = stackalloc char[32];
+        value.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture);
+        WriteFloatingPointScalar(buffer, written);
+    }
+
+    /// <remarks>
+    /// The round-trip format writes negative zero as "-0", which the core schema resolves to the integer 0, so the
+    /// sign would be lost.
+    /// </remarks>
+    private const string NegativeZero = "-0.0";
+
+    /// <summary>Writes a formatted binary floating-point value so that it resolves to a float.</summary>
+    /// <param name="buffer">A buffer holding the formatted value, with room for two more characters.</param>
+    /// <param name="length">The length of the formatted value.</param>
+    /// <remarks>
+    /// The round-trip format writes a whole number without a fraction, such as "1", which the core schema resolves to
+    /// an integer, so ".0" is appended to keep the value a float.
+    /// </remarks>
+    private void WriteFloatingPointScalar(Span<char> buffer, int length)
+    {
+        if (buffer[..length].IndexOfAny('.', 'E', 'e') < 0)
+        {
+            buffer[length++] = '.';
+            buffer[length++] = '0';
+        }
+
+        WritePlainScalar(buffer[..length]);
     }
 
     private void WriteNonFiniteScalar(string value)
@@ -824,13 +864,15 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The value to write.</param>
     public void WriteScalar(Half value)
     {
-        if (!Half.IsFinite(value))
+        if (!Half.IsFinite(value) || (value == Half.Zero && Half.IsNegative(value)))
         {
             WriteScalar((double)value);
             return;
         }
 
-        WritePlainScalar(value.ToString(CultureInfo.InvariantCulture));
+        Span<char> buffer = stackalloc char[32];
+        value.TryFormat(buffer, out var written, format: default, CultureInfo.InvariantCulture);
+        WriteFloatingPointScalar(buffer, written);
     }
 
     /// <summary>Writes a 128-bit signed integer scalar value.</summary>
@@ -899,7 +941,22 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        WritePlainScalar(value.ToString(format: null, CultureInfo.InvariantCulture));
+        if (T.IsZero(value) && T.IsNegative(value))
+        {
+            WritePlainScalar(NegativeZero);
+            return;
+        }
+
+        var text = value.ToString(format: null, CultureInfo.InvariantCulture);
+
+        // A whole binary floating-point number would resolve to an integer. The decimal types keep the exact text
+        // of their value, whose scale is significant.
+        if (typeof(T) == typeof(BFloat16) && text.AsSpan().IndexOfAny('.', 'E', 'e') < 0)
+        {
+            text += ".0";
+        }
+
+        WritePlainScalar(text);
     }
 #endif
 
@@ -1417,7 +1474,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        if (IsPlainSafe(value, isKey))
+        if (IsPlainSafe(value, isKey) && IsPlainAllowedBySchema(value))
         {
             Write(value);
             return;
@@ -1443,10 +1500,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return style switch
         {
             // A plain "<<" key was read as the merge key, so it is only quoted when the writer picks the style.
-            ScalarStyle.Plain when IsPlainSafe(value, isKey: false) => ScalarStyle.Plain,
+            ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && IsPlainAllowedBySchema(value) => ScalarStyle.Plain,
             ScalarStyle.SingleQuoted when CanWriteSingleQuotedScalar(value) => ScalarStyle.SingleQuoted,
             // A plain "null" or "~" key is read back as a null key, which no dictionary accepts.
-            ScalarStyle.Any when IsPlainSafe(value, isKey: true) && !YamlScalar.IsNull(value) => ScalarStyle.Plain,
+            ScalarStyle.Any when Options.ScalarStylePreferences.PreferPlainStyle && IsPlainSafe(value, isKey: true) && !YamlScalar.IsNull(value) && IsPlainAllowedBySchema(value) => ScalarStyle.Plain,
             _ => ScalarStyle.DoubleQuoted,
         };
     }
@@ -1484,7 +1541,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return;
         }
 
-        if (ShouldQuoteAmbiguousScalar(value))
+        if (!Options.ScalarStylePreferences.PreferPlainStyle || ShouldQuoteAmbiguousScalar(value))
         {
             Write('"');
             WriteEscaped(value);
@@ -1518,7 +1575,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 return true;
 
             // A plain string that reads as a null, a boolean, or a number would not be read back as that string.
-            case ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && !ShouldQuoteAmbiguousScalar(value):
+            case ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && !ShouldQuoteAmbiguousScalar(value) && IsPlainAllowedBySchema(value):
                 Write(value);
                 return true;
 
@@ -1748,7 +1805,18 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return YamlScalar.IsNull(value) ||
                YamlScalar.TryParseBool(value, out _) ||
                YamlScalar.TryParseInt64(value, out _) ||
-               YamlScalar.TryParseDouble(value, out _);
+               YamlScalar.TryParseDouble(value, out _) ||
+               YamlScalar.ResolvesToNonString(value, Options.Schema) ||
+               IsNamedFloatingPointLiteral(value);
+    }
+
+    /// <remarks>
+    /// "NaN" and "Infinity" are strings in YAML, but they are quoted anyway, as a reader that parses numbers with .NET
+    /// would read them as floating-point values.
+    /// </remarks>
+    private static bool IsNamedFloatingPointLiteral(ReadOnlySpan<char> value)
+    {
+        return value.Length > 0 && char.IsAsciiLetter(value[^1]) && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
     }
 
     private bool RequiresExplicitKey(ReadOnlySpan<char> value, ScalarStyle style)
@@ -1947,19 +2015,36 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
     private void WritePlainScalar(string value)
     {
-        WriteValuePrefixForScalar();
-        WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
-        Write(value);
-        CompleteValueAfterScalar();
+        WritePlainScalar(value.AsSpan());
     }
 
     private void WritePlainScalar(ReadOnlySpan<char> value)
     {
+        // An explicit tag decides how the scalar resolves, so only an untagged scalar is checked against the schema.
+        var quote = _pendingTag is null && !IsPlainAllowedBySchema(value);
         WriteValuePrefixForScalar();
         WriteNodeProperties(writeLeadingSpace: false, writeTrailingSpace: true);
-        Write(value);
+        if (quote)
+        {
+            Write('"');
+            WriteEscaped(value);
+            Write('"');
+        }
+        else
+        {
+            Write(value);
+        }
+
         CompleteValueAfterScalar();
     }
+
+    /// <summary>Determines whether the schema in use accepts a plain scalar with this text.</summary>
+    /// <remarks>
+    /// The JSON schema only resolves null, booleans, and numbers from plain scalars, and any other plain scalar is an
+    /// error (YAML 1.2 §10.2.2), so dates, identifiers, and strings are quoted.
+    /// </remarks>
+    private bool IsPlainAllowedBySchema(ReadOnlySpan<char> value)
+        => Options.Schema is not YamlSchemaKind.Json || YamlScalar.ResolvesToNonString(value, YamlSchemaKind.Json);
 
     private void Write(string value)
     {

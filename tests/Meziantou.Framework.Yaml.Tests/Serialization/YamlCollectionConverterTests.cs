@@ -425,7 +425,7 @@ public sealed class YamlCollectionConverterTests
             : YamlSerializer.Deserialize<object>(yaml);
 
         Assert.Equal("a: 1\n", yaml);
-        Assert.Equal(1, Assert.IsType<Dictionary<string, object?>>(roundTrip)["a"]);
+        Assert.Equal(1, Assert.IsType<Dictionary<object, object?>>(roundTrip)["a"]);
         Assert.Equal(yaml, Serialize<object>(value, useSourceGeneration));
     }
 
@@ -491,6 +491,178 @@ public sealed class YamlCollectionConverterTests
         Assert.Contains("Dictionary key type", keyException.Message);
         Assert.Throws<NotSupportedException>(() => YamlSerializer.Deserialize<Dictionary<CollectionConverterModel, int>>("a: 1\n"));
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullableScalarElements_RoundTrip(bool useSourceGeneration)
+    {
+        var guid = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var date = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        var model = new NullableElementCollectionModel
+        {
+            Ints = [1, null],
+            IntArray = [1, null],
+            IntMap = new Dictionary<string, int?>(StringComparer.Ordinal) { ["a"] = 1, ["b"] = null },
+            Guids = [guid, null],
+            Kinds = [NullableElementKind.Second, null],
+            Dates = [date, null],
+        };
+
+        var yaml = Serialize(model, useSourceGeneration);
+        var roundTrip = Deserialize<NullableElementCollectionModel>(yaml, useSourceGeneration)!;
+
+        Assert.Equal(
+            "Ints:\n  - 1\n  - null\n" +
+            "IntArray:\n  - 1\n  - null\n" +
+            "IntMap:\n  a: 1\n  b: null\n" +
+            "Guids:\n  - 11111111-1111-1111-1111-111111111111\n  - null\n" +
+            "Kinds:\n  - Second\n  - null\n" +
+            "Dates:\n  - 2024-01-02T03:04:05.0000000Z\n  - null\n",
+            yaml);
+        Assert.Equal(model.Ints, roundTrip.Ints!);
+        Assert.Equal(model.IntArray, roundTrip.IntArray!);
+        Assert.Equal(model.IntMap, roundTrip.IntMap!);
+        Assert.Equal(model.Guids, roundTrip.Guids!);
+        Assert.Equal(model.Kinds, roundTrip.Kinds!);
+        Assert.Equal(model.Dates, roundTrip.Dates!);
+        Assert.Equal("- 1\n- null\n", Serialize(new List<int?> { 1, null }, useSourceGeneration));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JsonSchema_WritesEveryScalarThatIsNotANullBooleanOrNumberQuoted(bool useSourceGeneration)
+    {
+        static YamlSerializerOptions Json(YamlSerializerOptions options) => options with { UseSchema = true, Schema = YamlSchemaKind.Json };
+        var model = CreateScalarFormattingModel();
+
+        var yaml = Serialize(model, useSourceGeneration, Json);
+        var roundTrip = Deserialize<ScalarFormattingModel>(yaml, useSourceGeneration, Json)!;
+
+        Assert.Equal(
+            "\"Name\": \"text\"\n" +
+            "\"Count\": 1\n" +
+            "\"Double\": 1.0\n" +
+            "\"Single\": 2.0\n" +
+            "\"Half\": 3.0\n" +
+            "\"Decimal\": 4\n" +
+            "\"Infinity\": !!float .inf\n" +
+            "\"Flag\": true\n" +
+            "\"Nothing\": null\n" +
+            "\"Kind\": \"Second\"\n" +
+            "\"When\": \"2024-01-02\"\n" +
+            "\"Id\": \"00000000-0000-0000-0000-000000000001\"\n" +
+            "\"DoubleKeys\":\n" +
+            "  1.0: \"one\"\n",
+            yaml);
+        Assert.Equal(model.Name, roundTrip.Name);
+        Assert.Equal(model.Kind, roundTrip.Kind);
+        Assert.Equal(model.When, roundTrip.When);
+        Assert.Equal(model.Id, roundTrip.Id);
+        Assert.Equal(double.PositiveInfinity, roundTrip.Infinity);
+        Assert.Equal("one", roundTrip.DoubleKeys![1.0]);
+    }
+
+    [Theory]
+    [InlineData(false, "Name: text\n")]
+    [InlineData(false, "\"Name\": text\n")]
+    [InlineData(false, "Name: \"text\"\n")]
+    [InlineData(false, "\"Nothing\": ~\n")]
+    [InlineData(false, "\"Flag\": True\n")]
+    [InlineData(false, "\"Nothing\":\n")]
+    [InlineData(false, "\"Count\": 0x1\n")]
+    [InlineData(true, "Name: text\n")]
+    [InlineData(true, "\"Name\": text\n")]
+    [InlineData(true, "\"Nothing\": ~\n")]
+    [InlineData(true, "\"Flag\": True\n")]
+    public void JsonSchema_RejectsPlainScalarsThatAreNotANullBooleanOrNumber(bool useSourceGeneration, string yaml)
+    {
+        static YamlSerializerOptions Json(YamlSerializerOptions options) => options with { UseSchema = true, Schema = YamlSchemaKind.Json };
+
+        Assert.Throws<YamlException>(() => Deserialize<ScalarFormattingModel>(yaml, useSourceGeneration, Json));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JsonSchema_AcceptsQuotedStringsAndTaggedPlainScalars(bool useSourceGeneration)
+    {
+        static YamlSerializerOptions Json(YamlSerializerOptions options) => options with { UseSchema = true, Schema = YamlSchemaKind.Json };
+
+        var model = Deserialize<ScalarFormattingModel>("\"Name\": !!str text\n\"Count\": 2\n\"Flag\": true\n\"Nothing\": null\n\"Kind\": 'Second'\n", useSourceGeneration, Json)!;
+
+        Assert.Equal("text", model.Name);
+        Assert.Equal(2, model.Count);
+        Assert.True(model.Flag);
+        Assert.Null(model.Nothing);
+        Assert.Equal(NullableElementKind.Second, model.Kind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WholeFloatingPointNumbers_AreWrittenAsFloats(bool useSourceGeneration)
+    {
+        var yaml = Serialize(CreateScalarFormattingModel(), useSourceGeneration);
+
+        Assert.Contains("Double: 1.0\nSingle: 2.0\nHalf: 3.0\nDecimal: 4\n", yaml);
+        Assert.Contains("DoubleKeys:\n  1.0: one\n", yaml);
+        Assert.Equal("- 10000000000000000.0\n- 1E+300\n- -0.0\n- 0.5\n", Serialize(new List<double> { 1e16, 1e300, -0.0, 0.5 }, useSourceGeneration));
+
+        var untyped = Assert.IsType<Dictionary<object, object?>>(YamlSerializer.Deserialize<object>(yaml));
+        Assert.Equal(1.0, untyped["Double"]);
+        Assert.Equal(2.0, untyped["Single"]);
+        Assert.Equal(3.0, untyped["Half"]);
+        Assert.Equal("one", Assert.IsType<Dictionary<object, object?>>(untyped["DoubleKeys"])[1.0]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreferPlainStyleDisabled_QuotesStrings(bool useSourceGeneration)
+    {
+        static YamlSerializerOptions Quoted(YamlSerializerOptions options) => options with { ScalarStylePreferences = new YamlScalarStylePreferences { PreferPlainStyle = false } };
+        var model = new ScalarFormattingModel { Name = "text", Count = 1, Flag = true, Kind = NullableElementKind.Second };
+
+        var yaml = Serialize(model, useSourceGeneration, Quoted);
+
+        Assert.StartsWith("\"Name\": \"text\"\n\"Count\": 1\n\"Double\": 0.0\n", yaml);
+        Assert.Contains("\"Flag\": true\n\"Nothing\": null\n\"Kind\": Second\n", yaml);
+        Assert.Equal("text", Deserialize<ScalarFormattingModel>(yaml, useSourceGeneration)!.Name);
+    }
+
+    [Fact]
+    public void PreferPlainStyleDisabled_IsHonoredFromTheSourceGenerationOptions()
+    {
+        var yaml = YamlSerializer.Serialize(new ScalarFormattingModel { Name = "text" }, QuotedStringsYamlContext.Default);
+
+        Assert.StartsWith("\"Name\": \"text\"\n", yaml);
+    }
+
+    [Fact]
+    public void PreferPlainStyleDisabled_DoesNotOverrideAnExplicitStringStyle()
+    {
+        var options = new YamlSerializerOptions { ScalarStylePreferences = new YamlScalarStylePreferences { PreferPlainStyle = false, StringStyle = ScalarStyle.Plain } };
+
+        Assert.Equal("text\n", YamlSerializer.Serialize("text", options));
+    }
+
+    private static ScalarFormattingModel CreateScalarFormattingModel() => new()
+    {
+        Name = "text",
+        Count = 1,
+        Double = 1.0,
+        Single = 2f,
+        Half = (Half)3,
+        Decimal = 4m,
+        Infinity = double.PositiveInfinity,
+        Flag = true,
+        Kind = NullableElementKind.Second,
+        When = new DateOnly(2024, 1, 2),
+        Id = new Guid("00000000-0000-0000-0000-000000000001"),
+        DoubleKeys = new Dictionary<double, string> { [1.0] = "one" },
+    };
 
     private static string Serialize<T>(T value, bool useSourceGeneration, Func<YamlSerializerOptions, YamlSerializerOptions>? configure = null)
     {
@@ -563,6 +735,56 @@ internal sealed class CollectionConverterModel
     public Dictionary<string, IReadOnlyList<int>>? NestedMap { get; set; }
 }
 
+internal enum NullableElementKind
+{
+    First,
+    Second,
+}
+
+internal sealed class NullableElementCollectionModel
+{
+    public List<int?>? Ints { get; set; }
+
+    public int?[]? IntArray { get; set; }
+
+    public Dictionary<string, int?>? IntMap { get; set; }
+
+    public List<Guid?>? Guids { get; set; }
+
+    public List<NullableElementKind?>? Kinds { get; set; }
+
+    public List<DateTime?>? Dates { get; set; }
+}
+
+internal sealed class ScalarFormattingModel
+{
+    public string? Name { get; set; }
+
+    public int Count { get; set; }
+
+    public double Double { get; set; }
+
+    public float Single { get; set; }
+
+    public Half Half { get; set; }
+
+    public decimal Decimal { get; set; }
+
+    public double Infinity { get; set; }
+
+    public bool Flag { get; set; }
+
+    public string? Nothing { get; set; }
+
+    public NullableElementKind Kind { get; set; }
+
+    public DateOnly When { get; set; }
+
+    public Guid Id { get; set; }
+
+    public Dictionary<double, string>? DoubleKeys { get; set; }
+}
+
 internal sealed record CollectionConstructorRecord(Dictionary<string, int> Map, List<int> Items, int[] Array, IReadOnlyList<string> Names, Queue<int> Queue);
 
 internal readonly struct EnumerableWithoutMembers : IEnumerable<int>
@@ -600,6 +822,15 @@ internal sealed class UnsupportedCollectionModel
 [YamlSerializable(typeof(KeyValuePair<string, int>))]
 [YamlSerializable(typeof(CollectionConstructorRecord))]
 [YamlSerializable(typeof(List<IEnumerable<int>>))]
+[YamlSerializable(typeof(NullableElementCollectionModel))]
+[YamlSerializable(typeof(List<int?>))]
+[YamlSerializable(typeof(ScalarFormattingModel))]
 internal sealed partial class CollectionConverterYamlContext : YamlSerializerContext
+{
+}
+
+[YamlSourceGenerationOptions(PreferPlainStyle = false)]
+[YamlSerializable(typeof(ScalarFormattingModel))]
+internal sealed partial class QuotedStringsYamlContext : YamlSerializerContext
 {
 }

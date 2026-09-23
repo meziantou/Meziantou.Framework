@@ -129,6 +129,16 @@ reports `MFY002` or `MFY007`), unless a custom converter handles the key type. T
 `object` keep their type: a string key such as `"1"` or `"true"` is quoted so it is not read back as a number or a
 boolean, and `YamlWriter.WriteDictionaryKey` writes a key the same way from a custom converter.
 
+Reading into `object` produces `null`, `bool`, `long` (or `ulong` beyond its range), `double`, `string`, `List<object?>`
+for a sequence, and `Dictionary<object, object?>` for a mapping. The keys of that dictionary are resolved like values, so
+`1` is a `long` and `'1'` is a `string`, and both can appear in the same mapping. Two keys that resolve to the same value,
+such as `1` and `0x1`, are duplicates. A null key (`~`, `null`) and a key that is itself a sequence or a mapping cannot be
+represented and throw a `YamlException`.
+
+A key of one of the supported key types is always written and read as a scalar by the dictionary itself. A custom
+converter registered for its type, in `Converters`, in `YamlSourceGenerationOptionsAttribute.Converters`, or with
+`YamlConverterAttribute` on the type, applies to the values of the dictionary, not to its keys.
+
 The other collections of the base class library, such as `ArrayList`, `Hashtable`, `ReadOnlyCollection<>`, or the
 immutable collections not listed above, and the types that cannot be serialized at all, such as `Type`, delegates, and
 `IAsyncEnumerable<>`, are not written as a mapping of their properties, which could not be read back: they throw a
@@ -197,7 +207,7 @@ exposes the default instance.
 | `MappingOrder` | `Declaration` | `Declaration` or `Sorted`. |
 | `BlockSequenceMappingStyle` | `Compact` | How a mapping inside a block sequence is emitted. |
 | `BlockSequenceSequenceStyle` | `Expanded` | How a nested sequence inside a block sequence is emitted. |
-| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true`, `StringStyle = Any` | Quotes scalars that would otherwise resolve to a boolean, a number, or null, and selects the style used for string values. |
+| `ScalarStylePreferences` | `PreferPlainStyle = true`, `PreferQuotedForAmbiguousScalars = true`, `StringStyle = Any` | Quotes scalars that would otherwise resolve to a boolean, a number, or null, and selects the style used for string values. `PreferPlainStyle = false` double-quotes every string value and mapping key the writer would otherwise write plain, unless `StringStyle` requests another style. |
 
 `BlockSequenceMappingStyle` controls whether the first key of a mapping shares the line of its sequence dash:
 
@@ -666,7 +676,7 @@ the derived type and reports the `MFY025` diagnostic.
 
 ## Merge keys
 
-A merge key (`<<`) copies the entries of another mapping into the current one. Its value can be an inline mapping, an alias to an anchored mapping, or a sequence mixing both. Keys written in the mapping itself always win over merged keys, and in a merge sequence the last entry wins:
+A merge key (`<<`) copies the entries of another mapping into the current one. Its value can be an inline mapping, an alias to an anchored mapping, or a sequence mixing both. Keys written in the mapping itself always win over merged keys, and in a merge sequence the earlier entries win over the later ones:
 
 ```yaml
 defaults: &defaults
@@ -685,7 +695,7 @@ var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandl
 var config = YamlSerializer.Deserialize<Config>(yaml, options);
 ```
 
-An alias resolves to the value the anchored node was deserialized into. When that value is an object, every readable member takes part in the merge, including the members the anchored mapping left out. Source-generated deserialization does not support aliases as merge values.
+An alias merges the entries of the anchored mapping node as they appear in the document, the same way as an inline mapping, whatever type the anchored node was deserialized into: a member the anchored mapping leaves out is not merged. The nodes a merge alias replays count towards `MaxAliasExpansionNodeCount`.
 
 ## C# unions
 
@@ -835,7 +845,7 @@ YamlSerializer.Deserialize<Section>("""
 
 Merge keys are only recognized under the `Core` and `Extended` schemas; the `Json` and `Failsafe` schemas treat `<<` as
 an ordinary key. A merge key whose value is an alias additionally requires `ReferenceHandling` to be `Preserve` or
-`PreserveMinimal`, and is currently supported when binding to dictionaries only.
+`PreserveMinimal`.
 
 ## Schemas
 
@@ -844,13 +854,24 @@ an ordinary key. A merge key whose value is an alias additionally requires `Refe
 | Kind | Description |
 | --- | --- |
 | `Failsafe` | YAML 1.2 §10.1. Every plain scalar is a string. |
-| `Json` | YAML 1.2 §10.2. JSON-compatible resolution. |
+| `Json` | YAML 1.2 §10.2. JSON-compatible resolution: a plain scalar must be `null`, `true`, `false`, or a JSON number. |
 | `Core` | YAML 1.2 §10.3. The default; adds `~`, `Null`, `TRUE`, hexadecimal and octal integers, `.inf`, `.nan`. |
 | `Extended` | Adds `y`/`yes`/`on` booleans, `!!timestamp`, `!!merge`, and `_` digit separators. |
 
+With `Schema = Json`, the writer double-quotes every scalar that is not null, a boolean, or a number (strings, keys, enum
+names, dates, identifiers, ...), and writes the non-finite floating-point values with an explicit `!!float` tag. With
+`UseSchema = true` as well, reading rejects an untagged plain scalar that is not `null`, `true`, `false`, or a JSON number,
+as the JSON schema does, so `name: text` throws while `"name": "text"` is accepted.
+
+A binary floating-point value (`double`, `float`, `Half`, `BFloat16`) is always written so it resolves to a float: a
+whole number keeps a fraction (`1.0`), negative zero is `-0.0`, and the special values are `.inf`, `-.inf`, and `.nan`.
+`decimal` and the IEEE 754 decimal types keep the exact text of their value, whose scale is significant.
+
 Scalar resolution goes through the selected schema only when `UseSchema = true`. Otherwise built-in converters use a
 faster, permissive span-based path, which also accepts binary integers and digit separators while honoring quoted
-scalars as strings. Set `UseSchema = true` to apply the selected schema’s scalar spelling rules.
+scalars as strings. Null, booleans, `.inf` and `.nan` keep the core schema spellings in both paths, and an explicit
+`!!null`, `!!bool`, `!!int` or `!!float` tag is honored when reading into `object`; a scalar that does not match its tag
+throws a `YamlException`. Set `UseSchema = true` to apply the selected schema’s scalar spelling rules.
 
 ```csharp
 var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Extended };
@@ -903,10 +924,12 @@ instance cannot change them:
 
 - `PropertyNamingPolicy` is always applied at build time: the member names are generated from the policy set on the
   attribute, and the policy of an options instance is ignored. `DictionaryKeyPolicy` is read at run time.
-- `DefaultIgnoreCondition`, `UnmappedMemberHandling`, `PreferredObjectCreationHandling`, `DuplicateKeyHandling`,
-  `MappingOrder`, `PropertyNameCaseInsensitive`, `DiscriminatorStyle`, `TypeDiscriminatorPropertyName`,
-  `UnknownDerivedTypeHandling`, and whether `Schema` applies merge keys are applied at build time when the attribute sets
-  them, and read from the options at run time otherwise.
+- `DefaultIgnoreCondition`, `IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`, `UnmappedMemberHandling`,
+  `PreferredObjectCreationHandling`, `DuplicateKeyHandling`, `MappingOrder`, `PropertyNameCaseInsensitive`,
+  `DiscriminatorStyle`, `TypeDiscriminatorPropertyName`, `UnknownDerivedTypeHandling`, `InferClosedTypePolymorphism`, and
+  whether `Schema` applies merge keys are applied at build time when the attribute sets them, and read from the options at
+  run time otherwise. A closed hierarchy is always known at build time, so its derived types are generated even when only
+  the options can enable inference.
 
 `YamlSerializableAttribute.TypeInfoPropertyName` renames the generated property when the default name collides.
 

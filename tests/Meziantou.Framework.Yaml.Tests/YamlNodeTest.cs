@@ -68,6 +68,17 @@ public class YamlNodeTest
     }
 
     [Fact]
+    public void YamlValue_FloatingPointSpecialValues_UseYamlSpellings()
+    {
+        Assert.Equal(".inf", new YamlValue(double.PositiveInfinity).Scalar.Value);
+        Assert.Equal("-.inf", new YamlValue(float.NegativeInfinity).Scalar.Value);
+        Assert.Equal(".nan", new YamlValue(Half.NaN).Scalar.Value);
+        Assert.Equal("-0.0", new YamlValue(-0.0).Scalar.Value);
+        Assert.Equal("-0.0", new YamlValue(-0.0f).Scalar.Value);
+        Assert.Equal("0.1", new YamlValue(0.1f).Scalar.Value);
+    }
+
+    [Fact]
     public void FromObject()
     {
         var stream = new YamlStream();

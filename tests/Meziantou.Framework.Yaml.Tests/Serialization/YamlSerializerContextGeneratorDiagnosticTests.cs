@@ -345,6 +345,53 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Empty(diagnostics);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MFY002_IsSuppressed_ForMembersOfTypeWithYamlConverterAttribute(bool listTypeWithConverter)
+    {
+        var source = $$"""
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public sealed class TypeLevelConverter : YamlConverter<ConverterDecoratedType>
+            {
+                public override ConverterDecoratedType Read(YamlReader reader)
+                {
+                    reader.Skip();
+                    return new ConverterDecoratedType();
+                }
+
+                public override void Write(YamlWriter writer, ConverterDecoratedType value)
+                {
+                    writer.WriteScalar("value");
+                }
+            }
+
+            [YamlConverter(typeof(TypeLevelConverter))]
+            public sealed class ConverterDecoratedType
+            {
+                public System.Action? Callback { get; set; }
+            }
+
+            public sealed class ModelWithTypeLevelConverter
+            {
+                public ConverterDecoratedType? Item { get; set; }
+
+                public System.Collections.Generic.List<ConverterDecoratedType>? Items { get; set; }
+            }
+
+            [YamlSerializable(typeof(ModelWithTypeLevelConverter))]
+            {{(listTypeWithConverter ? "[YamlSerializable(typeof(ConverterDecoratedType))]" : "")}}
+            internal partial class TestContext : YamlSerializerContext
+            {
+            }
+            """;
+
+        var result = RunGenerator(source);
+        Assert.Empty(result.GeneratorDiagnostics);
+        Assert.Contains("TypeLevelConverter", result.GeneratedSource);
+    }
+
     [Fact]
     public void MFY002_IsSuppressed_WhenMemberTypeIsTransitivelyGenerated()
     {
@@ -1662,6 +1709,10 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             {
                 [YamlIgnore(Condition = YamlIgnoreCondition.Never)]
                 public int Value { get; set; }
+
+                public int Field;
+
+                public readonly int ReadOnlyField;
             }
 
             internal sealed class StaticDictionaryMember
@@ -1684,6 +1735,9 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             [YamlSourceGenerationOptions(
                 PropertyNameCaseInsensitive = true,
                 DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingNull,
+                IncludeFields = true,
+                IgnoreReadOnlyFields = false,
+                IgnoreReadOnlyProperties = false,
                 MappingOrder = YamlMappingOrderPolicy.Sorted,
                 Schema = YamlSchemaKind.Core,
                 UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
@@ -1721,6 +1775,9 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         AssertGeneratedSourceDoesNotContain(generatedSource, "switch (options.");
         AssertGeneratedSourceDoesNotContain(generatedSource, "extensionData is not global::Meziantou.Framework.Yaml.Model.YamlMapping");
         AssertGeneratedSourceDoesNotContain(generatedSource, "writer.Options");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "options.IncludeFields");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "options.IgnoreReadOnlyFields");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "options.IgnoreReadOnlyProperties");
         AssertGeneratedSourceDoesNotContain(generatedSource, "reader.Options");
         AssertGeneratedSourceDoesNotContain(generatedSource, "hasCustomConverters");
         AssertGeneratedSourceDoesNotContain(generatedSource, "TryGetCustomConverter");

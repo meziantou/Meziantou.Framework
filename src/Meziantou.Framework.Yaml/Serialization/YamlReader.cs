@@ -29,8 +29,8 @@ public sealed class YamlReader : YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(yaml);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
         var parser = Parser.CreateParser(new StringReader(yaml), effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader() : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases), effectiveOptions);
+        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
+        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
     }
 
     /// <summary>Creates a YAML reader over a text reader.</summary>
@@ -42,8 +42,8 @@ public sealed class YamlReader : YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
         var parser = Parser.CreateParser(reader, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader() : null;
-        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases), effectiveOptions);
+        var referenceReader = effectiveOptions.ReferenceHandling != YamlReferenceHandling.None ? new YamlReferenceReader(effectiveOptions.EffectiveMaxAliasExpansionNodeCount) : null;
+        return new YamlReader(new YamlReaderState(parser, referenceReader, effectiveOptions.SourceName, effectiveOptions.AllowAnchors, effectiveOptions.AllowAliases, IsJsonSchemaStrict(effectiveOptions)), effectiveOptions);
     }
 
     /// <summary>Creates a YAML reader over a string payload that shares the current reader's reference anchor state.</summary>
@@ -60,12 +60,18 @@ public sealed class YamlReader : YamlReaderWriterBase
         return Create(yaml, _state.ReferenceReader, _state.SourceName, Options);
     }
 
+    /// <remarks>
+    /// The JSON schema only resolves null, booleans, and numbers from plain scalars; any other plain scalar is an
+    /// error (YAML 1.2 §10.2.2), so a string must be quoted.
+    /// </remarks>
+    private static bool IsJsonSchemaStrict(YamlSerializerOptions options) => options.UseSchema && options.Schema is YamlSchemaKind.Json;
+
     internal static YamlReader Create(string yaml, YamlReferenceReader? referenceReader, string? sourceName, YamlSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(yaml);
         ArgumentNullException.ThrowIfNull(options);
         var parser = Parser.CreateParser(new StringReader(yaml), options.EffectiveMaxDepth, sourceName);
-        return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases), options);
+        return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases, IsJsonSchemaStrict(options)), options);
     }
 
     /// <summary>Gets the current token type.</summary>
@@ -164,6 +170,49 @@ public sealed class YamlReader : YamlReaderWriterBase
 
         value = null;
         return false;
+    }
+
+    /// <summary>Replays the mapping node the current alias refers to, so that it can be read again as a new node.</summary>
+    /// <returns>
+    /// <see langword="true"/> when the current token is an alias and reference handling is enabled: the reader is then
+    /// positioned on the start of a copy of the anchored mapping node. <see langword="false"/> otherwise, and the reader
+    /// does not move.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This is how a merge key (<c>&lt;&lt;: *defaults</c>) reads its alias: the merge copies the entries of the anchored
+    /// mapping node, as they appear in the document, and not the members of the value that node was deserialized into.
+    /// </para>
+    /// <para>
+    /// The copy is read like the original node, except that the anchors it contains are not defined again. An alias it
+    /// contains still refers to the value its anchor was deserialized into. The replayed nodes count towards
+    /// <see cref="YamlSerializerOptions.MaxAliasExpansionNodeCount"/>.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="YamlException">
+    /// The alias is unknown, does not refer to a mapping, refers to a mapping that contains it, or exceeds the alias
+    /// expansion limit.
+    /// </exception>
+    public bool TryReplayMappingAlias()
+    {
+        if (TokenType != YamlTokenType.Alias || _state.ReferenceReader is null)
+        {
+            return false;
+        }
+
+        var alias = Alias ?? throw new YamlException(SourceName, Start, End, "Alias token did not provide an alias value.");
+        IReadOnlyList<ParsingEvent> events;
+        try
+        {
+            events = _state.ReferenceReader.GetMappingEvents(alias);
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new YamlException(SourceName, Start, End, exception.Message, exception);
+        }
+
+        _state.Replay(events);
+        return true;
     }
 
     /// <summary>Registers an anchored value for later alias resolution.</summary>
@@ -416,15 +465,62 @@ public sealed class YamlReader : YamlReaderWriterBase
         private readonly IParser _parser;
         private readonly bool _allowAnchors;
         private readonly bool _allowAliases;
+        private readonly bool _jsonSchemaStrict;
+        private readonly bool _recordMappings;
+        private Stack<ReplayFrame>? _replays;
 
-        public YamlReaderState(IParser parser, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true)
+        public YamlReaderState(IParser parser, YamlReferenceReader? referenceReader, string? sourceName, bool allowAnchors = true, bool allowAliases = true, bool jsonSchemaStrict = false)
         {
+            _jsonSchemaStrict = jsonSchemaStrict;
             _parser = parser;
             TokenType = YamlTokenType.None;
             ReferenceReader = referenceReader;
             SourceName = sourceName;
             _allowAnchors = allowAnchors;
             _allowAliases = allowAliases;
+            _recordMappings = referenceReader is not null && allowAliases;
+        }
+
+        /// <summary>Reads <paramref name="events"/> before the rest of the input, starting with the next read.</summary>
+        public void Replay(IReadOnlyList<ParsingEvent> events)
+        {
+            _replays ??= new Stack<ReplayFrame>();
+            _replays.Push(new ReplayFrame(events));
+            Read();
+        }
+
+        private bool TryGetNextEvent([NotNullWhen(true)] out ParsingEvent? current, out bool isReplayed)
+        {
+            while (_replays is { Count: > 0 })
+            {
+                var frame = _replays.Peek();
+                if (frame.Index < frame.Events.Count)
+                {
+                    current = frame.Events[frame.Index++];
+                    isReplayed = true;
+                    return true;
+                }
+
+                _replays.Pop();
+            }
+
+            isReplayed = false;
+            while (_parser.MoveNext())
+            {
+                current = _parser.Current;
+                if (current is not null)
+                {
+                    if (_recordMappings)
+                    {
+                        ReferenceReader!.Record(current);
+                    }
+
+                    return true;
+                }
+            }
+
+            current = null;
+            return false;
         }
 
         public YamlTokenType TokenType { get; private set; }
@@ -442,14 +538,8 @@ public sealed class YamlReader : YamlReaderWriterBase
 
         public bool Read()
         {
-            while (_parser.MoveNext())
+            while (TryGetNextEvent(out var current, out var isReplayed))
             {
-                var current = _parser.Current;
-                if (current is null)
-                {
-                    continue;
-                }
-
                 Start = current.Start;
                 End = current.End;
 
@@ -459,6 +549,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     continue;
                 }
 
+                // The anchors of a replayed node are not defined again: they keep naming the original node.
                 CurrentEvent = current;
                 ScalarValue = null;
                 ScalarStyle = ScalarStyle.Any;
@@ -471,7 +562,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     case MappingStart mappingStart:
                         TokenType = YamlTokenType.StartMapping;
                         Tag = mappingStart.Tag;
-                        Anchor = mappingStart.Anchor;
+                        Anchor = isReplayed ? null : mappingStart.Anchor;
                         ThrowIfAnchorNotAllowed();
                         return true;
 
@@ -482,7 +573,7 @@ public sealed class YamlReader : YamlReaderWriterBase
                     case SequenceStart sequenceStart:
                         TokenType = YamlTokenType.StartSequence;
                         Tag = sequenceStart.Tag;
-                        Anchor = sequenceStart.Anchor;
+                        Anchor = isReplayed ? null : sequenceStart.Anchor;
                         ThrowIfAnchorNotAllowed();
                         return true;
 
@@ -495,8 +586,9 @@ public sealed class YamlReader : YamlReaderWriterBase
                         ScalarValue = scalar.Value;
                         ScalarStyle = scalar.Style;
                         Tag = scalar.Tag;
-                        Anchor = scalar.Anchor;
+                        Anchor = isReplayed ? null : scalar.Anchor;
                         ThrowIfAnchorNotAllowed();
+                        ThrowIfInvalidJsonSchemaScalar();
                         if (Anchor is not null)
                         {
                             ReferenceReader?.RegisterScalar(Anchor, scalar);
@@ -549,6 +641,17 @@ public sealed class YamlReader : YamlReaderWriterBase
             }
         }
 
+        private void ThrowIfInvalidJsonSchemaScalar()
+        {
+            if (_jsonSchemaStrict &&
+                Tag is null &&
+                ScalarStyle is ScalarStyle.Any or ScalarStyle.Plain &&
+                !YamlScalar.ResolvesToNonString(ScalarValue.AsSpan(), YamlSchemaKind.Json))
+            {
+                throw new YamlException(SourceName, Start, End, $"The plain scalar '{ScalarValue}' is not valid under the JSON schema, which only resolves null, booleans, and numbers. Quote it to read it as a string.");
+            }
+        }
+
         public void Skip()
         {
             switch (TokenType)
@@ -594,6 +697,13 @@ public sealed class YamlReader : YamlReaderWriterBase
             {
                 Read();
             }
+        }
+
+        private sealed class ReplayFrame(IReadOnlyList<ParsingEvent> events)
+        {
+            public IReadOnlyList<ParsingEvent> Events { get; } = events;
+
+            public int Index { get; set; }
         }
     }
 }

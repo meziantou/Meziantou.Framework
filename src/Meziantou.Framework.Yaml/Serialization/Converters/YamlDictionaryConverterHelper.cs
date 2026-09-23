@@ -121,9 +121,10 @@ internal static class YamlDictionaryConverterHelper
             return;
         }
 
-        // An enum key is read through the enum converter, which accepts the YamlEnumMemberName names, so it is
-        // written with the same names as an enum value.
-        if (key is Enum && writer.GetConverter(key.GetType()) is IYamlEnumNameFormatter enumNameFormatter)
+        // An enum key is read through the built-in enum converter, which accepts the YamlEnumMemberName names, so it is
+        // written with the same names as an enum value, even when a custom converter handles the values of the enum.
+        if (key is Enum &&
+            (writer.GetConverter(key.GetType()) as IYamlEnumNameFormatter ?? YamlReaderWriterBase.YamlBuiltInConverters.CreateConverter(key.GetType()) as IYamlEnumNameFormatter) is { } enumNameFormatter)
         {
             writer.WritePropertyName(enumNameFormatter.FormatName(key));
             return;
@@ -139,44 +140,14 @@ internal static class YamlDictionaryConverterHelper
             return boolValue ? "true" : "false";
         }
 
-        if (key is double doubleValue)
+        switch (key)
         {
-            if (double.IsPositiveInfinity(doubleValue))
-            {
-                return ".inf";
-            }
-
-            if (double.IsNegativeInfinity(doubleValue))
-            {
-                return "-.inf";
-            }
-
-            if (double.IsNaN(doubleValue))
-            {
-                return ".nan";
-            }
-
-            return doubleValue.ToString("R", CultureInfo.InvariantCulture);
-        }
-
-        if (key is float floatValue)
-        {
-            if (float.IsPositiveInfinity(floatValue))
-            {
-                return ".inf";
-            }
-
-            if (float.IsNegativeInfinity(floatValue))
-            {
-                return "-.inf";
-            }
-
-            if (float.IsNaN(floatValue))
-            {
-                return ".nan";
-            }
-
-            return floatValue.ToString("R", CultureInfo.InvariantCulture);
+            case double doubleValue:
+                return YamlScalar.FormatFloatingPoint(doubleValue);
+            case float floatValue:
+                return YamlScalar.FormatFloatingPoint(floatValue);
+            case Half halfValue:
+                return YamlScalar.FormatFloatingPoint(halfValue);
         }
 
         if (key is DateTime dateTime)
@@ -343,7 +314,13 @@ internal static class YamlDictionaryConverterHelper
         if (keyConverter is null)
         {
             EnsureSupportedKeyType(reader, typeof(TKey));
-            keyConverter = reader.GetConverter(typeof(TKey));
+
+            // A key of a scalar type is read by the built-in converter of its type, the way it is written: a custom
+            // converter of the key type only applies to values. A key of any other type is read by its custom converter.
+            var keyType = Nullable.GetUnderlyingType(typeof(TKey)) ?? typeof(TKey);
+            keyConverter = IsSupportedKeyType(keyType)
+                ? YamlReaderWriterBase.YamlBuiltInConverters.CreateConverter(keyType) ?? reader.GetConverter(typeof(TKey))
+                : reader.GetConverter(typeof(TKey));
         }
 
         valueConverter ??= reader.GetConverter(typeof(TValue));
@@ -437,6 +414,7 @@ internal static class YamlDictionaryConverterHelper
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, typeof(TDictionary));
         if (reader.TokenType == YamlTokenType.StartMapping || reader.TokenType == YamlTokenType.Alias)
         {
             var merged = ReadStringDictionary<TDictionary, TValue>(reader, ref valueConverter, createDictionary, containerKind);
@@ -454,6 +432,7 @@ internal static class YamlDictionaryConverterHelper
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
+                YamlMergeKey.ReplayAlias(reader, typeof(TDictionary));
                 if (reader.TokenType != YamlTokenType.StartMapping && reader.TokenType != YamlTokenType.Alias)
                 {
                     throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge sequence entries must be mappings.");

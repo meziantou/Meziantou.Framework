@@ -9,11 +9,47 @@ internal static class YamlThrowHelper
 {
     /// <summary>Throws an exception for expected Token.</summary>
     public static YamlException ThrowExpectedToken(YamlReader reader, YamlTokenType expectedToken)
-        => new(reader.SourceName, reader.Start, reader.End, $"Expected a {expectedToken} token but found '{reader.TokenType}'.");
+    {
+        if (reader.TokenType is YamlTokenType.Alias)
+        {
+            // Without reference handling, an alias is never resolved, so it reaches the check of the expected token.
+            if (reader.Options.ReferenceHandling is YamlReferenceHandling.None)
+            {
+                return new(reader.SourceName, reader.Start, reader.End, "Aliases are not supported unless ReferenceHandling is Preserve.");
+            }
+
+            // An alias to a scalar is presented as that scalar, so this alias names either an unknown anchor or a node
+            // that is not a scalar. Resolving it reports an unknown anchor as the other converters do. It moves the
+            // reader past the alias, which does not matter as the caller throws the returned exception.
+            var aliasStart = reader.Start;
+            var aliasEnd = reader.End;
+            if (reader.TryReadAlias(out _))
+            {
+                return new(reader.SourceName, aliasStart, aliasEnd, $"Expected a {expectedToken} token but found '{YamlTokenType.Alias}'.");
+            }
+        }
+
+        return new(reader.SourceName, reader.Start, reader.End, $"Expected a {expectedToken} token but found '{reader.TokenType}'.");
+    }
 
     /// <summary>Throws an exception for expected Scalar.</summary>
     public static YamlException ThrowExpectedScalar(YamlReader reader)
         => ThrowExpectedToken(reader, YamlTokenType.Scalar);
+
+    /// <summary>Throws an exception for expected Scalar when deserializing a string.</summary>
+    public static YamlException ThrowExpectedStringScalar(YamlReader reader)
+    {
+        if (reader.TokenType is YamlTokenType.Alias && reader.Options.ReferenceHandling is YamlReferenceHandling.None)
+        {
+            return new(reader.SourceName, reader.Start, reader.End, "Aliases are not supported when deserializing into string unless ReferenceHandling is Preserve.");
+        }
+
+        return ThrowExpectedScalar(reader);
+    }
+
+    /// <summary>Throws an exception for an alias read without reference handling.</summary>
+    public static YamlException ThrowAliasNotSupported(YamlReader reader, Type type)
+        => new(reader.SourceName, reader.Start, reader.End, $"Aliases are not supported when deserializing into '{type}' unless ReferenceHandling is Preserve.");
 
     /// <summary>Throws an exception for expected Scalar Key.</summary>
     public static YamlException ThrowExpectedScalarKey(YamlReader reader)

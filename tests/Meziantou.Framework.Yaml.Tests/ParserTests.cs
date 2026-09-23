@@ -79,7 +79,12 @@ public class ParserTests : ParserTestHelper
     public void NonPrintableInput_ThrowsYamlException(int codePoint)
     {
         var character = ((char)codePoint).ToString();
-        foreach (var yaml in new[] { "a" + character, "'a" + character + "'", "\"a" + character + "\"", "|\n  a" + character, "# a" + character })
+
+        // Quoted scalars accept every non-C0 character (YAML 1.2 §5.1).
+        var inputs = codePoint < 0x20 || char.IsSurrogate((char)codePoint)
+            ? new[] { "a" + character, "'a" + character + "'", "\"a" + character + "\"", "|\n  a" + character, "# a" + character }
+            : new[] { "a" + character, "|\n  a" + character, "# a" + character };
+        foreach (var yaml in inputs)
         {
             using var reader = new StringReader(yaml);
             Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
@@ -89,9 +94,71 @@ public class ParserTests : ParserTestHelper
     }
 
     [Theory]
+    [InlineData(0x7F)]
+    [InlineData(0x80)]
+    [InlineData(0x9F)]
+    [InlineData(0xFFFE)]
+    [InlineData(0xFFFF)]
+    public void NonC0Characters_AreAllowedInQuotedScalars(int codePoint)
+    {
+        var character = ((char)codePoint).ToString();
+        foreach (var (yaml, expected) in new[]
+        {
+            ("'a" + character + "b'", "+STR\n+DOC\n=VAL 'a" + character + "b\n-DOC\n-STR"),
+            ("\"a" + character + "b\"", "+STR\n+DOC\n=VAL \"a" + character + "b\n-DOC\n-STR"),
+            ("[\"" + character + "\"]", "+STR\n+DOC\n+SEQ []\n=VAL \"" + character + "\n-SEQ\n-DOC\n-STR"),
+        })
+        {
+            using var reader = new StringReader(yaml);
+            Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+            using var bufferedReader = new StringReader(yaml);
+            Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        }
+    }
+
+    [Theory]
+    [InlineData("- Invalid use of BOM\n\uFEFF- Inside a document.\n")]
+    [InlineData("- a\n\uFEFF- b\n")]
+    [InlineData("a: 1\n\uFEFFb: 2\n")]
+    [InlineData("---\n\uFEFFa\n")]
+    [InlineData("[\n\uFEFFa]\n")]
+    [InlineData("a\n\uFEFF...\n")]
+    public void ByteOrderMarks_AreRejectedInsideDocuments(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        using var bufferedReader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+    }
+
+    [Theory]
+    [InlineData("- !<!> foo\n")]
+    [InlineData("- !<$:?> bar\n")]
+    [InlineData("!<foo> bar\n")]
+    [InlineData("!<1a:b> bar\n")]
+    public void InvalidVerbatimTags_ThrowYamlException(string yaml)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
+    [InlineData("!<!bar> baz\n", "+STR\n+DOC\n=VAL <!bar> :baz\n-DOC\n-STR")]
+    [InlineData("!<tag:yaml.org,2002:str> foo\n", "+STR\n+DOC\n=VAL <tag:yaml.org,2002:str> :foo\n-DOC\n-STR")]
+    [InlineData("!<urn:a.b-c+d:e> foo\n", "+STR\n+DOC\n=VAL <urn:a.b-c+d:e> :foo\n-DOC\n-STR")]
+    public void ValidVerbatimTags_AreAccepted(string yaml, string expected)
+    {
+        using var reader = new StringReader(yaml);
+        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+    }
+
+    [Theory]
     [InlineData("\uFEFF---\nvalue", "+STR\n+DOC ---\n=VAL :value\n-DOC\n-STR")]
     [InlineData("\uFEFFkey: value", "+STR\n+DOC\n+MAP\n=VAL :key\n=VAL :value\n-MAP\n-DOC\n-STR")]
     [InlineData("first\n...\n\uFEFF---\nsecond", "+STR\n+DOC\n=VAL :first\n-DOC ...\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("first\n\uFEFF--- second", "+STR\n+DOC\n=VAL :first\n-DOC\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("- first\n\uFEFF---\nsecond", "+STR\n+DOC\n+SEQ\n=VAL :first\n-SEQ\n-DOC\n+DOC ---\n=VAL :second\n-DOC\n-STR")]
+    [InlineData("first\n...\n\uFEFFsecond", "+STR\n+DOC\n=VAL :first\n-DOC ...\n+DOC\n=VAL :second\n-DOC\n-STR")]
     [InlineData("'a\uFEFFb'", "+STR\n+DOC\n=VAL 'a\uFEFFb\n-DOC\n-STR")]
     [InlineData("\"a\uFEFFb\"", "+STR\n+DOC\n=VAL \"a\uFEFFb\n-DOC\n-STR")]
     public void ByteOrderMarks_AreAllowedInDocumentPrefixesAndQuotedScalars(string yaml, string expected)

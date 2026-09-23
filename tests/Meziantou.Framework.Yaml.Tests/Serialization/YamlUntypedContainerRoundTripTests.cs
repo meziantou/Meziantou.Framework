@@ -34,7 +34,7 @@ public sealed class YamlUntypedContainerRoundTripTests
         Assert.Equal("x", b[0]);
         Assert.Equal(2L, b[1]);
 
-        var inner = (Dictionary<string, object?>)b[2]!;
+        var inner = (Dictionary<object, object?>)b[2]!;
         Assert.Equal(true, inner["c"]);
 
         var c = (List<object?>)roundTripped["c"]!;

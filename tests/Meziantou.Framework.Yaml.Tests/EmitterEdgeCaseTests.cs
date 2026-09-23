@@ -229,6 +229,75 @@ public sealed class EmitterEdgeCaseTests
         Assert.Equal("value", result.Value);
     }
 
+    [Theory]
+    [InlineData("- &a x\n- *a : b\n")]
+    [InlineData("- &a x\n- {*a : b}\n")]
+    [InlineData("- &a x\n- [*a : b]\n")]
+    [InlineData("&a a: b\n*a : c\n")]
+    public void Emit_AliasAsImplicitKey_IsSeparatedFromTheValueIndicator(string yaml)
+    {
+        var expected = ReadEvents(yaml);
+
+        var emitted = EmitEvents(expected, bestWidth: int.MaxValue);
+
+        Assert.Contains("*a :", emitted, StringComparison.Ordinal);
+        Assert.Equal(expected.Select(e => e.ToString()), ReadEvents(emitted).Select(e => e.ToString()));
+    }
+
+    [Theory]
+    [InlineData("x\n aaaa bbbb cccc dddd")]
+    [InlineData(" aaaa bbbb cccc dddd")]
+    [InlineData("aaaa bbbb\n  cccc dddd eeee\nffff gggg hhhh")]
+    public void Emit_FoldedScalar_DoesNotWrapMoreIndentedLines(string value)
+    {
+        foreach (var style in new[] { ScalarStyle.Folded, ScalarStyle.Any })
+        {
+            var yaml = EmitEvents(
+                [
+                    new MappingStart(),
+                    new Scalar("k"),
+                    new Scalar(null, null, value, style, true, true),
+                    new MappingEnd(),
+                ],
+                bestWidth: 10);
+
+            Assert.Equal(["k", value], ParseScalarValues(yaml));
+        }
+    }
+
+    private static List<ParsingEvent> ReadEvents(string yaml)
+    {
+        var result = new List<ParsingEvent>();
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            if (parser.Current is not (StreamStart or StreamEnd or DocumentStart or DocumentEnd))
+            {
+                result.Add(parser.Current!);
+            }
+        }
+
+        return result;
+    }
+
+    private static string EmitEvents(IEnumerable<ParsingEvent> events, int bestWidth)
+    {
+        using var buffer = new StringWriter(CultureInfo.InvariantCulture);
+        var emitter = new Emitter(buffer, bestWidth: bestWidth);
+
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(null, null, isImplicit: true));
+        foreach (var evt in events)
+        {
+            emitter.Emit(evt);
+        }
+
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        return buffer.ToString();
+    }
+
     private static List<string> ParseScalarValues(string yaml)
     {
         var result = new List<string>();

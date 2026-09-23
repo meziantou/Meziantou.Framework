@@ -37,6 +37,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     private char _previousCharacter;
     private int _firstTabColumn = -1;
     private bool _nonBlankOnLine;
+
+    // A byte order mark may start a document prefix, which only exists before the first document and after a
+    // document end marker. Inside a document, it may only precede the "---" marker of the next document.
+    private bool _documentPrefixAllowed = true;
+    private bool _inQuotedScalar;
     private bool _adjacentValueAllowed;
 
     /// <summary>Gets the current position inside the input stream.</summary>
@@ -274,6 +279,8 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             return;
         }
 
+        _documentPrefixAllowed = false;
+
         // Is it a directive?
 
         if (_column == 0 && _analyzer.Check('%'))
@@ -477,19 +484,24 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         return _analyzer.IsBlank();
     }
 
+    /// <remarks>A byte order mark followed by "---" also ends a document, as it starts the next one.</remarks>
     private bool IsDocumentIndicator()
     {
-        if (_column == 0 && _analyzer.IsBlankOrBreakOrZero(3))
-        {
-            bool isDocumentStart = _analyzer.Check('-', 0) && _analyzer.Check('-', 1) && _analyzer.Check('-', 2);
-            bool isDocumentEnd = _analyzer.Check('.', 0) && _analyzer.Check('.', 1) && _analyzer.Check('.', 2);
-
-            return isDocumentStart || isDocumentEnd;
-        }
-        else
+        if (_column != 0)
         {
             return false;
         }
+
+        var offset = _analyzer.Check('\uFEFF') ? 1 : 0;
+        if (!_analyzer.IsBlankOrBreakOrZero(offset + 3))
+        {
+            return false;
+        }
+
+        bool isDocumentStart = _analyzer.Check('-', offset) && _analyzer.Check('-', offset + 1) && _analyzer.Check('-', offset + 2);
+        bool isDocumentEnd = offset == 0 && _analyzer.Check('.', 0) && _analyzer.Check('.', 1) && _analyzer.Check('.', 2);
+
+        return isDocumentStart || isDocumentEnd;
     }
 
     private void Skip()
@@ -505,7 +517,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             if (!char.IsHighSurrogate(_previousCharacter))
                 throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Unpaired UTF-16 surrogate in input.");
         }
-        else if (character is not ('\t' or '\r' or '\n') && !Emitter.IsPrintable(character))
+        else if (character is not ('\t' or '\r' or '\n') && !Emitter.IsPrintable(character) && !(_inQuotedScalar && character >= '\x20'))
         {
             throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "Non-printable character in input.");
         }
@@ -562,6 +574,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         {
             if (_column == 0 && _analyzer.Check('\uFEFF'))
             {
+                if (!_documentPrefixAllowed && !IsDocumentIndicator())
+                    throw new SyntaxErrorException(CurrentPosition, CurrentPosition, "A byte order mark cannot appear inside a document.");
+
                 Skip();
                 _column = 0;
                 _nonBlankOnLine = false;
@@ -816,6 +831,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         var token = isStartToken ? (Token)new DocumentStart(start, CurrentPosition) : new DocumentEnd(start, start);
         _tokens.Enqueue(token);
+        _documentPrefixAllowed = !isStartToken;
     }
 
     /// <summary>Produce the FLOW-SEQUENCE-START or FLOW-MAPPING-START token.</summary>
@@ -1210,6 +1226,25 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         _tokens.Enqueue(ScanTag());
     }
 
+    /// <summary>Determines whether the value starts with a URI scheme, as defined by RFC 3986: <c>ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"</c>.</summary>
+    private static bool HasUriScheme(string value)
+    {
+        if (value.Length == 0 || !char.IsAsciiLetter(value[0]))
+            return false;
+
+        for (var i = 1; i < value.Length; i++)
+        {
+            var c = value[i];
+            if (c == ':')
+                return true;
+
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+                return false;
+        }
+
+        return false;
+    }
+
     /// <summary>Scan a TAG token.</summary>
     private Tag ScanTag()
     {
@@ -1246,6 +1281,12 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             if (!_analyzer.Check('>'))
             {
                 throw new SyntaxErrorException(start, CurrentPosition, "While scanning a tag, did not find the expected '>'.");
+            }
+
+            // A verbatim tag is either a local tag or a global tag, which is a URI (YAML 1.2 §6.9.1, example 6.25).
+            if (suffix == "!" || (suffix[0] != '!' && !HasUriScheme(suffix)))
+            {
+                throw new SyntaxErrorException(start, CurrentPosition, "While scanning a verbatim tag, the tag is neither a local tag nor a URI.");
             }
 
             Skip();
@@ -1603,7 +1644,17 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Create the SCALAR token and append it to the queue.
 
-        _tokens.Enqueue(ScanFlowScalar(isSingleQuoted));
+        // Quoted scalars may contain any non-C0 character (YAML 1.2 §5.1), such as DEL or the C1 controls.
+        _inQuotedScalar = true;
+        try
+        {
+            _tokens.Enqueue(ScanFlowScalar(isSingleQuoted));
+        }
+        finally
+        {
+            _inQuotedScalar = false;
+        }
+
         _adjacentValueAllowed = true;
     }
 

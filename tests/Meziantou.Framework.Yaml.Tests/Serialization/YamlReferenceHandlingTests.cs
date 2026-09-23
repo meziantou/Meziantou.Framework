@@ -1,6 +1,7 @@
 ﻿#pragma warning disable MA0048 // File name must match type name
 using System.Collections;
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;
@@ -75,10 +76,57 @@ internal sealed class ReferenceImmutableSets
     public ImmutableHashSet<int>? Second { get; set; }
 }
 
+internal record struct ReferenceRecordStruct(int X, string Y);
+
+[StructLayout(LayoutKind.Auto)]
+internal struct ReferencePointStruct
+{
+    public int X { get; set; }
+
+    public int Y { get; set; }
+}
+
+internal sealed class ReferenceStructAliases
+{
+    public ReferenceRecordStruct A { get; set; }
+
+    public ReferenceRecordStruct B { get; set; }
+
+    public ReferenceRecordStruct? Nullable { get; set; }
+
+    public List<ReferenceRecordStruct>? List { get; set; }
+
+    public object? Boxed { get; set; }
+
+    public ReferencePointStruct Point { get; set; }
+
+    public ReferencePointStruct OtherPoint { get; set; }
+}
+
+internal sealed class ReferenceSequenceInterfaces
+{
+    public int[]? Array { get; set; }
+
+    public HashSet<int>? Set { get; set; }
+
+    public IEnumerable<int>? Enumerable { get; set; }
+
+    public IList<int>? List { get; set; }
+
+    public ICollection<int>? Collection { get; set; }
+
+    public IReadOnlyList<int>? ReadOnlyList { get; set; }
+
+    public IReadOnlyCollection<int>? ReadOnlyCollection { get; set; }
+}
+
 [YamlSerializable(typeof(ReferenceCallbackNode))]
 [YamlSerializable(typeof(ReferenceCallbackStructHolder))]
 [YamlSerializable(typeof(ReferenceCountedValue))]
 [YamlSerializable(typeof(ReferenceImmutableSets))]
+[YamlSerializable(typeof(ReferenceSequenceInterfaces))]
+[YamlSerializable(typeof(ReferenceStructAliases))]
+[YamlSerializable(typeof(List<ReferencePointStruct?>))]
 internal sealed partial class ReferenceHandlingYamlContext : YamlSerializerContext
 {
     public ReferenceHandlingYamlContext()
@@ -332,7 +380,7 @@ public class YamlReferenceHandlingTests
         Assert.NotNull(result);
         Assert.Equal("hello", result["first"]);
         Assert.Equal("hello", result["second"]);
-        Assert.IsType<Dictionary<string, object?>>(result["third"]);
+        Assert.IsType<Dictionary<object, object?>>(result["third"]);
         Assert.Same(result["third"], result["fourth"]);
     }
 
@@ -429,6 +477,95 @@ public class YamlReferenceHandlingTests
         Assert.Same(roundTripped.First, roundTripped.Second);
     }
 
+    [Theory]
+    [InlineData(false, YamlReferenceHandling.Preserve)]
+    [InlineData(true, YamlReferenceHandling.Preserve)]
+    [InlineData(false, YamlReferenceHandling.PreserveMinimal)]
+    [InlineData(true, YamlReferenceHandling.PreserveMinimal)]
+    public void DeserializeResolvesAliasesToStructs(bool useSourceGeneration, YamlReferenceHandling referenceHandling)
+    {
+        var yaml = "A: &s {X: 1, Y: a}\nB: *s\nNullable: *s\nList: [*s, &t {X: 2, Y: b}, *t]\nBoxed: *s\nPoint: &p {X: 3, Y: 4}\nOtherPoint: *p\n";
+
+        var result = Deserialize<ReferenceStructAliases>(yaml, useSourceGeneration, new YamlSerializerOptions { ReferenceHandling = referenceHandling });
+
+        Assert.NotNull(result);
+        var expected = new ReferenceRecordStruct(1, "a");
+        Assert.Equal(expected, result.A);
+        Assert.Equal(expected, result.B);
+        Assert.Equal(expected, result.Nullable);
+        Assert.Equal([expected, new ReferenceRecordStruct(2, "b"), new ReferenceRecordStruct(2, "b")], result.List);
+        Assert.Equal(expected, result.Boxed);
+        Assert.Equal(3, result.OtherPoint.X);
+        Assert.Equal(4, result.OtherPoint.Y);
+    }
+
+    [Theory]
+    [InlineData(false, YamlReferenceHandling.Preserve)]
+    [InlineData(true, YamlReferenceHandling.Preserve)]
+    [InlineData(false, YamlReferenceHandling.PreserveMinimal)]
+    [InlineData(true, YamlReferenceHandling.PreserveMinimal)]
+    public void DeserializeResolvesAliasesToNullableStructSequenceItems(bool useSourceGeneration, YamlReferenceHandling referenceHandling)
+    {
+        var result = Deserialize<List<ReferencePointStruct?>>("[&s {X: 1}, *s]", useSourceGeneration, new YamlSerializerOptions { ReferenceHandling = referenceHandling });
+
+        Assert.NotNull(result);
+        Assert.HasCount(2, result);
+        Assert.Equal(1, result[0]!.Value.X);
+        Assert.Equal(1, result[1]!.Value.X);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AliasesToAnArrayAreAssignedToSequenceInterfaceMembers(bool useSourceGeneration)
+    {
+        const string Yaml = "Array: &a\n  - 1\nEnumerable: *a\nList: *a\nCollection: *a\nReadOnlyList: *a\nReadOnlyCollection: *a\n";
+
+        var value = useSourceGeneration
+            ? YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(Yaml, new ReferenceHandlingYamlContext(PreserveOptions))
+            : YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(Yaml, PreserveOptions);
+
+        Assert.NotNull(value);
+        Assert.Equal([1], value.Array);
+        Assert.Same(value.Array, value.Enumerable);
+        Assert.Same(value.Array, value.List);
+        Assert.Same(value.Array, value.Collection);
+        Assert.Same(value.Array, value.ReadOnlyList);
+        Assert.Same(value.Array, value.ReadOnlyCollection);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedEmptyArraysRoundTripThroughSequenceInterfaceMembers(bool useSourceGeneration)
+    {
+        var value = new ReferenceSequenceInterfaces { Array = [], Enumerable = [], ReadOnlyList = [], ReadOnlyCollection = [] };
+
+        var yaml = Serialize(value, useSourceGeneration, PreserveOptions);
+        var roundTripped = useSourceGeneration
+            ? YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(yaml, new ReferenceHandlingYamlContext(PreserveOptions))
+            : YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(yaml, PreserveOptions);
+
+        Assert.Contains("ReadOnlyList: *", yaml);
+        Assert.NotNull(roundTripped);
+        Assert.Empty(roundTripped.Array!);
+        Assert.Same(roundTripped.Array, roundTripped.Enumerable);
+        Assert.Same(roundTripped.Array, roundTripped.ReadOnlyList);
+        Assert.Same(roundTripped.Array, roundTripped.ReadOnlyCollection);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AliasToASequenceOfAnotherTypeThrowsYamlException(bool useSourceGeneration)
+    {
+        const string Yaml = "Set: &a\n  - 1\nReadOnlyList: *a\n";
+
+        Assert.Throws<YamlException>(() => useSourceGeneration
+            ? YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(Yaml, new ReferenceHandlingYamlContext(PreserveOptions))
+            : YamlSerializer.Deserialize<ReferenceSequenceInterfaces>(Yaml, PreserveOptions));
+    }
+
     private struct BoxedSequence : IEnumerable<int>
     {
         public readonly IEnumerator<int> GetEnumerator()
@@ -475,6 +612,11 @@ public class YamlReferenceHandlingTests
         => useSourceGeneration
             ? YamlSerializer.Serialize(value, typeof(T), new ReferenceHandlingYamlContext(options))
             : YamlSerializer.Serialize(value, typeof(T), options);
+
+    private static T? Deserialize<T>(string yaml, bool useSourceGeneration, YamlSerializerOptions options)
+        => useSourceGeneration
+            ? YamlSerializer.Deserialize<T>(yaml, new ReferenceHandlingYamlContext(options))
+            : YamlSerializer.Deserialize<T>(yaml, options);
 
     private static YamlSerializerOptions PreserveOptions { get; } = new() { ReferenceHandling = YamlReferenceHandling.Preserve };
 }

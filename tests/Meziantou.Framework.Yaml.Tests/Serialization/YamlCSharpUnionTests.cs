@@ -280,7 +280,7 @@ public sealed class YamlCSharpUnionTests
         var other = Deserialize<LabelOrAnyUnion>("Depth: 3\n", useSourceGeneration, StructuralOptions);
 
         Assert.Equal("a", Assert.IsType<UnionLabel>(label.Value).Name);
-        var mapping = Assert.IsAssignableTo<IDictionary<string, object?>>(other.Value);
+        var mapping = Assert.IsAssignableTo<IDictionary<object, object?>>(other.Value);
         Assert.Equal(3, mapping["Depth"]);
     }
 

@@ -124,6 +124,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             return;
         }
 
+        YamlMergeKey.ReplayAlias(reader, typeof(Dictionary<string, object>));
         if (reader.TokenType == YamlTokenType.StartMapping || reader.TokenType == YamlTokenType.Alias)
         {
             var merged = Read(reader);
@@ -141,6 +142,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             reader.Read();
             while (reader.TokenType != YamlTokenType.EndSequence)
             {
+                YamlMergeKey.ReplayAlias(reader, typeof(Dictionary<string, object>));
                 if (reader.TokenType != YamlTokenType.StartMapping && reader.TokenType != YamlTokenType.Alias)
                 {
                     throw new YamlException(reader.SourceName, reader.Start, reader.End, "Merge sequence entries must be mappings.");

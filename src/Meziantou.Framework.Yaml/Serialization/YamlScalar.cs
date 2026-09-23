@@ -23,12 +23,7 @@ public static class YamlScalar
             return true;
         }
 
-        if (value.Length == 1 && value[0] == '~')
-        {
-            return true;
-        }
-
-        return value.Equals("null", StringComparison.OrdinalIgnoreCase);
+        return value is "~" or "null" or "Null" or "NULL";
     }
 
     /// <summary>
@@ -37,13 +32,13 @@ public static class YamlScalar
     public static bool TryParseBool(ReadOnlySpan<char> value, out bool result)
     {
         value = Trim(value);
-        if (value.Equals("true", StringComparison.OrdinalIgnoreCase))
+        if (value is "true" or "True" or "TRUE")
         {
             result = true;
             return true;
         }
 
-        if (value.Equals("false", StringComparison.OrdinalIgnoreCase))
+        if (value is "false" or "False" or "FALSE")
         {
             result = false;
             return true;
@@ -127,17 +122,17 @@ public static class YamlScalar
         if (cleaned.Length >= 2 && cleaned[0] == '0')
         {
             var prefix = cleaned[1];
-            if (prefix is 'x' or 'X')
+            if (prefix == 'x')
             {
                 return TryParseUInt64Base(cleaned.Slice(2), 16, out result);
             }
 
-            if (prefix is 'o' or 'O')
+            if (prefix == 'o')
             {
                 return TryParseUInt64Base(cleaned.Slice(2), 8, out result);
             }
 
-            if (prefix is 'b' or 'B')
+            if (prefix == 'b')
             {
                 return TryParseUInt64Base(cleaned.Slice(2), 2, out result);
             }
@@ -158,10 +153,7 @@ public static class YamlScalar
             return false;
         }
 
-        if (value.Equals(".inf", StringComparison.OrdinalIgnoreCase) ||
-            value.Equals("+.inf", StringComparison.OrdinalIgnoreCase) ||
-            value.Equals("-.inf", StringComparison.OrdinalIgnoreCase) ||
-            value.Equals(".nan", StringComparison.OrdinalIgnoreCase))
+        if (!IsNumberLike(value))
         {
             result = default;
             return false;
@@ -238,7 +230,7 @@ public static class YamlScalar
         if (cleaned.Length >= 2 && cleaned[0] == '0')
         {
             var prefix = cleaned[1];
-            if (prefix is 'x' or 'X')
+            if (prefix == 'x')
             {
                 if (!TryParseUInt64Base(cleaned.Slice(2), 16, out magnitude))
                 {
@@ -249,7 +241,7 @@ public static class YamlScalar
                 return TryApplySignedMagnitude(magnitude, sign, out result);
             }
 
-            if (prefix is 'o' or 'O')
+            if (prefix == 'o')
             {
                 if (!TryParseUInt64Base(cleaned.Slice(2), 8, out magnitude))
                 {
@@ -260,7 +252,7 @@ public static class YamlScalar
                 return TryApplySignedMagnitude(magnitude, sign, out result);
             }
 
-            if (prefix is 'b' or 'B')
+            if (prefix == 'b')
             {
                 if (!TryParseUInt64Base(cleaned.Slice(2), 2, out magnitude))
                 {
@@ -288,22 +280,29 @@ public static class YamlScalar
     {
         value = Trim(value);
 
-        if (value.Equals(".inf", StringComparison.OrdinalIgnoreCase) || value.Equals("+.inf", StringComparison.OrdinalIgnoreCase))
+        if (value is ".inf" or ".Inf" or ".INF" or "+.inf" or "+.Inf" or "+.INF")
         {
             result = double.PositiveInfinity;
             return true;
         }
 
-        if (value.Equals("-.inf", StringComparison.OrdinalIgnoreCase))
+        if (value is "-.inf" or "-.Inf" or "-.INF")
         {
             result = double.NegativeInfinity;
             return true;
         }
 
-        if (value.Equals(".nan", StringComparison.OrdinalIgnoreCase))
+        if (value is ".nan" or ".NaN" or ".NAN")
         {
             result = double.NaN;
             return true;
+        }
+
+        // .NET also parses its own spellings, such as "NaN" or "-Infinity", which are strings in YAML.
+        if (!IsNumberLike(value))
+        {
+            result = default;
+            return false;
         }
 
         if (ContainsChar(value, '_'))
@@ -363,22 +362,29 @@ public static class YamlScalar
     {
         value = Trim(value);
 
-        if (value.Equals(".inf", StringComparison.OrdinalIgnoreCase) || value.Equals("+.inf", StringComparison.OrdinalIgnoreCase))
+        if (value is ".inf" or ".Inf" or ".INF" or "+.inf" or "+.Inf" or "+.INF")
         {
             result = T.PositiveInfinity;
             return true;
         }
 
-        if (value.Equals("-.inf", StringComparison.OrdinalIgnoreCase))
+        if (value is "-.inf" or "-.Inf" or "-.INF")
         {
             result = T.NegativeInfinity;
             return true;
         }
 
-        if (value.Equals(".nan", StringComparison.OrdinalIgnoreCase))
+        if (value is ".nan" or ".NaN" or ".NAN")
         {
             result = T.NaN;
             return true;
+        }
+
+        // .NET also parses its own spellings, such as "NaN" or "-Infinity", which are strings in YAML.
+        if (!IsNumberLike(value))
+        {
+            result = default;
+            return false;
         }
 
         if (ContainsChar(value, '_'))
@@ -419,7 +425,8 @@ public static class YamlScalar
                    value is null;
         }
 
-        if (HasStringTag(reader))
+        // An explicit tag other than !!null, such as "!!int" on an empty scalar, is not null even if the text is.
+        if (HasStringTag(reader) || (HasCoreScalarTag(reader) && !IsNullTag(reader)))
         {
             return false;
         }
@@ -640,11 +647,17 @@ public static class YamlScalar
     /// <param name="reader">The reader positioned on a scalar token.</param>
     public static object? ResolveObject(YamlReader reader)
     {
-        if (reader.Options.UseSchema)
+        if (reader.Options.UseSchema || HasCoreScalarTag(reader))
         {
-            if (TryResolveSchemaScalar(reader, out _, out var value))
+            if (TryResolveSchemaScalar(reader, out var tag, out var value))
             {
                 return value;
+            }
+
+            // A node whose content does not match its explicit tag, such as "!!int abc", is invalid.
+            if (HasCoreScalarTag(reader))
+            {
+                throw YamlThrowHelper.ThrowInvalidScalar(reader, $"The scalar '{reader.ScalarValue}' is not a valid '{tag}' value.");
             }
 
             return reader.ScalarValue ?? string.Empty;
@@ -671,6 +684,11 @@ public static class YamlScalar
             return integer;
         }
 
+        if (TryParseUInt64(text, out var unsignedInteger))
+        {
+            return unsignedInteger;
+        }
+
         if (TryParseDouble(text, out var floating))
         {
             return floating;
@@ -679,8 +697,64 @@ public static class YamlScalar
         return reader.ScalarValue ?? string.Empty;
     }
 
+    /// <summary>Formats a binary floating-point value as a YAML float.</summary>
+    /// <remarks>
+    /// .NET spells the special values "Infinity" and "NaN", which are strings in YAML, writes negative zero as "-0",
+    /// which is the integer 0, and writes a whole number without a fraction, which is an integer too.
+    /// </remarks>
+    internal static string FormatFloatingPoint(double value)
+    {
+        return value switch
+        {
+            double.PositiveInfinity => ".inf",
+            double.NegativeInfinity => "-.inf",
+            _ when double.IsNaN(value) => ".nan",
+            0 when double.IsNegative(value) => "-0.0",
+            _ => EnsureFraction(value.ToString("R", CultureInfo.InvariantCulture)),
+        };
+    }
+
+    /// <inheritdoc cref="FormatFloatingPoint(double)"/>
+    internal static string FormatFloatingPoint(float value)
+    {
+        return float.IsFinite(value) && !(value == 0 && float.IsNegative(value))
+            ? EnsureFraction(value.ToString("R", CultureInfo.InvariantCulture))
+            : FormatFloatingPoint((double)value);
+    }
+
+    /// <inheritdoc cref="FormatFloatingPoint(double)"/>
+    internal static string FormatFloatingPoint(Half value)
+    {
+        return Half.IsFinite(value) && !(value == Half.Zero && Half.IsNegative(value))
+            ? EnsureFraction(value.ToString(CultureInfo.InvariantCulture))
+            : FormatFloatingPoint((double)value);
+    }
+
+    private static string EnsureFraction(string value)
+        => value.AsSpan().IndexOfAny('.', 'E', 'e') < 0 ? value + ".0" : value;
+
+    /// <summary>Determines whether a plain scalar with this text resolves to a type other than a string under the schema.</summary>
+    /// <remarks>
+    /// This covers the spellings the span-based parsers reject, such as an integer beyond the range of <see cref="ulong"/>,
+    /// or the booleans and timestamps of the extended schema.
+    /// </remarks>
+    internal static bool ResolvesToNonString(ReadOnlySpan<char> value, YamlSchemaKind schemaKind)
+    {
+        // Every non-string rule of the built-in schemas matches an empty scalar or starts with one of these characters,
+        // which avoids evaluating the rules for most strings.
+        if (schemaKind is YamlSchemaKind.Failsafe || (value.Length > 0 && !char.IsAsciiDigit(value[0]) && "+-.~<nNtTfFyYoO".IndexOf(value[0], StringComparison.Ordinal) < 0))
+        {
+            return false;
+        }
+
+        var scalar = new ScalarEvent(anchor: null, tag: null, value.ToString(), ScalarStyle.Plain, isPlainImplicit: true, isQuotedImplicit: false);
+        return GetSchema(schemaKind).TryParse(scalar, decodeValue: false, out var tag, out _) &&
+               !string.Equals(tag, SchemaBase.StrShortTag, StringComparison.Ordinal);
+    }
+
     private static bool IsNull(ReadOnlySpan<char> value, ScalarStyle style) => IsPlainStyle(style) && IsNull(value);
 
+    /// <remarks>The non-specific tag "!" also makes a scalar a string (YAML 1.2 §6.9.1).</remarks>
     private static bool HasStringTag(YamlReader reader)
     {
         if (reader.Tag is null)
@@ -688,8 +762,28 @@ public static class YamlScalar
             return false;
         }
 
+        if (reader.Tag == "!")
+        {
+            return true;
+        }
+
         var schema = GetSchema(reader.Options.Schema);
         return string.Equals(schema.ShortenTag(reader.Tag), SchemaBase.StrShortTag, StringComparison.Ordinal);
+    }
+
+    private static bool IsNullTag(YamlReader reader)
+        => reader.Tag is not null && string.Equals(GetSchema(reader.Options.Schema).ShortenTag(reader.Tag), JsonSchema.NullShortTag, StringComparison.Ordinal);
+
+    /// <summary>Determines whether the scalar has an explicit <c>!!null</c>, <c>!!bool</c>, <c>!!int</c> or <c>!!float</c> tag that the schema in use defines.</summary>
+    private static bool HasCoreScalarTag(YamlReader reader)
+    {
+        if (reader.Tag is null || reader.Options.Schema is YamlSchemaKind.Failsafe)
+        {
+            return false;
+        }
+
+        var shortTag = GetSchema(reader.Options.Schema).ShortenTag(reader.Tag);
+        return shortTag is JsonSchema.NullShortTag or JsonSchema.BoolShortTag or JsonSchema.IntShortTag or JsonSchema.FloatShortTag;
     }
 
     private static bool IsPlainStyle(ScalarStyle style) => style is ScalarStyle.Any or ScalarStyle.Plain;
@@ -892,19 +986,23 @@ public static class YamlScalar
         }
     }
 
-    private static ReadOnlySpan<char> Trim(ReadOnlySpan<char> value)
+    /// <remarks>
+    /// Only YAML white space (space and tab) is removed: any other character, such as a no-break space, is content.
+    /// </remarks>
+    private static ReadOnlySpan<char> Trim(ReadOnlySpan<char> value) => value.Trim(" \t");
+
+    /// <remarks>
+    /// A number starts with a digit or a dot, optionally after a sign. This excludes the names .NET accepts for
+    /// special values, such as "NaN" or "Infinity", and the leading white space of its number styles.
+    /// </remarks>
+    private static bool IsNumberLike(ReadOnlySpan<char> value)
     {
-        while (value.Length > 0 && char.IsWhiteSpace(value[0]))
+        if (value.Length > 0 && value[0] is '+' or '-')
         {
             value = value.Slice(1);
         }
 
-        while (value.Length > 0 && char.IsWhiteSpace(value[^1]))
-        {
-            value = value.Slice(0, value.Length - 1);
-        }
-
-        return value;
+        return value.Length > 0 && (char.IsAsciiDigit(value[0]) || value[0] == '.');
     }
 
     private static bool ContainsChar(ReadOnlySpan<char> value, char c)

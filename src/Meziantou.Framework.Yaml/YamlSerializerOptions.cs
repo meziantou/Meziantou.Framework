@@ -310,6 +310,10 @@ public sealed record YamlSerializerOptions
     /// memory. Only nodes produced by alias expansion count towards this limit; documents without aliases are never
     /// affected, and <see cref="MaxDepth"/> does not help because the growth is in breadth rather than depth.
     /// </para>
+    /// <para>
+    /// The serializer applies the same limit to the nodes a merge key replays when its value is an alias
+    /// (<c>&lt;&lt;: *defaults</c>), as a merged mapping can itself merge other mappings.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is less than 0.</exception>
     public int MaxAliasExpansionNodeCount

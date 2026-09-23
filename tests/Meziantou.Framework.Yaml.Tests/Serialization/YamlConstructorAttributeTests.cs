@@ -122,4 +122,98 @@ public sealed class YamlConstructorAttributeTests
 
         public int Age { get; }
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Serialize_DoesNotRequireADeserializationConstructor(bool useSourceGeneration)
+    {
+        var privateConstructorYaml = useSourceGeneration
+            ? YamlSerializer.Serialize(PrivateConstructorOnlyModel.Create("Bob"), ConstructorYamlContext.Default)
+            : YamlSerializer.Serialize(PrivateConstructorOnlyModel.Create("Bob"));
+        var multipleConstructorsYaml = useSourceGeneration
+            ? YamlSerializer.Serialize(new MultiplePublicConstructorsModel("Bob", 42), ConstructorYamlContext.Default)
+            : YamlSerializer.Serialize(new MultiplePublicConstructorsModel("Bob", 42));
+
+        Assert.Equal("Name: Bob\n", privateConstructorYaml);
+        Assert.Equal("Name: Bob\nAge: 42\n", multipleConstructorsYaml);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_WithoutADeserializationConstructor_Throws(bool useSourceGeneration)
+    {
+        var privateConstructorException = Assert.Throws<YamlException>(() => useSourceGeneration
+            ? YamlSerializer.Deserialize<PrivateConstructorOnlyModel>("Name: Bob\n", ConstructorYamlContext.Default)
+            : YamlSerializer.Deserialize<PrivateConstructorOnlyModel>("Name: Bob\n"));
+        var multipleConstructorsException = Assert.Throws<YamlException>(() => useSourceGeneration
+            ? YamlSerializer.Deserialize<MultiplePublicConstructorsModel>("Name: Bob\n", ConstructorYamlContext.Default)
+            : YamlSerializer.Deserialize<MultiplePublicConstructorsModel>("Name: Bob\n"));
+
+        Assert.Contains("does not have a public constructor", privateConstructorException.Message);
+        Assert.Contains("multiple public constructors", multipleConstructorsException.Message);
+    }
+
+    [Theory]
+    [InlineData(typeof(PrivateConstructorOnlyModel), "Type 'Meziantou.Framework.Yaml.Tests.Serialization.YamlConstructorAttributeTests+PrivateConstructorOnlyModel' does not have a public constructor. Use 'Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute' to opt into a non-public constructor.")]
+    [InlineData(typeof(MultiplePublicConstructorsModel), "Type 'Meziantou.Framework.Yaml.Tests.Serialization.YamlConstructorAttributeTests+MultiplePublicConstructorsModel' defines multiple public constructors. Use 'Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute' to select the constructor to use for deserialization.")]
+    [InlineData(typeof(MultipleYamlConstructorsModel), "Type 'Meziantou.Framework.Yaml.Tests.Serialization.YamlConstructorAttributeTests+MultipleYamlConstructorsModel' defines multiple constructors annotated with 'Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute'.")]
+    public void Deserialize_WithoutADeserializationConstructor_ReportsTheSameMessageInBothModes(Type type, string expectedMessage)
+    {
+        var reflectionException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Name: Bob\n", type));
+        var generatedException = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize("Name: Bob\n", type, ConstructorYamlContext.Default));
+
+        Assert.EndsWith("): " + expectedMessage, reflectionException.Message);
+        Assert.Equal(reflectionException.Message, generatedException.Message);
+    }
+
+    internal sealed class PrivateConstructorOnlyModel
+    {
+        private PrivateConstructorOnlyModel(string name) => Name = name;
+
+        public string Name { get; }
+
+        public static PrivateConstructorOnlyModel Create(string name) => new(name);
+    }
+
+    internal sealed class MultiplePublicConstructorsModel
+    {
+        public MultiplePublicConstructorsModel(string name) => Name = name;
+
+        public MultiplePublicConstructorsModel(string name, int age)
+        {
+            Name = name;
+            Age = age;
+        }
+
+        public string Name { get; }
+
+        public int Age { get; }
+    }
+
+    internal sealed class MultipleYamlConstructorsModel
+    {
+        [YamlConstructor]
+        public MultipleYamlConstructorsModel(string name) => Name = name;
+
+        [YamlConstructor]
+        public MultipleYamlConstructorsModel(string name, int age)
+        {
+            Name = name;
+            Age = age;
+        }
+
+        public string Name { get; }
+
+        public int Age { get; }
+    }
+}
+
+#pragma warning disable MA0048 // File name must match type name
+[YamlSerializable(typeof(YamlConstructorAttributeTests.PrivateConstructorOnlyModel))]
+[YamlSerializable(typeof(YamlConstructorAttributeTests.MultiplePublicConstructorsModel))]
+[YamlSerializable(typeof(YamlConstructorAttributeTests.MultipleYamlConstructorsModel))]
+internal sealed partial class ConstructorYamlContext : YamlSerializerContext
+{
 }

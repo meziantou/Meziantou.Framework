@@ -145,6 +145,36 @@ public sealed class YamlIgnoreAttributeTests
         var roundTrip = YamlSerializer.Deserialize("FirstValue: 42\n", IgnoreConditionContext.Default.TypeWhenReadingIgnoreModel)!;
         Assert.Equal(0, roundTrip.FirstValue);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IgnoreReadOnlyProperties_DoesNotRejectNullInIgnoredNonNullableMembers(bool useSourceGeneration)
+    {
+        var value = new ReadOnlyNonNullableIgnoreModel(null!, null!);
+        var options = new YamlSerializerOptions { IgnoreReadOnlyProperties = true };
+
+        var yaml = useSourceGeneration
+            ? YamlSerializer.Serialize(value, new IgnoreConditionContext(options))
+            : YamlSerializer.Serialize(value, options);
+
+        Assert.Equal("{}", yaml.Trim(), ignoreLineEndingDifferences: true);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void IgnoreReadOnlyFields_DoesNotRejectNullInIgnoredNonNullableMembers(bool useSourceGeneration)
+    {
+        var value = new ReadOnlyFieldNonNullableIgnoreModel(null!);
+        var options = new YamlSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true };
+
+        var yaml = useSourceGeneration
+            ? YamlSerializer.Serialize(value, new IgnoreConditionContext(options))
+            : YamlSerializer.Serialize(value, options);
+
+        Assert.Equal("{}", yaml.Trim(), ignoreLineEndingDifferences: true);
+    }
 }
 
 #pragma warning disable MA0048 // File name must match type name
@@ -222,6 +252,18 @@ internal sealed class TypeAlwaysIgnoreExtensionDataModel
     public Dictionary<string, object?>? ExtensionData { get; set; }
 }
 
+internal sealed class ReadOnlyNonNullableIgnoreModel(string name, List<int> items)
+{
+    public string Name { get; } = name;
+
+    public List<int> Items { get; } = items;
+}
+
+internal sealed class ReadOnlyFieldNonNullableIgnoreModel(string name)
+{
+    public readonly string Name = name;
+}
+
 [YamlSerializable(typeof(TypeIgnoreModel))]
 [YamlSerializable(typeof(TypeAndMemberIgnoreModel))]
 [YamlSerializable(typeof(TypeNeverIgnoreModel))]
@@ -229,6 +271,8 @@ internal sealed class TypeAlwaysIgnoreExtensionDataModel
 [YamlSerializable(typeof(DerivedIgnoreModel))]
 [YamlSerializable(typeof(TypeWhenReadingIgnoreModel))]
 [YamlSerializable(typeof(NullableValueTypeIgnoreModel))]
+[YamlSerializable(typeof(ReadOnlyNonNullableIgnoreModel))]
+[YamlSerializable(typeof(ReadOnlyFieldNonNullableIgnoreModel))]
 internal sealed partial class IgnoreConditionContext : YamlSerializerContext
 {
     public IgnoreConditionContext()

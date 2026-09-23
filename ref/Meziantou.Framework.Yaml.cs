@@ -936,6 +936,7 @@ namespace Meziantou.Framework.Yaml.Serialization
         public Meziantou.Framework.Yaml.Serialization.YamlReader CreateReader(string yaml) => throw null;
         public void MarkCurrentNodeDerivedTypeResolved() { }
         public bool TryReadAlias(out object? value) => throw null;
+        public bool TryReplayMappingAlias() => throw null;
         public void RegisterAnchor(string anchor, object value) { }
         public static string BufferCurrentNodeToStringAndFindDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string discriminatorPropertyName, out string? discriminatorValue) => throw null;
         public static string BufferCurrentNodeToStringAndRemoveDiscriminator(Meziantou.Framework.Yaml.Serialization.YamlReader reader, string? discriminatorPropertyName, bool removeTag, out string? discriminatorValue) => throw null;

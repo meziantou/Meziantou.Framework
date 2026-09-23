@@ -267,6 +267,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             baseTypes += $", global::System.ISpanParsable<{attribute.TypeName}>";
         }
 
+        if (attribute.CanImplementIUtf8SpanParsable())
+        {
+            baseTypes += $", global::System.IUtf8SpanParsable<{attribute.TypeName}>";
+        }
+
+        if (attribute.CanImplementIFormattable())
+        {
+            baseTypes += ", global::System.IFormattable";
+        }
+
+        if (attribute.CanImplementISpanFormattable())
+        {
+            baseTypes += ", global::System.ISpanFormattable";
+        }
+
+        if (attribute.CanImplementIUtf8SpanFormattable())
+        {
+            baseTypes += ", global::System.IUtf8SpanFormattable";
+        }
+
         if (attribute.SupportIStronglyTypedId)
         {
             baseTypes += $", global::Meziantou.Framework.IStronglyTypedId";
@@ -500,6 +520,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
             var readOnlySpanSymbol = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
             var readOnlySpanCharSymbol = readOnlySpanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Char));
+            var readOnlySpanByteSymbol = readOnlySpanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
+            var spanSymbol = compilation.GetTypeByMetadataName("System.Span`1");
+            var spanCharSymbol = spanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Char));
+            var spanByteSymbol = spanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
+            var formatProviderSymbol = compilation.GetTypeByMetadataName("System.IFormatProvider");
             foreach (var member in typeSymbol.GetMembers())
             {
                 switch (member)
@@ -548,6 +573,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                         IsParseDefined_ReadOnlySpan = true;
                         break;
 
+                    case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, { RefKind: RefKind.Out } param2] } when SymbolEqual(param1.Type, readOnlySpanByteSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsTryParseDefined_Utf8 = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "Parse", Parameters: [var param1] } when SymbolEqual(param1.Type, readOnlySpanByteSymbol):
+                        IsParseDefined_Utf8 = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "ToString", ReturnType.SpecialType: SpecialType.System_String, Parameters: [{ Type.SpecialType: SpecialType.System_String }, var param2] } when SymbolEqual(param2.Type, formatProviderSymbol):
+                        IsToStringFormatDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "TryFormat" } method when GetTryFormatSignature(method, spanCharSymbol, readOnlySpanCharSymbol, formatProviderSymbol) is TryFormatSignature.FormatAndProvider:
+                        IsTryFormatDefined_Char = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: false, Name: "TryFormat" } method when GetTryFormatSignature(method, spanByteSymbol, readOnlySpanCharSymbol, formatProviderSymbol) is TryFormatSignature.FormatAndProvider:
+                        IsTryFormatDefined_Utf8 = true;
+                        break;
+
                     case IMethodSymbol { IsStatic: false, Name: ".ctor", Parameters: [var param1] } when SymbolEqual(param1.Type, idTypeSymbol):
                         IsCtorDefined = true;
                         break;
@@ -589,6 +634,13 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             SupportIStronglyTypedIdOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
             SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") is not null;
             SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") is not null;
+            SupportIUtf8SpanParsable = compilation.GetBestTypeByMetadataName("System.IUtf8SpanParsable`1") is not null && compilation.GetBestTypeByMetadataName("System.Text.Unicode.Utf8") is not null;
+            SupportIFormattable = compilation.GetBestTypeByMetadataName("System.IFormattable") is not null;
+            SupportISpanFormattable = compilation.GetBestTypeByMetadataName("System.ISpanFormattable") is not null;
+            SupportIUtf8SpanFormattable = compilation.GetBestTypeByMetadataName("System.IUtf8SpanFormattable") is not null && compilation.GetBestTypeByMetadataName("System.Text.Unicode.Utf8") is not null;
+            ValueTypeHasToStringFormat = idTypeSymbol.GetMembers("ToString").Any(member => member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public, ReturnType.SpecialType: SpecialType.System_String, Parameters: [{ Type.SpecialType: SpecialType.System_String }, var param2] } && SymbolEqual(param2.Type, formatProviderSymbol));
+            ValueTypeTryFormat_Char = GetValueTypeTryFormatSignature(idTypeSymbol, spanCharSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
+            ValueTypeTryFormat_Utf8 = GetValueTypeTryFormatSignature(idTypeSymbol, spanByteSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
             SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") is not null;
             SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") is not null;
             SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") is not null;
@@ -620,6 +672,24 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             ValueTypeCSharpNullableTypeName = ValueTypeCSharpTypeName + (IsReferenceType ? "?" : "");
 
             static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
+
+            static TryFormatSignature GetValueTypeTryFormatSignature(ITypeSymbol valueType, ITypeSymbol? spanSymbol, ITypeSymbol? readOnlySpanCharSymbol, ITypeSymbol? formatProviderSymbol)
+            {
+                var result = TryFormatSignature.None;
+                foreach (var member in valueType.GetMembers("TryFormat"))
+                {
+                    if (member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public } method)
+                    {
+                        var signature = GetTryFormatSignature(method, spanSymbol, readOnlySpanCharSymbol, formatProviderSymbol);
+                        if (signature > result)
+                        {
+                            result = signature;
+                        }
+                    }
+                }
+
+                return result;
+            }
 
             static PartialTypeContext GetContext(ITypeSymbol typeSymbol)
             {
@@ -718,6 +788,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool IsTryParseDefined_ReadOnlySpan { get; }
         public bool IsParseDefined_String { get; }
         public bool IsParseDefined_ReadOnlySpan { get; }
+        public bool IsTryParseDefined_Utf8 { get; }
+        public bool IsParseDefined_Utf8 { get; }
+        public bool IsToStringFormatDefined { get; }
+        public bool IsTryFormatDefined_Char { get; }
+        public bool IsTryFormatDefined_Utf8 { get; }
         public bool IsOpLessThanDefined { get; }
         public bool IsOpGreaterThanDefined { get; }
         public bool IsOpLessThanOrEqualDefined { get; }
@@ -731,6 +806,10 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool SupportGuidCreateVersion7 { get; }
         public bool SupportIParsable { get; }
         public bool SupportISpanParsable { get; }
+        public bool SupportIUtf8SpanParsable { get; }
+        public bool SupportIFormattable { get; }
+        public bool SupportISpanFormattable { get; }
+        public bool SupportIUtf8SpanFormattable { get; }
         public bool SupportTypeConverter { get; }
         public bool SupportSystemTextJsonConverter { get; }
         public bool SupportNewtonsoftJsonConverter { get; }
@@ -752,6 +831,15 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public string ValueTypeCSharpTypeName { get; }
         public string ValueTypeCSharpNullableTypeName { get; }
         public string CSharpNullableTypeName { get; }
+
+        /// <summary>Gets a value indicating whether the underlying type has a public <c>ToString(string, IFormatProvider)</c> method.</summary>
+        public bool ValueTypeHasToStringFormat { get; }
+
+        /// <summary>Gets the most complete public <c>TryFormat(Span&lt;char&gt;, ...)</c> method of the underlying type.</summary>
+        public TryFormatSignature ValueTypeTryFormat_Char { get; }
+
+        /// <summary>Gets the most complete public <c>TryFormat(Span&lt;byte&gt;, ...)</c> method of the underlying type.</summary>
+        public TryFormatSignature ValueTypeTryFormat_Utf8 { get; }
 
         public bool IsValueTypeNullable => IdType is IdType.System_String;
         public bool UseGuidVersion7 => GuidGenerationStrategy is GuidGenerationStrategy.Version7 && SupportGuidCreateVersion7;
@@ -785,12 +873,24 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && IsTryParseDefined_ReadOnlySpan == other.IsTryParseDefined_ReadOnlySpan
                 && IsParseDefined_String == other.IsParseDefined_String
                 && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
+                && IsTryParseDefined_Utf8 == other.IsTryParseDefined_Utf8
+                && IsParseDefined_Utf8 == other.IsParseDefined_Utf8
+                && IsToStringFormatDefined == other.IsToStringFormatDefined
+                && IsTryFormatDefined_Char == other.IsTryFormatDefined_Char
+                && IsTryFormatDefined_Utf8 == other.IsTryFormatDefined_Utf8
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
                 && SupportIStronglyTypedId == other.SupportIStronglyTypedId
                 && SupportIStronglyTypedId_UnderlyingType == other.SupportIStronglyTypedId_UnderlyingType
                 && SupportIStronglyTypedIdOfT == other.SupportIStronglyTypedIdOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
+                && SupportIUtf8SpanParsable == other.SupportIUtf8SpanParsable
+                && SupportIFormattable == other.SupportIFormattable
+                && SupportISpanFormattable == other.SupportISpanFormattable
+                && SupportIUtf8SpanFormattable == other.SupportIUtf8SpanFormattable
+                && ValueTypeHasToStringFormat == other.ValueTypeHasToStringFormat
+                && ValueTypeTryFormat_Char == other.ValueTypeTryFormat_Char
+                && ValueTypeTryFormat_Utf8 == other.ValueTypeTryFormat_Utf8
                 && SupportTypeConverter == other.SupportTypeConverter
                 && SupportSystemTextJsonConverter == other.SupportSystemTextJsonConverter
                 && SupportNewtonsoftJsonConverter == other.SupportNewtonsoftJsonConverter
@@ -833,12 +933,24 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(IsTryParseDefined_ReadOnlySpan);
             hashcode.Add(IsParseDefined_String);
             hashcode.Add(IsParseDefined_ReadOnlySpan);
+            hashcode.Add(IsTryParseDefined_Utf8);
+            hashcode.Add(IsParseDefined_Utf8);
+            hashcode.Add(IsToStringFormatDefined);
+            hashcode.Add(IsTryFormatDefined_Char);
+            hashcode.Add(IsTryFormatDefined_Utf8);
             hashcode.Add(SupportIStronglyTypedId);
             hashcode.Add(SupportIStronglyTypedId_UnderlyingType);
             hashcode.Add(SupportIStronglyTypedIdOfT);
             hashcode.Add(SupportStaticInterfaces);
             hashcode.Add(SupportIParsable);
             hashcode.Add(SupportISpanParsable);
+            hashcode.Add(SupportIUtf8SpanParsable);
+            hashcode.Add(SupportIFormattable);
+            hashcode.Add(SupportISpanFormattable);
+            hashcode.Add(SupportIUtf8SpanFormattable);
+            hashcode.Add(ValueTypeHasToStringFormat);
+            hashcode.Add(ValueTypeTryFormat_Char);
+            hashcode.Add(ValueTypeTryFormat_Utf8);
             hashcode.Add(SupportTypeConverter);
             hashcode.Add(SupportSystemTextJsonConverter);
             hashcode.Add(SupportNewtonsoftJsonConverter);
@@ -865,6 +977,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool CanImplementIParsable()
         {
             return SupportStaticInterfaces && SupportIParsable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIUtf8SpanParsable()
+        {
+            return SupportStaticInterfaces && SupportIUtf8SpanParsable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIFormattable()
+        {
+            return SupportIFormattable;
+        }
+
+        public bool CanImplementISpanFormattable()
+        {
+            return SupportIFormattable && SupportISpanFormattable && SupportReadOnlySpanChar;
+        }
+
+        public bool CanImplementIUtf8SpanFormattable()
+        {
+            return SupportIFormattable && SupportIUtf8SpanFormattable && SupportReadOnlySpanChar;
         }
 
         public bool CanGenerateTypeConverter()
@@ -979,6 +1111,41 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 GenerateToStringAsRecord ?? defaults.GenerateToStringAsRecord,
                 GuidGenerationStrategy ?? defaults.GuidGenerationStrategy);
         }
+    }
+
+    /// <summary>
+    /// Returns the shape of a <c>TryFormat(Span&lt;T&gt; destination, out int written, ReadOnlySpan&lt;char&gt; format[, IFormatProvider? provider])</c> method.
+    /// </summary>
+    private static TryFormatSignature GetTryFormatSignature(IMethodSymbol method, ITypeSymbol? spanSymbol, ITypeSymbol? readOnlySpanCharSymbol, ITypeSymbol? formatProviderSymbol)
+    {
+        if (spanSymbol is null || readOnlySpanCharSymbol is null || method.ReturnType.SpecialType is not SpecialType.System_Boolean)
+            return TryFormatSignature.None;
+
+        var parameters = method.Parameters;
+        if (parameters.Length is not (3 or 4))
+            return TryFormatSignature.None;
+
+        if (!SymbolEqualityComparer.Default.Equals(parameters[0].Type, spanSymbol)
+            || parameters[1] is not { RefKind: RefKind.Out, Type.SpecialType: SpecialType.System_Int32 }
+            || !SymbolEqualityComparer.Default.Equals(parameters[2].Type, readOnlySpanCharSymbol))
+        {
+            return TryFormatSignature.None;
+        }
+
+        if (parameters.Length is 3)
+            return TryFormatSignature.Format;
+
+        if (formatProviderSymbol is not null && SymbolEqualityComparer.Default.Equals(parameters[3].Type, formatProviderSymbol))
+            return TryFormatSignature.FormatAndProvider;
+
+        return TryFormatSignature.None;
+    }
+
+    private enum TryFormatSignature
+    {
+        None,
+        Format,
+        FormatAndProvider,
     }
 
     [Flags]

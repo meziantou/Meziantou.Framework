@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp;
 using System.Xml.Linq;
 
 namespace Meziantou.Framework.StronglyTypedId;
@@ -12,6 +13,9 @@ public partial class StronglyTypedIdSourceGenerator
     private static XElement XmlParam(string name, params object[] description) => new("param", new XAttribute("name", name), description);
     private static XElement XmlParamRef(string name) => new("paramref", new XAttribute("name", name));
     private static XElement XmlSeeLangword(string name) => new("see", new XAttribute("langword", name));
+
+    private const string TryParseUtf8MethodName = "TryParseUtf8";
+    private const string InvariantCultureExpression = "global::System.Globalization.CultureInfo.InvariantCulture";
 
     private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {
@@ -331,6 +335,55 @@ public partial class StronglyTypedIdSourceGenerator
             GenerateTryParseMethod(writer, context, isReadOnlySpan: false);
         }
 
+        // TryParse (UTF-8)
+        // Only the IUtf8SpanParsable members are public. A public Parse(ReadOnlySpan<byte>) overload would make Parse(null) ambiguous.
+        if (context.CanImplementIUtf8SpanParsable() && !context.IsTryParseDefined_Utf8)
+        {
+            var returnType = "out " + (context.IsReferenceType ? $"{context.TypeName}?" : context.TypeName);
+            if (context.SupportNotNullWhenAttribute)
+            {
+                returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
+            }
+
+            WriteNewMember(
+                XmlSummary("Tries to parse the UTF-8 representation of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
+                XmlParam("utf8Text", "The UTF-8 text to convert."),
+                XmlParam("result", "When this method returns, contains the result of successfully parsing utf8Text or an undefined value on failure."),
+                XmlReturns(XmlSeeLangword("true"), " if ", XmlParamRef("utf8Text"), " was converted successfully; otherwise, ", XmlSeeLangword("false"), "."));
+            using (writer.BeginBlock($"private static bool {TryParseUtf8MethodName}(global::System.ReadOnlySpan<byte> utf8Text, {returnType} result)"))
+            {
+                // Parsing the UTF-16 representation ensures both representations accept the same values
+                writer.WriteLine("char[]? rentedBuffer = null;");
+                using (writer.BeginBlock("try"))
+                {
+                    // A UTF-8 sequence never decodes to more UTF-16 code units than it has bytes
+                    writer.WriteLine("global::System.Span<char> buffer = utf8Text.Length <= 256 ? stackalloc char[256] : (rentedBuffer = global::System.Buffers.ArrayPool<char>.Shared.Rent(utf8Text.Length));");
+                    using (writer.BeginBlock("if (global::System.Text.Unicode.Utf8.ToUtf16(utf8Text, buffer, out _, out var charsWritten, replaceInvalidSequences: false) == global::System.Buffers.OperationStatus.Done)"))
+                    {
+                        if (context.ValueTypeHasParseReadOnlySpan)
+                        {
+                            writer.WriteLine("return TryParse((global::System.ReadOnlySpan<char>)buffer.Slice(0, charsWritten), out result);");
+                        }
+                        else
+                        {
+                            writer.WriteLine("return TryParse(buffer.Slice(0, charsWritten).ToString(), out result);");
+                        }
+                    }
+                }
+
+                using (writer.BeginBlock("finally"))
+                {
+                    using (writer.BeginBlock("if (rentedBuffer != null)"))
+                    {
+                        writer.WriteLine("global::System.Buffers.ArrayPool<char>.Shared.Return(rentedBuffer);");
+                    }
+                }
+
+                writer.WriteLine("result = default;");
+                writer.WriteLine("return false;");
+            }
+        }
+
         if (context.SupportStaticInterfaces)
         {
             // ISpanParsable
@@ -384,6 +437,82 @@ public partial class StronglyTypedIdSourceGenerator
                     writer.WriteLine("return Parse(value);");
                 }
             }
+
+            // IUtf8SpanParsable
+            if (context.CanImplementIUtf8SpanParsable())
+            {
+                // TryParse
+                var returnType = "out " + (context.IsReferenceType ? $"{context.TypeName}?" : context.TypeName);
+                if (context.SupportNotNullWhenAttribute)
+                {
+                    returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
+                }
+
+                var tryParseMethodName = context.IsTryParseDefined_Utf8 ? "TryParse" : TryParseUtf8MethodName;
+                WriteNewMember(InheritDocComment);
+                using (writer.BeginBlock($"static bool global::System.IUtf8SpanParsable<{context.TypeName}>.TryParse(global::System.ReadOnlySpan<byte> utf8Text, global::System.IFormatProvider? provider, {returnType} result)"))
+                {
+                    writer.WriteLine($"return {tryParseMethodName}(utf8Text, out result);");
+                }
+
+                // Parse
+                WriteNewMember(InheritDocComment);
+                using (writer.BeginBlock($"static {context.TypeName} global::System.IUtf8SpanParsable<{context.TypeName}>.Parse(global::System.ReadOnlySpan<byte> utf8Text, global::System.IFormatProvider? provider)"))
+                {
+                    if (context.IsParseDefined_Utf8)
+                    {
+                        writer.WriteLine("return Parse(utf8Text);");
+                    }
+                    else
+                    {
+                        using (writer.BeginBlock($"if ({tryParseMethodName}(utf8Text, out var result))"))
+                        {
+                            if (!context.SupportNotNullWhenAttribute)
+                            {
+                                writer.WriteLine("#nullable disable");
+                            }
+
+                            writer.WriteLine("return result;");
+
+                            if (!context.SupportNotNullWhenAttribute)
+                            {
+                                writer.WriteLine("#nullable enable");
+                            }
+                        }
+
+                        writer.WriteLine("throw new global::System.FormatException($\"value '{(global::System.Text.Encoding.UTF8.GetString(utf8Text))}' is not valid\");");
+                    }
+                }
+            }
+        }
+
+        // IFormattable, ISpanFormattable, IUtf8SpanFormattable
+        // Formatting is culture-invariant, as is parsing, so the members are explicit implementations and the provider is ignored.
+        // Public overloads with an IFormatProvider parameter would be misleading and would make ToString() calls report MA0011.
+        if (context.CanImplementIFormattable() && !context.IsToStringFormatDefined)
+        {
+            WriteNewMember(InheritDocComment);
+            using (writer.BeginBlock("string global::System.IFormattable.ToString(string? format, global::System.IFormatProvider? formatProvider)"))
+            {
+                using (writer.BeginBlock("if (string.IsNullOrEmpty(format))"))
+                {
+                    writer.WriteLine(context.IsToStringDefined ? "return ToString() ?? \"\";" : "return ToString();");
+                }
+
+                writer.WriteLine($"return {GetFormattedValueStringExpression(context, "format")};");
+            }
+        }
+
+        if (context.CanImplementISpanFormattable() && !context.IsTryFormatDefined_Char)
+        {
+            WriteNewMember(InheritDocComment);
+            GenerateTryFormatMethod(writer, context, utf8: false);
+        }
+
+        if (context.CanImplementIUtf8SpanFormattable() && !context.IsTryFormatDefined_Utf8)
+        {
+            WriteNewMember(InheritDocComment);
+            GenerateTryFormatMethod(writer, context, utf8: true);
         }
 
         void GenerateTryParseMethod(CSharpGeneratedFileWriter writer, AttributeInfo context, bool isReadOnlySpan)
@@ -534,5 +663,142 @@ public partial class StronglyTypedIdSourceGenerator
                 _ => throw new ArgumentOutOfRangeException(nameof(stringComparison)),
             };
         }
+    }
+
+    /// <summary>
+    /// Gets the expression that formats <see cref="PropertyName"/> using the format and the invariant culture. The format is ignored when the underlying type is not formattable.
+    /// </summary>
+    private static string GetFormattedValueStringExpression(AttributeInfo context, string formatExpression)
+    {
+        if (context.IdType is IdType.System_String)
+            return $"{PropertyAsStringName} ?? \"\"";
+
+        if (context.ValueTypeHasToStringFormat)
+            return $"{PropertyName}.ToString({formatExpression}, {InvariantCultureExpression})";
+
+        return PropertyAsStringName;
+    }
+
+    /// <summary>
+    /// Generates <c>TryFormat</c> for <c>ISpanFormattable</c> or <c>IUtf8SpanFormattable</c>.
+    /// Without a format, the result is the same as <c>ToString()</c>. Otherwise, the format is applied to the value using the invariant culture.
+    /// </summary>
+    private static void GenerateTryFormatMethod(CSharpGeneratedFileWriter writer, AttributeInfo context, bool utf8)
+    {
+        var destination = utf8 ? "utf8Destination" : "destination";
+        var written = utf8 ? "bytesWritten" : "charsWritten";
+        var valueTryFormatSignature = utf8 ? context.ValueTypeTryFormat_Utf8 : context.ValueTypeTryFormat_Char;
+        var canUseValueTryFormat = context.IdType is not IdType.System_String && valueTryFormatSignature is not TryFormatSignature.None;
+
+        using (writer.BeginBlock($"bool global::System.{(utf8 ? "IUtf8SpanFormattable" : "ISpanFormattable")}.TryFormat(global::System.Span<{(utf8 ? "byte" : "char")}> {destination}, out int {written}, global::System.ReadOnlySpan<char> format, global::System.IFormatProvider? provider)"))
+        {
+            writer.WriteLine($"{written} = 0;");
+            writer.WriteLine("var length = 0;");
+            using (writer.BeginBlock("if (format.IsEmpty)"))
+            {
+                WriteSteps(GetDefaultSteps());
+            }
+
+            using (writer.BeginBlock("else"))
+            {
+                if (canUseValueTryFormat)
+                {
+                    WriteSteps([FormatStep.TryFormat(PropertyName, "format", valueTryFormatSignature is TryFormatSignature.FormatAndProvider ? InvariantCultureExpression : null)]);
+                }
+                else
+                {
+                    WriteSteps([FormatStep.Text(GetFormattedValueStringExpression(context, "format.ToString()"))]);
+                }
+            }
+
+            writer.WriteLine($"{written} = length;");
+            writer.WriteLine("return true;");
+        }
+
+        // Writes the same value as the generated ToString() method, without allocating when possible
+        FormatStep[] GetDefaultSteps()
+        {
+            if (context.IsToStringDefined)
+                return [FormatStep.Text("ToString()")];
+
+            FormatStep valueStep;
+            if (context.IdType is IdType.System_String)
+            {
+                valueStep = FormatStep.Text(context.GenerateToStringAsRecord ? $"{PropertyName} == null ? \"<null>\" : {PropertyAsStringName}" : PropertyAsStringName);
+            }
+            else if (canUseValueTryFormat && !context.IsValueAsStringDefined)
+            {
+                // Must match the ValueAsString property
+                var target = context.IdType is IdType.System_DateTimeOffset ? $"{PropertyName}.UtcDateTime" : PropertyName;
+                var format = context.IdType is IdType.System_DateTime or IdType.System_DateTimeOffset ? "\"o\"" : "default";
+                valueStep = FormatStep.TryFormat(target, format, valueTryFormatSignature is TryFormatSignature.FormatAndProvider ? InvariantCultureExpression : null);
+            }
+            else
+            {
+                valueStep = FormatStep.Text(PropertyAsStringName);
+            }
+
+            if (!context.GenerateToStringAsRecord)
+                return [valueStep];
+
+            return [FormatStep.Literal(context.TypeName + " { Value = "), valueStep, FormatStep.Literal(" }")];
+        }
+
+        void WriteSteps(FormatStep[] steps)
+        {
+            for (var i = 0; i < steps.Length; i++)
+            {
+                var step = steps[i];
+                if (step.Kind is FormatStepKind.TryFormat)
+                {
+                    var provider = step.Provider is null ? "" : ", " + step.Provider;
+                    WriteReturnFalseIf($"!{step.Expression}.TryFormat({destination}.Slice(length), out var written{i}, {step.Format}{provider})");
+                    writer.WriteLine($"length += written{i};");
+                }
+                else if (utf8)
+                {
+                    WriteReturnFalseIf($"global::System.Text.Unicode.Utf8.FromUtf16({step.Expression}, {destination}.Slice(length), out _, out var written{i}) != global::System.Buffers.OperationStatus.Done");
+                    writer.WriteLine($"length += written{i};");
+                }
+                else if (step.Kind is FormatStepKind.Literal)
+                {
+                    WriteReturnFalseIf($"!global::System.MemoryExtensions.AsSpan({step.Expression}).TryCopyTo({destination}.Slice(length))");
+                    writer.WriteLine($"length += {step.LiteralLength};");
+                }
+                else
+                {
+                    writer.WriteLine($"var text{i} = global::System.MemoryExtensions.AsSpan({step.Expression});");
+                    WriteReturnFalseIf($"!text{i}.TryCopyTo({destination}.Slice(length))");
+                    writer.WriteLine($"length += text{i}.Length;");
+                }
+            }
+        }
+
+        void WriteReturnFalseIf(string condition)
+        {
+            using (writer.BeginBlock($"if ({condition})"))
+            {
+                writer.WriteLine("return false;");
+            }
+        }
+    }
+
+    private enum FormatStepKind
+    {
+        Literal,
+        Text,
+        TryFormat,
+    }
+
+    /// <summary>A part of the formatted value written by the generated <c>TryFormat</c> method.</summary>
+    private sealed record FormatStep(FormatStepKind Kind, string Expression, int LiteralLength = 0, string? Format = null, string? Provider = null)
+    {
+        public static FormatStep Literal(string value) => new(FormatStepKind.Literal, SymbolDisplay.FormatLiteral(value, quote: true), LiteralLength: value.Length);
+
+        /// <summary>Writes the value of an expression of type <see cref="string"/>. A <see langword="null"/> value writes nothing.</summary>
+        public static FormatStep Text(string expression) => new(FormatStepKind.Text, expression);
+
+        /// <summary>Calls the <c>TryFormat</c> method of the expression.</summary>
+        public static FormatStep TryFormat(string expression, string format, string? provider) => new(FormatStepKind.TryFormat, expression, Format: format, Provider: provider);
     }
 }

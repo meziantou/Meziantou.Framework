@@ -969,6 +969,78 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         });
     }
 
+    [Theory]
+    [InlineData("Microsoft.NETFramework.ReferenceAssemblies.net472", "1.0.3", "", "IFormattable")]
+    [InlineData("Microsoft.NETCore.App.Ref", "6.0.0", "ref/", "IFormattable, ISpanFormattable")]
+    [InlineData("Microsoft.NETCore.App.Ref", "7.0.0", "ref/", "IFormattable, IParsable`1, ISpanFormattable, ISpanParsable`1")]
+    [InlineData("Microsoft.NETCore.App.Ref", "8.0.0", "ref/", "IFormattable, IParsable`1, ISpanFormattable, ISpanParsable`1, IUtf8SpanFormattable, IUtf8SpanParsable`1")]
+    public async Task Generate_ParsableAndFormattableInterfaces_DependOnTargetFramework(string packageName, string packageVersion, string referencePath, string expectedInterfaces)
+    {
+        string[] interfaceNames = ["IFormattable", "ISpanFormattable", "IUtf8SpanFormattable", "IParsable`1", "ISpanParsable`1", "IUtf8SpanParsable`1"];
+
+        foreach (var idType in new[] { "int", "string", "System.Guid", "bool" })
+        {
+            var sourceCode = AttributeSourceCode + $$"""
+
+                [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof({{idType}}))]
+                public partial struct Test {}
+                """;
+
+            var compilation = await CreateCompilation(sourceCode, [new NuGetReference(packageName, packageVersion, referencePath)], referenceAnnotations: false);
+            GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [InstantiateGenerator()]);
+            driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
+            Assert.Empty(diagnostics);
+
+            using var stream = new MemoryStream();
+            var emitResult = outputCompilation.Emit(stream, cancellationToken: XunitCancellationToken);
+            Assert.Empty(emitResult.Diagnostics);
+            Assert.True(emitResult.Success);
+
+            var type = outputCompilation.GetTypeByMetadataName("Test");
+            Assert.NotNull(type);
+            var interfaces = type.AllInterfaces.Where(i => i.ContainingNamespace.Name == "System" && interfaceNames.Contains(i.MetadataName)).Select(i => i.MetadataName).Order(StringComparer.Ordinal);
+            Assert.Equal(expectedInterfaces, string.Join(", ", interfaces));
+        }
+    }
+
+    [Fact]
+    public async Task Generate_UserDefinedFormattingAndParsingMembers()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                public string ToString(string? format, System.IFormatProvider? provider) => "custom";
+                public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { charsWritten = 0; return false; }
+                public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { bytesWritten = 0; return false; }
+                public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out Test result) { result = FromInt32(utf8Text.Length); return true; }
+                public static Test Parse(System.ReadOnlySpan<byte> utf8Text) => FromInt32(-utf8Text.Length);
+            }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            var instance = type.GetMethod("FromInt32")!.Invoke(null, [42])!;
+            Assert.Equal("custom", ((IFormattable)instance).ToString("D", formatProvider: null));
+            Assert.False(((ISpanFormattable)instance).TryFormat(new char[100], out _, format: default, provider: null));
+            Assert.False(((IUtf8SpanFormattable)instance).TryFormat(new byte[100], out _, format: default, provider: null));
+
+            var tryParseResult = typeof(StronglyTypedIdSourceGeneratorTests).GetMethod(nameof(TryParseUtf8), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, ["abc"u8.ToArray()]);
+            Assert.Equal(3, type.GetProperty("Value")!.GetValue(tryParseResult));
+
+            var parseResult = typeof(StronglyTypedIdSourceGeneratorTests).GetMethod(nameof(ParseUtf8), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, ["abc"u8.ToArray()]);
+            Assert.Equal(-3, type.GetProperty("Value")!.GetValue(parseResult));
+        });
+    }
+
+    private static T TryParseUtf8<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T>
+    {
+        Assert.True(T.TryParse(utf8Text, provider: null, out var result));
+        return result;
+    }
+
+    private static T ParseUtf8<T>(byte[] utf8Text) where T : IUtf8SpanParsable<T> => T.Parse(utf8Text, provider: null);
+
     [Fact]
     public async Task Generate_IComparable_Struct_ReferenceType()
     {

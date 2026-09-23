@@ -24,11 +24,15 @@ public partial struct ProjectId { }
 [MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdBsonConverter))]
 public partial struct ProjectId :
     System.IEquatable<ProjectId>,
-    System.IParsable<ProjectId>,        // .NET 7+
-    System.ISpanParsable<ProjectId>,    // .NET 7+
-    IStronglyTypedId,                   // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
-    IStronglyTypedId<int>,              // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
-    IComparable, IComparable<ProjectId> // When at least one of the interface is explicitly defined by the user
+    System.IParsable<ProjectId>,         // .NET 7+
+    System.ISpanParsable<ProjectId>,     // .NET 7+
+    System.IUtf8SpanParsable<ProjectId>, // .NET 8+
+    System.IFormattable,
+    System.ISpanFormattable,             // .NET 6+
+    System.IUtf8SpanFormattable,         // .NET 8+
+    IStronglyTypedId,                    // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
+    IStronglyTypedId<int>,               // When Meziantou.Framework.StronglyTypedId.Interfaces is referenced
+    IComparable, IComparable<ProjectId>  // When at least one of the interface is explicitly defined by the user
 {
     public int Value { get; }
     public string ValueAsString { get; } // Value formatted using InvariantCulture
@@ -82,6 +86,21 @@ public partial struct ProjectId :
 ````
 
 <!-- generated code -->
+
+Parsing and formatting are culture-invariant: the `IFormatProvider` arguments of the interface members are ignored and `CultureInfo.InvariantCulture` is always used. `IUtf8SpanParsable<T>`, `IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` are implemented explicitly, so the type doesn't expose overloads with an `IFormatProvider` parameter.
+
+`IUtf8SpanParsable<T>` decodes the UTF-8 text and uses `TryParse(ReadOnlySpan<char>)` (or `TryParse(string)`), so both representations accept the same values.
+
+`IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` use the following rules:
+
+- Without a format, the result is the same as `ToString()`. So, `$"{id}"` and `id.ToString()` return the same value.
+- With a format, the format is applied to `Value` using the invariant culture. For instance, `$"{id:N}"` returns the `Guid` without the hyphens. The format is ignored when the underlying type isn't formattable (`string`, `bool`, `ObjectId`).
+
+````c#
+var id = ProjectId.FromInt32(42);
+$"{id}";     // ProjectId { Value = 42 }
+$"{id:D5}";  // 00042
+````
 
 If the `Meziantou.Framework.StronglyTypedId.Interfaces` NuGet package is present, the generator will implements `IStronglyTypedId` and `IStronglyTypedId<T>`.
 

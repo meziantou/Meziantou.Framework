@@ -175,13 +175,11 @@ public static partial class MemoryDump
         }
     }
 
-    // DllImport rather than LibraryImport: the .NET 10 LibraryImport generator emits code rejected by the updated memory safety rules
-    private static class UnixInterop
+    private static partial class UnixInterop
     {
-        [DllImport("libc", EntryPoint = "prctl", SetLastError = true)]
+        [LibraryImport("libc", EntryPoint = "prctl", SetLastError = true)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Native method name")]
-        [SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "See comment on the containing class")]
-        internal static safe extern int prctl(int option, nint arg2, nint arg3, nint arg4, nint arg5);
+        internal static partial int prctl(int option, nint arg2, nint arg3, nint arg4, nint arg5);
     }
 }

@@ -23,7 +23,7 @@ public static partial class MemoryDump
     /// <param name="filePath">The path of the dump file. The file is overwritten if it already exists.</param>
     /// <param name="dumpType">The content of the dump.</param>
     /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows, Linux, or macOS.</exception>
-    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows8.1")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
     public static void Write(string filePath, MemoryDumpType dumpType = MemoryDumpType.Full)
@@ -35,7 +35,7 @@ public static partial class MemoryDump
         Lock.Wait();
         try
         {
-            if (OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindowsVersionAtLeast(8, 1))
             {
                 WriteWindows(filePath, dumpType);
             }
@@ -59,7 +59,7 @@ public static partial class MemoryDump
     /// <param name="dumpType">The content of the dump.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows, Linux, or macOS.</exception>
-    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows8.1")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
     public static async Task WriteAsync(string filePath, MemoryDumpType dumpType = MemoryDumpType.Full, CancellationToken cancellationToken = default)
@@ -71,7 +71,7 @@ public static partial class MemoryDump
         await Lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (OperatingSystem.IsWindows())
+            if (OperatingSystem.IsWindowsVersionAtLeast(8, 1))
             {
                 // MiniDumpWriteDump has no asynchronous version
                 WriteWindows(filePath, dumpType);

@@ -8,17 +8,30 @@ namespace Meziantou.Framework.Diagnostics;
 
 public static partial class MemoryDump
 {
+    private const int MaxMiniDumpAttempts = 5;
+    private const int ERROR_PARTIAL_COPY = 0x12B;
+    private const int HRESULT_ERROR_PARTIAL_COPY = unchecked((int)0x8007012B);
+
     [SupportedOSPlatform("windows")]
     private static void WriteWindows(string filePath, MemoryDumpType dumpType)
     {
-        int error;
-        using (var process = Process.GetCurrentProcess())
-        using (var fileHandle = File.OpenHandle(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+        var miniDumpType = GetMiniDumpType(dumpType);
+        using var process = Process.GetCurrentProcess();
+        var error = 0;
+        for (var attempt = 0; attempt < MaxMiniDumpAttempts; attempt++)
         {
-            if (WindowsInterop.MiniDumpWriteDump(process.SafeHandle, (uint)process.Id, fileHandle, GetMiniDumpType(dumpType), exceptionParam: 0, userStreamParam: 0, callbackParam: 0))
-                return;
+            using (var fileHandle = File.OpenHandle(filePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+            {
+                if (WindowsInterop.MiniDumpWriteDump(process.SafeHandle, (uint)process.Id, fileHandle, miniDumpType, exceptionParam: 0, userStreamParam: 0, callbackParam: 0))
+                    return;
 
-            error = Marshal.GetLastPInvokeError();
+                error = Marshal.GetLastPInvokeError();
+            }
+
+            // The memory of a running process can change while it is read, so MiniDumpWriteDump sometimes fails with
+            // ERROR_PARTIAL_COPY. dotnet-dump retries in this case too.
+            if (error is not (ERROR_PARTIAL_COPY or HRESULT_ERROR_PARTIAL_COPY))
+                break;
         }
 
         TryDeleteFile(filePath);

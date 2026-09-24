@@ -136,6 +136,18 @@ public static class SyntaxFactory
         return TomlTable(Token(SyntaxKind.OpenBracketToken), Key(name), Token(SyntaxKind.CloseBracketToken));
     }
 
+    /// <summary>Creates an array-of-tables header such as <c>[[products]]</c>.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public static TomlTableSyntax TomlArrayOfTables(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        return TomlTable(
+            new SyntaxToken(parent: null, Green.SyntaxFactory.Token(null, SyntaxKind.OpenBracketToken, "[[", null), position: 0, index: 0),
+            Key(name),
+            new SyntaxToken(parent: null, Green.SyntaxFactory.Token(null, SyntaxKind.CloseBracketToken, "]]", null), position: 0, index: 0));
+    }
+
     public static TomlTableSyntax TomlTable(SyntaxToken openBracketToken, SyntaxToken nameToken, SyntaxToken closeBracketToken)
         => (TomlTableSyntax)new Green.TomlTableSyntax(Required(openBracketToken, SyntaxKind.OpenBracketToken), Required(nameToken, SyntaxKind.KeyToken), Required(closeBracketToken, SyntaxKind.CloseBracketToken)).CreateRed();
 

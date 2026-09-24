@@ -2,7 +2,7 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>The base of every node in an TOML tree.</summary>
+/// <summary>The base of every node in a TOML tree.</summary>
 public abstract class TomlSyntaxNode : SyntaxNode
 {
     private protected TomlSyntaxNode(GreenNode green, SyntaxNode? parent, int position)

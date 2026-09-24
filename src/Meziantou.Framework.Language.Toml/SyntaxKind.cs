@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>The kinds of node, token, and trivia an TOML tree is made of.</summary>
+/// <summary>The kinds of node, token, and trivia a TOML tree is made of.</summary>
 public enum SyntaxKind
 {
     None = 0,

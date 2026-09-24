@@ -13,7 +13,7 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
     {
     }
 
-    /// <summary>Gets the section, property, and skipped-text entries in source order.</summary>
+    /// <summary>Gets the table, property, and skipped-text entries in source order.</summary>
     public SyntaxList<TomlEntrySyntax> Entries => new(GetRedAtZero(ref _entries));
 
     public SyntaxToken EndOfFileToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));

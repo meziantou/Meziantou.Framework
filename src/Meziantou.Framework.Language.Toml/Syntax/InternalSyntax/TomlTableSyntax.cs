@@ -2,7 +2,7 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 
-/// <summary>A section header such as <c>[database]</c>.</summary>
+/// <summary>A table header such as <c>[database]</c>.</summary>
 internal sealed class TomlTableSyntax : TomlEntrySyntax
 {
     private readonly GreenNode _openBracketToken;

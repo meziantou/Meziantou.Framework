@@ -1,10 +1,12 @@
 using Meziantou.Framework.Language.Toml.Internals;
 using Meziantou.Framework.Language.InternalSyntax;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 
-/// <summary>Builds the immutable tree for an TOML document, keeping every character of it.</summary>
+/// <summary>Builds the immutable tree for a TOML document, keeping every character of it.</summary>
 internal sealed class LanguageParser
 {
     private readonly Lexer _lexer;
@@ -92,7 +94,10 @@ internal sealed class LanguageParser
         }
 
         var separator = EatSeparatorAndLexValue();
+        var valueStart = _currentFullStart;
         var value = EatToken(SyntaxKind.ValueToken, TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+        if (!IsValidValue(value.Text))
+            _pending.Add(new PendingDiagnostic(valueStart + value.GetLeadingTriviaWidth(), Math.Max(value.Width, 1), TomlDiagnosticDescriptors.InvalidValue, [value.Text.Trim()]));
         var node = new TomlPropertySyntax(key, separator, value);
 
         return (TomlPropertySyntax)Finish(node, start, mark);
@@ -149,6 +154,140 @@ internal sealed class LanguageParser
 
     private void AddErrorForMissingToken(DiagnosticDescriptor descriptor, params object?[] arguments)
         => _pending.Add(new PendingDiagnostic(_currentFullStart + _current.GetLeadingTriviaWidth(), 0, descriptor, arguments));
+
+    private static bool IsValidValue(string text)
+    {
+        var value = text.Trim();
+        if (value.Length == 0)
+            return false;
+
+        if (value is "true" or "false")
+            return true;
+
+        if ((value[0] is '"' or '\'') && IsCompleteString(value))
+            return true;
+
+        if (value[0] is '[' or '{')
+            return IsBalancedContainer(value) && (value[0] == '[' ? IsValidContainerContents(value) : IsValidInlineTable(value));
+
+        return Regex.IsMatch(value, """^[+-]?(?:0|[1-9](?:_?[0-9])*)(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)
+            || DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)
+            || Regex.IsMatch(value, """^[+-]?[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+    }
+
+    private static bool IsCompleteString(string value)
+    {
+        var quote = value[0];
+        if (value.Length < 2 || value[^1] != quote)
+            return false;
+
+        if (quote == '\'')
+            return true;
+
+        var slashCount = 0;
+        for (var i = value.Length - 2; i >= 0 && value[i] == '\\'; i--)
+            slashCount++;
+
+        return (slashCount & 1) == 0;
+    }
+
+    private static bool IsBalancedContainer(string value)
+    {
+        var depth = 0;
+        char quote = '\0';
+        for (var i = 0; i < value.Length; i++)
+        {
+            var current = value[i];
+            if (quote is not '\0')
+            {
+                if (current == quote && (quote == '\'' || !IsEscaped(value, i)))
+                    quote = '\0';
+                continue;
+            }
+
+            if (current is '"' or '\'')
+                quote = current;
+            else if (current is '[' or '{')
+                depth++;
+            else if (current is ']' or '}')
+                depth--;
+
+            if (depth < 0)
+                return false;
+        }
+
+        return quote is '\0' && depth == 0;
+    }
+
+    private static bool IsValidContainerContents(string value)
+    {
+        var inner = value[1..^1].Trim();
+        if (inner.Length == 0)
+            return true;
+
+        foreach (var item in SplitTopLevel(inner))
+        {
+            var candidate = item.Trim();
+            if (candidate.Length == 0 || !IsValidValue(candidate))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsValidInlineTable(string value)
+    {
+        var inner = value[1..^1].Trim();
+        if (inner.Length == 0)
+            return true;
+
+        foreach (var item in SplitTopLevel(inner))
+        {
+            var separator = item.IndexOf('=', StringComparison.Ordinal);
+            if (separator <= 0 || !IsValidValue(item[(separator + 1)..].Trim()))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static IEnumerable<string> SplitTopLevel(string value)
+    {
+        var start = 0;
+        var depth = 0;
+        char quote = '\0';
+        for (var i = 0; i < value.Length; i++)
+        {
+            var current = value[i];
+            if (quote is not '\0')
+            {
+                if (current == quote && (quote == '\'' || !IsEscaped(value, i)))
+                    quote = '\0';
+            }
+            else if (current is '"' or '\'')
+                quote = current;
+            else if (current is '[' or '{')
+                depth++;
+            else if (current is ']' or '}')
+                depth--;
+            else if (current == ',' && depth == 0)
+            {
+                yield return value[start..i];
+                start = i + 1;
+            }
+        }
+
+        yield return value[start..];
+    }
+
+    private static bool IsEscaped(string value, int position)
+    {
+        var count = 0;
+        for (var i = position - 1; i >= 0 && value[i] == '\\'; i--)
+            count++;
+
+        return (count & 1) != 0;
+    }
 
     private GreenNode Finish(GreenNode node, int nodeFullStart, int mark)
     {

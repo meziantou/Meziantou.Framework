@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>Visits an TOML node and everything below it.</summary>
+/// <summary>Visits a TOML node and everything below it.</summary>
 public class TomlSyntaxWalker : TomlSyntaxVisitor
 {
     private int _recursionDepth;

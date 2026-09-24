@@ -2,7 +2,7 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>A section header such as <c>[database]</c>.</summary>
+/// <summary>A table header such as <c>[database]</c>.</summary>
 public sealed class TomlTableSyntax : TomlEntrySyntax
 {
     internal TomlTableSyntax(GreenNode green, SyntaxNode? parent, int position)
@@ -13,12 +13,12 @@ public sealed class TomlTableSyntax : TomlEntrySyntax
     public SyntaxToken OpenBracketToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
     public SyntaxToken NameToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
-    /// <summary>Gets the section name.</summary>
+    /// <summary>Gets the table name.</summary>
     public string Name => NameToken.ValueText;
 
     public SyntaxToken CloseBracketToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
 
-    /// <summary>Returns this section with the given parts, or itself when nothing changed.</summary>
+    /// <summary>Returns this table with the given parts, or itself when nothing changed.</summary>
     public TomlTableSyntax Update(SyntaxToken openBracketToken, SyntaxToken nameToken, SyntaxToken closeBracketToken)
     {
         if (openBracketToken.Node == Green.GetSlot(0) && nameToken.Node == Green.GetSlot(1) && closeBracketToken.Node == Green.GetSlot(2))
@@ -30,7 +30,7 @@ public sealed class TomlTableSyntax : TomlEntrySyntax
     public TomlTableSyntax WithOpenBracketToken(SyntaxToken openBracketToken) => Update(openBracketToken, NameToken, CloseBracketToken);
     public TomlTableSyntax WithNameToken(SyntaxToken nameToken) => Update(OpenBracketToken, nameToken, CloseBracketToken);
 
-    /// <summary>Returns this section with a new name.</summary>
+    /// <summary>Returns this table with a new name.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public TomlTableSyntax WithName(string name) => WithNameToken(SyntaxFactory.Key(name).WithTriviaFrom(NameToken));
 

@@ -34,6 +34,7 @@ namespace Meziantou.Framework.Language.Toml
         public static Meziantou.Framework.Language.Toml.TomlDocumentSyntax TomlDocument(params Meziantou.Framework.Language.Toml.TomlEntrySyntax[] entries) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlDocumentSyntax TomlDocument(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Toml.TomlEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlTableSyntax TomlTable(string name) => throw null;
+        public static Meziantou.Framework.Language.Toml.TomlTableSyntax TomlArrayOfTables(string name) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlTableSyntax TomlTable(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlPropertySyntax TomlProperty(string key, string value) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlPropertySyntax TomlProperty(Meziantou.Framework.Language.SyntaxToken keyToken, Meziantou.Framework.Language.SyntaxToken separatorToken, Meziantou.Framework.Language.SyntaxToken valueToken) => throw null;

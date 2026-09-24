@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>Dispatches on the kind of an TOML node.</summary>
+/// <summary>Dispatches on the kind of a TOML node.</summary>
 /// <remarks>
 /// Visiting a node does not visit its children. Derive from <see cref="TomlSyntaxWalker"/> to walk a whole tree.
 /// </remarks>
@@ -20,7 +20,7 @@ public abstract class TomlSyntaxVisitor
     public virtual void VisitTomlSkippedText(TomlSkippedTextSyntax node) => DefaultVisit(node);
 }
 
-/// <summary>Dispatches on the kind of an TOML node and returns a result.</summary>
+/// <summary>Dispatches on the kind of a TOML node and returns a result.</summary>
 /// <typeparam name="TResult">What visiting a node produces.</typeparam>
 public abstract class TomlSyntaxVisitor<TResult>
 {

@@ -2,7 +2,7 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>A key/value pair such as <c>name=value</c> or <c>name: value</c>.</summary>
+/// <summary>A key/value pair such as <c>name=value</c> or <c>name = value</c>.</summary>
 public sealed class TomlPropertySyntax : TomlEntrySyntax
 {
     internal TomlPropertySyntax(GreenNode green, SyntaxNode? parent, int position)

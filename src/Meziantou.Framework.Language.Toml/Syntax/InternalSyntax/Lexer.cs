@@ -34,8 +34,7 @@ internal sealed class Lexer(SourceText source)
                     Position++;
                     while (!IsAtEnd)
                     {
-                        var escaped = Position > start && _text[Position - 1] == '\\';
-                        if (Current == quote && !escaped)
+                        if (Current == quote && (quote == '\'' || !IsEscaped(Position)))
                         {
                             Position++;
                             break;
@@ -44,13 +43,17 @@ internal sealed class Lexer(SourceText source)
                         Position++;
                     }
 
+                    ScanDottedKeySuffix();
                     return SyntaxFactory.Token(leading, SyntaxKind.KeyToken, _text[start..Position], trailing: null);
                 }
 
-                while (!IsAtEnd && !IsTokenDelimiter(Current))
-                {
+                while (!IsAtEnd && Current is not '=' and not '#' and not '\r' and not '\n' and not '[' and not ']')
                     Position++;
-                }
+
+                while (Position > start && _text[Position - 1] is ' ' or '\t')
+                    Position--;
+
+                ScanDottedKeySuffix();
 
                 if (Position == start)
                 {
@@ -73,7 +76,7 @@ internal sealed class Lexer(SourceText source)
         {
             if (quote is not '\0')
             {
-                if (Current == quote && (Position == start || _text[Position - 1] != '\\'))
+                if (Current == quote && (quote == '\'' || !IsEscaped(Position)))
                     quote = '\0';
                 Position++;
                 continue;
@@ -168,6 +171,59 @@ internal sealed class Lexer(SourceText source)
     private char Current => Position < _text.Length ? _text[Position] : '\0';
     private char LookAhead => Position + 1 < _text.Length ? _text[Position + 1] : '\0';
 
-    private static bool IsTokenDelimiter(char value)
-        => value is '[' or ']' or '=' or '#' or '\r' or '\n' or ' ' or '\t';
+    private bool IsEscaped(int position)
+    {
+        var slashCount = 0;
+        for (var i = position - 1; i >= 0 && _text[i] == '\\'; i--)
+            slashCount++;
+
+        return (slashCount & 1) != 0;
+    }
+
+    private void ScanDottedKeySuffix()
+    {
+        while (true)
+        {
+            var save = Position;
+            while (!IsAtEnd && Current is ' ' or '\t')
+                Position++;
+
+            if (Current != '.')
+            {
+                Position = save;
+                return;
+            }
+
+            Position++;
+            while (!IsAtEnd && Current is ' ' or '\t')
+                Position++;
+
+            if (IsAtEnd || Current is '=' or '\r' or '\n' or '#')
+            {
+                Position = save;
+                return;
+            }
+
+            if (Current is '"' or '\'')
+            {
+                var quote = Current;
+                Position++;
+                while (!IsAtEnd)
+                {
+                    if (Current == quote && (quote == '\'' || !IsEscaped(Position)))
+                    {
+                        Position++;
+                        break;
+                    }
+
+                    Position++;
+                }
+            }
+            else
+            {
+                while (!IsAtEnd && Current is not ' ' and not '\t' and not '=' and not '\r' and not '\n' and not '#')
+                    Position++;
+            }
+        }
+    }
 }

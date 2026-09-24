@@ -59,7 +59,7 @@ Usage:
 Options:
   --directory <directory>              Root directory
   --files <files>                      Glob patterns to find files to scan
-  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference
+  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference, AgentPlugin, AgentPluginMarketplace
   --upgradable                         Only list dependencies that can be upgraded
   --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all. [default: 7]
   --format <Json|Text>                 Output format. Available values: Text, Json
@@ -78,7 +78,7 @@ Usage:
 Options:
   --directory <directory>              Root directory
   --files <files>                      Glob patterns to find files to scan
-  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference
+  --dependency-type <dependency-type>  Dependency types to include. Available values: Unknown, NuGet, Npm, PyPi, DockerImage, GitReference, DotNetSdk, DotNetTargetFramework, GitHubActions, AzureDevOpsVMPool, AzureDevOpsTask, AzureDevOpsTemplate, HelmChart, RubyGem, RenovateConfiguration, SwiftPackage, MSBuildProjectReference, DotNetAssemblyReference, AgentPlugin, AgentPluginMarketplace
   --update-lock-files                  Update lock files when dependencies are updated. Runs 'dotnet restore' and 'npm install', which execute MSBuild targets and npm install scripts from the scanned repository. Only use it on repositories you trust.
   --minimum-age <minimum-age>          Minimum age in days for package versions to consider for update (default: 7). Use 0 or negative to disable filtering. Versions whose publication date is unknown are skipped, except for Docker images as registries don't expose publication dates at all. [default: 7]
   -?, -h, --help                       Show help and usage information

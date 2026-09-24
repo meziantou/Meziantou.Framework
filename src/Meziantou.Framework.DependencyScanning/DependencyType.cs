@@ -56,4 +56,10 @@ public enum DependencyType
 
     /// <summary>.NET assembly file reference.</summary>
     DotNetAssemblyReference,
+
+    /// <summary>Claude Code or GitHub Copilot plugin referenced by a plugin marketplace.</summary>
+    AgentPlugin,
+
+    /// <summary>Claude Code or GitHub Copilot plugin marketplace.</summary>
+    AgentPluginMarketplace,
 }

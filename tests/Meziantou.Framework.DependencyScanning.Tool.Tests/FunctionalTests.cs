@@ -767,6 +767,23 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task NpmPackageSourceResolver_DeclaredRegistryTakesPrecedence()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var marketplaceFile = tempDir.CreateEmptyFile(".claude-plugin/marketplace.json");
+        await File.WriteAllTextAsync(marketplaceFile, "{}", XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".npmrc"), "registry=https://npmrc.registry/", XunitCancellationToken);
+
+        var declaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", "https://declared.registry");
+        var invalidDeclaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", "not a url");
+        var noDeclaredRegistry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(marketplaceFile), "@acme/plugin", declaredRegistry: null);
+
+        Assert.Equal("https://declared.registry/", declaredRegistry.ToString());
+        Assert.Equal("https://npmrc.registry/", invalidDeclaredRegistry.ToString());
+        Assert.Equal("https://npmrc.registry/", noDeclaredRegistry.ToString());
+    }
+
+    [Fact]
     public async Task NpmPackageSourceResolver_UsesNearestDefaultRegistry()
     {
         await using var tempDir = TemporaryDirectory.Create();

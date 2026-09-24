@@ -18,7 +18,8 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         if (dependencyLocation is null || dependency.Name is null)
             yield break;
 
-        var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(dependencyLocation), dependency.Name);
+        var declaredRegistry = dependency.Metadata.TryGetValue("registry", out var registryValue) ? registryValue as string : null;
+        var registry = NpmPackageSourceResolver.ResolveRegistry(FullPath.FromPath(dependencyLocation), dependency.Name, declaredRegistry);
         await foreach (var versionInfo in GetVersionsFromRegistryWithMetadataAsync(registry, dependency.Name, cancellationToken).ConfigureAwait(false))
         {
             yield return versionInfo;
@@ -51,7 +52,8 @@ internal sealed class NpmPackageUpdater : PackageUpdater
         var lockFiles = new HashSet<FullPath>();
         foreach (var dependency in updatedDependencies)
         {
-            if (dependency.Type is not DependencyType.Npm || dependency.VersionLocation is null)
+            // Only package.json dependencies are in a lock file, not npm plugins referenced by a plugin marketplace
+            if (dependency.Type is not DependencyType.Npm || dependency.VersionLocation is null || !string.Equals(Path.GetFileName(dependency.VersionLocation.FilePath), "package.json", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             var lockFile = TryFindLockFile(FullPath.FromPath(dependency.VersionLocation.FilePath).Parent, "package-lock.json");

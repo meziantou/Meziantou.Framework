@@ -75,6 +75,8 @@ namespace Meziantou.Framework.DependencyScanning
         SwiftPackage = 15,
         MSBuildProjectReference = 16,
         DotNetAssemblyReference = 17,
+        AgentPlugin = 18,
+        AgentPluginMarketplace = 19,
     }
 
     public delegate bool FileSystemEntryPredicate(ref System.IO.Enumeration.FileSystemEntry entry);
@@ -134,6 +136,13 @@ namespace Meziantou.Framework.DependencyScanning
 }
 namespace Meziantou.Framework.DependencyScanning.Scanners
 {
+    public sealed class AgentPluginDependencyScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
+    {
+        protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }
+        protected override bool ShouldScanFileCore(Meziantou.Framework.DependencyScanning.CandidateFileContext context) => throw null;
+        public override System.Threading.Tasks.ValueTask ScanAsync(Meziantou.Framework.DependencyScanning.ScanFileContext context) => throw null;
+    }
+
     public sealed class AzureDevOpsScanner : Meziantou.Framework.DependencyScanning.DependencyScanner
     {
         protected internal override System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.DependencyScanning.DependencyType> SupportedDependencyTypes { get => throw null; }

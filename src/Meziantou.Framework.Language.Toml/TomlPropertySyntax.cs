@@ -20,7 +20,7 @@ public sealed class TomlPropertySyntax : TomlEntrySyntax
     public SyntaxNodeOrToken ValueNode => ChildNodesAndTokens()[2];
 
     /// <summary>Gets the raw value text.</summary>
-    public string Value => ValueNode.ToString();
+    public string Value => ValueNode.IsNode ? ValueNode.AsNode()!.ToString() : ValueNode.AsToken().ValueText;
 
     /// <summary>Returns this property with the given parts, or itself when nothing changed.</summary>
     public TomlPropertySyntax Update(SyntaxToken keyToken, SyntaxToken separatorToken, SyntaxToken valueToken)

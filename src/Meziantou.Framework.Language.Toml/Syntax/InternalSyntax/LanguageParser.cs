@@ -65,7 +65,7 @@ internal sealed class LanguageParser
             AddErrorForMissingToken(TomlDiagnosticDescriptors.ExpectedSectionName);
             name = SyntaxFactory.MissingToken(SyntaxKind.KeyToken);
         }
-        if (!name.IsMissing && !IsValidBareKey(name.Text))
+        if (!name.IsMissing && !IsValidKey(name.Text))
             _pending.Add(new PendingDiagnostic(start + name.GetLeadingTriviaWidth(), Math.Max(name.Width, 1), TomlDiagnosticDescriptors.ExpectedSectionName, []));
 
         var closeBracketStart = _currentFullStart;
@@ -82,7 +82,7 @@ internal sealed class LanguageParser
         var mark = _pending.Count;
         var start = _currentFullStart;
         var key = EatToken(SyntaxKind.KeyToken, TomlDiagnosticDescriptors.ExpectedKey);
-        if (!IsValidBareKey(key.Text))
+        if (!IsValidKey(key.Text))
             _pending.Add(new PendingDiagnostic(start + key.GetLeadingTriviaWidth(), Math.Max(key.Width, 1), TomlDiagnosticDescriptors.ExpectedKey, []));
         if (CurrentKind is not SyntaxKind.EqualsToken)
         {
@@ -191,12 +191,31 @@ internal sealed class LanguageParser
             || Regex.IsMatch(value, """^[+-]?[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     }
 
-    private static bool IsValidBareKey(string text)
+    private static bool IsValidKey(string text)
     {
-        var segments = text.Split('.');
-        foreach (var segment in segments)
+        var segmentStart = 0;
+        char quote = '\0';
+        for (var i = 0; i <= text.Length; i++)
         {
-            var trimmed = segment.Trim(' ', '\t');
+            var current = i < text.Length ? text[i] : '\0';
+            if (quote is not '\0')
+            {
+                if (current == quote)
+                    quote = '\0';
+
+                continue;
+            }
+
+            if (current is '"' or '\'')
+            {
+                quote = current;
+                continue;
+            }
+
+            if (current is not '.' and not '\0')
+                continue;
+
+            var trimmed = text[segmentStart..i].Trim(' ', '\t');
             if (trimmed.Length == 0)
                 return false;
 
@@ -209,9 +228,11 @@ internal sealed class LanguageParser
 
             if (trimmed.Any(c => !((c is >= 'a' and <= 'z') || (c is >= 'A' and <= 'Z') || (c is >= '0' and <= '9') || c is '_' or '-')))
                 return false;
+
+            segmentStart = i + 1;
         }
 
-        return true;
+        return quote is '\0';
     }
 
     private static bool IsCompleteString(string value)

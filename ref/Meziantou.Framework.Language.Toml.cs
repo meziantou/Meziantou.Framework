@@ -39,7 +39,7 @@ namespace Meziantou.Framework.Language.Toml
         public static Meziantou.Framework.Language.Toml.TomlPropertySyntax TomlProperty(string key, string value) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlPropertySyntax TomlProperty(Meziantou.Framework.Language.SyntaxToken keyToken, Meziantou.Framework.Language.SyntaxToken separatorToken, Meziantou.Framework.Language.SyntaxToken valueToken) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlPropertySyntax TomlProperty(Meziantou.Framework.Language.SyntaxToken keyToken, Meziantou.Framework.Language.SyntaxToken separatorToken, Meziantou.Framework.Language.Toml.TomlArraySyntax value) => throw null;
-        public static Meziantou.Framework.Language.Toml.TomlArraySyntax TomlArray(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxTokenList contents, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public static Meziantou.Framework.Language.Toml.TomlArraySyntax TomlArray(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxNodeOrTokenList contents, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSkippedTextSyntax TomlSkippedText(string text) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSkippedTextSyntax TomlSkippedText(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree ParseSyntaxTree(string text, string? path = null) => throw null;
@@ -82,8 +82,8 @@ namespace Meziantou.Framework.Language.Toml
     {
         public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
-        public Meziantou.Framework.Language.SyntaxTokenList Contents { get => throw null; }
-        public Meziantou.Framework.Language.Toml.TomlArraySyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxTokenList contents, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
+        public Meziantou.Framework.Language.SyntaxNodeOrTokenList Contents { get => throw null; }
+        public Meziantou.Framework.Language.Toml.TomlArraySyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxNodeOrTokenList contents, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public override void Accept(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -164,6 +164,7 @@ namespace Meziantou.Framework.Language.Toml
         public virtual Meziantou.Framework.Language.SyntaxTriviaList VisitList(Meziantou.Framework.Language.SyntaxTriviaList list) => throw null;
         public virtual Meziantou.Framework.Language.SyntaxList<TNode> VisitList<TNode>(Meziantou.Framework.Language.SyntaxList<TNode> list) where TNode : Meziantou.Framework.Language.Toml.TomlSyntaxNode => throw null;
         public virtual Meziantou.Framework.Language.SyntaxTokenList VisitList(Meziantou.Framework.Language.SyntaxTokenList list) => throw null;
+        public virtual Meziantou.Framework.Language.SyntaxNodeOrTokenList VisitList(Meziantou.Framework.Language.SyntaxNodeOrTokenList list) => throw null;
     }
 
     public sealed class TomlSyntaxTree : Meziantou.Framework.Language.SyntaxTree

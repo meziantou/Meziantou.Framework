@@ -105,6 +105,12 @@ internal sealed class Lexer(SourceText source)
         }
 
         var text = _text[start..Position];
+        while (text.Length > 0 && text[^1] is ' ' or '\t')
+        {
+            Position--;
+            text = _text[start..Position];
+        }
+
         var trailing = LexTrivia(includeEndOfLine: true, includeComments: true);
 
         return SyntaxFactory.Token(leading, SyntaxKind.ValueToken, text, trailing);
@@ -120,7 +126,9 @@ internal sealed class Lexer(SourceText source)
             var itemLeading = LexTrivia(includeEndOfLine: true, includeComments: true);
             if (Current == ']')
             {
-                var closeBracket = Punctuation(itemLeading, SyntaxKind.CloseBracketToken);
+                var closeBracketStart = Position;
+                Position++;
+                var closeBracket = SyntaxFactory.Token(itemLeading, SyntaxKind.CloseBracketToken, _text[closeBracketStart..Position], LexTrivia(includeEndOfLine: true, includeComments: true));
                 return SyntaxFactory.Array(openBracket, SyntaxFactory.ListNode(contents?.ToArray() ?? []), closeBracket);
             }
 

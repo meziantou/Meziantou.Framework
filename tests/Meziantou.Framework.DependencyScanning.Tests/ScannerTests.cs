@@ -3416,6 +3416,146 @@ jobs:
             """, ignoreNewLines: true);
     }
 
+    [Theory]
+    [InlineData(".claude-plugin/marketplace.json")]
+    [InlineData(".github/plugin/marketplace.json")]
+    [InlineData("marketplaces/sample/.claude-plugin/marketplace.json")]
+    public async Task AgentPluginMarketplaceDependencies(string filePath)
+    {
+        AddFile(filePath, """
+            {
+              "name": "sample",
+              "plugins": [
+                { "name": "local", "source": "./plugins/local" },
+                { "name": "local-without-prefix", "source": "plugins/local" },
+                { "name": "github", "source": { "source": "github", "repo": "owner/github", "ref": "v1.0.0" } },
+                { "name": "github-sha", "source": { "source": "github", "repo": "owner/github-sha", "ref": "v2.0.0", "sha": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0", "path": "plugins/sha" } },
+                { "name": "url", "source": { "source": "url", "url": "https://gitlab.com/team/plugin.git", "ref": "main" } },
+                { "name": "subdir", "source": { "source": "git-subdir", "url": "https://github.com/acme/monorepo.git", "path": "tools/plugin" } },
+                { "name": "npm", "source": { "source": "npm", "package": "@acme/plugin", "version": "2.1.0", "registry": "https://npm.example.com" } },
+                { "name": "archive", "source": { "source": "archive", "url": "https://example.com/plugin.zip" } },
+                { "name": "shorthand", "source": "owner/shorthand#v3.0.0" },
+                { "name": "git-url", "source": "https://github.com/owner/git-url.git" },
+              ]
+            }
+            """);
+        var result = await GetDependencies<AgentPluginDependencyScanner>();
+        Assert.HasCount(7, result);
+        AssertContainDependency(result,
+            (DependencyType.AgentPlugin, "owner/github", "v1.0.0", 0, 0),
+            (DependencyType.AgentPlugin, "owner/github-sha", "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0", 0, 0),
+            (DependencyType.AgentPlugin, "https://gitlab.com/team/plugin.git", "main", 0, 0),
+            (DependencyType.AgentPlugin, "https://github.com/acme/monorepo.git", null, 0, 0),
+            (DependencyType.Npm, "@acme/plugin", "2.1.0", 0, 0),
+            (DependencyType.AgentPlugin, "owner/shorthand", "v3.0.0", 0, 0),
+            (DependencyType.AgentPlugin, "https://github.com/owner/git-url.git", null, 0, 0));
+
+        var githubSha = Assert.Single(result, d => d.Name == "owner/github-sha");
+        Assert.Equal("github-sha", githubSha.Metadata["plugin"]);
+        Assert.Equal("v2.0.0", githubSha.Metadata["ref"]);
+        Assert.Equal("plugins/sha", githubSha.Metadata["path"]);
+        Assert.Equal("tools/plugin", Assert.Single(result, d => d.Name == "https://github.com/acme/monorepo.git").Metadata["path"]);
+        Assert.Equal("https://npm.example.com", Assert.Single(result, d => d.Name == "@acme/plugin").Metadata["registry"]);
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual(filePath, """
+            {
+              "name": "sample",
+              "plugins": [
+                { "name": "local", "source": "./plugins/local" },
+                { "name": "local-without-prefix", "source": "plugins/local" },
+                { "name": "github", "source": { "source": "github", "repo": "dummy1", "ref": "2.0.0" } },
+                { "name": "github-sha", "source": { "source": "github", "repo": "dummy2", "ref": "v2.0.0", "sha": "2.0.0", "path": "plugins/sha" } },
+                { "name": "url", "source": { "source": "url", "url": "dummy3", "ref": "2.0.0" } },
+                { "name": "subdir", "source": { "source": "git-subdir", "url": "dummy4", "path": "tools/plugin" } },
+                { "name": "npm", "source": { "source": "npm", "package": "dummy5", "version": "2.0.0", "registry": "https://npm.example.com" } },
+                { "name": "archive", "source": { "source": "archive", "url": "https://example.com/plugin.zip" } },
+                { "name": "shorthand", "source": "dummy6#2.0.0" },
+                { "name": "git-url", "source": "dummy7" },
+              ]
+            }
+            """, ignoreNewLines: true);
+    }
+
+    [Theory]
+    [InlineData(".claude/settings.json")]
+    [InlineData(".claude/settings.local.json")]
+    [InlineData(".github/copilot/settings.json")]
+    [InlineData(".github/copilot/settings.local.json")]
+    [InlineData("src/app/.claude/settings.json")]
+    public async Task AgentPluginSettingsDependencies(string filePath)
+    {
+        AddFile(filePath, """
+            {
+              // Marketplaces shared with the team
+              "extraKnownMarketplaces": {
+                "github": { "source": { "source": "github", "repo": "owner/marketplace" } },
+                "github-ref": { "source": { "source": "github", "repo": "owner/marketplace-ref", "ref": "v1.0.0" } },
+                "git": { "source": { "source": "git", "url": "https://gitlab.com/team/marketplace.git", "ref": "main" } },
+                "url": { "source": { "source": "url", "url": "https://example.com/marketplace.json" } },
+                "directory": { "source": { "source": "directory", "path": "./local-marketplace" } },
+                "flat": { "source": "github", "repo": "owner/flat", "ref": "v2.0.0", "autoUpdate": true },
+              },
+              "enabledPlugins": {
+                "plugin@github": true
+              }
+            }
+            """);
+        var result = await GetDependencies<AgentPluginDependencyScanner>();
+        Assert.HasCount(5, result);
+        AssertContainDependency(result,
+            (DependencyType.AgentPluginMarketplace, "owner/marketplace", null, 0, 0),
+            (DependencyType.AgentPluginMarketplace, "owner/marketplace-ref", "v1.0.0", 0, 0),
+            (DependencyType.AgentPluginMarketplace, "https://gitlab.com/team/marketplace.git", "main", 0, 0),
+            (DependencyType.AgentPluginMarketplace, "https://example.com/marketplace.json", null, 0, 0),
+            (DependencyType.AgentPluginMarketplace, "owner/flat", "v2.0.0", 0, 0));
+        Assert.Equal("github-ref", Assert.Single(result, d => d.Name == "owner/marketplace-ref").Metadata["marketplace"]);
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual(filePath, """
+            {
+              // Marketplaces shared with the team
+              "extraKnownMarketplaces": {
+                "github": { "source": { "source": "github", "repo": "dummy1" } },
+                "github-ref": { "source": { "source": "github", "repo": "dummy2", "ref": "2.0.0" } },
+                "git": { "source": { "source": "git", "url": "dummy3", "ref": "2.0.0" } },
+                "url": { "source": { "source": "url", "url": "dummy4" } },
+                "directory": { "source": { "source": "directory", "path": "./local-marketplace" } },
+                "flat": { "source": "github", "repo": "dummy5", "ref": "2.0.0", "autoUpdate": true },
+              },
+              "enabledPlugins": {
+                "plugin@github": true
+              }
+            }
+            """, ignoreNewLines: true);
+    }
+
+    [Theory]
+    [InlineData("marketplace.json")]
+    [InlineData(".github/marketplace.json")]
+    [InlineData("plugin/marketplace.json")]
+    [InlineData(".claude/marketplace.json")]
+    [InlineData("settings.json")]
+    [InlineData(".vscode/settings.json")]
+    [InlineData(".github/settings.json")]
+    [InlineData("copilot/settings.json")]
+    [InlineData(".claude-plugin/settings.json")]
+    public async Task AgentPluginDependencies_IgnoresOtherFiles(string filePath)
+    {
+        AddFile(filePath, """
+            {
+              "plugins": [
+                { "name": "github", "source": { "source": "github", "repo": "owner/plugin", "ref": "v1.0.0" } }
+              ],
+              "extraKnownMarketplaces": {
+                "github": { "source": { "source": "github", "repo": "owner/marketplace", "ref": "v1.0.0" } }
+              }
+            }
+            """);
+        var result = await GetDependencies<AgentPluginDependencyScanner>();
+        Assert.Empty(result);
+    }
+
     private async Task<Dependency[]> GetDependencies<T>(ImmutableArray<DependencyScanner>? scanners = null) where T : DependencyScanner
     {
         var options = new ScannerOptions { DegreeOfParallelism = 1 };

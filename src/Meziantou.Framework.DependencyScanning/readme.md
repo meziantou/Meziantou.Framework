@@ -31,6 +31,8 @@ The library can detect the following dependency types:
 - **MSBuildProjectReference** - MSBuild project references
 - **DotNetAssemblyReference** - .NET assembly file references
 - **RubyGem** - Ruby gem packages
+- **AgentPlugin** - Claude Code and GitHub Copilot plugins referenced by a plugin marketplace
+- **AgentPluginMarketplace** - Claude Code and GitHub Copilot plugin marketplaces
 
 ## Scanner Notes
 
@@ -38,6 +40,7 @@ The library can detect the following dependency types:
 - **Variables**: names or versions that contain a variable reference, such as `FROM node:${NODE_VERSION}`, are reported with a location that is not updatable.
 - **YAML files**: a value is only updatable when its text in the file is exactly its value (plain scalars, and single-line quoted scalars without escape sequences). Block scalars (`|`, `>`), escaped or multi-line values are reported with a location that is not updatable. A value referenced through an alias (`*name`) is reported once.
 - **GitHub Actions**: workflows in `.github/workflows` and action metadata files (`action.yml`, `action.yaml`) anywhere in the repository are scanned. Local actions and reusable workflows (`uses: ./...`) are not reported.
+- **Agent plugins**: plugin marketplaces (`.claude-plugin/marketplace.json`, `.github/plugin/marketplace.json`) are scanned for plugins hosted in a git repository (`github`, `url` and `git-subdir` sources, and `owner/repo#ref` or git URL strings), reported as `AgentPlugin`, and for plugins published to npm, reported as `Npm`. The version of a git source is its `sha` when there is one, and its `ref` otherwise. Settings files (`.claude/settings.json`, `.github/copilot/settings.json` and their `settings.local.json` counterparts) are scanned for the git and URL marketplaces declared in `extraKnownMarketplaces`, reported as `AgentPluginMarketplace`. Plugins stored next to the marketplace and local marketplaces are not reported. The plugin or marketplace name, the `ref`, the `path` and the npm `registry` are available in `Dependency.Metadata` under the `plugin`, `marketplace`, `ref`, `path` and `registry` keys.
 - **Azure Pipelines**: templates referenced from steps, jobs, stages and `extends`, deployment job lifecycle hooks, and `git`, `github`, `githubenterprise` and `bitbucket` repository resources are reported. A job `container` that names a container resource is not reported again.
 - **Helm charts**: the dependency name is the chart `name`. The `repository` and `alias` values are available in `Dependency.Metadata` under the `repository` and `alias` keys.
 - **npm**: protocol and path specifiers (`workspace:`, `file:`, `link:`, git URLs, `github:`, tarball URLs, `owner/repo` shorthands, ...) are reported with a version location that is not updatable. An alias (`"name": "npm:package@1.0.0"`) is reported as the aliased package, with the alias name in `Dependency.Metadata` under the `alias` key.

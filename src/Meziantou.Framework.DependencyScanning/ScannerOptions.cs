@@ -21,6 +21,7 @@ public sealed class ScannerOptions
 {
     private static readonly ImmutableArray<DependencyScanner> DefaultScanners =
     [
+        new AgentPluginDependencyScanner(),
         new AzureDevOpsScanner(),
         new DockerfileDependencyScanner(),
         new DotNetFileBasedAppDependencyScanner(),

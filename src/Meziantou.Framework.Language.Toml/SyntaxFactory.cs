@@ -169,6 +169,18 @@ public static class SyntaxFactory
         return (TomlPropertySyntax)new Green.TomlPropertySyntax(Required(keyToken, SyntaxKind.KeyToken), separatorToken.Node!, Required(valueToken, SyntaxKind.ValueToken)).CreateRed();
     }
 
+    public static TomlPropertySyntax TomlProperty(SyntaxToken keyToken, SyntaxToken separatorToken, TomlArraySyntax value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        if (separatorToken.Kind() is not SyntaxKind.EqualsToken)
+            throw new ArgumentException("A TOML property separator is '='.", nameof(separatorToken));
+
+        return (TomlPropertySyntax)new Green.TomlPropertySyntax(Required(keyToken, SyntaxKind.KeyToken), separatorToken.Node!, value.Green).CreateRed();
+    }
+
+    public static TomlArraySyntax TomlArray(SyntaxToken openBracketToken, SyntaxTokenList contents, SyntaxToken closeBracketToken)
+        => (TomlArraySyntax)new Green.TomlArraySyntax(Required(openBracketToken, SyntaxKind.OpenBracketToken), contents.Node, Required(closeBracketToken, SyntaxKind.CloseBracketToken)).CreateRed();
+
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static TomlSkippedTextSyntax TomlSkippedText(string text) => TomlSkippedText(TokenList(BadToken(text)));
 

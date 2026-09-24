@@ -21,7 +21,17 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.KeyToken), VisitToken(node.SeparatorToken), VisitToken(node.ValueToken));
+        var key = VisitToken(node.KeyToken);
+        var separator = VisitToken(node.SeparatorToken);
+        return node.ValueNode.AsNode() is TomlArraySyntax array
+            ? node.Update(key, separator, (TomlArraySyntax)Visit(array)!)
+            : node.Update(key, separator, VisitToken(node.ValueNode.AsToken()));
+    }
+
+    public override SyntaxNode? VisitTomlArray(TomlArraySyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        return node.Update(VisitToken(node.OpenBracketToken), VisitList(node.Contents), VisitToken(node.CloseBracketToken));
     }
 
     public override SyntaxNode? VisitTomlSkippedText(TomlSkippedTextSyntax node)

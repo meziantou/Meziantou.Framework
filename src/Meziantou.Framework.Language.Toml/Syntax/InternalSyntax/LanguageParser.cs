@@ -11,7 +11,7 @@ internal sealed class LanguageParser
 {
     private readonly Lexer _lexer;
     private readonly List<PendingDiagnostic> _pending = [];
-    private GreenToken _current;
+    private GreenNode _current;
     private int _currentFullStart;
 
     public LanguageParser(SourceText source)
@@ -46,14 +46,14 @@ internal sealed class LanguageParser
         if (CurrentKind == SyntaxKind.KeyToken)
             return ParsePropertyOrSkippedText();
 
-        return ParseSkippedText(TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+        return ParseSkippedText(TomlDiagnosticDescriptors.UnexpectedToken, CurrentText);
     }
 
     private TomlTableSyntax ParseSection()
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
-        var openBracket = EatToken(SyntaxKind.OpenBracketToken, TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+        var openBracket = EatToken(SyntaxKind.OpenBracketToken, TomlDiagnosticDescriptors.UnexpectedToken, CurrentText);
 
         GreenToken name;
         if (CurrentKind == SyntaxKind.KeyToken)
@@ -84,7 +84,7 @@ internal sealed class LanguageParser
             var tokens = new List<GreenNode?> { key };
             while (CurrentKind != SyntaxKind.EndOfFileToken && !CurrentStartsLine())
             {
-                AddErrorAtCurrentToken(TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+                AddErrorAtCurrentToken(TomlDiagnosticDescriptors.UnexpectedToken, CurrentText);
                 tokens.Add(EatToken());
             }
 
@@ -95,9 +95,10 @@ internal sealed class LanguageParser
 
         var separator = EatSeparatorAndLexValue();
         var valueStart = _currentFullStart;
-        var value = EatToken(SyntaxKind.ValueToken, TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
-        if (!IsValidValue(value.Text))
-            _pending.Add(new PendingDiagnostic(valueStart + value.GetLeadingTriviaWidth(), Math.Max(value.Width, 1), TomlDiagnosticDescriptors.InvalidValue, [value.Text.Trim()]));
+        var value = EatValue();
+        var valueText = value.ToFullString();
+        if (value.RawKind != (int)SyntaxKind.TomlArray && !IsValidValue(valueText))
+            _pending.Add(new PendingDiagnostic(valueStart + value.GetLeadingTriviaWidth(), Math.Max(value.Width, 1), TomlDiagnosticDescriptors.InvalidValue, [valueText.Trim()]));
         var node = new TomlPropertySyntax(key, separator, value);
 
         return (TomlPropertySyntax)Finish(node, start, mark);
@@ -123,16 +124,24 @@ internal sealed class LanguageParser
 
     private GreenToken EatToken()
     {
-        var eaten = _current;
+        var eaten = (GreenToken)_current;
         _current = _lexer.Lex();
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
         return eaten;
     }
 
-    private GreenToken EatSeparatorAndLexValue()
+    private GreenNode EatValue()
     {
         var eaten = _current;
+        _current = _lexer.Lex();
+        _currentFullStart = _lexer.Position - _current.FullWidth;
+        return eaten;
+    }
+
+    private GreenToken EatSeparatorAndLexValue()
+    {
+        var eaten = (GreenToken)_current;
         _current = _lexer.LexValue();
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
@@ -306,7 +315,11 @@ internal sealed class LanguageParser
         return node.WithAdditionalDiagnostics(diagnostics);
     }
 
-    private bool CurrentStartsLine() => ContainsEndOfLine(_current.LeadingTrivia);
+    private string CurrentText => _current is GreenToken token ? token.Text : _current.ToString();
+
+    private GreenNode? CurrentLeadingTrivia => _current is GreenToken token ? token.LeadingTrivia : null;
+
+    private bool CurrentStartsLine() => ContainsEndOfLine(CurrentLeadingTrivia);
 
     private static bool ContainsEndOfLine(GreenNode? node)
     {

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Language.Toml;
+using Meziantou.Framework.Language;
 
 namespace Meziantou.Framework.Language.Toml.Tests;
 
@@ -52,6 +53,13 @@ public sealed class TomlSyntaxTreeTests
         var tree = TomlSyntaxTree.ParseText(Text);
 
         Assert.Equal(Text, tree.GetRoot().ToFullString());
+        var comment = Assert.Single(tree.GetRoot().DescendantTrivia(), trivia => trivia.Kind() == SyntaxKind.CommentTrivia);
+        Assert.Equal("# keep this", comment.ToString());
+        Assert.Empty(tree.GetDiagnostics());
+
+        var walker = new CommentWalker();
+        walker.Visit(tree.GetRoot());
+        Assert.Equal("# keep this", Assert.Single(walker.Comments).ToString());
     }
 
     [Fact]
@@ -60,5 +68,21 @@ public sealed class TomlSyntaxTreeTests
         var table = SyntaxFactory.TomlArrayOfTables("products");
 
         Assert.Equal("[[products]]", table.ToFullString());
+    }
+
+    private sealed class CommentWalker : TomlSyntaxWalker
+    {
+        public List<SyntaxTrivia> Comments { get; } = [];
+
+        public CommentWalker()
+            : base(SyntaxWalkerDepth.Trivia)
+        {
+        }
+
+        public override void VisitTrivia(SyntaxTrivia trivia)
+        {
+            if (trivia.Kind() == SyntaxKind.CommentTrivia)
+                Comments.Add(trivia);
+        }
     }
 }

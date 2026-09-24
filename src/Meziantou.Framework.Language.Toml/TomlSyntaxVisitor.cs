@@ -18,6 +18,7 @@ public abstract class TomlSyntaxVisitor
     public virtual void VisitTomlTable(TomlTableSyntax node) => DefaultVisit(node);
     public virtual void VisitTomlProperty(TomlPropertySyntax node) => DefaultVisit(node);
     public virtual void VisitTomlSkippedText(TomlSkippedTextSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlArray(TomlArraySyntax node) => DefaultVisit(node);
 }
 
 /// <summary>Dispatches on the kind of a TOML node and returns a result.</summary>
@@ -34,4 +35,5 @@ public abstract class TomlSyntaxVisitor<TResult>
     public virtual TResult? VisitTomlTable(TomlTableSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlProperty(TomlPropertySyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlSkippedText(TomlSkippedTextSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlArray(TomlArraySyntax node) => DefaultVisit(node);
 }

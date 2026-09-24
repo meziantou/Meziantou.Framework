@@ -66,9 +66,12 @@ internal sealed class Lexer(SourceText source)
         }
     }
 
-    public GreenToken LexValue()
+    public GreenNode LexValue()
     {
         var leading = LexTrivia(includeEndOfLine: false, includeComments: false);
+        if (Current == '[')
+            return LexArray(leading);
+
         var start = Position;
         var depth = 0;
         var quote = '\0';
@@ -105,6 +108,85 @@ internal sealed class Lexer(SourceText source)
         var trailing = LexTrivia(includeEndOfLine: true, includeComments: true);
 
         return SyntaxFactory.Token(leading, SyntaxKind.ValueToken, text, trailing);
+    }
+
+    private GreenNode LexArray(GreenNode? leading)
+    {
+        var openBracket = Punctuation(leading, SyntaxKind.OpenBracketToken);
+        List<GreenNode?>? contents = null;
+
+        while (!IsAtEnd)
+        {
+            var itemLeading = LexTrivia(includeEndOfLine: true, includeComments: true);
+            if (Current == ']')
+            {
+                var closeBracket = Punctuation(itemLeading, SyntaxKind.CloseBracketToken);
+                return SyntaxFactory.Array(openBracket, SyntaxFactory.ListNode(contents?.ToArray() ?? []), closeBracket);
+            }
+
+            if (Current == ',')
+            {
+                contents ??= [];
+                contents.Add(Punctuation(itemLeading, SyntaxKind.CommaToken));
+                continue;
+            }
+
+            if (Current == '[')
+            {
+                contents ??= [];
+                contents.Add(LexArray(itemLeading));
+                continue;
+            }
+
+            var start = Position;
+            var quote = '\0';
+            var depth = 0;
+            while (!IsAtEnd)
+            {
+                if (quote is not '\0')
+                {
+                    if (Current == quote && (quote == '\'' || !IsEscaped(Position)))
+                        quote = '\0';
+                    Position++;
+                    continue;
+                }
+
+                if (Current is '"' or '\'')
+                {
+                    quote = Current;
+                    Position++;
+                    continue;
+                }
+
+                if (Current == '[')
+                {
+                    depth++;
+                }
+                else if (Current == ']')
+                {
+                    if (depth == 0)
+                        break;
+                    depth--;
+                }
+                else if (Current == ',' && depth == 0)
+                {
+                    break;
+                }
+
+                Position++;
+            }
+
+            if (Position == start)
+            {
+                Position++;
+                continue;
+            }
+
+            contents ??= [];
+            contents.Add(SyntaxFactory.Token(itemLeading, SyntaxKind.ValueToken, _text[start..Position], trailing: null));
+        }
+
+        return SyntaxFactory.Array(openBracket, SyntaxFactory.ListNode(contents?.ToArray() ?? []), SyntaxFactory.MissingToken(SyntaxKind.CloseBracketToken));
     }
 
     private GreenToken Punctuation(GreenNode? leading, SyntaxKind kind, int width = 1)

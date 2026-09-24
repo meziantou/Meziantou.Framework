@@ -9,6 +9,7 @@ public static class SyntaxFacts
         SyntaxKind.OpenBracketToken => "[",
         SyntaxKind.CloseBracketToken => "]",
         SyntaxKind.EqualsToken => "=",
+        SyntaxKind.CommaToken => ",",
         _ => "",
     };
 
@@ -17,7 +18,7 @@ public static class SyntaxFacts
 
     public static bool IsAnyToken(SyntaxKind kind) => kind is >= SyntaxKind.OpenBracketToken and <= SyntaxKind.EndOfFileToken;
 
-    public static bool IsPunctuation(SyntaxKind kind) => kind is >= SyntaxKind.OpenBracketToken and <= SyntaxKind.EqualsToken;
+    public static bool IsPunctuation(SyntaxKind kind) => kind is >= SyntaxKind.OpenBracketToken and <= SyntaxKind.CommaToken;
 
     public static bool IsEntry(SyntaxKind kind)
         => kind is SyntaxKind.TomlTable or SyntaxKind.TomlProperty or SyntaxKind.TomlSkippedText;

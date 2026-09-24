@@ -10,7 +10,7 @@ internal static class SyntaxFactory
 {
     private static readonly FrozenDictionary<SyntaxKind, GreenToken> FixedTokens = new[]
     {
-        SyntaxKind.OpenBracketToken, SyntaxKind.CloseBracketToken, SyntaxKind.EqualsToken,
+        SyntaxKind.OpenBracketToken, SyntaxKind.CloseBracketToken, SyntaxKind.EqualsToken, SyntaxKind.CommaToken,
     }.ToFrozenDictionary(kind => kind, kind => new GreenToken((int)kind, SyntaxFacts.GetText(kind), leadingTrivia: null, trailingTrivia: null, isMissing: false));
 
     private static readonly GreenToken EndOfFile = new((int)SyntaxKind.EndOfFileToken, "", leadingTrivia: null, trailingTrivia: null, isMissing: false);
@@ -72,4 +72,7 @@ internal static class SyntaxFactory
 
     /// <summary>Builds a list that can be projected into a red node even when it holds a single token.</summary>
     public static GreenNode? ListNode(ReadOnlySpan<GreenNode?> items) => Meziantou.Framework.Language.InternalSyntax.SyntaxList.ListNode(items);
+
+    public static GreenNode Array(GreenNode openBracket, GreenNode? contents, GreenNode closeBracket)
+        => new TomlArraySyntax(openBracket, contents, closeBracket);
 }

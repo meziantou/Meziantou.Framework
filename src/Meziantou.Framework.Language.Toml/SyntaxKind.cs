@@ -11,6 +11,7 @@ public enum SyntaxKind
     OpenBracketToken = 8200,
     CloseBracketToken = 8201,
     EqualsToken = 8202,
+    CommaToken = 8203,
     KeyToken = 8300,
     ValueToken = 8301,
 
@@ -27,4 +28,5 @@ public enum SyntaxKind
     TomlTable = 9201,
     TomlProperty = 9202,
     TomlSkippedText = 9203,
+    TomlArray = 9204,
 }

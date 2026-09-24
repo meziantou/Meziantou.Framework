@@ -6,6 +6,7 @@ and the syntax tree itself.
 
 It is not useful on its own. It is referenced by
 [`Meziantou.Framework.Language.Json`](https://www.nuget.org/packages/Meziantou.Framework.Language.Json/),
+[`Meziantou.Framework.Language.Ini`](https://www.nuget.org/packages/Meziantou.Framework.Language.Ini/),
 [`Meziantou.Framework.Language.Regex`](https://www.nuget.org/packages/Meziantou.Framework.Language.Regex/),
 [`Meziantou.Framework.Language.Shell`](https://www.nuget.org/packages/Meziantou.Framework.Language.Shell/), and
 [`Meziantou.Framework.Language.Xml`](https://www.nuget.org/packages/Meziantou.Framework.Language.Xml/),

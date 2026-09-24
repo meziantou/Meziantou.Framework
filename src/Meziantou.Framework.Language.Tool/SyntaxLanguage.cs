@@ -21,17 +21,19 @@ internal sealed class SyntaxLanguage
     public RegexDialect? RegexDialect { get; }
     public ShellDialect? ShellDialect { get; }
 
+    public static SyntaxLanguage Ini { get; } = new(SyntaxLanguageFamily.Ini);
     public static SyntaxLanguage Json { get; } = new(SyntaxLanguageFamily.Json);
     public static SyntaxLanguage Xml { get; } = new(SyntaxLanguageFamily.Xml);
 
     /// <summary>The values <c>--language</c> documents, in the order the help text lists them.</summary>
-    public static string SupportedValues { get; } = "json, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
+    public static string SupportedValues { get; } = "ini, json, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
 
     /// <summary>The canonical name of the dialect, or <see langword="null"/> for the languages that have none.</summary>
     public string? DialectName => RegexDialect?.Name ?? ShellDialect?.Name;
 
     public SyntaxTree ParseText(string text) => Family switch
     {
+        SyntaxLanguageFamily.Ini => Language.Ini.IniSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Json => JsonSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Xml => XmlSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Regex => RegexSyntaxTree.ParseText(text, RegexDialect!),
@@ -45,6 +47,7 @@ internal sealed class SyntaxLanguage
     /// </summary>
     public string GetKindName(int rawKind) => Family switch
     {
+        SyntaxLanguageFamily.Ini => ((Language.Ini.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Json => ((Language.Json.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Xml => ((Language.Xml.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Regex => ((Language.Regex.SyntaxKind)rawKind).ToString(),
@@ -61,6 +64,10 @@ internal sealed class SyntaxLanguage
         var name = value?.Trim().ToLowerInvariant();
         switch (name)
         {
+            case "ini":
+                language = Ini;
+                return true;
+
             case "json":
                 language = Json;
                 return true;
@@ -104,6 +111,7 @@ internal sealed class SyntaxLanguage
     {
         var name = path.Extension.ToLowerInvariant() switch
         {
+            ".ini" or ".editorconfig" or ".gitconfig" or ".npmrc" => "ini",
             ".json" or ".jsonc" or ".json5" or ".webmanifest" => "json",
             ".xml" or ".xsd" or ".xsl" or ".xslt" or ".svg" or ".rss" or ".atom" or ".config" or ".csproj"
                 or ".vbproj" or ".fsproj" or ".props" or ".targets" or ".nuspec" or ".resx" or ".plist" or ".xaml" => "xml",

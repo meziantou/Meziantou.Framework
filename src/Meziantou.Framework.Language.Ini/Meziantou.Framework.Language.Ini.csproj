@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language.Ini</RootNamespace>
+    <Description>A Roslyn-style immutable INI syntax tree: green and red nodes, trivia, diagnostics, annotations, and roundtrip-safe parsing.</Description>
+    <PackageTags>ini, syntax-tree, cst, parser, diagnostics</PackageTags>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Ini.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+  </ItemGroup>
+
+</Project>

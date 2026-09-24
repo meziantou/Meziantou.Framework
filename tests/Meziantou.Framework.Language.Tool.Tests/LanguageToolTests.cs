@@ -4,6 +4,7 @@ namespace Meziantou.Framework.Language.Tool.Tests;
 
 public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 {
+    private const string IniSample = "[section]\nname=value\n";
     private const string JsonSample = "{\"a\":[1,/*c*/2]}";
     private const string XmlSample = "<?xml version=\"1.0\"?><root attr=\"value\"><child>sample</child><!--c--></root>";
     private const string ShellSample = "FOO=1 echo hi >out\n";
@@ -11,6 +12,10 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 
     public static TheoryData<string, string, string> DetectedSamples => new()
     {
+        { "sample.ini", IniSample, "ini" },
+        { ".editorconfig", "root=true\n", "ini" },
+        { ".gitconfig", "[user]\nname=Tester\n", "ini" },
+        { ".npmrc", "registry=https://registry.npmjs.org/\n", "ini" },
         { "sample.json", JsonSample, "json" },
         { "sample.xml", XmlSample, "xml" },
         { "sample.csproj", XmlSample, "xml" },
@@ -213,6 +218,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Theory]
+    [InlineData("ini", IniSample)]
     [InlineData("json", JsonSample)]
     [InlineData("xml", XmlSample)]
     [InlineData("bash", ShellSample)]
@@ -273,7 +279,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task Dump_JsonAndXmlHaveNoDialect()
     {
-        foreach (var (language, text) in new[] { ("json", JsonSample), ("xml", XmlSample) })
+        foreach (var (language, text) in new[] { ("ini", IniSample), ("json", JsonSample), ("xml", XmlSample) })
         {
             var console = new ConsoleHelper(testOutputHelper);
             Assert.Equal(0, await Program.MainImpl(["syntax", "--language", language], console.ConfigureConsole, new StringReader(text)));

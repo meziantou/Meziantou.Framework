@@ -12,18 +12,27 @@ public sealed class TomlArraySyntax : TomlSyntaxNode
 
     public SyntaxToken OpenBracketToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
     public SyntaxToken CloseBracketToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
-    public SyntaxTokenList Contents => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
-
-    public TomlArraySyntax Update(SyntaxToken openBracketToken, SyntaxTokenList contents, SyntaxToken closeBracketToken)
+    public SyntaxNodeOrTokenList Contents
     {
-        if (openBracketToken.Node == Green.GetSlot(0) && contents.Node == Green.GetSlot(1) && closeBracketToken.Node == Green.GetSlot(2))
+        get
+        {
+            var red = GetRed(ref _contents, 1);
+            return red is null ? default : new SyntaxNodeOrTokenList(red, GetChildIndex(1));
+        }
+    }
+
+    public TomlArraySyntax Update(SyntaxToken openBracketToken, SyntaxNodeOrTokenList contents, SyntaxToken closeBracketToken)
+    {
+        if (openBracketToken.Node == Green.GetSlot(0) && contents.Green == Green.GetSlot(1) && closeBracketToken.Node == Green.GetSlot(2))
             return this;
 
         return SyntaxFactory.TomlArray(openBracketToken, contents, closeBracketToken).WithAnnotationsFrom(this);
     }
 
-    internal override SyntaxNode? GetNodeSlot(int index) => null;
-    internal override SyntaxNode? GetCachedSlot(int index) => null;
+    internal override SyntaxNode? GetNodeSlot(int index) => index == 1 ? GetRed(ref _contents, 1) : null;
+    internal override SyntaxNode? GetCachedSlot(int index) => index == 1 ? _contents : null;
+
+    private SyntaxNode? _contents;
 
     public override void Accept(TomlSyntaxVisitor visitor)
     {

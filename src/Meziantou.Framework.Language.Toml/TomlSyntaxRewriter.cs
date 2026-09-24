@@ -24,7 +24,7 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         var key = VisitToken(node.KeyToken);
         var separator = VisitToken(node.SeparatorToken);
         return node.ValueNode.AsNode() is TomlArraySyntax array
-            ? node.Update(key, separator, (TomlArraySyntax)Visit(array)!)
+            ? node.Update(key, separator, (TomlArraySyntax?)Visit(array) ?? array)
             : node.Update(key, separator, VisitToken(node.ValueNode.AsToken()));
     }
 
@@ -111,5 +111,25 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         }
 
         return rewritten is null ? list : new SyntaxTokenList(rewritten);
+    }
+
+    public virtual SyntaxNodeOrTokenList VisitList(SyntaxNodeOrTokenList list)
+    {
+        List<SyntaxNodeOrToken>? rewritten = null;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var item = list[i];
+            SyntaxNodeOrToken visited = item.AsNode(out var node)
+                ? (SyntaxNodeOrToken)(Visit((TomlSyntaxNode)node) ?? node)
+                : VisitToken(item.AsToken());
+
+            if (rewritten is null && visited == item)
+                continue;
+
+            rewritten ??= [.. list.Take(i)];
+            rewritten.Add(visited);
+        }
+
+        return rewritten is null ? list : new SyntaxNodeOrTokenList(rewritten);
     }
 }

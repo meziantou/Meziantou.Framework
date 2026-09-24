@@ -20,7 +20,7 @@ public sealed class TomlPropertySyntax : TomlEntrySyntax
     public SyntaxNodeOrToken ValueNode => ChildNodesAndTokens()[2];
 
     /// <summary>Gets the raw value text.</summary>
-    public string Value => ValueNode.ToFullString();
+    public string Value => ValueNode.ToString();
 
     /// <summary>Returns this property with the given parts, or itself when nothing changed.</summary>
     public TomlPropertySyntax Update(SyntaxToken keyToken, SyntaxToken separatorToken, SyntaxToken valueToken)
@@ -53,9 +53,9 @@ public sealed class TomlPropertySyntax : TomlEntrySyntax
     /// <summary>Returns this property with a new raw value.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public TomlPropertySyntax WithValue(string value)
-        => ValueNode.AsNode() is TomlArraySyntax
-            ? SyntaxFactory.TomlProperty(KeyToken, SeparatorToken, SyntaxFactory.Value(value))
-            : WithValueToken(SyntaxFactory.Value(value).WithTriviaFrom(ValueNode.AsToken()));
+        => WithValueToken(SyntaxFactory.Value(value)
+            .WithLeadingTrivia(ValueNode.GetLeadingTrivia())
+            .WithTrailingTrivia(ValueNode.GetTrailingTrivia()));
 
     internal override SyntaxNode? GetNodeSlot(int index)
         => index == 2 && Green.GetSlot(2)?.RawKind == (int)SyntaxKind.TomlArray

@@ -178,8 +178,8 @@ public static class SyntaxFactory
         return (TomlPropertySyntax)new Green.TomlPropertySyntax(Required(keyToken, SyntaxKind.KeyToken), separatorToken.Node!, value.Green).CreateRed();
     }
 
-    public static TomlArraySyntax TomlArray(SyntaxToken openBracketToken, SyntaxTokenList contents, SyntaxToken closeBracketToken)
-        => (TomlArraySyntax)new Green.TomlArraySyntax(Required(openBracketToken, SyntaxKind.OpenBracketToken), contents.Node, Required(closeBracketToken, SyntaxKind.CloseBracketToken)).CreateRed();
+    public static TomlArraySyntax TomlArray(SyntaxToken openBracketToken, SyntaxNodeOrTokenList contents, SyntaxToken closeBracketToken)
+        => (TomlArraySyntax)new Green.TomlArraySyntax(Required(openBracketToken, SyntaxKind.OpenBracketToken), contents.Green, Required(closeBracketToken, SyntaxKind.CloseBracketToken)).CreateRed();
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static TomlSkippedTextSyntax TomlSkippedText(string text) => TomlSkippedText(TokenList(BadToken(text)));

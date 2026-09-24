@@ -70,6 +70,80 @@ public sealed class TomlSyntaxTreeTests
         Assert.Equal("[[products]]", table.ToFullString());
     }
 
+    [Theory]
+    [InlineData("[[products]")]
+    [InlineData("[products]]")]
+    public void ReportsMismatchedTableDelimiters(string text)
+    {
+        Assert.NotEmpty(TomlSyntaxTree.ParseText(text).GetDiagnostics());
+    }
+
+    [Theory]
+    [InlineData("invalid key = 1")]
+    [InlineData("invalid@key = 1")]
+    public void ReportsInvalidBareKeys(string text)
+    {
+        Assert.NotEmpty(TomlSyntaxTree.ParseText(text).GetDiagnostics());
+    }
+
+    [Fact]
+    public void AllowsWhitespaceAroundDottedKeySeparators()
+    {
+        Assert.Empty(TomlSyntaxTree.ParseText("invalid . key = 1").GetDiagnostics());
+    }
+
+    [Fact]
+    public void ArrayContentsExposeNestedArraysAsNodes()
+    {
+        var property = Assert.IsType<TomlPropertySyntax>(Assert.Single(TomlSyntaxTree.ParseText("values = [[1]]").GetRoot().Entries));
+        var array = Assert.IsType<TomlArraySyntax>(property.ValueNode.AsNode());
+
+        var nested = Assert.Single(array.Contents, item => item.IsNode);
+        Assert.IsType<TomlArraySyntax>(nested.AsNode());
+    }
+
+    [Fact]
+    public void PropertyValueExcludesOuterTrivia()
+    {
+        var property = Assert.IsType<TomlPropertySyntax>(Assert.Single(TomlSyntaxTree.ParseText("value =  42 # comment").GetRoot().Entries));
+
+        Assert.Equal("42", property.Value);
+        Assert.Equal("value =  43 # comment", property.WithValue("43").ToFullString());
+    }
+
+    [Fact]
+    public void WithValuePreservesOuterTrivia()
+    {
+        var property = Assert.IsType<TomlPropertySyntax>(Assert.Single(TomlSyntaxTree.ParseText("value =  [1] # comment").GetRoot().Entries));
+
+        Assert.Equal("[1]", property.Value);
+        Assert.Equal("value =  2 # comment", property.WithValue("2").ToFullString());
+    }
+
+    [Fact]
+    public void RewriterVisitsNestedArraysAndRetainsRequiredArray()
+    {
+        var property = Assert.IsType<TomlPropertySyntax>(Assert.Single(TomlSyntaxTree.ParseText("value = [[1]]").GetRoot().Entries));
+        var rewriter = new NullArrayRewriter();
+
+        var rewritten = Assert.IsType<TomlPropertySyntax>(rewriter.VisitTomlProperty(property));
+
+        Assert.Equal("value = [[1]]", rewritten.ToFullString());
+        Assert.Equal(2, rewriter.ArrayCount);
+    }
+
+    private sealed class NullArrayRewriter : TomlSyntaxRewriter
+    {
+        public int ArrayCount { get; private set; }
+
+        public override SyntaxNode? VisitTomlArray(TomlArraySyntax node)
+        {
+            ArrayCount++;
+            base.VisitTomlArray(node);
+            return node.Parent is TomlPropertySyntax ? null : node;
+        }
+    }
+
     private sealed class CommentWalker : TomlSyntaxWalker
     {
         public List<SyntaxTrivia> Comments { get; } = [];

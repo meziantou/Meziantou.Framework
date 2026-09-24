@@ -65,8 +65,13 @@ internal sealed class LanguageParser
             AddErrorForMissingToken(TomlDiagnosticDescriptors.ExpectedSectionName);
             name = SyntaxFactory.MissingToken(SyntaxKind.KeyToken);
         }
+        if (!name.IsMissing && !IsValidBareKey(name.Text))
+            _pending.Add(new PendingDiagnostic(start + name.GetLeadingTriviaWidth(), Math.Max(name.Width, 1), TomlDiagnosticDescriptors.ExpectedSectionName, []));
 
+        var closeBracketStart = _currentFullStart;
         var closeBracket = EatToken(SyntaxKind.CloseBracketToken, TomlDiagnosticDescriptors.ExpectedClosingBracket);
+        if (!closeBracket.IsMissing && (openBracket.Text is "[[" && closeBracket.Text is not "]]" || openBracket.Text is "[" && closeBracket.Text is not "]"))
+            _pending.Add(new PendingDiagnostic(closeBracketStart + closeBracket.GetLeadingTriviaWidth(), Math.Max(closeBracket.Width, 1), TomlDiagnosticDescriptors.ExpectedClosingBracket, []));
         var node = new TomlTableSyntax(openBracket, name, closeBracket);
 
         return (TomlTableSyntax)Finish(node, start, mark);
@@ -77,6 +82,8 @@ internal sealed class LanguageParser
         var mark = _pending.Count;
         var start = _currentFullStart;
         var key = EatToken(SyntaxKind.KeyToken, TomlDiagnosticDescriptors.ExpectedKey);
+        if (!IsValidBareKey(key.Text))
+            _pending.Add(new PendingDiagnostic(start + key.GetLeadingTriviaWidth(), Math.Max(key.Width, 1), TomlDiagnosticDescriptors.ExpectedKey, []));
         if (CurrentKind is not SyntaxKind.EqualsToken)
         {
             AddErrorForMissingToken(TomlDiagnosticDescriptors.ExpectedSeparator);
@@ -182,6 +189,29 @@ internal sealed class LanguageParser
         return Regex.IsMatch(value, """^[+-]?(?:0|[1-9](?:_?[0-9])*)(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9](?:_?[0-9])*)?$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)
             || DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _)
             || Regex.IsMatch(value, """^[+-]?[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+    }
+
+    private static bool IsValidBareKey(string text)
+    {
+        var segments = text.Split('.');
+        foreach (var segment in segments)
+        {
+            var trimmed = segment.Trim(' ', '\t');
+            if (trimmed.Length == 0)
+                return false;
+
+            if (trimmed[0] is '"' or '\'')
+            {
+                if (trimmed.Length < 2 || trimmed[^1] != trimmed[0])
+                    return false;
+                continue;
+            }
+
+            if (trimmed.Any(c => !((c is >= 'a' and <= 'z') || (c is >= 'A' and <= 'Z') || (c is >= '0' and <= '9') || c is '_' or '-')))
+                return false;
+        }
+
+        return true;
     }
 
     private static bool IsCompleteString(string value)

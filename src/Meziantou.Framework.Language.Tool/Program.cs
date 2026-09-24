@@ -23,7 +23,7 @@ internal static class Program
 
     internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure, TextReader? input)
     {
-        var rootCommand = new RootCommand("Inspect JSON, XML, regular expression, and shell documents");
+        var rootCommand = new RootCommand("Inspect INI, JSON, XML, regular expression, and shell documents");
         AddSyntaxCommand(rootCommand, input);
 
         var invocationConfiguration = new InvocationConfiguration();
@@ -65,7 +65,7 @@ internal static class Program
 
         var syntaxCommand = new Command("syntax")
         {
-            Description = "Dump the syntax tree of a JSON, XML, regular expression, or shell document as JSON",
+            Description = "Dump the syntax tree of an INI, JSON, XML, regular expression, or shell document as JSON",
         };
         syntaxCommand.Options.Add(inputOption);
         syntaxCommand.Options.Add(outputOption);

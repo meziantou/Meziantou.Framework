@@ -1,4 +1,5 @@
 using Meziantou.Framework.Language.Json;
+using Meziantou.Framework.Language.Toml;
 using Meziantou.Framework.Language.Regex;
 using Meziantou.Framework.Language.Shell;
 using Meziantou.Framework.Language.Xml;
@@ -23,10 +24,11 @@ internal sealed class SyntaxLanguage
 
     public static SyntaxLanguage Ini { get; } = new(SyntaxLanguageFamily.Ini);
     public static SyntaxLanguage Json { get; } = new(SyntaxLanguageFamily.Json);
+    public static SyntaxLanguage Toml { get; } = new(SyntaxLanguageFamily.Toml);
     public static SyntaxLanguage Xml { get; } = new(SyntaxLanguageFamily.Xml);
 
     /// <summary>The values <c>--language</c> documents, in the order the help text lists them.</summary>
-    public static string SupportedValues { get; } = "ini, json, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
+    public static string SupportedValues { get; } = "ini, json, toml, xml, regex, regex-dotnet, regex-javascript, regex-pcre, regex-ere, regex-bre, sh, bash, zsh, powershell, pwsh, cmd";
 
     /// <summary>The canonical name of the dialect, or <see langword="null"/> for the languages that have none.</summary>
     public string? DialectName => RegexDialect?.Name ?? ShellDialect?.Name;
@@ -35,6 +37,7 @@ internal sealed class SyntaxLanguage
     {
         SyntaxLanguageFamily.Ini => Language.Ini.IniSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Json => JsonSyntaxTree.ParseText(text),
+        SyntaxLanguageFamily.Toml => TomlSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Xml => XmlSyntaxTree.ParseText(text),
         SyntaxLanguageFamily.Regex => RegexSyntaxTree.ParseText(text, RegexDialect!),
         SyntaxLanguageFamily.Shell => ShellSyntaxTree.ParseText(text, ShellDialect!),
@@ -49,6 +52,7 @@ internal sealed class SyntaxLanguage
     {
         SyntaxLanguageFamily.Ini => ((Language.Ini.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Json => ((Language.Json.SyntaxKind)rawKind).ToString(),
+        SyntaxLanguageFamily.Toml => ((Language.Toml.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Xml => ((Language.Xml.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Regex => ((Language.Regex.SyntaxKind)rawKind).ToString(),
         SyntaxLanguageFamily.Shell => ((Language.Shell.SyntaxKind)rawKind).ToString(),
@@ -70,6 +74,10 @@ internal sealed class SyntaxLanguage
 
             case "json":
                 language = Json;
+                return true;
+
+            case "toml":
+                language = Toml;
                 return true;
 
             case "xml":
@@ -113,6 +121,7 @@ internal sealed class SyntaxLanguage
         {
             ".ini" or ".editorconfig" or ".gitconfig" or ".npmrc" => "ini",
             ".json" or ".jsonc" or ".json5" or ".webmanifest" => "json",
+            ".toml" => "toml",
             ".xml" or ".xsd" or ".xsl" or ".xslt" or ".svg" or ".rss" or ".atom" or ".config" or ".csproj"
                 or ".vbproj" or ".fsproj" or ".props" or ".targets" or ".nuspec" or ".resx" or ".plist" or ".xaml" => "xml",
             ".sh" => "sh",

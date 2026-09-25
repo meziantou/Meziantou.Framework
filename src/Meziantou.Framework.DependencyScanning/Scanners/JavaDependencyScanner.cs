@@ -114,71 +114,66 @@ public sealed partial class JavaDependencyScanner : DependencyScanner
         var tree = TomlSyntaxTree.ParseText(text, context.FullPath);
         var versions = new Dictionary<string, (string Version, TextLocation Location)>(StringComparer.Ordinal);
         var versionReferences = new List<(string Name, string VersionReference)>();
-        string? section = null;
-        foreach (var entry in tree.GetRoot().Entries)
+        foreach (var table in tree.GetRoot().Tables)
         {
-            if (entry is TomlTableSyntax table)
-            {
-                section = table.Name;
-                continue;
-            }
-
-            if (entry is not TomlPropertySyntax property || !property.ValueNode.IsToken)
-                continue;
-
-            var value = property.Value;
-            var valueStart = property.ValueNode.AsToken().Span.Start;
+            var section = TomlUtilities.GetName(table.Key);
             if (section is "versions")
             {
-                if (TomlUtilities.TryGetString(value, out var version, out var offset))
+                foreach (var property in table.Properties)
                 {
-                    versions[property.Key] = (version, TomlUtilities.CreateLocation(context, tree, new TextSpan(valueStart + offset, version.Length)));
+                    if (TomlUtilities.GetString(property.Value) is { } version)
+                    {
+                        versions[TomlUtilities.GetName(property.Key)] = (version.Value, TomlUtilities.CreateLocation(context, tree, version));
+                    }
                 }
             }
             else if (section is "libraries")
             {
-                if (TomlUtilities.TryGetString(value, out var notation, out var offset))
+                foreach (var property in table.Properties)
                 {
-                    // guava = "com.google.guava:guava:33.0.0"
-                    var separator = notation.LastIndexOf(':', StringComparison.Ordinal);
-                    if (separator <= 0 || notation.AsSpan(0, separator).IndexOf(':') < 0)
+                    if (TomlUtilities.GetString(property.Value) is { } notation)
+                    {
+                        // guava = "com.google.guava:guava:33.0.0"
+                        var separator = notation.Value.LastIndexOf(':', StringComparison.Ordinal);
+                        if (separator <= 0 || notation.Value.AsSpan(0, separator).IndexOf(':') < 0)
+                            continue;
+
+                        var notationLocation = TomlUtilities.CreateLocation(context, tree, notation);
+                        context.ReportDependency(this, notation.Value[..separator], notation.Value[(separator + 1)..], DependencyType.JavaPackage,
+                            new NonUpdatableLocation(context),
+                            new TextLocation(context.FileSystem, context.FullPath, notationLocation.LineNumber, notationLocation.LinePosition + separator + 1, notation.Value.Length - separator - 1));
                         continue;
+                    }
 
-                    context.ReportDependency(this, notation[..separator], notation[(separator + 1)..], DependencyType.JavaPackage,
-                        new NonUpdatableLocation(context),
-                        TomlUtilities.CreateLocation(context, tree, new TextSpan(valueStart + offset + separator + 1, notation.Length - separator - 1)));
-                    continue;
-                }
+                    // guava = { module = "com.google.guava:guava", version = "33.0.0" }
+                    // guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+                    string name;
+                    if (TomlUtilities.GetInlineTableString(property.Value, "module") is { } module)
+                    {
+                        name = module.Value;
+                    }
+                    else if (TomlUtilities.GetInlineTableString(property.Value, "group") is { } group && TomlUtilities.GetInlineTableString(property.Value, "name") is { } artifact)
+                    {
+                        name = group.Value + ":" + artifact.Value;
+                    }
+                    else
+                    {
+                        continue;
+                    }
 
-                // guava = { module = "com.google.guava:guava", version = "33.0.0" }
-                // guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
-                string name;
-                if (TomlUtilities.TryGetInlineTableString(value, "module", out var module, out _))
-                {
-                    name = module;
-                }
-                else if (TomlUtilities.TryGetInlineTableString(value, "group", out var group, out _) && TomlUtilities.TryGetInlineTableString(value, "name", out var artifact, out _))
-                {
-                    name = group + ":" + artifact;
-                }
-                else
-                {
-                    continue;
-                }
-
-                if (TomlUtilities.TryGetInlineTableString(value, "version", out var version, out offset))
-                {
-                    context.ReportDependency(this, name, version, DependencyType.JavaPackage,
-                        new NonUpdatableLocation(context),
-                        TomlUtilities.CreateLocation(context, tree, new TextSpan(valueStart + offset, version.Length)));
-                }
-                else if (TomlUtilities.TryGetInlineTableString(value, "version.ref", out var versionReference, out _))
-                {
-                    versionReferences.Add((name, versionReference));
-                }
-                else
-                {
-                    context.ReportDependency(this, name, version: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context));
+                    if (TomlUtilities.GetInlineTableString(property.Value, "version") is { } libraryVersion)
+                    {
+                        context.ReportDependency(this, name, libraryVersion.Value, DependencyType.JavaPackage,
+                            new NonUpdatableLocation(context), TomlUtilities.CreateLocation(context, tree, libraryVersion));
+                    }
+                    else if (TomlUtilities.GetInlineTableString(property.Value, "version.ref") is { } versionReference)
+                    {
+                        versionReferences.Add((name, versionReference.Value));
+                    }
+                    else
+                    {
+                        context.ReportDependency(this, name, version: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context));
+                    }
                 }
             }
         }

@@ -42,42 +42,39 @@ public sealed partial class CargoDependencyScanner : DependencyScanner
         using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
         var tree = TomlSyntaxTree.ParseText(text, context.FullPath);
-        var isDependencySection = false;
-        foreach (var entry in tree.GetRoot().Entries)
+        foreach (var table in tree.GetRoot().Tables)
         {
-            if (entry is TomlTableSyntax table)
-            {
-                isDependencySection = DependencySections.Contains(table.Name, StringComparer.Ordinal);
-                continue;
-            }
-
-            if (!isDependencySection || entry is not TomlPropertySyntax property || !property.ValueNode.IsToken)
+            if (table.IsArrayOfTables || !DependencySections.Contains(TomlUtilities.GetName(table.Key), StringComparer.Ordinal))
                 continue;
 
-            var name = property.Key;
-            var value = property.Value;
-            string? version;
-            int versionOffset;
-            if (name.Contains('.', StringComparison.Ordinal))
+            foreach (var property in table.Properties)
             {
-                // Dotted keys, such as serde.version = "1.0" or serde.workspace = true
-                const string VersionSuffix = ".version";
-                if (!name.EndsWith(VersionSuffix, StringComparison.Ordinal) || !TomlUtilities.TryGetString(value, out version, out versionOffset))
+                var names = property.Key.Names;
+                TomlStringSyntax? version;
+                if (names.Count is 1)
+                {
+                    // serde = "1.0", serde = { version = "1.0" } or serde = { path = "../serde" }
+                    version = TomlUtilities.GetString(property.Value) ?? TomlUtilities.GetInlineTableString(property.Value, "version");
+                }
+                else if (names is [_, "version"] && TomlUtilities.GetString(property.Value) is { } dottedVersion)
+                {
+                    // serde.version = "1.0". Other dotted keys, such as serde.workspace = true, are not versions.
+                    version = dottedVersion;
+                }
+                else
+                {
                     continue;
+                }
 
-                name = name[..^VersionSuffix.Length];
-            }
-            else if (!TomlUtilities.TryGetString(value, out version, out versionOffset))
-            {
-                // version is null when the inline table has no version, such as { path = "../local" } or { workspace = true }
-                _ = TomlUtilities.TryGetInlineTableString(value, "version", out version, out versionOffset);
-            }
+                var nameSpan = property.Key.Parts[0].Span;
+                if (property.Key.Parts[0].Text is ['"' or '\'', ..])
+                {
+                    nameSpan = new TextSpan(nameSpan.Start + 1, nameSpan.Length - 2);
+                }
 
-            var nameLocation = TomlUtilities.CreateLocation(context, tree, new TextSpan(property.KeyToken.Span.Start, name.Length));
-            Location versionLocation = version is not null
-                ? TomlUtilities.CreateLocation(context, tree, new TextSpan(property.ValueNode.AsToken().Span.Start + versionOffset, version.Length))
-                : new NonUpdatableLocation(context);
-            context.ReportDependency(this, name, version, DependencyType.RustCrate, nameLocation, versionLocation);
+                Location versionLocation = version is not null ? TomlUtilities.CreateLocation(context, tree, version) : new NonUpdatableLocation(context);
+                context.ReportDependency(this, names[0], version?.Value, DependencyType.RustCrate, TomlUtilities.CreateLocation(context, tree, nameSpan), versionLocation);
+            }
         }
     }
 

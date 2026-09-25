@@ -1,48 +1,36 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
-using Meziantou.Framework.DependencyScanning.Locations;
 using Meziantou.Framework.Language;
 using Meziantou.Framework.Language.Toml;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
-internal static partial class TomlUtilities
+internal static class TomlUtilities
 {
-    /// <summary>Gets the content of a basic or literal string value, and its offset in the value text.</summary>
-    public static bool TryGetString(string value, [NotNullWhen(true)] out string? content, out int offset)
-    {
-        if (value.Length >= 2 && value[0] is '"' or '\'' && value[^1] == value[0])
-        {
-            content = value[1..^1];
-            offset = 1;
-            return true;
-        }
+    /// <summary>Gets the name of a key, such as <c>version.ref</c>, with quoted parts unquoted.</summary>
+    public static string GetName(TomlKeySyntax key) => string.Join('.', key.Names);
 
-        content = null;
-        offset = 0;
-        return false;
-    }
+    /// <summary>Gets a single-line string value. Multi-line strings are ignored as a version cannot span several lines.</summary>
+    public static TomlStringSyntax? GetString(TomlValueSyntax value) => value is TomlStringSyntax { IsMultiLine: false } str ? str : null;
 
-    /// <summary>Gets a top-level string entry of an inline table, such as <c>version = "1.0"</c> in <c>{ features = ["a"], version = "1.0" }</c>, and its offset in the value text.</summary>
-    public static bool TryGetInlineTableString(string value, string key, [NotNullWhen(true)] out string? content, out int offset)
+    /// <summary>Gets a string entry of an inline table, such as <c>version</c> in <c>{ features = ["a"], version = "1.0" }</c>.</summary>
+    public static TomlStringSyntax? GetInlineTableString(TomlValueSyntax value, string key)
     {
-        if (value.StartsWith('{', StringComparison.Ordinal))
+        if (value is TomlInlineTableSyntax table)
         {
-            foreach (Match match in InlineTableStringEntryRegex().Matches(value))
+            foreach (var property in table.Properties)
             {
-                if (!match.Groups["key"].ValueSpan.Equals(key, StringComparison.Ordinal))
-                    continue;
-
-                var group = match.Groups["basic"].Success ? match.Groups["basic"] : match.Groups["literal"];
-                content = group.Value;
-                offset = group.Index;
-                return true;
+                if (GetName(property.Key) == key)
+                    return GetString(property.Value);
             }
         }
 
-        content = null;
-        offset = 0;
-        return false;
+        return null;
+    }
+
+    /// <summary>Creates the location of the content of a string, without its quotes.</summary>
+    public static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TomlStringSyntax value)
+    {
+        var span = value.StringToken.Span;
+        return CreateLocation(context, tree, new TextSpan(span.Start + 1, span.Length - 2));
     }
 
     public static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TextSpan span)
@@ -50,7 +38,4 @@ internal static partial class TomlUtilities
         var lineSpan = tree.GetLineSpan(span);
         return new TextLocation(context.FileSystem, context.FullPath, lineSpan.Start.Line + 1, lineSpan.Start.Character + 1, span.Length);
     }
-
-    [GeneratedRegex("""(?:^\{|,)\s*(?<key>[A-Za-z0-9_.-]+)\s*=\s*(?:"(?<basic>[^"]*)"|'(?<literal>[^']*)')""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex InlineTableStringEntryRegex();
 }

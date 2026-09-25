@@ -28,6 +28,10 @@ The library can detect the following dependency types:
 - **HelmChart** - Helm chart dependencies
 - **RenovateConfiguration** - Renovate configuration extends
 - **SwiftPackage** - Swift Package Manager dependencies
+- **RustCrate** - Rust crates from Cargo manifests and lockfiles
+- **GoModule** - Go modules from `go.mod` and `go.sum`
+- **JavaPackage** - Java packages from Maven and Gradle
+- **PhpPackage** - PHP packages from Composer
 - **MSBuildProjectReference** - MSBuild project references
 - **DotNetAssemblyReference** - .NET assembly file references
 - **RubyGem** - Ruby gem packages
@@ -45,6 +49,12 @@ The library can detect the following dependency types:
 - **Helm charts**: the dependency name is the chart `name`. The `repository` and `alias` values are available in `Dependency.Metadata` under the `repository` and `alias` keys.
 - **npm**: protocol and path specifiers (`workspace:`, `file:`, `link:`, git URLs, `github:`, tarball URLs, `owner/repo` shorthands, ...) are reported with a version location that is not updatable. An alias (`"name": "npm:package@1.0.0"`) is reported as the aliased package, with the alias name in `Dependency.Metadata` under the `alias` key.
 - **Python**: `*requirements*.txt` files and `.txt` files in a `requirements` directory are scanned. Only exact pins (`==`) are reported.
+- **RubyGems**: `Gemfile`, `*.gemspec`, and `Gemfile.lock` files are scanned. Gem declarations and top-level Bundler lockfile specs are reported. Lockfile versions are not updatable.
+- **Cargo**: `Cargo.toml` dependency sections and `Cargo.lock` package entries are scanned. Registry version requirements are updatable; git, path, workspace, and other non-version specifications are reported as non-updatable. `Cargo.lock` versions are not updatable as their checksums would no longer match.
+- **Go modules**: `go.mod` `require` directives and `go.sum` checksum entries are scanned. `go.mod` versions are updatable; `go.sum` versions are not, as their hashes would no longer match.
+- **Python projects**: `pyproject.toml`, `poetry.lock`, `Pipfile`, and `Pipfile.lock` are scanned. Exact versions from the dependency sections (`[project]` `dependencies`, `[project.optional-dependencies]`, `[dependency-groups]`, Poetry dependency tables, and Pipfile `[packages]`/`[dev-packages]`) and lockfile entries are reported. Lockfile versions are not updatable.
+- **Composer**: `composer.json` `require` and `require-dev` entries, plus `composer.lock` package entries, are scanned. Platform requirements, such as `php` or `ext-json`, are ignored.
+- **Java**: Maven `pom.xml` dependencies, plugins, and parent, Gradle build dependencies, and Gradle version catalog libraries (`libs.versions.toml`, including `version.ref`) are scanned. Maven property references and catalog versions shared by several libraries are not updatable.
 - **Renovate**: `.json5` files are read as JSON with comments and trailing commas. JSON5-only syntax, such as unquoted property names or single-quoted strings, is not supported.
 
 ## Usage

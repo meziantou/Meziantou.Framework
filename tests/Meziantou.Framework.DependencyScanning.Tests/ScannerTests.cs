@@ -12,6 +12,385 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     private readonly TemporaryDirectory _directory = TemporaryDirectory.Create();
 
     [Fact]
+    public async Task PythonProjectDependencies()
+    {
+        AddFile("pyproject.toml", """
+            [project]
+            name = "my-app"
+            version = "0.1.0"
+            dependencies = [
+                "requests==2.31.0",
+            ]
+
+            [tool.poetry.dependencies]
+            python = ">=3.12"
+            httpx = "0.27.0"
+            """);
+        AddFile("poetry.lock", """
+            [[package]]
+            name = "requests"
+            version = "2.31.0"
+            """);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 5, 16),
+            (DependencyType.PyPi, "httpx", "0.27.0", 10, 10));
+        Assert.Single(result, d => d.Name == "requests" && d.VersionLocation is { IsUpdatable: false } location && location.FilePath.EndsWith("poetry.lock", StringComparison.Ordinal));
+        Assert.DoesNotContain(result, d => d.Name is "name" or "version");
+    }
+
+    [Fact]
+    public async Task PythonPipfileDependencies()
+    {
+        AddFile("Pipfile", """
+            [[source]]
+            url = "https://pypi.org/simple"
+            verify_ssl = true
+            name = "pypi"
+
+            [packages]
+            requests = "==2.31.0"
+
+            [dev-packages]
+            pytest = "8.0.0"
+
+            [requires]
+            python_version = "3.11"
+            """);
+        AddFile("Pipfile.lock", /*lang=json,strict*/ """
+            {
+              "default": {
+                "requests": { "version": "==2.31.0" }
+              }
+            }
+            """);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 7, 15),
+            (DependencyType.PyPi, "pytest", "8.0.0", 10, 11),
+            (DependencyType.PyPi, "requests", "2.31.0", 0, 0));
+        Assert.DoesNotContain(result, d => d.Version is not null && d.Version.StartsWith('=', StringComparison.Ordinal));
+        Assert.DoesNotContain(result, d => d.Name is "url" or "verify_ssl" or "name" or "python_version");
+    }
+
+    [Fact]
+    public async Task ComposerDependencies()
+    {
+        AddFile("composer.json", """
+            {
+              "require": {
+                "php": ">=8.1",
+                "ext-json": "*",
+                "monolog/monolog": "^3.0"
+              },
+              "require-dev": {
+                "phpunit/phpunit": "^11.0"
+              }
+            }
+            """);
+        AddFile("composer.lock", """
+            {
+              "packages": [
+                { "name": "monolog/monolog", "version": "3.0.0" }
+              ],
+              "packages-dev": [
+                { "name": "phpunit/phpunit", "version": "11.0.0" }
+              ]
+            }
+            """);
+
+        var result = await GetDependencies<ComposerDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.PhpPackage, "monolog/monolog", "^3.0", 0, 0),
+            (DependencyType.PhpPackage, "phpunit/phpunit", "^11.0", 0, 0));
+        Assert.DoesNotContain(result, d => d.Name is "php" or "ext-json");
+    }
+
+    [Fact]
+    public async Task JavaDependencies()
+    {
+        AddFile("pom.xml", """
+            <project>
+              <groupId>com.acme</groupId>
+              <artifactId>app</artifactId>
+              <version>1.0-SNAPSHOT</version>
+              <parent>
+                <groupId>org.example</groupId>
+                <artifactId>example-parent</artifactId>
+                <version>2.0.0</version>
+              </parent>
+              <dependencies>
+                <dependency>
+                  <groupId>org.example</groupId>
+                  <artifactId>example-bom-managed</artifactId>
+                </dependency>
+                <dependency>
+                  <groupId>org.example</groupId>
+                  <artifactId>example-core</artifactId>
+                  <version>1.2.3</version>
+                  <exclusions>
+                    <exclusion>
+                      <groupId>org.excluded</groupId>
+                      <artifactId>excluded</artifactId>
+                    </exclusion>
+                  </exclusions>
+                </dependency>
+                <dependency>
+                  <groupId>org.example</groupId>
+                  <artifactId>example-property</artifactId>
+                  <version>${example.version}</version>
+                </dependency>
+              </dependencies>
+              <build>
+                <plugins>
+                  <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.11.0</version>
+                  </plugin>
+                </plugins>
+              </build>
+            </project>
+            """);
+        AddFile("build.gradle", """
+            dependencies {
+                implementation "org.example:example-core:1.2.3"
+                implementation 'org.example:example-aar:1.0.0@aar'
+                implementation "org.example:example-interpolated:$exampleVersion"
+            }
+            """);
+
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "org.example:example-parent", "2.0.0", 8, 14),
+            (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 18, 16),
+            (DependencyType.JavaPackage, "org.example:example-property", "${example.version}", 0, 0),
+            (DependencyType.JavaPackage, "org.apache.maven.plugins:maven-compiler-plugin", "3.11.0", 36, 18),
+            (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 2, 46),
+            (DependencyType.JavaPackage, "org.example:example-aar", "1.0.0", 3, 45));
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:example-property").VersionLocation!.IsUpdatable);
+        Assert.DoesNotContain(result, d => d.Name is "com.acme:app" or "org.excluded:excluded" or "org.example:maven-compiler-plugin" or "org.example:example-interpolated");
+    }
+
+    [Fact]
+    public async Task JavaVersionCatalogDependencies()
+    {
+        AddFile("gradle/libs.versions.toml", """
+            [versions]
+            guava = "33.0.0"
+            shared = "1.0.0"
+
+            [libraries]
+            guava = { module = "com.google.guava:guava", version.ref = "guava" }
+            commons = "org.apache.commons:commons-lang3:3.14.0"
+            junit = { group = "org.junit.jupiter", name = "junit-jupiter", version = "5.10.0" }
+            a = { module = "org.example:a", version.ref = "shared" }
+            b = { module = "org.example:b", version.ref = "shared" }
+
+            [plugins]
+            kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+            """);
+
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "com.google.guava:guava", "33.0.0", 2, 10),
+            (DependencyType.JavaPackage, "org.apache.commons:commons-lang3", "3.14.0", 7, 45),
+            (DependencyType.JavaPackage, "org.junit.jupiter:junit-jupiter", "5.10.0", 8, 75),
+            (DependencyType.JavaPackage, "org.example:a", "1.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.example:b", "1.0.0", 0, 0));
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:a").VersionLocation!.IsUpdatable);
+        Assert.Equal(5, result.Count(d => d.Type == DependencyType.JavaPackage));
+    }
+
+    [Fact]
+    public async Task GoModuleDependencies()
+    {
+        const string Original = """
+            module example.com/app
+
+            require github.com/foo/bar v1.2.3
+
+            require (
+                golang.org/x/text v0.14.0 // indirect
+                example.com/local v0.1.0
+            )
+            """;
+        const string Expected = """
+            module example.com/app
+
+            require dummy1 v2.0.0
+
+            require (
+                dummy2 v2.0.0 // indirect
+                dummy3 v2.0.0
+            )
+            """;
+
+        AddFile("go.mod", Original);
+        var result = await GetDependencies<GoModuleDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.GoModule, "github.com/foo/bar", "v1.2.3", 3, 28),
+            (DependencyType.GoModule, "golang.org/x/text", "v0.14.0", 6, 23),
+            (DependencyType.GoModule, "example.com/local", "v0.1.0", 7, 23));
+
+        await UpdateDependencies(result, "dummy", "v2.0.0");
+        AssertFileContentEqual("go.mod", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task GoModuleSumDependencies()
+    {
+        AddFile("go.sum", """
+            github.com/foo/bar v1.2.3 h1:abc
+            github.com/foo/bar v1.2.3/go.mod h1:def
+            golang.org/x/text v0.14.0 h1:ghi
+            """);
+
+        var result = await GetDependencies<GoModuleDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.GoModule, "github.com/foo/bar", "v1.2.3", 0, 0),
+            (DependencyType.GoModule, "golang.org/x/text", "v0.14.0", 0, 0));
+        Assert.DoesNotContain(result, d => d.VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
+    public async Task CargoDependencies()
+    {
+        const string Original = """
+            [dependencies]
+            serde = "1.0"
+            tokio = { version = "1.0", features = ["full"] }
+            local = { path = "../local" }
+            reqwest = { features = ["json"], version = "0.12" }
+            renamed = { package = "foo-version", version = "2" }
+            git = { git = "https://github.com/a/version-lib", branch = "main" }
+            literal = '1.5'
+            dotted.version = "0.3"
+            dotted.features = ["a"]
+            member.workspace = true
+
+            [dev-dependencies]
+            anyhow = "1.0"
+            """;
+        const string Expected = """
+            [dependencies]
+            dummy1 = "2.0.0"
+            dummy2 = { version = "2.0.0", features = ["full"] }
+            dummy3 = { path = "../local" }
+            dummy4 = { features = ["json"], version = "2.0.0" }
+            dummy5 = { package = "foo-version", version = "2.0.0" }
+            dummy6 = { git = "https://github.com/a/version-lib", branch = "main" }
+            dummy7 = '2.0.0'
+            dummy8.version = "2.0.0"
+            dotted.features = ["a"]
+            member.workspace = true
+
+            [dev-dependencies]
+            dummy9 = "2.0.0"
+            """;
+
+        AddFile("Cargo.toml", Original);
+        var result = await GetDependencies<CargoDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RustCrate, "serde", "1.0", 2, 10),
+            (DependencyType.RustCrate, "tokio", "1.0", 3, 22),
+            (DependencyType.RustCrate, "local", null, 0, 0),
+            (DependencyType.RustCrate, "reqwest", "0.12", 5, 45),
+            (DependencyType.RustCrate, "renamed", "2", 6, 49),
+            (DependencyType.RustCrate, "git", null, 0, 0),
+            (DependencyType.RustCrate, "literal", "1.5", 8, 12),
+            (DependencyType.RustCrate, "dotted", "0.3", 9, 19),
+            (DependencyType.RustCrate, "anyhow", "1.0", 14, 11));
+        Assert.Equal(9, result.Count(d => d.Type == DependencyType.RustCrate));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Cargo.toml", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task CargoLockDependencies()
+    {
+        AddFile("Cargo.lock", """
+            version = 4
+
+            [[package]]
+            name = "serde"
+            version = "1.0.0"
+            source = "registry+https://github.com/rust-lang/crates.io-index"
+
+            [[package]]
+            name = "serde_derive"
+            version = "1.0.0"
+            """);
+
+        var result = await GetDependencies<CargoDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RustCrate, "serde", "1.0.0", 0, 0),
+            (DependencyType.RustCrate, "serde_derive", "1.0.0", 0, 0));
+        Assert.DoesNotContain(result, d => d.VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
+    public async Task RubyGemDependencies()
+    {
+        const string Original = """
+            source "https://rubygems.org"
+            gem "rails", "~> 7.0"
+            gem 'without-version'
+            """;
+        const string Expected = """
+            source "https://rubygems.org"
+            gem "dummy1", "2.0.0"
+            gem 'dummy2'
+            """;
+
+        AddFile("Gemfile", Original);
+        var result = await GetDependencies<RubyGemDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RubyGem, "rails", "~> 7.0", 2, 15),
+            (DependencyType.RubyGem, "without-version", null, 0, 0));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Gemfile", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task RubyGemDependencies_GemspecAndLockFile()
+    {
+        AddFile("sample.gemspec", """
+            Gem::Specification.new do |spec|
+              spec.add_dependency "rack", "3.0.0"
+              spec.add_runtime_dependency("puma", "~> 6.0")
+              spec.add_development_dependency "rspec"
+            end
+            """);
+        AddFile("Gemfile.lock", """
+            GEM
+              specs:
+                rack (3.0.0)
+                  base64
+                puma (6.0.1)
+
+            DEPENDENCIES
+              rack
+            """);
+
+        var gemspecResult = await GetDependencies<RubyGemDependencyScanner>();
+        AssertContainDependency(gemspecResult,
+            (DependencyType.RubyGem, "rack", "3.0.0", 2, 32),
+            (DependencyType.RubyGem, "puma", "~> 6.0", 3, 40),
+            (DependencyType.RubyGem, "rspec", null, 0, 0));
+
+        var lockPath = _directory.GetFullPath("Gemfile.lock");
+        var lockResult = await DependencyScanner.ScanFileAsync(_directory.FullPath, lockPath, await File.ReadAllBytesAsync(lockPath), [new RubyGemDependencyScanner()], XunitCancellationToken);
+        AssertContainDependency(lockResult,
+            (DependencyType.RubyGem, "rack", "3.0.0", 0, 0),
+            (DependencyType.RubyGem, "puma", "6.0.1", 0, 0));
+        Assert.DoesNotContain(lockResult, d => d.VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
     public async Task NpmPackageJsonDependencies()
     {
         const string Original = /*lang=json,strict*/ """
@@ -3658,8 +4037,8 @@ jobs:
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
-                (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation!).LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation!).LinePosition == expected.VersionColumn));
+                (expected.VersionLine == 0 || (d.VersionLocation as ILocationLineInfo)?.LineNumber == expected.VersionLine) &&
+                (expected.VersionColumn == 0 || (d.VersionLocation as ILocationLineInfo)?.LinePosition == expected.VersionColumn));
         }
     }
 

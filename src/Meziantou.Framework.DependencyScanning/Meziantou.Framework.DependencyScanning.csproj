@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </ItemGroup>

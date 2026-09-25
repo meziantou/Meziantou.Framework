@@ -2,46 +2,41 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 
-internal sealed class TomlArraySyntax : TomlSyntaxNode
+/// <summary>An array: brackets around a comma-separated list of values.</summary>
+internal sealed class TomlArraySyntax : TomlValueSyntax
 {
-    private readonly GreenNode _openBracket;
-    private readonly GreenNode? _contents;
-    private readonly GreenNode _closeBracket;
+    private readonly GreenNode _openBracketToken;
+    private readonly GreenNode? _elements;
+    private readonly GreenNode _closeBracketToken;
 
-    public TomlArraySyntax(GreenNode openBracket, GreenNode? contents, GreenNode closeBracket)
-        : this(openBracket, contents, closeBracket, diagnostics: null, annotations: null)
+    public TomlArraySyntax(GreenNode openBracketToken, GreenNode? elements, GreenNode closeBracketToken)
+        : this(openBracketToken, elements, closeBracketToken, diagnostics: null, annotations: null)
     {
     }
 
-    private TomlArraySyntax(GreenNode openBracket, GreenNode? contents, GreenNode closeBracket, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private TomlArraySyntax(GreenNode openBracketToken, GreenNode? elements, GreenNode closeBracketToken, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
         : base(SyntaxKind.TomlArray, diagnostics, annotations)
     {
         SlotCount = 3;
-        AdjustFlagsAndWidth(openBracket);
-        _openBracket = openBracket;
-        AdjustFlagsAndWidth(contents);
-        _contents = contents;
-        AdjustFlagsAndWidth(closeBracket);
-        _closeBracket = closeBracket;
+        AdjustFlagsAndWidth(openBracketToken);
+        _openBracketToken = openBracketToken;
+        AdjustFlagsAndWidth(elements);
+        _elements = elements;
+        AdjustFlagsAndWidth(closeBracketToken);
+        _closeBracketToken = closeBracketToken;
     }
 
     internal override GreenNode? GetSlot(int index) => index switch
     {
-        0 => _openBracket,
-        1 => _contents,
-        2 => _closeBracket,
+        0 => _openBracketToken,
+        1 => _elements,
+        2 => _closeBracketToken,
         _ => null,
     };
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots)
-        => new TomlArraySyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
-
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics)
-        => new TomlArraySyntax(_openBracket, _contents, _closeBracket, diagnostics, GetAnnotations());
-
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations)
-        => new TomlArraySyntax(_openBracket, _contents, _closeBracket, GetDiagnostics(), annotations);
-
-    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position)
-        => new Toml.TomlArraySyntax(this, parent, position);
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => new TomlArraySyntax(RequiredSlot(slots[0]), slots[1], RequiredSlot(slots[2]), GetDiagnostics(), GetAnnotations());
+    internal override bool IsSeparatedListSlot(int index) => index is 1;
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new TomlArraySyntax(_openBracketToken, _elements, _closeBracketToken, diagnostics, GetAnnotations());
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new TomlArraySyntax(_openBracketToken, _elements, _closeBracketToken, GetDiagnostics(), annotations);
+    internal override SyntaxNode CreateRed(SyntaxNode? parent, int position) => new Toml.TomlArraySyntax(this, parent, position);
 }

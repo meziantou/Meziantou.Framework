@@ -9,7 +9,8 @@ internal static class TomlUtilities
     public static string GetName(TomlKeySyntax key) => string.Join('.', key.Names);
 
     /// <summary>Gets a single-line string value. Multi-line strings are ignored as a version cannot span several lines.</summary>
-    public static TomlStringSyntax? GetString(TomlValueSyntax value) => value is TomlStringSyntax { IsMultiLine: false } str ? str : null;
+    /// <remarks>A string the parser reported, such as one without its closing quote, is ignored too: its value is a guess, and its quotes are not where a location expects them.</remarks>
+    public static TomlStringSyntax? GetString(TomlValueSyntax value) => value is TomlStringSyntax { IsMultiLine: false } str && !str.StringToken.ContainsDiagnostics ? str : null;
 
     /// <summary>Gets a string entry of an inline table, such as <c>version</c> in <c>{ features = ["a"], version = "1.0" }</c>.</summary>
     public static TomlStringSyntax? GetInlineTableString(TomlValueSyntax value, string key)

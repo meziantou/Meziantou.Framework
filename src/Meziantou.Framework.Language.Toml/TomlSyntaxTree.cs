@@ -4,8 +4,16 @@ namespace Meziantou.Framework.Language.Toml;
 
 /// <summary>A parsed TOML document.</summary>
 /// <remarks>
+/// <para>
 /// Parsing never throws and never gives up: whatever the text says, the tree reproduces it exactly, and anything wrong
-/// with it is reported through <see cref="GetDiagnostics"/> -- from a missing bracket to a key defined twice.
+/// with it is reported through <see cref="GetDiagnostics()"/> -- from a missing bracket to a key defined twice.
+/// </para>
+/// <para>
+/// What breaks the grammar is carried by the nodes, and is what <see cref="SyntaxNode.ContainsDiagnostics"/> tells.
+/// Whether a key or a table is defined twice, or a value extended after the fact, depends on the whole document
+/// instead, so the tree works it out from its root the first time it is asked, and again for every new tree an edit
+/// produces. A node carries none of these, and neither does a node that is not part of a tree.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -18,6 +26,7 @@ public sealed class TomlSyntaxTree : SyntaxTree
     private readonly SourceText _text;
     private readonly TomlDocumentSyntax _root;
     private IReadOnlyList<Diagnostic>? _diagnostics;
+    private Diagnostic[]? _documentDiagnostics;
 
     private TomlSyntaxTree(SourceText text, TomlParseOptions options, Green.TomlDocumentSyntax green, string? path)
     {
@@ -71,12 +80,18 @@ public sealed class TomlSyntaxTree : SyntaxTree
     }
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
-    /// <remarks>The diagnostics are those <paramref name="root"/> carries; the text is not parsed again.</remarks>
+    /// <remarks>
+    /// The text is not parsed again: the grammar diagnostics are those <paramref name="root"/> carries. Keys and
+    /// tables defined twice are checked over the new root.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static TomlSyntaxTree Create(TomlDocumentSyntax root, string? path = null) => Create(root, options: null, path);
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
-    /// <remarks>The diagnostics are those <paramref name="root"/> carries; the text is not parsed again.</remarks>
+    /// <remarks>
+    /// The text is not parsed again: the grammar diagnostics are those <paramref name="root"/> carries. Keys and
+    /// tables defined twice are checked over the new root.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static TomlSyntaxTree Create(TomlDocumentSyntax root, TomlParseOptions? options, string? path = null)
     {
@@ -86,7 +101,29 @@ public sealed class TomlSyntaxTree : SyntaxTree
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= base.GetDiagnostics();
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= [.. Merge(base.GetDiagnostics(), GetDocumentDiagnostics())];
+
+    /// <summary>Gets the diagnostics at or below <paramref name="node"/>, including the keys and tables it defines twice.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
+    public override IEnumerable<Diagnostic> GetDiagnostics(SyntaxNode node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        var span = node.FullSpan;
+        return Merge(base.GetDiagnostics(node), GetDocumentDiagnostics().Where(diagnostic => span.Contains(diagnostic.Location.SourceSpan)));
+    }
+
+    /// <summary>Gets the diagnostics that depend on the whole document rather than on the grammar, in source order.</summary>
+    private Diagnostic[] GetDocumentDiagnostics()
+    {
+        return _documentDiagnostics ??= [.. Green.DocumentValidator.Validate(_root.Green)
+            .Select(info => info.ToDiagnostic(nodePosition: 0, _text))
+            .OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start)];
+    }
+
+    /// <summary>Merges two lists of diagnostics that are each in source order, keeping the first list's first at the same position.</summary>
+    private static IEnumerable<Diagnostic> Merge(IEnumerable<Diagnostic> first, IEnumerable<Diagnostic> second)
+        => first.Concat(second).OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start);
 
     /// <summary>Returns a tree over <paramref name="newText"/>, parsed with the same options.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="newText"/> is <see langword="null"/>.</exception>

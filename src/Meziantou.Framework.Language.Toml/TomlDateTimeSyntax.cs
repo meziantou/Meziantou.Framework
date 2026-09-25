@@ -27,7 +27,7 @@ public sealed class TomlDateTimeSyntax : TomlValueSyntax
 
     /// <summary>Gets the value: a <see cref="DateTimeOffset"/>, <see cref="DateTime"/>, <see cref="DateOnly"/>, or <see cref="TimeOnly"/>, depending on the kind.</summary>
     /// <exception cref="InvalidOperationException">The token was built by hand and does not spell a date or a time.</exception>
-    public object Value => DateTimeToken.Value ?? Internals.TokenValues.ParseDateTime(DateTimeToken.Text);
+    public object Value => DateTimeToken.Value is { } value and (DateTimeOffset or DateTime or DateOnly or TimeOnly) ? value : Internals.TokenValues.ParseDateTime(DateTimeToken.Text);
 
     /// <summary>Returns this value with a different token, or itself when nothing changed.</summary>
     /// <remarks>The kind of the node follows the token, so replacing a date with a time changes both.</remarks>

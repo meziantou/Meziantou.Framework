@@ -309,6 +309,22 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task CargoDependencies_WithAnUnterminatedString()
+    {
+        AddFile("Cargo.toml", """
+            [dependencies]
+            tokio = "1.0
+            serde = "
+            """);
+
+        var result = await GetDependencies<CargoDependencyScanner>();
+
+        AssertContainDependency(result,
+            (DependencyType.RustCrate, "tokio", null, 0, 0),
+            (DependencyType.RustCrate, "serde", null, 0, 0));
+    }
+
+    [Fact]
     public async Task CargoLockDependencies()
     {
         AddFile("Cargo.lock", """

@@ -23,7 +23,6 @@ internal sealed class LanguageParser
     private readonly Lexer _lexer;
     private readonly TomlParseOptions _options;
     private readonly List<PendingDiagnostic> _pending = [];
-    private readonly DocumentValidator _validator = new();
     private GreenToken _current;
     private LexerMode _currentMode;
     private int _currentFullStart;
@@ -70,7 +69,7 @@ internal sealed class LanguageParser
 
             var entryStart = _currentFullStart;
             var entry = ParseEntry();
-            entries.Add(_validator.Validate(entry));
+            entries.Add(MoveLineEndOntoTrailingMissingTokens(entry));
 
             // Every entry reads at least one token; if one ever does not, the line is skipped rather than read forever.
             if (_currentFullStart == entryStart && CurrentKind != SyntaxKind.EndOfFileToken)
@@ -79,9 +78,11 @@ internal sealed class LanguageParser
                 continue;
             }
 
-            // Every entry ends its line; what follows it on the same line is not the start of another one.
+            // Every entry ends its line; what follows it on the same line is not the start of another one. It is read
+            // the way the start of an entry is, not as the value the token after a value was read as.
             if (CurrentKind != SyntaxKind.EndOfFileToken && !_previousTokenEndedTheLine)
             {
+                EnsureMode(LexerMode.Key);
                 entries.Add(ParseRestOfLine(entry is TomlTableSyntax ? "a table header" : "a key/value pair"));
             }
         }
@@ -104,26 +105,32 @@ internal sealed class LanguageParser
         }
         else
         {
-            value = DocumentValidator.ValidateStandaloneValue(ParseValue(TerminatorState.EndOfFile));
+            value = ParseValue(TerminatorState.EndOfFile);
         }
 
         if (CurrentKind != SyntaxKind.EndOfFileToken)
         {
-            // A value has one node, so what follows it is kept together with it, token by token.
-            AddErrorAtCurrentToken(TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+            // A value has one node, so what follows it is kept together with it, token by token. The diagnostics the
+            // nodes of the value carried move to the node that replaces them, at the same place in the text.
+            if (!_current.ContainsDiagnostics)
+            {
+                AddErrorAtCurrentToken(TomlDiagnosticDescriptors.UnexpectedToken, _current.Text);
+            }
+
             var tokens = new List<GreenNode?>();
-            CollectTokens(value, tokens);
+            var diagnostics = new List<SyntaxDiagnosticInfo>();
+            CollectTokens(value, offset: 0, tokens, diagnostics);
             while (CurrentKind != SyntaxKind.EndOfFileToken)
             {
                 tokens.Add(EatToken(LexerMode.Value));
             }
 
-            value = new TomlSkippedValueSyntax(SyntaxFactory.ListNode(tokens.ToArray()));
+            value = new TomlSkippedValueSyntax(SyntaxFactory.ListNode(tokens.ToArray())).WithAdditionalDiagnostics([.. diagnostics]);
         }
 
         return Finish(value, nodeFullStart: 0, mark);
 
-        static void CollectTokens(GreenNode node, List<GreenNode?> tokens)
+        static void CollectTokens(GreenNode node, int offset, List<GreenNode?> tokens, List<SyntaxDiagnosticInfo> diagnostics)
         {
             if (node.IsToken)
             {
@@ -131,11 +138,16 @@ internal sealed class LanguageParser
                 return;
             }
 
+            foreach (var diagnostic in node.GetDiagnostics())
+            {
+                diagnostics.Add(diagnostic.WithOffset(offset + diagnostic.Offset));
+            }
+
             for (var i = 0; i < node.SlotCount; i++)
             {
                 if (node.GetSlot(i) is { } child)
                 {
-                    CollectTokens(child, tokens);
+                    CollectTokens(child, offset + node.GetSlotOffset(i), tokens, diagnostics);
                 }
             }
         }
@@ -294,14 +306,7 @@ internal sealed class LanguageParser
     private GreenNode ParseArrayOrInlineTable(TerminatorState terminators)
     {
         if (_depth >= _options.MaxDepth)
-        {
-            var mark = _pending.Count;
-            var start = _currentFullStart;
-            AddErrorAtCurrentToken(TomlDiagnosticDescriptors.NestingTooDeep, _options.MaxDepth);
-            var skipped = ParseSkippedValue(terminators, reportFirstToken: false);
-
-            return Finish(skipped, start, mark);
-        }
+            return ParseTooDeepValue();
 
         _depth++;
         try
@@ -373,9 +378,20 @@ internal sealed class LanguageParser
         var reportedLineBreak = false;
         var lastCommaPosition = -1;
 
+        // An inline table written one key/value pair per line, the way TOML 1.1 allows.
+        var spansLines = _previousTokenEndedTheLine;
+
         while (true)
         {
             EnsureMode(LexerMode.Key);
+
+            // Keys are read with the lexer that joins ']]' into the closer of an array-of-tables header, but in a value
+            // those are the closers of two arrays.
+            if (CurrentKind == SyntaxKind.CloseBracketCloseBracketToken && (closers & TerminatorState.CloseBracket) != TerminatorState.None)
+            {
+                EnsureMode(LexerMode.Value);
+            }
+
             if (_options.Version < TomlVersion.V1_1 && _previousTokenEndedTheLine && !reportedLineBreak && CurrentKind != SyntaxKind.EndOfFileToken)
             {
                 AddErrorAtCurrentToken(TomlDiagnosticDescriptors.RequiresNewerVersion, "A line break in an inline table", "1.1");
@@ -394,7 +410,9 @@ internal sealed class LanguageParser
                     continue;
                 }
 
-                if (ShouldAbandon(closers))
+                // In an inline table that spans lines, an indented 'key =' on the next line is its next key/value pair
+                // with the comma forgotten, rather than the next entry of the document.
+                if (ShouldAbandon(closers) && !(spansLines && IsIndentedKeyValuePair()))
                     break;
 
                 AddErrorForMissingToken(TomlDiagnosticDescriptors.ExpectedCharacter, ",");
@@ -435,6 +453,58 @@ internal sealed class LanguageParser
         var node = new TomlInlineTableSyntax(openBrace, SyntaxFactory.ListNode(properties.ToArray()), closeBrace);
 
         return (TomlInlineTableSyntax)Finish(node, start, mark);
+    }
+
+    /// <summary>Keeps an array or an inline table that nests too deep as skipped text, up to the bracket that closes it.</summary>
+    /// <remarks>
+    /// <para>
+    /// The brackets are counted, so the arrays and inline tables around it each still close with their own bracket,
+    /// and the construct is reported once. Only the nesting is, and not what the tokens inside it say: they are read
+    /// as values whatever they are, so a key in there would otherwise be reported as a value that makes no sense.
+    /// </para>
+    /// <para>
+    /// A construct that is not closed stops, as any other one does, at a line that can only be the start of the
+    /// next entry.
+    /// </para>
+    /// </remarks>
+    private TomlSkippedValueSyntax ParseTooDeepValue()
+    {
+        var mark = _pending.Count;
+        var start = _currentFullStart;
+        AddErrorAtCurrentToken(TomlDiagnosticDescriptors.NestingTooDeep, _options.MaxDepth);
+
+        var tokens = new List<GreenNode?>();
+        var depth = 0;
+        do
+        {
+            switch (CurrentKind)
+            {
+                case SyntaxKind.OpenBracketToken or SyntaxKind.OpenBraceToken:
+                    depth++;
+                    break;
+                case SyntaxKind.CloseBracketToken or SyntaxKind.CloseBraceToken:
+                    depth--;
+                    break;
+            }
+
+            tokens.Add(WithoutOwnDiagnostics(EatToken(LexerMode.Value)));
+        }
+        while (depth > 0 && CurrentKind != SyntaxKind.EndOfFileToken && !(_previousTokenEndedTheLine && LooksLikeStartOfEntry()));
+
+        var node = new TomlSkippedValueSyntax(SyntaxFactory.ListNode(tokens.ToArray()));
+
+        return (TomlSkippedValueSyntax)Finish(node, start, mark);
+
+        static GreenNode WithoutOwnDiagnostics(GreenToken token)
+        {
+            if (token.GetDiagnostics().Length == 0)
+                return token;
+
+            var result = (GreenToken)token.SetDiagnostics(diagnostics: null);
+
+            // A token that holds text that could not be read says so with a flag the copy does not inherit.
+            return token.ContainsSkippedText && !result.ContainsSkippedText ? result.AsSkippedText() : result;
+        }
     }
 
     /// <summary>Keeps the tokens of a value that cannot be read, up to where the value has to end.</summary>
@@ -546,7 +616,11 @@ internal sealed class LanguageParser
     private bool ShouldAbandon(TerminatorState terminators)
         => (terminators & TerminatorState.EndOfLine) == TerminatorState.None && _previousTokenEndedTheLine && CurrentKind != SyntaxKind.EndOfFileToken && LooksLikeStartOfEntry();
 
-    /// <summary>Determines whether the current line starts with a table header or with <c>key =</c>.</summary>
+    /// <summary>Determines whether the current line is a table header, or starts with <c>key =</c>.</summary>
+    /// <remarks>
+    /// A header is recognized by its whole line, <c>[key]</c> or <c>[[key]]</c> followed by nothing but a comment:
+    /// a line such as <c>[3, 4]</c> in an array is an element that lacks the comma before it, not a header.
+    /// </remarks>
     private bool LooksLikeStartOfEntry()
     {
         var savedPosition = _lexer.Position;
@@ -555,7 +629,7 @@ internal sealed class LanguageParser
             _lexer.Position = _currentFullStart;
             var token = _lexer.Lex(LexerMode.Key);
             if (token.RawKind is (int)SyntaxKind.OpenBracketToken or (int)SyntaxKind.OpenBracketOpenBracketToken)
-                return true;
+                return IsRestOfHeaderLine();
 
             while (IsKeyPart((SyntaxKind)token.RawKind) && !EndsTheLine(token.TrailingTrivia))
             {
@@ -575,6 +649,101 @@ internal sealed class LanguageParser
         {
             _lexer.Position = savedPosition;
         }
+    }
+
+    /// <summary>Reads the rest of a line that starts with <c>[</c> or <c>[[</c>, and determines whether it is a key, a closing bracket, and nothing more.</summary>
+    private bool IsRestOfHeaderLine()
+    {
+        while (true)
+        {
+            var token = _lexer.Lex(LexerMode.Key);
+            if (!SyntaxFacts.IsKeyToken((SyntaxKind)token.RawKind) || EndsTheLine(token.TrailingTrivia))
+                return false;
+
+            token = _lexer.Lex(LexerMode.Key);
+            if (token.RawKind is (int)SyntaxKind.CloseBracketToken or (int)SyntaxKind.CloseBracketCloseBracketToken)
+                return EndsTheLine(token.TrailingTrivia) || _lexer.Lex(LexerMode.Key).RawKind == (int)SyntaxKind.EndOfFileToken;
+
+            if (token.RawKind != (int)SyntaxKind.DotToken || EndsTheLine(token.TrailingTrivia))
+                return false;
+        }
+    }
+
+    /// <summary>Determines whether the current token starts an indented line that reads as <c>key =</c>.</summary>
+    private bool IsIndentedKeyValuePair()
+    {
+        if (!IsKeyPart(CurrentKind) || _current.LeadingTrivia is not { } leading)
+            return false;
+
+        var count = GreenNodeList.Count(leading);
+        return count > 0 && GreenNodeList.ElementAt(leading, count - 1)?.RawKind == (int)SyntaxKind.WhitespaceTrivia && LooksLikeStartOfEntry();
+    }
+
+    /// <summary>Moves the trivia that ends an entry onto the missing tokens it ends with, where the entry's trailing trivia is read from.</summary>
+    /// <remarks>
+    /// A missing token is created where the text lacks one, after the trivia of the token before it has been read. Left
+    /// there, that trivia -- the line break above all -- would sit before the missing token, and anything asking the
+    /// entry whether it ends its line would be told it does not. The text is the same either way.
+    /// </remarks>
+    private static GreenNode MoveLineEndOntoTrailingMissingTokens(GreenNode entry)
+    {
+        if (GetLastToken(entry, includeMissing: true) is not { IsMissing: true } || GetLastToken(entry, includeMissing: false) is not { TrailingTrivia: { } trivia } lastRealToken)
+            return entry;
+
+        var stripped = ReplaceLastToken(entry, lastRealToken, KeepSkippedText(lastRealToken, lastRealToken.WithTrivia(lastRealToken.LeadingTrivia, trailingTrivia: null)));
+        var lastMissingToken = GetLastToken(stripped, includeMissing: true)!;
+
+        return ReplaceLastToken(stripped, lastMissingToken, lastMissingToken.WithTrivia(lastMissingToken.LeadingTrivia, trivia));
+
+        static GreenToken KeepSkippedText(GreenToken original, GreenToken copy)
+            => original.ContainsSkippedText && !copy.ContainsSkippedText ? copy.AsSkippedText() : copy;
+    }
+
+    private static GreenToken? GetLastToken(GreenNode node, bool includeMissing)
+    {
+        if (node is GreenToken token)
+            return includeMissing || !token.IsMissing ? token : null;
+
+        for (var i = node.SlotCount - 1; i >= 0; i--)
+        {
+            if (node.GetSlot(i) is { } child && GetLastToken(child, includeMissing) is { } found)
+                return found;
+        }
+
+        return null;
+    }
+
+    /// <summary>Returns <paramref name="node"/> with the last occurrence of <paramref name="token"/> replaced.</summary>
+    private static GreenNode ReplaceLastToken(GreenNode node, GreenToken token, GreenToken replacement)
+    {
+        if (ReferenceEquals(node, token))
+            return replacement;
+
+        if (node.IsToken)
+            return node;
+
+        for (var i = node.SlotCount - 1; i >= 0; i--)
+        {
+            if (node.GetSlot(i) is not { } child)
+                continue;
+
+            var newChild = ReplaceLastToken(child, token, replacement);
+            if (ReferenceEquals(newChild, child))
+                continue;
+
+            var slots = new GreenNode?[node.SlotCount];
+            for (var j = 0; j < slots.Length; j++)
+            {
+                slots[j] = node.GetSlot(j);
+            }
+
+            slots[i] = newChild;
+
+            // A list of one token has to stay a list, which rebuilding it through its slots would not keep.
+            return node.IsList ? SyntaxFactory.ListNode(slots)! : node.WithSlots(slots)!;
+        }
+
+        return node;
     }
 
     private bool IsTerminator(SyntaxKind kind, TerminatorState terminators) => kind switch

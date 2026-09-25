@@ -363,6 +363,7 @@ namespace Meziantou.Framework.Language.Toml
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree Create(Meziantou.Framework.Language.Toml.TomlDocumentSyntax root, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree Create(Meziantou.Framework.Language.Toml.TomlDocumentSyntax root, Meziantou.Framework.Language.Toml.TomlParseOptions? options, string? path = null) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;

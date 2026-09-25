@@ -39,18 +39,21 @@ internal static class ScalarParser
             if (!ScanDigitGroup(text, ref index, isDigit) || index != text.Length)
                 return Result.NoMatch;
 
-            ulong result = 0;
+            var result = 0L;
             foreach (var character in text.AsSpan(2))
             {
                 if (character == '_')
                     continue;
 
-                result = (result * (ulong)radix) + (ulong)HexValue(character);
-                if (result > long.MaxValue)
+                // Checked before multiplying: once the product has overflowed, it can wrap around to a small number.
+                var digit = HexValue(character);
+                if (result > (long.MaxValue - digit) / radix)
                     return Result.Unsupported;
+
+                result = (result * radix) + digit;
             }
 
-            value = (long)result;
+            value = result;
             return Result.Success;
         }
 
@@ -110,8 +113,10 @@ internal static class ScalarParser
         if (position != text.Length || !(hasFraction || hasExponent))
             return Result.NoMatch;
 
+        // .NET reads a finite number too large for a double as an infinity; inf and nan were handled above, so an
+        // infinity here is a number TOML says to reject rather than round.
         value = double.Parse(RemoveUnderscores(text), NumberStyles.Float, CultureInfo.InvariantCulture);
-        return Result.Success;
+        return double.IsInfinity(value) ? Result.Unsupported : Result.Success;
     }
 
     /// <summary>Reads an offset date-time, a local date-time, a local date, or a local time.</summary>

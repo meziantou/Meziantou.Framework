@@ -168,11 +168,14 @@ internal sealed class Lexer(SourceText source, TomlVersion version)
                 return Bad(TomlDiagnosticDescriptors.IntegerOutOfRange, text);
         }
 
-        if (ScalarParser.ParseFloat(text, out var number) == ScalarParser.Result.Success)
+        switch (ScalarParser.ParseFloat(text, out var number))
         {
-            value = number;
-            valueText = number.ToString(CultureInfo.InvariantCulture);
-            return SyntaxKind.FloatToken;
+            case ScalarParser.Result.Success:
+                value = number;
+                valueText = number.ToString(CultureInfo.InvariantCulture);
+                return SyntaxKind.FloatToken;
+            case ScalarParser.Result.Unsupported:
+                return Bad(TomlDiagnosticDescriptors.FloatOutOfRange, text);
         }
 
         return Bad(LooksNumeric(text) ? TomlDiagnosticDescriptors.InvalidNumber : TomlDiagnosticDescriptors.InvalidValue, text);

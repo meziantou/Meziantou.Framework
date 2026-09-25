@@ -7,9 +7,13 @@ namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 /// <summary>Reports what the grammar cannot see: keys defined twice, tables defined twice, and values extended after the fact.</summary>
 /// <remarks>
 /// <para>
-/// The entries are checked in document order, each as soon as it is parsed, against a model of the tables the
-/// document has built so far. Only the shape is modelled -- which names are tables, arrays of tables, or values --
-/// never the values themselves.
+/// The entries are checked in document order against a model of the tables the document has built so far. Only the
+/// shape is modelled -- which names are tables, arrays of tables, or values -- never the values themselves.
+/// </para>
+/// <para>
+/// Whether a key is defined twice depends on the whole document, so the result is never stored in the nodes: a node
+/// can be moved into another document, or the entry it clashed with removed, and the diagnostic would then be wrong.
+/// The tree runs this over its whole root instead, and each diagnostic is at an absolute position.
 /// </para>
 /// <para>
 /// The rules are those of Python's <c>tomllib</c>, which passes the whole <c>toml-test</c> suite. Two flags do most of
@@ -17,6 +21,10 @@ namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 /// define it again; and an inline table or an array is <em>frozen</em>, so nothing can be added to it, nor to anything
 /// inside it. A dotted key marks the tables it goes through as explicit only once the next header is reached, which
 /// is what lets <c>a.b = 1</c> and <c>a.c = 2</c> share <c>a</c> while stopping <c>[a]</c> from reopening it.
+/// </para>
+/// <para>
+/// Every key is walked once, name by name, from the table of the section it is in: the cost of a key/value pair is
+/// the length of its own key, whatever the depth of the header above it.
 /// </para>
 /// <para>
 /// An entry whose key could not be read is not checked, and a table header that is itself in error stops the
@@ -30,69 +38,76 @@ internal sealed class DocumentValidator
 
     private readonly Table _root = new();
     private readonly FlagNode _flags = new();
-    private readonly List<string[]> _pendingExplicit = [];
+    private readonly List<FlagNode> _pendingExplicit = [];
     private readonly List<SyntaxDiagnosticInfo> _diagnostics = [];
 
-    /// <summary>The key of the table the key/value pairs being read belong to, or <see langword="null"/> when its header is in error.</summary>
-    private string[]? _header = [];
+    /// <summary>The names of the header of the section being read.</summary>
+    private string[] _header = [];
 
-    /// <summary>Checks <paramref name="entry"/>, and returns it with whatever is wrong with it attached.</summary>
-    public GreenNode Validate(GreenNode entry)
+    /// <summary>The table the key/value pairs being read belong to, or <see langword="null"/> when their header is in error.</summary>
+    private Table? _headerTable;
+
+    /// <summary>The flags of <see cref="_headerTable"/>.</summary>
+    private FlagNode _headerFlags;
+
+    private DocumentValidator()
     {
-        var diagnostics = _diagnostics;
-        diagnostics.Clear();
-        switch (entry)
+        _headerTable = _root;
+        _headerFlags = _flags;
+    }
+
+    /// <summary>Checks the entries of <paramref name="document"/>.</summary>
+    /// <returns>What is wrong, at offsets from the start of the document.</returns>
+    public static List<SyntaxDiagnosticInfo> Validate(GreenNode document)
+    {
+        var validator = new DocumentValidator();
+        var entries = document.GetSlot(0);
+        var count = GreenNodeList.Count(entries);
+        for (var i = 0; i < count; i++)
         {
-            case TomlTableSyntax table:
-                ValidateHeader(table, diagnostics);
-                break;
-            case TomlPropertySyntax property when _header is not null:
-                ValidateProperty(property, diagnostics);
-                break;
+            var offset = GreenNodeList.OffsetAt(entries, i);
+            switch (GreenNodeList.ElementAt(entries, i))
+            {
+                case TomlTableSyntax table:
+                    validator.ValidateHeader(table, offset);
+                    break;
+                case TomlPropertySyntax property:
+                    validator.ValidateProperty(property, offset);
+                    break;
+            }
         }
 
-        return diagnostics.Count == 0 ? entry : entry.WithAdditionalDiagnostics([.. diagnostics]);
+        return validator._diagnostics;
     }
 
-    /// <summary>Checks the inline tables of a value parsed on its own, and returns it with whatever is wrong with them attached.</summary>
-    public static GreenNode ValidateStandaloneValue(GreenNode value)
+    private void ValidateHeader(TomlTableSyntax table, int offset)
     {
-        var diagnostics = new List<SyntaxDiagnosticInfo>();
-        ValidateValue(value, offset: 0, diagnostics);
-
-        return diagnostics.Count == 0 ? value : value.WithAdditionalDiagnostics([.. diagnostics]);
-    }
-
-    private void ValidateHeader(TomlTableSyntax table, List<SyntaxDiagnosticInfo> diagnostics)
-    {
-        foreach (var key in _pendingExplicit)
+        foreach (var flags in _pendingExplicit)
         {
-            _flags.Set(key, FlagKind.Explicit, recursive: false);
+            flags.Explicit = true;
         }
 
         _pendingExplicit.Clear();
-        _header = null;
+        _headerTable = null;
 
         var keyNode = table.GetRequiredSlot(1);
         if (GetNames(keyNode) is not { } names)
             return;
 
-        var keyOffset = table.GetSlotOffset(1) + keyNode.GetLeadingTriviaWidth();
+        var keyOffset = offset + table.GetSlotOffset(1) + keyNode.GetLeadingTriviaWidth();
         void Report(DiagnosticDescriptor descriptor, IEnumerable<string> key)
-            => Add(diagnostics, keyOffset, keyNode.Width, descriptor, key);
+            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, key);
 
-        if (_flags.Is(names, FlagKind.Frozen))
+        if (_flags.GetFrozenPrefixLength(names, includeLast: true) is var frozenLength and > 0)
         {
-            Report(TomlDiagnosticDescriptors.ImmutableValue, FrozenPrefix(_flags, names));
+            Report(TomlDiagnosticDescriptors.ImmutableValue, names[..frozenLength]);
             return;
         }
 
+        Table sectionTable;
+        FlagNode sectionFlags;
         if (table.Kind == SyntaxKind.TomlArrayOfTables)
         {
-            // Each [[a]] starts a new table, so what the previous one defined is free to be defined again.
-            _flags.Remove(names);
-            _flags.Set(names, FlagKind.Explicit, recursive: false);
-
             var parent = GetOrCreateTable(_root, names, names.Length - 1, accessArrays: true, out var failedAt);
             if (parent is null)
             {
@@ -100,12 +115,15 @@ internal sealed class DocumentValidator
                 return;
             }
 
+            ArrayOfTables array;
             if (!parent.Children.TryGetValue(names[^1], out var existing))
             {
-                parent.Children.Add(names[^1], new ArrayOfTables());
+                array = new ArrayOfTables();
+                parent.Children.Add(names[^1], array);
             }
-            else if (existing is ArrayOfTables array)
+            else if (existing is ArrayOfTables existingArray)
             {
+                array = existingArray;
                 array.Last = new Table();
             }
             else
@@ -113,133 +131,186 @@ internal sealed class DocumentValidator
                 Report(existing is Table ? TomlDiagnosticDescriptors.DuplicateTable : TomlDiagnosticDescriptors.NotATable, names);
                 return;
             }
+
+            // Each [[a]] starts a new table, so what the previous one defined is free to be defined again. Only a
+            // header that is accepted does that: a rejected one leaves the tables it names as they were.
+            _flags.Remove(names);
+            sectionFlags = _flags.GetOrAdd(names);
+            sectionFlags.Explicit = true;
+            sectionTable = array.Last;
         }
         else
         {
-            if (_flags.Is(names, FlagKind.Explicit))
+            sectionFlags = _flags.GetOrAdd(names);
+            if (sectionFlags.Explicit)
             {
                 Report(TomlDiagnosticDescriptors.DuplicateTable, names);
                 return;
             }
 
-            _flags.Set(names, FlagKind.Explicit, recursive: false);
-            if (GetOrCreateTable(_root, names, names.Length, accessArrays: true, out var failedAt) is null)
+            sectionFlags.Explicit = true;
+            if (GetOrCreateTable(_root, names, names.Length, accessArrays: true, out var failedAt) is not { } created)
             {
                 Report(TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
                 return;
             }
+
+            sectionTable = created;
         }
 
         _header = names;
+        _headerTable = sectionTable;
+        _headerFlags = sectionFlags;
     }
 
-    private void ValidateProperty(TomlPropertySyntax property, List<SyntaxDiagnosticInfo> diagnostics)
+    private void ValidateProperty(TomlPropertySyntax property, int offset)
     {
+        var value = property.GetRequiredSlot(2);
+        var valueOffset = offset + property.GetSlotOffset(2);
         var keyNode = property.GetRequiredSlot(0);
-        if (GetNames(keyNode) is not { } names)
-            return;
-
-        var keyOffset = keyNode.GetLeadingTriviaWidth();
-        void Report(DiagnosticDescriptor descriptor, IEnumerable<string> key)
-            => Add(diagnostics, keyOffset, keyNode.Width, descriptor, key);
-
-        var header = _header!;
-        for (var i = 1; i < names.Length; i++)
+        if (_headerTable is not { } table || GetNames(keyNode) is not { } names)
         {
-            string[] table = [.. header, .. names[..i]];
-            if (_flags.Is(table, FlagKind.Explicit))
+            // An inline table is a document of its own, so it can still be checked.
+            ValidateValue(value, valueOffset, _diagnostics);
+            return;
+        }
+
+        var keyOffset = offset + keyNode.GetLeadingTriviaWidth();
+        void Report(DiagnosticDescriptor descriptor, int nameCount)
+            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, [.. _header, .. names.AsSpan(0, nameCount)]);
+
+        // The tables a dotted key goes through must not have been defined by a header, and become explicit at the
+        // next one. The frozen check comes after that one, as in tomllib, so it is only remembered on the way.
+        var flags = _headerFlags;
+        var frozenLength = 0;
+        for (var i = 0; i < names.Length - 1; i++)
+        {
+            flags = flags.GetOrAdd(names[i]);
+            if (flags.Explicit)
             {
-                Report(TomlDiagnosticDescriptors.TableDefinedByHeader, table);
+                Report(TomlDiagnosticDescriptors.TableDefinedByHeader, i + 1);
+                ValidateValue(value, valueOffset, _diagnostics);
                 return;
             }
 
-            _pendingExplicit.Add(table);
+            _pendingExplicit.Add(flags);
+            if (frozenLength == 0 && flags.Frozen)
+            {
+                frozenLength = i + 1;
+            }
         }
 
-        string[] fullKey = [.. header, .. names];
-        if (_flags.Is(fullKey[..^1], FlagKind.Frozen))
+        if (frozenLength > 0)
         {
-            Report(TomlDiagnosticDescriptors.ImmutableValue, FrozenPrefix(_flags, fullKey[..^1]));
+            Report(TomlDiagnosticDescriptors.ImmutableValue, frozenLength);
+            ValidateValue(value, valueOffset, _diagnostics);
             return;
         }
 
-        var parent = GetOrCreateTable(_root, fullKey, fullKey.Length - 1, accessArrays: true, out var failedAt);
-        if (parent is null)
+        for (var i = 0; i < names.Length - 1; i++)
         {
-            Report(TomlDiagnosticDescriptors.NotATable, fullKey[..failedAt]);
+            if (GetOrCreateChild(table, names[i], accessArrays: true) is not { } child)
+            {
+                Report(TomlDiagnosticDescriptors.NotATable, i + 1);
+                ValidateValue(value, valueOffset, _diagnostics);
+                return;
+            }
+
+            table = child;
+        }
+
+        if (!table.Children.TryAdd(names[^1], Value))
+        {
+            Report(TomlDiagnosticDescriptors.DuplicateKey, names.Length);
+            ValidateValue(value, valueOffset, _diagnostics);
             return;
         }
 
-        if (!parent.Children.TryAdd(fullKey[^1], Value))
-        {
-            Report(TomlDiagnosticDescriptors.DuplicateKey, fullKey);
-            return;
-        }
-
-        var value = property.GetRequiredSlot(2);
         if (value is TomlInlineTableSyntax or TomlArraySyntax)
         {
-            _flags.Set(fullKey, FlagKind.Frozen, recursive: true);
+            flags.GetOrAdd(names[^1]).Frozen = true;
         }
 
-        ValidateValue(value, property.GetSlotOffset(2), diagnostics);
+        ValidateValue(value, valueOffset, _diagnostics);
     }
 
     /// <summary>Checks the inline tables in <paramref name="value"/>, each of which is a document of its own.</summary>
+    /// <remarks>
+    /// Values are walked with a stack rather than by recursion, so a tree built by hand as deep as memory allows is
+    /// checked rather than overflowing the stack.
+    /// </remarks>
     private static void ValidateValue(GreenNode value, int offset, List<SyntaxDiagnosticInfo> diagnostics)
     {
-        switch (value)
+        if (value is not (TomlArraySyntax or TomlInlineTableSyntax))
+            return;
+
+        var stack = new Stack<(GreenNode Value, int Offset)>();
+        stack.Push((value, offset));
+        while (stack.TryPop(out var current))
         {
-            case TomlArraySyntax array:
-                foreach (var (element, elementOffset) in GetListItems(array, offset))
-                {
-                    ValidateValue(element, elementOffset, diagnostics);
-                }
-
-                break;
-
-            case TomlInlineTableSyntax inlineTable:
-                var root = new Table();
-                var flags = new FlagNode();
-                foreach (var (item, itemOffset) in GetListItems(inlineTable, offset))
-                {
-                    if (item is not TomlPropertySyntax property)
-                        continue;
-
-                    var memberValue = property.GetRequiredSlot(2);
-                    ValidateValue(memberValue, itemOffset + property.GetSlotOffset(2), diagnostics);
-
-                    var keyNode = property.GetRequiredSlot(0);
-                    if (GetNames(keyNode) is not { } names)
-                        continue;
-
-                    var keyOffset = itemOffset + keyNode.GetLeadingTriviaWidth();
-                    if (flags.Is(names, FlagKind.Frozen))
+            switch (current.Value)
+            {
+                case TomlArraySyntax array:
+                    foreach (var (element, elementOffset) in GetListItems(array, current.Offset))
                     {
-                        Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.ImmutableValue, FrozenPrefix(flags, names));
-                        continue;
+                        if (element is TomlArraySyntax or TomlInlineTableSyntax)
+                        {
+                            stack.Push((element, elementOffset));
+                        }
                     }
 
-                    var parent = GetOrCreateTable(root, names, names.Length - 1, accessArrays: false, out var failedAt);
-                    if (parent is null)
-                    {
-                        Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
-                        continue;
-                    }
+                    break;
 
-                    if (!parent.Children.TryAdd(names[^1], Value))
-                    {
-                        Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.DuplicateKey, names);
-                        continue;
-                    }
+                case TomlInlineTableSyntax inlineTable:
+                    ValidateInlineTable(inlineTable, current.Offset, diagnostics, stack);
+                    break;
+            }
+        }
+    }
 
-                    if (memberValue is TomlInlineTableSyntax or TomlArraySyntax)
-                    {
-                        flags.Set(names, FlagKind.Frozen, recursive: true);
-                    }
-                }
+    private static void ValidateInlineTable(TomlInlineTableSyntax inlineTable, int offset, List<SyntaxDiagnosticInfo> diagnostics, Stack<(GreenNode Value, int Offset)> values)
+    {
+        var root = new Table();
+        var rootFlags = new FlagNode();
+        foreach (var (item, itemOffset) in GetListItems(inlineTable, offset))
+        {
+            if (item is not TomlPropertySyntax property)
+                continue;
 
-                break;
+            var memberValue = property.GetRequiredSlot(2);
+            if (memberValue is TomlArraySyntax or TomlInlineTableSyntax)
+            {
+                values.Push((memberValue, itemOffset + property.GetSlotOffset(2)));
+            }
+
+            var keyNode = property.GetRequiredSlot(0);
+            if (GetNames(keyNode) is not { } names)
+                continue;
+
+            var keyOffset = itemOffset + keyNode.GetLeadingTriviaWidth();
+            if (rootFlags.GetFrozenPrefixLength(names, includeLast: true) is var frozenLength and > 0)
+            {
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.ImmutableValue, names[..frozenLength]);
+                continue;
+            }
+
+            var parent = GetOrCreateTable(root, names, names.Length - 1, accessArrays: false, out var failedAt);
+            if (parent is null)
+            {
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
+                continue;
+            }
+
+            if (!parent.Children.TryAdd(names[^1], Value))
+            {
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.DuplicateKey, names);
+                continue;
+            }
+
+            if (memberValue is TomlInlineTableSyntax or TomlArraySyntax)
+            {
+                rootFlags.GetOrAdd(names).Frozen = true;
+            }
         }
     }
 
@@ -266,6 +337,10 @@ internal sealed class DocumentValidator
     }
 
     /// <summary>Gets the names a key is made of, or <see langword="null"/> when a part of it could not be read.</summary>
+    /// <remarks>
+    /// Only a mistake in the name itself stops the key from being checked. One in the trivia around it, such as a bad
+    /// character in the comment on the line above, or a feature of a newer TOML version, leaves the name readable.
+    /// </remarks>
     private static string[]? GetNames(GreenNode key)
     {
         var tokens = key.GetSlot(0);
@@ -279,13 +354,28 @@ internal sealed class DocumentValidator
             if (GreenNodeList.ElementAt(tokens, i) is not GreenToken token || token.RawKind == (int)SyntaxKind.DotToken)
                 continue;
 
-            if (token.IsMissing || !SyntaxFacts.IsKeyToken((SyntaxKind)token.RawKind) || token.ContainsDiagnostics)
+            if (token.IsMissing || !SyntaxFacts.IsKeyToken((SyntaxKind)token.RawKind) || HasUnreadableName(token))
                 return null;
 
             names.Add(token.ValueText);
         }
 
         return names.Count == 0 ? null : [.. names];
+
+        static bool HasUnreadableName(GreenToken token)
+        {
+            foreach (var diagnostic in token.GetDiagnostics())
+            {
+                if (diagnostic.Descriptor == TomlDiagnosticDescriptors.UnterminatedString
+                    || diagnostic.Descriptor == TomlDiagnosticDescriptors.InvalidEscapeSequence
+                    || diagnostic.Descriptor == TomlDiagnosticDescriptors.InvalidUnicodeEscapeSequence)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>Walks down to the table <paramref name="key"/> names, creating the ones that do not exist yet.</summary>
@@ -300,50 +390,39 @@ internal sealed class DocumentValidator
         var current = root;
         for (var i = 0; i < count; i++)
         {
-            if (!current.Children.TryGetValue(key[i], out var child))
-            {
-                child = new Table();
-                current.Children.Add(key[i], child);
-            }
-
-            if (accessArrays && child is ArrayOfTables array)
-            {
-                child = array.Last;
-            }
-
-            if (child is not Table table)
+            if (GetOrCreateChild(current, key[i], accessArrays) is not { } child)
             {
                 failedAt = i + 1;
                 return null;
             }
 
-            current = table;
+            current = child;
         }
 
         failedAt = 0;
         return current;
     }
 
-    /// <summary>Gets the shortest part of <paramref name="key"/> that is frozen, which is the inline table or array to name.</summary>
-    private static string[] FrozenPrefix(FlagNode flags, string[] key)
+    /// <summary>Gets the table <paramref name="name"/> names in <paramref name="parent"/>, creating it when it does not exist yet.</summary>
+    /// <returns>The table, or <see langword="null"/> when the name is something else.</returns>
+    private static Table? GetOrCreateChild(Table parent, string name, bool accessArrays)
     {
-        for (var i = 1; i < key.Length; i++)
+        if (!parent.Children.TryGetValue(name, out var child))
         {
-            if (flags.Is(key[..i], FlagKind.Frozen))
-                return key[..i];
+            child = new Table();
+            parent.Children.Add(name, child);
         }
 
-        return key;
+        if (accessArrays && child is ArrayOfTables array)
+        {
+            child = array.Last;
+        }
+
+        return child as Table;
     }
 
     private static void Add(List<SyntaxDiagnosticInfo> diagnostics, int offset, int width, DiagnosticDescriptor descriptor, IEnumerable<string> key)
         => diagnostics.Add(new SyntaxDiagnosticInfo(offset, width, descriptor, [TomlFormatting.FormatKey(key)]));
-
-    private enum FlagKind
-    {
-        Explicit,
-        Frozen,
-    }
 
     private sealed class Table
     {
@@ -356,69 +435,56 @@ internal sealed class DocumentValidator
         public Table Last { get; set; } = new();
     }
 
-    /// <summary>The flags set on a name, and on the names under it.</summary>
+    /// <summary>The flags set on a name, and the names under it.</summary>
+    /// <remarks>Frozen applies to everything under the name as well: nothing can be added inside an inline table or an array.</remarks>
     private sealed class FlagNode
     {
         private Dictionary<string, FlagNode>? _children;
-        private bool _explicit;
-        private bool _frozen;
-        private bool _frozenRecursive;
 
-        public void Set(string[] key, FlagKind flag, bool recursive)
+        public bool Explicit { get; set; }
+
+        public bool Frozen { get; set; }
+
+        public FlagNode GetOrAdd(string name)
+        {
+            _children ??= new(StringComparer.Ordinal);
+            if (!_children.TryGetValue(name, out var child))
+            {
+                child = new FlagNode();
+                _children.Add(name, child);
+            }
+
+            return child;
+        }
+
+        public FlagNode GetOrAdd(string[] key)
         {
             var node = this;
             foreach (var name in key)
             {
-                node._children ??= new(StringComparer.Ordinal);
-                if (!node._children.TryGetValue(name, out var child))
-                {
-                    child = new FlagNode();
-                    node._children.Add(name, child);
-                }
-
-                node = child;
+                node = node.GetOrAdd(name);
             }
 
-            switch (flag)
-            {
-                case FlagKind.Explicit:
-                    node._explicit = true;
-                    break;
-                case FlagKind.Frozen when recursive:
-                    node._frozenRecursive = true;
-                    break;
-                case FlagKind.Frozen:
-                    node._frozen = true;
-                    break;
-            }
+            return node;
         }
 
-        /// <summary>Determines whether <paramref name="key"/> has <paramref name="flag"/>, directly or through a name above it.</summary>
-        public bool Is(string[] key, FlagKind flag)
+        /// <summary>Gets how many names of <paramref name="key"/> lead to the first frozen one, or 0 when none is.</summary>
+        /// <param name="key">The names to follow.</param>
+        /// <param name="includeLast">Whether the last name counts, or only the ones it is under.</param>
+        public int GetFrozenPrefixLength(string[] key, bool includeLast)
         {
-            if (key.Length == 0)
-                return false;
-
             var node = this;
-            for (var i = 0; i < key.Length; i++)
+            var count = includeLast ? key.Length : key.Length - 1;
+            for (var i = 0; i < count; i++)
             {
-                if (node._children is null || !node._children.TryGetValue(key[i], out var child))
-                    return false;
+                if (node._children is null || !node._children.TryGetValue(key[i], out node))
+                    return 0;
 
-                if (i < key.Length - 1)
-                {
-                    if (flag == FlagKind.Frozen && child._frozenRecursive)
-                        return true;
-                }
-                else
-                {
-                    return flag == FlagKind.Explicit ? child._explicit : child._frozen || child._frozenRecursive;
-                }
-
-                node = child;
+                if (node.Frozen)
+                    return i + 1;
             }
 
-            return false;
+            return 0;
         }
 
         /// <summary>Removes the flags of <paramref name="key"/> and of everything under it.</summary>

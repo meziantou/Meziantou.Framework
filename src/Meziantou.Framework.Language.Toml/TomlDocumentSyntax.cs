@@ -41,21 +41,38 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
 
     /// <summary>Returns this document with <paramref name="items"/> added at the end.</summary>
     /// <remarks>
+    /// <para>
     /// Every entry has to end its line, so a line feed is added after the last entry and after each of
     /// <paramref name="items"/> that does not already end with a line break.
+    /// </para>
+    /// <para>
+    /// Comments after the last entry belong to the end of the document, so the new entries go before them. In a
+    /// document that has only comments, such as a header, they go after them instead.
+    /// </para>
     /// </remarks>
     public TomlDocumentSyntax AddEntries(params TomlEntrySyntax[] items)
     {
         ArgumentNullException.ThrowIfNull(items);
+        if (items.Length == 0)
+            return this;
 
         var entries = Entries;
-        if (entries.Count > 0 && items.Length > 0)
+        var endOfFileToken = EndOfFileToken;
+        var added = items.Select(SyntaxFactory.EndLine).ToArray();
+        if (entries.Count > 0)
         {
             var last = entries[entries.Count - 1];
             entries = entries.Replace(last, SyntaxFactory.EndLine(last));
         }
+        else if (endOfFileToken.LeadingTrivia.Any(trivia => trivia.IsKind(SyntaxKind.CommentTrivia)))
+        {
+            // The comments move to the first new entry, and end their line if the text they came from did not.
+            SyntaxTrivia[] comments = endOfFileToken.LeadingTrivia.Last().IsKind(SyntaxKind.EndOfLineTrivia) ? [.. endOfFileToken.LeadingTrivia] : [.. endOfFileToken.LeadingTrivia, SyntaxFactory.LineFeed];
+            added[0] = added[0].WithLeadingTrivia([.. comments, .. added[0].GetLeadingTrivia()]);
+            endOfFileToken = endOfFileToken.WithLeadingTrivia(default(SyntaxTriviaList));
+        }
 
-        return WithEntries(entries.AddRange(items.Select(SyntaxFactory.EndLine)));
+        return Update(entries.AddRange(added), endOfFileToken);
     }
 
     internal static IReadOnlyList<TomlPropertySyntax> GetProperties(SyntaxList<TomlEntrySyntax> entries, int start)

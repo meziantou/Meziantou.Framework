@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
@@ -67,11 +68,11 @@ public sealed partial class RubyGemDependencyScanner : DependencyScanner
             if (!match.Success)
                 continue;
 
+            // The version is not updatable as Bundler resolves it from the Gemfile and may check its checksum
             var name = match.Groups["name"];
-            var version = match.Groups["version"];
-            context.ReportDependency(this, name.Value, version.Value, DependencyType.RubyGem,
+            context.ReportDependency(this, name.Value, match.Groups["version"].Value, DependencyType.RubyGem,
                 new TextLocation(context.FileSystem, context.FullPath, lineNumber, name.Index + 1, name.Length),
-                new TextLocation(context.FileSystem, context.FullPath, lineNumber, version.Index + 1, version.Length));
+                new NonUpdatableLocation(context));
         }
     }
 

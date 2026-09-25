@@ -51,16 +51,33 @@ public sealed partial class CargoDependencyScanner : DependencyScanner
                 continue;
             }
 
-            if (!isDependencySection || entry is not TomlPropertySyntax property)
+            if (!isDependencySection || entry is not TomlPropertySyntax property || !property.ValueNode.IsToken)
                 continue;
 
-            var versionText = property.Value.Trim('"');
-            var version = versionText.StartsWith('{', StringComparison.Ordinal) ? ExtractVersion(versionText) : versionText;
-            var nameLocation = CreateLocation(context, tree, property.KeyToken.Span);
-            Location? versionLocation = version is not null
-                ? CreateVersionLocation(context, tree, property.ValueNode.AsToken().Span, property.Value, version)
+            var name = property.Key;
+            var value = property.Value;
+            string? version;
+            int versionOffset;
+            if (name.Contains('.', StringComparison.Ordinal))
+            {
+                // Dotted keys, such as serde.version = "1.0" or serde.workspace = true
+                const string VersionSuffix = ".version";
+                if (!name.EndsWith(VersionSuffix, StringComparison.Ordinal) || !TomlUtilities.TryGetString(value, out version, out versionOffset))
+                    continue;
+
+                name = name[..^VersionSuffix.Length];
+            }
+            else if (!TomlUtilities.TryGetString(value, out version, out versionOffset))
+            {
+                // version is null when the inline table has no version, such as { path = "../local" } or { workspace = true }
+                _ = TomlUtilities.TryGetInlineTableString(value, "version", out version, out versionOffset);
+            }
+
+            var nameLocation = TomlUtilities.CreateLocation(context, tree, new TextSpan(property.KeyToken.Span.Start, name.Length));
+            Location versionLocation = version is not null
+                ? TomlUtilities.CreateLocation(context, tree, new TextSpan(property.ValueNode.AsToken().Span.Start + versionOffset, version.Length))
                 : new NonUpdatableLocation(context);
-            context.ReportDependency(this, property.Key, version, DependencyType.RustCrate, nameLocation, versionLocation);
+            context.ReportDependency(this, name, version, DependencyType.RustCrate, nameLocation, versionLocation);
         }
     }
 
@@ -108,38 +125,12 @@ public sealed partial class CargoDependencyScanner : DependencyScanner
             if (!versionMatch.Success)
                 continue;
 
-            var version = versionMatch.Groups["version"];
-            context.ReportDependency(this, packageName, version.Value, DependencyType.RustCrate,
+            // The version is not updatable as the checksum of the package would not match anymore
+            context.ReportDependency(this, packageName, versionMatch.Groups["version"].Value, DependencyType.RustCrate,
                 new TextLocation(context.FileSystem, context.FullPath, packageNameLine, packageNameColumn, packageName.Length),
-                new TextLocation(context.FileSystem, context.FullPath, lineNumber, version.Index + 1, version.Length));
+                new NonUpdatableLocation(context));
             packageName = null;
         }
-    }
-
-    private static string? ExtractVersion(string value)
-    {
-        const string Prefix = "version";
-        var index = value.IndexOf(Prefix, StringComparison.Ordinal);
-        if (index < 0)
-            return null;
-
-        var quoteStart = value.IndexOf('"', index + Prefix.Length, StringComparison.Ordinal);
-        var quoteEnd = quoteStart >= 0 ? value.IndexOf('"', quoteStart + 1, StringComparison.Ordinal) : -1;
-        return quoteStart >= 0 && quoteEnd > quoteStart ? value[(quoteStart + 1)..quoteEnd] : null;
-    }
-
-    private static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TextSpan span)
-    {
-        var lineSpan = tree.GetLineSpan(span);
-        return new TextLocation(context.FileSystem, context.FullPath, lineSpan.Start.Line + 1, lineSpan.Start.Character + 1, span.Length);
-    }
-
-    private static TextLocation CreateVersionLocation(ScanFileContext context, TomlSyntaxTree tree, TextSpan valueSpan, string value, string version)
-    {
-        var versionOffset = value.StartsWith('"', StringComparison.Ordinal)
-            ? 1
-            : value.IndexOf('"', StringComparison.Ordinal) + 1;
-        return CreateLocation(context, tree, new TextSpan(valueSpan.Start + versionOffset, version.Length));
     }
 
     [GeneratedRegex("""^\s*name\s*=\s*"(?<name>[^"]+)"\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]

@@ -43,7 +43,8 @@ public sealed class ComposerDependencyScanner : DependencyScanner
                 {
                     foreach (var dependency in dependencies)
                     {
-                        if (dependency.Value is null || !JsonNodeDocument.TryGetString(dependency.Value, out var version))
+                        // Platform requirements, such as php or ext-json, are not packages. Packages are always named vendor/package.
+                        if (!dependency.Key.Contains('/', StringComparison.Ordinal) || dependency.Value is null || !JsonNodeDocument.TryGetString(dependency.Value, out var version))
                             continue;
 
                         context.ReportDependency(this, dependency.Key, version, DependencyType.PhpPackage,

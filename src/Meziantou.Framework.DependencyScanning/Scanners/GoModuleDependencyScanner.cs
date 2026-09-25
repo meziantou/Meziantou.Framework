@@ -77,11 +77,11 @@ public sealed partial class GoModuleDependencyScanner : DependencyScanner
             if (!match.Success)
                 continue;
 
+            // The version is not updatable as the h1: hash would not match anymore
             var name = match.Groups["name"];
-            var version = match.Groups["version"];
-            context.ReportDependency(this, name.Value, version.Value, DependencyType.GoModule,
+            context.ReportDependency(this, name.Value, match.Groups["version"].Value, DependencyType.GoModule,
                 new TextLocation(context.FileSystem, context.FullPath, lineNumber, name.Index + 1, name.Length),
-                new TextLocation(context.FileSystem, context.FullPath, lineNumber, version.Index + 1, version.Length));
+                new NonUpdatableLocation(context));
         }
     }
 

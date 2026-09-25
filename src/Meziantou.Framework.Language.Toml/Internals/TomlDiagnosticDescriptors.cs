@@ -11,6 +11,7 @@ internal static class TomlDiagnosticDescriptors
     public static readonly DiagnosticDescriptor InvalidValue = Error("TOML0006", "Invalid value", "Invalid value '{0}'.");
     public static readonly DiagnosticDescriptor InvalidNumber = Error("TOML0006", "Invalid number", "Invalid number '{0}'.");
     public static readonly DiagnosticDescriptor IntegerOutOfRange = Error("TOML0006", "Integer out of range", "The integer '{0}' does not fit in 64 bits.");
+    public static readonly DiagnosticDescriptor FloatOutOfRange = Error("TOML0006", "Float out of range", "The float '{0}' is too large for a 64-bit float.");
     public static readonly DiagnosticDescriptor InvalidDateTime = Error("TOML0006", "Invalid date or time", "Invalid date or time '{0}'.");
     public static readonly DiagnosticDescriptor UnsupportedDateTime = Error("TOML0006", "Unsupported date or time", "The date or time '{0}' cannot be represented: {1}.");
     public static readonly DiagnosticDescriptor InvalidKey = Error("TOML0007", "Invalid key", "Invalid key '{0}'. A bare key may only contain the characters A-Z, a-z, 0-9, '_' and '-'.");

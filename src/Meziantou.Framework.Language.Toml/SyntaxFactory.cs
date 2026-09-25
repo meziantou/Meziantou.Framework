@@ -29,25 +29,54 @@ public static class SyntaxFactory
     /// <summary>A Windows line break.</summary>
     public static SyntaxTrivia CarriageReturnLineFeed => Trivia(SyntaxKind.EndOfLineTrivia, "\r\n");
 
+    /// <summary>Creates whitespace trivia: one or more spaces and tabs, the only whitespace TOML has.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
-    public static SyntaxTrivia Whitespace(string text) => Trivia(SyntaxKind.WhitespaceTrivia, text);
+    /// <exception cref="ArgumentException"><paramref name="text"/> is empty, or holds something other than spaces and tabs.</exception>
+    public static SyntaxTrivia Whitespace(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
 
+        if (text.Length == 0 || text.AsSpan().ContainsAnyExcept(' ', '\t'))
+            throw new ArgumentException("TOML whitespace is made of spaces and tabs.", nameof(text));
+
+        return Trivia(SyntaxKind.WhitespaceTrivia, text);
+    }
+
+    /// <summary>Creates a line break: <c>\n</c> or <c>\r\n</c>, the only two TOML has.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
-    public static SyntaxTrivia EndOfLine(string text) => Trivia(SyntaxKind.EndOfLineTrivia, text);
+    /// <exception cref="ArgumentException"><paramref name="text"/> is neither <c>\n</c> nor <c>\r\n</c>.</exception>
+    public static SyntaxTrivia EndOfLine(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        if (text is not ("\n" or "\r\n"))
+            throw new ArgumentException("A TOML line break is '\\n' or '\\r\\n'.", nameof(text));
+
+        return Trivia(SyntaxKind.EndOfLineTrivia, text);
+    }
 
     /// <summary>Creates comment trivia.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="text"/> is not a TOML comment.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="text"/> is not a TOML comment: it does not start with <c>#</c>, or it holds a line break, a
+    /// control character other than tab, or a lone surrogate.
+    /// </exception>
     public static SyntaxTrivia Comment(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        if (text is ['#', ..] && !text.Contains('\n', StringComparison.Ordinal) && !text.Contains('\r', StringComparison.Ordinal))
+        if (text is ['#', ..] && !text.AsSpan().ContainsAnyInRange('\0', '\b') && !text.AsSpan().ContainsAnyInRange('\n', '\u001F') && !text.Contains('\u007F', StringComparison.Ordinal) && TomlFormatting.IsWellFormedUtf16(text))
             return Trivia(SyntaxKind.CommentTrivia, text);
 
-        throw new ArgumentException("A TOML comment starts with '#' and does not span lines.", nameof(text));
+        throw new ArgumentException("A TOML comment starts with '#', does not span lines, and holds no control character other than tab.", nameof(text));
     }
 
+    /// <summary>Creates trivia of any kind, with <paramref name="text"/> used as it is.</summary>
+    /// <remarks>
+    /// Nothing checks that <paramref name="text"/> is what <paramref name="kind"/> says, which is what lets a tree hold
+    /// exactly what a document has, mistakes included. Prefer <see cref="Whitespace"/>, <see cref="EndOfLine"/>, and
+    /// <see cref="Comment"/>, which refuse text that would change what the tokens around it mean.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static SyntaxTrivia Trivia(SyntaxKind kind, string text)
     {
@@ -69,11 +98,13 @@ public static class SyntaxFactory
     }
 
     /// <summary>Creates a token whose text is fixed by its kind, such as a bracket or <c>true</c>.</summary>
-    public static SyntaxToken Token(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.Token(kind), position: 0, index: 0);
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is not a token whose text is fixed, such as a key or a value.</exception>
+    public static SyntaxToken Token(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.Token(FixedTextKind(kind)), position: 0, index: 0);
 
-    /// <summary>Creates a token with trivia on either side.</summary>
+    /// <summary>Creates a token whose text is fixed by its kind, with trivia on either side.</summary>
+    /// <exception cref="ArgumentException"><paramref name="kind"/> is not a token whose text is fixed, such as a key or a value.</exception>
     public static SyntaxToken Token(SyntaxTriviaList leading, SyntaxKind kind, SyntaxTriviaList trailing)
-        => new(parent: null, Green.SyntaxFactory.Token(leading.Node, kind, trailing.Node), position: 0, index: 0);
+        => new(parent: null, Green.SyntaxFactory.Token(leading.Node, FixedTextKind(kind), trailing.Node), position: 0, index: 0);
 
     /// <summary>Creates a zero-width token standing in for one the text does not have.</summary>
     public static SyntaxToken MissingToken(SyntaxKind kind) => new(parent: null, Green.SyntaxFactory.MissingToken(kind), position: 0, index: 0);
@@ -89,6 +120,7 @@ public static class SyntaxFactory
 
     /// <summary>Creates one part of a key: a bare key when <paramref name="name"/> can be one, a basic string otherwise.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="name"/> holds a lone surrogate, which TOML cannot represent.</exception>
     public static SyntaxToken KeyPart(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
@@ -98,9 +130,14 @@ public static class SyntaxFactory
 
     /// <summary>Creates a basic string token holding <paramref name="value"/>, escaped as TOML requires.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="value"/> holds a lone surrogate, a character TOML cannot hold, escaped or not.
+    /// </exception>
     public static SyntaxToken Literal(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (!TomlFormatting.IsWellFormedUtf16(value))
+            throw new ArgumentException("The string holds a lone surrogate, which TOML cannot represent.", nameof(value));
 
         return ValueToken(SyntaxKind.BasicStringToken, TomlFormatting.QuoteBasicString(value), value, value);
     }
@@ -182,7 +219,11 @@ public static class SyntaxFactory
         => default;
 
     /// <summary>Creates a list of <paramref name="nodes"/> with a comma and a space between each pair.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="nodes"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// A node that ends with a comment, such as one from <see cref="ParseValue"/>, gets a line break after it, or the
+    /// comment would hide the comma or the bracket that follows it.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="nodes"/> or one of its items is <see langword="null"/>.</exception>
     public static SeparatedSyntaxList<TNode> SeparatedList<TNode>(IEnumerable<TNode> nodes)
         where TNode : TomlSyntaxNode
     {
@@ -191,12 +232,15 @@ public static class SyntaxFactory
         var items = new List<SyntaxNodeOrToken>();
         foreach (var node in nodes)
         {
+            if (node is null)
+                throw new ArgumentNullException(nameof(nodes), "The list cannot hold null.");
+
             if (items.Count > 0)
             {
                 items.Add(Token(TriviaList(), SyntaxKind.CommaToken, TriviaList(Space)));
             }
 
-            items.Add(node);
+            items.Add(EndCommentLine(node));
         }
 
         return new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(items));
@@ -379,7 +423,9 @@ public static class SyntaxFactory
     /// <summary>Parses <paramref name="text"/> as a single value, such as <c>[1, 2]</c> or <c>'''literal'''</c>.</summary>
     /// <remarks>
     /// Text after the value makes the whole of it a <see cref="TomlSkippedValueSyntax"/>. Whether
-    /// <paramref name="text"/> held one valid value and nothing else is what <see cref="SyntaxNode.ContainsDiagnostics"/> says.
+    /// <paramref name="text"/> held one value the grammar accepts and nothing else is what
+    /// <see cref="SyntaxNode.ContainsDiagnostics"/> says. A key defined twice in an inline table is not a grammar
+    /// mistake: <see cref="TomlSyntaxTree.GetDiagnostics()"/> reports it once the value is part of a document.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static TomlValueSyntax ParseValue(string text, TomlParseOptions? options = null)
@@ -392,6 +438,27 @@ public static class SyntaxFactory
     /// <summary>Determines whether the two nodes have the same structure and text.</summary>
     public static bool AreEquivalent(TomlSyntaxNode? oldNode, TomlSyntaxNode? newNode)
         => oldNode is null ? newNode is null : oldNode.IsEquivalentTo(newNode);
+
+    /// <summary>Returns <paramref name="node"/> with a line break after its trailing comment, when it ends with one that has none.</summary>
+    private static TNode EndCommentLine<TNode>(TNode node)
+        where TNode : TomlSyntaxNode
+    {
+        var trailing = node.GetTrailingTrivia();
+        var last = trailing.LastOrDefault(trivia => !trivia.IsKind(SyntaxKind.WhitespaceTrivia));
+        if (!last.IsKind(SyntaxKind.CommentTrivia))
+            return node;
+
+        return node.WithTrailingTrivia([.. trailing, LineFeed]);
+    }
+
+    /// <summary>Returns <paramref name="kind"/>, refusing a kind whose text is not fixed and so cannot be made from the kind alone.</summary>
+    private static SyntaxKind FixedTextKind(SyntaxKind kind)
+    {
+        if (kind != SyntaxKind.EndOfFileToken && SyntaxFacts.GetText(kind).Length == 0)
+            throw new ArgumentException($"A {kind} has no fixed text. Use {nameof(Literal)}, {nameof(KeyPart)}, {nameof(ParseValue)}, or {nameof(BadToken)}.", nameof(kind));
+
+        return kind;
+    }
 
     /// <summary>Returns <paramref name="entry"/> ending with a line break, which every entry of a document needs.</summary>
     internal static TomlEntrySyntax EndLine(TomlEntrySyntax entry)

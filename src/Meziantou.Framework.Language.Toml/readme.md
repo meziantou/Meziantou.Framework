@@ -100,7 +100,12 @@ Console.WriteLine(document.ToFullString());
 
 Every entry of a document has to end its line, so `TomlDocument` and `AddEntries` add a line feed to an entry that does
 not already end with one. `SyntaxFactory.ParseValue` reads a single value, which is the easiest way to get one written
-exactly as you want, such as a literal or multi-line string.
+exactly as you want, such as a literal or multi-line string. A key defined twice in an inline table is not a grammar
+mistake, so `ParseValue` does not report it; the tree the value ends up in does.
+
+The factory methods refuse what TOML cannot hold rather than writing a document that does not read back: a string with
+a lone surrogate, whitespace other than spaces and tabs, a line break other than `\n` and `\r\n`, a comment with a
+control character, or `Token` for a kind whose text is not fixed, such as a key or a number.
 
 ## Diagnostics
 
@@ -123,7 +128,7 @@ foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnos
 | `TOML0003` | A missing value |
 | `TOML0004` | Something after an entry on its line, where only a comment may follow |
 | `TOML0005` | A token that cannot start an entry or a value |
-| `TOML0006` | A malformed value: a number, date, or time that breaks the grammar, an integer that does not fit in 64 bits, a word that is not a value |
+| `TOML0006` | A malformed value: a number, date, or time that breaks the grammar, an integer that does not fit in 64 bits, a float too large for a `double`, a word that is not a value |
 | `TOML0007` | A bare key with a character it cannot hold, or a multi-line string used as a key |
 | `TOML0008` | An unterminated string |
 | `TOML0009` | An invalid escape sequence, or one that is not a Unicode scalar value |
@@ -136,6 +141,13 @@ foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnos
 | `TOML0022` | An addition to an inline table or an array, which cannot be extended after the fact |
 | `TOML0023` | A table header or a dotted key that goes through a value |
 | `TOML0024` | A dotted key that adds to a table a header already defined |
+
+The first group is the grammar, and each diagnostic is carried by the node it is about: `ContainsDiagnostics` says
+whether a node has any. The second group, from `TOML0020`, depends on the whole document rather than on one node, so
+the tree works it out from its root when it is first asked. `TomlSyntaxTree.GetDiagnostics()` reports both, and so
+does `GetDiagnostics()` on a node that is part of a tree. Because nothing about them is stored in the nodes, they are
+always those of the tree at hand: a tree made from an edited root, with `WithRoot` or `Create`, is checked again, so a
+duplicate removed by the edit is no longer reported and one the edit added is.
 
 ### Versions
 
@@ -154,6 +166,13 @@ line with it. A string without its closing quote ends with its line. Arrays, and
 lines, so they cannot stop at the end of one; they stop at their closing bracket, and also at a line that can only be
 the start of the next entry, a table header or `key =`, where a comma or a closing bracket was expected. A missing `]`
 is reported once, rather than turning the rest of the document into one array.
+
+A table header is recognized by its whole line, `[key]` or `[[key]]` and nothing after it but a comment, so a line
+such as `[3, 4]` in an array is an element whose comma is missing. In an inline table that opens a line of its own,
+an indented `key =` is its next key/value pair whose comma is missing, where one at the start of a line ends it.
+
+An array or an inline table nested deeper than `MaxDepth` is kept whole as skipped text, up to its own closing bracket,
+and reported once; the arrays and inline tables around it still close where they should.
 
 ### What .NET cannot hold
 

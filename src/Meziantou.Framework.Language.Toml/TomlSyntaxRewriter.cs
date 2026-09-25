@@ -113,13 +113,19 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return Visit(node) switch
+        return VisitListElement(node) ?? node;
+    }
+
+    /// <summary>Rewrites a node, returning <see langword="null"/> when the rewrite removes it.</summary>
+    /// <exception cref="InvalidOperationException">The rewrite returned a node that cannot take the place of <paramref name="node"/>.</exception>
+    private TNode? VisitListElement<TNode>(TNode node)
+        where TNode : TomlSyntaxNode
+        => Visit(node) switch
         {
-            null => node,
+            null => null,
             TNode result => result,
             var other => throw new InvalidOperationException($"A {node.Kind()} cannot be replaced with a {(SyntaxKind)other.RawKind}: it has to be a {typeof(TNode).Name}."),
         };
-    }
 
     /// <summary>Rewrites a token, putting the trivia around it through <see cref="VisitTrivia"/>.</summary>
     public virtual SyntaxToken VisitToken(SyntaxToken token)
@@ -154,13 +160,15 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         return rewritten is null ? list : new SyntaxTriviaList(rewritten);
     }
 
+    /// <summary>Rewrites each node of a list, dropping the ones the rewrite returns <see langword="null"/> for.</summary>
+    /// <exception cref="InvalidOperationException">The rewrite returned a node that cannot take the place of the one it rewrote.</exception>
     public virtual SyntaxList<TNode> VisitList<TNode>(SyntaxList<TNode> list)
         where TNode : TomlSyntaxNode
     {
         List<TNode>? rewritten = null;
         for (var i = 0; i < list.Count; i++)
         {
-            var visited = Visit(list[i]) as TNode;
+            var visited = VisitListElement(list[i]);
             if (rewritten is null && (visited is null || ReferenceEquals(visited, list[i])))
             {
                 if (visited is not null)
@@ -193,30 +201,61 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         return rewritten is null ? list : new SyntaxTokenList(rewritten);
     }
 
-    /// <summary>Rewrites the elements of a separated list, keeping its separators in place.</summary>
+    /// <summary>Rewrites the elements of a separated list and its separators.</summary>
+    /// <remarks>
+    /// An element the rewrite returns <see langword="null"/> for is removed, together with the separator after it, or
+    /// the one before it when it is the last element, and the trivia they hold.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The rewrite returned a node that cannot take the place of the one it rewrote.</exception>
     public virtual SeparatedSyntaxList<TNode> VisitList<TNode>(SeparatedSyntaxList<TNode> list)
         where TNode : TomlSyntaxNode
     {
         var withSeparators = list.GetWithSeparators();
         List<SyntaxNodeOrToken>? rewritten = null;
+        var skipNextSeparator = false;
         for (var i = 0; i < withSeparators.Count; i++)
         {
             var item = withSeparators[i];
-            SyntaxNodeOrToken visited;
             if (item.AsNode(out var node))
             {
-                visited = Visit((TomlSyntaxNode)node) ?? node;
+                var visited = VisitListElement((TNode)node);
+                if (visited is null)
+                {
+                    rewritten ??= [.. withSeparators.Take(i)];
+                    if (i + 1 < withSeparators.Count)
+                    {
+                        skipNextSeparator = true;
+                    }
+                    else if (rewritten.Count > 0)
+                    {
+                        // The last element has no separator after it, so the one before it goes.
+                        rewritten.RemoveAt(rewritten.Count - 1);
+                    }
+
+                    continue;
+                }
+
+                if (rewritten is null && ReferenceEquals(visited, node))
+                    continue;
+
+                rewritten ??= [.. withSeparators.Take(i)];
+                rewritten.Add(visited);
             }
             else
             {
-                visited = VisitToken(item.AsToken());
+                if (skipNextSeparator)
+                {
+                    skipNextSeparator = false;
+                    continue;
+                }
+
+                var visited = VisitToken(item.AsToken());
+                if (rewritten is null && visited == item.AsToken())
+                    continue;
+
+                rewritten ??= [.. withSeparators.Take(i)];
+                rewritten.Add(visited);
             }
-
-            if (rewritten is null && visited == item)
-                continue;
-
-            rewritten ??= [.. withSeparators.Take(i)];
-            rewritten.Add(visited);
         }
 
         return rewritten is null ? list : new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(rewritten));

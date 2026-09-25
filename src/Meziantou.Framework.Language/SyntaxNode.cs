@@ -72,8 +72,12 @@ public abstract class SyntaxNode
     internal void AttachToTree(SyntaxTree tree) => Interlocked.CompareExchange(ref _syntaxTree, tree, null);
 
     /// <summary>Gets the diagnostics at or below this node.</summary>
+    /// <remarks>
+    /// A node that is part of a tree asks the tree, which may know of diagnostics the nodes do not carry, such as a
+    /// key defined twice in a document.
+    /// </remarks>
     public IEnumerable<Diagnostic> GetDiagnostics()
-        => Syntax.SyntaxTreeDiagnostics.Enumerate(Green, Position, SyntaxTree?.GetText());
+        => SyntaxTree is { } tree ? tree.GetDiagnostics(this) : Syntax.SyntaxTreeDiagnostics.Enumerate(Green, Position, sourceText: null);
 
     /// <summary>Gets the range this node covers, including the trivia at its outer edges.</summary>
     public TextSpan FullSpan => new(Position, Green.FullWidth);

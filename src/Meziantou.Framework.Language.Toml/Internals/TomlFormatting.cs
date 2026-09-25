@@ -57,6 +57,28 @@ internal static class TomlFormatting
         return builder.ToString();
     }
 
+    /// <summary>Determines whether <paramref name="value"/> has no lone surrogate, which no TOML text can hold, escaped or not.</summary>
+    public static bool IsWellFormedUtf16(ReadOnlySpan<char> value)
+    {
+        var index = value.IndexOfAnyInRange('\uD800', '\uDFFF');
+        if (index < 0)
+            return true;
+
+        for (var i = index; i < value.Length; i++)
+        {
+            if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                i++;
+            }
+            else if (char.IsSurrogate(value[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Writes a float so that reading it back gives the same value, and so that it reads as a float.</summary>
     public static string FormatFloat(double value)
     {

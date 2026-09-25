@@ -4,6 +4,9 @@
     <RootNamespace>Meziantou.Framework.Language.Toml.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="files/toml-test/cases.json" LogicalName="Meziantou.Framework.Language.Toml.Tests.files.toml-test.cases.json" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
   </ItemGroup>
 </Project>

@@ -17,8 +17,16 @@ public abstract class TomlSyntaxVisitor
     public virtual void VisitTomlDocument(TomlDocumentSyntax node) => DefaultVisit(node);
     public virtual void VisitTomlTable(TomlTableSyntax node) => DefaultVisit(node);
     public virtual void VisitTomlProperty(TomlPropertySyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlKey(TomlKeySyntax node) => DefaultVisit(node);
     public virtual void VisitTomlSkippedText(TomlSkippedTextSyntax node) => DefaultVisit(node);
     public virtual void VisitTomlArray(TomlArraySyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlInlineTable(TomlInlineTableSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlString(TomlStringSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlInteger(TomlIntegerSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlFloat(TomlFloatSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlBoolean(TomlBooleanSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlDateTime(TomlDateTimeSyntax node) => DefaultVisit(node);
+    public virtual void VisitTomlSkippedValue(TomlSkippedValueSyntax node) => DefaultVisit(node);
 }
 
 /// <summary>Dispatches on the kind of a TOML node and returns a result.</summary>
@@ -34,6 +42,14 @@ public abstract class TomlSyntaxVisitor<TResult>
     public virtual TResult? VisitTomlDocument(TomlDocumentSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlTable(TomlTableSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlProperty(TomlPropertySyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlKey(TomlKeySyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlSkippedText(TomlSkippedTextSyntax node) => DefaultVisit(node);
     public virtual TResult? VisitTomlArray(TomlArraySyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlInlineTable(TomlInlineTableSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlString(TomlStringSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlInteger(TomlIntegerSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlFloat(TomlFloatSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlBoolean(TomlBooleanSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlDateTime(TomlDateTimeSyntax node) => DefaultVisit(node);
+    public virtual TResult? VisitTomlSkippedValue(TomlSkippedValueSyntax node) => DefaultVisit(node);
 }

@@ -1,6 +1,18 @@
 namespace Meziantou.Framework.Language.Toml;
 
 /// <summary>Builds a new tree by visiting an old one and returning replacements.</summary>
+/// <remarks>
+/// A node whose parts all come back unchanged is returned as it was, so rewriting a tree and changing nothing in it
+/// costs nothing and keeps every node.
+/// </remarks>
+/// <example>
+/// <code>
+/// private sealed class DoubleIntegers : TomlSyntaxRewriter
+/// {
+///     public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node) => node.WithValue(node.Value * 2);
+/// }
+/// </code>
+/// </example>
 public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
 {
     public override SyntaxNode? VisitTomlDocument(TomlDocumentSyntax node)
@@ -14,24 +26,21 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.OpenBracketToken), VisitToken(node.NameToken), VisitToken(node.CloseBracketToken));
+        return node.Update(VisitToken(node.OpenBracketToken), VisitRequired(node.Key), VisitToken(node.CloseBracketToken));
     }
 
     public override SyntaxNode? VisitTomlProperty(TomlPropertySyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        var key = VisitToken(node.KeyToken);
-        var separator = VisitToken(node.SeparatorToken);
-        return node.ValueNode.AsNode() is TomlArraySyntax array
-            ? node.Update(key, separator, (TomlArraySyntax?)Visit(array) ?? array)
-            : node.Update(key, separator, VisitToken(node.ValueNode.AsToken()));
+        return node.Update(VisitRequired(node.Key), VisitToken(node.EqualsToken), VisitRequired(node.Value));
     }
 
-    public override SyntaxNode? VisitTomlArray(TomlArraySyntax node)
+    public override SyntaxNode? VisitTomlKey(TomlKeySyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
-        return node.Update(VisitToken(node.OpenBracketToken), VisitList(node.Contents), VisitToken(node.CloseBracketToken));
+
+        return node.Update(VisitList(node.Tokens));
     }
 
     public override SyntaxNode? VisitTomlSkippedText(TomlSkippedTextSyntax node)
@@ -39,6 +48,77 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         ArgumentNullException.ThrowIfNull(node);
 
         return node.Update(VisitList(node.Tokens));
+    }
+
+    public override SyntaxNode? VisitTomlArray(TomlArraySyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.OpenBracketToken), VisitList(node.Elements), VisitToken(node.CloseBracketToken));
+    }
+
+    public override SyntaxNode? VisitTomlInlineTable(TomlInlineTableSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.OpenBraceToken), VisitList(node.Properties), VisitToken(node.CloseBraceToken));
+    }
+
+    public override SyntaxNode? VisitTomlString(TomlStringSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.StringToken));
+    }
+
+    public override SyntaxNode? VisitTomlInteger(TomlIntegerSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.IntegerToken));
+    }
+
+    public override SyntaxNode? VisitTomlFloat(TomlFloatSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.FloatToken));
+    }
+
+    public override SyntaxNode? VisitTomlBoolean(TomlBooleanSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.BooleanToken));
+    }
+
+    public override SyntaxNode? VisitTomlDateTime(TomlDateTimeSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitToken(node.DateTimeToken));
+    }
+
+    public override SyntaxNode? VisitTomlSkippedValue(TomlSkippedValueSyntax node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node.Update(VisitList(node.Tokens));
+    }
+
+    /// <summary>Rewrites a node that has to be there, keeping it when the rewrite returns <see langword="null"/>.</summary>
+    /// <exception cref="InvalidOperationException">The rewrite returned a node that cannot take the place of <paramref name="node"/>.</exception>
+    protected TNode VisitRequired<TNode>(TNode node)
+        where TNode : TomlSyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(node);
+
+        return Visit(node) switch
+        {
+            null => node,
+            TNode result => result,
+            var other => throw new InvalidOperationException($"A {node.Kind()} cannot be replaced with a {(SyntaxKind)other.RawKind}: it has to be a {typeof(TNode).Name}."),
+        };
     }
 
     /// <summary>Rewrites a token, putting the trivia around it through <see cref="VisitTrivia"/>.</summary>
@@ -113,23 +193,32 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         return rewritten is null ? list : new SyntaxTokenList(rewritten);
     }
 
-    public virtual SyntaxNodeOrTokenList VisitList(SyntaxNodeOrTokenList list)
+    /// <summary>Rewrites the elements of a separated list, keeping its separators in place.</summary>
+    public virtual SeparatedSyntaxList<TNode> VisitList<TNode>(SeparatedSyntaxList<TNode> list)
+        where TNode : TomlSyntaxNode
     {
+        var withSeparators = list.GetWithSeparators();
         List<SyntaxNodeOrToken>? rewritten = null;
-        for (var i = 0; i < list.Count; i++)
+        for (var i = 0; i < withSeparators.Count; i++)
         {
-            var item = list[i];
-            SyntaxNodeOrToken visited = item.AsNode(out var node)
-                ? (SyntaxNodeOrToken)(Visit((TomlSyntaxNode)node) ?? node)
-                : VisitToken(item.AsToken());
+            var item = withSeparators[i];
+            SyntaxNodeOrToken visited;
+            if (item.AsNode(out var node))
+            {
+                visited = Visit((TomlSyntaxNode)node) ?? node;
+            }
+            else
+            {
+                visited = VisitToken(item.AsToken());
+            }
 
             if (rewritten is null && visited == item)
                 continue;
 
-            rewritten ??= [.. list.Take(i)];
+            rewritten ??= [.. withSeparators.Take(i)];
             rewritten.Add(visited);
         }
 
-        return rewritten is null ? list : new SyntaxNodeOrTokenList(rewritten);
+        return rewritten is null ? list : new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(rewritten));
     }
 }

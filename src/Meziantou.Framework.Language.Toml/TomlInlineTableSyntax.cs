@@ -39,7 +39,28 @@ public sealed class TomlInlineTableSyntax : TomlValueSyntax
     public TomlInlineTableSyntax WithOpenBraceToken(SyntaxToken openBraceToken) => Update(openBraceToken, Properties, CloseBraceToken);
     public TomlInlineTableSyntax WithProperties(SeparatedSyntaxList<TomlPropertySyntax> properties) => Update(OpenBraceToken, properties, CloseBraceToken);
     public TomlInlineTableSyntax WithCloseBraceToken(SyntaxToken closeBraceToken) => Update(OpenBraceToken, Properties, closeBraceToken);
-    public TomlInlineTableSyntax AddProperties(params TomlPropertySyntax[] items) => WithProperties(Properties.AddRange(items));
+
+    /// <summary>Returns this inline table with <paramref name="items"/> added at the end, laid out the way the table already is.</summary>
+    /// <remarks>
+    /// In a table written on one line, each new key/value pair follows a comma and a space, and an empty table gets a
+    /// space inside each brace. In one written a pair per line, each goes on a line of its own, indented as the last
+    /// one is. A pair that ends with a comment gets a line break after it, or the comment would hide what follows it.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="items"/> or one of its items is <see langword="null"/>.</exception>
+    public TomlInlineTableSyntax AddProperties(params TomlPropertySyntax[] items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        var openBrace = OpenBraceToken;
+        var closeBrace = CloseBraceToken;
+        if (Properties.Count == 0 && items.Length > 0 && openBrace.TrailingTrivia.Count == 0 && closeBrace.LeadingTrivia.Count == 0)
+        {
+            openBrace = openBrace.WithTrailingTrivia(SyntaxFactory.Space);
+            closeBrace = closeBrace.WithLeadingTrivia(SyntaxFactory.Space);
+        }
+
+        return Update(openBrace, SyntaxFactory.AddToList(Properties, items), closeBrace);
+    }
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 1 ? GetRed(ref _properties, 1) : null;
     internal override SyntaxNode? GetCachedSlot(int index) => index == 1 ? _properties : null;

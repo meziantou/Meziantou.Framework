@@ -32,14 +32,6 @@ internal static class TomlUtilities
     /// <remarks>For instance, a line holding only <c>"serde = "1.0"</c> is a complete quoted key, <c>serde = </c>, followed by text that is not a value.</remarks>
     public static bool IsWellFormed(TomlPropertySyntax property) => !property.EqualsToken.IsMissing && !property.Key.ContainsDiagnostics;
 
-    /// <summary>Creates the location of the content of a string, without its quotes.</summary>
-    /// <remarks>The location assumes the text of the string is its value. Use <see cref="CreateValueLocation"/> for a string that can contain escape sequences.</remarks>
-    public static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TomlStringSyntax value)
-    {
-        var span = value.StringToken.Span;
-        return CreateLocation(context, tree, new TextSpan(span.Start + 1, span.Length - 2));
-    }
-
     public static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TextSpan span)
     {
         var lineSpan = tree.GetLineSpan(span);

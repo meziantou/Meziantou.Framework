@@ -9,7 +9,12 @@ public sealed record IniParseOptions
 
     /// <summary>Gets where <c>;</c> and <c>#</c> start a comment other than at the beginning of a line.</summary>
     /// <remarks>A value in quotes, such as <c>"a;b"</c>, never contains a comment, whatever this says.</remarks>
-    public IniInlineCommentMode InlineComments { get; init; } = IniInlineCommentMode.AfterWhitespace;
+    /// <exception cref="ArgumentOutOfRangeException">The value is not one of <see cref="IniInlineCommentMode"/>.</exception>
+    public IniInlineCommentMode InlineComments
+    {
+        get;
+        init => field = Enum.IsDefined(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not an inline comment mode.");
+    } = IniInlineCommentMode.AfterWhitespace;
 
     /// <summary>
     /// Gets a value indicating whether a line holding only a key, such as <c>skip-networking</c> in a MySQL option file,
@@ -46,5 +51,10 @@ public sealed record IniParseOptions
     public bool ReportDuplicates { get; init; }
 
     /// <summary>Gets how section names and keys are compared to find duplicates. Defaults to <see cref="StringComparer.OrdinalIgnoreCase"/>.</summary>
-    public StringComparer NameComparer { get; init; } = StringComparer.OrdinalIgnoreCase;
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public StringComparer NameComparer
+    {
+        get;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = StringComparer.OrdinalIgnoreCase;
 }

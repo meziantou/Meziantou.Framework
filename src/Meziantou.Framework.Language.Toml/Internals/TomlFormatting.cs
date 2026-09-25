@@ -3,8 +3,57 @@ namespace Meziantou.Framework.Language.Toml.Internals;
 /// <summary>Writes keys and values as TOML text.</summary>
 internal static class TomlFormatting
 {
-    /// <summary>Writes a dotted key, quoting each part that cannot be written bare.</summary>
-    public static string FormatKey(IEnumerable<string> names) => string.Join('.', names.Select(FormatKeyPart));
+    /// <summary>The most characters of a key a diagnostic message shows, roughly: past that, the middle of the key is left out.</summary>
+    private const int MaxMessageKeyLength = 200;
+
+    /// <summary>The most characters of one part of a key a diagnostic message shows.</summary>
+    private const int MaxMessageKeyPartLength = 64;
+
+    /// <summary>Writes the dotted key made of <paramref name="prefix"/> followed by <paramref name="names"/>, for a diagnostic message.</summary>
+    /// <remarks>
+    /// A document can repeat a long key many times, each time with a mistake, and every message lives as long as its
+    /// diagnostic. So both the work and the text are bounded, whatever the length of the key: a long part is cut short,
+    /// and a long key keeps its first and last parts with <c>…</c> in place of the ones between them.
+    /// </remarks>
+    public static string FormatKeyForMessage(ReadOnlySpan<string> prefix, ReadOnlySpan<string> names)
+    {
+        var count = prefix.Length + names.Length;
+        var head = new List<string>();
+        var headLength = 0;
+        var first = 0;
+        while (first < count && headLength < MaxMessageKeyLength / 2)
+        {
+            var part = FormatMessageKeyPart(first < prefix.Length ? prefix[first] : names[first - prefix.Length]);
+            head.Add(part);
+            headLength += part.Length + 1;
+            first++;
+        }
+
+        var tail = new List<string>();
+        var tailLength = 0;
+        var last = count;
+        while (last > first && tailLength < MaxMessageKeyLength / 2)
+        {
+            last--;
+            var part = FormatMessageKeyPart(last < prefix.Length ? prefix[last] : names[last - prefix.Length]);
+            tail.Add(part);
+            tailLength += part.Length + 1;
+        }
+
+        tail.Reverse();
+
+        return last > first ? string.Join('.', [.. head, "…", .. tail]) : string.Join('.', [.. head, .. tail]);
+
+        static string FormatMessageKeyPart(string name)
+        {
+            if (name.Length <= MaxMessageKeyPartLength)
+                return FormatKeyPart(name);
+
+            var length = char.IsHighSurrogate(name[MaxMessageKeyPartLength - 1]) ? MaxMessageKeyPartLength - 1 : MaxMessageKeyPartLength;
+
+            return FormatKeyPart(string.Concat(name.AsSpan(0, length), "…"));
+        }
+    }
 
     /// <summary>Writes one part of a key: bare when it can be, as a basic string otherwise.</summary>
     public static string FormatKeyPart(string name) => SyntaxFacts.IsBareKey(name) ? name : QuoteBasicString(name);

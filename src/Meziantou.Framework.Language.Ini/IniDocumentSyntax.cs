@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Meziantou.Framework.Language.InternalSyntax;
 using Green = Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
 
@@ -70,7 +71,9 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        comparer ??= Options.NameComparer;
+        if (UsesNameComparer(comparer))
+            return Index.GetNames(Options.NameComparer).GetSections(name);
+
         return Index.Sections.Where(section => !section.NameToken.IsMissing && comparer.Equals(section.Name, name));
     }
 
@@ -83,10 +86,16 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     {
         ArgumentNullException.ThrowIfNull(key);
 
-        comparer ??= Options.NameComparer;
+        if (UsesNameComparer(comparer))
+            return Index.GetNames(Options.NameComparer).GetProperties(section, key);
+
         var properties = section is null ? GlobalProperties : GetSections(section, comparer).SelectMany(header => header.Properties);
         return properties.Where(property => !property.KeyToken.IsMissing && comparer.Equals(property.Key, key));
     }
+
+    /// <summary>Determines whether names compared with <paramref name="comparer"/> can be looked up in the index, which uses <see cref="IniParseOptions.NameComparer"/>.</summary>
+    private bool UsesNameComparer([NotNullWhen(false)] StringComparer? comparer)
+        => comparer is null || comparer.Equals(Options.NameComparer);
 
     /// <summary>Gets the value of the property with key <paramref name="key"/> in the section named <paramref name="section"/>.</summary>
     /// <remarks>
@@ -107,9 +116,12 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     /// <see cref="IniPropertySyntax.WithValue(string)"/> writes it. Otherwise it is added after the last entry of the last
     /// section named <paramref name="section"/>, or of the properties before the first section header, written like the
     /// property before it: same indentation, same separator, same spacing. When there is no such section, it is added at
-    /// the end of the document under a new header, after a blank line.
+    /// the end of the document under a new header, after a blank line and after the comments that end the document.
     /// </para>
-    /// <para>The value is written the way <see cref="Options"/> read it.</para>
+    /// <para>
+    /// The value is written the way <see cref="Options"/> read it. The lines of a value with line breaks are read back
+    /// joined with <c>\n</c>, whichever of <c>\r\n</c>, <c>\r</c>, or <c>\n</c> separated them.
+    /// </para>
     /// </remarks>
     /// <param name="section">The name of the section, or <see langword="null"/> for the properties before the first section header.</param>
     /// <param name="key">The key of the property.</param>
@@ -117,17 +129,21 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     /// <param name="comparer">How section names and keys are compared, or <see langword="null"/> for the <see cref="IniParseOptions.NameComparer"/> of <see cref="Options"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="key"/>, <paramref name="section"/>, or <paramref name="value"/> cannot be written; see
-    /// <see cref="SyntaxFactory.Key(string)"/>, <see cref="SyntaxFactory.SectionName(string)"/>, and <see cref="IniPropertySyntax.WithValue(string)"/>.
+    /// <paramref name="key"/>, <paramref name="section"/>, or <paramref name="value"/> cannot be written the way
+    /// <see cref="Options"/> read them; see <see cref="SyntaxFactory.Key(string, IniParseOptions)"/>,
+    /// <see cref="SyntaxFactory.SectionName(string, IniParseOptions)"/>, and <see cref="IniPropertySyntax.WithValue(string)"/>.
+    /// A key or section the document already has is not checked, as it is not written.
     /// </exception>
     public IniDocumentSyntax SetValue(string? section, string key, string value, StringComparer? comparer = null)
     {
+        ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
 
-        var keyToken = SyntaxFactory.Key(key);
         var existing = GetProperties(section, key, comparer).LastOrDefault();
         if (existing is not null)
             return this.ReplaceNode(existing, existing.WithValue(value));
+
+        var keyToken = SyntaxFactory.TryKey(key, Options) ?? throw new ArgumentException($"'{key}' cannot be written as an INI key.", nameof(key));
 
         var index = Index;
         var entries = Entries;
@@ -144,13 +160,16 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
             var header = GetSections(section, comparer).LastOrDefault();
             if (header is null)
             {
-                var newHeader = SyntaxFactory.IniSection(section);
+                var nameToken = SyntaxFactory.TrySectionName(section, Options) ?? throw new ArgumentException($"'{section}' cannot be written as an INI section name.", nameof(section));
+                var newHeader = SyntaxFactory.IniSection(nameToken);
                 if (entries.Count > 0)
                 {
                     newHeader = newHeader.WithLeadingTrivia(SyntaxFactory.GetEndOfLine(this));
                 }
 
-                return AddEntries(newHeader, CreateProperty(keyToken, value, sibling: null, indentation));
+                // The comments at the end of the document describe the section above them, or are what is left of an old one:
+                // a new section goes after them.
+                return AddEntries([newHeader, CreateProperty(keyToken, value, sibling: null, indentation)], afterTrailingComments: true);
             }
 
             var headerOrdinal = index.SectionOrdinals[header];
@@ -188,11 +207,48 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         return WithEntries(entries.Insert(insertAt, property));
     }
 
+    /// <summary>Returns this document with each property of <paramref name="values"/> set, as <see cref="SetValue"/> sets them one after the other.</summary>
+    /// <remarks>
+    /// Every edit of an immutable document rebuilds it, so setting properties one at a time costs as much as the document
+    /// for each of them. This sets every property the document already has in one edit, and only the new ones one at a
+    /// time. When a property is set more than once, the last value wins.
+    /// </remarks>
+    /// <param name="values">The section, key, and value of each property, as <see cref="SetValue"/> takes them.</param>
+    /// <param name="comparer">How section names and keys are compared, or <see langword="null"/> for the <see cref="IniParseOptions.NameComparer"/> of <see cref="Options"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="values"/>, or a key or value in it, is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">A section, key, or value cannot be written; see <see cref="SetValue"/>.</exception>
+    public IniDocumentSyntax SetValues(IEnumerable<(string? Section, string Key, string Value)> values, StringComparer? comparer = null)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        var replacements = new Dictionary<IniPropertySyntax, string>(ReferenceEqualityComparer.Instance);
+        var added = new List<(string? Section, string Key, string Value)>();
+        foreach (var item in values)
+        {
+            if (GetProperties(item.Section, item.Key, comparer).LastOrDefault() is { } existing)
+            {
+                replacements[existing] = item.Value;
+            }
+            else
+            {
+                added.Add(item);
+            }
+        }
+
+        var result = replacements.Count == 0 ? this : this.ReplaceNodes(replacements.Keys, (original, _) => original.WithValue(replacements[original]));
+        foreach (var (section, key, value) in added)
+        {
+            result = result.SetValue(section, key, value, comparer);
+        }
+
+        return result;
+    }
+
     /// <summary>Returns this document without the properties with key <paramref name="key"/> in the sections named <paramref name="section"/>.</summary>
     /// <remarks>
     /// Every one of them is removed, with the comment lines in front of it and the comment after it, so that
-    /// <see cref="GetValue(string?, string, StringComparer?)"/> finds none. What heads the document, up to its last blank
-    /// line, stays.
+    /// <see cref="GetValue(string?, string, StringComparer?)"/> finds none. Comment lines that a blank line separates
+    /// from it head a group of entries, or the document, and stay.
     /// </remarks>
     /// <param name="section">The name of the section, or <see langword="null"/> for the properties before the first section header.</param>
     /// <param name="key">The key of the properties.</param>
@@ -209,8 +265,8 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
 
     /// <summary>Returns this document without the sections named <paramref name="name"/> and the entries under them.</summary>
     /// <remarks>
-    /// Each header is removed with the comment lines in front of it and every entry up to the next header. What heads the
-    /// document, up to its last blank line, stays.
+    /// Each header is removed with the comment lines in front of it and every entry up to the next header. Comment lines
+    /// that a blank line separates from the header head the document, or a group of sections, and stay.
     /// </remarks>
     /// <param name="name">The name of the sections.</param>
     /// <param name="comparer">How names are compared, or <see langword="null"/> for the <see cref="IniParseOptions.NameComparer"/> of <see cref="Options"/>.</param>
@@ -259,6 +315,13 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     {
         ArgumentNullException.ThrowIfNull(items);
 
+        return AddEntries(items, afterTrailingComments: false);
+    }
+
+    /// <param name="items">The entries to add.</param>
+    /// <param name="afterTrailingComments">Whether the entries go after the comments that end the document, rather than in front of them.</param>
+    private IniDocumentSyntax AddEntries(IniEntrySyntax[] items, bool afterTrailingComments)
+    {
         if (items.Length == 0)
             return this;
 
@@ -271,7 +334,8 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
             var last = entries[entries.Count - 1];
             entries = entries.Replace(last, SyntaxFactory.EndLine(last, endOfLine, replaceLineBreaks: false));
         }
-        else
+
+        if (entries.Count == 0 || (afterTrailingComments && endOfFile.LeadingTrivia.Any(trivia => trivia.IsKind(SyntaxKind.CommentTrivia))))
         {
             // Everything but the whitespace after the last line break stays in front of the new entries.
             var trivia = endOfFile.LeadingTrivia;
@@ -346,6 +410,10 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     }
 
     /// <summary>Returns this document without the entries at <paramref name="removed"/>, and the skipped text after them on their lines.</summary>
+    /// <remarks>
+    /// What heads a run of removed entries, up to its last blank line, is not theirs, and stays: the head of the document,
+    /// or comment lines that head a group of entries.
+    /// </remarks>
     private IniDocumentSyntax RemoveEntries(HashSet<int> removed)
     {
         if (removed.Count == 0)
@@ -353,41 +421,45 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
 
         var entries = Entries;
         var kept = new List<IniEntrySyntax>(entries.Count);
-        SyntaxTriviaList? head = null;
+        List<SyntaxTrivia>? carried = null;
         for (var i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
             if (removed.Contains(i) || (entry is IniSkippedTextSyntax && removed.Contains(i - 1) && removed.Add(i)))
             {
-                if (i == 0)
+                if (!removed.Contains(i - 1))
                 {
-                    head = SplitHead(entry.GetLeadingTrivia()).Head;
+                    var head = SplitHead(entry.GetLeadingTrivia()).Head;
+                    if (i == 0 || head.Any(trivia => trivia.IsKind(SyntaxKind.CommentTrivia)))
+                    {
+                        (carried ??= []).AddRange(head);
+                    }
                 }
 
                 continue;
             }
 
-            if (head is { } carried)
+            if (carried is not null)
             {
                 entry = entry.WithLeadingTrivia([.. carried, .. SkipBlankLines(entry.GetLeadingTrivia(), carried)]);
-                head = null;
+                carried = null;
             }
 
             kept.Add(entry);
         }
 
         var endOfFile = EndOfFileToken;
-        if (head is { } rest)
+        if (carried is not null)
         {
-            endOfFile = endOfFile.WithLeadingTrivia([.. rest, .. SkipBlankLines(endOfFile.LeadingTrivia, rest)]);
+            endOfFile = endOfFile.WithLeadingTrivia([.. carried, .. SkipBlankLines(endOfFile.LeadingTrivia, carried)]);
         }
 
         return Update(SyntaxFactory.List(kept), endOfFile);
 
-        // The head of the document ends with a blank line when it has one, so the blank lines after it would double it.
-        static IEnumerable<SyntaxTrivia> SkipBlankLines(SyntaxTriviaList trivia, SyntaxTriviaList head)
+        // What is carried ends with a blank line when it has one, so the blank lines after it would double it.
+        static IEnumerable<SyntaxTrivia> SkipBlankLines(SyntaxTriviaList trivia, List<SyntaxTrivia> head)
         {
-            if (head.Count == 0 || !head[head.Count - 1].IsKind(SyntaxKind.EndOfLineTrivia))
+            if (head.Count == 0 || !head[^1].IsKind(SyntaxKind.EndOfLineTrivia))
                 return trivia;
 
             var start = 0;
@@ -441,21 +513,25 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     private static bool IsByteOrderMark(SyntaxTrivia trivia) => trivia.IsKind(SyntaxKind.WhitespaceTrivia) && trivia.ToFullString() is "﻿";
 
     /// <summary>Where each section header and property sits, worked out once per document.</summary>
+    /// <remarks>The lists it hands out are read-only, as the document that shares them is immutable.</remarks>
     private sealed class SectionIndex
     {
+        private NameIndex? _names;
+
         public SectionIndex(SyntaxList<IniEntrySyntax> entries)
         {
-            List<IniPropertySyntax>? current = [];
-            GlobalProperties = current;
+            var sections = new List<IniSectionSyntax>();
+            var current = new List<IniPropertySyntax>();
+            GlobalProperties = current.AsReadOnly();
             for (var i = 0; i < entries.Count; i++)
             {
                 switch (entries[i])
                 {
                     case IniSectionSyntax section:
                         current = [];
-                        SectionOrdinals.Add(section, Sections.Count);
-                        Sections.Add(section);
-                        Properties.Add(section, current);
+                        SectionOrdinals.Add(section, sections.Count);
+                        sections.Add(section);
+                        Properties.Add(section, current.AsReadOnly());
                         EntryIndexes.Add(section, i);
                         break;
 
@@ -465,12 +541,94 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
                         break;
                 }
             }
+
+            Sections = sections.AsReadOnly();
         }
 
         public IReadOnlyList<IniPropertySyntax> GlobalProperties { get; }
-        public List<IniSectionSyntax> Sections { get; } = [];
+        public ReadOnlyCollection<IniSectionSyntax> Sections { get; }
         public Dictionary<IniSectionSyntax, int> SectionOrdinals { get; } = new(ReferenceEqualityComparer.Instance);
         public Dictionary<IniSectionSyntax, IReadOnlyList<IniPropertySyntax>> Properties { get; } = new(ReferenceEqualityComparer.Instance);
         public Dictionary<IniEntrySyntax, int> EntryIndexes { get; } = new(ReferenceEqualityComparer.Instance);
+
+        /// <summary>Gets the sections and properties by name, as <paramref name="comparer"/> compares names.</summary>
+        /// <remarks>Only the comparer of the document is ever asked for, so the first one asked for is the one kept.</remarks>
+        public NameIndex GetNames(StringComparer comparer)
+        {
+            var names = Volatile.Read(ref _names);
+            if (names is null)
+            {
+                names = new NameIndex(this, comparer);
+                names = Interlocked.CompareExchange(ref _names, names, comparand: null) ?? names;
+            }
+
+            return names;
+        }
+    }
+
+    /// <summary>The section headers and properties of a document by name, so that looking one up does not read them all.</summary>
+    private sealed class NameIndex
+    {
+        private readonly Dictionary<string, List<IniSectionSyntax>> _sections;
+        private readonly Dictionary<string, List<IniPropertySyntax>> _globalProperties;
+        private readonly Dictionary<IniSectionSyntax, Dictionary<string, List<IniPropertySyntax>>> _sectionProperties = new(ReferenceEqualityComparer.Instance);
+
+        public NameIndex(SectionIndex index, StringComparer comparer)
+        {
+            _sections = new(comparer);
+            foreach (var section in index.Sections)
+            {
+                _sectionProperties.Add(section, ByKey(index.Properties[section], comparer));
+                if (section.NameToken.IsMissing)
+                    continue;
+
+                if (!_sections.TryGetValue(section.Name, out var sections))
+                {
+                    sections = [];
+                    _sections.Add(section.Name, sections);
+                }
+
+                sections.Add(section);
+            }
+
+            _globalProperties = ByKey(index.GlobalProperties, comparer);
+        }
+
+        public ReadOnlyCollection<IniSectionSyntax> GetSections(string name) => _sections.TryGetValue(name, out var sections) ? sections.AsReadOnly() : ReadOnlyCollection<IniSectionSyntax>.Empty;
+
+        public IEnumerable<IniPropertySyntax> GetProperties(string? section, string key)
+        {
+            if (section is null)
+                return _globalProperties.TryGetValue(key, out var global) ? global.AsReadOnly() : [];
+
+            if (!_sections.TryGetValue(section, out var headers))
+                return [];
+
+            if (headers.Count == 1)
+                return _sectionProperties[headers[0]].TryGetValue(key, out var properties) ? properties.AsReadOnly() : [];
+
+            // Sections that share a name are one section, in source order.
+            return headers.SelectMany(header => _sectionProperties[header].TryGetValue(key, out var properties) ? properties : []);
+        }
+
+        private static Dictionary<string, List<IniPropertySyntax>> ByKey(IReadOnlyList<IniPropertySyntax> properties, StringComparer comparer)
+        {
+            var result = new Dictionary<string, List<IniPropertySyntax>>(comparer);
+            foreach (var property in properties)
+            {
+                if (property.KeyToken.IsMissing)
+                    continue;
+
+                if (!result.TryGetValue(property.Key, out var list))
+                {
+                    list = [];
+                    result.Add(property.Key, list);
+                }
+
+                list.Add(property);
+            }
+
+            return result;
+        }
     }
 }

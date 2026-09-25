@@ -27,9 +27,9 @@ namespace Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 /// the length of its own key, whatever the depth of the header above it.
 /// </para>
 /// <para>
-/// An entry whose key could not be read is not checked, and a table header that is itself in error stops the
-/// key/value pairs under it from being checked, so one mistake is reported once rather than again on every line it
-/// affects.
+/// An entry whose key could not be read, or a key/value pair without its <c>=</c>, is not checked, and a table header
+/// that is itself in error stops the key/value pairs under it from being checked, so one mistake is reported once
+/// rather than again on every line it affects.
 /// </para>
 /// </remarks>
 internal sealed class DocumentValidator
@@ -95,12 +95,12 @@ internal sealed class DocumentValidator
             return;
 
         var keyOffset = offset + table.GetSlotOffset(1) + keyNode.GetLeadingTriviaWidth();
-        void Report(DiagnosticDescriptor descriptor, IEnumerable<string> key)
-            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, key);
+        void Report(DiagnosticDescriptor descriptor, int nameCount)
+            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, [], names.AsSpan(0, nameCount));
 
         if (_flags.GetFrozenPrefixLength(names, includeLast: true) is var frozenLength and > 0)
         {
-            Report(TomlDiagnosticDescriptors.ImmutableValue, names[..frozenLength]);
+            Report(TomlDiagnosticDescriptors.ImmutableValue, frozenLength);
             return;
         }
 
@@ -111,7 +111,7 @@ internal sealed class DocumentValidator
             var parent = GetOrCreateTable(_root, names, names.Length - 1, accessArrays: true, out var failedAt);
             if (parent is null)
             {
-                Report(TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
+                Report(TomlDiagnosticDescriptors.NotATable, failedAt);
                 return;
             }
 
@@ -128,7 +128,7 @@ internal sealed class DocumentValidator
             }
             else
             {
-                Report(existing is Table ? TomlDiagnosticDescriptors.DuplicateTable : TomlDiagnosticDescriptors.NotATable, names);
+                Report(existing is Table ? TomlDiagnosticDescriptors.DuplicateTable : TomlDiagnosticDescriptors.NotATable, names.Length);
                 return;
             }
 
@@ -144,14 +144,14 @@ internal sealed class DocumentValidator
             sectionFlags = _flags.GetOrAdd(names);
             if (sectionFlags.Explicit)
             {
-                Report(TomlDiagnosticDescriptors.DuplicateTable, names);
+                Report(TomlDiagnosticDescriptors.DuplicateTable, names.Length);
                 return;
             }
 
             sectionFlags.Explicit = true;
             if (GetOrCreateTable(_root, names, names.Length, accessArrays: true, out var failedAt) is not { } created)
             {
-                Report(TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
+                Report(TomlDiagnosticDescriptors.NotATable, failedAt);
                 return;
             }
 
@@ -168,7 +168,7 @@ internal sealed class DocumentValidator
         var value = property.GetRequiredSlot(2);
         var valueOffset = offset + property.GetSlotOffset(2);
         var keyNode = property.GetRequiredSlot(0);
-        if (_headerTable is not { } table || GetNames(keyNode) is not { } names)
+        if (_headerTable is not { } table || GetNames(keyNode) is not { } names || IsMissingEquals(property))
         {
             // An inline table is a document of its own, so it can still be checked.
             ValidateValue(value, valueOffset, _diagnostics);
@@ -177,7 +177,7 @@ internal sealed class DocumentValidator
 
         var keyOffset = offset + keyNode.GetLeadingTriviaWidth();
         void Report(DiagnosticDescriptor descriptor, int nameCount)
-            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, [.. _header, .. names.AsSpan(0, nameCount)]);
+            => Add(_diagnostics, keyOffset, keyNode.Width, descriptor, _header, names.AsSpan(0, nameCount));
 
         // The tables a dotted key goes through must not have been defined by a header, and become explicit at the
         // next one. The frozen check comes after that one, as in tomllib, so it is only remembered on the way.
@@ -284,26 +284,26 @@ internal sealed class DocumentValidator
             }
 
             var keyNode = property.GetRequiredSlot(0);
-            if (GetNames(keyNode) is not { } names)
+            if (GetNames(keyNode) is not { } names || IsMissingEquals(property))
                 continue;
 
             var keyOffset = itemOffset + keyNode.GetLeadingTriviaWidth();
             if (rootFlags.GetFrozenPrefixLength(names, includeLast: true) is var frozenLength and > 0)
             {
-                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.ImmutableValue, names[..frozenLength]);
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.ImmutableValue, [], names.AsSpan(0, frozenLength));
                 continue;
             }
 
             var parent = GetOrCreateTable(root, names, names.Length - 1, accessArrays: false, out var failedAt);
             if (parent is null)
             {
-                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.NotATable, names[..failedAt]);
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.NotATable, [], names.AsSpan(0, failedAt));
                 continue;
             }
 
             if (!parent.Children.TryAdd(names[^1], Value))
             {
-                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.DuplicateKey, names);
+                Add(diagnostics, keyOffset, keyNode.Width, TomlDiagnosticDescriptors.DuplicateKey, [], names);
                 continue;
             }
 
@@ -421,8 +421,16 @@ internal sealed class DocumentValidator
         return child as Table;
     }
 
-    private static void Add(List<SyntaxDiagnosticInfo> diagnostics, int offset, int width, DiagnosticDescriptor descriptor, IEnumerable<string> key)
-        => diagnostics.Add(new SyntaxDiagnosticInfo(offset, width, descriptor, [TomlFormatting.FormatKey(key)]));
+    /// <summary>Gets whether a key/value pair has no <c>=</c>, in which case what follows the key was not read as its value.</summary>
+    /// <remarks>
+    /// Such a pair defines nothing: the grammar already reports it, and taking its key as defined would report the
+    /// line that defines it correctly as well.
+    /// </remarks>
+    private static bool IsMissingEquals(TomlPropertySyntax property) => property.GetRequiredSlot(1).IsMissing;
+
+    /// <summary>Reports a key made of <paramref name="prefix"/> followed by <paramref name="key"/>, such as the header of a section and a key under it.</summary>
+    private static void Add(List<SyntaxDiagnosticInfo> diagnostics, int offset, int width, DiagnosticDescriptor descriptor, ReadOnlySpan<string> prefix, ReadOnlySpan<string> key)
+        => diagnostics.Add(new SyntaxDiagnosticInfo(offset, width, descriptor, [TomlFormatting.FormatKeyForMessage(prefix, key)]));
 
     private sealed class Table
     {

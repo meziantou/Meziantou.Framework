@@ -15,6 +15,7 @@ namespace Meziantou.Framework.Language.Ini
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniPropertySyntax> GetProperties(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public string? GetValue(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax SetValue(string? section, string key, string value, System.StringComparer? comparer = null) => throw null;
+        public Meziantou.Framework.Language.Ini.IniDocumentSyntax SetValues([System.Runtime.CompilerServices.TupleElementNames(new string[] { "Section", "Key", "Value" })] System.Collections.Generic.IEnumerable<System.ValueTuple<string?, string, string>> values, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax RemoveProperties(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax RemoveSections(string name, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
@@ -150,7 +151,8 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithRoot(Meziantou.Framework.Language.Ini.IniDocumentSyntax root) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Ini.IniSyntaxTree oldTree) => throw null;
-        public bool IsEquivalentTo(Meziantou.Framework.Language.Ini.IniSyntaxTree? other) => throw null;
+        public bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Language.Ini.IniSyntaxTree? other) => throw null;
+        public override bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Language.SyntaxTree? other) => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         protected override Meziantou.Framework.Language.SyntaxTree WithChangedTextCore(Meziantou.Framework.Language.SourceText newText) => throw null;
         protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
@@ -204,7 +206,9 @@ namespace Meziantou.Framework.Language.Ini
         public static Meziantou.Framework.Language.SyntaxToken MissingToken(Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken BadToken(string text) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken Key(string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Key(string text, Meziantou.Framework.Language.Ini.IniParseOptions options) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken SectionName(string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken SectionName(string text, Meziantou.Framework.Language.Ini.IniParseOptions options) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken Value(string value) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken Value(string value, Meziantou.Framework.Language.Ini.IniParseOptions options) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken RawValue(string text) => throw null;
@@ -218,6 +222,7 @@ namespace Meziantou.Framework.Language.Ini
         public static Meziantou.Framework.Language.Ini.IniDocumentSyntax IniDocument(params Meziantou.Framework.Language.Ini.IniEntrySyntax[] entries) => throw null;
         public static Meziantou.Framework.Language.Ini.IniDocumentSyntax IniDocument(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSectionSyntax IniSection(string name) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniSectionSyntax IniSection(string name, Meziantou.Framework.Language.Ini.IniParseOptions options) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSectionSyntax IniSection(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public static Meziantou.Framework.Language.Ini.IniPropertySyntax IniProperty(string key, string value) => throw null;
         public static Meziantou.Framework.Language.Ini.IniPropertySyntax IniProperty(string key, string value, Meziantou.Framework.Language.Ini.IniParseOptions options) => throw null;
@@ -239,6 +244,9 @@ namespace Meziantou.Framework.Language.Ini
         public static bool IsAnyToken(Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static bool IsPunctuation(Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static bool IsEntry(Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
+        public static bool IsValidKey(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options = null) => throw null;
+        public static bool IsValidSectionName(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options = null) => throw null;
+        public static bool IsValidValue(string value, Meziantou.Framework.Language.Ini.IniParseOptions? options = null) => throw null;
     }
 
     public enum SyntaxKind

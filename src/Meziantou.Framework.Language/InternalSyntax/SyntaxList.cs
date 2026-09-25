@@ -183,7 +183,11 @@ internal sealed class SyntaxList : GreenNode
         return low;
     }
 
-    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => List(slots);
+    /// <remarks>
+    /// A list that holds a single token was built that way on purpose, to be projected into a red list, so it stays a
+    /// list rather than collapsing to the token.
+    /// </remarks>
+    internal override GreenNode? WithSlots(ReadOnlySpan<GreenNode?> slots) => ListNode(slots);
 
     internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new SyntaxList(_children, diagnostics, GetAnnotations());
     internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new SyntaxList(_children, GetDiagnostics(), annotations);

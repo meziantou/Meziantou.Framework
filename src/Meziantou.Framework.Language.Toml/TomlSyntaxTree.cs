@@ -11,8 +11,14 @@ namespace Meziantou.Framework.Language.Toml;
 /// <para>
 /// What breaks the grammar is carried by the nodes, and is what <see cref="SyntaxNode.ContainsDiagnostics"/> tells.
 /// Whether a key or a table is defined twice, or a value extended after the fact, depends on the whole document
-/// instead, so the tree works it out from its root the first time it is asked, and again for every new tree an edit
-/// produces. A node carries none of these, and neither does a node that is not part of a tree.
+/// instead, so the tree works it out from its root the first time it is asked. A node carries none of these, and
+/// neither does a node that is not part of a tree.
+/// </para>
+/// <para>
+/// A tree made from a root with <see cref="Create(TomlDocumentSyntax, TomlParseOptions?, string?)"/> or
+/// <see cref="WithRoot"/> reports the diagnostics of its text instead, which it parses again the first time it is
+/// asked: an edit can build nodes that do not read back as themselves, such as a comment that hides the bracket after
+/// it, and the options of the tree can be those of another version than the nodes were parsed with.
 /// </para>
 /// </remarks>
 /// <example>
@@ -25,7 +31,11 @@ public sealed class TomlSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly TomlDocumentSyntax _root;
-    private IReadOnlyList<Diagnostic>? _diagnostics;
+
+    /// <summary>Whether <see cref="_root"/> is what parsing <see cref="_text"/> with <see cref="Options"/> gave, so that the nodes carry the diagnostics of the text.</summary>
+    private readonly bool _isParsed;
+
+    private Diagnostic[]? _diagnostics;
     private Diagnostic[]? _documentDiagnostics;
 
     private TomlSyntaxTree(SourceText text, TomlParseOptions options, Green.TomlDocumentSyntax green, string? path)
@@ -33,7 +43,25 @@ public sealed class TomlSyntaxTree : SyntaxTree
         _text = text;
         Options = options;
         FilePath = path;
+        _isParsed = true;
         _root = (TomlDocumentSyntax)green.CreateRed();
+        _root.AttachToTree(this);
+    }
+
+    private TomlSyntaxTree(TomlDocumentSyntax root, TomlParseOptions options, string? path)
+    {
+        _text = SourceText.From(root.ToFullString());
+        Options = options;
+        FilePath = path;
+
+        // The root the caller holds becomes the root of the tree when it belongs to none yet, as in Roslyn, so that the
+        // nodes the caller holds report the diagnostics of the tree. A root that already belongs to a tree is copied.
+        if (root.Position == 0 && root.SyntaxTree is null)
+        {
+            root.AttachToTree(this);
+        }
+
+        _root = ReferenceEquals(root.SyntaxTree, this) ? root : (TomlDocumentSyntax)root.Green.CreateRed();
         _root.AttachToTree(this);
     }
 
@@ -81,27 +109,30 @@ public sealed class TomlSyntaxTree : SyntaxTree
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
     /// <remarks>
-    /// The text is not parsed again: the grammar diagnostics are those <paramref name="root"/> carries. Keys and
-    /// tables defined twice are checked over the new root.
+    /// <paramref name="root"/> becomes the root of the tree when it is not part of another one yet. The nodes are kept,
+    /// but the diagnostics are those of the text: it is parsed again the first time they are asked for, so that they
+    /// are right even when an edit built nodes that do not read back as themselves.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static TomlSyntaxTree Create(TomlDocumentSyntax root, string? path = null) => Create(root, options: null, path);
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
     /// <remarks>
-    /// The text is not parsed again: the grammar diagnostics are those <paramref name="root"/> carries. Keys and
-    /// tables defined twice are checked over the new root.
+    /// <paramref name="root"/> becomes the root of the tree when it is not part of another one yet. The nodes are kept,
+    /// but the diagnostics are those of the text: it is parsed again with <paramref name="options"/> the first time they
+    /// are asked for, so that they are right even when an edit built nodes that do not read back as themselves, or when
+    /// the nodes were parsed as another version of TOML.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static TomlSyntaxTree Create(TomlDocumentSyntax root, TomlParseOptions? options, string? path = null)
     {
         ArgumentNullException.ThrowIfNull(root);
 
-        return new TomlSyntaxTree(SourceText.From(root.ToFullString()), options ?? TomlParseOptions.Default, (Green.TomlDocumentSyntax)root.Green, path);
+        return new TomlSyntaxTree(root, options ?? TomlParseOptions.Default, path);
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= [.. Merge(base.GetDiagnostics(), GetDocumentDiagnostics())];
+    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= ComputeDiagnostics();
 
     /// <summary>Gets the diagnostics at or below <paramref name="node"/>, including the keys and tables it defines twice.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
@@ -109,8 +140,58 @@ public sealed class TomlSyntaxTree : SyntaxTree
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        var span = node.FullSpan;
-        return Merge(base.GetDiagnostics(node), GetDocumentDiagnostics().Where(diagnostic => span.Contains(diagnostic.Location.SourceSpan)));
+        if (!_isParsed)
+            return Within(GetDiagnostics(), node.FullSpan);
+
+        return Merge(base.GetDiagnostics(node), Within(GetDocumentDiagnostics(), node.FullSpan));
+    }
+
+    /// <summary>Gets the diagnostics on <paramref name="token"/> and the trivia around it.</summary>
+    public override IEnumerable<Diagnostic> GetDiagnostics(SyntaxToken token)
+        => _isParsed ? base.GetDiagnostics(token) : Within(GetDiagnostics(), token.FullSpan);
+
+    /// <summary>Gets the diagnostics on <paramref name="trivia"/>.</summary>
+    public override IEnumerable<Diagnostic> GetDiagnostics(SyntaxTrivia trivia)
+        => _isParsed ? base.GetDiagnostics(trivia) : Within(GetDiagnostics(), trivia.FullSpan);
+
+    private Diagnostic[] ComputeDiagnostics()
+    {
+        // The nodes of a tree made from a root may not be what their text reads as, so the text is what is checked.
+        if (!_isParsed)
+            return [.. ParseText(_text, Options, FilePath).GetDiagnostics()];
+
+        return [.. Merge(base.GetDiagnostics(), GetDocumentDiagnostics())];
+    }
+
+    /// <summary>Gets the diagnostics of <paramref name="diagnostics"/>, which are in source order, that lie within <paramref name="span"/>.</summary>
+    /// <remarks>A binary search finds the first one, so asking every node of a tree for its diagnostics stays linear.</remarks>
+    private static List<Diagnostic> Within(IReadOnlyList<Diagnostic> diagnostics, TextSpan span)
+    {
+        var low = 0;
+        var high = diagnostics.Count;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (diagnostics[middle].Location.SourceSpan.Start < span.Start)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        var result = new List<Diagnostic>();
+        for (var i = low; i < diagnostics.Count && diagnostics[i].Location.SourceSpan.Start <= span.End; i++)
+        {
+            if (span.Contains(diagnostics[i].Location.SourceSpan))
+            {
+                result.Add(diagnostics[i]);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Gets the diagnostics that depend on the whole document rather than on the grammar, in source order.</summary>
@@ -157,5 +238,6 @@ public sealed class TomlSyntaxTree : SyntaxTree
 
     protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText, Options, FilePath);
 
-    protected override SyntaxTree WithRootCore(SyntaxNode root) => Create((TomlDocumentSyntax)root, Options, FilePath);
+    protected override SyntaxTree WithRootCore(SyntaxNode root)
+        => Create(root as TomlDocumentSyntax ?? throw new ArgumentException($"The root of a TOML tree is a {nameof(TomlDocumentSyntax)}, not a {root.GetType().Name}.", nameof(root)), Options, FilePath);
 }

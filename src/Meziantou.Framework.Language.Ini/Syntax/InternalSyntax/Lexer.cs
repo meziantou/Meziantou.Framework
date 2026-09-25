@@ -46,11 +46,12 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
     /// </summary>
     /// <param name="position">The start of a line.</param>
     /// <param name="indentation">How indented the key of the value is.</param>
-    public bool IsContinuation(int position, int indentation)
+    /// <param name="textStart">Where the text of that line starts.</param>
+    public bool IsContinuation(int position, int indentation, out int textStart)
     {
         while (true)
         {
-            var textStart = position;
+            textStart = position;
             while (textStart < _text.Length && IsWhitespace(_text[textStart]))
             {
                 textStart++;
@@ -158,19 +159,30 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
 
     /// <summary>Reads one line of a value, and returns where its text ends once the whitespace after it is left out.</summary>
     /// <param name="isQuoted">Whether the whole text is one quoted string, such as <c>"a;b"</c>, whose quotes are left out.</param>
+    /// <remarks>
+    /// Only a value wholly in quotes is read as quoted: a comment cannot start inside its quotes. When anything but a
+    /// comment follows the closing quote on the line, or the quote is not closed, the quotes are ordinary characters and
+    /// the line is read as if there were none, so whether <c>;</c> or <c>#</c> starts a comment never depends on them.
+    /// </remarks>
     private int ScanValueLine(out bool isQuoted)
     {
         var start = Position;
-        var quoteEnd = -1;
         if (options.AllowQuotedValues && Current is '"' or '\'')
         {
-            // A comment cannot start inside quotes, so the quoted part is read as a whole. A quote that is not closed on
-            // the line is an ordinary character.
             var close = _text.IndexOfAny([Current, '\r', '\n'], Position + 1);
             if (close >= 0 && _text[close] == Current)
             {
-                Position = close + 1;
-                quoteEnd = Position;
+                var after = close + 1;
+                while (after < _text.Length && IsWhitespace(_text[after]))
+                {
+                    after++;
+                }
+
+                if (after >= _text.Length || IsEndOfLine(_text[after]) || IsInlineCommentStart(after))
+                {
+                    isQuoted = true;
+                    return close + 1;
+                }
             }
         }
 
@@ -185,7 +197,7 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
             end--;
         }
 
-        isQuoted = quoteEnd == end;
+        isQuoted = false;
         return end;
     }
 

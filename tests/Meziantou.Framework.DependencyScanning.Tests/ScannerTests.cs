@@ -1163,6 +1163,95 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task CargoDependencies_InEveryFormOfTheTable()
+    {
+        const string Original = """
+            dependencies.anyhow = "1.0"
+
+            [dependencies.tokio]
+            version = "1.2"
+            features = ["full"]
+
+            [target.'cfg(windows)'.dependencies]
+            winapi = "0.3"
+
+            [workspace.dependencies]
+            serde = { version = "1.0" }
+
+            [build-dependencies.cc]
+            path = "../cc"
+            """;
+        const string Expected = """
+            dependencies.dummy1 = "2.0.0"
+
+            [dependencies.dummy2]
+            version = "2.0.0"
+            features = ["full"]
+
+            [target.'cfg(windows)'.dependencies]
+            dummy3 = "2.0.0"
+
+            [workspace.dependencies]
+            dummy4 = { version = "2.0.0" }
+
+            [build-dependencies.dummy5]
+            path = "../cc"
+            """;
+
+        AddFile("Cargo.toml", Original);
+        var result = await GetDependencies<CargoDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RustCrate, "anyhow", "1.0", 1, 24),
+            (DependencyType.RustCrate, "tokio", "1.2", 4, 12),
+            (DependencyType.RustCrate, "winapi", "0.3", 8, 11),
+            (DependencyType.RustCrate, "serde", "1.0", 11, 22));
+        Assert.Equal(5, result.Count(d => d.Type == DependencyType.RustCrate));
+
+        // A path dependency has no version, whichever form of the table declares it
+        var cc = Assert.Single(result, d => d.Name is "cc");
+        Assert.Null(cc.Version);
+        Assert.False(cc.VersionLocation!.IsUpdatable);
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Cargo.toml", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task CargoDependencies_WithEscapeSequences_AreNotUpdatable()
+    {
+        AddFile("Cargo.toml", """
+            [dependencies]
+            serde = "1\u002E0"
+            "tok\u0069o" = "1.2"
+            """);
+
+        var result = await GetDependencies<CargoDependencyScanner>();
+
+        Assert.False(Assert.Single(result, d => d.Name == "serde" && d.Version == "1.0").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "tokio" && d.Version == "1.2").NameLocation!.IsUpdatable);
+    }
+
+    [Fact]
+    public async Task JavaVersionCatalogDependencies_WithEscapeSequences_AreNotUpdatable()
+    {
+        AddFile("gradle/libs.versions.toml", """
+            [versions]
+            shared = "2\u002E0"
+
+            [libraries]
+            guava = "com.google\u002Eguava:guava:33.0.0"
+            x = { module = "org.example:x", version = "1\u002E0" }
+            y = { module = "org.example:y", version.ref = "shared" }
+            """);
+
+        var result = await GetDependencies<JavaDependencyScanner>();
+
+        Assert.False(Assert.Single(result, d => d.Name == "com.google.guava:guava" && d.Version == "33.0.0").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:x" && d.Version == "1.0").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:y" && d.Version == "2.0").VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
     public async Task CargoLockDependencies()
     {
         AddFile("Cargo.lock", """

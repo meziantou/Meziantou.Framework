@@ -416,6 +416,93 @@ public sealed class SyntaxReplaceTests
     }
 
     /// <summary>
+    /// The lists are immutable, so their <c>Add</c> returns a new list. A collection expression that went through it
+    /// would throw every element away and build an empty list without a word.
+    /// </summary>
+    [Fact]
+    public void SyntaxTriviaList_CollectionExpression_HoldsEveryElement()
+    {
+        var trivia = TestSyntax.ParseRoot("a \n").GetFirstToken().TrailingTrivia;
+
+        SyntaxTriviaList list = [trivia[1], trivia[0]];
+        SyntaxTriviaList empty = [];
+
+        Assert.Equal(2, list.Count);
+        Assert.Equal("\n ", list.ToFullString());
+        Assert.Equal(0, empty.Count);
+    }
+
+    /// <summary>The conditional takes its type from the list on the other branch, so the spread targets the list type.</summary>
+    [Theory]
+    [InlineData(true, "a ")]
+    [InlineData(false, "a \n")]
+    public void SyntaxTriviaList_CollectionExpressionInAConditional_KeepsTheAddedTrivia(bool unchanged, string expected)
+    {
+        var token = TestSyntax.ParseRoot("a \n").GetFirstToken();
+        var endOfLine = token.TrailingTrivia[1];
+        var existing = token.TrailingTrivia.RemoveAt(1);
+
+        var updated = token.WithTrailingTrivia(unchanged ? existing : [.. existing, endOfLine]);
+
+        Assert.Equal(expected, updated.ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxTokenList_CollectionExpression_HoldsEveryElement()
+    {
+        var a = TestSyntax.Atom("a").IdentifierToken;
+        var b = TestSyntax.Atom("b").IdentifierToken;
+
+        SyntaxTokenList list = [a, b];
+
+        Assert.Equal(2, list.Count);
+        Assert.Equal("ab", list.ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxNodeOrTokenList_CollectionExpression_HoldsEveryElement()
+    {
+        var separators = TestSyntax.ParseRoot("(a,b)").DescendantTokens().Where(token => token.RawKind == (int)TestSyntaxKind.CommaToken);
+
+        SyntaxNodeOrTokenList list = [TestSyntax.Atom("x"), separators.First(), TestSyntax.Atom("y")];
+        SyntaxNodeOrTokenList single = [separators.First()];
+
+        Assert.Equal(3, list.Count);
+        Assert.Equal("x,y", list.ToFullString());
+        Assert.Equal(1, single.Count);
+        Assert.True(single[0].IsToken);
+    }
+
+    [Fact]
+    public void SyntaxList_CollectionExpression_HoldsEveryElement()
+    {
+        var a = TestSyntax.Atom("a");
+
+        SyntaxList<TestValueSyntax> list = [a, a, TestSyntax.Atom("b")];
+        SyntaxList<TestValueSyntax> single = [a];
+
+        Assert.Equal(["a", "a", "b"], list.Select(value => value.ToFullString()));
+        Assert.Equal(1, single.Count);
+    }
+
+    /// <summary>A collection expression builds the same list as adding each element in turn, separators included.</summary>
+    [Fact]
+    public void SeparatedSyntaxList_CollectionExpression_AddsTheSeparatorsOfTheLanguage()
+    {
+        SeparatedSyntaxList<TestValueSyntax> list = [TestSyntax.Atom("a"), TestSyntax.Atom("b"), TestSyntax.Atom("c")];
+        SeparatedSyntaxList<TestValueSyntax> single = [TestSyntax.Atom("a")];
+        SeparatedSyntaxList<TestValueSyntax> empty = [];
+
+        Assert.Equal(3, list.Count);
+        Assert.Equal(2, list.SeparatorCount);
+        Assert.Equal("a,b,c", list.ToFullString());
+        Assert.Equal(default(SeparatedSyntaxList<TestValueSyntax>).Add(TestSyntax.Atom("a")).Add(TestSyntax.Atom("b")).Add(TestSyntax.Atom("c")).ToFullString(), list.ToFullString());
+        Assert.Equal(1, single.Count);
+        Assert.Equal(0, single.SeparatorCount);
+        Assert.Equal(0, empty.Count);
+    }
+
+    /// <summary>
     /// A batch naming one node in the tree and one from somewhere else is rejected, the way a single foreign node is.
     /// Replacing what it can and ignoring the rest would leave the caller believing the whole batch had applied.
     /// </summary>

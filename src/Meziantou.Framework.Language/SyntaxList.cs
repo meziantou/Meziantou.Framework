@@ -1,14 +1,34 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 using GreenList = Meziantou.Framework.Language.InternalSyntax.SyntaxList;
 
 namespace Meziantou.Framework.Language;
 
+/// <summary>Builds <see cref="SyntaxList{TNode}"/> instances.</summary>
+public static class SyntaxList
+{
+    /// <summary>Creates a detached list holding <paramref name="nodes"/>.</summary>
+    /// <remarks>This is what a collection expression targeting <see cref="SyntaxList{TNode}"/> builds its list with.</remarks>
+    public static SyntaxList<TNode> Create<TNode>(ReadOnlySpan<TNode> nodes)
+        where TNode : SyntaxNode
+    {
+        var green = new GreenNode?[nodes.Length];
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            green[i] = nodes[i].Green;
+        }
+
+        return new SyntaxList<TNode>(GreenList.List(green)?.CreateRed());
+    }
+}
+
 /// <summary>A sequence of nodes of the same kind, held in one slot of their parent.</summary>
 /// <typeparam name="TNode">The type of the nodes in the list.</typeparam>
 /// <remarks><see langword="default"/> is the empty list.</remarks>
 [StructLayout(LayoutKind.Auto)]
+[CollectionBuilder(typeof(SyntaxList), nameof(SyntaxList.Create))]
 public readonly struct SyntaxList<TNode> : IReadOnlyList<TNode>, IEquatable<SyntaxList<TNode>>
     where TNode : SyntaxNode
 {

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 using GreenList = Meziantou.Framework.Language.InternalSyntax.SyntaxList;
@@ -8,6 +9,7 @@ namespace Meziantou.Framework.Language;
 /// <summary>A sequence that mixes nodes and tokens, as a separated list does.</summary>
 /// <remarks><see langword="default"/> is the empty list.</remarks>
 [StructLayout(LayoutKind.Auto)]
+[CollectionBuilder(typeof(SyntaxNodeOrTokenList), nameof(Create))]
 public readonly struct SyntaxNodeOrTokenList : IReadOnlyList<SyntaxNodeOrToken>, IEquatable<SyntaxNodeOrTokenList>
 {
     private readonly SyntaxNode? _node;
@@ -24,6 +26,19 @@ public readonly struct SyntaxNodeOrTokenList : IReadOnlyList<SyntaxNodeOrToken>,
     public SyntaxNodeOrTokenList(IEnumerable<SyntaxNodeOrToken> nodesAndTokens)
         : this(CreateNode(nodesAndTokens), index: 0)
     {
+    }
+
+    /// <summary>Creates a detached list holding <paramref name="nodesAndTokens"/>.</summary>
+    /// <remarks>This is what a collection expression targeting <see cref="SyntaxNodeOrTokenList"/> builds its list with.</remarks>
+    public static SyntaxNodeOrTokenList Create(ReadOnlySpan<SyntaxNodeOrToken> nodesAndTokens)
+    {
+        var green = new GreenNode?[nodesAndTokens.Length];
+        for (var i = 0; i < nodesAndTokens.Length; i++)
+        {
+            green[i] = nodesAndTokens[i].UnderlyingNode;
+        }
+
+        return Detached(GreenList.List(green));
     }
 
     internal SyntaxNode? Node => _node;

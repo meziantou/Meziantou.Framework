@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.Language;
 
 /// <summary>The trivia on one side of a token.</summary>
 [StructLayout(LayoutKind.Auto)]
+[CollectionBuilder(typeof(SyntaxTriviaList), nameof(Create))]
 public readonly struct SyntaxTriviaList : IReadOnlyList<SyntaxTrivia>, IEquatable<SyntaxTriviaList>
 {
     private readonly SyntaxToken _token;
@@ -27,6 +29,19 @@ public readonly struct SyntaxTriviaList : IReadOnlyList<SyntaxTrivia>, IEquatabl
         : this(token: default, ToGreen(trivia), position: 0, index: 0)
     {
         ArgumentNullException.ThrowIfNull(trivia);
+    }
+
+    /// <summary>Creates a detached list holding <paramref name="trivia"/>.</summary>
+    /// <remarks>This is what a collection expression targeting <see cref="SyntaxTriviaList"/> builds its list with.</remarks>
+    public static SyntaxTriviaList Create(ReadOnlySpan<SyntaxTrivia> trivia)
+    {
+        var green = new GreenNode?[trivia.Length];
+        for (var i = 0; i < trivia.Length; i++)
+        {
+            green[i] = trivia[i].UnderlyingNode;
+        }
+
+        return Detached(InternalSyntax.SyntaxList.List(green));
     }
 
     internal GreenNode? Node => _node;
@@ -121,7 +136,7 @@ public readonly struct SyntaxTriviaList : IReadOnlyList<SyntaxTrivia>, IEquatabl
     public static bool operator ==(SyntaxTriviaList left, SyntaxTriviaList right) => left.Equals(right);
     public static bool operator !=(SyntaxTriviaList left, SyntaxTriviaList right) => !left.Equals(right);
 
-    internal static GreenNode? ToGreen(IEnumerable<SyntaxTrivia>? trivia) => trivia is null ? null : SyntaxList.List(ToGreenArray(trivia));
+    internal static GreenNode? ToGreen(IEnumerable<SyntaxTrivia>? trivia) => trivia is null ? null : InternalSyntax.SyntaxList.List(ToGreenArray(trivia));
 
     private static GreenNode?[] ToGreenArray(IEnumerable<SyntaxTrivia> trivia)
     {

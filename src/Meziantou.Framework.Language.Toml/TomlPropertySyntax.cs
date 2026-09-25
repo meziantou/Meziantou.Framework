@@ -2,66 +2,53 @@ using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
 
-/// <summary>A key/value pair such as <c>name=value</c> or <c>name = value</c>.</summary>
+/// <summary>A key/value pair such as <c>port = 8080</c>, in the document or in an inline table.</summary>
 public sealed class TomlPropertySyntax : TomlEntrySyntax
 {
+    private TomlKeySyntax? _key;
+    private TomlValueSyntax? _value;
+
     internal TomlPropertySyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
     {
     }
 
-    public SyntaxToken KeyToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
+    public TomlKeySyntax Key => GetRedAtZero(ref _key)!;
 
-    /// <summary>Gets the key.</summary>
-    public string Key => KeyToken.ValueText;
+    public SyntaxToken EqualsToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
-    public SyntaxToken SeparatorToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
-    /// <summary>Gets the value, which is either a token or a structured array node.</summary>
-    public SyntaxNodeOrToken ValueNode => ChildNodesAndTokens()[2];
+    public TomlValueSyntax Value => GetRed(ref _value, 2)!;
 
-    /// <summary>Gets the raw value text.</summary>
-    public string Value => ValueNode.IsNode ? ValueNode.AsNode()!.ToString() : ValueNode.AsToken().ValueText;
-
-    /// <summary>Returns this property with the given parts, or itself when nothing changed.</summary>
-    public TomlPropertySyntax Update(SyntaxToken keyToken, SyntaxToken separatorToken, SyntaxToken valueToken)
+    /// <summary>Returns this key/value pair with the given parts, or itself when nothing changed.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
+    public TomlPropertySyntax Update(TomlKeySyntax key, SyntaxToken equalsToken, TomlValueSyntax value)
     {
-        if (keyToken.Node == Green.GetSlot(0) && separatorToken.Node == Green.GetSlot(1) && valueToken.Node == Green.GetSlot(2))
-            return this;
-
-        return SyntaxFactory.TomlProperty(keyToken, separatorToken, valueToken).WithAnnotationsFrom(this);
-    }
-
-    public TomlPropertySyntax Update(SyntaxToken keyToken, SyntaxToken separatorToken, TomlArraySyntax value)
-    {
+        ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
 
-        if (keyToken.Node == Green.GetSlot(0) && separatorToken.Node == Green.GetSlot(1) && value.Green == Green.GetSlot(2))
+        if (ReferenceEquals(key.Green, Green.GetSlot(0)) && equalsToken.Node == Green.GetSlot(1) && ReferenceEquals(value.Green, Green.GetSlot(2)))
             return this;
 
-        return SyntaxFactory.TomlProperty(keyToken, separatorToken, value).WithAnnotationsFrom(this);
+        return SyntaxFactory.TomlProperty(key, equalsToken, value).WithAnnotationsFrom(this);
     }
 
-    public TomlPropertySyntax WithKeyToken(SyntaxToken keyToken) => ValueNode.AsNode() is TomlArraySyntax array ? Update(keyToken, SeparatorToken, array) : Update(keyToken, SeparatorToken, ValueNode.AsToken());
+    public TomlPropertySyntax WithKey(TomlKeySyntax key) => Update(key, EqualsToken, Value);
+    public TomlPropertySyntax WithEqualsToken(SyntaxToken equalsToken) => Update(Key, equalsToken, Value);
+    public TomlPropertySyntax WithValue(TomlValueSyntax value) => Update(Key, EqualsToken, value);
 
-    /// <summary>Returns this property with a new key.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-    public TomlPropertySyntax WithKey(string key) => WithKeyToken(SyntaxFactory.Key(key).WithTriviaFrom(KeyToken));
+    internal override SyntaxNode? GetNodeSlot(int index) => index switch
+    {
+        0 => GetRedAtZero(ref _key),
+        2 => GetRed(ref _value, 2),
+        _ => null,
+    };
 
-    public TomlPropertySyntax WithSeparatorToken(SyntaxToken separatorToken) => ValueNode.AsNode() is TomlArraySyntax array ? Update(KeyToken, separatorToken, array) : Update(KeyToken, separatorToken, ValueNode.AsToken());
-    public TomlPropertySyntax WithValueToken(SyntaxToken valueToken) => Update(KeyToken, SeparatorToken, valueToken);
-
-    /// <summary>Returns this property with a new raw value.</summary>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
-    public TomlPropertySyntax WithValue(string value)
-        => WithValueToken(SyntaxFactory.Value(value)
-            .WithLeadingTrivia(ValueNode.GetLeadingTrivia())
-            .WithTrailingTrivia(ValueNode.GetTrailingTrivia()));
-
-    internal override SyntaxNode? GetNodeSlot(int index)
-        => index == 2 && Green.GetSlot(2)?.RawKind == (int)SyntaxKind.TomlArray
-            ? new TomlArraySyntax(Green.GetRequiredSlot(2), this, GetChildPosition(2))
-            : null;
-    internal override SyntaxNode? GetCachedSlot(int index) => null;
+    internal override SyntaxNode? GetCachedSlot(int index) => index switch
+    {
+        0 => _key,
+        2 => _value,
+        _ => null,
+    };
 
     public override void Accept(TomlSyntaxVisitor visitor)
     {

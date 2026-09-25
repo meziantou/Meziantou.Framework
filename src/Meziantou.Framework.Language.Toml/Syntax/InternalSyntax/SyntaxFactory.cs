@@ -10,7 +10,9 @@ internal static class SyntaxFactory
 {
     private static readonly FrozenDictionary<SyntaxKind, GreenToken> FixedTokens = new[]
     {
-        SyntaxKind.OpenBracketToken, SyntaxKind.CloseBracketToken, SyntaxKind.EqualsToken, SyntaxKind.CommaToken,
+        SyntaxKind.OpenBracketToken, SyntaxKind.CloseBracketToken, SyntaxKind.OpenBracketOpenBracketToken, SyntaxKind.CloseBracketCloseBracketToken,
+        SyntaxKind.OpenBraceToken, SyntaxKind.CloseBraceToken, SyntaxKind.EqualsToken, SyntaxKind.CommaToken, SyntaxKind.DotToken,
+        SyntaxKind.TrueKeyword, SyntaxKind.FalseKeyword,
     }.ToFrozenDictionary(kind => kind, kind => new GreenToken((int)kind, SyntaxFacts.GetText(kind), leadingTrivia: null, trailingTrivia: null, isMissing: false));
 
     private static readonly GreenToken EndOfFile = new((int)SyntaxKind.EndOfFileToken, "", leadingTrivia: null, trailingTrivia: null, isMissing: false);
@@ -46,6 +48,10 @@ internal static class SyntaxFactory
     public static GreenToken Token(GreenNode? leading, SyntaxKind kind, string text, GreenNode? trailing)
         => new((int)kind, text, leading, trailing, isMissing: false);
 
+    /// <summary>Creates a token whose text and meaning differ, such as a quoted string or a number.</summary>
+    public static GreenToken TokenWithValue<TValue>(GreenNode? leading, SyntaxKind kind, string text, TValue value, string valueText, GreenNode? trailing)
+        => new SyntaxTokenWithValue<TValue>((int)kind, text, value, valueText, leading, trailing, isMissing: false);
+
     public static GreenToken MissingToken(SyntaxKind kind) => new((int)kind, "", leadingTrivia: null, trailingTrivia: null, isMissing: true);
 
     public static GreenToken BadToken(GreenNode? leading, string text, GreenNode? trailing)
@@ -72,7 +78,4 @@ internal static class SyntaxFactory
 
     /// <summary>Builds a list that can be projected into a red node even when it holds a single token.</summary>
     public static GreenNode? ListNode(ReadOnlySpan<GreenNode?> items) => Meziantou.Framework.Language.InternalSyntax.SyntaxList.ListNode(items);
-
-    public static GreenNode Array(GreenNode openBracket, GreenNode? contents, GreenNode closeBracket)
-        => new TomlArraySyntax(openBracket, contents, closeBracket);
 }

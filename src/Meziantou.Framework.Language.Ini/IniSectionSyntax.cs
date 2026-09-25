@@ -13,10 +13,25 @@ public sealed class IniSectionSyntax : IniEntrySyntax
     public SyntaxToken OpenBracketToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
     public SyntaxToken NameToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
-    /// <summary>Gets the section name.</summary>
+    /// <summary>Gets the section name, without the whitespace around it.</summary>
     public string Name => NameToken.ValueText;
 
     public SyntaxToken CloseBracketToken => new(this, Green.GetSlot(2), GetChildPosition(2), GetChildIndex(2));
+
+    /// <summary>Gets the properties under this header: the ones that follow it, up to the next header.</summary>
+    /// <remarks>A header that is not part of a document has none.</remarks>
+    public IReadOnlyList<IniPropertySyntax> Properties
+    {
+        get
+        {
+            if (Parent is not IniDocumentSyntax document)
+                return [];
+
+            var entries = document.Entries;
+            var index = entries.IndexOf(this);
+            return index < 0 ? [] : IniDocumentSyntax.GetProperties(entries, index + 1);
+        }
+    }
 
     /// <summary>Returns this section with the given parts, or itself when nothing changed.</summary>
     public IniSectionSyntax Update(SyntaxToken openBracketToken, SyntaxToken nameToken, SyntaxToken closeBracketToken)
@@ -32,7 +47,8 @@ public sealed class IniSectionSyntax : IniEntrySyntax
 
     /// <summary>Returns this section with a new name.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
-    public IniSectionSyntax WithName(string name) => WithNameToken(SyntaxFactory.Key(name).WithTriviaFrom(NameToken));
+    /// <exception cref="ArgumentException"><paramref name="name"/> cannot be written as a section name; see <see cref="SyntaxFactory.SectionName(string)"/>.</exception>
+    public IniSectionSyntax WithName(string name) => WithNameToken(SyntaxFactory.SectionName(name).WithTriviaFrom(NameToken));
 
     public IniSectionSyntax WithCloseBracketToken(SyntaxToken closeBracketToken) => Update(OpenBracketToken, NameToken, closeBracketToken);
 

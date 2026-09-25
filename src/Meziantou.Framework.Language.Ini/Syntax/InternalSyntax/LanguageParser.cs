@@ -5,17 +5,30 @@ using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 namespace Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
 
 /// <summary>Builds the immutable tree for an INI document, keeping every character of it.</summary>
+/// <remarks>
+/// Every entry is one line: a section header, or a key with its separator and value. What follows an entry on its line,
+/// other than a comment, is kept as skipped text and reported once.
+/// </remarks>
 internal sealed class LanguageParser
 {
     private readonly Lexer _lexer;
+    private readonly IniParseOptions _options;
     private readonly List<PendingDiagnostic> _pending = [];
+    private readonly DuplicateTracker? _duplicates;
     private GreenToken _current;
+    private LexerMode _currentMode;
     private int _currentFullStart;
+    private int _previousTokenTextEnd;
+    private bool _previousTokenEndedTheLine = true;
+    private int _valueIndentation;
 
-    public LanguageParser(SourceText source)
+    public LanguageParser(SourceText source, IniParseOptions options)
     {
-        _lexer = new Lexer(source);
-        _current = _lexer.Lex();
+        _options = options;
+        _lexer = new Lexer(source, options);
+        _duplicates = options.ReportDuplicates ? new DuplicateTracker(options.NameComparer) : null;
+        _currentMode = LexerMode.LineStart;
+        _current = _lexer.Lex(_currentMode);
         _currentFullStart = _lexer.Position - _current.FullWidth;
     }
 
@@ -25,130 +38,197 @@ internal sealed class LanguageParser
     {
         var mark = _pending.Count;
         var entries = new List<GreenNode?>();
-
-        while (CurrentKind != SyntaxKind.EndOfFileToken)
+        while (true)
         {
-            entries.Add(ParseEntry());
+            EnsureMode(LexerMode.LineStart);
+            if (CurrentKind == SyntaxKind.EndOfFileToken)
+                break;
+
+            var entryStart = _currentFullStart;
+            var entry = ParseEntry();
+            entries.Add(entry);
+
+            // Every entry reads at least one character; if one ever does not, the rest of the line is skipped rather than
+            // read forever.
+            if (_currentFullStart == entryStart)
+            {
+                _previousTokenEndedTheLine = false;
+            }
+
+            // Every entry ends its line; what follows it on the same line is not the start of another one.
+            if (!_previousTokenEndedTheLine)
+            {
+                EnsureMode(LexerMode.RestOfLine);
+                if (CurrentKind != SyntaxKind.EndOfFileToken)
+                {
+                    entries.Add(ParseRestOfLine(entry is IniSectionSyntax ? "a section header" : "a property"));
+                }
+            }
         }
 
-        var node = new IniDocumentSyntax(SyntaxFactory.List(entries.ToArray()), EatToken());
+        var node = new IniDocumentSyntax(SyntaxFactory.List(entries.ToArray()), EatToken(LexerMode.LineStart));
 
         return (IniDocumentSyntax)Finish(node, nodeFullStart: 0, mark);
     }
 
     private IniEntrySyntax ParseEntry()
-    {
-        if (CurrentKind == SyntaxKind.OpenBracketToken)
-            return ParseSection();
-
-        if (CurrentKind == SyntaxKind.KeyToken)
-            return ParsePropertyOrSkippedText();
-
-        return ParseSkippedText(IniDiagnosticDescriptors.UnexpectedToken, _current.Text);
-    }
+        => CurrentKind == SyntaxKind.OpenBracketToken ? ParseSection() : ParseProperty();
 
     private IniSectionSyntax ParseSection()
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
-        var openBracket = EatToken(SyntaxKind.OpenBracketToken, IniDiagnosticDescriptors.UnexpectedToken, _current.Text);
+        var openBracket = EatToken(LexerMode.SectionName);
 
         GreenToken name;
-        if (CurrentKind == SyntaxKind.KeyToken)
+        if (!_previousTokenEndedTheLine && CurrentKind == SyntaxKind.KeyToken)
         {
-            name = EatToken();
+            var nameStart = CurrentTextStart;
+            name = EatToken(LexerMode.SectionName);
+            _duplicates?.EnterSection(name.Text, nameStart, _pending);
         }
         else
         {
             AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedSectionName);
             name = SyntaxFactory.MissingToken(SyntaxKind.KeyToken);
+            _duplicates?.EnterSection(name: null, position: 0, _pending);
         }
 
-        var closeBracket = EatToken(SyntaxKind.CloseBracketToken, IniDiagnosticDescriptors.ExpectedClosingBracket);
+        GreenToken closeBracket;
+        if (!_previousTokenEndedTheLine && CurrentKind == SyntaxKind.CloseBracketToken)
+        {
+            closeBracket = EatToken(LexerMode.LineStart);
+        }
+        else
+        {
+            AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedClosingBracket);
+
+            // The line ends with the header, missing bracket or not, so the trivia ending it goes to the last token.
+            if (name.IsMissing)
+            {
+                closeBracket = SyntaxFactory.MissingToken(SyntaxKind.CloseBracketToken, openBracket.TrailingTrivia);
+                openBracket = openBracket.WithTrivia(openBracket.LeadingTrivia, trailingTrivia: null);
+            }
+            else
+            {
+                closeBracket = SyntaxFactory.MissingToken(SyntaxKind.CloseBracketToken, name.TrailingTrivia);
+                name = name.WithTrivia(name.LeadingTrivia, trailingTrivia: null);
+            }
+        }
+
         var node = new IniSectionSyntax(openBracket, name, closeBracket);
 
         return (IniSectionSyntax)Finish(node, start, mark);
     }
 
-    private IniEntrySyntax ParsePropertyOrSkippedText()
+    private IniPropertySyntax ParseProperty()
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
-        var key = EatToken(SyntaxKind.KeyToken, IniDiagnosticDescriptors.ExpectedKey);
-        if (CurrentKind is not (SyntaxKind.EqualsToken or SyntaxKind.ColonToken))
+
+        GreenToken key;
+        if (CurrentKind == SyntaxKind.KeyToken)
         {
-            AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedSeparator);
-
-            var tokens = new List<GreenNode?> { key };
-            while (CurrentKind != SyntaxKind.EndOfFileToken && !CurrentStartsLine())
-            {
-                AddErrorAtCurrentToken(IniDiagnosticDescriptors.UnexpectedToken, _current.Text);
-                tokens.Add(EatToken());
-            }
-
-            var skipped = new IniSkippedTextSyntax(SyntaxFactory.ListNode(tokens.ToArray()));
-
-            return (IniSkippedTextSyntax)Finish(skipped, start, mark);
+            _valueIndentation = _lexer.GetIndentation(CurrentTextStart);
+            _duplicates?.AddKey(_current.Text, CurrentTextStart, _pending);
+            key = EatToken(LexerMode.LineStart);
+        }
+        else
+        {
+            // The line starts with a separator: the key is missing, but the value is still read.
+            _valueIndentation = _lexer.GetIndentation(CurrentTextStart);
+            _pending.Add(new PendingDiagnostic(CurrentTextStart, 0, IniDiagnosticDescriptors.ExpectedKey, []));
+            key = SyntaxFactory.MissingToken(SyntaxKind.KeyToken);
         }
 
-        var separator = EatSeparatorAndLexValue();
-        var value = EatToken(SyntaxKind.ValueToken, IniDiagnosticDescriptors.UnexpectedToken, _current.Text);
+        GreenToken separator;
+        GreenToken value;
+        if ((key.IsMissing || !_previousTokenEndedTheLine) && CurrentKind is SyntaxKind.EqualsToken or SyntaxKind.ColonToken)
+        {
+            separator = EatToken(LexerMode.Value);
+            value = EatToken(LexerMode.LineStart);
+        }
+        else
+        {
+            if (!_options.AllowKeysWithoutValue)
+            {
+                AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedSeparator);
+            }
+
+            // A key on its own still ends its line, so the trivia ending it goes to the missing value.
+            separator = SyntaxFactory.MissingToken(SyntaxKind.EqualsToken);
+            value = SyntaxFactory.MissingToken(SyntaxKind.ValueToken, key.TrailingTrivia);
+            key = key.WithTrivia(key.LeadingTrivia, trailingTrivia: null);
+        }
+
         var node = new IniPropertySyntax(key, separator, value);
 
         return (IniPropertySyntax)Finish(node, start, mark);
     }
 
-    private IniSkippedTextSyntax ParseSkippedText(DiagnosticDescriptor descriptor, params object?[] arguments)
+    /// <summary>Keeps what follows an entry on its line, where INI allows nothing but a comment.</summary>
+    private IniSkippedTextSyntax ParseRestOfLine(string entryDescription)
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
-        var tokens = new List<GreenNode?>();
+        AddErrorAtCurrentToken(IniDiagnosticDescriptors.ExpectedEndOfLine, entryDescription, _current.Text);
 
-        do
-        {
-            AddErrorAtCurrentToken(descriptor, arguments);
-            tokens.Add(EatToken());
-        }
-        while (CurrentKind != SyntaxKind.EndOfFileToken && !CurrentStartsLine());
-
-        var node = new IniSkippedTextSyntax(SyntaxFactory.ListNode(tokens.ToArray()));
+        var node = new IniSkippedTextSyntax(SyntaxFactory.ListNode([EatToken(LexerMode.LineStart)]));
 
         return (IniSkippedTextSyntax)Finish(node, start, mark);
     }
 
-    private GreenToken EatToken()
+    private int CurrentTextStart => _currentFullStart + _current.GetLeadingTriviaWidth();
+
+    private GreenToken EatToken(LexerMode nextMode)
     {
         var eaten = _current;
-        _current = _lexer.Lex();
+        _previousTokenTextEnd = _currentFullStart + eaten.GetLeadingTriviaWidth() + eaten.Width;
+        _previousTokenEndedTheLine = EndsTheLine(eaten.TrailingTrivia);
+        _lexer.Position = _currentFullStart + eaten.FullWidth;
+        _current = _lexer.Lex(nextMode, _valueIndentation);
+        _currentMode = nextMode;
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
         return eaten;
     }
 
-    private GreenToken EatSeparatorAndLexValue()
+    /// <summary>Reads the current token again the way <paramref name="mode"/> reads it, if it was read another way.</summary>
+    private void EnsureMode(LexerMode mode)
     {
-        var eaten = _current;
-        _current = _lexer.LexValue();
-        _currentFullStart = _lexer.Position - _current.FullWidth;
+        if (_currentMode == mode)
+            return;
 
-        return eaten;
+        _lexer.Position = _currentFullStart;
+        _current = _lexer.Lex(mode, _valueIndentation);
+        _currentMode = mode;
     }
 
-    private GreenToken EatToken(SyntaxKind kind, DiagnosticDescriptor descriptor, params object?[] arguments)
+    private static bool EndsTheLine(GreenNode? trailingTrivia)
     {
-        if (CurrentKind == kind)
-            return EatToken();
+        var count = GreenNodeList.Count(trailingTrivia);
+        for (var i = 0; i < count; i++)
+        {
+            if (GreenNodeList.ElementAt(trailingTrivia, i)?.RawKind == (int)SyntaxKind.EndOfLineTrivia)
+                return true;
+        }
 
-        AddErrorForMissingToken(descriptor, arguments);
-
-        return SyntaxFactory.MissingToken(kind);
+        return false;
     }
 
     private void AddErrorAtCurrentToken(DiagnosticDescriptor descriptor, params object?[] arguments)
-        => _pending.Add(new PendingDiagnostic(_currentFullStart + _current.GetLeadingTriviaWidth(), Math.Max(_current.Width, 1), descriptor, arguments));
+        => _pending.Add(new PendingDiagnostic(CurrentTextStart, Math.Max(_current.Width, 1), descriptor, arguments));
 
+    /// <summary>Records an error for something the text does not have.</summary>
+    /// <remarks>
+    /// The missing thing belongs right after what comes before it. When that ended its line, reporting it in front of the
+    /// current token would report it against whatever begins the next line instead.
+    /// </remarks>
     private void AddErrorForMissingToken(DiagnosticDescriptor descriptor, params object?[] arguments)
-        => _pending.Add(new PendingDiagnostic(_currentFullStart + _current.GetLeadingTriviaWidth(), 0, descriptor, arguments));
+    {
+        var position = _previousTokenEndedTheLine || CurrentKind == SyntaxKind.EndOfFileToken ? _previousTokenTextEnd : CurrentTextStart;
+        _pending.Add(new PendingDiagnostic(position, 0, descriptor, arguments));
+    }
 
     private GreenNode Finish(GreenNode node, int nodeFullStart, int mark)
     {
@@ -159,7 +239,7 @@ internal sealed class LanguageParser
         for (var i = 0; i < diagnostics.Length; i++)
         {
             var diagnostic = _pending[mark + i];
-            diagnostics[i] = new SyntaxDiagnosticInfo(Math.Max(0, diagnostic.Start - nodeFullStart), diagnostic.Width, diagnostic.Descriptor, diagnostic.Arguments);
+            diagnostics[i] = new SyntaxDiagnosticInfo(Math.Max(0, diagnostic.Position - nodeFullStart), diagnostic.Width, diagnostic.Descriptor, diagnostic.Arguments);
         }
 
         _pending.RemoveRange(mark, diagnostics.Length);
@@ -167,27 +247,48 @@ internal sealed class LanguageParser
         return node.WithAdditionalDiagnostics(diagnostics);
     }
 
-    private bool CurrentStartsLine() => ContainsEndOfLine(_current.LeadingTrivia);
+    private readonly record struct PendingDiagnostic(int Position, int Width, DiagnosticDescriptor Descriptor, object?[] Arguments);
 
-    private static bool ContainsEndOfLine(GreenNode? node)
+    /// <summary>Finds the section names and keys a document uses more than once.</summary>
+    /// <remarks>Sections that share a name are one section, so a key is a duplicate if any of them already has it.</remarks>
+    private sealed class DuplicateTracker(StringComparer comparer)
     {
-        if (node is null)
-            return false;
+        private readonly HashSet<string> _sections = new(comparer);
+        private readonly Dictionary<string, HashSet<string>> _keysBySection = new(comparer);
+        private HashSet<string> _currentKeys = new(comparer);
+        private string? _currentSection;
 
-        if (node.IsTrivia)
-            return node.RawKind == (int)SyntaxKind.EndOfLineTrivia;
-
-        if (node.IsList)
+        public void EnterSection(string? name, int position, List<PendingDiagnostic> pending)
         {
-            for (var i = 0; i < node.SlotCount; i++)
+            _currentSection = name;
+            if (name is null)
             {
-                if (ContainsEndOfLine(node.GetSlot(i)))
-                    return true;
+                // Keys under a header without a name belong to no section that can be named again.
+                _currentKeys = new HashSet<string>(comparer);
+                return;
             }
+
+            if (!_sections.Add(name))
+            {
+                pending.Add(new PendingDiagnostic(position, name.Length, IniDiagnosticDescriptors.DuplicateSection, [name]));
+            }
+
+            if (!_keysBySection.TryGetValue(name, out var keys))
+            {
+                keys = new HashSet<string>(comparer);
+                _keysBySection.Add(name, keys);
+            }
+
+            _currentKeys = keys;
         }
 
-        return false;
+        public void AddKey(string key, int position, List<PendingDiagnostic> pending)
+        {
+            if (!_currentKeys.Add(key))
+            {
+                var section = _currentSection is null ? "the global section" : $"the section '{_currentSection}'";
+                pending.Add(new PendingDiagnostic(position, key.Length, IniDiagnosticDescriptors.DuplicateKey, [key, section]));
+            }
+        }
     }
-
-    private sealed record PendingDiagnostic(int Start, int Width, DiagnosticDescriptor Descriptor, object?[] Arguments);
 }

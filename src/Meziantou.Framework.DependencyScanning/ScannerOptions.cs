@@ -24,6 +24,7 @@ public sealed class ScannerOptions
         new AgentPluginDependencyScanner(),
         new AzureDevOpsScanner(),
         new CargoDependencyScanner(),
+        new DockerComposeDependencyScanner(),
         new DockerfileDependencyScanner(),
         new DotNetFileBasedAppDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
@@ -33,8 +34,10 @@ public sealed class ScannerOptions
         new GoModuleDependencyScanner(),
         new HelmChartDependencyScanner(),
         new JavaDependencyScanner(),
+        new KubernetesDependencyScanner(),
         new MsBuildReferencesDependencyScanner(),
         new NpmPackageJsonDependencyScanner(),
+        new NuGetLockFileDependencyScanner(),
         new NuSpecDependencyScanner(),
         new PackagesConfigDependencyScanner(),
         new ProjectAssetsDependencyScanner(),
@@ -64,10 +67,28 @@ public sealed class ScannerOptions
     public bool RecurseSubdirectories { get; set; } = true;
 
     /// <summary>Gets or sets a predicate to filter which subdirectories to recurse into.</summary>
+    /// <remarks>
+    /// Symbolic links and other reparse points to directories are never followed, whatever the predicate returns.
+    /// The predicate is only supported with the default <see cref="FileSystem"/>: a directory scan with a custom file
+    /// system throws a <see cref="NotSupportedException"/> when it is set.
+    /// </remarks>
     public FileSystemEntryPredicate? ShouldRecursePredicate { get; set; }
 
     /// <summary>Gets or sets a predicate to filter which files to scan.</summary>
+    /// <remarks>
+    /// The predicate is only supported with the default <see cref="FileSystem"/>: a directory scan with a custom file
+    /// system throws a <see cref="NotSupportedException"/> when it is set.
+    /// </remarks>
     public FileSystemEntryPredicate? ShouldScanFilePredicate { get; set; }
+
+    /// <summary>Gets or sets the callback invoked when a file cannot be scanned. Default is <see langword="null"/>: the file is silently skipped.</summary>
+    /// <remarks>
+    /// A file that cannot be opened or read, or that a scanner fails to scan, is skipped and the scan continues with
+    /// the next file. The callback receives the path of the file and the exception. It can be invoked concurrently,
+    /// and an exception it throws stops the scan. Cancellation is not a failure: the scan methods throw an
+    /// <see cref="OperationCanceledException"/> when their cancellation token is canceled.
+    /// </remarks>
+    public FileScanFailed? OnFileScanFailed { get; set; }
 
     /// <summary>Gets or sets the maximum number of parallel scanning tasks, or <c>-1</c> to use <see cref="Environment.ProcessorCount"/>. Default is 16.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is <c>0</c> or less than <c>-1</c>.</exception>
@@ -86,7 +107,13 @@ public sealed class ScannerOptions
     internal int EffectiveDegreeOfParallelism => DegreeOfParallelism is -1 ? Environment.ProcessorCount : DegreeOfParallelism;
 
     /// <summary>Gets or sets the file system implementation to use for file access.</summary>
+    /// <remarks>
+    /// With a custom file system, a directory scan lists the files with <see cref="IFileSystem.GetFiles"/> using the
+    /// <c>*</c> pattern, and does not support <see cref="ShouldScanFilePredicate"/> and <see cref="ShouldRecursePredicate"/>.
+    /// </remarks>
     public IFileSystem FileSystem { get; set; } = Internals.FileSystem.Instance;
+
+    internal bool UsesDefaultFileSystem => ReferenceEquals(FileSystem, Internals.FileSystem.Instance);
 
     /// <summary>Gets or sets the set of dependency types to include. When set, only these types will be scanned. Default is empty (all types included).</summary>
     public ImmutableHashSet<DependencyType> IncludedDependencyTypes

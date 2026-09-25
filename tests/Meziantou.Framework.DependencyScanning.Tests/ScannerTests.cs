@@ -76,6 +76,361 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task PythonProjectDependencies_ArrayClosedOnLastElementLine()
+    {
+        const string Original = """
+            [project]
+            dependencies = [
+              "flask==3.0.0"]
+
+            [project.urls]
+            Homepage = "https://example.com"
+            """;
+        const string Expected = """
+            [project]
+            dependencies = [
+              "dummy1==9.9.9"]
+
+            [project.urls]
+            Homepage = "https://example.com"
+            """;
+
+        AddFile("pyproject.toml", Original);
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(1, result);
+        AssertContainDependency(result, (DependencyType.PyPi, "flask", "3.0.0", 3, 11));
+
+        await UpdateDependencies(result, "dummy", "9.9.9");
+        AssertFileContentEqual("pyproject.toml", Expected, ignoreNewLines: false);
+    }
+
+    [Theory]
+    [InlineData("[project]\ndependencies = [\n  \"flask==3.0.0\"\n\n[project.urls]\nHomepage = \"https://example.com\"\n")]
+    [InlineData("[project]\ndependencies = [\"flask==3.0.0\n\n[project.urls]\nHomepage = \"https://example.com\"\n")]
+    [InlineData("[project\ndependencies = [\"flask==3.0.0\"]\n[project.urls]\nHomepage = \"https://example.com\"\n")]
+    [InlineData("[tool.poetry.dependencies]\nflask = \"3.0.0\n[project.urls]\nHomepage = \"https://example.com\"\n")]
+    public async Task PythonProjectDependencies_MalformedToml(string content)
+    {
+        AddFile("pyproject.toml", content);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.DoesNotContain(result, d => d.Name is "Homepage");
+        Assert.All(result, d => Assert.Equal("flask", d.Name));
+    }
+
+    [Fact]
+    public async Task PythonProjectDependencies_Requirements()
+    {
+        const string Original = """"
+            [build-system]
+            requires = ["setuptools==69.0.0", "wheel"]
+
+            [project]
+            name = "my-app"
+            dependencies = ["requests[socks]==2.31.0", "flask == 3.0.0",
+              "django (==5.0.1)", 'attrs==23.2.0 ; python_version < "3.12"',
+              "range>=1.0", "arbitrary===1.0", "multiple==1.0,!=1.1", "url @ https://example.com/url-1.0.tar.gz",
+              "escaped\u003D=1.0.0", """multiline==1.0.0"""]
+
+            [project.optional-dependencies]
+            dev = ["pytest==8.0.0"]
+
+            [dependency-groups]
+            test = [{ include-group = "dev" }, "coverage==7.4.0"]
+
+            [tool.uv]
+            dev-dependencies = ["ruff==0.3.0"]
+            constraint-dependencies = ["urllib3==2.2.1"]
+
+            [[tool.uv.index]]
+            dependencies = ["index==1.0.0"]
+            """";
+        const string Expected = """"
+            [build-system]
+            requires = ["dummy1==9.9.9", "wheel"]
+
+            [project]
+            name = "my-app"
+            dependencies = ["dummy2[socks]==9.9.9", "dummy3 == 9.9.9",
+              "dummy4 (==9.9.9)", 'dummy5==9.9.9 ; python_version < "3.12"',
+              "range>=1.0", "arbitrary===1.0", "multiple==1.0,!=1.1", "url @ https://example.com/url-1.0.tar.gz",
+              "escaped\u003D=1.0.0", """multiline==1.0.0"""]
+
+            [project.optional-dependencies]
+            dev = ["dummy6==9.9.9"]
+
+            [dependency-groups]
+            test = [{ include-group = "dev" }, "dummy7==9.9.9"]
+
+            [tool.uv]
+            dev-dependencies = ["dummy8==9.9.9"]
+            constraint-dependencies = ["dummy9==9.9.9"]
+
+            [[tool.uv.index]]
+            dependencies = ["index==1.0.0"]
+            """";
+
+        AddFile("pyproject.toml", Original);
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(11, result);
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "setuptools", "69.0.0", 2, 26),
+            (DependencyType.PyPi, "requests", "2.31.0", 6, 35),
+            (DependencyType.PyPi, "flask", "3.0.0", 6, 54),
+            (DependencyType.PyPi, "django", "5.0.1", 7, 14),
+            (DependencyType.PyPi, "attrs", "23.2.0", 7, 31),
+            (DependencyType.PyPi, "pytest", "8.0.0", 12, 17),
+            (DependencyType.PyPi, "coverage", "7.4.0", 15, 47),
+            (DependencyType.PyPi, "ruff", "0.3.0", 18, 28),
+            (DependencyType.PyPi, "urllib3", "2.2.1", 19, 38));
+
+        // The raw text of these strings is not their value, so the value cannot be located
+        Assert.Single(result, d => d.Name is "escaped" && d.Version is "1.0.0" && d.NameLocation is { IsUpdatable: false } && d.VersionLocation is { IsUpdatable: false });
+        Assert.Single(result, d => d.Name is "multiline" && d.Version is "1.0.0" && d.NameLocation is { IsUpdatable: false } && d.VersionLocation is { IsUpdatable: false });
+
+        await UpdateDependencies(result, "dummy", "9.9.9");
+        AssertFileContentEqual("pyproject.toml", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task PythonProjectDependencies_Poetry()
+    {
+        const string Original = """
+            [tool.poetry]
+            name = "my-app"
+
+            [tool.poetry.dependencies]
+            python = "3.11"
+            requests = { version = "2.31.0", extras = ["socks"] }
+            flask = "==3.0.0"
+            "quoted-name" = "1.0.0"
+            range = "^1.0"
+            arbitrary = "===1.0"
+            multiple = [{ version = "1.0", python = "<3.12" }]
+            dotted.version = "2.0.0"
+
+            [tool.poetry.dependencies.table]
+            version = "3.0.0"
+
+            [tool.poetry.group.dev.dependencies]
+            pytest = "8.0.0"
+
+            [tool.poetry.dev-dependencies]
+            black = '24.1.0'
+
+            [project.urls]
+            Homepage = "https://example.com"
+            """;
+        const string Expected = """
+            [tool.poetry]
+            name = "my-app"
+
+            [tool.poetry.dependencies]
+            python = "3.11"
+            dummy1 = { version = "9.9.9", extras = ["socks"] }
+            dummy2 = "==9.9.9"
+            "dummy3" = "9.9.9"
+            range = "^1.0"
+            arbitrary = "===1.0"
+            multiple = [{ version = "1.0", python = "<3.12" }]
+            dummy4.version = "9.9.9"
+
+            [tool.poetry.dependencies.dummy5]
+            version = "9.9.9"
+
+            [tool.poetry.group.dev.dependencies]
+            dummy6 = "9.9.9"
+
+            [tool.poetry.dev-dependencies]
+            dummy7 = '9.9.9'
+
+            [project.urls]
+            Homepage = "https://example.com"
+            """;
+
+        AddFile("pyproject.toml", Original);
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(7, result);
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 6, 25),
+            (DependencyType.PyPi, "flask", "3.0.0", 7, 12),
+            (DependencyType.PyPi, "quoted-name", "1.0.0", 8, 18),
+            (DependencyType.PyPi, "dotted", "2.0.0", 12, 19),
+            (DependencyType.PyPi, "table", "3.0.0", 15, 12),
+            (DependencyType.PyPi, "pytest", "8.0.0", 18, 11),
+            (DependencyType.PyPi, "black", "24.1.0", 21, 10));
+        Assert.DoesNotContain(result, d => d.Name is "python" or "name" or "Homepage");
+
+        await UpdateDependencies(result, "dummy", "9.9.9");
+        AssertFileContentEqual("pyproject.toml", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task PythonPipfileDependencies_InlineTables()
+    {
+        const string Original = """
+            [packages]
+            requests = { version = "==2.31.0", extras = ["socks"] }
+            flask = "*"
+            django = { git = "https://github.com/django/django.git", ref = "main" }
+            attrs = "===23.2.0"
+
+            [dev-packages]
+            pytest = "==8.0.0"
+            """;
+        const string Expected = """
+            [packages]
+            dummy1 = { version = "==9.9.9", extras = ["socks"] }
+            flask = "*"
+            django = { git = "https://github.com/django/django.git", ref = "main" }
+            attrs = "===23.2.0"
+
+            [dev-packages]
+            dummy2 = "==9.9.9"
+            """;
+
+        AddFile("Pipfile", Original);
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 2, 27),
+            (DependencyType.PyPi, "pytest", "8.0.0", 8, 13));
+
+        await UpdateDependencies(result, "dummy", "9.9.9");
+        AssertFileContentEqual("Pipfile", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task PythonPipfileLock_InvalidVersionsAreIgnored()
+    {
+        AddFile("Pipfile.lock", /*lang=json,strict*/ """
+            {
+              "default": {
+                "number": { "version": 2 },
+                "arbitrary": { "version": "===1.0" },
+                "requests": { "version": "==2.31.0" }
+              }
+            }
+            """);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(1, result);
+        AssertContainDependency(result, (DependencyType.PyPi, "requests", "2.31.0", 0, 0));
+    }
+
+    [Theory]
+    [InlineData("""{ "default": { "requests": { "version": "==2.31.0" }, "requests": { "version": "==2.31.0" } } }""")]
+    [InlineData("""{ "default": { "requests": { "version": "==2.31.0\uD800" } } }""")]
+    public async Task PythonPipfileLock_Malformed(string content)
+    {
+        AddFile("Pipfile.lock", content);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task PythonUvLockDependencies()
+    {
+        AddFile("uv.lock", """
+            version = 1
+            requires-python = ">=3.12"
+
+            [[package]]
+            name = "my-app"
+            version = "0.1.0"
+            source = { editable = "." }
+            dependencies = [
+                { name = "requests" },
+            ]
+
+            [[package]]
+            name = "requests"
+            version = "2.31.0"
+            source = { registry = "https://pypi.org/simple" }
+            sdist = { url = "https://files.pythonhosted.org/requests-2.31.0.tar.gz", hash = "sha256:abc", size = 1 }
+
+            [package.optional-dependencies]
+            socks = [
+                { name = "pysocks" },
+            ]
+
+            [[package]]
+            name = "pysocks"
+            version = "1.7.1"
+            source = { registry = "https://pypi.org/simple" }
+            """);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 0, 0),
+            (DependencyType.PyPi, "pysocks", "1.7.1", 0, 0));
+        Assert.All(result, d => Assert.False(d.VersionLocation!.IsUpdatable));
+        Assert.Single(result, d => d.Name is "requests" && d.NameLocation is ILocationLineInfo { LineNumber: 13, LinePosition: 9 });
+    }
+
+    [Fact]
+    public async Task PythonPoetryLockDependencies_LocalPackagesAreIgnored()
+    {
+        AddFile("poetry.lock", """
+            [[package]]
+            name = "my-lib"
+            version = "0.1.0"
+            files = []
+            develop = true
+
+            [package.dependencies]
+            requests = "^2.31"
+
+            [package.source]
+            type = "directory"
+            url = "../my-lib"
+
+            [[package]]
+            name = "wheel-file"
+            version = "1.0.0"
+            files = []
+
+            [package.source]
+            type = "file"
+            url = "dist/wheel_file-1.0.0-py3-none-any.whl"
+
+            [[package]]
+            name = "requests"
+            version = "2.31.0"
+            files = [
+                {file = "requests-2.31.0.tar.gz", hash = "sha256:abc"},
+            ]
+
+            [package.extras]
+            socks = ["PySocks (>=1.5.6,!=1.5.7)"]
+
+            [[package]]
+            name = "forked"
+            version = "1.2.0"
+            files = []
+
+            [package.source]
+            type = "git"
+            url = "https://github.com/acme/forked.git"
+            reference = "main"
+
+            [metadata]
+            lock-version = "2.0"
+            content-hash = "abc"
+            """);
+
+        var result = await GetDependencies<PythonProjectDependencyScanner>();
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.PyPi, "requests", "2.31.0", 0, 0),
+            (DependencyType.PyPi, "forked", "1.2.0", 0, 0));
+        Assert.All(result, d => Assert.False(d.VersionLocation!.IsUpdatable));
+        Assert.Single(result, d => d.Name is "forked" && d.NameLocation is ILocationLineInfo { LineNumber: 34, LinePosition: 9 });
+    }
+
+    [Fact]
     public async Task ComposerDependencies()
     {
         AddFile("composer.json", """
@@ -106,6 +461,29 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.PhpPackage, "monolog/monolog", "^3.0", 0, 0),
             (DependencyType.PhpPackage, "phpunit/phpunit", "^11.0", 0, 0));
         Assert.DoesNotContain(result, d => d.Name is "php" or "ext-json");
+    }
+
+    [Fact]
+    public async Task ComposerDependencies_MalformedLockFileEntries_AreSkipped()
+    {
+        AddFile("composer.lock", """
+            {
+              "packages": [
+                { "name": 1, "version": "1.0.0" },
+                { "name": "a/b", "version": ["1.0.0"] },
+                { "name": "c/d", "version": null },
+                "e/f",
+                { "name": "monolog/monolog", "version": "3.0.0" }
+              ],
+              "packages-dev": { "name": "g/h", "version": "1.0.0" }
+            }
+            """);
+
+        var result = await GetDependencies<ComposerDependencyScanner>();
+
+        var dependency = Assert.Single(result);
+        Assert.Equal("monolog/monolog", dependency.Name);
+        Assert.Equal("3.0.0", dependency.Version);
     }
 
     [Fact]
@@ -162,15 +540,236 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             """);
 
         var result = await GetDependencies<JavaDependencyScanner>();
+
+        // A pom.xml location is an XML location, whose position is the one of the element, as for the MSBuild scanner
         AssertContainDependency(result,
-            (DependencyType.JavaPackage, "org.example:example-parent", "2.0.0", 8, 14),
-            (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 18, 16),
+            (DependencyType.JavaPackage, "org.example:example-parent", "2.0.0", 8, 6),
+            (DependencyType.JavaPackage, "org.example:example-bom-managed", null, 0, 0),
+            (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 18, 8),
             (DependencyType.JavaPackage, "org.example:example-property", "${example.version}", 0, 0),
-            (DependencyType.JavaPackage, "org.apache.maven.plugins:maven-compiler-plugin", "3.11.0", 36, 18),
+            (DependencyType.JavaPackage, "org.apache.maven.plugins:maven-compiler-plugin", "3.11.0", 36, 10),
             (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 2, 46),
             (DependencyType.JavaPackage, "org.example:example-aar", "1.0.0", 3, 45));
         Assert.False(Assert.Single(result, d => d.Name == "org.example:example-property").VersionLocation!.IsUpdatable);
+        Assert.Null(Assert.Single(result, d => d.Name == "org.example:example-bom-managed").VersionLocation);
         Assert.DoesNotContain(result, d => d.Name is "com.acme:app" or "org.excluded:excluded" or "org.example:maven-compiler-plugin" or "org.example:example-interpolated");
+    }
+
+    [Fact]
+    public async Task JavaMavenDependencies_AnyLayout()
+    {
+        const string Original = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <project xmlns="http://maven.apache.org/POM/4.0.0">
+              <parent><artifactId>parent</artifactId><version>1.0.0</version><groupId>org.parent</groupId></parent>
+              <properties>
+                <single.version>2.0.0</single.version>
+                <shared.version> 3.0.0 </shared.version>
+                <profile.version>4.0.0</profile.version>
+              </properties>
+              <dependencyManagement>
+                <dependencies>
+                  <dependency>
+                    <version>5.0.0</version>
+                    <groupId>org.bom</groupId>
+                    <artifactId>bom</artifactId>
+                    <type>pom</type>
+                    <scope>import</scope>
+                  </dependency>
+                </dependencies>
+              </dependencyManagement>
+              <dependencies>
+                <dependency><groupId>org.single</groupId><artifactId>single</artifactId><version>${single.version}</version></dependency>
+                <dependency><groupId>org.shared</groupId><artifactId>a</artifactId><version>${shared.version}</version></dependency>
+                <dependency><groupId>org.shared</groupId><artifactId>b</artifactId><version>${shared.version}</version></dependency>
+                <dependency><groupId>org.profile</groupId><artifactId>profile</artifactId><version>${profile.version}</version></dependency>
+                <dependency><groupId>org.managed</groupId><artifactId>managed</artifactId></dependency>
+                <!--
+                <dependency>
+                  <groupId>org.commented</groupId>
+                  <artifactId>commented</artifactId>
+                  <version>1.0.0</version>
+                </dependency>
+                -->
+              </dependencies>
+              <build>
+                <pluginManagement>
+                  <plugins>
+                    <plugin>
+                      <groupId>org.plugins</groupId>
+                      <artifactId>managed-plugin</artifactId>
+                      <version>6.0.0</version>
+                      <dependencies>
+                        <dependency>
+                          <groupId>org.plugin-dependency</groupId>
+                          <artifactId>plugin-dependency</artifactId>
+                          <version> 7.0.0 </version>
+                        </dependency>
+                      </dependencies>
+                      <configuration>
+                        <artifactItems>
+                          <artifactItem>
+                            <groupId>org.configuration</groupId>
+                            <artifactId>configuration</artifactId>
+                            <version>1.0.0</version>
+                          </artifactItem>
+                        </artifactItems>
+                        <dependencies>
+                          <dependency>
+                            <groupId>org.configuration</groupId>
+                            <artifactId>configuration-dependency</artifactId>
+                            <version>1.0.0</version>
+                          </dependency>
+                        </dependencies>
+                      </configuration>
+                    </plugin>
+                  </plugins>
+                </pluginManagement>
+                <extensions>
+                  <extension>
+                    <groupId>org.extension</groupId>
+                    <artifactId>extension</artifactId>
+                    <version>8.0.0</version>
+                  </extension>
+                </extensions>
+              </build>
+              <profiles>
+                <profile>
+                  <properties>
+                    <profile.version>4.1.0</profile.version>
+                  </properties>
+                  <dependencies>
+                    <dependency>
+                      <groupId>org.in-profile</groupId>
+                      <artifactId>in-profile</artifactId>
+                      <version>9.0.0</version>
+                    </dependency>
+                  </dependencies>
+                </profile>
+              </profiles>
+            </project>
+            """;
+
+        AddFile("pom.xml", Original);
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "org.parent:parent", "1.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.bom:bom", "5.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.single:single", "2.0.0", 5, 6),
+            (DependencyType.JavaPackage, "org.shared:a", "3.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.shared:b", "3.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.profile:profile", "${profile.version}", 0, 0),
+            (DependencyType.JavaPackage, "org.managed:managed", null, 0, 0),
+            (DependencyType.JavaPackage, "org.plugins:managed-plugin", "6.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.plugin-dependency:plugin-dependency", "7.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.extension:extension", "8.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.in-profile:in-profile", "9.0.0", 0, 0));
+        Assert.HasCount(11, result);
+        Assert.Equal("single.version", Assert.Single(result, d => d.Name == "org.single:single").Metadata["property"]);
+        Assert.DoesNotContain(result, d => d.Name is "org.shared:a" or "org.shared:b" or "org.profile:profile" && d.VersionLocation!.IsUpdatable);
+
+        foreach (var dependency in result.Where(d => d.VersionLocation is { IsUpdatable: true }))
+        {
+            await dependency.UpdateVersionAsync("10.0.0");
+        }
+
+        AssertFileContentEqual("pom.xml", Original
+            .Replace("<version>1.0.0</version><groupId>org.parent</groupId>", "<version>10.0.0</version><groupId>org.parent</groupId>", StringComparison.Ordinal)
+            .Replace("<single.version>2.0.0</single.version>", "<single.version>10.0.0</single.version>", StringComparison.Ordinal)
+            .Replace("<version>5.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal)
+            .Replace("<version>6.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal)
+            .Replace("<version> 7.0.0 </version>", "<version> 10.0.0 </version>", StringComparison.Ordinal)
+            .Replace("<version>8.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal)
+            .Replace("<version>9.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal), ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task JavaGradleDependencies_CommentsMapNotationAndPlugins()
+    {
+        const string Original = """
+            plugins {
+                id 'org.springframework.boot' version '3.2.0'
+                id("com.diffplug.spotless") version "6.25.0" apply false
+                id 'java'
+                // id 'org.commented' version '1.0.0'
+            }
+
+            dependencies {
+                implementation "org.a:a:1.0.0", 'org.b:b:2.0.0'
+                // implementation "org.commented:line:1.0.0"
+                /* implementation "org.commented:block:1.0.0"
+                   implementation "org.commented:block2:1.0.0" */
+                implementation "org.c:c:3.0.0" // "org.commented:trailing:1.0.0"
+                implementation "https://example.com/not-a-comment" + "org.d:d:4.0.0"
+                implementation group: 'org.e', name: 'e', version: '5.0.0'
+                runtimeOnly(group: 'org.f', name: 'f', version: '6.0.0', classifier: 'jdk')
+                implementation group: 'org.g', name: 'g', version: gVersion
+                testImplementation "org.h:h:$hVersion"
+            }
+            """;
+
+        AddFile("build.gradle", Original);
+        AddFile("build.gradle.kts", """
+            plugins {
+                id("org.jetbrains.dokka") version "1.9.20"
+                kotlin("jvm") version "1.9.22"
+                /* /* nested */ id("org.commented") version "1.0.0" */
+            }
+
+            group = "com.acme"
+            version = "1.0.0"
+
+            dependencies {
+                implementation(group = "org.i", name = "i", version = "7.0.0")
+                implementation("org.j:j:8.0.0"); implementation("org.k:k:9.0.0")
+                implementation("org.l:l:${lVersion}")
+            }
+            """);
+
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "org.springframework.boot:org.springframework.boot.gradle.plugin", "3.2.0", 2, 44),
+            (DependencyType.JavaPackage, "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin", "6.25.0", 3, 42),
+            (DependencyType.JavaPackage, "org.a:a", "1.0.0", 9, 29),
+            (DependencyType.JavaPackage, "org.b:b", "2.0.0", 9, 46),
+            (DependencyType.JavaPackage, "org.c:c", "3.0.0", 13, 29),
+            (DependencyType.JavaPackage, "org.d:d", "4.0.0", 14, 67),
+            (DependencyType.JavaPackage, "org.e:e", "5.0.0", 15, 57),
+            (DependencyType.JavaPackage, "org.f:f", "6.0.0", 16, 54),
+            (DependencyType.JavaPackage, "org.jetbrains.dokka:org.jetbrains.dokka.gradle.plugin", "1.9.20", 2, 40),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", "1.9.22", 3, 28),
+            (DependencyType.JavaPackage, "org.i:i", "7.0.0", 11, 60),
+            (DependencyType.JavaPackage, "org.j:j", "8.0.0", 12, 29),
+            (DependencyType.JavaPackage, "org.k:k", "9.0.0", 12, 62));
+        Assert.HasCount(13, result);
+        Assert.Equal("org.jetbrains.kotlin.jvm", Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").Metadata["pluginId"]);
+
+        foreach (var dependency in result.Where(d => d.VersionLocation!.FilePath.EndsWith("build.gradle", StringComparison.Ordinal)).OrderByDescending(d => ((ILocationLineInfo)d.VersionLocation!).LinePosition))
+        {
+            await dependency.UpdateVersionAsync("10.0.0");
+        }
+
+        AssertFileContentEqual("build.gradle", """
+            plugins {
+                id 'org.springframework.boot' version '10.0.0'
+                id("com.diffplug.spotless") version "10.0.0" apply false
+                id 'java'
+                // id 'org.commented' version '1.0.0'
+            }
+
+            dependencies {
+                implementation "org.a:a:10.0.0", 'org.b:b:10.0.0'
+                // implementation "org.commented:line:1.0.0"
+                /* implementation "org.commented:block:1.0.0"
+                   implementation "org.commented:block2:1.0.0" */
+                implementation "org.c:c:10.0.0" // "org.commented:trailing:1.0.0"
+                implementation "https://example.com/not-a-comment" + "org.d:d:10.0.0"
+                implementation group: 'org.e', name: 'e', version: '10.0.0'
+                runtimeOnly(group: 'org.f', name: 'f', version: '10.0.0', classifier: 'jdk')
+                implementation group: 'org.g', name: 'g', version: gVersion
+                testImplementation "org.h:h:$hVersion"
+            }
+            """, ignoreNewLines: true);
     }
 
     [Fact]
@@ -198,9 +797,62 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.JavaPackage, "org.apache.commons:commons-lang3", "3.14.0", 7, 45),
             (DependencyType.JavaPackage, "org.junit.jupiter:junit-jupiter", "5.10.0", 8, 75),
             (DependencyType.JavaPackage, "org.example:a", "1.0.0", 0, 0),
-            (DependencyType.JavaPackage, "org.example:b", "1.0.0", 0, 0));
+            (DependencyType.JavaPackage, "org.example:b", "1.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", null, 0, 0));
         Assert.False(Assert.Single(result, d => d.Name == "org.example:a").VersionLocation!.IsUpdatable);
-        Assert.Equal(5, result.Count(d => d.Type == DependencyType.JavaPackage));
+        Assert.Equal(6, result.Count(d => d.Type == DependencyType.JavaPackage));
+    }
+
+    [Fact]
+    public async Task JavaVersionCatalogDependencies_PluginsAndVersionTables()
+    {
+        const string Original = """
+            [versions]
+            kotlin = "1.9.22"
+            spotless = "6.25.0"
+            dokka = "1.9.20"
+
+            [libraries]
+            kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version = { ref = "kotlin" } }
+            guava = { module = "com.google.guava:guava", version = "33.0.0" }
+            escaped = "org.example:escaped:\u0031.0.0"
+            rich = { module = "org.example:rich", version = { strictly = "1.0.0" } }
+
+            [plugins]
+            kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+            spotless = { id = "com.diffplug.spotless", version = { ref = "spotless" } }
+            dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+            boot = { id = "org.springframework.boot", version = "3.2.0" }
+            detekt = "io.gitlab.arturbosch.detekt:1.23.4"
+            """;
+
+        AddFile("gradle/libs.versions.toml", Original);
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin:kotlin-stdlib", "1.9.22", 0, 0),
+            (DependencyType.JavaPackage, "com.google.guava:guava", "33.0.0", 8, 57),
+            (DependencyType.JavaPackage, "org.example:escaped", "1.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.example:rich", null, 0, 0),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", "1.9.22", 0, 0),
+            (DependencyType.JavaPackage, "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin", "6.25.0", 3, 13),
+            (DependencyType.JavaPackage, "org.jetbrains.dokka:org.jetbrains.dokka.gradle.plugin", "1.9.20", 4, 10),
+            (DependencyType.JavaPackage, "org.springframework.boot:org.springframework.boot.gradle.plugin", "3.2.0", 16, 54),
+            (DependencyType.JavaPackage, "io.gitlab.arturbosch.detekt:io.gitlab.arturbosch.detekt.gradle.plugin", "1.23.4", 17, 39));
+        Assert.HasCount(9, result);
+        Assert.Equal("com.diffplug.spotless", Assert.Single(result, d => d.Name == "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin").Metadata["pluginId"]);
+
+        // The kotlin version is shared by a library and a plugin, and the escaped version is not written as its value
+        Assert.False(Assert.Single(result, d => d.Name == "org.jetbrains.kotlin:kotlin-stdlib").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:escaped").VersionLocation!.IsUpdatable);
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("gradle/libs.versions.toml", Original
+            .Replace("spotless = \"6.25.0\"", "spotless = \"2.0.0\"", StringComparison.Ordinal)
+            .Replace("dokka = \"1.9.20\"", "dokka = \"2.0.0\"", StringComparison.Ordinal)
+            .Replace("version = \"33.0.0\"", "version = \"2.0.0\"", StringComparison.Ordinal)
+            .Replace("version = \"3.2.0\"", "version = \"2.0.0\"", StringComparison.Ordinal)
+            .Replace("detekt:1.23.4", "detekt:2.0.0", StringComparison.Ordinal), ignoreNewLines: true);
     }
 
     [Fact]
@@ -235,6 +887,81 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.GoModule, "example.com/local", "v0.1.0", 7, 23));
 
         await UpdateDependencies(result, "dummy", "v2.0.0");
+        AssertFileContentEqual("go.mod", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task GoModuleDependencies_Directives()
+    {
+        const string Original = """
+            module example.com/app
+
+            go 1.22
+
+            toolchain go1.22.3
+
+            require(
+                golang.org/x/text v0.14.0
+                // example.com/commented v1.0.0
+                example.com/local v0.1.0// indirect
+            )
+
+            replace example.com/a => example.com/fork v1.2.3
+
+            replace example.com/b v1.0.0 => ../b
+
+            replace (
+                example.com/c v1.0.0 => example.com/c2 v0.0.1
+                example.com/d => ./d
+            )
+
+            exclude (
+                example.com/e v1.0.0
+            )
+            """;
+        const string Expected = """
+            module example.com/app
+
+            go 1.23
+
+            toolchain go1.23.1
+
+            require(
+                dummy1 v2.0.0
+                // example.com/commented v1.0.0
+                dummy2 v2.0.0// indirect
+            )
+
+            replace example.com/a => dummy3 v2.0.0
+
+            replace example.com/b v1.0.0 => ../b
+
+            replace (
+                example.com/c v1.0.0 => dummy4 v2.0.0
+                example.com/d => ./d
+            )
+
+            exclude (
+                example.com/e v1.0.0
+            )
+            """;
+
+        AddFile("go.mod", Original);
+        var result = await GetDependencies<GoModuleDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.GoModule, "go", "1.22", 3, 4),
+            (DependencyType.GoModule, "toolchain", "go1.22.3", 5, 11),
+            (DependencyType.GoModule, "golang.org/x/text", "v0.14.0", 8, 23),
+            (DependencyType.GoModule, "example.com/local", "v0.1.0", 10, 23),
+            (DependencyType.GoModule, "example.com/fork", "v1.2.3", 13, 43),
+            (DependencyType.GoModule, "example.com/c2", "v0.0.1", 18, 44));
+        Assert.HasCount(6, result);
+        Assert.Equal("example.com/a", Assert.Single(result, d => d.Name == "example.com/fork").Metadata["replaces"]);
+        Assert.Equal("example.com/c", Assert.Single(result, d => d.Name == "example.com/c2").Metadata["replaces"]);
+
+        await UpdateDependencies(result.Where(d => d.Name is not ("go" or "toolchain")), "dummy", "v2.0.0");
+        await Assert.Single(result, d => d.Name == "go").UpdateVersionAsync("1.23");
+        await Assert.Single(result, d => d.Name == "toolchain").UpdateVersionAsync("go1.23.1");
         AssertFileContentEqual("go.mod", Expected, ignoreNewLines: true);
     }
 
@@ -279,12 +1006,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             dummy2 = { version = "2.0.0", features = ["full"] }
             dummy3 = { path = "../local" }
             dummy4 = { features = ["json"], version = "2.0.0" }
-            dummy5 = { package = "foo-version", version = "2.0.0" }
+            renamed = { package = "dummy5", version = "2.0.0" }
             dummy6 = { git = "https://github.com/a/version-lib", branch = "main" }
             dummy7 = '2.0.0'
-            dummy8.version = "2.0.0"
+            dotted.version = "2.0.0"
             dotted.features = ["a"]
-            member.workspace = true
+            dummy8.workspace = true
 
             [dev-dependencies]
             dummy9 = "2.0.0"
@@ -297,15 +1024,126 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.RustCrate, "tokio", "1.0", 3, 22),
             (DependencyType.RustCrate, "local", null, 0, 0),
             (DependencyType.RustCrate, "reqwest", "0.12", 5, 45),
-            (DependencyType.RustCrate, "renamed", "2", 6, 49),
+            (DependencyType.RustCrate, "foo-version", "2", 6, 49),
             (DependencyType.RustCrate, "git", null, 0, 0),
             (DependencyType.RustCrate, "literal", "1.5", 8, 12),
             (DependencyType.RustCrate, "dotted", "0.3", 9, 19),
+            (DependencyType.RustCrate, "member", null, 0, 0),
             (DependencyType.RustCrate, "anyhow", "1.0", 14, 11));
-        Assert.Equal(9, result.Count(d => d.Type == DependencyType.RustCrate));
+        Assert.Equal(10, result.Count(d => d.Type == DependencyType.RustCrate));
+
+        // A renamed dependency is the crate of its package, and the key is the name the code uses
+        var renamed = Assert.Single(result, d => d.Name == "foo-version");
+        Assert.Equal("renamed", renamed.Metadata["alias"]);
+        Assert.Equal(24, Assert.IsAssignableTo<ILocationLineInfo>(renamed.NameLocation).LinePosition);
+
+        // Renaming dotted.version alone would leave dotted.features behind
+        Assert.False(Assert.Single(result, d => d.Name == "dotted").NameLocation!.IsUpdatable);
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("Cargo.toml", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task CargoDependencies_TablesAndTargets()
+    {
+        const string Original = """
+            [dependencies.serde]
+            version = "1.0"
+            features = ["derive"]
+
+            [target.'cfg(unix)'.dependencies]
+            nix = "0.29"
+
+            [target.x86_64-pc-windows-gnu.dev-dependencies]
+            winapi = { version = "0.3" }
+
+            [target.'cfg(windows)'.build-dependencies.winres]
+            version = "0.1"
+
+            [workspace.dependencies.json]
+            package = "serde_json"
+            version = "1.0"
+
+            [[bin]]
+            name = "app"
+            """;
+        const string Expected = """
+            [dependencies.dummy1]
+            version = "2.0.0"
+            features = ["derive"]
+
+            [target.'cfg(unix)'.dependencies]
+            dummy2 = "2.0.0"
+
+            [target.x86_64-pc-windows-gnu.dev-dependencies]
+            dummy3 = { version = "2.0.0" }
+
+            [target.'cfg(windows)'.build-dependencies.dummy4]
+            version = "2.0.0"
+
+            [workspace.dependencies.json]
+            package = "dummy5"
+            version = "2.0.0"
+
+            [[bin]]
+            name = "app"
+            """;
+
+        AddFile("Cargo.toml", Original);
+        var result = await GetDependencies<CargoDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RustCrate, "serde", "1.0", 2, 12),
+            (DependencyType.RustCrate, "nix", "0.29", 6, 8),
+            (DependencyType.RustCrate, "winapi", "0.3", 9, 23),
+            (DependencyType.RustCrate, "winres", "0.1", 12, 12),
+            (DependencyType.RustCrate, "serde_json", "1.0", 16, 12));
+        Assert.HasCount(5, result);
+        Assert.Equal("json", Assert.Single(result, d => d.Name == "serde_json").Metadata["alias"]);
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Cargo.toml", Expected, ignoreNewLines: true);
+    }
+
+    [Theory]
+    [InlineData("[dependencies]\n\"\n")]
+    [InlineData("[dependencies]\n\"serde = \"1.0\"\n")]
+    [InlineData("[dependencies]\n'serde\n")]
+    [InlineData("[dependencies]\nserde\n")]
+    [InlineData("[dependencies.\"\nversion = \"1.0\"\n")]
+    public async Task CargoDependencies_MalformedKeys_AreSkipped(string content)
+    {
+        AddFile("Cargo.toml", content);
+
+        var result = await GetDependencies<CargoDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task CargoDependencies_EscapedStrings_AreNotUpdatable()
+    {
+        AddFile("Cargo.toml", """
+            [dependencies]
+            "ser\u0064e" = "1\u002E0"
+            tokio = "1\u002E0"
+            json = { package = "serde\u005Fjson", version = "1.0" }
+            """);
+
+        var result = await GetDependencies<CargoDependencyScanner>();
+
+        var serde = Assert.Single(result, d => d.Name == "serde");
+        Assert.Equal("1.0", serde.Version);
+        Assert.False(serde.NameLocation!.IsUpdatable);
+        Assert.False(serde.VersionLocation!.IsUpdatable);
+
+        var tokio = Assert.Single(result, d => d.Name == "tokio");
+        Assert.True(tokio.NameLocation!.IsUpdatable);
+        Assert.False(tokio.VersionLocation!.IsUpdatable);
+
+        var json = Assert.Single(result, d => d.Name == "serde_json");
+        Assert.False(json.NameLocation!.IsUpdatable);
+        Assert.True(json.VersionLocation!.IsUpdatable);
     }
 
     [Fact]
@@ -338,6 +1176,14 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             [[package]]
             name = "serde_derive"
             version = "1.0.0"
+            source = "git+https://github.com/serde-rs/serde?tag=v1.0.0#abc"
+
+            [[package]]
+            name = "app"
+            version = "0.1.0"
+            dependencies = [
+             "serde",
+            ]
             """);
 
         var result = await GetDependencies<CargoDependencyScanner>();
@@ -345,6 +1191,9 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.RustCrate, "serde", "1.0.0", 0, 0),
             (DependencyType.RustCrate, "serde_derive", "1.0.0", 0, 0));
         Assert.DoesNotContain(result, d => d.VersionLocation!.IsUpdatable);
+
+        // A package without a source is a crate of the workspace itself
+        Assert.HasCount(2, result);
     }
 
     [Fact]
@@ -404,6 +1253,76 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.RubyGem, "rack", "3.0.0", 0, 0),
             (DependencyType.RubyGem, "puma", "6.0.1", 0, 0));
         Assert.DoesNotContain(lockResult, d => d.VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
+    public async Task RubyGemDependencies_GeneratedGemspecLiterals()
+    {
+        const string Original = """
+            # gem "commented", "1.0.0"
+            Gem::Specification.new do |s|
+              s.description = "Add gem 'in-string' to your Gemfile"
+              s.post_install_message = <<~MESSAGE
+                gem "in-heredoc", "1.0.0"
+              MESSAGE
+              s.add_runtime_dependency(%q<rack>.freeze, ["~> 3.0".freeze])
+              s.add_runtime_dependency(%q{puma}.freeze, [">= 6.0".freeze, "< 7".freeze])
+              s.add_development_dependency(%q(rspec).freeze, "~> 3.12".freeze)
+              s.add_dependency "json", "~> 2.0",
+                ">= 2.0.1"
+              s.add_dependency "escaped", "\x31.0"
+            end
+            =begin
+            gem "in-embedded-document", "1.0.0"
+            =end
+            """;
+
+        AddFile("sample.gemspec", Original);
+        var result = await GetDependencies<RubyGemDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.RubyGem, "rack", "~> 3.0", 7, 47),
+            (DependencyType.RubyGem, "puma", ">= 6.0, < 7", 0, 0),
+            (DependencyType.RubyGem, "rspec", "~> 3.12", 9, 51),
+            (DependencyType.RubyGem, "json", "~> 2.0, >= 2.0.1", 0, 0),
+            (DependencyType.RubyGem, "escaped", "\\x31.0", 0, 0));
+        Assert.HasCount(5, result);
+        Assert.False(Assert.Single(result, d => d.Name == "puma").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "escaped").VersionLocation!.IsUpdatable);
+
+        await Assert.Single(result, d => d.Name == "rack").UpdateVersionAsync("~> 3.1");
+        await Assert.Single(result, d => d.Name == "rspec").UpdateVersionAsync("~> 3.13");
+        AssertFileContentEqual("sample.gemspec", Original
+            .Replace("[\"~> 3.0\".freeze]", "[\"~> 3.1\".freeze]", StringComparison.Ordinal)
+            .Replace("\"~> 3.12\".freeze", "\"~> 3.13\".freeze", StringComparison.Ordinal), ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task RubyGemDependencies_LockFilePlatforms()
+    {
+        AddFile("Gemfile.lock", """
+            GEM
+              remote: https://rubygems.org/
+              specs:
+                nokogiri (1.15.0)
+                  racc (~> 1.4)
+                nokogiri (1.15.0-arm64-darwin)
+                  racc (~> 1.4)
+                nokogiri (1.15.0-x86_64-linux)
+                  racc (~> 1.4)
+                racc (1.7.1)
+
+            PLATFORMS
+              arm64-darwin
+              x86_64-linux
+            """);
+
+        var result = await GetDependencies<RubyGemDependencyScanner>();
+        Assert.HasCount(4, result);
+        Assert.Equal(3, result.Count(d => d.Name == "nokogiri" && d.Version == "1.15.0"));
+        Assert.Single(result, d => d.Name == "nokogiri" && !d.Metadata.ContainsKey("platform"));
+        Assert.Single(result, d => d.Name == "nokogiri" && d.Metadata.TryGetValue("platform", out var platform) && platform is "arm64-darwin");
+        Assert.Single(result, d => d.Name == "nokogiri" && d.Metadata.TryGetValue("platform", out var platform) && platform is "x86_64-linux");
+        Assert.Single(result, d => d.Name == "racc" && d.Version == "1.7.1");
     }
 
     [Fact]
@@ -521,6 +1440,124 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         await UpdateDependencies(result, "dummy", "4.0.0");
         AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task NpmPackageJsonDependencies_PackageManagerOverridesAndResolutions()
+    {
+        const string Original = /*lang=json,strict*/ """
+{
+  "packageManager": "yarn@4.1.0",
+  "overrides": {
+    "foo": "1.0.0",
+    "bar": {
+      ".": "2.0.0",
+      "baz": "3.0.0"
+    },
+    "@scope/qux@^1.0.0": "4.0.0",
+    "ref": "$foo"
+  },
+  "resolutions": {
+    "**/r": "5.0.0",
+    "p/@scope/q": "6.0.0",
+    "s@npm:1.0.0": "7.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "m@1>n": "8.0.0",
+      "o": "-"
+    }
+  }
+}
+""";
+        const string Expected = /*lang=json,strict*/ """
+{
+  "packageManager": "yarn@9.0.0",
+  "overrides": {
+    "foo": "9.0.0",
+    "bar": {
+      ".": "9.0.0",
+      "baz": "9.0.0"
+    },
+    "@scope/qux@^1.0.0": "9.0.0",
+    "ref": "$foo"
+  },
+  "resolutions": {
+    "**/r": "9.0.0",
+    "p/@scope/q": "9.0.0",
+    "s@npm:1.0.0": "9.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "m@1>n": "9.0.0",
+      "o": "-"
+    }
+  }
+}
+""";
+        const string WithHash = /*lang=json,strict*/ """
+{
+  "packageManager": "pnpm@9.1.0+sha512.abc"
+}
+""";
+
+        AddFile("package.json", Original);
+        AddFile("hash/package.json", WithHash);
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.Npm, "yarn", "4.1.0", 0, 0),
+            (DependencyType.Npm, "pnpm", "9.1.0", 0, 0),
+            (DependencyType.Npm, "foo", "1.0.0", 0, 0),
+            (DependencyType.Npm, "bar", "2.0.0", 0, 0),
+            (DependencyType.Npm, "baz", "3.0.0", 0, 0),
+            (DependencyType.Npm, "@scope/qux", "4.0.0", 0, 0),
+            (DependencyType.Npm, "ref", "$foo", 0, 0),
+            (DependencyType.Npm, "r", "5.0.0", 0, 0),
+            (DependencyType.Npm, "@scope/q", "6.0.0", 0, 0),
+            (DependencyType.Npm, "s", "7.0.0", 0, 0),
+            (DependencyType.Npm, "n", "8.0.0", 0, 0));
+        Assert.HasCount(11, result);
+
+        // Corepack checks the hash, which would not match a new version
+        Assert.False(Assert.Single(result, d => d.Name == "pnpm").VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name == "ref").VersionLocation!.IsUpdatable);
+
+        await UpdateDependencies(result, "dummy", "9.0.0");
+        AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
+        AssertFileContentEqual("hash/package.json", WithHash, ignoreNewLines: true);
+    }
+
+    [Theory]
+    [InlineData("package-lock.json")]
+    [InlineData("npm-shrinkwrap.json")]
+    public async Task NpmPackageLockDependencies(string fileName)
+    {
+        AddFile(fileName, /*lang=json,strict*/ """
+{
+  "name": "app",
+  "lockfileVersion": 3,
+  "packages": {
+    "": { "name": "app", "dependencies": { "a": "^1.0.0" } },
+    "node_modules/a": { "version": "1.0.0", "resolved": "https://registry.npmjs.org/a/-/a-1.0.0.tgz", "integrity": "sha512-abc" },
+    "node_modules/b": { "name": "real-b", "version": "2.0.0" },
+    "node_modules/a/node_modules/@scope/c": { "version": "3.0.0" },
+    "node_modules/d": { "version": 1 },
+    "node_modules/w": { "resolved": "packages/w", "link": true },
+    "packages/w": { "name": "w", "version": "0.0.1" }
+  }
+}
+""");
+
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.Npm, "a", "1.0.0", 0, 0),
+            (DependencyType.Npm, "real-b", "2.0.0", 0, 0),
+            (DependencyType.Npm, "@scope/c", "3.0.0", 0, 0));
+        Assert.HasCount(3, result);
+        Assert.Equal("b", Assert.Single(result, d => d.Name == "real-b").Metadata["alias"]);
+
+        // The version is not updatable as the integrity of the package would not match anymore
+        Assert.DoesNotContain(result, d => d.VersionLocation!.IsUpdatable);
     }
 
     [Theory]
@@ -714,6 +1751,35 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task NuSpecDependencies_WithoutVersion()
+    {
+        AddFile("test.nuspec", """
+            <?xml version="1.0" encoding="utf-8"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+                <metadata>
+                    <dependencies>
+                        <dependency id="PackageA" />
+                        <dependency id="PackageB" version="" />
+                        <dependency version="1.0.0" />
+                    </dependencies>
+                </metadata>
+            </package>
+            """);
+
+        var result = await GetDependencies<NuSpecDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "PackageA", null, 0, 0),
+            (DependencyType.NuGet, "PackageB", null, 0, 0));
+        Assert.All(result, d =>
+        {
+            Assert.Null(d.VersionLocation);
+            Assert.True(d.NameLocation!.IsUpdatable);
+        });
+    }
+
+    [Fact]
     public async Task MsBuildReferencesDependencies()
     {
         const string Original = """
@@ -785,6 +1851,11 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     [InlineData("test.fsproj")]
     [InlineData("test.vbproj")]
     [InlineData("build.proj")]
+    [InlineData("Setup.wixproj")]
+    [InlineData("Database.sqlproj")]
+    [InlineData("App.esproj")]
+    [InlineData("Native.vcxproj")]
+    [InlineData("Test.CSPROJ")]
     public async Task MsBuildReferencesDependencies_ProjectFileExtensions(string fileName)
     {
         AddFile(fileName, """
@@ -798,6 +1869,134 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
 
         AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 3, 45));
+    }
+
+    [Theory]
+    [InlineData("project.pbxproj")]
+    [InlineData("Setup.vdproj")]
+    public async Task MsBuildReferencesDependencies_NonMsBuildProjectFileExtensions(string fileName)
+    {
+        AddFile(fileName, """
+            <Project>
+              <ItemGroup>
+                <PackageReference Include="TestPackage" Version="4.2.1" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task MsBuildReferencesDependencies_ItemTypesAndMetadataNamesAreCaseInsensitive()
+    {
+        const string Original = """
+            <Project>
+              <PropertyGroup>
+                <targetframework>net8.0</targetframework>
+              </PropertyGroup>
+              <ItemGroup>
+                <packagereference Include="PackageA" version="1.0.0" />
+                <PACKAGEVERSION Include="PackageB" VERSION="1.0.1" />
+                <PackageReference Include="PackageC" versionoverride="1.0.2" />
+                <PackageReference Include="PackageD">
+                  <version>1.0.3</version>
+                </PackageReference>
+                <projectreference Include="ProjectA.csproj" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string Expected = """
+            <Project>
+              <PropertyGroup>
+                <targetframework>net10.0</targetframework>
+              </PropertyGroup>
+              <ItemGroup>
+                <packagereference Include="dummy1" version="2.0.0" />
+                <PACKAGEVERSION Include="dummy2" VERSION="2.0.0" />
+                <PackageReference Include="dummy3" versionoverride="2.0.0" />
+                <PackageReference Include="dummy4">
+                  <version>2.0.0</version>
+                </PackageReference>
+                <projectreference Include="dummy5" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        AddFile("test.csproj", Original);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        Assert.HasCount(6, result);
+        AssertContainDependency(result,
+            (DependencyType.DotNetTargetFramework, null, "net8.0", 3, 0),
+            (DependencyType.NuGet, "PackageA", "1.0.0", 6, 0),
+            (DependencyType.NuGet, "PackageB", "1.0.1", 7, 0),
+            (DependencyType.NuGet, "PackageC", "1.0.2", 8, 0),
+            (DependencyType.NuGet, "PackageD", "1.0.3", 10, 0),
+            (DependencyType.MSBuildProjectReference, "ProjectA.csproj", null, 0, 0));
+
+        foreach (var dependency in result.Where(d => d.Type == DependencyType.DotNetTargetFramework))
+        {
+            await dependency.UpdateVersionAsync("net10.0");
+        }
+
+        await UpdateDependencies(result.Where(d => d.Type != DependencyType.DotNetTargetFramework), "dummy", "2.0.0");
+        AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task MsBuildReferencesDependencies_ValuesAreTrimmedAndIncludeIsSplit()
+    {
+        const string Original = """
+            <Project>
+              <ItemGroup>
+                <PackageReference Include=" PackageA " Version=" 1.0.0 " />
+                <PackageReference Include="PackageB;PackageC" Version="1.0.1" />
+                <PackageVersion Include="PackageD ; PackageE" Version="1.0.2" />
+                <PackageReference Include="PackageF">
+                  <Version>
+                    1.0.3
+                  </Version>
+                </PackageReference>
+                <ProjectReference Include="ProjectA.csproj;ProjectB.csproj" />
+              </ItemGroup>
+            </Project>
+            """;
+        const string Expected = """
+            <Project>
+              <ItemGroup>
+                <PackageReference Include=" dummy1 " Version=" 2.0.0 " />
+                <PackageReference Include="dummy2;dummy3" Version="1.0.1" />
+                <PackageVersion Include="dummy4 ; dummy5" Version="1.0.2" />
+                <PackageReference Include="dummy6">
+                  <Version>
+                    2.0.0
+                  </Version>
+                </PackageReference>
+                <ProjectReference Include="dummy7;dummy8" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        AddFile("test.csproj", Original);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        Assert.HasCount(8, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "PackageA", "1.0.0", 3, 45),
+            (DependencyType.NuGet, "PackageB", "1.0.1", 0, 0),
+            (DependencyType.NuGet, "PackageC", "1.0.1", 0, 0),
+            (DependencyType.NuGet, "PackageD", "1.0.2", 0, 0),
+            (DependencyType.NuGet, "PackageE", "1.0.2", 0, 0),
+            (DependencyType.NuGet, "PackageF", "1.0.3", 0, 0),
+            (DependencyType.MSBuildProjectReference, "ProjectA.csproj", null, 0, 0),
+            (DependencyType.MSBuildProjectReference, "ProjectB.csproj", null, 0, 0));
+
+        // Updating the version shared by several items would also update the other items
+        Assert.All(result.Where(d => d.Name is "PackageB" or "PackageC" or "PackageD" or "PackageE"), d => Assert.False(d.VersionLocation!.IsUpdatable));
+
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
     }
 
     [Fact]
@@ -1251,6 +2450,11 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     [InlineData("requirements-dev.txt")]
     [InlineData("dev-requirements.txt")]
     [InlineData("requirements/base.txt")]
+    [InlineData("requirements.in")]
+    [InlineData("requirements-dev.in")]
+    [InlineData("requirements/base.in")]
+    [InlineData("constraints.txt")]
+    [InlineData("pip-constraints.txt")]
     public async Task PythonRequirementsFileNames(string path)
     {
         AddFile(path, "requests==2.31.0\n");
@@ -1262,7 +2466,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
     [Theory]
     [InlineData("readme.txt")]
-    [InlineData("requirements.in")]
+    [InlineData("MANIFEST.in")]
     [InlineData("requirements/readme.md")]
     [InlineData("requirements/sub/base.txt")]
     public async Task PythonRequirementsFileNames_NotScanned(string path)
@@ -1292,21 +2496,21 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         const string Expected =
             "#!/usr/bin/env dotnet\n" +
-            "#:sdk dummy1\n" +
-            "#:sdk dummy2@2.0.0\n" +
-            "#:package dummy3\n" +
+            "#:sdk Microsoft.NET.Sdk.Web\n" +
+            "#:sdk dummy1@2.0.0\n" +
+            "#:package dummy2\n" +
+            "#:package dummy3@2.0.0\n" +
             "#:package dummy4@2.0.0\n" +
-            "#:package dummy5@2.0.0\n" +
-            "#:project dummy6\n" +
-            "#:ref dummy7\n" +
+            "#:project dummy5\n" +
+            "#:ref dummy6\n" +
             "#:property TargetFramework=2.0.0\n" +
             "\n" +
             "Console.WriteLine(\"Hello, World!\");\n";
 
         AddFile("app.cs", Original);
         var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        Assert.DoesNotContain(result, d => d.Name == "Microsoft.NET.Sdk.Web");
         AssertContainDependency(result,
-            (DependencyType.NuGet, "Microsoft.NET.Sdk.Web", null, 0, 0),
             (DependencyType.NuGet, "Aspire.AppHost.Sdk", "13.0.2", 3, 26),
             (DependencyType.NuGet, "Newtonsoft.Json", null, 0, 0),
             (DependencyType.NuGet, "Serilog", "3.1.1", 5, 19),
@@ -1451,6 +2655,57 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task DotNetFileBasedAppDependencies_AfterOtherPreprocessorDirectives()
+    {
+        // Like the SDK, which reads the directives from the leading trivia of the first token, other directives do not stop the scan
+        AddFile("app1.cs",
+            "#nullable enable\n" +
+            "#region Directives\n" +
+            "#pragma warning disable CS1591\n" +
+            "# define TRACE\n" +
+            "#:package Serilog@3.1.1\n" +
+            "#endregion\n" +
+            "#:package Newtonsoft.Json@13.0.1\n" +
+            "Console.WriteLine(\"Hello\");\n" +
+            "#:package Ignored@1.0.0\n");
+
+        // The directives in or after an #if are not read
+        AddFile("app2.cs",
+            "#:package Spectre.Console@0.49.1\n" +
+            "#if DEBUG\n" +
+            "#:package IgnoredInIf@1.0.0\n" +
+            "#endif\n" +
+            "#:package IgnoredAfterIf@1.0.0\n" +
+            "Console.WriteLine(\"Hello\");\n");
+
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Serilog", "3.1.1", 5, 19),
+            (DependencyType.NuGet, "Newtonsoft.Json", "13.0.1", 7, 27),
+            (DependencyType.NuGet, "Spectre.Console", "0.49.1", 1, 27));
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_SdkWithoutVersionIsNotReported()
+    {
+        // Consistent with Sdk="Name" in a project file: the version of such an SDK comes from global.json, or the SDK is built in
+        AddFile("app.cs",
+            "#:sdk Microsoft.NET.Sdk.Web\n" +
+            "#:sdk My.Sdk@1.0.0\n" +
+            "Console.WriteLine(\"Hello\");\n");
+        AddFile("test.csproj", """<Project Sdk="Microsoft.NET.Sdk.Web" />""");
+
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        var projectResult = await GetDependencies<MsBuildReferencesDependencyScanner>();
+
+        AssertContainDependency(result, (DependencyType.NuGet, "My.Sdk", "1.0.0", 2, 14));
+        Assert.Single(result);
+        Assert.Empty(projectResult);
+    }
+
+    [Fact]
     public async Task PackagesConfigDependencies()
     {
         const string Original = """
@@ -1510,6 +2765,80 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         });
     }
 
+    [Theory]
+    [InlineData("packages.lock.json")]
+    [InlineData("packages.MyProject.lock.json")]
+    public async Task NuGetLockFileDependencies(string fileName)
+    {
+        AddFile(fileName, /*lang=json,strict*/ """
+            {
+              "version": 1,
+              "dependencies": {
+                "net8.0": {
+                  "Newtonsoft.Json": {
+                    "type": "Direct",
+                    "requested": "[13.0.3, )",
+                    "resolved": "13.0.3",
+                    "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+                  },
+                  "System.Memory": {
+                    "type": "Transitive",
+                    "resolved": "4.5.5",
+                    "contentHash": "XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw=="
+                  },
+                  "MyLibrary": {
+                    "type": "Project",
+                    "dependencies": {
+                      "System.Memory": "[4.5.5, )"
+                    }
+                  }
+                },
+                "net8.0/win-x64": {
+                  "System.Memory": {
+                    "type": "Transitive",
+                    "resolved": "4.5.5"
+                  }
+                },
+                "net48": {
+                  "Newtonsoft.Json": {
+                    "type": "Direct",
+                    "requested": "[13.0.1, )",
+                    "resolved": "13.0.1"
+                  },
+                  "Invalid": {
+                    "type": "Direct",
+                    "resolved": 1
+                  }
+                }
+              }
+            }
+            """);
+
+        var result = await GetDependencies<NuGetLockFileDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "Newtonsoft.Json", "13.0.3", 0, 0),
+            (DependencyType.NuGet, "Newtonsoft.Json", "13.0.1", 0, 0),
+            (DependencyType.NuGet, "System.Memory", "4.5.5", 0, 0));
+        Assert.All(result, dependency =>
+        {
+            Assert.False(dependency.NameLocation!.IsUpdatable);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        });
+    }
+
+    [Fact]
+    public async Task NuGetLockFileDependencies_InvalidJson()
+    {
+        AddFile("packages.lock.json", """{"dependencies": {"net8.0": {"A": {"resolved": "1.0.0" """);
+        AddFile("other/packages.lock.json", """{"dependencies": ["net8.0"]}""");
+
+        var result = await GetDependencies<NuGetLockFileDependencyScanner>();
+
+        Assert.Empty(result);
+    }
+
     [Fact]
     public async Task PackagesConfigWithCsprojDependencies()
     {
@@ -1553,7 +2882,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
               <Import Project="..\packages\NUnit.3.12.0-beta00\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.12.0-beta00\build\NUnit.props')" />
               <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
               <ItemGroup>
-                <Reference Include="nunit.framework, Version=3.12.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+                <Reference Include="nunit.framework, Version=3.11.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
                   <HintPath>..\packages\NUnit.3.12.0-beta00\lib\net45\nunit.framework.dll</HintPath>
                 </Reference>
               </ItemGroup>
@@ -1604,12 +2933,174 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             <?xml version="1.0" encoding="utf-8"?>
             <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup>
-                <Reference Include="nunit.framework, Version=3.12.0.0, Culture=neutral">
+                <Reference Include="nunit.framework, Version=3.11.0.0, Culture=neutral">
                   <HintPath>..\packages\NUnit.3.12.0\lib\net45\nunit.framework.dll</HintPath>
                 </Reference>
               </ItemGroup>
             </Project>
             """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task PackagesConfigWithCsproj_PackageFolderMustBeAWholePathSegment()
+    {
+        AddFile("packages.config", """
+            <?xml version="1.0" encoding="utf-8" ?>
+            <packages>
+              <package id="Microsoft.Owin" version="1.0.0" targetFramework="net461" />
+              <package id="Owin" version="1.0.0" targetFramework="net461" />
+              <package id="Foo" version="1.0" targetFramework="net461" />
+            </packages>
+            """);
+        const string OriginalCsproj = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <Import Project="..\packages\Microsoft.Owin.1.0.0\build\Microsoft.Owin.props" Condition="Exists('..\packages\Microsoft.Owin.1.0.0\build\Microsoft.Owin.props')" />
+              <ItemGroup>
+                <Reference Include="Microsoft.Owin">
+                  <HintPath>..\packages\Microsoft.Owin.1.0.0\lib\net45\Microsoft.Owin.dll</HintPath>
+                </Reference>
+                <Reference Include="Owin">
+                  <HintPath>..\packages\Owin.1.0.0\lib\net40\Owin.dll</HintPath>
+                </Reference>
+                <Reference Include="Foo">
+                  <HintPath>..\packages\Foo.1.0.1\lib\net40\Foo.dll</HintPath>
+                </Reference>
+              </ItemGroup>
+            </Project>
+            """;
+        AddFile("file.csproj", OriginalCsproj);
+
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
+
+        Assert.HasCount(2, result.Where(d => d.Name == "Owin"));
+        Assert.HasCount(4, result.Where(d => d.Name == "Microsoft.Owin"));
+        Assert.Single(result, d => d.Name == "Foo");
+
+        foreach (var dependency in result.Where(d => d.Name == "Owin"))
+        {
+            await dependency.UpdateVersionAsync("2.0.0");
+        }
+
+        AssertFileContentEqual("file.csproj", OriginalCsproj.Replace(@"packages\Owin.1.0.0\", @"packages\Owin.2.0.0\", StringComparison.Ordinal), ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task PackagesConfigWithCsproj_AssemblyVersionIsNotReportedAsPackageVersion()
+    {
+        AddFile("packages.config", """
+            <?xml version="1.0" encoding="utf-8" ?>
+            <packages>
+              <package id="Newtonsoft.Json" version="12.0.3" targetFramework="net461" />
+            </packages>
+            """);
+        const string OriginalCsproj = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <ItemGroup>
+                <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+                  <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+                </Reference>
+              </ItemGroup>
+            </Project>
+            """;
+        AddFile("file.csproj", OriginalCsproj);
+
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        Assert.All(result, d => Assert.Equal("12.0.3", d.Version));
+        var hintPathDependency = Assert.Single(result, d => d.VersionLocation!.FilePath.EndsWith("file.csproj", StringComparison.Ordinal));
+        Assert.Equal("12.0.0.0", hintPathDependency.Metadata["assemblyVersion"]);
+        var assemblyVersionLocation = (Location)hintPathDependency.Metadata["assemblyVersionLocation"]!;
+        Assert.True(assemblyVersionLocation.IsUpdatable);
+
+        foreach (var dependency in result)
+        {
+            await dependency.UpdateVersionAsync("13.0.3");
+        }
+
+        var expectedCsproj = OriginalCsproj.Replace(@"Newtonsoft.Json.12.0.3\", @"Newtonsoft.Json.13.0.3\", StringComparison.Ordinal);
+        AssertFileContentEqual("file.csproj", expectedCsproj, ignoreNewLines: true);
+
+        // The caller knows the assembly version of the new package, and can update it
+        await assemblyVersionLocation.UpdateAsync("12.0.0.0", "13.0.0.0");
+        expectedCsproj = expectedCsproj.Replace("Version=12.0.0.0", "Version=13.0.0.0", StringComparison.Ordinal);
+        AssertFileContentEqual("file.csproj", expectedCsproj, ignoreNewLines: true);
+
+        foreach (var invalidVersion in new[] { "70000.0.0.0", "1.0.20240101", "1.2.3.4.5", "1.2.x", "", "1..2" })
+        {
+            await Assert.ThrowsAsync<DependencyScannerException>(() => assemblyVersionLocation.UpdateAsync(invalidVersion));
+            AssertFileContentEqual("file.csproj", expectedCsproj, ignoreNewLines: true);
+        }
+
+        await assemblyVersionLocation.UpdateAsync("v14.0-beta.1+sha");
+        AssertFileContentEqual("file.csproj", expectedCsproj.Replace("Version=13.0.0.0", "Version=14.0.0.0", StringComparison.Ordinal), ignoreNewLines: true);
+    }
+
+    [Theory]
+    [InlineData("1", "1.0.0.0")]
+    [InlineData("1.2", "1.2.0.0")]
+    [InlineData("1.2.3", "1.2.3.0")]
+    [InlineData("1.2.3.4", "1.2.3.4")]
+    [InlineData("v1.2.3", "1.2.3.0")]
+    [InlineData("V1.2.3", "1.2.3.0")]
+    [InlineData("1.2.3-beta.1", "1.2.3.0")]
+    [InlineData("1.2.3+sha.abc", "1.2.3.0")]
+    [InlineData("65534.65534.65534.65534", "65534.65534.65534.65534")]
+    [InlineData("01.002.0.0", "1.2.0.0")]
+    [InlineData("65535.0.0.0", null)]
+    [InlineData("70000.0.0.0", null)]
+    [InlineData("1.0.20240101", null)]
+    [InlineData("1.2.3.4.5", null)]
+    [InlineData("-1.0.0.0", null)]
+    [InlineData("1.-2", null)]
+    [InlineData("vv1.0", null)]
+    [InlineData("1. 2", null)]
+    [InlineData("+1.0", null)]
+    [InlineData("", null)]
+    public void AssemblyVersionXmlLocation_NormalizeAssemblyVersion(string value, string? expected)
+    {
+        if (expected is null)
+        {
+            Assert.Throws<DependencyScannerException>(() => AssemblyVersionXmlLocation.NormalizeAssemblyVersion(value));
+        }
+        else
+        {
+            Assert.Equal(expected, AssemblyVersionXmlLocation.NormalizeAssemblyVersion(value));
+        }
+    }
+
+    [Fact]
+    public async Task PackagesConfigPerProject()
+    {
+        AddFile("packages.config", """<packages><package id="A" version="1.0.0" /></packages>""");
+        AddFile("packages.ProjectB.config", """<packages><package id="B" version="2.0.0" /></packages>""");
+        AddFile("packages.Project_C.config", """<packages><package id="C" version="3.0.0" /></packages>""");
+        const string Csproj = """
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <ItemGroup>
+                <Reference Include="A"><HintPath>..\packages\A.1.0.0\lib\A.dll</HintPath></Reference>
+                <Reference Include="B"><HintPath>..\packages\B.2.0.0\lib\B.dll</HintPath></Reference>
+                <Reference Include="C"><HintPath>..\packages\C.3.0.0\lib\C.dll</HintPath></Reference>
+              </ItemGroup>
+            </Project>
+            """;
+        AddFile("ProjectA.csproj", Csproj);
+        AddFile("ProjectB.csproj", Csproj);
+        AddFile("Project C.vcxproj", Csproj);
+
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
+
+        Assert.HasCount(6, result);
+        AssertContainDependency(result,
+            (DependencyType.NuGet, "A", "1.0.0", 0, 0),
+            (DependencyType.NuGet, "B", "2.0.0", 0, 0),
+            (DependencyType.NuGet, "C", "3.0.0", 0, 0));
+        Assert.Equal(["A", "B", "C"], result.Where(d => d.VersionLocation!.FilePath.EndsWith("proj", StringComparison.Ordinal)).Select(d => d.Name).Order(StringComparer.Ordinal));
+        Assert.Single(result, d => d.Name == "A" && d.VersionLocation!.FilePath.EndsWith("ProjectA.csproj", StringComparison.Ordinal));
+        Assert.Single(result, d => d.Name == "B" && d.VersionLocation!.FilePath.EndsWith("ProjectB.csproj", StringComparison.Ordinal));
+        Assert.Single(result, d => d.Name == "C" && d.VersionLocation!.FilePath.EndsWith("Project C.vcxproj", StringComparison.Ordinal));
     }
 
     [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
@@ -1766,25 +3257,26 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             FROM node:21 AS build extra
             """;
         const string Expected = """
-            # syntax=docker/dockerfile:1
-            FROM dummy1:2.0.0 AS build-env
-            FROM --platform=linux/amd64 dummy2:2.0.0
-              FROM dummy3:2.0.0
+            # syntax=dummy1:2.0.0
+            FROM dummy2:2.0.0 AS build-env
+            FROM --platform=linux/amd64 dummy3:2.0.0
+              FROM dummy4:2.0.0
             FROMnode:1
-            FROM dummy4:2.0.0 as base
+            FROM dummy5:2.0.0 as base
             FROM localhost:5000/noversion
             FROM --platform=$BUILDPLATFORM \
                 # comment inside the instruction
-                dummy5:2.0.0 AS build
-            COPY --from=dummy6:2.0.0 /tool /tool
+                dummy6:2.0.0 AS build
+            COPY --from=dummy7:2.0.0 /tool /tool
             FROM scratch
             FROM node:21 AS build extra
             """;
 
         AddFile("Dockerfile", Original);
         var result = await GetDependencies<DockerfileDependencyScanner>();
-        Assert.HasCount(6, result);
+        Assert.HasCount(7, result);
         AssertContainDependency(result,
+            (DependencyType.DockerImage, "docker/dockerfile", "1", 1, 28),
             (DependencyType.DockerImage, "node", "18", 2, 11),
             (DependencyType.DockerImage, "node", "19", 3, 34),
             (DependencyType.DockerImage, "node", "20", 4, 13),
@@ -1858,6 +3350,275 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         Assert.HasCount(1, result);
         AssertContainDependency(result, (DependencyType.DockerImage, "node", "18", 2, 11));
+    }
+
+    [Fact]
+    public async Task DockerfileFromDependencies_EscapeDirectiveWithCrLfLineEndings()
+    {
+        AddFile("Dockerfile", "# syntax=docker/dockerfile:1\r\n# escape=`\r\nFROM mcr.microsoft.com/windows/servercore:ltsc2022\r\nRUN dir c:\\\r\nFROM node:18\r\n");
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "docker/dockerfile", "1", 1, 28),
+            (DependencyType.DockerImage, "mcr.microsoft.com/windows/servercore", "ltsc2022", 3, 43),
+            (DependencyType.DockerImage, "node", "18", 5, 11));
+    }
+
+    [Fact]
+    public async Task DockerfileFromDependencies_HeredocBodiesAreNotInstructions()
+    {
+        // <<- removes the leading tabs of the body and of the delimiter line
+        const string Tab = "\t";
+        AddFile("Dockerfile", $"""
+            FROM alpine:3.19
+            RUN <<EOF
+            FROM node:18
+            EOF
+            RUN <<-"END" bash
+            {Tab}COPY --from=python:3.12 /a /b
+            {Tab}END
+            COPY <<FILE1 <<'FILE2' /dest/
+            FROM ruby:3.3
+            FILE1
+            FROM golang:1.22
+            FILE2
+            RUN cat <<EOF > /file && echo done
+            FROM php:8
+            EOF
+            FROM node:20
+            """);
+
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        Assert.HasCount(2, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "alpine", "3.19", 1, 13),
+            (DependencyType.DockerImage, "node", "20", 16, 11));
+    }
+
+    [Fact]
+    public async Task DockerfileFromDependencies_SyntaxDirectiveMountsAndArguments()
+    {
+        const string Original = """
+            # syntax=docker/dockerfile:1.7
+            ARG NODE_VERSION=18.20.0
+            ARG BASE_IMAGE="mcr.microsoft.com/dotnet/sdk:8.0" SHARED=3.19
+            ARG NO_DEFAULT
+            FROM node:${NODE_VERSION} AS build
+            RUN --mount=type=cache,target=/root/.npm --mount=type=bind,from=golang:1.22,source=/usr/local/go,target=/go npm ci
+            RUN --mount=type=bind,from=build,target=/src ls
+            FROM $BASE_IMAGE AS sdk
+            FROM alpine:${SHARED}
+            FROM busybox:$SHARED
+            FROM python:${NO_DEFAULT}
+            FROM ${UNKNOWN}
+            ARG STAGE_VERSION=1.0
+            FROM ruby:${STAGE_VERSION}
+            """;
+
+        AddFile("Dockerfile", Original);
+        var result = await GetDependencies<DockerfileDependencyScanner>();
+
+        Assert.HasCount(8, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "docker/dockerfile", "1.7", 1, 28),
+            (DependencyType.DockerImage, "node", "18.20.0", 2, 18),
+            (DependencyType.DockerImage, "golang", "1.22", 6, 72),
+            (DependencyType.DockerImage, "mcr.microsoft.com/dotnet/sdk", "8.0", 3, 46));
+
+        var sdk = Assert.Single(result, d => d.Name == "mcr.microsoft.com/dotnet/sdk");
+        Assert.Equal(17, ((ILocationLineInfo)sdk.NameLocation!).LinePosition);
+
+        // An argument shared by several images, or declared after the first FROM, cannot be updated
+        foreach (var (name, version) in new[] { ("alpine", "3.19"), ("busybox", "3.19"), ("python", "${NO_DEFAULT}"), ("ruby", "${STAGE_VERSION}") })
+        {
+            var dependency = Assert.Single(result, d => d.Name == name);
+            Assert.Equal(version, dependency.Version);
+            Assert.True(dependency.NameLocation!.IsUpdatable);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        }
+
+        await Assert.Single(result, d => d.Name == "node").UpdateVersionAsync("20.0.0", XunitCancellationToken);
+        await sdk.UpdateVersionAsync("9.0", XunitCancellationToken);
+        await Assert.Single(result, d => d.Name == "golang").UpdateVersionAsync("1.23", XunitCancellationToken);
+        AssertFileContentEqual("Dockerfile", Original
+            .Replace("NODE_VERSION=18.20.0", "NODE_VERSION=20.0.0", StringComparison.Ordinal)
+            .Replace("sdk:8.0", "sdk:9.0", StringComparison.Ordinal)
+            .Replace("golang:1.22", "golang:1.23", StringComparison.Ordinal), ignoreNewLines: false);
+    }
+
+    [Theory]
+    [InlineData("compose.yaml")]
+    [InlineData("compose.yml")]
+    [InlineData("docker-compose.yml")]
+    [InlineData("docker-compose.yaml")]
+    [InlineData("docker-compose.override.yml")]
+    [InlineData("compose.prod.yaml")]
+    [InlineData("sub/Docker-Compose.yml")]
+    public async Task DockerComposeDependencies(string fileName)
+    {
+        const string Original = """
+            x-common: &common
+              image: redis:7.2
+            services:
+              web:
+                image: nginx:1.25
+              db:
+                image: "postgres:16@sha256:abcdef"
+              app:
+                build: .
+                image: myorg/app:1.0.0
+              worker:
+                image: ${REGISTRY:-docker.io}/worker:${TAG}
+              plain:
+                image: busybox
+            """;
+
+        AddFile(fileName, Original);
+        var result = await GetDependencies<DockerComposeDependencyScanner>();
+
+        Assert.HasCount(4, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "nginx", "1.25", 5, 18),
+            (DependencyType.DockerImage, "postgres", "sha256:abcdef", 0, 0),
+            (DependencyType.DockerImage, "${REGISTRY:-docker.io}/worker", "${TAG}", 0, 0),
+            (DependencyType.DockerImage, "busybox", null, 0, 0));
+
+        // Other scanners of YAML files do not report the images of a compose file
+        Assert.Empty(await GetDependencies<AzureDevOpsScanner>());
+        Assert.Empty(await GetDependencies<KubernetesDependencyScanner>());
+
+        await Assert.Single(result, d => d.Name == "nginx").UpdateVersionAsync("1.27", XunitCancellationToken);
+        AssertFileContentEqual(fileName, Original.Replace("nginx:1.25", "nginx:1.27", StringComparison.Ordinal), ignoreNewLines: false);
+    }
+
+    [Theory]
+    [InlineData("compose.json")]
+    [InlineData("mycompose.yml")]
+    [InlineData("docker-compose")]
+    public async Task DockerComposeDependencies_NotScanned(string fileName)
+    {
+        AddFile(fileName, """
+            services:
+              web:
+                image: nginx:1.25
+            """);
+
+        Assert.Empty(await GetDependencies<DockerComposeDependencyScanner>());
+    }
+
+    [Fact]
+    public async Task KubernetesDependencies()
+    {
+        const string Original = """
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: web
+            spec:
+              template:
+                spec:
+                  initContainers:
+                  - name: init
+                    image: busybox:1.36
+                  containers:
+                  - name: web
+                    image: nginx:1.25
+                  - name: sidecar
+                    image: ghcr.io/owner/sidecar@sha256:abcdef
+            ---
+            apiVersion: batch/v1
+            kind: CronJob
+            metadata:
+              name: job
+            spec:
+              schedule: "* * * * *"
+              jobTemplate:
+                spec:
+                  template:
+                    spec:
+                      containers:
+                      - name: job
+                        image: "alpine:3.19"
+            ---
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              name: pod
+            spec:
+              containers:
+              - name: app
+                image: redis
+              ephemeralContainers:
+              - name: debug
+                image: debian:12
+            ---
+            apiVersion: v1
+            kind: List
+            items:
+            - apiVersion: apps/v1
+              kind: StatefulSet
+              spec:
+                template:
+                  spec:
+                    containers:
+                    - name: db
+                      image: postgres:16
+            ---
+            apiVersion: v1
+            kind: ConfigMap
+            data:
+              containers: |
+                image: not-an-image:1.0
+            """;
+
+        AddFile("k8s/manifests.yaml", Original);
+        var result = await GetDependencies<KubernetesDependencyScanner>();
+
+        Assert.HasCount(7, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "busybox", "1.36", 10, 24),
+            (DependencyType.DockerImage, "nginx", "1.25", 13, 22),
+            (DependencyType.DockerImage, "ghcr.io/owner/sidecar", "sha256:abcdef", 0, 0),
+            (DependencyType.DockerImage, "alpine", "3.19", 29, 28),
+            (DependencyType.DockerImage, "redis", null, 0, 0),
+            (DependencyType.DockerImage, "debian", "12", 41, 19),
+            (DependencyType.DockerImage, "postgres", "16", 53, 27));
+
+        // Other scanners of YAML files do not report the images of a manifest
+        Assert.Empty(await GetDependencies<AzureDevOpsScanner>());
+
+        await Assert.Single(result, d => d.Name == "nginx").UpdateVersionAsync("1.27", XunitCancellationToken);
+        AssertFileContentEqual("k8s/manifests.yaml", Original.Replace("nginx:1.25", "nginx:1.27", StringComparison.Ordinal), ignoreNewLines: false);
+    }
+
+    [Theory]
+    [InlineData("chart/templates/deployment.yaml")]
+    [InlineData(".github/workflows/deploy.yml")]
+    [InlineData("compose.yaml")]
+    public async Task KubernetesDependencies_NotScanned(string fileName)
+    {
+        // A Helm template is a Go template, not a manifest, even when it is valid YAML
+        var content = """
+            apiVersion: apps/v1
+            kind: Deployment
+            spec:
+              template:
+                spec:
+                  containers:
+                  - name: web
+                    image: nginx:1.25
+            """;
+        if (fileName.Contains("templates", StringComparison.Ordinal))
+        {
+            content = content.Replace("nginx:1.25", "\"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"", StringComparison.Ordinal);
+        }
+
+        AddFile(fileName, content);
+
+        Assert.Empty(await GetDependencies<KubernetesDependencyScanner>());
     }
 
     [Fact]
@@ -2211,6 +3972,67 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task GitSubmodulesFromDependencies_MetadataAndRelativeUrls()
+    {
+        const string GitModules = """
+            [submodule "lib"]
+                path = libs/lib
+                url = ../lib.git
+                branch = main
+            [submodule "other"]
+                path = libs/other
+                url = ./../../other/other.git
+            [submodule "absolute"]
+                path = libs/absolute
+                url = https://example.com/absolute.git
+            """;
+
+        await RunGitAsync(_directory.FullPath, "init");
+        await RunGitAsync(_directory.FullPath, "remote", "add", "origin", "https://github.com/owner/repo.git");
+        foreach (var path in new[] { "libs/lib", "libs/other", "libs/absolute" })
+        {
+            await RunGitAsync(_directory.FullPath, "update-index", "--add", "--cacheinfo", $"160000,{CreateFakeCommitSha(path, 40)},{path}");
+        }
+
+        AddFile(".gitmodules", GitModules);
+        var result = await GetDependencies<GitSubmoduleDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        var lib = Assert.Single(result, d => d.Name == "../lib.git");
+        Assert.Equal(CreateFakeCommitSha("libs/lib", 40), lib.Version);
+        Assert.True(lib.VersionLocation!.IsUpdatable);
+        Assert.Equal("lib", lib.Metadata["name"]);
+        Assert.Equal("libs/lib", lib.Metadata["path"]);
+        Assert.Equal("main", lib.Metadata["branch"]);
+        Assert.Equal("https://github.com/owner/lib.git", lib.Metadata["url"]);
+
+        var other = Assert.Single(result, d => d.Name == "./../../other/other.git");
+        Assert.Null(other.Metadata["branch"]);
+        Assert.Equal("https://github.com/other/other.git", other.Metadata["url"]);
+
+        var absolute = Assert.Single(result, d => d.Name == "https://example.com/absolute.git");
+        Assert.Equal("https://example.com/absolute.git", absolute.Metadata["url"]);
+
+        // Without an index, the submodules are reported without their commit, and a scp-like remote url is supported
+        var root = Path.Combine(Path.GetTempPath(), "virtual-" + Guid.NewGuid().ToString("N"));
+        var fileSystem = new GitInMemoryFileSystem();
+        fileSystem.AddFile(Path.Combine(root, ".gitmodules"), GitModules);
+        fileSystem.AddFile(Path.Combine(root, ".git", "config"), "[remote \"upstream\"]\n\turl = https://example.com/upstream.git\n[remote \"origin\"]\n\turl = git@github.com:owner/repo.git\n");
+
+        var options = new ScannerOptions { FileSystem = fileSystem, Scanners = [new GitSubmoduleDependencyScanner()] };
+        var noIndexResult = await DependencyScanner.ScanFileAsync(root, Path.Combine(root, ".gitmodules"), options, XunitCancellationToken);
+        Assert.HasCount(3, noIndexResult);
+        Assert.DoesNotContain(noIndexResult, d => d.Version is not null || d.VersionLocation is not null);
+        Assert.Equal("git@github.com:owner/lib.git", Assert.Single(noIndexResult, d => d.Name == "../lib.git").Metadata["url"]);
+        Assert.Equal("git@github.com:other/other.git", Assert.Single(noIndexResult, d => d.Name == "./../../other/other.git").Metadata["url"]);
+
+        // Without a remote, a relative url cannot be resolved
+        fileSystem.AddFile(Path.Combine(root, ".git", "config"), "[core]\n\tbare = false\n");
+        noIndexResult = await DependencyScanner.ScanFileAsync(root, Path.Combine(root, ".gitmodules"), options, XunitCancellationToken);
+        Assert.Null(Assert.Single(noIndexResult, d => d.Name == "../lib.git").Metadata["url"]);
+    }
+
+    [Fact]
     public async Task GitSubmodulesFromDependencies_ReadsThroughFileSystem()
     {
         const string GitModules = "[submodule \"a\"]\n\tpath = libs/a\n\turl = https://example.com/a.git\n";
@@ -2223,9 +4045,12 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         // The file system scan finds the submodule on disk
         Assert.Single(await GetDependencies<GitSubmoduleDependencyScanner>());
 
-        // The single-file in-memory scan must not read the repository on disk
+        // The single-file in-memory scan must not read the repository on disk, so the commit is unknown
         var inMemoryResult = await DependencyScanner.ScanFileAsync(_directory.FullPath, _directory.GetFullPath(".gitmodules"), Encoding.UTF8.GetBytes(GitModules), [new GitSubmoduleDependencyScanner()], XunitCancellationToken);
-        Assert.Empty(inMemoryResult);
+        var inMemoryDependency = Assert.Single(inMemoryResult);
+        Assert.Equal("https://example.com/a.git", inMemoryDependency.Name);
+        Assert.Null(inMemoryDependency.Version);
+        Assert.Null(inMemoryDependency.VersionLocation);
 
         // A custom file system is used for the .git directory, the gitdir file of worktrees and their common directory
         var root = Path.Combine(Path.GetTempPath(), "virtual-" + Guid.NewGuid().ToString("N"));
@@ -2249,7 +4074,8 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
 
         // An unknown object format cannot be read
         fileSystem.AddFile(Path.Combine(root, "repo", ".git", "config"), "[extensions]\n\tobjectFormat = sha512\n");
-        Assert.Empty(await DependencyScanner.ScanFileAsync(root, Path.Combine(root, "repo", ".gitmodules"), options, XunitCancellationToken));
+        var unknownFormatDependency = Assert.Single(await DependencyScanner.ScanFileAsync(root, Path.Combine(root, "repo", ".gitmodules"), options, XunitCancellationToken));
+        Assert.Null(unknownFormatDependency.Version);
     }
 
     [Fact]
@@ -2257,15 +4083,19 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     {
         const string GitModules = "[submodule \"a\"]\n\tpath = libs/a\n\turl = https://example.com/a.git\n[submodule \"b\"]\n\tpath = libs/abc\n\turl = https://example.com/b.git\n";
 
-        // A .git file with an invalid gitdir path
+        // A .git file with an invalid gitdir path: the submodules are reported without their commit
         AddFile(".gitmodules", GitModules);
         AddFile(".git", "gitdir: invalid\0path\n");
-        Assert.Empty(await GetDependencies<GitSubmoduleDependencyScanner>());
+        var dependencies = await GetDependencies<GitSubmoduleDependencyScanner>();
+        Assert.HasCount(2, dependencies);
+        Assert.DoesNotContain(dependencies, d => d.Version is not null || d.VersionLocation is not null);
 
         // A .git directory without an index: opening the directory as a file must not throw
         File.Delete(_directory.GetFullPath(".git"));
         await RunGitAsync(_directory.FullPath, "init");
-        Assert.Empty(await GetDependencies<GitSubmoduleDependencyScanner>());
+        dependencies = await GetDependencies<GitSubmoduleDependencyScanner>();
+        Assert.HasCount(2, dependencies);
+        Assert.DoesNotContain(dependencies, d => d.Version is not null || d.VersionLocation is not null);
 
         // Truncated and corrupted indexes, in every supported format
         var root = Path.Combine(Path.GetTempPath(), "virtual-" + Guid.NewGuid().ToString("N"));
@@ -3179,6 +5009,51 @@ jobs:
     }
 
     [Fact]
+    public async Task SwiftPackageManifestDependencies_ExpressionsAndEscapeSequences()
+    {
+        const string Original = """
+            let org = "apple"
+            let version: Version = "1.0.0"
+            let package = Package(
+                name: "Sample",
+                dependencies: [
+                    .package(url: "https://github.com/\(org)/swift-nio.git", from: "2.76.0"),
+                    .package(url: "https://github.com/" + "apple/swift-log.git", exact: "1.5.0"),
+                    .package(url: "https://github.com/apple/swift-collections.git", from: version),
+                    .package(url: "https://github.com/apple/swift-algorithms.git", .upToNextMinor(from: "\(version)")),
+                    .package(url: "https://github.com/apple/swift\u{2D}argument-parser.git", from: "1.3.0"),
+                    .package(url: #"https://github.com/apple/swift\#u{2D}system.git"#, from: "1.2.0"),
+                    .package(url: "https://github.com/apple/swift-atomics.git", from: "1.2.0"),
+                ]
+            )
+            """;
+
+        AddFile("Package.swift", Original);
+        var result = await GetDependencies<SwiftPackageDependencyScanner>();
+        Assert.HasCount(7, result);
+        AssertContainDependency(result,
+            (DependencyType.SwiftPackage, "https://github.com/\\(org)/swift-nio.git", "from: \"2.76.0\"", 0, 0),
+            (DependencyType.SwiftPackage, "\"https://github.com/\" + \"apple/swift-log.git\"", "exact: \"1.5.0\"", 0, 0),
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-collections.git", "from: version", 0, 0),
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-algorithms.git", ".upToNextMinor(from: \"\\(version)\")", 0, 0),
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-argument-parser.git", "from: \"1.3.0\"", 0, 0),
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-system.git", "from: \"1.2.0\"", 0, 0),
+            (DependencyType.SwiftPackage, "https://github.com/apple/swift-atomics.git", "from: \"1.2.0\"", 0, 0));
+
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-nio", StringComparison.Ordinal)).NameLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-log", StringComparison.Ordinal)).NameLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-collections", StringComparison.Ordinal)).VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-algorithms", StringComparison.Ordinal)).VersionLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-argument-parser", StringComparison.Ordinal)).NameLocation!.IsUpdatable);
+        Assert.False(Assert.Single(result, d => d.Name!.Contains("swift-system", StringComparison.Ordinal)).NameLocation!.IsUpdatable);
+
+        var atomics = Assert.Single(result, d => d.Name!.Contains("swift-atomics", StringComparison.Ordinal));
+        Assert.True(atomics.NameLocation!.IsUpdatable);
+        Assert.True(atomics.VersionLocation!.IsUpdatable);
+        Assert.True(Assert.Single(result, d => d.Name!.Contains("swift-nio", StringComparison.Ordinal)).VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
     public async Task SwiftPackageManifestDependencies_QualifiedPackageCall()
     {
         const string Original = """
@@ -3272,8 +5147,9 @@ jobs:
     [Fact]
     public async Task AzureDevOpsContainerWithoutVersionDependencies()
     {
+        // A name without a tag, a digest or a path could be a container resource alias, so it has a path here
         AddFile("sample.yml", """
-            container: 'image'
+            container: 'org/image'
             """);
         var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
@@ -3692,6 +5568,127 @@ jobs:
     }
 
     [Fact]
+    public async Task AzureDevOpsTemplateContainerAliasesAndExpressions()
+    {
+        // In a template, the container resources are declared by the pipeline that includes it
+        AddFile("templates/jobs.yml", """
+            parameters:
+            - name: container
+              type: string
+            jobs:
+            - job: A
+              container: build_container
+            - job: B
+              container: ${{ parameters.container }}
+            - job: C
+              container: $(containerImage)
+            - job: D
+              container: ubuntu:22.04
+            - job: E
+              container: $(registry)/image:$(tag)
+            - job: F
+              container:
+                image: node
+            """);
+
+        var result = await GetDependencies<AzureDevOpsScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "ubuntu", "22.04", 12, 21),
+            (DependencyType.DockerImage, "$(registry)/image", "$(tag)", 0, 0),
+            (DependencyType.DockerImage, "node", null, 0, 0));
+        Assert.False(Assert.Single(result, d => d.Name == "$(registry)/image").VersionLocation!.IsUpdatable);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsServicesVariableTemplatesAndPackages()
+    {
+        AddFile("azure-pipelines.yml", """
+            resources:
+              containers:
+              - container: redis
+                image: redis:7
+              packages:
+              - package: npmAlias
+                type: npm
+                connection: GitHubConnection
+                name: owner/my-package
+                version: 1.0.1
+              - package: nugetAlias
+                type: NuGet
+                connection: GitHubConnection
+                name: owner/My.Package
+                version: 2.0.0
+              pipelines:
+              - pipeline: upstream
+                source: Upstream
+                version: 1.2.3
+            variables:
+            - template: vars.yml@templates
+            - name: a
+              value: b
+            stages:
+            - stage: S
+              variables:
+              - template: stage-vars.yml
+              jobs:
+              - job: J
+                variables:
+                - template: job-vars.yml@templates
+                services:
+                  redis: redis
+                  postgres: postgres:16
+                  nginx:
+                    image: nginx:1.25
+                steps:
+                - script: echo
+            """);
+
+        var result = await GetDependencies<AzureDevOpsScanner>();
+
+        Assert.HasCount(8, result);
+        AssertContainDependency(result,
+            (DependencyType.DockerImage, "redis", "7", 4, 18),
+            (DependencyType.Npm, "owner/my-package", "1.0.1", 10, 14),
+            (DependencyType.NuGet, "owner/My.Package", "2.0.0", 15, 14),
+            (DependencyType.AzureDevOpsTemplate, "vars.yml", "templates", 21, 22),
+            (DependencyType.AzureDevOpsTemplate, "stage-vars.yml", null, 0, 0),
+            (DependencyType.AzureDevOpsTemplate, "job-vars.yml", "templates", 31, 30),
+            (DependencyType.DockerImage, "postgres", "16", 34, 26),
+            (DependencyType.DockerImage, "nginx", "1.25", 36, 22));
+
+        var npm = Assert.Single(result, d => d.Type == DependencyType.Npm);
+        Assert.Equal("npmAlias", npm.Metadata["package"]);
+        Assert.Equal("GitHubConnection", npm.Metadata["connection"]);
+        Assert.Equal("npm", npm.Metadata["type"]);
+
+        await npm.UpdateVersionAsync("1.0.2", XunitCancellationToken);
+        Assert.Contains("    version: 1.0.2\n", File.ReadAllText(_directory.GetFullPath("azure-pipelines.yml")).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task AzureDevOpsRootServicesRequireSteps()
+    {
+        AddFile("azure-pipelines.yml", """
+            services:
+              postgres: postgres:16
+            steps:
+            - script: echo
+            """);
+        AddFile("other.yml", """
+            services:
+              web:
+                image: nginx:1.25
+            """);
+
+        var result = await GetDependencies<AzureDevOpsScanner>();
+
+        var dependency = Assert.Single(result);
+        Assert.Equal("postgres", dependency.Name);
+    }
+
+    [Fact]
     public async Task HelmChartsDependencies()
     {
         AddFile("Chart.yaml", """
@@ -3750,6 +5747,47 @@ jobs:
         Assert.Equal("@bitnami", redis.Metadata["repository"]);
         Assert.Equal("cache", redis.Metadata["alias"]);
         Assert.Null(Assert.Single(result, d => d.Name == "local-chart").Metadata["repository"]);
+    }
+
+    [Fact]
+    public async Task HelmChartsDependencies_LockAndRequirementsFiles()
+    {
+        const string Lock = """
+            dependencies:
+            - name: mariadb
+              repository: https://charts.bitnami.com/bitnami
+              version: 11.4.2
+            digest: sha256:0123456789abcdef
+            generated: "2024-01-01T00:00:00Z"
+            """;
+        AddFile("v2/Chart.lock", Lock);
+        AddFile("v1/requirements.lock", Lock.Replace("mariadb", "redis", StringComparison.Ordinal));
+        AddFile("v1/requirements.yaml", """
+            dependencies:
+            - name: redis
+              version: ~17.0.0
+              repository: "@bitnami"
+            """);
+
+        var result = await GetDependencies<HelmChartDependencyScanner>();
+
+        Assert.HasCount(3, result);
+        AssertContainDependency(result,
+            (DependencyType.HelmChart, "mariadb", "11.4.2", 0, 0),
+            (DependencyType.HelmChart, "redis", "11.4.2", 0, 0),
+            (DependencyType.HelmChart, "redis", "~17.0.0", 3, 12));
+
+        // The lock files record a digest of the dependencies, so their entries are not updatable
+        foreach (var dependency in result.Where(d => d.Version is "11.4.2"))
+        {
+            Assert.False(dependency.NameLocation!.IsUpdatable);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+            Assert.Equal("https://charts.bitnami.com/bitnami", dependency.Metadata["repository"]);
+        }
+
+        var requirement = Assert.Single(result, d => d.Version is "~17.0.0");
+        Assert.True(requirement.VersionLocation!.IsUpdatable);
+        Assert.Equal("@bitnami", requirement.Metadata["repository"]);
     }
 
     [Theory]

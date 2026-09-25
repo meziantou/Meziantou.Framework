@@ -28,20 +28,34 @@ internal sealed class JsonLocation : Location
 
     public string JsonPath { get; }
     public int StartPosition { get; set; }
-    public int Length { get; }
+    public int Length { get; private set; }
 
-    public override bool IsUpdatable => true;
+    public override bool IsUpdatable => CanWriteFile;
+
+    private protected override bool TracksWrittenValue => true;
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
+        if (oldValue is null)
+            throw new DependencyScannerException("The value expected at the location is unknown, so the file cannot be updated safely. Provide the expected value.");
+
         var stream = FileSystem.OpenReadWrite(FilePath);
         try
         {
             var file = await StreamUtilities.ReadForUpdateAsync(stream, isXml: false, cancellationToken).ConfigureAwait(false);
             var syntaxTree = JsonSyntaxTree.ParseText(file.Text);
-            var updatedRoot = ReplaceValue(syntaxTree, oldValue, newValue);
+            var (updatedRoot, valueStart) = ReplaceValue(syntaxTree, oldValue, newValue);
             var updatedContent = updatedRoot.ToFullString();
             await StreamUtilities.WriteForUpdateAsync(stream, file, updatedContent, cancellationToken).ConfigureAwait(false);
+
+            if (StartPosition >= 0)
+            {
+                StartPosition = valueStart;
+                Length = newValue.Length;
+            }
+
+            SetCurrentValue(newValue);
+            NotifyValueReplaced(valueStart, oldValue.Length, newValue.Length);
         }
         finally
         {
@@ -54,30 +68,31 @@ internal sealed class JsonLocation : Location
         return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{JsonPath}");
     }
 
-    private string UpdateTextValue(string? currentValue, string? oldValue, string newValue)
+    private (string Value, int ValueStart) UpdateTextValue(string? currentValue, string oldValue, string newValue)
     {
         if (StartPosition < 0)
         {
-            if (oldValue is not null && !string.Equals(currentValue, oldValue, StringComparison.Ordinal))
+            if (!string.Equals(currentValue, oldValue, StringComparison.Ordinal))
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
 
-            return newValue;
+            return (newValue, 0);
         }
 
         if (currentValue is null)
             throw new DependencyScannerException("Current value is null. The file was probably modified since last scan.");
 
-        var index = oldValue is null ? GetRecordedIndex(currentValue) : FindOldValue(currentValue, oldValue);
-        var length = oldValue?.Length ?? Length;
-        return string.Concat(currentValue.AsSpan(0, index), newValue, currentValue.AsSpan(index + length));
+        var index = FindOldValue(currentValue, oldValue);
+        return (string.Concat(currentValue.AsSpan(0, index), newValue, currentValue.AsSpan(index + oldValue.Length)), index);
     }
 
-    private int GetRecordedIndex(string currentValue)
+    private protected override void OnSiblingValueReplaced(Location sibling, int start, int oldLength, int newLength)
     {
-        if (Length < 0 || StartPosition > currentValue.Length || Length > currentValue.Length - StartPosition)
-            throw new DependencyScannerException($"The recorded location does not fit in the current value '{currentValue}'. The file was probably modified since last scan.");
-
-        return StartPosition;
+        if (sibling is JsonLocation other && StartPosition >= start + oldLength &&
+            string.Equals(other.JsonPath, JsonPath, StringComparison.Ordinal) &&
+            string.Equals(other.FilePath, FilePath, StringComparison.Ordinal))
+        {
+            StartPosition += newLength - oldLength;
+        }
     }
 
     private int FindOldValue(string currentValue, string oldValue)
@@ -100,7 +115,7 @@ internal sealed class JsonLocation : Location
         throw new DependencyScannerException($"Expected value '{oldValue}' was not found at the recorded location in the current value '{currentValue}'. The file was probably modified since last scan.");
     }
 
-    private JsonDocumentSyntax ReplaceValue(JsonSyntaxTree syntaxTree, string? oldValue, string newValue)
+    private (JsonDocumentSyntax Root, int ValueStart) ReplaceValue(JsonSyntaxTree syntaxTree, string oldValue, string newValue)
     {
         if (!JsonPathExpression.TryParse(JsonPath, out var path))
             throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
@@ -109,14 +124,14 @@ internal sealed class JsonLocation : Location
         if (node is not JsonStringSyntax stringNode)
             throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-        var updatedValue = UpdateTextValue(stringNode.Value, oldValue, newValue);
+        var (updatedValue, valueStart) = UpdateTextValue(stringNode.Value, oldValue, newValue);
         if (string.Equals(updatedValue, stringNode.Value, StringComparison.Ordinal))
-            return syntaxTree.GetRoot();
+            return (syntaxTree.GetRoot(), valueStart);
 
         // Replacing the token rebuilds the nodes above it and leaves the rest of the document as it was, so the file
         // comes back byte for byte the same apart from this one value.
         var updatedToken = SyntaxFactory.Literal(updatedValue).WithTriviaFrom(stringNode.StringToken);
 
-        return syntaxTree.GetRoot().ReplaceToken(stringNode.StringToken, updatedToken);
+        return (syntaxTree.GetRoot().ReplaceToken(stringNode.StringToken, updatedToken), valueStart);
     }
 }

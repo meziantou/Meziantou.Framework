@@ -34,6 +34,24 @@ internal static class GitFileSystemUtilities
         return await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Gets the directory that holds the repository configuration. Worktrees store it in the common directory named by their <c>commondir</c> file.
+    /// Returns <see langword="null"/> when the <c>commondir</c> file holds an invalid path.
+    /// </summary>
+    public static async ValueTask<string?> GetCommonDirectoryAsync(IFileSystem fileSystem, string gitDirectory, CancellationToken cancellationToken)
+    {
+        var content = await TryReadAllTextAsync(fileSystem, Path.Combine(gitDirectory, "commondir"), cancellationToken).ConfigureAwait(false);
+        if (content is null)
+            return gitDirectory;
+
+        var newLineIndex = content.AsSpan().IndexOfAny('\r', '\n');
+        var relativeCommonDirectory = (newLineIndex < 0 ? content : content[..newLineIndex]).Trim();
+        if (relativeCommonDirectory.Length is 0)
+            return gitDirectory;
+
+        return TryResolvePath(gitDirectory, relativeCommonDirectory, out var commonDirectory) ? commonDirectory : null;
+    }
+
     /// <summary>Resolves a path read from a git file (gitdir, commondir) relative to <paramref name="baseDirectory"/>.</summary>
     public static bool TryResolvePath(string baseDirectory, string path, out string fullPath)
     {

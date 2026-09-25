@@ -48,20 +48,34 @@ internal class XmlLocation : Location, ILocationLineInfo
     public string? AttributeName { get; }
 
     public int StartPosition { get; set; } = -1;
-    public int Length { get; } = -1;
+    public int Length { get; private set; } = -1;
 
-    public override bool IsUpdatable => true;
+    public override bool IsUpdatable => CanWriteFile;
+
+    private protected override bool TracksWrittenValue => true;
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
     int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
+        if (oldValue is null)
+            throw new DependencyScannerException("The value expected at the location is unknown, so the file cannot be updated safely. Provide the expected value.");
+
         var stream = FileSystem.OpenReadWrite(FilePath);
         try
         {
             var file = await StreamUtilities.ReadForUpdateAsync(stream, isXml: true, cancellationToken).ConfigureAwait(false);
-            var updatedContent = ReplaceValue(file.Text, oldValue, newValue);
+            var (updatedContent, valueStart) = ReplaceValue(file.Text, oldValue, newValue);
             await StreamUtilities.WriteForUpdateAsync(stream, file, updatedContent, cancellationToken).ConfigureAwait(false);
+
+            if (StartPosition >= 0)
+            {
+                StartPosition = valueStart;
+                Length = newValue.Length;
+            }
+
+            SetCurrentValue(newValue);
+            NotifyValueReplaced(valueStart, oldValue.Length, newValue.Length);
         }
         finally
         {
@@ -79,7 +93,7 @@ internal class XmlLocation : Location, ILocationLineInfo
         return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
     }
 
-    private string ReplaceValue(string text, string? oldValue, string newValue)
+    private (string Text, int ValueStart) ReplaceValue(string text, string oldValue, string newValue)
     {
         var root = XmlSyntaxTree.ParseText(text).GetRoot();
         var locationXPath = AttributeName is null ? XPath : $"{XPath}/@{AttributeName}";
@@ -98,22 +112,21 @@ internal class XmlLocation : Location, ILocationLineInfo
         if (!XmlUtilities.TryDecodeCharacterData(sourceText, isAttribute, out var currentValue, out var sourceOffsets))
             throw new DependencyScannerException($"The value '{sourceText}' contains an entity reference that cannot be resolved. The location cannot be mapped onto the file.");
 
-        var (start, length) = (StartPosition, Length);
-        if (start < 0)
+        int start;
+        if (StartPosition < 0)
         {
-            (start, length) = (0, currentValue.Length);
-        }
-        else if (length < 0 || start > currentValue.Length || length > currentValue.Length - start)
-        {
-            throw new DependencyScannerException($"The recorded location does not fit in the current value '{currentValue}'. The file was probably modified since last scan.");
-        }
+            if (!string.Equals(currentValue, oldValue, StringComparison.Ordinal))
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
 
-        var slicedCurrentValue = currentValue.AsSpan(start, length);
-        if (oldValue is not null && !slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
-            throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
+            start = 0;
+        }
+        else
+        {
+            start = FindOldValue(currentValue, oldValue);
+        }
 
         var replaceStart = sourceOffsets[start];
-        var replaceEnd = sourceOffsets[start + length];
+        var replaceEnd = sourceOffsets[start + oldValue.Length];
         if (replaceStart < 0 || replaceEnd < 0)
             throw new DependencyScannerException($"The recorded location splits a character reference in '{sourceText}'. The location cannot be mapped onto the file.");
 
@@ -127,7 +140,41 @@ internal class XmlLocation : Location, ILocationLineInfo
             escapedValue = string.Concat("&#xA;", escapedValue.AsSpan(1));
         }
 
-        return string.Concat(text.AsSpan(0, replaceStart), escapedValue, text.AsSpan(replaceEnd));
+        return (string.Concat(text.AsSpan(0, replaceStart), escapedValue, text.AsSpan(replaceEnd)), start);
+    }
+
+    private protected override void OnSiblingValueReplaced(Location sibling, int start, int oldLength, int newLength)
+    {
+        if (sibling is XmlLocation other && StartPosition >= start + oldLength &&
+            string.Equals(other.XPath, XPath, StringComparison.Ordinal) &&
+            string.Equals(other.AttributeName, AttributeName, StringComparison.Ordinal) &&
+            string.Equals(other.FilePath, FilePath, StringComparison.Ordinal))
+        {
+            StartPosition += newLength - oldLength;
+        }
+    }
+
+    private int FindOldValue(string currentValue, string oldValue)
+    {
+        if (StartPosition <= currentValue.Length && oldValue.Length <= currentValue.Length - StartPosition &&
+            currentValue.AsSpan(StartPosition, oldValue.Length).Equals(oldValue, StringComparison.Ordinal))
+        {
+            return StartPosition;
+        }
+
+        // Several locations can share one value, such as the name and the version of Sdk="Name/1.0". Updating one of
+        // them moves the ones after it, so the value is searched again, but only where it can have moved to: anywhere
+        // after the recorded start when the value grew, or at its end when the value shrank. Anything before that window
+        // belongs to another part of the value, and the value is only replaced when it occurs exactly once in the window.
+        if (oldValue.Length > 0 && oldValue.Length <= currentValue.Length)
+        {
+            var searchStart = Math.Max(0, Math.Min(StartPosition, currentValue.Length - oldValue.Length));
+            var index = currentValue.IndexOf(oldValue, searchStart, StringComparison.Ordinal);
+            if (index >= 0 && currentValue.IndexOf(oldValue, index + 1, StringComparison.Ordinal) < 0)
+                return index;
+        }
+
+        throw new DependencyScannerException($"Expected value '{oldValue}' was not found at the recorded location in the current value '{currentValue}'. The file was probably modified since last scan.");
     }
 
     private static (int Start, int End, bool IsAttribute, char Quote) GetElementContentSpan(string text, XmlElementSyntax element)

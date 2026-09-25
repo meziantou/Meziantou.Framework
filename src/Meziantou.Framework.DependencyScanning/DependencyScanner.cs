@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO.Enumeration;
 using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using Meziantou.Framework.DependencyScanning.Internals;
@@ -60,10 +59,16 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans a directory and its subdirectories for dependencies.</summary>
+    /// <remarks>
+    /// A file that cannot be read, or that a scanner fails to scan, is skipped and reported to <see cref="ScannerOptions.OnFileScanFailed"/>.
+    /// Symbolic links to directories are not followed, and symbolic links to files outside <paramref name="path"/> are not scanned.
+    /// </remarks>
     /// <param name="path">The root directory path to scan.</param>
     /// <param name="options">The scanner options, or <see langword="null"/> to use defaults.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A collection of all discovered dependencies.</returns>
+    /// <exception cref="DirectoryNotFoundException">The directory does not exist. The exception is reported through the returned task.</exception>
+    /// <exception cref="NotSupportedException"><see cref="ScannerOptions.FileSystem"/> is a custom file system, and a file or directory predicate is set. The exception is reported through the returned task.</exception>
     public static async Task<IReadOnlyCollection<Dependency>> ScanDirectoryAsync(string path, ScannerOptions? options, CancellationToken cancellationToken = default)
     {
         // Scanners only ever produce, and the collection is enumerated once at the end. A ConcurrentBag
@@ -75,17 +80,37 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans a directory and its subdirectories for dependencies, invoking a callback for each dependency found.</summary>
+    /// <remarks>
+    /// <para>
+    /// Files are scanned concurrently unless <see cref="ScannerOptions.DegreeOfParallelism"/> is 1, so
+    /// <paramref name="onDependencyFound"/> can be invoked concurrently from several threads and must be thread-safe.
+    /// An exception thrown by <paramref name="onDependencyFound"/> stops the scan.
+    /// </para>
+    /// <para>
+    /// A file that cannot be read, or that a scanner fails to scan, is skipped and reported to <see cref="ScannerOptions.OnFileScanFailed"/>.
+    /// Symbolic links to directories are not followed, and symbolic links to files outside <paramref name="path"/> are not scanned.
+    /// </para>
+    /// </remarks>
     /// <param name="path">The root directory path to scan.</param>
     /// <param name="options">The scanner options, or <see langword="null"/> to use defaults.</param>
-    /// <param name="onDependencyFound">The callback invoked when a dependency is found.</param>
+    /// <param name="onDependencyFound">The callback invoked when a dependency is found. It can be invoked concurrently.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="DirectoryNotFoundException">The directory does not exist. The exception is reported through the returned task.</exception>
+    /// <exception cref="NotSupportedException"><see cref="ScannerOptions.FileSystem"/> is a custom file system, and a file or directory predicate is set. The exception is reported through the returned task.</exception>
     public static async Task ScanDirectoryAsync(string path, ScannerOptions? options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
     {
-        if (!Directory.Exists(path))
-            throw new DirectoryNotFoundException(path);
-
         options ??= ScannerOptions.Default;
+        if (options.UsesDefaultFileSystem)
+        {
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException(path);
+        }
+        else if (options.ShouldScanFilePredicate is not null || options.ShouldRecursePredicate is not null)
+        {
+            // The predicates take a FileSystemEntry, which only an enumeration of the physical disk can create
+            throw new NotSupportedException($"{nameof(ScannerOptions.ShouldScanFilePredicate)} and {nameof(ScannerOptions.ShouldRecursePredicate)} are not supported with a custom file system. Filter the files in {nameof(IFileSystem)}.{nameof(IFileSystem.GetFiles)}, or scan a list of files with {nameof(ScanFilesAsync)}.");
+        }
+
         var scanners = options.EnabledScanners;
         if (scanners.Length is 0)
             return;
@@ -114,6 +139,10 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans a single file from memory for dependencies.</summary>
+    /// <remarks>
+    /// When a scanner fails to scan the content, the dependencies found before the failure are returned, and the
+    /// failure is not reported. The locations of the dependencies are not updatable, because there is no file to write.
+    /// </remarks>
     /// <param name="rootDirectory">The root directory context for relative path resolution.</param>
     /// <param name="filePath">The path of the file being scanned.</param>
     /// <param name="content">The file content as a byte array.</param>
@@ -124,6 +153,17 @@ public abstract class DependencyScanner
         return ScanFileAsync(rootDirectory, filePath, content, scanners: null, cancellationToken);
     }
 
+    /// <summary>Scans a single file from memory for dependencies, using the specified scanners.</summary>
+    /// <remarks>
+    /// When a scanner fails to scan the content, the dependencies found before the failure are returned, and the
+    /// failure is not reported. The locations of the dependencies are not updatable, because there is no file to write.
+    /// </remarks>
+    /// <param name="rootDirectory">The root directory context for relative path resolution.</param>
+    /// <param name="filePath">The path of the file being scanned.</param>
+    /// <param name="content">The file content as a byte array.</param>
+    /// <param name="scanners">The scanners to use, or <see langword="null"/> to use the default scanners.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A collection of dependencies found in the file.</returns>
     public static async Task<IReadOnlyCollection<Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, IReadOnlyList<DependencyScanner>? scanners, CancellationToken cancellationToken = default)
     {
         var options = new ScannerOptions
@@ -142,6 +182,11 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans a single file from the file system for dependencies.</summary>
+    /// <remarks>
+    /// A single file is handled like a file of a directory scan: when the file cannot be read, or a scanner fails to
+    /// scan it, the failure is reported to <see cref="ScannerOptions.OnFileScanFailed"/>, the remaining scanners are
+    /// skipped, and the dependencies found before the failure are returned.
+    /// </remarks>
     /// <param name="rootDirectory">The root directory context for relative path resolution.</param>
     /// <param name="filePath">The path of the file to scan.</param>
     /// <param name="options">The scanner options, or <see langword="null"/> to use defaults.</param>
@@ -156,6 +201,7 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans multiple specific files for dependencies.</summary>
+    /// <remarks>A file that cannot be read, or that a scanner fails to scan, is skipped and reported to <see cref="ScannerOptions.OnFileScanFailed"/>.</remarks>
     /// <param name="rootDirectory">The root directory context for relative path resolution.</param>
     /// <param name="filePaths">The collection of file paths to scan.</param>
     /// <param name="options">The scanner options, or <see langword="null"/> to use defaults.</param>
@@ -170,10 +216,16 @@ public abstract class DependencyScanner
     }
 
     /// <summary>Scans multiple specific files for dependencies, invoking a callback for each dependency found.</summary>
+    /// <remarks>
+    /// Files are scanned concurrently unless <see cref="ScannerOptions.DegreeOfParallelism"/> is 1, so
+    /// <paramref name="onDependencyFound"/> can be invoked concurrently from several threads and must be thread-safe.
+    /// An exception thrown by <paramref name="onDependencyFound"/> stops the scan. A file that cannot be read, or that
+    /// a scanner fails to scan, is skipped and reported to <see cref="ScannerOptions.OnFileScanFailed"/>.
+    /// </remarks>
     /// <param name="rootDirectory">The root directory context for relative path resolution.</param>
     /// <param name="filePaths">The collection of file paths to scan.</param>
     /// <param name="options">The scanner options, or <see langword="null"/> to use defaults.</param>
-    /// <param name="onDependencyFound">The callback invoked when a dependency is found.</param>
+    /// <param name="onDependencyFound">The callback invoked when a dependency is found. It can be invoked concurrently.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     public static Task ScanFilesAsync(string rootDirectory, IEnumerable<string> filePaths, ScannerOptions? options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
     {
@@ -195,17 +247,26 @@ public abstract class DependencyScanner
         if (scanners.Length is 0)
             return;
 
-        var scanFileContext = new ScanFileContext(filePath, onDependencyFound, options, cancellationToken);
+        // Scanners that filter on the relative directory need both paths absolute and normalized. A custom file system
+        // gets the path as the caller wrote it, as it may not be a path of the physical disk.
+        var (candidateRootDirectory, candidateFilePath) = ScanPathUtilities.NormalizeCandidatePaths(rootDirectory, filePath);
+        var fullPath = options.UsesDefaultFileSystem ? candidateFilePath : filePath;
+
+        var scanFileContext = new ScanFileContext(fullPath, onDependencyFound, options, cancellationToken);
         try
         {
             foreach (var scanner in scanners)
             {
-                if (!scanner.ShouldScanFile(rootDirectory, filePath))
+                if (!scanner.ShouldScanFile(candidateRootDirectory, candidateFilePath))
                     continue;
 
                 scanFileContext.ResetStream();
                 await scanner.ScanAsync(scanFileContext).ConfigureAwait(false);
             }
+        }
+        catch (Exception ex) when (scanFileContext.IsFileScanFailure(ex))
+        {
+            options.OnFileScanFailed?.Invoke(fullPath, ex);
         }
         finally
         {
@@ -213,38 +274,87 @@ public abstract class DependencyScanner
         }
     }
 
-    private static async Task ScanDirectorySequentialAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken)
+    private static async Task ScanFileAsync<T>(ScannerOptions options, DependencyFound onDependencyFound, FileToScan<T> file, CancellationToken cancellationToken)
         where T : struct, IEnabledScannersArray
     {
         var scanners = options.EnabledScanners;
-        if (scanners.Length is 0)
-            return;
-
-        using var enumerator = new ScannerFileEnumerator<T>(path, options);
-        while (enumerator.MoveNext())
+        var scanFileContext = new ScanFileContext(file.FullPath, onDependencyFound, options, cancellationToken);
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var entry = enumerator.Current;
-            var scanFileContext = new ScanFileContext(entry.FullPath, onDependencyFound, options, cancellationToken);
-            try
+            for (var i = 0; i < scanners.Length; i++)
             {
-                for (var i = 0; i < scanners.Length; i++)
+                if (!file.Scanners.Get(i))
+                    continue;
+
+                scanFileContext.ResetStream();
+                await scanners[i].ScanAsync(scanFileContext).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) when (scanFileContext.IsFileScanFailure(ex))
+        {
+            // One file the scanners cannot read must not lose the dependencies of all the other files
+            options.OnFileScanFailed?.Invoke(file.FullPath, ex);
+        }
+        finally
+        {
+            await scanFileContext.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static IEnumerable<FileToScan<T>> EnumerateFilesToScan<T>(string path, ScannerOptions options)
+        where T : struct, IEnabledScannersArray
+    {
+        if (options.UsesDefaultFileSystem)
+        {
+            using var enumerator = new ScannerFileEnumerator<T>(path, options);
+            while (enumerator.MoveNext())
+            {
+                yield return enumerator.Current;
+            }
+
+            yield break;
+        }
+
+        var searchOption = options.RecurseSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+        foreach (var filePath in options.FileSystem.GetFiles(path, "*", searchOption))
+        {
+            if (TryGetScanners<T>(options, path, filePath, out var scanners))
+                yield return new FileToScan<T>(scanners, filePath);
+        }
+    }
+
+    private static bool TryGetScanners<T>(ScannerOptions options, string rootDirectory, string filePath, out T scanners)
+        where T : struct, IEnabledScannersArray
+    {
+        scanners = new T();
+        try
+        {
+            var (candidateRootDirectory, candidateFilePath) = ScanPathUtilities.NormalizeCandidatePaths(rootDirectory, filePath);
+            var enabledScanners = options.EnabledScanners;
+            for (var i = 0; i < enabledScanners.Length; i++)
+            {
+                if (enabledScanners[i].ShouldScanFile(candidateRootDirectory, candidateFilePath))
                 {
-                    if (!entry.Scanners.Get(i))
-                    {
-                        continue;
-                    }
-
-                    var scanner = scanners[i];
-
-                    scanFileContext.ResetStream();
-                    await scanner.ScanAsync(scanFileContext).ConfigureAwait(false);
+                    scanners.Set(i);
                 }
             }
-            finally
-            {
-                await scanFileContext.DisposeAsync().ConfigureAwait(false);
-            }
+        }
+        catch (Exception ex)
+        {
+            options.OnFileScanFailed?.Invoke(filePath, ex);
+            return false;
+        }
+
+        return !scanners.IsEmpty;
+    }
+
+    private static async Task ScanDirectorySequentialAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken)
+        where T : struct, IEnabledScannersArray
+    {
+        foreach (var file in EnumerateFilesToScan<T>(path, options))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await ScanFileAsync(options, onDependencyFound, file, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -259,8 +369,9 @@ public abstract class DependencyScanner
             FullMode = BoundedChannelFullMode.Wait,
         });
 
-        // The first failure (in the enumerator or in any reader) cancels all the other tasks, so the enumerator
-        // doesn't block forever on a full channel once no reader is left, and the error is reported promptly.
+        // The first failure (in the enumerator, in a callback, or a cancellation) cancels all the other tasks, so the
+        // enumerator doesn't block forever on a full channel once no reader is left, and the error is reported promptly.
+        // A file that cannot be scanned is not a failure: it is skipped and reported to OnFileScanFailed.
         using var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var linkedCancellationToken = linkedCancellationTokenSource.Token;
         Exception? firstException = null;
@@ -297,11 +408,10 @@ public abstract class DependencyScanner
         {
             try
             {
-                using var enumerator = new ScannerFileEnumerator<T>(path, options);
-                while (enumerator.MoveNext())
+                foreach (var file in EnumerateFilesToScan<T>(path, options))
                 {
                     linkedCancellationToken.ThrowIfCancellationRequested();
-                    await filesToScanChannel.Writer.WriteAsync(enumerator.Current, linkedCancellationToken).ConfigureAwait(false);
+                    await filesToScanChannel.Writer.WriteAsync(file, linkedCancellationToken).ConfigureAwait(false);
                 }
             }
             finally
@@ -313,30 +423,12 @@ public abstract class DependencyScanner
         async Task ScanFilesFromChannelAsync()
         {
             var reader = filesToScanChannel.Reader;
-            var scanners = options.EnabledScanners;
             while (await reader.WaitToReadAsync(linkedCancellationToken).ConfigureAwait(false))
             {
-                while (reader.TryRead(out var entry))
+                while (reader.TryRead(out var file))
                 {
                     linkedCancellationToken.ThrowIfCancellationRequested();
-                    var scanFileContext = new ScanFileContext(entry.FullPath, onDependencyFound, options, linkedCancellationToken);
-                    try
-                    {
-                        for (var i = 0; i < scanners.Length; i++)
-                        {
-                            if (!entry.Scanners.Get(i))
-                                continue;
-
-                            var scanner = scanners[i];
-
-                            scanFileContext.ResetStream();
-                            await scanner.ScanAsync(scanFileContext).ConfigureAwait(false);
-                        }
-                    }
-                    finally
-                    {
-                        await scanFileContext.DisposeAsync().ConfigureAwait(false);
-                    }
+                    await ScanFileAsync(options, onDependencyFound, file, linkedCancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -367,48 +459,4 @@ public abstract class DependencyScanner
     /// <summary>When overridden in a derived class, performs the actual scanning of a file to discover dependencies.</summary>
     /// <param name="context">The context containing the file to scan and methods to report discovered dependencies.</param>
     public abstract ValueTask ScanAsync(ScanFileContext context);
-
-
-    private sealed class SingleFileInMemoryFileSystem : IFileSystem
-    {
-        private readonly string _path;
-        private readonly byte[] _content;
-
-        public SingleFileInMemoryFileSystem(string path, byte[] content)
-        {
-            _path = path;
-            _content = content;
-        }
-
-        public Stream OpenRead(string path)
-        {
-            if (path == _path)
-                return new MemoryStream(_content);
-
-            throw new FileNotFoundException("File not found", path);
-        }
-
-        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions)
-        {
-            // The only file known by this file system is the in-memory file
-            var fileDirectory = Path.GetDirectoryName(_path.AsSpan());
-            var searchDirectory = Path.TrimEndingDirectorySeparator(path.AsSpan());
-            var isInSearchDirectory = fileDirectory.Equals(searchDirectory, StringComparison.Ordinal);
-            if (!isInSearchDirectory && searchOptions is SearchOption.AllDirectories)
-            {
-                isInSearchDirectory = fileDirectory.Length > searchDirectory.Length
-                    && fileDirectory.StartsWith(searchDirectory, StringComparison.Ordinal)
-                    && (Path.EndsInDirectorySeparator(searchDirectory) || IsDirectorySeparator(fileDirectory[searchDirectory.Length]));
-            }
-
-            if (isInSearchDirectory && FileSystemName.MatchesWin32Expression(FileSystemName.TranslateWin32Expression(pattern), Path.GetFileName(_path.AsSpan()), ignoreCase: false))
-                return [_path];
-
-            return [];
-
-            static bool IsDirectorySeparator(char c) => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
-        }
-
-        public Stream OpenReadWrite(string path) => throw new NotSupportedException($"Cannot open '{path}' for writing: the dependencies were scanned from in-memory content, so their locations cannot be updated");
-    }
 }

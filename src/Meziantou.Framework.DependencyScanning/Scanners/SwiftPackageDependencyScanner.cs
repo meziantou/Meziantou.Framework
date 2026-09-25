@@ -173,7 +173,7 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
 
     private static Location CreateLocation(ScanFileContext context, string text, TextRange range)
     {
-        if (range.Length <= 0 || ContainsNewLine(text, range))
+        if (!range.IsVerbatim || range.Length <= 0 || ContainsNewLine(text, range))
             return new NonUpdatableLocation(context);
 
         return TextLocation.FromIndex(context.FileSystem, context.FullPath, text, range.Start, range.Length);
@@ -312,13 +312,19 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         {
             foreach (var segment in segments)
             {
-                if (TryGetLabel(text, tokens, segment, out var segmentLabel) &&
-                    segmentLabel == label &&
-                    TryGetStringLiteral(text, tokens, segment.Start + 2, segment.End, out var value, out var valueRange))
+                if (!TryGetLabel(text, tokens, segment, out var segmentLabel) || segmentLabel != label || segment.Length <= 2)
+                    continue;
+
+                if (TryGetStringLiteral(text, tokens, segment.Start + 2, segment.End, out var value, out var valueRange))
                 {
                     dependencyNameRange = valueRange;
                     return value;
                 }
+
+                // An expression, such as a variable or a concatenation, is reported as written, and cannot be updated
+                var expressionRange = new TextRange(tokens[segment.Start + 2].Start, tokens[segment.End - 1].End, IsVerbatim: false);
+                dependencyNameRange = expressionRange;
+                return text[expressionRange.Start..expressionRange.End];
             }
         }
 
@@ -341,7 +347,8 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
 
             // The whole requirement (e.g. `from: "1.0.0"`) is the version, so the kind of requirement can be changed on update.
             // The range starts at the first token and ends at the last one, so surrounding comments are not included.
-            var range = new TextRange(tokens[segment.Start].Start, tokens[segment.End - 1].End);
+            // A requirement that uses a variable, such as `from: version`, is reported as written, and cannot be updated
+            var range = new TextRange(tokens[segment.Start].Start, tokens[segment.End - 1].End, IsLiteralRequirement(text, tokens, segment));
             dependencyVersionRange = range;
             return text[range.Start..range.End];
         }
@@ -405,6 +412,40 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
         return false;
     }
 
+    /// <summary>Whether a requirement is made of string literals only, such as <c>.upToNextMajor(from: "1.0.0")</c>, and no variable.</summary>
+    private static bool IsLiteralRequirement(string text, List<SwiftToken> tokens, TokenRange segment)
+    {
+        for (var i = segment.Start; i < segment.End; i++)
+        {
+            var token = tokens[i];
+            var isLiteral = token.Kind switch
+            {
+                SwiftTokenKind.StringLiteral => token.IsTerminated && IsVerbatim(text, token),
+                SwiftTokenKind.Identifier => IsRequirementKeyword(text[token.Start..token.End]),
+                SwiftTokenKind.Punctuation or SwiftTokenKind.Operator => true,
+                _ => false,
+            };
+
+            if (!isLiteral)
+                return false;
+        }
+
+        return true;
+
+        static bool IsRequirementKeyword(string identifier)
+        {
+            return RequirementLabels.Contains(identifier, StringComparer.Ordinal)
+                || RequirementFactoryMethods.Contains(identifier, StringComparer.Ordinal)
+                || RequirementTypeQualifiers.Contains(identifier, StringComparer.Ordinal);
+        }
+    }
+
+    /// <summary>Whether the value of a string literal is exactly its text, so that the text can be replaced by another value.</summary>
+    private static bool IsVerbatim(string text, SwiftToken token)
+    {
+        return !token.HasInterpolation && text.AsSpan(token.ContentStart, token.ContentEnd - token.ContentStart).SequenceEqual(SwiftLexer.GetStringValue(text, token));
+    }
+
     private static bool TryGetLabel(string text, List<SwiftToken> tokens, TokenRange segment, out string label)
     {
         if (segment.Length >= 2 &&
@@ -421,10 +462,11 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
 
     private static bool TryGetStringLiteral(string text, List<SwiftToken> tokens, int start, int end, out string? value, out TextRange valueRange)
     {
-        if (start < end && tokens[start] is { Kind: SwiftTokenKind.StringLiteral, IsTerminated: true } token)
+        // The value must be the literal alone: "https://" + host is not the URL "https://"
+        if (start + 1 == end && tokens[start] is { Kind: SwiftTokenKind.StringLiteral, IsTerminated: true } token)
         {
             value = SwiftLexer.GetStringValue(text, token);
-            valueRange = new TextRange(token.ContentStart, token.ContentEnd);
+            valueRange = new TextRange(token.ContentStart, token.ContentEnd, IsVerbatim(text, token));
             return true;
         }
 
@@ -434,7 +476,7 @@ public sealed class SwiftPackageDependencyScanner : DependencyScanner
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct TextRange(int Start, int End)
+    private readonly record struct TextRange(int Start, int End, bool IsVerbatim = true)
     {
         public int Length => End - Start;
     }

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 
 /// <summary>
 /// Minimal Swift lexer: it only distinguishes what the manifest scanner needs (identifiers, string literals, punctuation and operators)
-/// and drops comments and whitespace. Strings containing interpolations are returned as a single token.
+/// and drops comments and whitespace. Strings containing interpolations are returned as a single token, marked with <see cref="SwiftToken.HasInterpolation"/>.
 /// </summary>
 internal static class SwiftLexer
 {
@@ -188,13 +188,83 @@ internal static class SwiftLexer
 
         if (outermostString is { } unterminated)
         {
-            tokens.Add(new SwiftToken(SwiftTokenKind.StringLiteral, unterminated.TokenStart, text.Length, unterminated.ContentStart, text.Length, unterminated.IsMultiline, IsTerminated: false));
+            tokens.Add(new SwiftToken(SwiftTokenKind.StringLiteral, unterminated.TokenStart, text.Length, unterminated.ContentStart, text.Length, unterminated.IsMultiline, IsTerminated: false, unterminated.HashCount, unterminated.HasInterpolation));
         }
 
         return tokens;
     }
 
+    /// <summary>Gets the value of a string literal: the indentation of a multiline string is removed, and escape sequences are resolved.</summary>
+    /// <remarks>A string that contains an interpolation is not a constant, so its escape sequences are kept as written.</remarks>
     public static string GetStringValue(string text, SwiftToken token)
+    {
+        var value = RemoveMultilineIndentation(text, token);
+        return token.HasInterpolation ? value : ResolveEscapeSequences(value, token.HashCount, token.IsMultiline);
+    }
+
+    private static string ResolveEscapeSequences(string value, int hashCount, bool isMultiline)
+    {
+        if (!value.Contains('\\', StringComparison.Ordinal))
+            return value;
+
+        var result = new StringBuilder(value.Length);
+        var i = 0;
+        while (i < value.Length)
+        {
+            // In a raw string, such as #"..."#, an escape sequence is a backslash followed by as many # as the delimiter has
+            var escapedIndex = i + 1 + hashCount;
+            if (value[i] == '\\' && escapedIndex < value.Length && HasHashes(value, i + 1, hashCount))
+            {
+                var escaped = value[escapedIndex];
+                var replacement = escaped switch
+                {
+                    '0' => "\0",
+                    '\\' => "\\",
+                    't' => "\t",
+                    'n' => "\n",
+                    'r' => "\r",
+                    '"' => "\"",
+                    '\'' => "'",
+                    _ => null,
+                };
+
+                if (replacement is not null)
+                {
+                    result.Append(replacement);
+                    i = escapedIndex + 1;
+                    continue;
+                }
+
+                // \u{1F600}
+                if (escaped == 'u' && escapedIndex + 1 < value.Length && value[escapedIndex + 1] == '{')
+                {
+                    var closeIndex = value.IndexOf('}', escapedIndex + 2, StringComparison.Ordinal);
+                    if (closeIndex > escapedIndex + 2 && closeIndex - escapedIndex - 2 <= 8 &&
+                        int.TryParse(value.AsSpan(escapedIndex + 2, closeIndex - escapedIndex - 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint) &&
+                        codePoint is (>= 0 and < 0xD800) or (> 0xDFFF and <= 0x10FFFF))
+                    {
+                        result.Append(char.ConvertFromUtf32(codePoint));
+                        i = closeIndex + 1;
+                        continue;
+                    }
+                }
+
+                // A backslash at the end of a line of a multiline string joins it to the next line
+                if (escaped == '\n' && isMultiline)
+                {
+                    i = escapedIndex + 1;
+                    continue;
+                }
+            }
+
+            result.Append(value[i]);
+            i++;
+        }
+
+        return result.ToString();
+    }
+
+    private static string RemoveMultilineIndentation(string text, SwiftToken token)
     {
         var content = text.AsSpan(token.ContentStart, token.ContentEnd - token.ContentStart);
         if (!token.IsMultiline)
@@ -250,6 +320,8 @@ internal static class SwiftLexer
             var escapedIndex = i + 1 + frame.HashCount;
             if (escapedIndex < text.Length && text[escapedIndex] == '(')
             {
+                frames.Pop();
+                frames.Push(frame with { HasInterpolation = true });
                 frames.Push(Frame.Code(isInterpolation: true));
                 return escapedIndex + 1;
             }
@@ -265,7 +337,7 @@ internal static class SwiftLexer
         {
             // Unterminated single-line string
             frames.Pop();
-            AddToken(tokens, frames.Count == 1, new SwiftToken(SwiftTokenKind.StringLiteral, frame.TokenStart, i, frame.ContentStart, i, IsMultiline: false, IsTerminated: false));
+            AddToken(tokens, frames.Count == 1, new SwiftToken(SwiftTokenKind.StringLiteral, frame.TokenStart, i, frame.ContentStart, i, IsMultiline: false, IsTerminated: false, frame.HashCount, frame.HasInterpolation));
             return i;
         }
 
@@ -276,7 +348,7 @@ internal static class SwiftLexer
             {
                 var end = i + quoteLength + frame.HashCount;
                 frames.Pop();
-                AddToken(tokens, frames.Count == 1, new SwiftToken(SwiftTokenKind.StringLiteral, frame.TokenStart, end, frame.ContentStart, i, frame.IsMultiline, IsTerminated: true));
+                AddToken(tokens, frames.Count == 1, new SwiftToken(SwiftTokenKind.StringLiteral, frame.TokenStart, end, frame.ContentStart, i, frame.IsMultiline, IsTerminated: true, frame.HashCount, frame.HasInterpolation));
                 return end;
             }
         }
@@ -376,10 +448,10 @@ internal static class SwiftLexer
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Frame(FrameKind Kind, int TokenStart, int ContentStart, int HashCount, bool IsMultiline, int ParenthesisDepth)
+    private readonly record struct Frame(FrameKind Kind, int TokenStart, int ContentStart, int HashCount, bool IsMultiline, int ParenthesisDepth, bool HasInterpolation)
     {
-        public static Frame Code(bool isInterpolation) => new(isInterpolation ? FrameKind.Interpolation : FrameKind.Code, 0, 0, 0, IsMultiline: false, 0);
+        public static Frame Code(bool isInterpolation) => new(isInterpolation ? FrameKind.Interpolation : FrameKind.Code, 0, 0, 0, IsMultiline: false, 0, HasInterpolation: false);
 
-        public static Frame String(int tokenStart, int contentStart, int hashCount, bool isMultiline) => new(FrameKind.String, tokenStart, contentStart, hashCount, isMultiline, 0);
+        public static Frame String(int tokenStart, int contentStart, int hashCount, bool isMultiline) => new(FrameKind.String, tokenStart, contentStart, hashCount, isMultiline, 0, HasInterpolation: false);
     }
 }

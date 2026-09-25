@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.IO.Enumeration;
 using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
@@ -60,33 +62,55 @@ public sealed class DependencyScannerTests
     public async Task ReportScanException(int degreeOfParallelism)
     {
         await using var directory = TemporaryDirectory.Create();
-        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+        string filePath = directory.GetFullPath("text.txt");
+        await File.WriteAllTextAsync(filePath, "", XunitCancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken));
+        foreach (var scanner in new DependencyScanner[] { new ShouldScanThrowScanner(), new ScanThrowScanner() })
+        {
+            // By default, the file is skipped and the scan succeeds
+            var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [scanner] }, XunitCancellationToken);
+            Assert.Empty(items);
+
+            var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+            var options = new ScannerOptions
+            {
+                DegreeOfParallelism = degreeOfParallelism,
+                Scanners = [scanner],
+                OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+            };
+            await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, XunitCancellationToken);
+
+            var failure = Assert.Single(failures);
+            Assert.Equal(filePath, failure.FilePath);
+            Assert.IsType<InvalidOperationException>(failure.Exception);
+        }
     }
 
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
-    public async Task ReportScanException_IAsyncEnumerable(int degreeOfParallelism)
+    public async Task ReportScanException_CallbackThrows_StopsTheScan(int degreeOfParallelism)
     {
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        foreach (var scanner in new DependencyScanner[] { new ShouldScanThrowScanner(), new ScanThrowScanner() })
         {
-            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, XunitCancellationToken))
+            var options = new ScannerOptions
             {
-            }
-        });
+                DegreeOfParallelism = degreeOfParallelism,
+                Scanners = [scanner],
+                OnFileScanFailed = (path, exception) => throw new DependencyScannerException("Cannot scan " + path, exception),
+            };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-        {
-            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, XunitCancellationToken))
+            var exception = await Assert.ThrowsAsync<DependencyScannerException>(async () =>
             {
-            }
-        });
+                foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken))
+                {
+                }
+            });
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
+        }
     }
 
     [Fact]
@@ -100,11 +124,113 @@ public sealed class DependencyScannerTests
         }
 
         var scanner = new CountingScanThrowScanner();
-        var options = new ScannerOptions { DegreeOfParallelism = 2, Scanners = [scanner] };
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = 2,
+            Scanners = [scanner],
+            OnFileScanFailed = (path, exception) => throw new DependencyScannerException("Cannot scan " + path, exception),
+        };
         var scanTask = DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => { }, XunitCancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => scanTask.WaitAsync(TimeSpan.FromMinutes(2), XunitCancellationToken));
+        await Assert.ThrowsAsync<DependencyScannerException>(() => scanTask.WaitAsync(TimeSpan.FromMinutes(2), XunitCancellationToken));
         Assert.True(scanner.ScanCount < FileCount, $"The scan should stop after the first failure, but {scanner.ScanCount.ToStringInvariant()} files were scanned");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_FileThatCannotBeScanned_IsSkipped(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        string validFile1 = directory.CreateEmptyFile("valid1.txt");
+        string invalidFile = directory.CreateEmptyFile("invalid.txt");
+        string validFile2 = directory.CreateEmptyFile("valid2.txt");
+
+        var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = degreeOfParallelism,
+            Scanners = [new ThrowOnFileNameScanner("invalid.txt")],
+            OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+        };
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+
+        Assert.Equal([invalidFile, validFile1, validFile2], items.Select(item => item.VersionLocation!.FilePath).Order(StringComparer.Ordinal));
+        var failure = Assert.Single(failures);
+        Assert.Equal(invalidFile, failure.FilePath);
+        Assert.IsType<FormatException>(failure.Exception);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_FileThatCannotBeOpened_IsSkipped(int degreeOfParallelism)
+    {
+        var fileSystem = new InMemoryFileSystem();
+        fileSystem.AddFile("/repo/valid.txt", "");
+        fileSystem.AddFile("/repo/locked.txt", "");
+        fileSystem.AddUnreadableFile("/repo/locked.txt");
+
+        var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = degreeOfParallelism,
+            FileSystem = fileSystem,
+            Scanners = [new ReadContentScanner()],
+            OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+        };
+        var items = await DependencyScanner.ScanDirectoryAsync("/repo", options, XunitCancellationToken);
+        var fileItems = await DependencyScanner.ScanFilesAsync("/repo", ["/repo/valid.txt", "/repo/locked.txt", "/repo/missing.txt"], options, XunitCancellationToken);
+
+        Assert.Equal("/repo/valid.txt", Assert.Single(items).VersionLocation!.FilePath);
+        Assert.Equal("/repo/valid.txt", Assert.Single(fileItems).VersionLocation!.FilePath);
+        Assert.Equal(["/repo/locked.txt", "/repo/locked.txt", "/repo/missing.txt"], failures.Select(failure => failure.FilePath).Order(StringComparer.Ordinal));
+        Assert.Equal(2, failures.Count(failure => failure.Exception is UnauthorizedAccessException));
+        Assert.Single(failures, failure => failure.Exception is FileNotFoundException);
+    }
+
+    [Fact]
+    public async Task ScanFile_ScannerFails_ReturnsTheDependenciesFoundBeforeTheFailure()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        string filePath = directory.CreateEmptyFile("invalid.txt");
+
+        var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+        var options = new ScannerOptions
+        {
+            Scanners = [new DummyScanner(), new ThrowOnFileNameScanner("invalid.txt"), new DummyScanner()],
+            OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+        };
+        var items = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, options, XunitCancellationToken);
+        var inMemoryItems = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, [], options.Scanners, XunitCancellationToken);
+
+        // The first scanner and the failing one reported a dependency before the failure. The last scanner is skipped.
+        Assert.Equal(2, items.Count);
+        Assert.Equal(2, inMemoryItems.Count);
+        var failure = Assert.Single(failures);
+        Assert.Equal(filePath, failure.FilePath);
+        Assert.IsType<FormatException>(failure.Exception);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_DependencyFoundCallbackThrows_StopsTheScan(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("file.txt");
+
+        var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = degreeOfParallelism,
+            Scanners = [new DummyScanner()],
+            OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+        };
+
+        await Assert.ThrowsAsync<FormatException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, onDependencyFound: _ => throw new FormatException(), XunitCancellationToken));
+        await Assert.ThrowsAsync<FormatException>(() => DependencyScanner.ScanFilesAsync(directory.FullPath, [directory.GetFullPath("file.txt")], options, onDependencyFound: _ => throw new FormatException(), XunitCancellationToken));
+        Assert.Empty(failures);
     }
 
     [Fact]
@@ -116,6 +242,159 @@ public sealed class DependencyScannerTests
         var task = DependencyScanner.ScanDirectoryAsync(missingDirectory, new ScannerOptions { Scanners = [new DummyScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken);
 
         await Assert.ThrowsAsync<DirectoryNotFoundException>(() => task);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_DoesNotFollowDirectorySymbolicLinks(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await using var outsideDirectory = TemporaryDirectory.Create();
+        string file = directory.CreateEmptyFile("sub/file.txt");
+        outsideDirectory.CreateEmptyFile("outside.txt");
+
+        // Two links to the root made the scan grow exponentially, and a link to another directory left the root
+        CreateSymbolicLinkOrSkip(() => Directory.CreateSymbolicLink(directory.GetFullPath("self1"), directory.FullPath));
+        CreateSymbolicLinkOrSkip(() => Directory.CreateSymbolicLink(directory.GetFullPath("sub/self2"), ".."));
+        CreateSymbolicLinkOrSkip(() => Directory.CreateSymbolicLink(directory.GetFullPath("outside"), outsideDirectory.FullPath));
+
+        var options = new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new DummyScanner()] };
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken).WaitAsync(TimeSpan.FromMinutes(1), XunitCancellationToken);
+
+        Assert.Equal(file, Assert.Single(items).VersionLocation!.FilePath);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ScanDirectory_SymbolicLinkToFile_IsOnlyScannedWhenItsTargetIsInTheRootDirectory(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await using var outsideDirectory = TemporaryDirectory.Create();
+        string target = directory.CreateEmptyFile("target.txt");
+        string outsideTarget = outsideDirectory.CreateEmptyFile("outside.txt");
+        string insideLink = directory.GetFullPath("sub/inside-link.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(insideLink)!);
+
+        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(insideLink, "../target.txt"));
+        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("outside-link.txt"), outsideTarget));
+        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("link-to-link.txt"), directory.GetFullPath("outside-link.txt")));
+        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("dangling-link.txt"), "missing.txt"));
+
+        var failures = new ConcurrentQueue<(string FilePath, Exception Exception)>();
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = degreeOfParallelism,
+            Scanners = [new ReadContentScanner()],
+            OnFileScanFailed = (path, exception) => failures.Enqueue((path, exception)),
+        };
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+
+        Assert.Equal(new[] { insideLink, target }.Order(StringComparer.Ordinal), items.Select(item => item.VersionLocation!.FilePath).Order(StringComparer.Ordinal));
+
+        // A dangling link inside the root is enumerated, but cannot be read
+        var failure = Assert.Single(failures);
+        Assert.Equal(directory.GetFullPath("dangling-link.txt"), failure.FilePath);
+        Assert.IsType<FileNotFoundException>(failure.Exception);
+    }
+
+    private static void CreateSymbolicLinkOrSkip(Action createLink)
+    {
+        try
+        {
+            createLink();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+        {
+            global::Xunit.Assert.Skip("Symbolic links cannot be created on this machine: " + ex.Message);
+        }
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(1, false)]
+    public async Task ScanDirectory_CustomFileSystem_EnumeratesTheFileSystem(int degreeOfParallelism, bool recurseSubdirectories)
+    {
+        // The root does not exist on the disk
+        var fileSystem = new InMemoryFileSystem();
+        fileSystem.AddFile("/virtual/repo/file.txt", "");
+        fileSystem.AddFile("/virtual/repo/sub/file.txt", "");
+        fileSystem.AddFile("/virtual/repo/.github/workflows/ci.yml", """
+            jobs:
+              build:
+                steps:
+                  - uses: actions/checkout@v4
+            """);
+        fileSystem.AddFile("/virtual/other/file.txt", "");
+
+        var options = new ScannerOptions
+        {
+            DegreeOfParallelism = degreeOfParallelism,
+            RecurseSubdirectories = recurseSubdirectories,
+            FileSystem = fileSystem,
+            Scanners = [new ReadContentScanner(), new GitHubActionsScanner()],
+        };
+        var items = await DependencyScanner.ScanDirectoryAsync("/virtual/repo", options, XunitCancellationToken);
+
+        string[] expectedFiles = recurseSubdirectories
+            ? ["/virtual/repo/.github/workflows/ci.yml", "/virtual/repo/file.txt", "/virtual/repo/sub/file.txt"]
+            : ["/virtual/repo/file.txt"];
+        Assert.Equal(expectedFiles, items.Where(item => item.Type is DependencyType.Unknown).Select(item => item.VersionLocation!.FilePath).Order(StringComparer.Ordinal));
+        string[] expectedActions = recurseSubdirectories ? ["actions/checkout"] : [];
+        Assert.Equal(expectedActions, items.Where(item => item.Type is DependencyType.GitHubActions).Select(item => item.Name));
+        Assert.Equal(new[] { recurseSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly }, fileSystem.GetFilesSearchOptions);
+    }
+
+    [Fact]
+    public async Task ScanDirectory_CustomFileSystem_MissingDirectory_ReturnsFaultedTask()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        fileSystem.AddFile("/virtual/repo/file.txt", "");
+
+        var task = DependencyScanner.ScanDirectoryAsync("/virtual/missing", new ScannerOptions { FileSystem = fileSystem, Scanners = [new DummyScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken);
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() => task);
+    }
+
+    [Fact]
+    public async Task ScanDirectory_CustomFileSystem_Predicates_AreNotSupported()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        fileSystem.AddFile("/virtual/repo/file.txt", "");
+
+        var scanFileOptions = new ScannerOptions { FileSystem = fileSystem, Scanners = [new DummyScanner()], ShouldScanFilePredicate = (ref FileSystemEntry entry) => true };
+        var recurseOptions = new ScannerOptions { FileSystem = fileSystem, Scanners = [new DummyScanner()], ShouldRecursePredicate = (ref FileSystemEntry entry) => true };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => DependencyScanner.ScanDirectoryAsync("/virtual/repo", scanFileOptions, onDependencyFound: _ => { }, XunitCancellationToken));
+        await Assert.ThrowsAsync<NotSupportedException>(() => DependencyScanner.ScanDirectoryAsync("/virtual/repo", recurseOptions, onDependencyFound: _ => { }, XunitCancellationToken));
+        Assert.Empty(fileSystem.GetFilesSearchOptions);
+    }
+
+    [Fact]
+    public async Task ScannerOptions_ReadmePredicateSample_Compiles()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        string file = directory.CreateEmptyFile("src/file.txt");
+        directory.CreateEmptyFile("src/.hidden.txt");
+        directory.CreateEmptyFile("node_modules/file.txt");
+        directory.CreateEmptyFile("bin/file.txt");
+
+        // Keep in sync with the sample in readme.md
+        var options = new ScannerOptions
+        {
+            // Filter files to scan
+            ShouldScanFilePredicate = (ref FileSystemEntry entry) => !entry.FileName.StartsWith('.'),
+
+            // Filter directories to recurse into
+            ShouldRecursePredicate = (ref FileSystemEntry entry) => entry.FileName is not ("node_modules" or "bin"),
+        };
+        options.Scanners = [new DummyScanner()];
+
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+
+        Assert.Equal(file, Assert.Single(items).VersionLocation!.FilePath);
     }
 
     [Theory]
@@ -132,6 +411,52 @@ public sealed class DependencyScannerTests
         var context = new CandidateFileContext(rootDirectory, directory, "file.txt");
 
         Assert.Equal(expected, context.RelativeDirectory.ToString());
+    }
+
+    [Theory]
+    [InlineData("relative-root", false)]
+    [InlineData("dot-segments", false)]
+    [InlineData("trailing-separator", false)]
+    [InlineData("relative-file", false)]
+    [InlineData("different-case", true)]
+    public async Task ScanFiles_NormalizesThePaths(string kind, bool requiresCaseInsensitiveFileSystem)
+    {
+        if (requiresCaseInsensitiveFileSystem && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            global::Xunit.Assert.Skip("The file system is case-sensitive.");
+
+        await using var directory = TemporaryDirectory.Create();
+        string filePath = directory.GetFullPath(".github/workflows/ci.yml");
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        await File.WriteAllTextAsync(filePath, """
+            jobs:
+              build:
+                steps:
+                  - uses: actions/checkout@v4
+            """, XunitCancellationToken);
+
+        string rootDirectory = directory.FullPath;
+        var (root, file) = kind switch
+        {
+            "relative-root" => (Path.GetRelativePath(Environment.CurrentDirectory, rootDirectory), filePath),
+            "dot-segments" => (Path.Combine(rootDirectory, ".github", "..", "."), filePath),
+            "trailing-separator" => (rootDirectory + Path.DirectorySeparatorChar + Path.DirectorySeparatorChar, filePath),
+            "relative-file" => (rootDirectory, Path.GetRelativePath(Environment.CurrentDirectory, filePath)),
+            _ => (rootDirectory.ToUpperInvariant(), filePath),
+        };
+
+        var options = new ScannerOptions { Scanners = [new GitHubActionsScanner()] };
+        var items = await DependencyScanner.ScanFilesAsync(root, [file], options, XunitCancellationToken);
+        var singleFileItems = await DependencyScanner.ScanFileAsync(root, file, options, XunitCancellationToken);
+        var inMemoryItems = await DependencyScanner.ScanFileAsync(root, file, await File.ReadAllBytesAsync(filePath, XunitCancellationToken), options.Scanners, XunitCancellationToken);
+
+        Assert.Equal("actions/checkout", Assert.Single(items).Name);
+        Assert.Equal("actions/checkout", Assert.Single(singleFileItems).Name);
+        Assert.Equal("actions/checkout", Assert.Single(inMemoryItems).Name);
+
+        // The locations point to the file, even when it was given as a relative path
+        Assert.Equal(filePath, Assert.Single(items).VersionLocation!.FilePath);
+        await Assert.Single(singleFileItems).UpdateVersionAsync("v5", XunitCancellationToken);
+        Assert.Contains("actions/checkout@v5", await File.ReadAllTextAsync(filePath, XunitCancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -268,6 +593,20 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task ScanFiles_NonSeekableStream_IsReadIntoMemory()
+    {
+        var fileSystem = new InMemoryFileSystem { ReturnNonSeekableStreams = true };
+        fileSystem.AddFile("/repo/test.csproj", "<Project><ItemGroup><PackageReference Include=\"A\" Version=\"1.0.0\" /></ItemGroup></Project>");
+
+        // Both scanners read the content from its start
+        var options = new ScannerOptions { FileSystem = fileSystem, Scanners = [new ReadContentScanner(), new MsBuildReferencesDependencyScanner()] };
+        var items = await DependencyScanner.ScanFilesAsync("/repo", ["/repo/test.csproj"], options, XunitCancellationToken);
+
+        Assert.Equal(2, items.Count);
+        Assert.Contains(items, item => item.Name is "A" && item.Version is "1.0.0");
+    }
+
+    [Fact]
     public async Task ScanFile_InMemory()
     {
         var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], [new DummyScanner()], XunitCancellationToken);
@@ -288,9 +627,12 @@ public sealed class DependencyScannerTests
         var items = await DependencyScanner.ScanFileAsync("/repo", "/repo/src/packages.config", content, XunitCancellationToken);
 
         Assert.Equal(["Newtonsoft.Json", "Serilog"], items.Select(item => item.Name).Order(StringComparer.Ordinal));
+
+        // There is no file to write
+        Assert.All(items, item => Assert.False(item.NameLocation!.IsUpdatable || item.VersionLocation!.IsUpdatable));
         var versionLocation = items.First().VersionLocation;
         Assert.NotNull(versionLocation);
-        await Assert.ThrowsAsync<NotSupportedException>(() => versionLocation.UpdateAsync("1.0.0", XunitCancellationToken));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => versionLocation.UpdateAsync("1.0.0", XunitCancellationToken));
     }
 
     [Fact]
@@ -555,6 +897,69 @@ public sealed class DependencyScannerTests
         Assert.Equal(Encoding.Latin1.GetBytes(Original.Replace("1.0.0", "2.0.0", StringComparison.Ordinal)), updatedContent);
     }
 
+    [Theory]
+    [InlineData("utf-16", "utf-8")]
+    [InlineData("windows-1252", "windows-1252")]
+    [InlineData("unknown-encoding", "utf-8")]
+    [InlineData("doctype", "utf-8")]
+    public async Task XmlFile_EncodingDeclarationOrDoctype_IsScannedAndUpdated(string kind, string fileEncodingName)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        var prolog = kind is "doctype"
+            ? "<?xml version=\"1.0\"?>\n<!DOCTYPE Project [ <!ENTITY name \"value\"> ]>\n"
+            : $"<?xml version=\"1.0\" encoding=\"{kind}\"?>\n";
+        var original = prolog + "<Project><PropertyGroup><Description>café</Description></PropertyGroup><ItemGroup><PackageReference Include=\"A\" Version=\"1.0.0\" /></ItemGroup></Project>";
+        var fileEncoding = fileEncodingName is "utf-8" ? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false) : CodePagesEncodingProvider.Instance.GetEncoding(fileEncodingName)!;
+        await File.WriteAllBytesAsync(filePath, fileEncoding.GetBytes(original), XunitCancellationToken);
+
+        var dependency = Assert.Single(await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new MsBuildReferencesDependencyScanner()] }, XunitCancellationToken));
+        Assert.Equal("A", dependency.Name);
+        Assert.Equal("1.0.0", dependency.Version);
+
+        await dependency.UpdateVersionAsync("2.0.0", XunitCancellationToken);
+
+        Assert.Equal(fileEncoding.GetBytes(original.Replace("1.0.0", "2.0.0", StringComparison.Ordinal)), await File.ReadAllBytesAsync(filePath, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task XmlUtilities_Load_DecodesTheDeclaredWindowsCodePage()
+    {
+        byte[] content = [.. "<?xml version=\"1.0\" encoding=\"windows-1252\"?><a>caf"u8, 0xE9, 0x80, .. "</a>"u8];
+        await using var stream = new MemoryStream(content);
+
+        var document = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, XunitCancellationToken);
+
+        Assert.Equal("café€", document.Root!.Value);
+    }
+
+    [Theory]
+    [InlineData(XmlUtilities.MaxDepth + 1, true)]
+    [InlineData(XmlUtilities.MaxDepth + 2, false)]
+    [InlineData(20_000, false)]
+    public async Task XmlUtilities_TryLoad_RejectsDeeplyNestedDocuments(int elementCount, bool expectedValid)
+    {
+        var content = string.Concat(Enumerable.Repeat("<a>", elementCount)) + string.Concat(Enumerable.Repeat("</a>", elementCount));
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+
+        var document = await XmlUtilities.TryLoadDocumentWithoutClosingStream(stream, XunitCancellationToken).WaitAsync(TimeSpan.FromMinutes(1), XunitCancellationToken);
+
+        Assert.Equal(expectedValid, document is not null);
+    }
+
+    [Fact]
+    public async Task XmlUtilities_Load_RejectsDocumentsLargerThanTheLimit()
+    {
+        var content = "<a>" + new string('x', 100) + "</a>";
+        await using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+
+        await Assert.ThrowsAsync<XmlException>(() => XmlUtilities.LoadDocumentAsync(stream, LoadOptions.None, XmlUtilities.MaxDepth, maxCharactersInDocument: 50, XunitCancellationToken));
+
+        stream.Position = 0;
+        var document = await XmlUtilities.LoadDocumentAsync(stream, LoadOptions.None, XmlUtilities.MaxDepth, maxCharactersInDocument: 200, XunitCancellationToken);
+        Assert.Equal(new string('x', 100), document.Root!.Value);
+    }
+
     [Fact]
     public async Task TextLocation_Update_FileThatIsNotValidUtf8_ThrowsWithoutModifyingTheFile()
     {
@@ -685,6 +1090,96 @@ public sealed class DependencyScannerTests
         }
     }
 
+    [Theory]
+    [InlineData("FROM node:18\n", "library/node", "FROM library/node:20\n", "FROM library/node:22\n")]
+    [InlineData("FROM library/node:18\n", "node", "FROM node:20\n", "FROM node:22\n")]
+    [InlineData("FROM node:18 AS build\n", "n", "FROM n:20 AS build\n", "FROM n:22 AS build\n")]
+    public async Task TextLocation_UpdateNameThenVersionOnTheSameLine(string original, string newName, string expected, string expectedAfterSecondUpdate)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("Dockerfile");
+        await File.WriteAllTextAsync(filePath, original, XunitCancellationToken);
+        var dependency = Assert.Single(await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DockerfileDependencyScanner()] }, XunitCancellationToken));
+
+        await dependency.UpdateNameAsync(newName, XunitCancellationToken);
+        await dependency.UpdateVersionAsync("20", XunitCancellationToken);
+        Assert.Equal(expected, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+
+        // A location expects the value it wrote last, so it can be updated again
+        await dependency.VersionLocation!.UpdateAsync("22", XunitCancellationToken);
+        Assert.Equal(expectedAfterSecondUpdate, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task TextLocation_UpdateWithoutOldValue_ChecksTheScannedValue()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("Dockerfile");
+        await File.WriteAllTextAsync(filePath, "FROM node:18\n", XunitCancellationToken);
+        var dependency = Assert.Single(await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DockerfileDependencyScanner()] }, XunitCancellationToken));
+
+        const string Modified = "FROM nginx:18\n";
+        await File.WriteAllTextAsync(filePath, Modified, XunitCancellationToken);
+
+        await Assert.ThrowsAsync<DependencyScannerException>(() => dependency.NameLocation!.UpdateAsync("python", XunitCancellationToken));
+        Assert.Equal(Modified, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData("text")]
+    [InlineData("xml")]
+    [InlineData("json")]
+    public async Task Location_UpdateWithoutOldValue_UnknownValue_Throws(string kind)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("file");
+        const string XmlContent = "<Project Sdk=\"My.Sdk/1.0.0\" />";
+        var (content, location) = kind switch
+        {
+            "text" => ("version: 1.0.0", (Location)new TextLocation(FileSystem.Instance, filePath, line: 1, column: 10, length: 5)),
+            "xml" => (XmlContent, new XmlLocation(FileSystem.Instance, filePath, XDocument.Parse(XmlContent).Root!, XDocument.Parse(XmlContent).Root!.Attribute("Sdk"), column: 7, length: 5)),
+            _ => ("{\"version\":\"1.0.0\"}", new JsonLocation(FileSystem.Instance, filePath, "$['version']", 0, 5)),
+        };
+        await File.WriteAllTextAsync(filePath, content, XunitCancellationToken);
+
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("2.0.0", XunitCancellationToken));
+        Assert.Equal(content, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task XmlLocation_UpdateNameThenVersionInTheSameAttribute()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        await File.WriteAllTextAsync(filePath, "<Project Sdk=\"My.Sdk/1.2.3\" />", XunitCancellationToken);
+        var dependency = Assert.Single(await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new MsBuildReferencesDependencyScanner()] }, XunitCancellationToken));
+        Assert.Equal("My.Sdk", dependency.Name);
+
+        await dependency.UpdateNameAsync("Other.Longer.Sdk", XunitCancellationToken);
+        await dependency.UpdateVersionAsync("2.0.0", XunitCancellationToken);
+        await dependency.UpdateVersionAsync("3.0.0", XunitCancellationToken);
+
+        Assert.Equal("<Project Sdk=\"Other.Longer.Sdk/3.0.0\" />", await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task JsonLocation_UpdatePartWithoutOldValue_AfterRenamingThePrecedingPart()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("renovate.json");
+        await File.WriteAllTextAsync(filePath, """{"extends":["github>org/cfg#1.0.0"]}""", XunitCancellationToken);
+
+        var nameLocation = new JsonLocation(FileSystem.Instance, filePath, "$['extends'][0]", 0, "github>org/cfg".Length);
+        var versionLocation = new JsonLocation(FileSystem.Instance, filePath, "$['extends'][0]", "github>org/cfg#".Length, "1.0.0".Length);
+        var dependency = new Dependency("github>org/cfg", "1.0.0", DependencyType.RenovateConfiguration, nameLocation, versionLocation);
+
+        await dependency.UpdateNameAsync("github>org/configuration", XunitCancellationToken);
+        await versionLocation.UpdateAsync("2.0.0", XunitCancellationToken);
+        await dependency.UpdateVersionAsync("3.0.0", XunitCancellationToken);
+
+        Assert.Equal("""{"extends":["github>org/configuration#3.0.0"]}""", await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+    }
+
     private static async Task<XDocument> LoadXmlDocument(string filePath)
     {
         await using var stream = File.OpenRead(filePath);
@@ -754,12 +1249,12 @@ public sealed class DependencyScannerTests
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-        {
-            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new ReportUnsupportedDependencyType()] }, XunitCancellationToken))
-            {
-            }
-        });
+        var failures = new ConcurrentQueue<Exception>();
+        var options = new ScannerOptions { Scanners = [new ReportUnsupportedDependencyType()], OnFileScanFailed = (_, exception) => failures.Enqueue(exception) };
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+
+        Assert.Empty(items);
+        Assert.IsType<InvalidOperationException>(Assert.Single(failures));
     }
 
     [Fact]
@@ -923,6 +1418,36 @@ public sealed class DependencyScannerTests
         protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
     }
 
+    private sealed class ThrowOnFileNameScanner(string failingFileName) : DependencyScanner
+    {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
+        public override ValueTask ScanAsync(ScanFileContext context)
+        {
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(context.FileSystem, context.FullPath, 1, 1, 1));
+            if (Path.GetFileName(context.FullPath) == failingFileName)
+                throw new FormatException();
+
+            return ValueTask.CompletedTask;
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
+    /// <summary>Reads the whole content, then reports a dependency.</summary>
+    private sealed class ReadContentScanner : DependencyScanner
+    {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
+        public override async ValueTask ScanAsync(ScanFileContext context)
+        {
+            await context.Content.CopyToAsync(Stream.Null, context.CancellationToken);
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(context.FileSystem, context.FullPath, 1, 1, 1));
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
     private sealed class ShouldScanThrowScanner : DependencyScanner
     {
         protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
@@ -987,6 +1512,16 @@ public sealed class DependencyScannerTests
     private sealed class InMemoryFileSystem : IFileSystem
     {
         private readonly List<(string Path, byte[] Content)> _files = [];
+        private readonly HashSet<string> _unreadableFiles = new(StringComparer.Ordinal);
+
+        public bool ReturnNonSeekableStreams { get; init; }
+
+        public ConcurrentQueue<SearchOption> GetFilesSearchOptions { get; } = [];
+
+        public void AddUnreadableFile(string path)
+        {
+            _unreadableFiles.Add(path);
+        }
 
         public void AddFile(string path, byte[] content)
         {
@@ -1000,18 +1535,40 @@ public sealed class DependencyScannerTests
 
         public Stream OpenRead(string path)
         {
+            if (_unreadableFiles.Contains(path))
+                throw new UnauthorizedAccessException("Access denied: " + path);
+
             foreach (var file in _files)
             {
                 if (file.Path == path)
                 {
-                    return new MemoryStream(file.Content);
+                    Stream stream = new MemoryStream(file.Content);
+                    if (ReturnNonSeekableStreams)
+                    {
+                        stream = new RestrictedStream(stream, new RestrictedStreamOptions { AllowReading = true, AllowSynchronousCalls = true, AllowAsynchronousCalls = true, AllowSeeking = false });
+                    }
+
+                    return stream;
                 }
             }
 
             throw new FileNotFoundException("File not found", path);
         }
 
-        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
+        /// <summary>Lists the files under a directory. Paths use <c>/</c>, and directories exist when they contain a file.</summary>
+        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions)
+        {
+            Assert.Equal("*", pattern);
+            GetFilesSearchOptions.Enqueue(searchOptions);
+
+            var prefix = path.TrimEnd('/') + "/";
+            var files = _files.Select(file => file.Path).Where(filePath => filePath.StartsWith(prefix, StringComparison.Ordinal)).ToArray();
+            if (files.Length is 0)
+                throw new DirectoryNotFoundException(path);
+
+            return files.Where(filePath => searchOptions is SearchOption.AllDirectories || !filePath.AsSpan(prefix.Length).Contains('/'));
+        }
+
         public Stream OpenReadWrite(string path) => throw new NotSupportedException();
     }
 }

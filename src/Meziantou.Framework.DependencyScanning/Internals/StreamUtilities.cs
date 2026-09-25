@@ -53,15 +53,7 @@ internal static class StreamUtilities
         await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
         var bytes = memoryStream.GetBuffer().AsMemory(0, (int)memoryStream.Length);
 
-        var (encoding, preambleLength) = DetectBom(bytes.Span) switch
-        {
-            BomKind.Utf8 => (CreateStrictUtf8Encoding(), 3),
-            BomKind.Utf16LittleEndian => (new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true), 2),
-            BomKind.Utf16BigEndian => (new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true), 2),
-            BomKind.Utf32LittleEndian => (new UTF32Encoding(bigEndian: false, byteOrderMark: false, throwOnInvalidCharacters: true), 4),
-            BomKind.Utf32BigEndian => ((Encoding)new UTF32Encoding(bigEndian: true, byteOrderMark: false, throwOnInvalidCharacters: true), 4),
-            _ => ((isXml ? GetXmlDeclaredEncoding(bytes.Span) : null) ?? CreateStrictUtf8Encoding(), 0),
-        };
+        var (encoding, preambleLength) = isXml ? GetXmlEncoding(bytes.Span, strict: true) : GetEncoding(bytes.Span, strict: true);
 
         string text;
         try
@@ -109,27 +101,67 @@ internal static class StreamUtilities
 
     private static UTF8Encoding CreateStrictUtf8Encoding() => new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-    private static Encoding? GetXmlDeclaredEncoding(ReadOnlySpan<byte> bytes)
+    /// <summary>Gets the encoding of a file from its BOM, or UTF-8 when it has none, and the length of the BOM.</summary>
+    /// <param name="bytes">The start of the file.</param>
+    /// <param name="strict">Whether the encoding throws on invalid bytes, rather than replacing them.</param>
+    private static (Encoding Encoding, int PreambleLength) GetEncoding(ReadOnlySpan<byte> bytes, bool strict)
     {
-        var name = XmlUtilities.GetDeclaredEncodingName(bytes);
-        if (name is null)
-            return null;
+        return DetectBom(bytes) switch
+        {
+            BomKind.Utf8 => (strict ? CreateStrictUtf8Encoding() : Encoding.UTF8, 3),
+            BomKind.Utf16LittleEndian => (new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: strict), 2),
+            BomKind.Utf16BigEndian => (new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: strict), 2),
+            BomKind.Utf32LittleEndian => (new UTF32Encoding(bigEndian: false, byteOrderMark: false, throwOnInvalidCharacters: strict), 4),
+            BomKind.Utf32BigEndian => ((Encoding)new UTF32Encoding(bigEndian: true, byteOrderMark: false, throwOnInvalidCharacters: strict), 4),
+            _ => (strict ? CreateStrictUtf8Encoding() : Encoding.UTF8, 0),
+        };
+    }
 
-        Encoding encoding;
+    /// <summary>Gets the encoding of an XML file, and the length of its BOM.</summary>
+    /// <remarks>
+    /// <para>
+    /// MSBuild reads a project through a <see cref="StreamReader"/> that only detects a BOM, so it ignores the declared
+    /// encoding and reads the file as UTF-8 otherwise. That is followed here, except that a declared encoding is honored
+    /// when it can be: an ASCII-compatible encoding that .NET supports, including the Windows code pages such as
+    /// windows-1252. A declaration that cannot be honored, such as UTF-16 without a BOM, which only a text editor that
+    /// does not rewrite the declaration produces, falls back to UTF-8 instead of making the file unreadable.
+    /// </para>
+    /// <para>The same rule is used to scan the file and to update it, so both read the same text.</para>
+    /// </remarks>
+    /// <param name="bytes">The start of the file. The first 1024 bytes are enough.</param>
+    /// <param name="strict">Whether the encoding throws on invalid bytes, rather than replacing them.</param>
+    internal static (Encoding Encoding, int PreambleLength) GetXmlEncoding(ReadOnlySpan<byte> bytes, bool strict)
+    {
+        if (DetectBom(bytes) is not BomKind.None)
+            return GetEncoding(bytes, strict);
+
+        var name = XmlUtilities.GetDeclaredEncodingName(bytes);
+        // The declaration was read as ASCII, so an encoding that does not write ASCII as ASCII, such as UTF-16, cannot be the right one
+        if (name is not null && GetEncodingByName(name, strict) is { } encoding && IsAsciiCompatible(encoding))
+            return (encoding, 0);
+
+        return GetEncoding(bytes, strict);
+    }
+
+    private static bool IsAsciiCompatible(Encoding encoding)
+    {
+        return encoding.GetBytes("<?xml version=\"1.0\" encoding=\"\"?>").AsSpan().SequenceEqual("<?xml version=\"1.0\" encoding=\"\"?>"u8);
+    }
+
+    private static Encoding? GetEncodingByName(string name, bool strict)
+    {
+        var encoderFallback = strict ? EncoderFallback.ExceptionFallback : EncoderFallback.ReplacementFallback;
+        var decoderFallback = strict ? DecoderFallback.ExceptionFallback : DecoderFallback.ReplacementFallback;
         try
         {
-            encoding = Encoding.GetEncoding(name, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+            return Encoding.GetEncoding(name, encoderFallback, decoderFallback);
         }
-        catch (ArgumentException ex)
+        catch (ArgumentException)
         {
-            throw new DependencyScannerException($"The encoding '{name}' declared by the XML file is not supported.", ex);
+            // The Windows code pages, such as windows-1252, are only available through this provider. Using it directly
+            // does not register it for the whole process.
+            return CodePagesEncodingProvider.Instance.GetEncoding(name, encoderFallback, decoderFallback);
         }
-
-        // The declaration was read as ASCII, so the bytes cannot be UTF-16 or UTF-32. An XML reader rejects such a file as well.
-        if (encoding is UnicodeEncoding or UTF32Encoding)
-            throw new DependencyScannerException($"The XML file declares the encoding '{name}' but has no byte order mark.");
-
-        return encoding;
     }
 
     private static BomKind DetectBom(ReadOnlySpan<byte> buffer)
@@ -155,7 +187,7 @@ internal static class StreamUtilities
         return BomKind.None;
     }
 
-    private static async ValueTask<int> ReadUntilCountOrEndAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
+    internal static async ValueTask<int> ReadUntilCountOrEndAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var totalRead = 0;
         while (totalRead < buffer.Length)

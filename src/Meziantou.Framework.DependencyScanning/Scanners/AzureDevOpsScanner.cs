@@ -3,7 +3,7 @@ using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilitie
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans Azure DevOps pipeline YAML files for VM pool images, tasks, templates, and repository references.</summary>
+/// <summary>Scans Azure DevOps pipeline YAML files for VM pool images, tasks, templates, container images, and repository and package resources.</summary>
 public sealed class AzureDevOpsScanner : DependencyScanner
 {
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/jobs-deployment-strategy?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
@@ -21,6 +21,8 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         DependencyType.AzureDevOpsTemplate,
         DependencyType.GitReference,
         DependencyType.DockerImage,
+        DependencyType.Npm,
+        DependencyType.NuGet,
     ];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
@@ -70,6 +72,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
             {
                 ScanTemplate(yaml, stage);
                 ScanPool(yaml, stage);
+                ScanVariables(yaml, stage);
                 ScanJobs(yaml, stage, containerAliases);
             }
         }
@@ -85,8 +88,9 @@ public sealed class AzureDevOpsScanner : DependencyScanner
             {
                 ScanTemplate(yaml, job);
                 ScanPool(yaml, job);
+                ScanVariables(yaml, job);
                 ScanSteps(yaml, job);
-                ScanJobContainers(yaml, job, containerAliases);
+                ScanJobContainers(yaml, job, containerAliases, scanServices: true);
                 ScanDeploymentStrategy(yaml, job);
             }
         }
@@ -138,20 +142,48 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
     }
 
-    private void ScanJobContainers(YamlFile yaml, YamlElement node, HashSet<string> containerAliases)
+    private void ScanJobContainers(YamlFile yaml, YamlElement node, HashSet<string> containerAliases, bool scanServices)
     {
-        var containerNode = GetProperty(node, "container", StringComparison.Ordinal);
+        ScanContainer(yaml, GetProperty(node, "container", StringComparison.Ordinal), containerAliases);
+
+        // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/jobs-job?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
+        // services: { <name>: <container resource alias | image | container> }
+        if (scanServices && GetProperty(node, "services", StringComparison.Ordinal) is YamlMapping services)
+        {
+            foreach (var service in services)
+            {
+                ScanContainer(yaml, service.Value, containerAliases);
+            }
+        }
+    }
+
+    private void ScanContainer(YamlFile yaml, YamlElement? containerNode, HashSet<string> containerAliases)
+    {
         if (containerNode is YamlMapping container)
         {
-            containerNode = GetProperty(container, "image", StringComparison.Ordinal);
-        }
-        else if (GetScalarValue(containerNode) is { } alias && containerAliases.Contains(alias))
-        {
-            // container: <alias> references resources.containers[].container, whose image is reported from the resource
+            yaml.ReportDockerImage(this, GetProperty(container, "image", StringComparison.Ordinal));
             return;
         }
 
-        yaml.ReportDockerImage(this, containerNode);
+        // container: <alias> references resources.containers[].container, whose image is reported from the resource.
+        // The resource may be declared in another file (the pipeline that includes a template), and the value may be an
+        // expression, so a value is only reported when it is certainly an image: it has a tag, a digest or a path.
+        if (GetScalarValue(containerNode) is { } alias && containerAliases.Contains(alias))
+            return;
+
+        yaml.ReportDockerImage(this, containerNode, requireQualifiedReference: true);
+    }
+
+    // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/variables-template?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
+    private void ScanVariables(YamlFile yaml, YamlElement? node)
+    {
+        if (GetProperty(node, "variables", StringComparison.Ordinal) is YamlSequence variables)
+        {
+            foreach (var variable in variables)
+            {
+                ScanTemplate(yaml, variable);
+            }
+        }
     }
 
     private static HashSet<string> GetContainerAliases(YamlElement node)
@@ -216,6 +248,44 @@ public sealed class AzureDevOpsScanner : DependencyScanner
                         ]);
                 }
             }
+
+            // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-packages-package?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
+            if (GetProperty(resources, "packages", StringComparison.Ordinal) is YamlSequence packages)
+            {
+                foreach (var package in packages)
+                {
+                    var type = GetScalarValue(GetProperty(package, "type", StringComparison.Ordinal));
+                    DependencyType? dependencyType = type switch
+                    {
+                        _ when string.Equals(type, "npm", StringComparison.OrdinalIgnoreCase) => DependencyType.Npm,
+                        _ when string.Equals(type, "NuGet", StringComparison.OrdinalIgnoreCase) => DependencyType.NuGet,
+                        _ => null,
+                    };
+
+                    if (dependencyType is null)
+                        continue;
+
+                    // name is <repository>/<package> on GitHub Packages
+                    var name = GetProperty(package, "name", StringComparison.Ordinal);
+                    if (GetScalarValue(name) is not { } nameValue || !yaml.TryMarkAsReported(name))
+                        continue;
+
+                    var version = GetProperty(package, "version", StringComparison.Ordinal);
+                    yaml.Context.ReportDependency(
+                        this,
+                        name: nameValue,
+                        version: GetScalarValue(version),
+                        dependencyType.Value,
+                        nameLocation: yaml.GetLocation(name),
+                        versionLocation: yaml.GetLocation(version),
+                        tags: [],
+                        metadata: [
+                            KeyValuePair.Create<string, object?>("package", GetScalarValue(GetProperty(package, "package", StringComparison.Ordinal))),
+                            KeyValuePair.Create<string, object?>("connection", GetScalarValue(GetProperty(package, "connection", StringComparison.Ordinal))),
+                            KeyValuePair.Create<string, object?>("type", type),
+                        ]);
+                }
+            }
         }
     }
 
@@ -232,10 +302,13 @@ public sealed class AzureDevOpsScanner : DependencyScanner
 
             var containerAliases = GetContainerAliases(rootNode);
             ScanPool(yaml, rootNode);
+            ScanVariables(yaml, rootNode);
             ScanStages(yaml, rootNode, containerAliases);
             ScanJobs(yaml, rootNode, containerAliases);
             ScanSteps(yaml, rootNode);
-            ScanJobContainers(yaml, rootNode, containerAliases);
+            // A pipeline with a single implicit job declares its steps and services at the root. A docker-compose file also
+            // has a root services mapping, but no steps.
+            ScanJobContainers(yaml, rootNode, containerAliases, scanServices: GetProperty(rootNode, "steps", StringComparison.Ordinal) is not null);
             ScanResources(yaml, rootNode);
 
             // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/extends?view=azure-pipelines&WT.mc_id=DT-MVP-5003978

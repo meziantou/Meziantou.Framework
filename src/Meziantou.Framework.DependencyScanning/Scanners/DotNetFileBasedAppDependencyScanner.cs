@@ -67,10 +67,20 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             if (remainingLine.IsWhiteSpace() || remainingLine.StartsWith("//", StringComparison.Ordinal) || remainingLine.StartsWith("#!", StringComparison.Ordinal))
                 continue;
 
-            // Stop scanning at first non-directive line.
+            // The SDK reads the directives in the leading trivia of the first token of the file, so it stops at the first token.
             // Like any preprocessor directive, a directive must be the first non-whitespace text of its line, so a directive after a comment is ignored by the compiler.
-            if (!remainingLine.StartsWith("#:", StringComparison.Ordinal) || hasCommentOnLine)
+            if (hasCommentOnLine || remainingLine[0] is not '#')
                 break;
+
+            if (!remainingLine.StartsWith("#:", StringComparison.Ordinal))
+            {
+                // Other preprocessor directives, such as #nullable, #region or #pragma, are trivia like comments, so the directives after them are read.
+                // The SDK stops at #if, as the directives of an inactive branch must not be read, and the compiler rejects the ones after #if.
+                if (IsIfDirective(remainingLine))
+                    break;
+
+                continue;
+            }
 
             // The regexes match the whole line, so the reported columns are columns in the raw line
             // Package directive: #:package Name or #:package Name@Version
@@ -82,10 +92,15 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
             }
 
             // SDK directive: #:sdk Name or #:sdk Name@Version
+            // Like Sdk="Name" in a project file, an SDK without a version is not reported: it is either a built-in SDK or its version comes from global.json.
             match = SdkRegex().Match(line);
             if (match.Success)
             {
-                ReportNameVersionDependency(context, match, lineNo, DependencyType.NuGet);
+                if (match.Groups["Version"].Success)
+                {
+                    ReportNameVersionDependency(context, match, lineNo, DependencyType.NuGet);
+                }
+
                 continue;
             }
 
@@ -117,6 +132,14 @@ public sealed partial class DotNetFileBasedAppDependencyScanner : DependencyScan
                 continue;
             }
         }
+    }
+
+    private static bool IsIfDirective(ReadOnlySpan<char> line)
+    {
+        // Whitespace is allowed between '#' and the directive name
+        var directive = line[1..].TrimStart();
+        return directive.StartsWith("if", StringComparison.Ordinal)
+            && (directive.Length == 2 || !(char.IsLetterOrDigit(directive[2]) || directive[2] is '_'));
     }
 
     private void ReportNameVersionDependency(ScanFileContext context, Match match, int lineNo, DependencyType type)

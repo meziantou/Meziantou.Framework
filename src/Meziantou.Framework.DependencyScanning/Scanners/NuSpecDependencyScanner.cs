@@ -29,18 +29,27 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
         {
             var idAttribute = dependency.Attribute(IdXName);
             var id = idAttribute?.Value;
+            if (string.IsNullOrEmpty(id))
+                continue;
+
+            Location nameLocation = IsReplacementToken(id)
+                ? new NonUpdatableLocation(context)
+                : new XmlLocation(context.FileSystem, context.FullPath, dependency, idAttribute);
+
+            // The version is optional: a dependency without a version accepts any version of the package
             var versionAttribute = dependency.Attribute(VersionXName);
             var version = versionAttribute?.Value;
-            if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(version))
+            if (string.IsNullOrEmpty(version))
             {
-                context.ReportDependency(this, id, version, DependencyType.NuGet,
-                    nameLocation: IsReplacementToken(id)
-                        ? new NonUpdatableLocation(context)
-                        : new XmlLocation(context.FileSystem, context.FullPath, dependency, idAttribute),
-                    versionLocation: IsReplacementToken(version)
-                        ? new NonUpdatableLocation(context)
-                        : new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute));
+                context.ReportDependency(this, id, version: null, DependencyType.NuGet, nameLocation, versionLocation: null);
+                continue;
             }
+
+            context.ReportDependency(this, id, version, DependencyType.NuGet,
+                nameLocation,
+                versionLocation: IsReplacementToken(version)
+                    ? new NonUpdatableLocation(context)
+                    : new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute));
         }
     }
 

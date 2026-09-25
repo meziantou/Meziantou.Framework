@@ -6,12 +6,16 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class YamlParserUtilities
 {
-    public static YamlFile? LoadYamlFile(ScanFileContext context)
+    /// <summary>Parses the file, or returns <see langword="null"/> when it is not valid YAML or when <paramref name="shouldParse"/> rejects its text.</summary>
+    public static YamlFile? LoadYamlFile(ScanFileContext context, Func<string, bool>? shouldParse = null)
     {
         try
         {
             using var textReader = new StreamReader(context.Content, leaveOpen: true);
             var text = textReader.ReadToEnd();
+            if (shouldParse is not null && !shouldParse(text))
+                return null;
+
             var stream = YamlStream.Load(new StringReader(text));
             return new YamlFile(context, text, stream);
         }
@@ -95,10 +99,17 @@ internal static class YamlParserUtilities
             }
         }
 
-        public void ReportDockerImage(DependencyScanner scanner, YamlElement? node, int prefixLength = 0)
+        /// <summary>Reports a Docker image. When <paramref name="requireQualifiedReference"/> is <see langword="true"/>, a value that could be another kind of name (an alias or an expression) is skipped.</summary>
+        public void ReportDockerImage(DependencyScanner scanner, YamlElement? node, int prefixLength = 0, bool requireQualifiedReference = false)
         {
             var value = GetScalarValue(node);
-            if (value is null || value.Length <= prefixLength || !TryMarkAsReported(node))
+            if (value is null || value.Length <= prefixLength)
+                return;
+
+            if (requireQualifiedReference && (!DockerImageReference.TryParse(value[prefixLength..], out var reference) || !reference.IsQualified))
+                return;
+
+            if (!TryMarkAsReported(node))
                 return;
 
             DockerImageReference.Report(scanner, _context, value[prefixLength..], (start, length) => GetLocation(node, prefixLength + start, length));

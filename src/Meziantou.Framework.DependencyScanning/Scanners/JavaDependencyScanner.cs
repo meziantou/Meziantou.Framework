@@ -1,14 +1,15 @@
-using System.Text.RegularExpressions;
-using Meziantou.Framework.DependencyScanning.Internals;
-using Meziantou.Framework.DependencyScanning.Locations;
-using Meziantou.Framework.Language;
-using Meziantou.Framework.Language.Toml;
-
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 /// <summary>Scans Maven and Gradle files for Java package dependencies.</summary>
+/// <remarks>
+/// Gradle plugins, declared in a <c>plugins</c> block or in the <c>[plugins]</c> table of a version catalog, are reported with
+/// the coordinates of their plugin marker artifact, <c>&lt;id&gt;:&lt;id&gt;.gradle.plugin</c>, which is the artifact Gradle resolves
+/// the plugin from. The plugin id is available in <see cref="Dependency.Metadata"/> under the <c>pluginId</c> key.
+/// </remarks>
 public sealed partial class JavaDependencyScanner : DependencyScanner
 {
+    private const string PluginIdMetadataKey = "pluginId";
+
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.JavaPackage];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
@@ -25,188 +26,17 @@ public sealed partial class JavaDependencyScanner : DependencyScanner
         if (fileName.Equals("libs.versions.toml", StringComparison.Ordinal))
         {
             await ScanVersionCatalogAsync(context).ConfigureAwait(false);
-            return;
         }
-
-        var isMaven = fileName.Equals("pom.xml", StringComparison.Ordinal);
-        using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-        var lineNumber = 0;
-        string? mavenElement = null;
-        var inMavenExclusions = false;
-        string? mavenGroup = null;
-        string? mavenArtifact = null;
-        string? line;
-        while ((line = await reader.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) is not null)
+        else if (fileName.Equals("pom.xml", StringComparison.Ordinal))
         {
-            lineNumber++;
-            if (isMaven)
-            {
-                // Only the coordinates of dependencies, plugins and the parent are dependencies, not the ones of the project itself
-                if (MavenElementRegex().Match(line) is { Success: true } elementMatch)
-                {
-                    var isClosing = elementMatch.Groups["close"].Success;
-                    var element = elementMatch.Groups["name"].Value;
-                    if (element is "exclusions")
-                    {
-                        inMavenExclusions = !isClosing;
-                    }
-                    else
-                    {
-                        mavenElement = isClosing ? null : element;
-
-                        // Maven uses this group when a plugin does not specify one
-                        mavenGroup = !isClosing && element is "plugin" ? "org.apache.maven.plugins" : null;
-                        mavenArtifact = null;
-                    }
-
-                    continue;
-                }
-
-                if (mavenElement is null || inMavenExclusions)
-                    continue;
-
-                if (MavenGroupRegex().Match(line) is { Success: true } groupMatch)
-                {
-                    mavenGroup = groupMatch.Groups["value"].Value;
-                    continue;
-                }
-
-                if (MavenArtifactRegex().Match(line) is { Success: true } artifactMatch)
-                {
-                    mavenArtifact = artifactMatch.Groups["value"].Value;
-                    continue;
-                }
-
-                if (mavenGroup is null || mavenArtifact is null)
-                    continue;
-
-                var mavenVersionMatch = MavenVersionRegex().Match(line);
-                if (!mavenVersionMatch.Success)
-                    continue;
-
-                // A property reference, such as ${junit.version}, must be updated where the property is defined
-                var mavenVersion = mavenVersionMatch.Groups["value"];
-                Location mavenVersionLocation = mavenVersion.Value.Contains("${", StringComparison.Ordinal)
-                    ? new NonUpdatableLocation(context)
-                    : new TextLocation(context.FileSystem, context.FullPath, lineNumber, mavenVersion.Index + 1, mavenVersion.Length);
-                context.ReportDependency(this, $"{mavenGroup}:{mavenArtifact}", mavenVersion.Value, DependencyType.JavaPackage,
-                    new NonUpdatableLocation(context), mavenVersionLocation);
-                mavenGroup = null;
-                mavenArtifact = null;
-                continue;
-            }
-
-            var match = GradleDependencyRegex().Match(line);
-            if (!match.Success)
-                continue;
-
-            var version = match.Groups["version"];
-            context.ReportDependency(this, match.Groups["name"].Value, version.Value, DependencyType.JavaPackage,
-                new NonUpdatableLocation(context),
-                new TextLocation(context.FileSystem, context.FullPath, lineNumber, version.Index + 1, version.Length));
+            await ScanMavenAsync(context).ConfigureAwait(false);
+        }
+        else
+        {
+            await ScanGradleAsync(context, isKotlin: fileName.EndsWith(".kts", StringComparison.Ordinal)).ConfigureAwait(false);
         }
     }
 
-    private async ValueTask ScanVersionCatalogAsync(ScanFileContext context)
-    {
-        using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-        var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
-        var tree = TomlSyntaxTree.ParseText(text, context.FullPath);
-        var versions = new Dictionary<string, (string Version, TextLocation Location)>(StringComparer.Ordinal);
-        var versionReferences = new List<(string Name, string VersionReference)>();
-        foreach (var table in tree.GetRoot().Tables)
-        {
-            var section = TomlUtilities.GetName(table.Key);
-            if (section is "versions")
-            {
-                foreach (var property in table.Properties)
-                {
-                    if (TomlUtilities.GetString(property.Value) is { } version)
-                    {
-                        versions[TomlUtilities.GetName(property.Key)] = (version.Value, TomlUtilities.CreateLocation(context, tree, version));
-                    }
-                }
-            }
-            else if (section is "libraries")
-            {
-                foreach (var property in table.Properties)
-                {
-                    if (TomlUtilities.GetString(property.Value) is { } notation)
-                    {
-                        // guava = "com.google.guava:guava:33.0.0"
-                        var separator = notation.Value.LastIndexOf(':', StringComparison.Ordinal);
-                        if (separator <= 0 || notation.Value.AsSpan(0, separator).IndexOf(':') < 0)
-                            continue;
-
-                        var notationLocation = TomlUtilities.CreateLocation(context, tree, notation);
-                        context.ReportDependency(this, notation.Value[..separator], notation.Value[(separator + 1)..], DependencyType.JavaPackage,
-                            new NonUpdatableLocation(context),
-                            new TextLocation(context.FileSystem, context.FullPath, notationLocation.LineNumber, notationLocation.LinePosition + separator + 1, notation.Value.Length - separator - 1));
-                        continue;
-                    }
-
-                    // guava = { module = "com.google.guava:guava", version = "33.0.0" }
-                    // guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
-                    string name;
-                    if (TomlUtilities.GetInlineTableString(property.Value, "module") is { } module)
-                    {
-                        name = module.Value;
-                    }
-                    else if (TomlUtilities.GetInlineTableString(property.Value, "group") is { } group && TomlUtilities.GetInlineTableString(property.Value, "name") is { } artifact)
-                    {
-                        name = group.Value + ":" + artifact.Value;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    if (TomlUtilities.GetInlineTableString(property.Value, "version") is { } libraryVersion)
-                    {
-                        context.ReportDependency(this, name, libraryVersion.Value, DependencyType.JavaPackage,
-                            new NonUpdatableLocation(context), TomlUtilities.CreateLocation(context, tree, libraryVersion));
-                    }
-                    else if (TomlUtilities.GetInlineTableString(property.Value, "version.ref") is { } versionReference)
-                    {
-                        versionReferences.Add((name, versionReference.Value));
-                    }
-                    else
-                    {
-                        context.ReportDependency(this, name, version: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context));
-                    }
-                }
-            }
-        }
-
-        foreach (var (name, versionReference) in versionReferences)
-        {
-            if (!versions.TryGetValue(versionReference, out var version))
-            {
-                context.ReportDependency(this, name, version: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context));
-                continue;
-            }
-
-            // A version shared by several libraries cannot be updated for one of them only
-            var isShared = versionReferences.Count(item => item.VersionReference == versionReference) > 1;
-            context.ReportDependency(this, name, version.Version, DependencyType.JavaPackage,
-                new NonUpdatableLocation(context),
-                isShared ? new NonUpdatableLocation(context) : version.Location);
-        }
-    }
-
-    [GeneratedRegex("""^\s*<groupId>(?<value>[^<]+)</groupId>\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex MavenGroupRegex();
-
-    [GeneratedRegex("""^\s*<artifactId>(?<value>[^<]+)</artifactId>\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex MavenArtifactRegex();
-
-    [GeneratedRegex("""^\s*<version>(?<value>[^<]+)</version>\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex MavenVersionRegex();
-
-    [GeneratedRegex("""^\s*<(?<close>/)?(?<name>dependency|plugin|parent|exclusions)>\s*$""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex MavenElementRegex();
-
-    // group:artifact:version[:classifier][@extension]. Interpolated versions, such as $fooVersion, are not matched.
-    [GeneratedRegex("""["'](?<name>[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+):(?<version>[^"'$:@]+)(?::[^"'$:@]+)?(?:@[^"'$]+)?["']""", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex GradleDependencyRegex();
+    /// <summary>Gets the coordinates of the marker artifact Gradle resolves a plugin from.</summary>
+    private static string GetGradlePluginMarkerName(string pluginId) => pluginId + ":" + pluginId + ".gradle.plugin";
 }

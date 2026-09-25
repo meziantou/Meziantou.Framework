@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.11" />
+    <PackageReference Include="System.CommandLine" Version="2.0.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +19,7 @@
     <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Ini/Meziantou.Framework.Language.Ini.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Shell/Meziantou.Framework.Language.Shell.csproj" />
     <ProjectReference Include="../Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />

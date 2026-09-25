@@ -5,6 +5,7 @@ internal enum SyntaxLanguageFamily
 {
     Ini,
     Json,
+    Toml,
     Xml,
     Regex,
     Shell,

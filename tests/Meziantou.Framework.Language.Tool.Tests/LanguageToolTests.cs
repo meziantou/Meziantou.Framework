@@ -6,6 +6,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 {
     private const string IniSample = "[section]\nname=value\n";
     private const string JsonSample = "{\"a\":[1,/*c*/2]}";
+    private const string TomlSample = "title = \"TOML\"\n[owner]\nname = \"Tom\"\n";
     private const string XmlSample = "<?xml version=\"1.0\"?><root attr=\"value\"><child>sample</child><!--c--></root>";
     private const string ShellSample = "FOO=1 echo hi >out\n";
     private const string RegexSample = @"(?<year>\d{4})-\d\d";
@@ -17,6 +18,7 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
         { ".gitconfig", "[user]\nname=Tester\n", "ini" },
         { ".npmrc", "registry=https://registry.npmjs.org/\n", "ini" },
         { "sample.json", JsonSample, "json" },
+        { "sample.toml", TomlSample, "toml" },
         { "sample.xml", XmlSample, "xml" },
         { "sample.csproj", XmlSample, "xml" },
         { "sample.props", XmlSample, "xml" },

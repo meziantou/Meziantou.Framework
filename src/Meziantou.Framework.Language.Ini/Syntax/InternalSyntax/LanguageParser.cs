@@ -21,6 +21,7 @@ internal sealed class LanguageParser
     private int _previousTokenTextEnd;
     private bool _previousTokenEndedTheLine = true;
     private int _valueIndentation;
+    private string? _keyWithoutValueBeforeContinuation;
 
     public LanguageParser(SourceText source, IniParseOptions options)
     {
@@ -43,6 +44,13 @@ internal sealed class LanguageParser
             EnsureMode(LexerMode.LineStart);
             if (CurrentKind == SyntaxKind.EndOfFileToken)
                 break;
+
+            // The line after a key without a value is reported outside of both entries, as it belongs to neither.
+            if (_keyWithoutValueBeforeContinuation is { } key)
+            {
+                AddErrorAtCurrentToken(IniDiagnosticDescriptors.UnexpectedContinuation, key);
+                _keyWithoutValueBeforeContinuation = null;
+            }
 
             var entryStart = _currentFullStart;
             var entry = ParseEntry();
@@ -164,6 +172,13 @@ internal sealed class LanguageParser
             separator = SyntaxFactory.MissingToken(SyntaxKind.EqualsToken);
             value = SyntaxFactory.MissingToken(SyntaxKind.ValueToken, key.TrailingTrivia);
             key = key.WithTrivia(key.LeadingTrivia, trailingTrivia: null);
+
+            // configparser rejects a line indented as if it continued a key that has no value. It is read as an entry of
+            // its own, and reported once that entry is read.
+            if (_options.AllowMultilineValues && !key.IsMissing && _previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation, out _))
+            {
+                _keyWithoutValueBeforeContinuation = key.Text;
+            }
         }
 
         var node = new IniPropertySyntax(key, separator, value, continuations);
@@ -175,7 +190,7 @@ internal sealed class LanguageParser
     private GreenNode? ParseContinuationLines()
     {
         List<GreenNode?>? lines = null;
-        while (_previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation))
+        while (_previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation, out _))
         {
             EnsureMode(LexerMode.ValueContinuation);
             (lines ??= []).Add(EatToken(LexerMode.LineStart));
@@ -274,17 +289,19 @@ internal sealed class LanguageParser
         private readonly HashSet<string> _sections = new(comparer);
         private readonly Dictionary<string, HashSet<string>> _keysBySection = new(comparer);
         private HashSet<string> _currentKeys = new(comparer);
-        private string? _currentSection;
+        private string _currentSectionDescription = "the global section";
 
         public void EnterSection(string? name, int position, List<PendingDiagnostic> pending)
         {
-            _currentSection = name;
             if (name is null)
             {
                 // Keys under a header without a name belong to no section that can be named again.
+                _currentSectionDescription = "a section without a name";
                 _currentKeys = new HashSet<string>(comparer);
                 return;
             }
+
+            _currentSectionDescription = $"the section '{name}'";
 
             if (!_sections.Add(name))
             {
@@ -304,8 +321,7 @@ internal sealed class LanguageParser
         {
             if (!_currentKeys.Add(key))
             {
-                var section = _currentSection is null ? "the global section" : $"the section '{_currentSection}'";
-                pending.Add(new PendingDiagnostic(position, key.Length, IniDiagnosticDescriptors.DuplicateKey, [key, section]));
+                pending.Add(new PendingDiagnostic(position, key.Length, IniDiagnosticDescriptors.DuplicateKey, [key, _currentSectionDescription]));
             }
         }
     }

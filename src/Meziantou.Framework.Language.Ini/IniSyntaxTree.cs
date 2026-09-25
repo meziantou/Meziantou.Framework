@@ -77,8 +77,10 @@ public sealed class IniSyntaxTree : SyntaxTree
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
     /// <remarks>
-    /// The diagnostics are those <paramref name="root"/> carries; the text is not parsed again. The root of the tree is read
-    /// with <paramref name="options"/> from then on, which decides how an edit writes values.
+    /// When <paramref name="options"/> are those of <paramref name="root"/>, the diagnostics are those it carries and the
+    /// text is not parsed again. Other options read the text differently, so the text of <paramref name="root"/> is parsed
+    /// again with them, and the tree has the nodes and diagnostics they give; the annotations of <paramref name="root"/>
+    /// are not carried over then.
     /// </remarks>
     /// <param name="root">The root of the tree.</param>
     /// <param name="options">The options, or <see langword="null"/> for the <see cref="IniDocumentSyntax.Options"/> of <paramref name="root"/>.</param>
@@ -89,12 +91,14 @@ public sealed class IniSyntaxTree : SyntaxTree
         ArgumentNullException.ThrowIfNull(root);
 
         var green = (Green.IniDocumentSyntax)root.Green;
-        if (options is not null)
-        {
-            green = green.WithOptions(options);
-        }
+        var text = SourceText.From(root.ToFullString());
+        if (options is null || ReferenceEquals(options, green.Options))
+            return new IniSyntaxTree(text, green, path);
 
-        return new IniSyntaxTree(SourceText.From(root.ToFullString()), green, path);
+        if (options.Equals(green.Options))
+            return new IniSyntaxTree(text, green.WithOptions(options), path);
+
+        return ParseText(text, options, path);
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
@@ -117,20 +121,25 @@ public sealed class IniSyntaxTree : SyntaxTree
         return WithChangedText(_text.WithChanges(changes));
     }
 
-    /// <summary>Returns a tree whose root is <paramref name="root"/>.</summary>
+    /// <summary>Returns a tree whose root is <paramref name="root"/>, read with the options of <paramref name="root"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
-    public IniSyntaxTree WithRoot(IniDocumentSyntax root) => Create(root, Options, FilePath);
+    public IniSyntaxTree WithRoot(IniDocumentSyntax root) => Create(root, options: null, FilePath);
 
     /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
     public IReadOnlyList<TextChange> GetChanges(IniSyntaxTree oldTree) => base.GetChanges(oldTree);
 
-    /// <summary>Determines whether the two trees have the same structure and text.</summary>
-    public bool IsEquivalentTo(IniSyntaxTree? other) => base.IsEquivalentTo(other);
+    /// <summary>Determines whether the two trees have the same structure and text, and are read with equal options.</summary>
+    /// <remarks>Trees read with different options can have the same text and structure, but not the same values.</remarks>
+    public bool IsEquivalentTo([NotNullWhen(true)] IniSyntaxTree? other) => IsEquivalentTo((SyntaxTree?)other);
+
+    /// <inheritdoc cref="IsEquivalentTo(IniSyntaxTree?)"/>
+    public override bool IsEquivalentTo([NotNullWhen(true)] SyntaxTree? other)
+        => other is IniSyntaxTree tree && Options.Equals(tree.Options) && base.IsEquivalentTo(other);
 
     protected override SyntaxNode GetRootCore() => _root;
 
     protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText, Options, FilePath);
 
-    protected override SyntaxTree WithRootCore(SyntaxNode root) => Create((IniDocumentSyntax)root, Options, FilePath);
+    protected override SyntaxTree WithRootCore(SyntaxNode root) => Create((IniDocumentSyntax)root, options: null, FilePath);
 }

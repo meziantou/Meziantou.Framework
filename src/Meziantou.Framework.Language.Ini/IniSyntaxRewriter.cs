@@ -70,7 +70,8 @@ public class IniSyntaxRewriter : IniSyntaxVisitor<SyntaxNode?>
         List<TNode>? rewritten = null;
         for (var i = 0; i < list.Count; i++)
         {
-            var visited = Visit(list[i]) as TNode;
+            // A rewrite that returns a node of another kind is a bug in the rewriter, not a request to remove the node.
+            var visited = (TNode?)Visit(list[i]);
             if (rewritten is null && (visited is null || ReferenceEquals(visited, list[i])))
             {
                 if (visited is not null)

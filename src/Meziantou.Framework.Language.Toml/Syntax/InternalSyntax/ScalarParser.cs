@@ -114,7 +114,8 @@ internal static class ScalarParser
             return Result.NoMatch;
 
         // .NET reads a finite number too large for a double as an infinity; inf and nan were handled above, so an
-        // infinity here is a number TOML says to reject rather than round.
+        // infinity here is a number TOML says to reject rather than round. A number too small for a double rounds to
+        // zero, or to a subnormal, which is the nearest value a double has, as IEEE 754 says.
         value = double.Parse(RemoveUnderscores(text), NumberStyles.Float, CultureInfo.InvariantCulture);
         return double.IsInfinity(value) ? Result.Unsupported : Result.Success;
     }

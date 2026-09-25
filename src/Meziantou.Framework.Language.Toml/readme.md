@@ -71,6 +71,34 @@ Whitespace and comments are trivia. Up to and including the end of a line they b
 line, and everything after belongs to the token that follows, so a comment on its own line attaches to the entry it
 describes.
 
+## Reading values by key
+
+A table can be written with a header, with dotted keys, or as an inline table, and the three can be mixed.
+`GetKeyValues()` reads every key/value pair of a document with the full key it defines, whichever way it is written, and
+`GetValue` finds the value of one key:
+
+```csharp
+var root = TomlSyntaxTree.ParseText("""
+    [dependencies]
+    serde = { version = "1.0" }
+
+    [dependencies.tokio]
+    version = "1.2"
+    """).GetRoot();
+
+var tokio = (TomlStringSyntax)root.GetValue("dependencies", "tokio", "version")!;
+Console.WriteLine(tokio.Value); // 1.2
+
+foreach (var pair in root.GetKeyValues())
+{
+    Console.WriteLine(string.Join('.', pair.Names)); // dependencies.serde, dependencies.serde.version, dependencies.tokio.version
+}
+```
+
+A pair whose value is an inline table comes before the pairs of that table. `Parts` gives the token that writes each
+name, and `Table` the header the pair is under, which tells apart the tables of an array of tables. Values in arrays
+are not visited, as they have no key of their own.
+
 ## Editing without reformatting
 
 Nodes are immutable: every change returns a new node, and everything you did not change keeps its text.
@@ -99,13 +127,20 @@ Console.WriteLine(document.ToFullString());
 ```
 
 Every entry of a document has to end its line, so `TomlDocument` and `AddEntries` add a line feed to an entry that does
-not already end with one. `SyntaxFactory.ParseValue` reads a single value, which is the easiest way to get one written
-exactly as you want, such as a literal or multi-line string. A key defined twice in an inline table is not a grammar
-mistake, so `ParseValue` does not report it; the tree the value ends up in does.
+not already end with one. So does any edit that puts an entry in front of another: `ReplaceNode`, `InsertNodesAfter`,
+`InsertNodesBefore`, or a rewriter. A comment in front of an entry gets a line break after it too, or it would hide the
+entry. `AddElements` and `AddProperties` lay new items out the way the array or inline table already is, on its line
+or one per line.
+
+`SyntaxFactory.ParseValue` reads a single value, which is the easiest way to get one written exactly as you want, such
+as a literal or multi-line string. The comments and blank lines after it are kept as its trailing trivia. A key defined
+twice in an inline table is not a grammar mistake, so `ParseValue` does not report it; the tree the value ends up in
+does.
 
 The factory methods refuse what TOML cannot hold rather than writing a document that does not read back: a string with
 a lone surrogate, whitespace other than spaces and tabs, a line break other than `\n` and `\r\n`, a comment with a
-control character, or `Token` for a kind whose text is not fixed, such as a key or a number.
+control character, `Token` for a kind whose text is not fixed, such as a key or a number, or a key/value pair whose
+value starts with a line break or a comment.
 
 ## Diagnostics
 
@@ -145,9 +180,16 @@ foreach (var diagnostic in TomlSyntaxTree.ParseText("a = 1\na = 2\n").GetDiagnos
 The first group is the grammar, and each diagnostic is carried by the node it is about: `ContainsDiagnostics` says
 whether a node has any. The second group, from `TOML0020`, depends on the whole document rather than on one node, so
 the tree works it out from its root when it is first asked. `TomlSyntaxTree.GetDiagnostics()` reports both, and so
-does `GetDiagnostics()` on a node that is part of a tree. Because nothing about them is stored in the nodes, they are
-always those of the tree at hand: a tree made from an edited root, with `WithRoot` or `Create`, is checked again, so a
-duplicate removed by the edit is no longer reported and one the edit added is.
+does `GetDiagnostics()` on a node that is part of a tree.
+
+A tree made from a root, with `WithRoot` or `Create`, reports the diagnostics of its text: it parses the text again,
+with its own options, the first time it is asked. So a duplicate removed by an edit is no longer reported, one the edit
+added is, and so is an edit that built nodes that do not read back as themselves, such as a comment that hides the
+bracket after it. The nodes are kept as they are, and the root becomes the root of the tree when it was part of none,
+so the nodes you hold report the diagnostics of the tree too.
+
+Messages name the key they are about. A very long key is shortened in the middle, with `…`, so that a document
+repeating one cannot make its diagnostics take more memory than the text.
 
 ### Versions
 
@@ -172,14 +214,22 @@ such as `[3, 4]` in an array is an element whose comma is missing. In an inline 
 an indented `key =` is its next key/value pair whose comma is missing, where one at the start of a line ends it.
 
 An array or an inline table nested deeper than `MaxDepth` is kept whole as skipped text, up to its own closing bracket,
-and reported once; the arrays and inline tables around it still close where they should.
+and reported once; the arrays and inline tables around it still close where they should. Nesting deeper than the stack
+of the thread doing the parsing can hold is reported the same way, whatever `MaxDepth` says, so raising it can never
+make a document overflow the stack.
+
+A key/value pair without its `=` defines nothing, so the line that defines the same key correctly is not reported too.
 
 ### What .NET cannot hold
 
 Values are read into .NET types, which cannot hold a few valid TOML values. The year 0 and a leap second (`:60`) are
 reported as `TOML0006`. An offset further from UTC than ±14:00 is read as the same instant in UTC. A fraction of a
 second is truncated to the seven digits .NET keeps, as the specification asks. Line breaks in multi-line strings are
-read as line feeds, whatever the text uses.
+read as line feeds, whatever the text uses. A float too large for a `double` is reported as `TOML0006`, but one too
+close to zero, such as `1e-400`, is read as the nearest `double`, which is zero with its sign.
+
+The `Value` of a string in error is a best guess, such as the text up to the end of the line for a string without its
+closing quote: check `ContainsDiagnostics` before relying on it.
 
 ## Walking a tree
 

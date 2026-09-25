@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Language.Toml;
 
 /// <summary>Builds a new tree by visiting an old one and returning replacements.</summary>
@@ -50,16 +52,26 @@ public class TomlSyntaxRewriter : TomlSyntaxVisitor<SyntaxNode?>
         return node.Update(VisitList(node.Tokens));
     }
 
+    /// <exception cref="InsufficientExecutionStackException">The value is nested too deeply to rewrite.</exception>
     public override SyntaxNode? VisitTomlArray(TomlArraySyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
 
+        // Arrays and inline tables are the only nodes that nest, and a tree built by hand can nest them deeper than
+        // the stack holds: this throws an exception that can be caught rather than overflowing the stack.
+        RuntimeHelpers.EnsureSufficientExecutionStack();
+
         return node.Update(VisitToken(node.OpenBracketToken), VisitList(node.Elements), VisitToken(node.CloseBracketToken));
     }
 
+    /// <exception cref="InsufficientExecutionStackException">The value is nested too deeply to rewrite.</exception>
     public override SyntaxNode? VisitTomlInlineTable(TomlInlineTableSyntax node)
     {
         ArgumentNullException.ThrowIfNull(node);
+
+        // Arrays and inline tables are the only nodes that nest, and a tree built by hand can nest them deeper than
+        // the stack holds: this throws an exception that can be caught rather than overflowing the stack.
+        RuntimeHelpers.EnsureSufficientExecutionStack();
 
         return node.Update(VisitToken(node.OpenBraceToken), VisitList(node.Properties), VisitToken(node.CloseBraceToken));
     }

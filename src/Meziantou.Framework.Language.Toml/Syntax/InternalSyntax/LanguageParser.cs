@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Language.Toml.Internals;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
@@ -126,6 +127,15 @@ internal sealed class LanguageParser
             }
 
             value = new TomlSkippedValueSyntax(SyntaxFactory.ListNode(tokens.ToArray())).WithAdditionalDiagnostics([.. diagnostics]);
+        }
+
+        // The comments and blank lines after the line of the value belong to the end of the text, which a value does not
+        // have. They go to the value, so that no character of the text is lost.
+        if (_current.LeadingTrivia is { } rest)
+        {
+            value = GetLastToken(value, includeMissing: true) is { } lastToken
+                ? ReplaceLastToken(value, lastToken, KeepSkippedText(lastToken, lastToken.WithTrivia(lastToken.LeadingTrivia, SyntaxFactory.Concat(lastToken.TrailingTrivia, rest))))
+                : new TomlSkippedValueSyntax(SyntaxFactory.ListNode([SyntaxFactory.MissingToken(SyntaxKind.BadToken).WithTrivia(rest, trailingTrivia: null)]));
         }
 
         return Finish(value, nodeFullStart: 0, mark);
@@ -298,14 +308,19 @@ internal sealed class LanguageParser
         }
     }
 
-    /// <summary>Parses an array or an inline table, and refuses to descend past <see cref="TomlParseOptions.MaxDepth"/>.</summary>
+    /// <summary>
+    /// Parses an array or an inline table, and refuses to descend past <see cref="TomlParseOptions.MaxDepth"/>, or past
+    /// what the stack of the current thread can hold.
+    /// </summary>
     /// <remarks>
     /// Past the limit the rest of the construct is kept as skipped text, so the promise the whole parser is built on
-    /// still holds: nothing is thrown, every character is reproduced, and what went wrong is a diagnostic.
+    /// still holds: nothing is thrown, every character is reproduced, and what went wrong is a diagnostic. The stack is
+    /// checked as well because a stack overflow cannot be caught: a limit raised past what the thread can hold would
+    /// otherwise let the text end the process.
     /// </remarks>
     private GreenNode ParseArrayOrInlineTable(TerminatorState terminators)
     {
-        if (_depth >= _options.MaxDepth)
+        if (_depth >= _options.MaxDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
             return ParseTooDeepValue();
 
         _depth++;
@@ -471,7 +486,7 @@ internal sealed class LanguageParser
     {
         var mark = _pending.Count;
         var start = _currentFullStart;
-        AddErrorAtCurrentToken(TomlDiagnosticDescriptors.NestingTooDeep, _options.MaxDepth);
+        AddErrorAtCurrentToken(TomlDiagnosticDescriptors.NestingTooDeep, _depth);
 
         var tokens = new List<GreenNode?>();
         var depth = 0;
@@ -694,10 +709,11 @@ internal sealed class LanguageParser
         var lastMissingToken = GetLastToken(stripped, includeMissing: true)!;
 
         return ReplaceLastToken(stripped, lastMissingToken, lastMissingToken.WithTrivia(lastMissingToken.LeadingTrivia, trivia));
-
-        static GreenToken KeepSkippedText(GreenToken original, GreenToken copy)
-            => original.ContainsSkippedText && !copy.ContainsSkippedText ? copy.AsSkippedText() : copy;
     }
+
+    /// <summary>Returns <paramref name="copy"/>, flagged as holding skipped text when <paramref name="original"/> was, which a copy does not inherit.</summary>
+    private static GreenToken KeepSkippedText(GreenToken original, GreenToken copy)
+        => original.ContainsSkippedText && !copy.ContainsSkippedText ? copy.AsSkippedText() : copy;
 
     private static GreenToken? GetLastToken(GreenNode node, bool includeMissing)
     {

@@ -190,6 +190,8 @@ namespace Meziantou.Framework.Language.Toml
         public Meziantou.Framework.Language.Toml.TomlDocumentSyntax WithEntries(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Toml.TomlEntrySyntax> entries) => throw null;
         public Meziantou.Framework.Language.Toml.TomlDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public Meziantou.Framework.Language.Toml.TomlDocumentSyntax AddEntries(params Meziantou.Framework.Language.Toml.TomlEntrySyntax[] items) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Toml.TomlKeyValue> GetKeyValues() => throw null;
+        public Meziantou.Framework.Language.Toml.TomlValueSyntax? GetValue(params string[] names) => throw null;
         public override void Accept(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor<TResult> visitor) => throw null;
     }
@@ -256,6 +258,16 @@ namespace Meziantou.Framework.Language.Toml
         public Meziantou.Framework.Language.Toml.TomlKeySyntax WithTokens(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public override void Accept(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor visitor) { }
         public override TResult Accept<TResult>(Meziantou.Framework.Language.Toml.TomlSyntaxVisitor<TResult> visitor) => throw null;
+    }
+
+    public sealed class TomlKeyValue
+    {
+        public Meziantou.Framework.Language.Toml.TomlTableSyntax? Table { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Names { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Parts { get => throw null; }
+        public Meziantou.Framework.Language.Toml.TomlPropertySyntax Property { get => throw null; }
+        public Meziantou.Framework.Language.Toml.TomlValueSyntax Value { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public sealed class TomlParseOptions : System.IEquatable<Meziantou.Framework.Language.Toml.TomlParseOptions>
@@ -364,6 +376,8 @@ namespace Meziantou.Framework.Language.Toml
         public static Meziantou.Framework.Language.Toml.TomlSyntaxTree Create(Meziantou.Framework.Language.Toml.TomlDocumentSyntax root, Meziantou.Framework.Language.Toml.TomlParseOptions? options, string? path = null) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
+        public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxToken token) => throw null;
+        public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
         public Meziantou.Framework.Language.Toml.TomlSyntaxTree WithChanges(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.TextChange> changes) => throw null;

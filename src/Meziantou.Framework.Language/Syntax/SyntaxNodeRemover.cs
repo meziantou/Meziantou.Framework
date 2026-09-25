@@ -54,26 +54,28 @@ internal static class SyntaxNodeRemover
 
     /// <summary>Returns a copy of <paramref name="node"/> whose first token carries <paramref name="trivia"/> in front of it.</summary>
     public static GreenNode PrependLeadingTrivia(GreenNode node, GreenNode? trivia)
-        => trivia is null ? node : RebuildEdge(node, trivia, leading: true);
+        => trivia is null ? node : ReplaceEdgeToken(node, first: true, token => token.WithTrivia(GreenList.Concat(trivia, token.LeadingTrivia), token.TrailingTrivia));
 
     /// <summary>Returns a copy of <paramref name="node"/> whose last token carries <paramref name="trivia"/> after it.</summary>
     public static GreenNode AppendTrailingTrivia(GreenNode node, GreenNode? trivia)
-        => trivia is null ? node : RebuildEdge(node, trivia, leading: false);
+        => trivia is null ? node : ReplaceEdgeToken(node, first: false, token => token.WithTrivia(token.LeadingTrivia, GreenList.Concat(token.TrailingTrivia, trivia)));
 
     /// <summary>
-    /// Rebuilds the path down to the first or last token of <paramref name="node"/> with extra trivia on it.
+    /// Rebuilds the path down to the first or last token of <paramref name="node"/> with that token replaced by what
+    /// <paramref name="replace"/> returns for it.
     /// </summary>
     /// <remarks>
     /// The descent is written out rather than recursed so a deeply nested document does not become a deep call stack.
+    /// A token that held text the parser could not use keeps saying so, which a copy does not inherit on its own.
     /// </remarks>
-    private static GreenNode RebuildEdge(GreenNode node, GreenNode trivia, bool leading)
+    public static GreenNode ReplaceEdgeToken(GreenNode node, bool first, Func<GreenToken, GreenToken> replace)
     {
         var path = new List<(GreenNode Node, int Slot)>();
         var current = node;
 
         while (current is not GreenToken)
         {
-            var slot = leading ? FirstOccupiedSlot(current) : LastOccupiedSlot(current);
+            var slot = first ? FirstOccupiedSlot(current) : LastOccupiedSlot(current);
             if (slot < 0)
                 return node;
 
@@ -82,10 +84,13 @@ internal static class SyntaxNodeRemover
         }
 
         var token = (GreenToken)current;
-        GreenNode rebuilt = leading
-            ? token.WithTrivia(GreenList.Concat(trivia, token.LeadingTrivia), token.TrailingTrivia)
-            : token.WithTrivia(token.LeadingTrivia, GreenList.Concat(token.TrailingTrivia, trivia));
+        var replaced = replace(token);
+        if (token.ContainsSkippedText && !replaced.ContainsSkippedText)
+        {
+            replaced = replaced.AsSkippedText();
+        }
 
+        GreenNode rebuilt = replaced;
         for (var i = path.Count - 1; i >= 0; i--)
         {
             var (parent, slot) = path[i];

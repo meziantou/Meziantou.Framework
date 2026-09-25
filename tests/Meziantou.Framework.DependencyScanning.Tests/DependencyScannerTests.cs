@@ -277,7 +277,8 @@ public sealed class DependencyScannerTests
         string insideLink = directory.GetFullPath("sub/inside-link.txt");
         Directory.CreateDirectory(Path.GetDirectoryName(insideLink)!);
 
-        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(insideLink, "../target.txt"));
+        // Windows cannot follow a relative link written with '/', so the target uses the platform separator
+        CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(insideLink, Path.Combine("..", "target.txt")));
         CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("outside-link.txt"), outsideTarget));
         CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("link-to-link.txt"), directory.GetFullPath("outside-link.txt")));
         CreateSymbolicLinkOrSkip(() => File.CreateSymbolicLink(directory.GetFullPath("dangling-link.txt"), "missing.txt"));

@@ -35,9 +35,21 @@ public sealed class IniSectionSyntax : IniEntrySyntax
     public IniSectionSyntax WithNameToken(SyntaxToken nameToken) => Update(OpenBracketToken, nameToken, CloseBracketToken);
 
     /// <summary>Returns this section with a new name.</summary>
+    /// <remarks>
+    /// In a document, the name is checked the way the document reads it (see <see cref="IniDocumentSyntax.Options"/>), as
+    /// <see cref="SyntaxFactory.SectionName(string, IniParseOptions)"/> checks it. Otherwise it is checked as
+    /// <see cref="SyntaxFactory.SectionName(string)"/> checks it.
+    /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException"><paramref name="name"/> cannot be written as a section name; see <see cref="SyntaxFactory.SectionName(string)"/>.</exception>
-    public IniSectionSyntax WithName(string name) => WithNameToken(SyntaxFactory.SectionName(name).WithTriviaFrom(NameToken));
+    /// <exception cref="ArgumentException"><paramref name="name"/> cannot be written as a section name.</exception>
+    public IniSectionSyntax WithName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var options = (Parent as IniDocumentSyntax)?.Options ?? SyntaxFactory.StrictOptions;
+        var token = SyntaxFactory.TrySectionName(name, options) ?? throw new ArgumentException($"'{name}' cannot be written as an INI section name.", nameof(name));
+        return WithNameToken(token.WithTriviaFrom(NameToken));
+    }
 
     public IniSectionSyntax WithCloseBracketToken(SyntaxToken closeBracketToken) => Update(OpenBracketToken, NameToken, closeBracketToken);
 

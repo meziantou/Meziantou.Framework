@@ -10,6 +10,7 @@ internal static class IniDiagnosticDescriptors
     public static readonly DiagnosticDescriptor ExpectedEndOfLine = Error("INI0005", "Expected the end of the line", "Expected the end of the line after {0}, found '{1}'.");
     public static readonly DiagnosticDescriptor DuplicateSection = Warning("INI0006", "Duplicate section", "The section '{0}' is already defined.");
     public static readonly DiagnosticDescriptor DuplicateKey = Warning("INI0007", "Duplicate key", "The key '{0}' is already defined in {1}.");
+    public static readonly DiagnosticDescriptor UnexpectedContinuation = Error("INI0008", "Unexpected indentation", "This line is indented as if it continued the value of '{0}', which has none.");
 
     private static DiagnosticDescriptor Error(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Error);
     private static DiagnosticDescriptor Warning(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Warning);

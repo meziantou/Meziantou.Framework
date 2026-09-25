@@ -78,4 +78,7 @@ internal static class SyntaxFactory
 
     /// <summary>Builds a list that can be projected into a red node even when it holds a single token.</summary>
     public static GreenNode? ListNode(ReadOnlySpan<GreenNode?> items) => Meziantou.Framework.Language.InternalSyntax.SyntaxList.ListNode(items);
+
+    /// <summary>Appends one sequence of nodes, such as trivia, to another.</summary>
+    public static GreenNode? Concat(GreenNode? left, GreenNode? right) => Meziantou.Framework.Language.InternalSyntax.SyntaxList.Concat(left, right);
 }

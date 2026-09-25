@@ -264,8 +264,13 @@ public static class SyntaxFactory
         return TomlDocument(List(entries.Select(EndLine)), Token(SyntaxKind.EndOfFileToken));
     }
 
+    /// <summary>Creates a document from <paramref name="entries"/>.</summary>
+    /// <remarks>
+    /// An entry followed by another one on the same line gets a line break after it, and so does a comment in front of
+    /// an entry, or the text would read as something else. The last entry is left as it is.
+    /// </remarks>
     public static TomlDocumentSyntax TomlDocument(SyntaxList<TomlEntrySyntax> entries, SyntaxToken endOfFileToken)
-        => (TomlDocumentSyntax)new Green.TomlDocumentSyntax(entries.Green, endOfFileToken.Node ?? Green.SyntaxFactory.Token(SyntaxKind.EndOfFileToken)).CreateRed();
+        => (TomlDocumentSyntax)Green.TomlDocumentSyntax.Create(entries.Green, endOfFileToken.Node ?? Green.SyntaxFactory.Token(SyntaxKind.EndOfFileToken)).CreateRed();
 
     /// <summary>Creates a key from the names of its parts, quoting each that cannot be bare.</summary>
     /// <example><c>Key("site", "google.com")</c> is <c>site."google.com"</c>.</example>
@@ -293,7 +298,7 @@ public static class SyntaxFactory
 
     /// <summary>Creates a key from its parts and the dots between them.</summary>
     public static TomlKeySyntax Key(SyntaxTokenList tokens)
-        => (TomlKeySyntax)new Green.TomlKeySyntax(tokens.Node).CreateRed();
+        => (TomlKeySyntax)new Green.TomlKeySyntax(TokenListNode(tokens)).CreateRed();
 
     /// <summary>Creates a table header such as <c>[server]</c>, or <c>[server.http]</c> from several names.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="names"/> is <see langword="null"/>.</exception>
@@ -327,14 +332,25 @@ public static class SyntaxFactory
 
     /// <summary>Creates <c>key = value</c>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="value"/> starts with a line break or a comment, which would put it on a line of its own.
+    /// </exception>
     public static TomlPropertySyntax TomlProperty(TomlKeySyntax key, TomlValueSyntax value)
         => TomlProperty(key.WithTrailingTrivia(Space), Token(TriviaList(), SyntaxKind.EqualsToken, TriviaList(Space)), value);
 
     /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="value"/> starts with a line break or a comment, which would put it on a line of its own.
+    /// </exception>
     public static TomlPropertySyntax TomlProperty(TomlKeySyntax key, SyntaxToken equalsToken, TomlValueSyntax value)
     {
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
+
+        // The value of a key/value pair has to start on the line of its '='. One that comes from a multi-line array, or
+        // from ParseValue, can have a line break or a comment in front of it, which the pair cannot hold.
+        if (value.GetLeadingTrivia().Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia) || trivia.IsKind(SyntaxKind.CommentTrivia)))
+            throw new ArgumentException("The value of a key/value pair has to start on the same line as its '=', so it cannot start with a line break or a comment.", nameof(value));
 
         return (TomlPropertySyntax)new Green.TomlPropertySyntax(key.Green, Required(equalsToken, SyntaxKind.EqualsToken), value.Green).CreateRed();
     }
@@ -406,11 +422,11 @@ public static class SyntaxFactory
     public static TomlSkippedTextSyntax TomlSkippedText(string text) => TomlSkippedText(TokenList(BadToken(text)));
 
     public static TomlSkippedTextSyntax TomlSkippedText(SyntaxTokenList tokens)
-        => (TomlSkippedTextSyntax)new Green.TomlSkippedTextSyntax(tokens.Node).CreateRed();
+        => (TomlSkippedTextSyntax)new Green.TomlSkippedTextSyntax(TokenListNode(tokens)).CreateRed();
 
     /// <summary>Creates a value that holds <paramref name="tokens"/> as they are, or a missing value when there are none.</summary>
     public static TomlSkippedValueSyntax TomlSkippedValue(SyntaxTokenList tokens)
-        => (TomlSkippedValueSyntax)new Green.TomlSkippedValueSyntax(tokens.Node).CreateRed();
+        => (TomlSkippedValueSyntax)new Green.TomlSkippedValueSyntax(TokenListNode(tokens)).CreateRed();
 
     /// <summary>Parses <paramref name="text"/> into a tree.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
@@ -438,6 +454,92 @@ public static class SyntaxFactory
     /// <summary>Determines whether the two nodes have the same structure and text.</summary>
     public static bool AreEquivalent(TomlSyntaxNode? oldNode, TomlSyntaxNode? newNode)
         => oldNode is null ? newNode is null : oldNode.IsEquivalentTo(newNode);
+
+    /// <summary>Returns <paramref name="list"/> with <paramref name="items"/> added at its end, laid out the way the list already is.</summary>
+    /// <remarks>
+    /// <para>
+    /// A list written on one line gets a comma and a space before each new item, and what came after its last item,
+    /// such as the space before a closing brace, goes after the new last one. A list whose last item ends its line gets
+    /// each new item on a line of its own, indented as the last item is, and the comment after the last item stays on
+    /// its line. A list that ends with a comma still does.
+    /// </para>
+    /// <para>
+    /// The commas are new ones rather than copies of those the list has, which could carry a comment of their own.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="items"/> or one of its items is <see langword="null"/>.</exception>
+    internal static SeparatedSyntaxList<TNode> AddToList<TNode>(SeparatedSyntaxList<TNode> list, TNode[] items)
+        where TNode : TomlSyntaxNode
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        if (Array.Exists(items, item => item is null))
+            throw new ArgumentNullException(nameof(items), "The list cannot hold null.");
+
+        if (items.Length == 0)
+            return list;
+
+        if (list.Count == 0)
+            return SeparatedList(items);
+
+        var result = new List<SyntaxNodeOrToken>(list.GetWithSeparators());
+        var last = result[^1];
+        var tail = last.GetTrailingTrivia();
+        var endsTrailingComma = list.HasTrailingSeparator;
+        if (!tail.Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia)))
+        {
+            result[^1] = WithTrailingTrivia(last, endsTrailingComma ? [Space] : []);
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (i > 0 || !endsTrailingComma)
+                {
+                    result.Add(Comma(Space));
+                }
+
+                var item = EndCommentLine(items[i]);
+                result.Add(i == items.Length - 1 && !endsTrailingComma ? item.WithTrailingTrivia([.. item.GetTrailingTrivia(), .. tail]) : item);
+            }
+
+            if (endsTrailingComma)
+            {
+                result.Add(Comma([.. tail]));
+            }
+        }
+        else
+        {
+            var endOfLine = tail.First(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+            var lastLeading = list[^1].GetLeadingTrivia();
+            var lastLineBreak = lastLeading.LastOrDefault(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+            SyntaxTrivia[] indentation = [.. lastLeading.Skip(lastLineBreak.RawKind == 0 ? 0 : lastLeading.IndexOf(lastLineBreak) + 1).Where(trivia => trivia.IsKind(SyntaxKind.WhitespaceTrivia))];
+            if (!endsTrailingComma)
+            {
+                // The comma goes right after the last item, and the comment after it stays on that line.
+                result[^1] = WithTrailingTrivia(last, []);
+                result.Add(Comma([.. tail]));
+            }
+
+            for (var i = 0; i < items.Length; i++)
+            {
+                var item = items[i].GetLeadingTrivia().Count == 0 ? items[i].WithLeadingTrivia(indentation) : items[i];
+                item = EndCommentLine(item);
+                if (i < items.Length - 1 || endsTrailingComma)
+                {
+                    result.Add(item);
+                    result.Add(Comma(endOfLine));
+                }
+                else
+                {
+                    result.Add(item.GetTrailingTrivia().Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia)) ? item : item.WithTrailingTrivia([.. item.GetTrailingTrivia(), endOfLine]));
+                }
+            }
+        }
+
+        return new SeparatedSyntaxList<TNode>(new SyntaxNodeOrTokenList(result));
+
+        static SyntaxToken Comma(params SyntaxTrivia[] trailing) => Token(TriviaList(), SyntaxKind.CommaToken, TriviaList(trailing));
+
+        static SyntaxNodeOrToken WithTrailingTrivia(SyntaxNodeOrToken item, SyntaxTrivia[] trivia)
+            => item.AsNode(out var node) ? node.WithTrailingTrivia(trivia) : item.AsToken().WithTrailingTrivia(trivia);
+    }
 
     /// <summary>Returns <paramref name="node"/> with a line break after its trailing comment, when it ends with one that has none.</summary>
     private static TNode EndCommentLine<TNode>(TNode node)
@@ -471,6 +573,10 @@ public static class SyntaxFactory
 
         return entry.WithTrailingTrivia([.. trailing, LineFeed]);
     }
+
+    /// <summary>Gets the node a list of tokens is held in, which stays a list even for a single token, as the parser builds it.</summary>
+    private static Meziantou.Framework.Language.InternalSyntax.GreenNode? TokenListNode(SyntaxTokenList tokens)
+        => Green.SyntaxFactory.ListNode(Meziantou.Framework.Language.InternalSyntax.GreenNodeList.ToArray(tokens.Node));
 
     private static SyntaxToken ValueToken<TValue>(SyntaxKind kind, string text, TValue value, string valueText)
         => new(parent: null, Green.SyntaxFactory.TokenWithValue(leading: null, kind, text, value, valueText, trailing: null), position: 0, index: 0);

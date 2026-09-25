@@ -38,9 +38,41 @@ public sealed class TomlTableSyntax : TomlEntrySyntax
                 return [];
 
             var entries = document.Entries;
-            var index = entries.IndexOf(this);
+            var index = IndexOf(entries, this);
             return index < 0 ? [] : TomlDocumentSyntax.GetProperties(entries, index + 1);
         }
+    }
+
+    /// <summary>Finds <paramref name="table"/> among <paramref name="entries"/> by its position.</summary>
+    /// <remarks>
+    /// The entries are in source order, so a binary search finds it without going through the ones before it, which
+    /// keeps reading the properties of every table of a document linear rather than quadratic.
+    /// </remarks>
+    private static int IndexOf(SyntaxList<TomlEntrySyntax> entries, TomlTableSyntax table)
+    {
+        var low = 0;
+        var high = entries.Count;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (entries[middle].Position < table.Position)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        // An entry can be empty, and share its position with the ones around it.
+        for (var i = low; i < entries.Count && entries[i].Position == table.Position; i++)
+        {
+            if (ReferenceEquals(entries[i], table))
+                return i;
+        }
+
+        return -1;
     }
 
     /// <summary>Returns this header with the given parts, or itself when nothing changed.</summary>

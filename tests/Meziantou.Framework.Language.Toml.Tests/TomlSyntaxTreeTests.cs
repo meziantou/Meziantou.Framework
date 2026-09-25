@@ -734,6 +734,276 @@ public sealed class TomlSyntaxTreeTests
         Assert.Equal(expected, rewritten!.ToFullString());
     }
 
+    [Fact]
+    public void DiagnosticMessages_StayShortForALongKey()
+    {
+        var text = "[" + string.Join('.', Enumerable.Repeat("a", 20_000)) + "]\n" + string.Concat(Enumerable.Repeat("x = 1\n", 2_000)) + "[\"" + new string('b', 10_000) + "\"]\ny = 1\ny = 2\n";
+
+        var diagnostics = TomlSyntaxTree.ParseText(text).GetDiagnostics();
+
+        Assert.Equal(2_000, diagnostics.Count);
+        Assert.All(diagnostics, diagnostic => Assert.HasCountLessThan(300, diagnostic.Message));
+        Assert.StartsWith("The key 'a.a.", diagnostics[0].Message, StringComparison.Ordinal);
+        Assert.EndsWith(".a.a.x' is already defined.", diagnostics[0].Message, StringComparison.Ordinal);
+        Assert.Contains(".….", diagnostics[0].Message, StringComparison.Ordinal);
+        Assert.Equal("The key '\"" + new string('b', 64) + "…\".y' is already defined.", diagnostics[^1].Message);
+    }
+
+    [Fact]
+    public void Properties_OfEveryTable_OfALargeDocument()
+    {
+        var root = TomlSyntaxTree.ParseText(string.Concat(Enumerable.Range(0, 100_000).Select(i => $"[t{i}]\nx = {i}\ny = 1\n"))).GetRoot();
+
+        var values = root.Tables.Select(table => ((TomlIntegerSyntax)table.Properties[0].Value).Value).ToArray();
+
+        Assert.Equal(Enumerable.Range(0, 100_000).Select(i => (long)i), values);
+    }
+
+    [Fact]
+    public void WithRoot_ReportsTheDiagnosticsOfTheText()
+    {
+        var tree = TomlSyntaxTree.ParseText("a = [1, 2]\n");
+        var array = (TomlArraySyntax)tree.GetRoot().RootProperties[0].Value;
+
+        var edited = tree.WithRoot(tree.GetRoot().ReplaceNode(array, array.WithCloseBracketToken(SyntaxFactory.MissingToken(SyntaxKind.CloseBracketToken))));
+
+        Assert.Equal("a = [1, 2", edited.GetRoot().ToFullString());
+        Assert.Equal("TOML0002", Assert.Single(edited.GetDiagnostics()).Id);
+        Assert.Equal("TOML0002", Assert.Single(edited.GetRoot().RootProperties[0].GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Create_ReportsTheDiagnosticsOfItsVersion()
+    {
+        var v11 = TomlSyntaxTree.ParseText("a = \"\\e\"\n").GetRoot();
+        var v10 = TomlSyntaxTree.ParseText("a = 07:32\n", new TomlParseOptions { Version = TomlVersion.V1_0 }).GetRoot();
+
+        Assert.Equal("TOML0013", Assert.Single(TomlSyntaxTree.Create(v11, new TomlParseOptions { Version = TomlVersion.V1_0 }).GetDiagnostics()).Id);
+        Assert.Empty(TomlSyntaxTree.Create(v10).GetDiagnostics());
+    }
+
+    [Fact]
+    public void WithRoot_MakesTheRootItsOwn()
+    {
+        var tree = TomlSyntaxTree.ParseText("a = 1\nb = 2\n");
+        var root = tree.GetRoot();
+        var updated = root.ReplaceNode(root.RootProperties[1].Key, SyntaxFactory.Key("a").WithTriviaFrom(root.RootProperties[1].Key));
+
+        var edited = tree.WithRoot(updated);
+
+        Assert.Same(updated, edited.GetRoot());
+        Assert.Equal("TOML0020", Assert.Single(updated.RootProperties[1].GetDiagnostics()).Id);
+        Assert.NotSame(root, TomlSyntaxTree.Create(root).GetRoot());
+    }
+
+    [Fact]
+    public void WithRoot_RefusesARootThatIsNotADocument()
+    {
+        SyntaxTree tree = TomlSyntaxTree.ParseText("a = 1\n");
+
+        Assert.Throws<ArgumentException>(() => tree.WithRoot(SyntaxFactory.Key("x")));
+    }
+
+    [Fact]
+    public void Editing_EndsTheLineOfWhatItInserts()
+    {
+        var root = SyntaxFactory.ParseDocument("[server]\nhost = \"x\"\n[other]\ny = 1\n");
+        var host = root.Tables.First().Properties[0];
+        var port = SyntaxFactory.TomlProperty("port", SyntaxFactory.TomlInteger(80));
+
+        Assert.Equal("[server]\nhost = \"x\"\nport = 80\n[other]\ny = 1\n", root.InsertNodesAfter(host, [port]).ToFullString());
+        Assert.Equal("[server]\nport = 80\nhost = \"x\"\n[other]\ny = 1\n", root.InsertNodesBefore(host, [port]).ToFullString());
+        Assert.Equal("[server]\nport = 80\n[other]\ny = 1\n", root.ReplaceNode(host, port).ToFullString());
+        Assert.Equal("[srv]\nhost = \"x\"\n[other]\ny = 1\n", root.ReplaceNode(root.Tables.First(), SyntaxFactory.TomlTable("srv")).ToFullString());
+        Assert.Equal("[server]\nw = 9\n[other]\nw = 9", new PropertyToW().Visit(root)!.ToFullString());
+    }
+
+    [Fact]
+    public void Editing_KeepsTheTextOfAParsedDocument()
+    {
+        const string Text = "a = 1 b = 2\nc = 3\n";
+        var root = SyntaxFactory.ParseDocument(Text);
+
+        var edited = root.ReplaceNode(root.RootProperties[1].Value, SyntaxFactory.TomlInteger(4).WithTriviaFrom(root.RootProperties[1].Value));
+
+        Assert.Equal("a = 1 b = 2\nc = 4\n", edited.ToFullString());
+    }
+
+    [Fact]
+    public void Factory_EndsTheLineOfACommentInFrontOfAnEntry()
+    {
+        var document = SyntaxFactory.TomlDocument(
+            SyntaxFactory.TomlProperty("a", SyntaxFactory.TomlInteger(1)).WithLeadingTrivia(SyntaxFactory.Comment("# about a")),
+            SyntaxFactory.TomlProperty("b", SyntaxFactory.TomlInteger(2)));
+
+        Assert.Equal("# about a\na = 1\nb = 2\n", document.ToFullString());
+    }
+
+    [Theory]
+    [InlineData("\n1")]
+    [InlineData("# c\n1")]
+    public void Factory_TomlProperty_RefusesAValueOnALineOfItsOwn(string value)
+        => Assert.Throws<ArgumentException>(() => SyntaxFactory.TomlProperty("a", SyntaxFactory.ParseValue(value)));
+
+    [Theory]
+    [InlineData("a = [1, 2]\n", "a = [1, 2, 3 # three\n]\n")]
+    [InlineData("a = []\n", "a = [3 # three\n]\n")]
+    [InlineData("a = [1]\n", "a = [1, 3 # three\n]\n")]
+    [InlineData("a = [1, 2,]\n", "a = [1, 2, 3 # three\n,]\n")]
+    [InlineData("a = [\n  1, # one\n  2 # two\n]\n", "a = [\n  1, # one\n  2, # two\n  3 # three\n]\n")]
+    [InlineData("a = [\n  1,\n  2,\n]\n", "a = [\n  1,\n  2,\n  3 # three\n,\n]\n")]
+    public void AddElements_LaysOutTheNewElementsAsTheArrayIs(string text, string expected)
+    {
+        var root = SyntaxFactory.ParseDocument(text);
+        var array = (TomlArraySyntax)root.RootProperties[0].Value;
+
+        var edited = root.ReplaceNode(array, array.AddElements(SyntaxFactory.ParseValue("3 # three")));
+
+        Assert.Equal(expected, edited.ToFullString());
+        Assert.Empty(TomlSyntaxTree.ParseText(edited.ToFullString()).GetDiagnostics());
+    }
+
+    [Theory]
+    [InlineData("a = [1, 2]\n", "a = [1, 2, 3, 4]\n")]
+    [InlineData("a = [1, 2,]\n", "a = [1, 2, 3, 4,]\n")]
+    [InlineData("a = [\n  1, # one\n  2 # two\n]\n", "a = [\n  1, # one\n  2, # two\n  3,\n  4\n]\n")]
+    [InlineData("a = [\n    1,\n    2,\n]\n", "a = [\n    1,\n    2,\n    3,\n    4,\n]\n")]
+    public void AddElements_AddsSeveralElements(string text, string expected)
+    {
+        var root = SyntaxFactory.ParseDocument(text);
+        var array = (TomlArraySyntax)root.RootProperties[0].Value;
+
+        var edited = root.ReplaceNode(array, array.AddElements(SyntaxFactory.TomlInteger(3), SyntaxFactory.TomlInteger(4)));
+
+        Assert.Equal(expected, edited.ToFullString());
+    }
+
+    [Theory]
+    [InlineData("t = { a = 1, b = 2 }\n", "t = { a = 1, b = 2, c = 3 }\n")]
+    [InlineData("t = {a = 1}\n", "t = {a = 1, c = 3}\n")]
+    [InlineData("t = {}\n", "t = { c = 3 }\n")]
+    [InlineData("t = { a = 1, }\n", "t = { a = 1, c = 3, }\n")]
+    public void AddProperties_LaysOutTheNewPairsAsTheTableIs(string text, string expected)
+    {
+        var root = SyntaxFactory.ParseDocument(text);
+        var table = (TomlInlineTableSyntax)root.RootProperties[0].Value;
+
+        var edited = root.ReplaceNode(table, table.AddProperties(SyntaxFactory.TomlProperty("c", SyntaxFactory.TomlInteger(3))));
+
+        Assert.Equal(expected, edited.ToFullString());
+    }
+
+    [Theory]
+    [InlineData("[1]\n# keep me\n")]
+    [InlineData("1 # c\n  \n")]
+    [InlineData("'x'\n\n")]
+    [InlineData("# c")]
+    [InlineData("\t")]
+    public void ParseValue_KeepsTheTextAfterTheValue(string text)
+        => Assert.Equal(text, SyntaxFactory.ParseValue(text).ToFullString());
+
+    [Theory]
+    [InlineData("a.b\na = 1\n")]
+    [InlineData("a\n[a]\n")]
+    [InlineData("x = { a\n, a }\n")]
+    public void AKeyWithoutItsEquals_DefinesNothing(string text)
+    {
+        var ids = TomlSyntaxTree.ParseText(text).GetDiagnostics().Select(diagnostic => diagnostic.Id);
+
+        Assert.All(ids, id => Assert.Equal("TOML0002", id));
+    }
+
+    [Fact]
+    public void Factory_BuildsWhatTheParserBuilds()
+    {
+        Assert.True(SyntaxFactory.AreEquivalent(SyntaxFactory.Key("a"), SyntaxFactory.ParseDocument("a = 1\n").RootProperties[0].Key));
+        Assert.True(SyntaxFactory.AreEquivalent(SyntaxFactory.TomlDocument(SyntaxFactory.TomlProperty("a", SyntaxFactory.TomlInteger(1))), SyntaxFactory.ParseDocument("a = 1\n")));
+        Assert.True(SyntaxFactory.AreEquivalent(SyntaxFactory.TomlInlineTable(SyntaxFactory.TomlProperty("a", SyntaxFactory.TomlInteger(1))), SyntaxFactory.ParseValue("{ a = 1 }")));
+    }
+
+    [Fact]
+    public void Options_RefuseWhatTheyCannotMean()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlParseOptions { MaxDepth = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlParseOptions { MaxDepth = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlParseOptions { Version = (TomlVersion)42 });
+    }
+
+    [Fact]
+    public void DeepNesting_BeyondTheStack_IsReportedRatherThanOverflowing()
+    {
+        var text = "a = " + new string('[', 100_000) + new string(']', 100_000) + "\n";
+        TomlSyntaxTree? tree = null;
+
+        var thread = new Thread(() => tree = TomlSyntaxTree.ParseText(text, new TomlParseOptions { MaxDepth = int.MaxValue }), maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.NotNull(tree);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal("TOML0012", Assert.Single(tree.GetDiagnostics()).Id);
+    }
+
+    [Fact]
+    public void Rewriter_ThrowsRatherThanOverflowingTheStack()
+    {
+        TomlValueSyntax value = SyntaxFactory.TomlArray();
+        for (var i = 0; i < 20_000; i++)
+        {
+            value = SyntaxFactory.TomlArray(SyntaxFactory.SingletonSeparatedList(value));
+        }
+
+        var document = SyntaxFactory.TomlDocument(SyntaxFactory.TomlProperty("a", value));
+        Exception? exception = null;
+
+        var thread = new Thread(() => exception = Record.Exception(() => new TomlSyntaxRewriter().Visit(document)), maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.IsType<InsufficientExecutionStackException>(exception);
+    }
+
+    [Fact]
+    public void GetKeyValues_GivesTheFullKeyOfEveryPair()
+    {
+        var root = SyntaxFactory.ParseDocument("""
+            name = "app"
+            [dependencies]
+            serde = { version = "1.0", features = ["derive"] }
+            tokio.version = "1.2"
+            [dependencies.'my crate']
+            version = "0.3"
+            [[bin]]
+            name = "a"
+            [[bin]]
+            name = "b"
+            """);
+
+        var pairs = root.GetKeyValues().ToArray();
+
+        Assert.Equal(
+            ["name", "dependencies.serde", "dependencies.serde.version", "dependencies.serde.features", "dependencies.tokio.version", "dependencies.my crate.version", "bin.name", "bin.name"],
+            pairs.Select(pair => string.Join('.', pair.Names)).ToArray());
+        Assert.Equal(["dependencies", "my crate", "version"], pairs[5].Parts.Select(part => part.ValueText).ToArray());
+        Assert.Null(pairs[0].Table);
+        Assert.NotSame(pairs[6].Table, pairs[7].Table);
+        Assert.Equal("1.0", ((TomlStringSyntax)pairs[2].Value).Value);
+    }
+
+    [Theory]
+    [InlineData("[server]\nport = 80\n")]
+    [InlineData("server.port = 80\n")]
+    [InlineData("server = { port = 80 }\n")]
+    [InlineData("[server]\nhost = { name = 'x' }\n[other]\nport = 1\n[server.x]\n[a]\nserver.port = 1\n[b]\n[server]\nport = 80\n")]
+    public void GetValue_FindsTheKeyWhereverItIsWritten(string text)
+    {
+        var root = SyntaxFactory.ParseDocument(text);
+
+        Assert.Equal(80, Assert.IsType<TomlIntegerSyntax>(root.GetValue("server", "port")).Value);
+        Assert.Null(root.GetValue("server", "Port"));
+        Assert.Throws<ArgumentException>(() => root.GetValue());
+    }
+
     private static TomlPropertySyntax ParseSingleProperty(string text)
     {
         var tree = TomlSyntaxTree.ParseText(text);
@@ -747,6 +1017,11 @@ public sealed class TomlSyntaxTreeTests
     private static T ParseSingleValue<T>(string text)
         where T : TomlValueSyntax
         => Assert.IsType<T>(ParseSingleValue(text));
+
+    private sealed class PropertyToW : TomlSyntaxRewriter
+    {
+        public override SyntaxNode? VisitTomlProperty(TomlPropertySyntax node) => SyntaxFactory.TomlProperty("w", SyntaxFactory.TomlInteger(9));
+    }
 
     private sealed class DoubleIntegers : TomlSyntaxRewriter
     {

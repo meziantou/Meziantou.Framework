@@ -13,7 +13,14 @@ public sealed class TomlStringSyntax : TomlValueSyntax
     public SyntaxToken StringToken => new(this, Green.GetSlot(0), Position, GetChildIndex(0));
 
     /// <summary>Gets the text of the string, with its quotes removed and its escape sequences resolved.</summary>
-    /// <remarks>Line breaks in a multi-line string are line feeds, whichever line break the text uses.</remarks>
+    /// <remarks>
+    /// <para>Line breaks in a multi-line string are line feeds, whichever line break the text uses.</para>
+    /// <para>
+    /// When the string is in error, which <see cref="SyntaxNode.ContainsDiagnostics"/> tells, this is a best guess:
+    /// an escape sequence that is not valid is left out or kept in part, and a string without its closing quotes runs
+    /// to the end of its line, or of the text for a multi-line one. Check for diagnostics before relying on it.
+    /// </para>
+    /// </remarks>
     public string Value => StringToken.ValueText;
 
     /// <summary>Gets a value indicating whether the string is written between three quotes, and may span lines.</summary>

@@ -75,6 +75,91 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
         return Update(entries.AddRange(added), endOfFileToken);
     }
 
+    /// <summary>Gets every key/value pair of the document, in source order, with the full key each one defines.</summary>
+    /// <remarks>
+    /// <para>
+    /// A key/value pair whose value is an inline table comes first, followed by the pairs of that inline table, each
+    /// with the full key it defines. The values in an array are not visited, as they have no key of their own.
+    /// </para>
+    /// <para>
+    /// The pairs are read as they are written, whatever the diagnostics of the document: a key defined twice comes
+    /// twice.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// foreach (var pair in document.GetKeyValues())
+    /// {
+    ///     if (pair.Names is ["dependencies", var name] &amp;&amp; pair.Value is TomlStringSyntax version)
+    ///         Console.WriteLine($"{name} {version.Value}");
+    /// }
+    /// </code>
+    /// </example>
+    public IEnumerable<TomlKeyValue> GetKeyValues()
+    {
+        TomlTableSyntax? table = null;
+        IReadOnlyList<string> headerNames = [];
+        IReadOnlyList<SyntaxToken> headerParts = [];
+        var pending = new Stack<(TomlPropertySyntax Property, IReadOnlyList<string> Names, IReadOnlyList<SyntaxToken> Parts)>();
+        foreach (var entry in Entries)
+        {
+            switch (entry)
+            {
+                case TomlTableSyntax header:
+                    table = header;
+                    headerNames = header.Key.Names;
+                    headerParts = header.Key.Parts;
+                    break;
+
+                case TomlPropertySyntax property:
+                    // The pairs of inline tables are walked with a stack rather than by recursion, so a document built by
+                    // hand as deep as memory allows does not overflow the stack.
+                    pending.Push((property, headerNames, headerParts));
+                    while (pending.TryPop(out var item))
+                    {
+                        var names = new TomlKeyValue.Concatenation<string>(item.Names, item.Property.Key.Names);
+                        var parts = new TomlKeyValue.Concatenation<SyntaxToken>(item.Parts, item.Property.Key.Parts);
+                        yield return new TomlKeyValue(table, names, parts, item.Property);
+
+                        if (item.Property.Value is TomlInlineTableSyntax inlineTable)
+                        {
+                            var properties = inlineTable.Properties;
+                            for (var i = properties.Count - 1; i >= 0; i--)
+                            {
+                                pending.Push((properties[i], names, parts));
+                            }
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Gets the value of the key/value pair that defines the full key <paramref name="names"/>.</summary>
+    /// <remarks>
+    /// The key is looked for wherever it can be written: under a header, as a dotted key, or in an inline table, so
+    /// <c>GetValue("server", "port")</c> finds the port in <c>[server]</c>, in <c>server.port = 80</c>, and in
+    /// <c>server = { port = 80 }</c>. Names are compared as they are, case included, as TOML does. A table a header
+    /// defines is not a value. When the key is defined more than once, as it is in each table of an array of tables,
+    /// the first one is returned.
+    /// </remarks>
+    /// <param name="names">The name of each part of the key, unquoted.</param>
+    /// <returns>The value, or <see langword="null"/> when no key/value pair defines that key.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="names"/> or one of its items is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="names"/> is empty.</exception>
+    public TomlValueSyntax? GetValue(params string[] names)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        if (names.Length == 0)
+            throw new ArgumentException("A key has at least one part.", nameof(names));
+
+        if (Array.Exists(names, name => name is null))
+            throw new ArgumentNullException(nameof(names), "A key cannot have a null part.");
+
+        return GetKeyValues().FirstOrDefault(pair => pair.Names.SequenceEqual(names, StringComparer.Ordinal))?.Value;
+    }
+
     internal static IReadOnlyList<TomlPropertySyntax> GetProperties(SyntaxList<TomlEntrySyntax> entries, int start)
     {
         var result = new List<TomlPropertySyntax>();

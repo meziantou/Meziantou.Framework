@@ -39,7 +39,16 @@ public sealed class TomlArraySyntax : TomlValueSyntax
     public TomlArraySyntax WithOpenBracketToken(SyntaxToken openBracketToken) => Update(openBracketToken, Elements, CloseBracketToken);
     public TomlArraySyntax WithElements(SeparatedSyntaxList<TomlValueSyntax> elements) => Update(OpenBracketToken, elements, CloseBracketToken);
     public TomlArraySyntax WithCloseBracketToken(SyntaxToken closeBracketToken) => Update(OpenBracketToken, Elements, closeBracketToken);
-    public TomlArraySyntax AddElements(params TomlValueSyntax[] items) => WithElements(Elements.AddRange(items));
+
+    /// <summary>Returns this array with <paramref name="items"/> added at the end, laid out the way the array already is.</summary>
+    /// <remarks>
+    /// In an array written on one line, each new element follows a comma and a space. In one written an element per
+    /// line, each goes on a line of its own, indented as the last one is, and a comment after the last element stays
+    /// on its line. An element that ends with a comment gets a line break after it, or the comment would hide what
+    /// follows it.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="items"/> or one of its items is <see langword="null"/>.</exception>
+    public TomlArraySyntax AddElements(params TomlValueSyntax[] items) => WithElements(SyntaxFactory.AddToList(Elements, items));
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 1 ? GetRed(ref _elements, 1) : null;
     internal override SyntaxNode? GetCachedSlot(int index) => index == 1 ? _elements : null;

@@ -14,7 +14,6 @@ public sealed partial class CargoDependencyScanner : DependencyScanner
         "dependencies",
         "dev-dependencies",
         "build-dependencies",
-        "workspace.dependencies",
     ];
 
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.RustCrate];
@@ -42,40 +41,57 @@ public sealed partial class CargoDependencyScanner : DependencyScanner
         using var reader = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var text = await reader.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
         var tree = TomlSyntaxTree.ParseText(text, context.FullPath);
-        foreach (var table in tree.GetRoot().Tables)
+
+        // A table can be written with a header, with dotted keys, or as an inline table, so the pairs are matched on
+        // the full key they define: [dependencies] serde = "1.0", [dependencies.serde] version = "1.0", and
+        // dependencies.serde.version = "1.0" are the same dependency.
+        foreach (var pair in tree.GetRoot().GetKeyValues())
         {
-            if (table.IsArrayOfTables || !DependencySections.Contains(TomlUtilities.GetName(table.Key), StringComparer.Ordinal))
+            if (pair.Table is { IsArrayOfTables: true } || TomlUtilities.IsInInlineTable(pair) || GetDependencyTableLength(pair.Names) is not (> 0 and var tableLength))
                 continue;
 
-            foreach (var property in table.Properties)
+            TomlStringSyntax? version;
+            if (pair.Names.Count == tableLength + 1)
             {
-                var names = property.Key.Names;
-                TomlStringSyntax? version;
-                if (names.Count is 1)
-                {
-                    // serde = "1.0", serde = { version = "1.0" } or serde = { path = "../serde" }
-                    version = TomlUtilities.GetString(property.Value) ?? TomlUtilities.GetInlineTableString(property.Value, "version");
-                }
-                else if (names is [_, "version"] && TomlUtilities.GetString(property.Value) is { } dottedVersion)
-                {
-                    // serde.version = "1.0". Other dotted keys, such as serde.workspace = true, are not versions.
-                    version = dottedVersion;
-                }
-                else
-                {
+                // serde = "1.0", serde = { version = "1.0" } or serde = { path = "../serde" }
+                if (pair.Value is not (TomlStringSyntax or TomlInlineTableSyntax))
                     continue;
-                }
 
-                var nameSpan = property.Key.Parts[0].Span;
-                if (property.Key.Parts[0].Text is ['"' or '\'', ..])
-                {
-                    nameSpan = new TextSpan(nameSpan.Start + 1, nameSpan.Length - 2);
-                }
-
-                Location versionLocation = version is not null ? TomlUtilities.CreateLocation(context, tree, version) : new NonUpdatableLocation(context);
-                context.ReportDependency(this, names[0], version?.Value, DependencyType.RustCrate, TomlUtilities.CreateLocation(context, tree, nameSpan), versionLocation);
+                version = TomlUtilities.GetString(pair.Value) ?? TomlUtilities.GetInlineTableString(pair.Value, "version");
             }
+            else if (pair.Names.Count == tableLength + 2 && pair.Names[^1] is "version" && TomlUtilities.GetString(pair.Value) is { } dottedVersion)
+            {
+                // serde.version = "1.0", or version = "1.0" under [dependencies.serde]. Other keys, such as
+                // serde.workspace = true, are not versions.
+                version = dottedVersion;
+            }
+            else
+            {
+                continue;
+            }
+
+            var versionLocation = version is not null ? TomlUtilities.CreateLocation(context, tree, version) : new NonUpdatableLocation(context);
+            context.ReportDependency(this, pair.Names[tableLength], version?.Value, DependencyType.RustCrate, TomlUtilities.CreateLocation(context, tree, pair.Parts[tableLength]), versionLocation);
         }
+    }
+
+    /// <summary>Gets how many names of <paramref name="names"/> make the table of dependencies they are in, or 0 when they are in none.</summary>
+    /// <remarks>
+    /// The tables are <c>dependencies</c>, <c>dev-dependencies</c> and <c>build-dependencies</c>, the same under
+    /// <c>target.'cfg(...)'</c>, and <c>workspace.dependencies</c>.
+    /// </remarks>
+    private static int GetDependencyTableLength(IReadOnlyList<string> names)
+    {
+        if (names.Count > 1 && DependencySections.Contains(names[0], StringComparer.Ordinal))
+            return 1;
+
+        if (names.Count > 2 && names[0] is "workspace" && names[1] is "dependencies")
+            return 2;
+
+        if (names.Count > 3 && names[0] is "target" && DependencySections.Contains(names[2], StringComparer.Ordinal))
+            return 3;
+
+        return 0;
     }
 
     private async ValueTask ScanLockFileAsync(ScanFileContext context)

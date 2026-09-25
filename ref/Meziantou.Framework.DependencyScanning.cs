@@ -73,14 +73,14 @@ namespace Meziantou.Framework.DependencyScanning
         RubyGem = 13,
         RenovateConfiguration = 14,
         SwiftPackage = 15,
-        RustCrate = 16,
-        GoModule = 17,
-        JavaPackage = 18,
-        PhpPackage = 19,
-        MSBuildProjectReference = 20,
-        DotNetAssemblyReference = 21,
-        AgentPlugin = 22,
-        AgentPluginMarketplace = 23,
+        MSBuildProjectReference = 16,
+        DotNetAssemblyReference = 17,
+        AgentPlugin = 18,
+        AgentPluginMarketplace = 19,
+        RustCrate = 20,
+        GoModule = 21,
+        JavaPackage = 22,
+        PhpPackage = 23,
     }
 
     public delegate bool FileSystemEntryPredicate(ref System.IO.Enumeration.FileSystemEntry entry);

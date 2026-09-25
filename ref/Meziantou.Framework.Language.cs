@@ -126,6 +126,12 @@ namespace Meziantou.Framework.Language
         public override string ToString() => throw null;
     }
 
+    public static class SeparatedSyntaxList
+    {
+        public static Meziantou.Framework.Language.SeparatedSyntaxList<TNode> Create<TNode>(System.ReadOnlySpan<TNode> nodes) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
+    }
+
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Language.SeparatedSyntaxList), "Create")]
     public readonly struct SeparatedSyntaxList<TNode> : System.Collections.Generic.IEnumerable<TNode>, System.Collections.Generic.IReadOnlyCollection<TNode>, System.Collections.Generic.IReadOnlyList<TNode>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.SeparatedSyntaxList<TNode>> where TNode : Meziantou.Framework.Language.SyntaxNode
     {
         public int Count { get => throw null; }
@@ -199,6 +205,12 @@ namespace Meziantou.Framework.Language
         public override string ToString() => throw null;
     }
 
+    public static class SyntaxList
+    {
+        public static Meziantou.Framework.Language.SyntaxList<TNode> Create<TNode>(System.ReadOnlySpan<TNode> nodes) where TNode : Meziantou.Framework.Language.SyntaxNode => throw null;
+    }
+
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Language.SyntaxList), "Create")]
     public readonly struct SyntaxList<TNode> : System.Collections.Generic.IEnumerable<TNode>, System.Collections.Generic.IReadOnlyCollection<TNode>, System.Collections.Generic.IReadOnlyList<TNode>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.SyntaxList<TNode>> where TNode : Meziantou.Framework.Language.SyntaxNode
     {
         public int Count { get => throw null; }
@@ -363,6 +375,7 @@ namespace Meziantou.Framework.Language
         public static bool operator !=(Meziantou.Framework.Language.SyntaxNodeOrToken left, Meziantou.Framework.Language.SyntaxNodeOrToken right) => throw null;
     }
 
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Language.SyntaxNodeOrTokenList), "Create")]
     public readonly struct SyntaxNodeOrTokenList : System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxNodeOrToken>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.SyntaxNodeOrTokenList>
     {
         public int Count { get => throw null; }
@@ -370,6 +383,7 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
         public SyntaxNodeOrTokenList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> nodesAndTokens) { }
+        public static Meziantou.Framework.Language.SyntaxNodeOrTokenList Create(System.ReadOnlySpan<Meziantou.Framework.Language.SyntaxNodeOrToken> nodesAndTokens) => throw null;
         public bool Any() => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrToken First() => throw null;
         public Meziantou.Framework.Language.SyntaxNodeOrToken Last() => throw null;
@@ -458,6 +472,7 @@ namespace Meziantou.Framework.Language
         public static bool operator !=(Meziantou.Framework.Language.SyntaxToken left, Meziantou.Framework.Language.SyntaxToken right) => throw null;
     }
 
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Language.SyntaxTokenList), "Create")]
     public readonly struct SyntaxTokenList : System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Language.SyntaxToken>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.SyntaxTokenList>
     {
         public int Count { get => throw null; }
@@ -465,6 +480,7 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
         public SyntaxTokenList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxToken> tokens) { }
+        public static Meziantou.Framework.Language.SyntaxTokenList Create(System.ReadOnlySpan<Meziantou.Framework.Language.SyntaxToken> tokens) => throw null;
         public bool Any() => throw null;
         public Meziantou.Framework.Language.SyntaxToken First() => throw null;
         public Meziantou.Framework.Language.SyntaxToken Last() => throw null;
@@ -547,6 +563,7 @@ namespace Meziantou.Framework.Language
         public static bool operator !=(Meziantou.Framework.Language.SyntaxTrivia left, Meziantou.Framework.Language.SyntaxTrivia right) => throw null;
     }
 
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Language.SyntaxTriviaList), "Create")]
     public readonly struct SyntaxTriviaList : System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Language.SyntaxTrivia>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxTrivia>, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Language.SyntaxTriviaList>
     {
         public int Count { get => throw null; }
@@ -554,6 +571,7 @@ namespace Meziantou.Framework.Language
         public Meziantou.Framework.Language.TextSpan FullSpan { get => throw null; }
         public Meziantou.Framework.Language.TextSpan Span { get => throw null; }
         public SyntaxTriviaList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxTrivia> trivia) { }
+        public static Meziantou.Framework.Language.SyntaxTriviaList Create(System.ReadOnlySpan<Meziantou.Framework.Language.SyntaxTrivia> trivia) => throw null;
         public bool Any() => throw null;
         public Meziantou.Framework.Language.SyntaxTrivia First() => throw null;
         public Meziantou.Framework.Language.SyntaxTrivia Last() => throw null;

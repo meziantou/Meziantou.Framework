@@ -1,9 +1,43 @@
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language;
+
+/// <summary>Builds <see cref="SeparatedSyntaxList{TNode}"/> instances.</summary>
+public static class SeparatedSyntaxList
+{
+    /// <summary>Creates a detached list holding <paramref name="nodes"/>, with the separator of their language between each pair.</summary>
+    /// <remarks>
+    /// This is what a collection expression targeting <see cref="SeparatedSyntaxList{TNode}"/> builds its list with,
+    /// so <c>[a, b]</c> gives the same list as adding <c>a</c> then <c>b</c> to an empty one.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// There is more than one node and the language does not define a separator for its lists.
+    /// </exception>
+    public static SeparatedSyntaxList<TNode> Create<TNode>(ReadOnlySpan<TNode> nodes)
+        where TNode : SyntaxNode
+    {
+        if (nodes.IsEmpty)
+            return default;
+
+        var separator = nodes.Length > 1 ? SeparatedSyntaxList<TNode>.CreateLanguageSeparator(nodes[1]) : default;
+        var items = new SyntaxNodeOrToken[(nodes.Length << 1) - 1];
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            if (i > 0)
+            {
+                items[(i << 1) - 1] = separator;
+            }
+
+            items[i << 1] = nodes[i];
+        }
+
+        return new SeparatedSyntaxList<TNode>(SyntaxNodeOrTokenList.Create(items));
+    }
+}
 
 /// <summary>A sequence of nodes with a separator token between each pair, and optionally one after the last.</summary>
 /// <typeparam name="TNode">The type of the nodes in the list.</typeparam>
@@ -19,6 +53,7 @@ namespace Meziantou.Framework.Language;
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
+[CollectionBuilder(typeof(SeparatedSyntaxList), nameof(SeparatedSyntaxList.Create))]
 public readonly struct SeparatedSyntaxList<TNode> : IReadOnlyList<TNode>, IEquatable<SeparatedSyntaxList<TNode>>
     where TNode : SyntaxNode
 {
@@ -196,6 +231,12 @@ public readonly struct SeparatedSyntaxList<TNode> : IReadOnlyList<TNode>, IEquat
             }
         }
 
+        return CreateLanguageSeparator(node);
+    }
+
+    /// <summary>The separator the language of <paramref name="node"/> puts between the elements of its lists.</summary>
+    internal static SyntaxToken CreateLanguageSeparator(TNode node)
+    {
         if (node.Green.CreateSeparator() is not { } separator)
             throw new InvalidOperationException($"The language of '{node.GetType().Name}' does not define a separator for its lists; build the list with its separators instead.");
 

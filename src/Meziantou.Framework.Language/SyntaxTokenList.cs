@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 
@@ -7,6 +8,7 @@ namespace Meziantou.Framework.Language;
 /// <summary>A sequence of tokens held in one slot of their parent.</summary>
 /// <remarks><see langword="default"/> is the empty list.</remarks>
 [StructLayout(LayoutKind.Auto)]
+[CollectionBuilder(typeof(SyntaxTokenList), nameof(Create))]
 public readonly struct SyntaxTokenList : IReadOnlyList<SyntaxToken>, IEquatable<SyntaxTokenList>
 {
     private readonly SyntaxNode? _parent;
@@ -27,6 +29,19 @@ public readonly struct SyntaxTokenList : IReadOnlyList<SyntaxToken>, IEquatable<
     public SyntaxTokenList(IEnumerable<SyntaxToken> tokens)
         : this(parent: null, ToGreen(tokens), position: 0, index: 0)
     {
+    }
+
+    /// <summary>Creates a detached list holding <paramref name="tokens"/>.</summary>
+    /// <remarks>This is what a collection expression targeting <see cref="SyntaxTokenList"/> builds its list with.</remarks>
+    public static SyntaxTokenList Create(ReadOnlySpan<SyntaxToken> tokens)
+    {
+        var green = new GreenNode?[tokens.Length];
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            green[i] = tokens[i].Node;
+        }
+
+        return Detached(InternalSyntax.SyntaxList.List(green));
     }
 
     internal GreenNode? Node => _node;

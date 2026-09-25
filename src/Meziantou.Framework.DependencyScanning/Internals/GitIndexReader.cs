@@ -80,18 +80,9 @@ internal static class GitIndexReader
 
     private static async ValueTask<int> GetHashSizeAsync(IFileSystem fileSystem, string gitDirectory, CancellationToken cancellationToken)
     {
-        // Worktrees store the repository configuration in the common directory
-        var commonDirectory = gitDirectory;
-        var commonDirectoryContent = await GitFileSystemUtilities.TryReadAllTextAsync(fileSystem, Path.Combine(gitDirectory, "commondir"), cancellationToken).ConfigureAwait(false);
-        if (commonDirectoryContent is not null)
-        {
-            var relativeCommonDirectory = GetFirstLine(commonDirectoryContent).Trim();
-            if (relativeCommonDirectory.Length > 0)
-            {
-                if (!GitFileSystemUtilities.TryResolvePath(gitDirectory, relativeCommonDirectory, out commonDirectory))
-                    return 0;
-            }
-        }
+        var commonDirectory = await GitFileSystemUtilities.GetCommonDirectoryAsync(fileSystem, gitDirectory, cancellationToken).ConfigureAwait(false);
+        if (commonDirectory is null)
+            return 0;
 
         var config = await GitFileSystemUtilities.TryReadAllTextAsync(fileSystem, Path.Combine(commonDirectory, "config"), cancellationToken).ConfigureAwait(false);
         if (config is null)
@@ -113,12 +104,6 @@ internal static class GitIndexReader
             _ when objectFormat.Equals("sha256", StringComparison.OrdinalIgnoreCase) => Sha256Size,
             _ => 0,
         };
-    }
-
-    private static string GetFirstLine(string value)
-    {
-        var index = value.AsSpan().IndexOfAny('\r', '\n');
-        return index < 0 ? value : value[..index];
     }
 
     private static IndexFile? ParseIndex(byte[] content, int hashSize)

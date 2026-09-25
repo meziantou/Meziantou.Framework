@@ -6,12 +6,11 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans legacy packages.config files for NuGet package dependencies.</summary>
+/// <summary>Scans legacy packages.config and packages.&lt;project&gt;.config files for NuGet package dependencies.</summary>
 public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 {
-    private static readonly Version VersionZero = new(0, 0, 0, 0);
-    private static readonly Version VersionOne = new(1, 0, 0, 0);
-    private static readonly string[] ProjectFilePatterns = ["*.csproj", "*.vbproj", "*.fsproj"];
+    private const string AssemblyVersionMetadataName = "assemblyVersion";
+    private const string AssemblyVersionLocationMetadataName = "assemblyVersionLocation";
 
     private static readonly XName PackageXName = XName.Get("package");
     private static readonly XName IdXName = XName.Get("id");
@@ -27,7 +26,9 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasFileName("packages.config", ignoreCase: true);
+        // A project can use packages.<project name>.config instead of packages.config, for instance when several projects share a directory
+        return context.HasFileName("packages.config", ignoreCase: true)
+            || (context.FileName.StartsWith("packages.", StringComparison.OrdinalIgnoreCase) && context.FileName.EndsWith(".config", StringComparison.OrdinalIgnoreCase) && context.FileName.Length > "packages..config".Length);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -71,9 +72,8 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         if (directory is null)
             return [];
 
-        var files = ProjectFilePatterns.SelectMany(pattern => context.FileSystem.GetFiles(directory, pattern, SearchOption.TopDirectoryOnly));
         var result = new List<AssociatedProject>();
-        foreach (var file in files)
+        foreach (var file in GetAssociatedProjectFiles(context, directory))
         {
             Stream stream;
             try
@@ -103,13 +103,72 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         return result;
     }
 
+    /// <summary>
+    /// Gets the project files that use the scanned file. Like NuGet, a project uses packages.&lt;project name&gt;.config when it exists
+    /// (spaces in the project name may be replaced by underscores), and packages.config otherwise.
+    /// </summary>
+    private static IEnumerable<string> GetAssociatedProjectFiles(ScanFileContext context, string directory)
+    {
+        var projectFiles = context.FileSystem.GetFiles(directory, "*proj", SearchOption.TopDirectoryOnly)
+            .Where(IsMsBuildProjectFile)
+            .ToArray();
+        if (projectFiles.Length == 0)
+            return [];
+
+        var configFileName = Path.GetFileName(context.FullPath);
+        if (!configFileName.Equals("packages.config", StringComparison.OrdinalIgnoreCase))
+        {
+            var projectName = configFileName["packages.".Length..^".config".Length];
+            return projectFiles.Where(file => IsPackagesConfigNameForProject(projectName, file));
+        }
+
+        var projectSpecificConfigNames = context.FileSystem.GetFiles(directory, "packages.*.config", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Where(name => name.Length > "packages..config".Length)
+            .Select(name => name["packages.".Length..^".config".Length])
+            .ToArray();
+        return projectFiles.Where(file => !projectSpecificConfigNames.Any(projectName => IsPackagesConfigNameForProject(projectName, file)));
+
+        static bool IsMsBuildProjectFile(string path)
+        {
+            var extension = Path.GetExtension(path);
+            return extension.EndsWith("proj", StringComparison.OrdinalIgnoreCase)
+                && !extension.Equals(".pbxproj", StringComparison.OrdinalIgnoreCase)
+                && !extension.Equals(".vdproj", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsPackagesConfigNameForProject(string projectNameInConfigFileName, string projectPath)
+        {
+            var projectName = Path.GetFileNameWithoutExtension(projectPath);
+            return projectName.Equals(projectNameInConfigFileName, StringComparison.OrdinalIgnoreCase)
+                || projectName.Replace(' ', '_').Equals(projectNameInConfigFileName, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private void FindInReferences(ScanFileContext context, DependencyRoot dependency, AssociatedProject project)
     {
         foreach (var hint in project.HintPaths)
         {
-            if (FindDependencyInElementValue(context, dependency, project.Path, hint))
+            var index = IndexOfPackageFolder(hint.Value, dependency);
+            if (index < 0)
+                continue;
+
+            var versionStartColumn = index + dependency.Name.Length + 1;
+            var versionLocation = new XmlLocation(context.FileSystem, project.Path, hint, column: versionStartColumn, length: dependency.Version.Length);
+
+            // The assembly version of the reference is not the package version, so it is reported as metadata. It is not
+            // updated with the package version, as the assembly version of the new version of the package is unknown.
+            var assemblyVersion = FindAssemblyVersion(context, project.Path, hint.Parent?.Attribute(IncludeXName));
+            if (assemblyVersion is var (assemblyVersionValue, assemblyVersionLocation))
             {
-                FindDependencyInAssemblyName(context, dependency, project.Path, hint.Parent?.Attribute(IncludeXName));
+                context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation,
+                    tags: [],
+                    metadata: [new(AssemblyVersionMetadataName, assemblyVersionValue), new(AssemblyVersionLocationMetadataName, assemblyVersionLocation)]);
+            }
+            else
+            {
+                context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
             }
         }
     }
@@ -140,10 +199,11 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         {
             Path = path;
 
+            // Item types and metadata names are case-insensitive, but MSBuild keywords such as Import, Target and Error are not
             HintPaths = [.. document.Descendants()
-                .Where(element => element.Name.LocalName == "Reference")
+                .Where(element => element.Name.LocalName.Equals("Reference", StringComparison.OrdinalIgnoreCase))
                 .Elements()
-                .Where(element => element.Name.LocalName == "HintPath")];
+                .Where(element => element.Name.LocalName.Equals("HintPath", StringComparison.OrdinalIgnoreCase))];
 
             ImportAttributes = [.. document.Descendants()
                 .Where(element => element.Name.LocalName == "Import")
@@ -164,59 +224,56 @@ public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
         public XAttribute[] ErrorAttributes { get; }
     }
 
-    private bool FindDependencyInElementValue(ScanFileContext context, DependencyRoot dependency, string file, XElement element)
+    private void FindDependencyInAttributeValue(ScanFileContext context, DependencyRoot dependency, string file, XAttribute attribute)
     {
-        if (element is null)
-            return false;
-
-        var value = element.Value;
-        var indexOf = value.IndexOf(dependency.Name + '.' + dependency.Version, StringComparison.OrdinalIgnoreCase);
-        if (indexOf < 0)
-            return false;
-
-        var versionStartColumn = indexOf + (dependency.Name + '.').Length;
-        var versionLocation = new XmlLocation(context.FileSystem, file, element, column: versionStartColumn, length: dependency.Version.Length);
-        context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
-        return true;
-    }
-
-    private void FindDependencyInAttributeValue(ScanFileContext context, DependencyRoot dependency, string file, XAttribute? attribute)
-    {
-        if (attribute is null)
+        var index = IndexOfPackageFolder(attribute.Value, dependency);
+        if (index < 0)
             return;
 
-        var value = attribute.Value;
-        var indexOf = value.IndexOf(dependency.Name + '.' + dependency.Version, StringComparison.OrdinalIgnoreCase);
-        if (indexOf < 0)
-            return;
-
-        var versionStartColumn = indexOf + (dependency.Name + '.').Length;
+        var versionStartColumn = index + dependency.Name.Length + 1;
         Debug.Assert(attribute.Parent is not null);
         var versionLocation = new XmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: versionStartColumn, length: dependency.Version.Length);
         context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
     }
 
-    private void FindDependencyInAssemblyName(ScanFileContext context, DependencyRoot dependency, string file, XAttribute? attribute)
+    /// <summary>
+    /// Finds the package folder, "&lt;id&gt;.&lt;version&gt;", in a path. The folder name must be a whole path segment,
+    /// so that package "Owin" 1.0 does not match the folder of package "Microsoft.Owin" 1.0.
+    /// </summary>
+    private static int IndexOfPackageFolder(string value, DependencyRoot dependency)
+    {
+        var folderName = dependency.Name + '.' + dependency.Version;
+        var index = 0;
+        while ((index = value.IndexOf(folderName, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+        {
+            var end = index + folderName.Length;
+            if ((index == 0 || IsSegmentStart(value[index - 1])) && (end == value.Length || IsSegmentEnd(value[end])))
+                return index;
+
+            index++;
+        }
+
+        return -1;
+
+        static bool IsSegmentStart(char c) => c is '\\' or '/' or '\'' or '"' or ';' or ')';
+        static bool IsSegmentEnd(char c) => c is '\\' or '/' or '\'' or '"' or ';';
+    }
+
+    private static (string Version, Location Location)? FindAssemblyVersion(ScanFileContext context, string file, XAttribute? attribute)
     {
         if (attribute is null)
-            return;
+            return null;
 
-        var value = attribute.Value;
-        var match = VersionInAssemblyNameRegex().Match(value);
-        if (match.Success)
-        {
-            var version = match.Groups["Version"].Value;
-            if (Version.TryParse(version, out var v) && v != VersionZero && v != VersionOne)
-            {
-                Debug.Assert(attribute.Parent is not null);
-                var versionLocation = new AssemblyVersionXmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: match.Index, length: match.Value.Length);
-                context.ReportDependency(this, dependency.Name, match.Value, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
-            }
-        }
+        var match = VersionInAssemblyNameRegex().Match(attribute.Value);
+        if (!match.Success || !Version.TryParse(match.Value, out _))
+            return null;
+
+        Debug.Assert(attribute.Parent is not null);
+        return (match.Value, new AssemblyVersionXmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: match.Index, length: match.Length));
     }
 
     private record struct DependencyRoot(string Name, string Version, DependencyType Type);
 
-    [GeneratedRegex("(?<=Version=)(?<Version>[0-9.]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    [GeneratedRegex(@"(?<=,\s*Version\s*=\s*)[0-9]+(\.[0-9]+){1,3}(?![0-9.])", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: -1)]
     private static partial Regex VersionInAssemblyNameRegex();
 }

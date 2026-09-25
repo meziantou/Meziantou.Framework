@@ -28,43 +28,52 @@ internal static class TomlUtilities
         return null;
     }
 
-    /// <summary>Determines whether a key/value pair is inside an inline table, rather than under a header or at the root.</summary>
-    public static bool IsInInlineTable(TomlKeyValue pair) => pair.Property.Parent is TomlInlineTableSyntax;
-
-    /// <summary>Determines whether the text between the quotes of a single-line string is its value, as it is when the string has no escape sequence.</summary>
-    /// <remarks>
-    /// Only then can the value be found in the text at the same offsets, and a new value be written there as it is.
-    /// </remarks>
-    public static bool IsVerbatim(TomlStringSyntax value) => !value.IsMultiLine && IsVerbatim(value.StringToken);
-
-    /// <summary>Creates the location of the content of a string, without its quotes, or a location that cannot be updated when the string has escape sequences.</summary>
-    public static Location CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TomlStringSyntax value)
-        => IsVerbatim(value) ? CreateLocation(context, tree, GetContentSpan(value.StringToken)) : new NonUpdatableLocation(context);
-
-    /// <summary>Creates the location of the name a part of a key holds, without its quotes, or a location that cannot be updated when the name has escape sequences.</summary>
-    public static Location CreateLocation(ScanFileContext context, TomlSyntaxTree tree, SyntaxToken keyPart)
-    {
-        if (keyPart.IsMissing)
-            return new NonUpdatableLocation(context);
-
-        if (keyPart.IsKind(SyntaxKind.BareKeyToken))
-            return CreateLocation(context, tree, keyPart.Span);
-
-        return IsVerbatim(keyPart) ? CreateLocation(context, tree, GetContentSpan(keyPart)) : new NonUpdatableLocation(context);
-    }
-
-    /// <summary>Gets the span of the text between the quotes of a single-line string.</summary>
-    private static TextSpan GetContentSpan(SyntaxToken token) => new(token.Span.Start + 1, token.Span.Length - 2);
-
-    private static bool IsVerbatim(SyntaxToken token)
-    {
-        var text = token.Text;
-        return text.Length >= 2 && text.AsSpan(1, text.Length - 2).SequenceEqual(token.ValueText);
-    }
+    /// <summary>Gets whether a property has both a key and a value, so that it is not the parser's recovery from a malformed line.</summary>
+    /// <remarks>For instance, a line holding only <c>"serde = "1.0"</c> is a complete quoted key, <c>serde = </c>, followed by text that is not a value.</remarks>
+    public static bool IsWellFormed(TomlPropertySyntax property) => !property.EqualsToken.IsMissing && !property.Key.ContainsDiagnostics;
 
     public static TextLocation CreateLocation(ScanFileContext context, TomlSyntaxTree tree, TextSpan span)
     {
         var lineSpan = tree.GetLineSpan(span);
         return new TextLocation(context.FileSystem, context.FullPath, lineSpan.Start.Line + 1, lineSpan.Start.Character + 1, span.Length);
+    }
+
+    /// <summary>Creates the location of the content of a string, which is not updatable when the text of the string is not its value, such as <c>"1.0"</c>.</summary>
+    /// <remarks>A location replaces the text of the file, so writing a value where escape sequences were would change more than the value.</remarks>
+    public static Location CreateValueLocation(ScanFileContext context, TomlSyntaxTree tree, TomlStringSyntax value) => CreateTokenLocation(context, tree, value.StringToken);
+
+    /// <summary>Creates the location of a key part, such as <c>serde</c> or <c>"serde"</c>, which is not updatable when the text of the key is not its name.</summary>
+    public static Location CreateKeyLocation(ScanFileContext context, TomlSyntaxTree tree, SyntaxToken keyPart) => CreateTokenLocation(context, tree, keyPart);
+
+    private static Location CreateTokenLocation(ScanFileContext context, TomlSyntaxTree tree, SyntaxToken token)
+    {
+        if (TryGetVerbatimSpan(token, out var span))
+            return CreateLocation(context, tree, span);
+
+        return new NonUpdatableLocation(context);
+    }
+
+    /// <summary>Gets the span of the content of a bare key or a single-line string, when that content is exactly its value.</summary>
+    private static bool TryGetVerbatimSpan(SyntaxToken token, out TextSpan span)
+    {
+        span = default;
+        if (token.ContainsDiagnostics || token.IsMissing)
+            return false;
+
+        var text = token.Text;
+        var value = token.ValueText;
+        switch (token.Kind())
+        {
+            case SyntaxKind.BareKeyToken when text == value:
+                span = token.Span;
+                return true;
+
+            case SyntaxKind.BasicStringToken or SyntaxKind.LiteralStringToken when text.Length >= 2 && text[0] == text[^1] && text.AsSpan(1, text.Length - 2).SequenceEqual(value):
+                span = new TextSpan(token.Span.Start + 1, token.Span.Length - 2);
+                return true;
+
+            default:
+                return false;
+        }
     }
 }

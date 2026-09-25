@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning;
 
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.DependencyScanning;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct ScanFileContext : IAsyncDisposable
 {
-    private readonly Lazy<Stream> _content;
+    private readonly ScanFileState _state;
     private readonly DependencyFound _onDependencyFound;
     private readonly ScannerOptions _options;
 
@@ -18,14 +19,18 @@ public readonly struct ScanFileContext : IAsyncDisposable
         FileSystem = options.FileSystem;
         CancellationToken = cancellationToken;
 
-        _content = new Lazy<Stream>(() => options.FileSystem.OpenRead(fullPath));
+        _state = new ScanFileState(options.FileSystem, fullPath);
     }
 
     /// <summary>Gets the full path of the file being scanned.</summary>
     public string FullPath { get; }
 
-    /// <summary>Gets a stream containing the file content. The stream is lazily opened on first access.</summary>
-    public Stream Content => _content.Value;
+    /// <summary>Gets a seekable stream containing the file content. The stream is lazily opened on first access.</summary>
+    /// <remarks>
+    /// When the file system returns a stream that cannot seek, the content is read into memory. An exception thrown
+    /// while opening the file makes the scan skip the file, and is reported to <see cref="ScannerOptions.OnFileScanFailed"/>.
+    /// </remarks>
+    public Stream Content => _state.GetContent();
 
     /// <summary>Gets the cancellation token for the scanning operation.</summary>
     public CancellationToken CancellationToken { get; }
@@ -35,7 +40,16 @@ public readonly struct ScanFileContext : IAsyncDisposable
 
     private void UnsafeReportDependency(Dependency dependency)
     {
-        _onDependencyFound(dependency);
+        try
+        {
+            _onDependencyFound(dependency);
+        }
+        catch
+        {
+            // The exception comes from the caller, not from the file or the scanner, so it must stop the scan
+            _state.DependencyFoundCallbackFailed = true;
+            throw;
+        }
     }
 
     /// <summary>Reports a discovered dependency to the scanning framework.</summary>
@@ -98,19 +112,21 @@ public readonly struct ScanFileContext : IAsyncDisposable
 
     internal void ResetStream()
     {
-        if (_content.IsValueCreated)
-        {
-            _content.Value.Seek(0, SeekOrigin.Begin);
-        }
+        _state.ResetContent();
+    }
+
+    /// <summary>Determines whether an exception thrown while scanning the file only means that the file must be skipped.</summary>
+    /// <remarks>Cancellation of the scan and an exception thrown by the callback that receives the dependencies stop the whole scan instead.</remarks>
+    internal bool IsFileScanFailure(Exception exception)
+    {
+        if (exception is OperationCanceledException && CancellationToken.IsCancellationRequested)
+            return false;
+
+        return !_state.DependencyFoundCallbackFailed;
     }
 
     public ValueTask DisposeAsync()
     {
-        if (_content.IsValueCreated)
-        {
-            return _content.Value.DisposeAsync();
-        }
-
-        return default;
+        return _state.DisposeAsync();
     }
 }

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct SwiftToken(SwiftTokenKind Kind, int Start, int End, int ContentStart, int ContentEnd, bool IsMultiline, bool IsTerminated)
+internal readonly record struct SwiftToken(SwiftTokenKind Kind, int Start, int End, int ContentStart, int ContentEnd, bool IsMultiline, bool IsTerminated, int HashCount = 0, bool HasInterpolation = false)
 {
     public int Length => End - Start;
 

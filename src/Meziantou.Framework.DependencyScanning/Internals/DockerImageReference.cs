@@ -10,9 +10,10 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct DockerImageReference
 {
-    private DockerImageReference(string name, string? tag, int tagIndex, string? digest)
+    private DockerImageReference(string name, string? tag, int tagIndex, string? digest, bool hasPathSeparator)
     {
         Name = name;
+        HasPathSeparator = hasPathSeparator;
         Tag = tag;
         TagIndex = tagIndex;
         Digest = digest;
@@ -25,6 +26,15 @@ internal readonly struct DockerImageReference
     public int TagIndex { get; }
 
     public string? Digest { get; }
+
+    /// <summary>Gets a value indicating whether the name contains a <c>/</c> outside of variable references, such as <c>library/node</c> or <c>ghcr.io/owner/image</c>.</summary>
+    public bool HasPathSeparator { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the reference is certainly an image rather than another kind of name, such as an alias or a build stage:
+    /// it has a tag, a digest, or a registry or repository path. Variable references do not count.
+    /// </summary>
+    public bool IsQualified => Tag is not null || Digest is not null || HasPathSeparator;
 
     /// <summary>
     /// Parses an image reference. The tag separator is the last <c>:</c> after the last <c>/</c>, so a registry port
@@ -94,7 +104,7 @@ internal readonly struct DockerImageReference
         if (nameEnd is 0)
             return false;
 
-        reference = new DockerImageReference(value[..nameEnd], tag, tagIndex, digest);
+        reference = new DockerImageReference(value[..nameEnd], tag, tagIndex, digest, lastSlash >= 0);
         return true;
     }
 

@@ -6,17 +6,75 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class XmlUtilities
 {
-    private static readonly XmlReaderSettings? XmlSettings = new() { CloseInput = false, Async = true, };
+    /// <summary>The maximum nesting depth of a document. Loading a document is quadratic in its depth, and no file the scanners read nests deeper than a few dozen levels.</summary>
+    internal const int MaxDepth = 256;
+
+    /// <summary>The maximum number of characters of a document, so that a huge file cannot exhaust the memory or the time of a scan.</summary>
+    internal const long MaxCharactersInDocument = 16 * 1024 * 1024;
+
+    private static readonly XmlReaderSettings DefaultXmlSettings = CreateXmlReaderSettings(MaxCharactersInDocument);
+
+    private static XmlReaderSettings CreateXmlReaderSettings(long maxCharactersInDocument) => new()
+    {
+        CloseInput = false,
+        Async = true,
+
+        // A DOCTYPE is skipped rather than rejected, as MSBuild does. Its entities are never expanded.
+        DtdProcessing = DtdProcessing.Ignore,
+        XmlResolver = null,
+        MaxCharactersInDocument = maxCharactersInDocument,
+    };
 
     public static Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, CancellationToken cancellationToken)
     {
         return LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.SetLineInfo, cancellationToken);
     }
 
-    public static async Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, LoadOptions loadOptions, CancellationToken cancellationToken)
+    /// <summary>Loads an XML document from the current position of <paramref name="stream"/>, which is left open.</summary>
+    /// <remarks>
+    /// The encoding is the one <see cref="StreamUtilities.GetXmlEncoding"/> resolves, so a file whose declared encoding
+    /// does not match its bytes is read like MSBuild reads it. Invalid bytes are replaced.
+    /// </remarks>
+    /// <exception cref="XmlException">The document is not valid, nests deeper than <see cref="MaxDepth"/>, or is larger than <see cref="MaxCharactersInDocument"/>.</exception>
+    public static Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, LoadOptions loadOptions, CancellationToken cancellationToken)
     {
-        using var xmlReader = XmlReader.Create(stream, XmlSettings);
-        return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
+        return LoadDocumentAsync(stream, loadOptions, MaxDepth, MaxCharactersInDocument, cancellationToken);
+    }
+
+    internal static async Task<XDocument> LoadDocumentAsync(Stream stream, LoadOptions loadOptions, int maxDepth, long maxCharactersInDocument, CancellationToken cancellationToken)
+    {
+        MemoryStream? bufferedStream = null;
+        try
+        {
+            var input = stream;
+            if (!input.CanSeek)
+            {
+                bufferedStream = new MemoryStream();
+                await input.CopyToAsync(bufferedStream, cancellationToken).ConfigureAwait(false);
+                bufferedStream.Position = 0;
+                input = bufferedStream;
+            }
+
+            // The encoding is detected from the start of the file, then the whole file is read through a TextReader, so
+            // the XML reader does not apply the declared encoding itself.
+            var start = input.Position;
+            var header = new byte[1024];
+            var headerLength = await StreamUtilities.ReadUntilCountOrEndAsync(input, header, cancellationToken).ConfigureAwait(false);
+            input.Seek(start, SeekOrigin.Begin);
+            var (encoding, _) = StreamUtilities.GetXmlEncoding(header.AsSpan(0, headerLength), strict: false);
+
+            using var textReader = new StreamReader(input, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: -1, leaveOpen: true);
+            var settings = maxCharactersInDocument == MaxCharactersInDocument ? DefaultXmlSettings : CreateXmlReaderSettings(maxCharactersInDocument);
+            using var xmlReader = new DepthLimitingXmlReader(XmlReader.Create(textReader, settings), maxDepth);
+            return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (bufferedStream is not null)
+            {
+                await bufferedStream.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     public static Task<XDocument?> TryLoadDocumentWithoutClosingStream(Stream stream, CancellationToken cancellationToken)
@@ -24,12 +82,12 @@ internal static class XmlUtilities
         return TryLoadDocumentWithoutClosingStream(stream, LoadOptions.SetLineInfo, cancellationToken);
     }
 
+    /// <summary>Loads an XML document like <see cref="LoadDocumentWithoutClosingStreamAsync(Stream, LoadOptions, CancellationToken)"/>, or returns <see langword="null"/> when it is not valid, too deep, or too large.</summary>
     public static async Task<XDocument?> TryLoadDocumentWithoutClosingStream(Stream stream, LoadOptions loadOptions, CancellationToken cancellationToken)
     {
         try
         {
-            using var xmlReader = XmlReader.Create(stream, XmlSettings);
-            return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
+            return await LoadDocumentWithoutClosingStreamAsync(stream, loadOptions, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -216,4 +274,85 @@ internal static class XmlUtilities
         >= 0x10000 and <= 0x10FFFF => true,
         _ => false,
     };
+
+    /// <summary>Stops reading a document that nests deeper than a limit, which <see cref="XmlReaderSettings"/> cannot do.</summary>
+    private sealed class DepthLimitingXmlReader : XmlReader, IXmlLineInfo
+    {
+        private readonly XmlReader _reader;
+        private readonly int _maxDepth;
+
+        public DepthLimitingXmlReader(XmlReader reader, int maxDepth)
+        {
+            _reader = reader;
+            _maxDepth = maxDepth;
+        }
+
+        public override int AttributeCount => _reader.AttributeCount;
+        public override string BaseURI => _reader.BaseURI;
+        public override int Depth => _reader.Depth;
+        public override bool EOF => _reader.EOF;
+        public override bool HasValue => _reader.HasValue;
+        public override bool IsDefault => _reader.IsDefault;
+        public override bool IsEmptyElement => _reader.IsEmptyElement;
+        public override string LocalName => _reader.LocalName;
+        public override string Name => _reader.Name;
+        public override string NamespaceURI => _reader.NamespaceURI;
+        public override XmlNameTable NameTable => _reader.NameTable;
+        public override XmlNodeType NodeType => _reader.NodeType;
+        public override string Prefix => _reader.Prefix;
+        public override char QuoteChar => _reader.QuoteChar;
+        public override ReadState ReadState => _reader.ReadState;
+        public override XmlReaderSettings? Settings => _reader.Settings;
+        public override string Value => _reader.Value;
+        public override string XmlLang => _reader.XmlLang;
+        public override XmlSpace XmlSpace => _reader.XmlSpace;
+
+        int IXmlLineInfo.LineNumber => _reader is IXmlLineInfo lineInfo ? lineInfo.LineNumber : 0;
+        int IXmlLineInfo.LinePosition => _reader is IXmlLineInfo lineInfo ? lineInfo.LinePosition : 0;
+        bool IXmlLineInfo.HasLineInfo() => _reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo();
+
+        public override string GetAttribute(int i) => _reader.GetAttribute(i);
+        public override string? GetAttribute(string name) => _reader.GetAttribute(name);
+        public override string? GetAttribute(string name, string? namespaceURI) => _reader.GetAttribute(name, namespaceURI);
+        public override string? LookupNamespace(string prefix) => _reader.LookupNamespace(prefix);
+        public override bool MoveToAttribute(string name) => _reader.MoveToAttribute(name);
+        public override bool MoveToAttribute(string name, string? ns) => _reader.MoveToAttribute(name, ns);
+        public override void MoveToAttribute(int i) => _reader.MoveToAttribute(i);
+        public override bool MoveToElement() => _reader.MoveToElement();
+        public override bool MoveToFirstAttribute() => _reader.MoveToFirstAttribute();
+        public override bool MoveToNextAttribute() => _reader.MoveToNextAttribute();
+        public override bool ReadAttributeValue() => _reader.ReadAttributeValue();
+        public override void ResolveEntity() => _reader.ResolveEntity();
+        public override Task<string> GetValueAsync() => _reader.GetValueAsync();
+
+        public override bool Read()
+        {
+            var result = _reader.Read();
+            EnsureDepth();
+            return result;
+        }
+
+        public override async Task<bool> ReadAsync()
+        {
+            var result = await _reader.ReadAsync().ConfigureAwait(false);
+            EnsureDepth();
+            return result;
+        }
+
+        private void EnsureDepth()
+        {
+            if (_reader.Depth > _maxDepth)
+                throw new XmlException($"The document nests deeper than {_maxDepth.ToString(CultureInfo.InvariantCulture)} levels.");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _reader.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
 }

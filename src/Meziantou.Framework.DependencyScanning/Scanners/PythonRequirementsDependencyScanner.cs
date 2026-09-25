@@ -3,8 +3,9 @@ using Meziantou.Framework.DependencyScanning.Internals;
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 /// <summary>
-/// Scans Python requirements files for PyPI packages pinned with <c>==</c>.
-/// Files named <c>*requirements*.txt</c> (for instance <c>requirements.txt</c> or <c>requirements-dev.txt</c>) and <c>*.txt</c> files in a <c>requirements</c> directory are scanned.
+/// Scans Python requirements and constraints files for PyPI packages pinned with <c>==</c>.
+/// Files named <c>*requirements*.txt</c> or <c>*constraints*.txt</c> (for instance <c>requirements.txt</c>, <c>requirements-dev.txt</c> or <c>constraints.txt</c>),
+/// their pip-tools <c>.in</c> counterparts (for instance <c>requirements.in</c>), and <c>*.txt</c> and <c>*.in</c> files in a <c>requirements</c> directory are scanned.
 /// </summary>
 public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 {
@@ -12,10 +13,10 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        if (!context.HasExtension(".txt", ignoreCase: true))
+        if (!context.HasExtension([".txt", ".in"], ignoreCase: true))
             return false;
 
-        if (context.FileName.Contains("requirements", StringComparison.OrdinalIgnoreCase))
+        if (context.FileName.Contains("requirements", StringComparison.OrdinalIgnoreCase) || context.FileName.Contains("constraints", StringComparison.OrdinalIgnoreCase))
             return true;
 
         return Path.GetFileName(context.Directory.TrimEnd(['/', '\\'])).Equals("requirements", StringComparison.OrdinalIgnoreCase);

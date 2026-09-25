@@ -28,11 +28,11 @@ public sealed class ComposerDependencyScanner : DependencyScanner
             var sections = isLockFile ? new[] { "packages", "packages-dev" } : new[] { "require", "require-dev" };
             foreach (var section in sections)
             {
-                if (isLockFile && root[section] is JsonArray packages)
+                if (isLockFile && JsonNodeDocument.TryGetArray(root, section, out var packages))
                 {
                     foreach (var package in packages.OfType<JsonObject>())
                     {
-                        if (package["name"]?.GetValue<string>() is not { } name || package["version"]?.GetValue<string>() is not { } version)
+                        if (!JsonNodeDocument.TryGetString(package["name"], out var name) || !JsonNodeDocument.TryGetString(package["version"], out var version))
                             continue;
 
                         context.ReportDependency(this, name, version, DependencyType.PhpPackage,

@@ -4,13 +4,12 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-/// <summary>Scans MSBuild project files (.csproj, .fsproj, .vbproj, .proj, .props, .targets) for NuGet package references, target frameworks, and project references.</summary>
+/// <summary>Scans MSBuild project files (.csproj, .fsproj, .vbproj, .proj, and any other *.*proj file, .props, .targets) for NuGet package references, target frameworks, and project references.</summary>
 public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 {
     private static readonly XName IncludeXName = XName.Get("Include");
     private static readonly XName UpdateXName = XName.Get("Update");
     private static readonly XName VersionXName = XName.Get("Version");
-    private static readonly XName VersionOverrideXName = XName.Get("VersionOverride");
     private static readonly XName SdkXName = XName.Get("Sdk");
     private static readonly XName NameXName = XName.Get("Name");
 
@@ -23,7 +22,13 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasExtension([".csproj", ".fsproj", ".vbproj", ".proj", ".props", ".targets"], ignoreCase: true);
+        if (context.HasExtension([".props", ".targets"], ignoreCase: true))
+            return true;
+
+        // Every MSBuild project type uses a *.*proj extension (.csproj, .vcxproj, .sqlproj, .wixproj, .esproj, ...).
+        // Xcode (.pbxproj) and Visual Studio Installer (.vdproj) projects share the suffix, but they are not MSBuild files.
+        return Path.GetExtension(context.FileName).EndsWith("proj", StringComparison.OrdinalIgnoreCase)
+            && !context.HasExtension([".pbxproj", ".vdproj"], ignoreCase: true);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -32,109 +37,56 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         if (doc is null || doc.Root is null)
             return;
 
+        // MSBuild keywords (Project, ItemGroup, PropertyGroup, Include, Sdk, ...) are case-sensitive, but item types, metadata names and property names are not
         var ns = doc.Root.GetDefaultNamespace();
-        var itemGroups = doc.Descendants(ns + "ItemGroup");
-        foreach (var package in itemGroups.Elements(ns + "PackageReference").Concat(itemGroups.Elements(ns + "PackageDownload")).Concat(itemGroups.Elements(ns + "GlobalPackageReference")))
+        var items = doc.Descendants(ns + "ItemGroup").Elements().Where(element => element.Name.Namespace == ns).ToArray();
+        foreach (var package in items.Where(item => HasName(item, "PackageReference") || HasName(item, "PackageDownload") || HasName(item, "GlobalPackageReference")))
         {
-            var nameAttribute = GetItemNameAttribute(package);
-            if (nameAttribute is null)
+            var names = GetItemNames(context, package);
+            if (names.Count == 0)
                 continue;
 
-            var nameValue = nameAttribute.Value;
             var reported = false;
-            var versionAttribute = package.Attribute(VersionXName);
-            var versionAttributeValue = versionAttribute?.Value;
-            if (!string.IsNullOrEmpty(versionAttributeValue))
+            if (TryGetMetadata(context, ns, package, "Version", names.Count, out var version, out var versionLocation))
             {
-                context.ReportDependency(this, nameValue, versionAttributeValue, DependencyType.NuGet,
-                    nameLocation: CreateLocation(context, nameValue, package, nameAttribute),
-                    versionLocation: CreateLocation(context, versionAttributeValue, package, versionAttribute));
+                ReportPackages(context, names, version, versionLocation);
                 reported = true;
-            }
-            else
-            {
-                var versionElement = package.Element(ns + "Version");
-                if (!string.IsNullOrEmpty(versionElement?.Value))
-                {
-                    context.ReportDependency(this, nameValue, versionElement.Value, DependencyType.NuGet,
-                        nameLocation: CreateLocation(context, nameValue, package, nameAttribute),
-                        versionLocation: CreateLocation(context, versionElement.Value, versionElement, attribute: null));
-                    reported = true;
-                }
             }
 
-            var versionOverrideAttribute = package.Attribute(VersionOverrideXName);
-            var versionOverrideAttributeValue = versionOverrideAttribute?.Value;
-            if (!string.IsNullOrEmpty(versionOverrideAttributeValue))
+            if (TryGetMetadata(context, ns, package, "VersionOverride", names.Count, out var versionOverride, out var versionOverrideLocation))
             {
-                context.ReportDependency(this, nameValue, versionOverrideAttributeValue, DependencyType.NuGet,
-                    nameLocation: CreateLocation(context, nameValue, package, nameAttribute),
-                    versionLocation: CreateLocation(context, versionOverrideAttributeValue, package, versionOverrideAttribute));
+                ReportPackages(context, names, versionOverride, versionOverrideLocation);
                 reported = true;
-            }
-            else
-            {
-                var versionOverrideElement = package.Element(ns + "VersionOverride");
-                if (!string.IsNullOrEmpty(versionOverrideElement?.Value))
-                {
-                    context.ReportDependency(this, nameValue, versionOverrideElement.Value, DependencyType.NuGet,
-                        nameLocation: CreateLocation(context, nameValue, package, nameAttribute),
-                        versionLocation: CreateLocation(context, versionOverrideElement.Value, versionOverrideElement, attribute: null));
-                    reported = true;
-                }
             }
 
             if (!reported)
             {
-                context.ReportDependency(this, nameValue, version: null, DependencyType.NuGet,
-                    nameLocation: CreateLocation(context, nameValue, package, nameAttribute),
-                    versionLocation: null);
+                ReportPackages(context, names, version: null, versionLocation: null);
             }
         }
 
-        foreach (var package in itemGroups.Elements(ns + "PackageVersion"))
+        foreach (var package in items.Where(item => HasName(item, "PackageVersion")))
         {
-            var packageNameAttr = GetItemNameAttribute(package);
-            if (packageNameAttr is null)
+            var names = GetItemNames(context, package);
+            if (names.Count == 0)
                 continue;
 
-            var packageName = packageNameAttr.Value;
-            var versionAttribute = package.Attribute(VersionXName);
-            var versionAttributeValue = versionAttribute?.Value;
-            if (!string.IsNullOrEmpty(versionAttributeValue))
+            if (TryGetMetadata(context, ns, package, "Version", names.Count, out var version, out var versionLocation))
             {
-                context.ReportDependency(this, packageName, versionAttributeValue, DependencyType.NuGet,
-                    nameLocation: CreateLocation(context, packageName, package, packageNameAttr),
-                    versionLocation: CreateLocation(context, versionAttributeValue, package, versionAttribute));
-            }
-            else
-            {
-                var versionElement = package.Element(ns + "Version");
-                if (!string.IsNullOrEmpty(versionElement?.Value))
-                {
-                    context.ReportDependency(this, packageName, versionElement.Value, DependencyType.NuGet,
-                        nameLocation: CreateLocation(context, packageName, package, packageNameAttr),
-                        versionLocation: CreateLocation(context, versionElement.Value, versionElement, attribute: null));
-                }
+                ReportPackages(context, names, version, versionLocation);
             }
         }
 
         foreach (var sdk in doc.Descendants(ns + "Sdk"))
         {
-            var nameAttribute = sdk.Attribute(NameXName);
-            var name = nameAttribute?.Value;
-            if (string.IsNullOrEmpty(name))
+            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(NameXName), out var name, out var nameLocation))
                 continue;
 
             // An SDK that only declares a MinimumVersion has no exact version to report
-            var versionAttribute = sdk.Attribute(VersionXName);
-            var version = versionAttribute?.Value;
-            if (string.IsNullOrEmpty(version))
+            if (!TryGetTrimmedValue(context, sdk, sdk.Attribute(VersionXName), out var version, out var versionLocation))
                 continue;
 
-            context.ReportDependency(this, name, version, DependencyType.NuGet,
-                nameLocation: CreateLocation(context, name, sdk, nameAttribute),
-                versionLocation: CreateLocation(context, version, sdk, versionAttribute));
+            context.ReportDependency(this, name, version, DependencyType.NuGet, nameLocation, versionLocation);
         }
 
         foreach (var element in doc.Descendants().Where(element => element.Name == ns + "Import" || element.Name == ns + "Project"))
@@ -146,34 +98,36 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             ReportSdkAttribute(context, ns, element, sdkAttribute);
         }
 
-        foreach (var element in doc.Descendants(ns + "PropertyGroup"))
+        foreach (var element in doc.Descendants(ns + "PropertyGroup").Elements().Where(element => element.Name.Namespace == ns))
         {
-            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFrameworkVersion"))
+            if (HasName(element, "TargetFrameworkVersion") || HasName(element, "TargetFramework"))
             {
-                ReportTargetFrameworks(context, targetFrameworkElement, isList: false);
+                ReportTargetFrameworks(context, element, isList: false);
             }
-
-            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFramework"))
+            else if (HasName(element, "TargetFrameworks"))
             {
-                ReportTargetFrameworks(context, targetFrameworkElement, isList: false);
-            }
-
-            foreach (var targetFrameworkElement in element.Elements(ns + "TargetFrameworks"))
-            {
-                ReportTargetFrameworks(context, targetFrameworkElement, isList: true);
+                ReportTargetFrameworks(context, element, isList: true);
             }
         }
 
-        foreach (var projectReference in itemGroups.Elements(ns + "ProjectReference"))
+        foreach (var projectReference in items.Where(item => HasName(item, "ProjectReference")))
         {
-            var nameAttribute = projectReference.Attribute(IncludeXName);
-            var nameValue = nameAttribute?.Value;
-            if (string.IsNullOrEmpty(nameValue))
+            var includeAttribute = projectReference.Attribute(IncludeXName);
+            if (includeAttribute is null)
                 continue;
 
-            context.ReportDependency(this, nameValue, version: null, DependencyType.MSBuildProjectReference,
-                nameLocation: CreateLocation(context, nameValue, projectReference, nameAttribute),
-                versionLocation: null);
+            foreach (var (name, nameLocation) in GetListEntries(context, projectReference, includeAttribute))
+            {
+                context.ReportDependency(this, name, version: null, DependencyType.MSBuildProjectReference, nameLocation, versionLocation: null);
+            }
+        }
+    }
+
+    private void ReportPackages(ScanFileContext context, List<(string Name, Location Location)> names, string? version, Location? versionLocation)
+    {
+        foreach (var (name, nameLocation) in names)
+        {
+            context.ReportDependency(this, name, version, DependencyType.NuGet, nameLocation, versionLocation);
         }
     }
 
@@ -191,16 +145,13 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 if (entries.Count != 1 || element.Name != ns + "Import")
                     continue;
 
-                var versionAttribute = element.Attribute(VersionXName);
-                var version = versionAttribute?.Value;
-                if (string.IsNullOrEmpty(version))
+                if (!TryGetTrimmedValue(context, element, element.Attribute(VersionXName), out var version, out var versionLocation))
                     continue;
 
-                context.ReportDependency(this, value.Substring(entryStart, entryLength), version, DependencyType.NuGet,
-                    nameLocation: IsMsBuildExpression(value.Substring(entryStart, entryLength))
-                        ? new NonUpdatableLocation(context)
-                        : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, entryStart, entryLength),
-                    versionLocation: CreateLocation(context, version, element, versionAttribute));
+                var name = value.Substring(entryStart, entryLength);
+                context.ReportDependency(this, name, version, DependencyType.NuGet,
+                    nameLocation: CreateLocation(context, name, element, sdkAttribute, entryStart, entryLength, value.Length),
+                    versionLocation);
                 continue;
             }
 
@@ -216,8 +167,9 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             if (versionValue.StartsWith("min=", StringComparison.OrdinalIgnoreCase) || versionValue.Contains('/', StringComparison.Ordinal))
                 continue;
 
-            context.ReportDependency(this, value.Substring(nameStart, nameLength), versionValue, DependencyType.NuGet,
-                nameLocation: IsMsBuildExpression(value.Substring(nameStart, nameLength))
+            var nameValue = value.Substring(nameStart, nameLength);
+            context.ReportDependency(this, nameValue, versionValue, DependencyType.NuGet,
+                nameLocation: IsMsBuildExpression(nameValue)
                     ? new NonUpdatableLocation(context)
                     : new XmlLocation(context.FileSystem, context.FullPath, element, sdkAttribute, nameStart, nameLength),
                 versionLocation: IsMsBuildExpression(versionValue)
@@ -244,26 +196,92 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         }
     }
 
-    private static XAttribute? GetItemNameAttribute(XElement element)
+    private static bool HasName(XElement element, string localName) => element.Name.LocalName.Equals(localName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets the items declared by the Include attribute, or by the Update attribute when there is no Include. MSBuild splits both on ';' and trims each entry.</summary>
+    private static List<(string Name, Location Location)> GetItemNames(ScanFileContext context, XElement element)
     {
         var includeAttribute = element.Attribute(IncludeXName);
-        if (!string.IsNullOrEmpty(includeAttribute?.Value))
-            return includeAttribute;
+        if (includeAttribute is not null && !string.IsNullOrWhiteSpace(includeAttribute.Value))
+            return GetListEntries(context, element, includeAttribute);
 
         var updateAttribute = element.Attribute(UpdateXName);
-        if (!string.IsNullOrEmpty(updateAttribute?.Value))
-            return updateAttribute;
+        if (updateAttribute is not null && !string.IsNullOrWhiteSpace(updateAttribute.Value))
+            return GetListEntries(context, element, updateAttribute);
 
-        return null;
+        return [];
     }
 
-    private static Location CreateLocation(ScanFileContext context, string value, XElement element, XAttribute? attribute)
+    private static List<(string Name, Location Location)> GetListEntries(ScanFileContext context, XElement element, XAttribute attribute)
+    {
+        var value = attribute.Value;
+        var result = new List<(string Name, Location Location)>();
+        foreach (var (start, length) in SplitList(value))
+        {
+            var entry = value.Substring(start, length);
+            result.Add((entry, CreateLocation(context, entry, element, attribute, start, length, value.Length)));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the value of a metadata declared as an attribute or as a child element, trimmed as NuGet does.
+    /// The location is not updatable when the item declares several packages, because they all share the value.
+    /// </summary>
+    private static bool TryGetMetadata(ScanFileContext context, XNamespace ns, XElement item, string metadataName, int itemCount, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
+    {
+        var attribute = item.Attributes().FirstOrDefault(attribute => attribute.Name.Namespace == XNamespace.None && attribute.Name.LocalName.Equals(metadataName, StringComparison.OrdinalIgnoreCase));
+        var element = item.Elements().FirstOrDefault(element => element.Name.Namespace == ns && HasName(element, metadataName));
+        var found = TryGetTrimmedValue(context, item, attribute, out value, out location)
+            || (element is not null && TryGetTrimmedValue(context, element, attribute: null, element.Value, out value, out location));
+
+        if (found && itemCount > 1)
+        {
+            location = new NonUpdatableLocation(context);
+        }
+
+        return found;
+    }
+
+    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
+    {
+        if (attribute is null)
+        {
+            value = null;
+            location = null;
+            return false;
+        }
+
+        return TryGetTrimmedValue(context, element, attribute, attribute.Value, out value, out location);
+    }
+
+    /// <summary>Gets the trimmed value of <paramref name="attribute"/>, or of <paramref name="element"/> when <paramref name="attribute"/> is <see langword="null"/>.</summary>
+    private static bool TryGetTrimmedValue(ScanFileContext context, XElement element, XAttribute? attribute, string rawValue, [NotNullWhen(true)] out string? value, [NotNullWhen(true)] out Location? location)
+    {
+        var (start, length) = Trim(rawValue, 0, rawValue.Length);
+        if (length == 0)
+        {
+            value = null;
+            location = null;
+            return false;
+        }
+
+        value = rawValue.Substring(start, length);
+        location = CreateLocation(context, value, element, attribute, start, length, rawValue.Length);
+        return true;
+    }
+
+    private static Location CreateLocation(ScanFileContext context, string value, XElement element, XAttribute? attribute, int start, int length, int rawValueLength)
     {
         // Updating a property, item or metadata reference would replace the indirection with a literal value
         if (IsMsBuildExpression(value))
             return new NonUpdatableLocation(context);
 
-        return new XmlLocation(context.FileSystem, context.FullPath, element, attribute);
+        if (start == 0 && length == rawValueLength)
+            return new XmlLocation(context.FileSystem, context.FullPath, element, attribute);
+
+        return new XmlLocation(context.FileSystem, context.FullPath, element, attribute, start, length);
     }
 
     private static bool IsMsBuildExpression(string value)

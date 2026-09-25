@@ -19,9 +19,25 @@ public sealed record IniParseOptions
 
     /// <summary>
     /// Gets a value indicating whether a value continues on the lines that follow it when they are indented more than its
-    /// key, as Python's <c>configparser</c> reads them. A blank line or a comment line ends the value.
+    /// key, as Python's <c>configparser</c> reads them.
     /// </summary>
+    /// <remarks>
+    /// As in <c>configparser</c>, a comment line between the lines of a value is skipped, and a blank line between them
+    /// is an empty line of the value. Each line is read like a one-line value, so its quotes and its comment are not
+    /// part of it.
+    /// </remarks>
     public bool AllowMultilineValues { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether a value wholly in double or single quotes, such as <c>"a;b"</c>, is read without
+    /// them, so that <c>;</c> and <c>#</c> inside them never start a comment. Defaults to <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// Set it to <see langword="false"/> for dialects where quotes are ordinary characters, such as Python's
+    /// <c>configparser</c>: the value of <c>key="a"</c> is then <c>"a"</c>, quotes included, and an edit never adds
+    /// quotes to a value.
+    /// </remarks>
+    public bool AllowQuotedValues { get; init; } = true;
 
     /// <summary>
     /// Gets a value indicating whether a section name used twice (<c>INI0006</c>) and a key used twice in the same

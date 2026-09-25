@@ -11,4 +11,6 @@ internal abstract class IniSyntaxNode : GreenNode
     }
 
     public override string KindText => ((SyntaxKind)RawKind).ToString();
+
+    internal override bool IsEndOfLineTrivia(GreenNode trivia) => trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia;
 }

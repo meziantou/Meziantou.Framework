@@ -296,8 +296,8 @@ key without separator
         Assert.Empty(tree.GetDiagnostics());
         Assert.Equal(Text, tree.GetRoot().ToFullString());
         var root = tree.GetRoot();
-        Assert.Equal("line1\nline2", root.GetValue(section: null, "k"));
-        Assert.Equal("1", root.GetValue(section: null, "other"));
+        Assert.Equal("line1\nline2\n\nother=1", root.GetValue(section: null, "k"));
+        Assert.Null(root.GetValue(section: null, "other"));
         Assert.Equal("\nb", root.GetValue("s", "a"));
         Assert.Equal("1", root.GetValue("s", "c"));
     }
@@ -373,12 +373,12 @@ key without separator
     [InlineData("say \"hi\"")]
     [InlineData("it's")]
     [InlineData("")]
-    public void WithValue_ReadsBackAsTheSameValueWhateverTheCommentMode(string value)
+    public void Value_ReadsBackAsTheSameValueWhateverTheCommentMode(string value)
     {
         var root = IniSyntaxTree.ParseText("url=old\nother=1").GetRoot();
         var property = (IniPropertySyntax)root.Entries[0];
 
-        var updated = root.ReplaceNode(property, property.WithValue(value));
+        var updated = root.ReplaceNode(property, property.WithValueToken(SyntaxFactory.Value(value).WithTriviaFrom(property.ValueToken)));
 
         foreach (var mode in Enum.GetValues<IniInlineCommentMode>())
         {
@@ -465,7 +465,7 @@ key without separator
 
     [Theory]
     [InlineData("a=1", "a=1\nb=2\n")]
-    [InlineData("a=1\r\nc=3", "a=1\r\nc=3\r\nb=2\n")]
+    [InlineData("a=1\r\nc=3", "a=1\r\nc=3\r\nb=2\r\n")]
     [InlineData("", "b=2\n")]
     public void AddEntries_StartsANewLine(string text, string expected)
     {
@@ -483,6 +483,365 @@ key without separator
         var root = IniSyntaxTree.ParseText("flag\n", new IniParseOptions { AllowKeysWithoutValue = true }).GetRoot();
 
         Assert.Equal("flag\nb=2\n", root.AddEntries(SyntaxFactory.IniProperty("b", "2")).ToFullString());
+    }
+
+    [Theory]
+    [MemberData(nameof(WithValueSamples))]
+    public void WithValue_ReadsBackAsTheSameValueWithTheDocumentOptions(string value, IniInlineCommentMode mode)
+    {
+        var options = new IniParseOptions { InlineComments = mode };
+        var root = IniSyntaxTree.ParseText("url=old\nother=1", options).GetRoot();
+        var property = (IniPropertySyntax)root.Entries[0];
+
+        var updated = root.ReplaceNode(property, property.WithValue(value));
+
+        var reparsed = IniSyntaxTree.ParseText(updated.ToFullString(), options);
+        Assert.Empty(reparsed.GetDiagnostics());
+        Assert.Equal(value, reparsed.GetRoot().GetValue(section: null, "url"));
+        Assert.Equal("1", reparsed.GetRoot().GetValue(section: null, "other"));
+    }
+
+    public static TheoryData<string, IniInlineCommentMode> WithValueSamples()
+    {
+        var data = new TheoryData<string, IniInlineCommentMode>();
+        foreach (var mode in Enum.GetValues<IniInlineCommentMode>())
+        {
+            foreach (var value in new[] { "http://host/#top", "abc#123", "a ; b", ";starts", " padded ", "\"quoted\"", "say \"hi\"", "it's", "" })
+            {
+                data.Add(value, mode);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [InlineData(IniInlineCommentMode.None, "a ; b", "k=a ; b\n")]
+    [InlineData(IniInlineCommentMode.None, ";starts", "k=;starts\n")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, "abc#1", "k=abc#1\n")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, "a ;b", "k=\"a ;b\"\n")]
+    [InlineData(IniInlineCommentMode.Anywhere, "abc#1", "k=\"abc#1\"\n")]
+    public void WithValue_QuotesOnlyWhatTheDocumentOptionsRequire(IniInlineCommentMode mode, string value, string expected)
+    {
+        var root = IniSyntaxTree.ParseText("k=old\n", new IniParseOptions { InlineComments = mode }).GetRoot();
+        var property = root.GlobalProperties[0];
+
+        Assert.Equal(expected, root.ReplaceNode(property, property.WithValue(value)).ToFullString());
+    }
+
+    [Fact]
+    public void WithValue_KeepsTheDocumentOptionsAcrossEdits()
+    {
+        var options = new IniParseOptions { InlineComments = IniInlineCommentMode.None, AllowQuotedValues = false };
+        var root = IniSyntaxTree.ParseText("a=1\nb=2\n", options).GetRoot();
+        root = root.ReplaceNode(root.GlobalProperties[0], root.GlobalProperties[0].WithValue("x ; y"));
+
+        var updated = root.ReplaceNode(root.GlobalProperties[1], root.GlobalProperties[1].WithValue("p#q"));
+
+        Assert.Same(options, updated.Options);
+        Assert.Equal("a=x ; y\nb=p#q\n", updated.ToFullString());
+    }
+
+    [Theory]
+    [InlineData(IniInlineCommentMode.None, "k=\"x\"\n", "\"x\"")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, "k=\"a ;b\"\n", "\"a")]
+    [InlineData(IniInlineCommentMode.Anywhere, "k='a#b'\n", "'a")]
+    public void ParseText_QuotesAreOrdinaryCharactersWhenQuotedValuesAreNotAllowed(IniInlineCommentMode mode, string text, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text, new IniParseOptions { InlineComments = mode, AllowQuotedValues = false }).GetRoot();
+
+        Assert.Equal(expected, root.GetValue(section: null, "k"));
+        Assert.Equal(text, root.ToFullString());
+    }
+
+    [Theory]
+    [InlineData(IniInlineCommentMode.None, "\"x\"", "k=\"x\"\n")]
+    [InlineData(IniInlineCommentMode.None, " padded", null)]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, "a ;b", null)]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, "a;b", "k=a;b\n")]
+    public void WithValue_NeverAddsQuotesWhenQuotedValuesAreNotAllowed(IniInlineCommentMode mode, string value, string? expected)
+    {
+        var root = IniSyntaxTree.ParseText("k=old\n", new IniParseOptions { InlineComments = mode, AllowQuotedValues = false }).GetRoot();
+        var property = root.GlobalProperties[0];
+
+        if (expected is null)
+        {
+            Assert.Throws<ArgumentException>(() => property.WithValue(value));
+            return;
+        }
+
+        Assert.Equal(expected, root.ReplaceNode(property, property.WithValue(value)).ToFullString());
+    }
+
+    [Fact]
+    public void SyntaxFactory_WritesValuesForTheGivenOptions()
+    {
+        var python = new IniParseOptions { InlineComments = IniInlineCommentMode.None, AllowQuotedValues = false, AllowMultilineValues = true };
+
+        Assert.Equal("abc#1", SyntaxFactory.Value("abc#1", python).Text);
+        Assert.Equal("\"abc#1\"", SyntaxFactory.Value("abc#1", new IniParseOptions { InlineComments = IniInlineCommentMode.Anywhere }).Text);
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.Value(" x", python));
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.Value("a\nb", python));
+        Assert.Equal("k=a;b\n    c\n", SyntaxFactory.IniProperty("k", "a;b\nc", python).ToFullString());
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.IniProperty("k", "a\nb", IniParseOptions.Default));
+    }
+
+    [Theory]
+    [MemberData(nameof(ConfigParserMultilineSamples))]
+    public void ParseText_MultilineValuesReadAsConfigParserReadsThem(string text, IniInlineCommentMode mode, string section, string key, string expected)
+    {
+        var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowMultilineValues = true, AllowQuotedValues = false, InlineComments = mode });
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, tree.GetRoot().GetValue(section, key));
+    }
+
+    // Generated with Python's configparser.ConfigParser(inline_comment_prefixes=None or (';', '#'), interpolation=None).
+    public static TheoryData<string, IniInlineCommentMode, string, string, string> ConfigParserMultilineSamples => new()
+    {
+        { "[s]\nk=line1 ; note\n  line2\n\n  other=1\n[t]\n  a=\n    b\n  c=1\n", IniInlineCommentMode.None, "s", "k", "line1 ; note\nline2\n\nother=1" },
+        { "[s]\nk=line1 ; note\n  line2\n\n  other=1\n[t]\n  a=\n    b\n  c=1\n", IniInlineCommentMode.None, "t", "a", "\nb" },
+        { "[s]\nk=line1 ; note\n  line2\n\n  other=1\n[t]\n  a=\n    b\n  c=1\n", IniInlineCommentMode.None, "t", "c", "1" },
+        { "[s]\nk=line1 ; note\n  line2\n\n  other=1\n[t]\n  a=\n    b\n  c=1\n", IniInlineCommentMode.AfterWhitespace, "s", "k", "line1\nline2\n\nother=1" },
+        { "[s]\nkey=a\n  # c\n  b\n", IniInlineCommentMode.None, "s", "key", "a\nb" },
+        { "[s]\nkey=a\n  # c\n  b\n", IniInlineCommentMode.AfterWhitespace, "s", "key", "a\nb" },
+        { "[s]\nkey=a\n\n  b\n", IniInlineCommentMode.None, "s", "key", "a\n\nb" },
+        { "[s]\nkey=a\n# c\n  b\n", IniInlineCommentMode.None, "s", "key", "a\nb" },
+        { "[s]\nkey=a\n\n\n  b\n  ; c\n\n  d\n\nx=1\n", IniInlineCommentMode.None, "s", "key", "a\n\n\nb\n\nd" },
+        { "[s]\nkey=a\n\n\n  b\n  ; c\n\n  d\n\nx=1\n", IniInlineCommentMode.None, "s", "x", "1" },
+        { "[s]\nkey=a\n  b ; c\n", IniInlineCommentMode.None, "s", "key", "a\nb ; c" },
+        { "[s]\nkey=a\n  b ; c\n", IniInlineCommentMode.AfterWhitespace, "s", "key", "a\nb" },
+        { "[s]\nkey=a\n  \"q\"\n", IniInlineCommentMode.None, "s", "key", "a\n\"q\"" },
+        { "[s]\nkey=a\n\n[t]\nx=1\n", IniInlineCommentMode.None, "s", "key", "a" },
+        { "[s]\nkey=a\n\n[t]\nx=1\n", IniInlineCommentMode.None, "t", "x", "1" },
+        { "[s]\n  key=a\n  b=2\n    c\n", IniInlineCommentMode.None, "s", "key", "a" },
+        { "[s]\n  key=a\n  b=2\n    c\n", IniInlineCommentMode.None, "s", "b", "2\nc" },
+        { "[s]\nkey=\n  a\n  b\n", IniInlineCommentMode.None, "s", "key", "\na\nb" },
+        { "[s]\nkey=a\n\t\n  b\n", IniInlineCommentMode.None, "s", "key", "a\n\nb" },
+    };
+
+    [Fact]
+    public void ParseText_MultilineValues_KeepsCommentsAsTrivia()
+    {
+        var root = IniSyntaxTree.ParseText("k=a ; c\n  # between\n  b\n", new IniParseOptions { AllowMultilineValues = true }).GetRoot();
+        var property = root.GlobalProperties[0];
+
+        Assert.Equal("a", property.ValueToken.Text);
+        Assert.Equal("b", Assert.Single(property.ContinuationTokens).Text);
+        Assert.Equal(["; c", "# between"], root.DescendantTrivia().Where(trivia => trivia.IsKind(SyntaxKind.CommentTrivia)).Select(trivia => trivia.ToFullString()));
+    }
+
+    [Fact]
+    public void ParseText_MultilineValues_ReadsEveryLineLikeAOneLineValue()
+    {
+        var root = IniSyntaxTree.ParseText("k=\"a b\"\n  \"c ;d\"\n", new IniParseOptions { AllowMultilineValues = true }).GetRoot();
+
+        Assert.Equal("a b\nc ;d", root.GetValue(section: null, "k"));
+    }
+
+    [Theory]
+    [InlineData("[s]\nk=old ; note\nx=1\n", "a\n\nb", "[s]\nk=a ; note\n\n    b\nx=1\n")]
+    [InlineData("k=a\n\tb\n", "x\ny", "k=x\n\ty\n")]
+    [InlineData("k=a\n  b\n  c\nx=1", "z", "k=z\nx=1")]
+    [InlineData("k=a", "x\ny", "k=x\n    y")]
+    [InlineData("  k=a\r\n", "x\ny", "  k=x\r\n      y\r\n")]
+    public void WithValue_WritesMultilineValues(string text, string value, string expected)
+    {
+        var options = new IniParseOptions { AllowMultilineValues = true };
+        var root = IniSyntaxTree.ParseText(text, options).GetRoot();
+        var property = root.GetProperties(root.Sections.Any() ? "s" : null, "k").Single();
+
+        var updated = root.ReplaceNode(property, property.WithValue(value));
+
+        Assert.Equal(expected, updated.ToFullString());
+        Assert.Equal(value, IniSyntaxTree.ParseText(updated.ToFullString(), options).GetRoot().GetValue(root.Sections.Any() ? "s" : null, "k"));
+    }
+
+    [Theory]
+    [InlineData("a\nb", false)]
+    [InlineData("a\n", true)]
+    public void WithValue_RejectsLinesTheDocumentCannotReadBack(string value, bool allowMultilineValues)
+    {
+        var root = IniSyntaxTree.ParseText("k=old\n", new IniParseOptions { AllowMultilineValues = allowMultilineValues }).GetRoot();
+
+        Assert.Throws<ArgumentException>(() => root.GlobalProperties[0].WithValue(value));
+    }
+
+    [Theory]
+    [InlineData("[s]\na=1", "[s]\na=1\nb=2\n")]
+    [InlineData("[s]\na=1 ; note", "[s]\na=1 ; note\nb=2\n")]
+    [InlineData("a=1\r\nb=0", "a=1\r\nb=0\r\nb=2\n")]
+    public void InsertNodesAfter_EndsTheLineOfTheLastEntry(string text, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text).GetRoot();
+
+        var updated = root.InsertNodesAfter(root.Entries[^1], [SyntaxFactory.IniProperty("b", "2")]);
+
+        Assert.Equal(expected, updated.ToFullString());
+        Assert.Equal("2", IniSyntaxTree.ParseText(updated.ToFullString()).GetRoot().GetProperties(root.Sections.Any() ? "s" : null, "b").Last().Value);
+    }
+
+    [Fact]
+    public void InsertNodesAfter_EndsTheLineOfASectionHeader()
+    {
+        var root = IniSyntaxTree.ParseText("[s]").GetRoot();
+
+        var updated = root.InsertNodesAfter(root.Entries[0], [SyntaxFactory.IniProperty("b", "2")]);
+
+        Assert.Equal("[s]\nb=2\n", updated.ToFullString());
+        Assert.Equal("2", IniSyntaxTree.ParseText(updated.ToFullString()).GetRoot().GetValue("s", "b"));
+    }
+
+    [Fact]
+    public void ReplaceNode_EndsTheLineOfAnEntryWithoutOne()
+    {
+        var root = IniSyntaxTree.ParseText("a=1\nb=2\n").GetRoot();
+        var replacement = SyntaxFactory.IniProperty(SyntaxFactory.Key("a"), SyntaxFactory.Token(SyntaxKind.EqualsToken), SyntaxFactory.Value("9"));
+
+        Assert.Equal("a=9\nb=2\n", root.ReplaceNode(root.Entries[0], replacement).ToFullString());
+    }
+
+    [Fact]
+    public void Edit_LeavesSkippedTextOnTheLineOfItsEntry()
+    {
+        var root = IniSyntaxTree.ParseText("[a] junk\nk=v\n").GetRoot();
+
+        Assert.Equal("[a] junk\nk=x\n", root.SetValue("a", "k", "x").ToFullString());
+    }
+
+    [Theory]
+    [InlineData("# header\n", "# header\n[db]\na=1\n")]
+    [InlineData("# header", "# header\n[db]\na=1\n")]
+    [InlineData("# header\n\n  ", "# header\n\n[db]\na=1\n  ")]
+    [InlineData("﻿; header\r\n", "﻿; header\r\n[db]\r\na=1\r\n")]
+    public void AddEntries_KeepsTheHeaderOfADocumentWithoutEntries(string text, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text).GetRoot();
+
+        Assert.Equal(expected, root.AddEntries(SyntaxFactory.IniSection("db"), SyntaxFactory.IniProperty("a", "1")).ToFullString());
+    }
+
+    [Fact]
+    public void AddEntries_UsesTheLineBreaksOfTheDocumentForMultilineValues()
+    {
+        var options = new IniParseOptions { AllowMultilineValues = true };
+        var root = IniSyntaxTree.ParseText("a=1\r\n", options).GetRoot();
+
+        Assert.Equal("a=1\r\nb=x\r\n    y\r\n", root.AddEntries(SyntaxFactory.IniProperty("b", "x\ny", options)).ToFullString());
+    }
+
+    [Fact]
+    public void GetValue_UsesTheNameComparerOfTheDocument()
+    {
+        var root = IniSyntaxTree.ParseText("[S]\nk=1\n", new IniParseOptions { NameComparer = StringComparer.Ordinal }).GetRoot();
+
+        Assert.Null(root.GetValue("s", "k"));
+        Assert.Null(root.GetValue("S", "K"));
+        Assert.Equal("1", root.GetValue("S", "k"));
+        Assert.Equal("1", root.GetValue("s", "K", StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Create_KeepsTheOptionsOfTheRoot()
+    {
+        var options = new IniParseOptions { NameComparer = StringComparer.Ordinal };
+        var root = IniSyntaxTree.ParseText("[S]\nk=1\n", options).GetRoot();
+        var edited = root.SetValue("S", "k", "2");
+
+        Assert.Same(options, IniSyntaxTree.Create(edited).Options);
+        Assert.Same(IniParseOptions.Default, IniSyntaxTree.Create(edited, IniParseOptions.Default).GetRoot().Options);
+        Assert.Same(IniParseOptions.Default, SyntaxFactory.IniDocument(SyntaxFactory.IniSection("s")).Options);
+    }
+
+    [Fact]
+    public void Sections_Properties_GroupsTheEntries()
+    {
+        var root = IniSyntaxTree.ParseText("g=0\n[a] junk\nx=1\ny=2\n[b]\n[a]\nz=3\n").GetRoot();
+
+        Assert.Equal(["g"], root.GlobalProperties.Select(property => property.Key));
+        Assert.Equal([["x", "y"], [], ["z"]], root.Sections.Select(section => section.Properties.Select(property => property.Key).ToArray()));
+        Assert.Equal("3", root.GetValue("a", "z"));
+        Assert.Empty(SyntaxFactory.IniSection("a").Properties);
+    }
+
+    [Fact]
+    public void Whitespace_AcceptsTheByteOrderMarkTheParserReads()
+    {
+        var root = IniSyntaxTree.ParseText("﻿  a=1\n").GetRoot();
+        var trivia = root.DescendantTrivia().ToArray();
+
+        Assert.Equal("﻿", trivia[0].ToFullString());
+        Assert.Equal("  ", trivia[1].ToFullString());
+        Assert.Equal(root.ToFullString(), root.ReplaceTrivia(trivia, (original, _) => SyntaxFactory.Trivia(original.Kind(), original.ToFullString())).ToFullString());
+    }
+
+    [Theory]
+    [InlineData("[s]\na=1\n", "s", "a", "2", "[s]\na=2\n")]
+    [InlineData("[s]\na=1\na=3\n", "s", "a", "2", "[s]\na=1\na=2\n")]
+    [InlineData("[s]\n  a = 1\n\n# next\n[t]\n", "s", "b", "2", "[s]\n  a = 1\n  b = 2\n\n# next\n[t]\n")]
+    [InlineData("[s]\na: 1", "s", "b", "2", "[s]\na: 1\nb: 2\n")]
+    [InlineData("[s]\n[t]\n", "s", "b", "2", "[s]\nb=2\n[t]\n")]
+    [InlineData("[s]\na=1\n", "t", "b", "2", "[s]\na=1\n\n[t]\nb=2\n")]
+    [InlineData("", "t", "b", "2", "[t]\nb=2\n")]
+    [InlineData("", null, "b", "2", "b=2\n")]
+    [InlineData("; cfg\n\n[s]\na=1\n", null, "k", "v", "; cfg\n\nk=v\n[s]\na=1\n")]
+    [InlineData("﻿[s]\n", null, "k", "v", "﻿k=v\n[s]\n")]
+    [InlineData("g=1\n[s]\n", null, "k", "v", "g=1\nk=v\n[s]\n")]
+    [InlineData("[S]\na=1\n", "s", "A", "2", "[S]\na=2\n")]
+    public void SetValue(string text, string? section, string key, string value, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text).GetRoot();
+
+        var updated = root.SetValue(section, key, value);
+
+        Assert.Equal(expected, updated.ToFullString());
+        Assert.Equal(value, IniSyntaxTree.ParseText(updated.ToFullString()).GetRoot().GetValue(section, key));
+    }
+
+    [Fact]
+    public void SetValue_IndentsTheKeyAsMuchAsTheLineAfterIt()
+    {
+        var options = new IniParseOptions { AllowMultilineValues = true };
+        var root = IniSyntaxTree.ParseText("[s]\n  [t]\n", options).GetRoot();
+
+        var updated = root.SetValue("s", "k", "v");
+
+        Assert.Equal("[s]\n  k=v\n  [t]\n", updated.ToFullString());
+        Assert.HasCount(2, IniSyntaxTree.ParseText(updated.ToFullString(), options).GetRoot().Sections);
+    }
+
+    [Theory]
+    [InlineData("[s]\n# about a\na=1\nb=2\na=3 ; last\n", "s", "a", "[s]\nb=2\n")]
+    [InlineData("; cfg\n\na=1\n[s]\n", null, "a", "; cfg\n\n[s]\n")]
+    [InlineData("; about a\na=1\nb=2\n", null, "a", "b=2\n")]
+    [InlineData("a=1\nb=2", null, "b", "a=1\n")]
+    public void RemoveProperties(string text, string? section, string key, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text).GetRoot();
+
+        Assert.Equal(expected, root.RemoveProperties(section, key).ToFullString());
+    }
+
+    [Theory]
+    [InlineData("[a]\nx=1\n\n[b]\ny=2\n\n[c]\nz=3", "b", "[a]\nx=1\n\n[c]\nz=3")]
+    [InlineData("; cfg\n\n[a]\nx=1\n\n[b]\ny=2\n", "a", "; cfg\n\n[b]\ny=2\n")]
+    [InlineData("; cfg\n\n[a]\nx=1\n", "a", "; cfg\n\n")]
+    [InlineData("[a] junk\nx=1\n[b]\n[A]\ny=2\n", "a", "[b]\n")]
+    public void RemoveSections(string text, string name, string expected)
+    {
+        var root = IniSyntaxTree.ParseText(text).GetRoot();
+
+        Assert.Equal(expected, root.RemoveSections(name).ToFullString());
+    }
+
+    [Fact]
+    public void Remove_ReturnsTheSameDocumentWhenNothingMatches()
+    {
+        var root = IniSyntaxTree.ParseText("[a]\nx=1\n").GetRoot();
+
+        Assert.Same(root, root.RemoveSections("b"));
+        Assert.Same(root, root.RemoveProperties("a", "y"));
     }
 
     private sealed class RenameValueRewriter : IniSyntaxRewriter

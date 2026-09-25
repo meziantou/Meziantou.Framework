@@ -12,6 +12,12 @@ internal enum LexerMode
     /// <summary>After a separator: the value, up to the end of the line or a comment.</summary>
     Value,
 
+    /// <summary>
+    /// The next line of a multiline value: the blank lines and comment lines in front of it, then its text up to the end of
+    /// the line or a comment.
+    /// </summary>
+    ValueContinuation,
+
     /// <summary>After an entry that should have ended its line: everything up to the end of the line, as one bad token.</summary>
     RestOfLine,
 }

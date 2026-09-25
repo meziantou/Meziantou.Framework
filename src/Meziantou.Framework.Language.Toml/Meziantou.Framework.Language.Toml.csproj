@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Language.Toml</RootNamespace>
+    <Description>A Roslyn-style immutable TOML syntax tree with lossless parsing and diagnostics.</Description>
+    <PackageTags>toml, syntax-tree, cst, parser, diagnostics</PackageTags>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Toml.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+  </ItemGroup>
+</Project>

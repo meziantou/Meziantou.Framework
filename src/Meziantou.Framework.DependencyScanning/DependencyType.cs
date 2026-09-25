@@ -51,6 +51,18 @@ public enum DependencyType
     /// <summary>Swift package dependency from Swift Package Manager.</summary>
     SwiftPackage,
 
+    /// <summary>Rust crate package from crates.io or another Cargo source.</summary>
+    RustCrate,
+
+    /// <summary>Go module dependency.</summary>
+    GoModule,
+
+    /// <summary>Java package dependency from Maven or Gradle.</summary>
+    JavaPackage,
+
+    /// <summary>PHP package dependency from Composer.</summary>
+    PhpPackage,
+
     /// <summary>MSBuild project reference.</summary>
     MSBuildProjectReference,
 

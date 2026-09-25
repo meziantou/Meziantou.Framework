@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Language.Toml.Tests/Meziantou.Framework.Language.Toml.Tests.csproj" />
+  </Folder>
+</Solution>

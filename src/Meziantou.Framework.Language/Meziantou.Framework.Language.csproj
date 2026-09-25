@@ -13,6 +13,7 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Ini" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Json" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Language.Toml" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Regex" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Shell" />
     <InternalsVisibleTo Include="Meziantou.Framework.Language.Xml" />

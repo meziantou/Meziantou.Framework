@@ -8,6 +8,11 @@ namespace Meziantou.Framework.Language.Ini
     {
         public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> Entries { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Ini.IniPropertySyntax> GlobalProperties { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniSectionSyntax> Sections { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniSectionSyntax> GetSections(string name, System.StringComparer? comparer = null) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniPropertySyntax> GetProperties(string? section, string key, System.StringComparer? comparer = null) => throw null;
+        public string? GetValue(string? section, string key, System.StringComparer? comparer = null) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> entries, Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax WithEntries(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> entries) => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax WithEndOfFileToken(Meziantou.Framework.Language.SyntaxToken endOfFileToken) => throw null;
@@ -30,6 +35,29 @@ namespace Meziantou.Framework.Language.Ini
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxToken token, Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxTrivia trivia, Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static bool IsKind(this Meziantou.Framework.Language.SyntaxNodeOrToken nodeOrToken, Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
+    }
+
+    public enum IniInlineCommentMode
+    {
+        None = 0,
+        AfterWhitespace = 1,
+        Anywhere = 2,
+    }
+
+    public sealed class IniParseOptions : System.IEquatable<Meziantou.Framework.Language.Ini.IniParseOptions>
+    {
+        public static Meziantou.Framework.Language.Ini.IniParseOptions Default { get => throw null; }
+        public Meziantou.Framework.Language.Ini.IniInlineCommentMode InlineComments { get => throw null; init { } }
+        public bool AllowKeysWithoutValue { get => throw null; init { } }
+        public bool AllowMultilineValues { get => throw null; init { } }
+        public bool ReportDuplicates { get => throw null; init { } }
+        public System.StringComparer NameComparer { get => throw null; init { } }
+        public override string ToString() => throw null;
+        public static bool operator !=(Meziantou.Framework.Language.Ini.IniParseOptions? left, Meziantou.Framework.Language.Ini.IniParseOptions? right) => throw null;
+        public static bool operator ==(Meziantou.Framework.Language.Ini.IniParseOptions? left, Meziantou.Framework.Language.Ini.IniParseOptions? right) => throw null;
+        public override int GetHashCode() => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public bool Equals(Meziantou.Framework.Language.Ini.IniParseOptions? other) => throw null;
     }
 
     public sealed class IniPropertySyntax : Meziantou.Framework.Language.Ini.IniEntrySyntax
@@ -55,6 +83,7 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
         public string Name { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseBracketToken { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Ini.IniPropertySyntax> Properties { get => throw null; }
         public Meziantou.Framework.Language.Ini.IniSectionSyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
         public Meziantou.Framework.Language.Ini.IniSectionSyntax WithOpenBracketToken(Meziantou.Framework.Language.SyntaxToken openBracketToken) => throw null;
         public Meziantou.Framework.Language.Ini.IniSectionSyntax WithNameToken(Meziantou.Framework.Language.SyntaxToken nameToken) => throw null;
@@ -98,11 +127,15 @@ namespace Meziantou.Framework.Language.Ini
     public sealed class IniSyntaxTree : Meziantou.Framework.Language.SyntaxTree
     {
         public override string? FilePath { get => throw null; }
+        public Meziantou.Framework.Language.Ini.IniParseOptions Options { get => throw null; }
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax GetRoot() => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(string text, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChangedText(Meziantou.Framework.Language.SourceText newText) => throw null;
         public Meziantou.Framework.Language.Ini.IniSyntaxTree WithChanges(params Meziantou.Framework.Language.TextChange[] changes) => throw null;
@@ -163,7 +196,9 @@ namespace Meziantou.Framework.Language.Ini
         public static Meziantou.Framework.Language.SyntaxToken MissingToken(Meziantou.Framework.Language.Ini.SyntaxKind kind) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken BadToken(string text) => throw null;
         public static Meziantou.Framework.Language.SyntaxToken Key(string text) => throw null;
-        public static Meziantou.Framework.Language.SyntaxToken Value(string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken SectionName(string text) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken Value(string value) => throw null;
+        public static Meziantou.Framework.Language.SyntaxToken RawValue(string text) => throw null;
         public static Meziantou.Framework.Language.SyntaxTokenList TokenList() => throw null;
         public static Meziantou.Framework.Language.SyntaxTokenList TokenList(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public static Meziantou.Framework.Language.SyntaxTokenList TokenList(params Meziantou.Framework.Language.SyntaxToken[] tokens) => throw null;
@@ -180,7 +215,9 @@ namespace Meziantou.Framework.Language.Ini
         public static Meziantou.Framework.Language.Ini.IniSkippedTextSyntax IniSkippedText(string text) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSkippedTextSyntax IniSkippedText(Meziantou.Framework.Language.SyntaxTokenList tokens) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseSyntaxTree(string text, string? path = null) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniSyntaxTree ParseSyntaxTree(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniDocumentSyntax ParseDocument(string text) => throw null;
+        public static Meziantou.Framework.Language.Ini.IniDocumentSyntax ParseDocument(string text, Meziantou.Framework.Language.Ini.IniParseOptions? options) => throw null;
         public static bool AreEquivalent(Meziantou.Framework.Language.Ini.IniSyntaxNode? oldNode, Meziantou.Framework.Language.Ini.IniSyntaxNode? newNode) => throw null;
     }
 

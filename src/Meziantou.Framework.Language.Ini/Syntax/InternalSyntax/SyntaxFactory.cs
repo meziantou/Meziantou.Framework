@@ -46,7 +46,13 @@ internal static class SyntaxFactory
     public static GreenToken Token(GreenNode? leading, SyntaxKind kind, string text, GreenNode? trailing)
         => new((int)kind, text, leading, trailing, isMissing: false);
 
-    public static GreenToken MissingToken(SyntaxKind kind) => new((int)kind, "", leadingTrivia: null, trailingTrivia: null, isMissing: true);
+    public static GreenToken TokenWithValue<TValue>(GreenNode? leading, SyntaxKind kind, string text, TValue value, string valueText, GreenNode? trailing)
+        => new SyntaxTokenWithValue<TValue>((int)kind, text, value, valueText, leading, trailing, isMissing: false);
+
+    public static GreenToken MissingToken(SyntaxKind kind) => MissingToken(kind, trailing: null);
+
+    /// <summary>Creates a missing token that carries the trivia ending the line of the tokens before it.</summary>
+    public static GreenToken MissingToken(SyntaxKind kind, GreenNode? trailing) => new((int)kind, "", leadingTrivia: null, trailing, isMissing: true);
 
     public static GreenToken BadToken(GreenNode? leading, string text, GreenNode? trailing)
         => (GreenToken)new GreenToken((int)SyntaxKind.BadToken, text, leading, trailing, isMissing: false).AsSkippedText();

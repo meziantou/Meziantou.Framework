@@ -21,7 +21,7 @@ public class IniSyntaxRewriter : IniSyntaxVisitor<SyntaxNode?>
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.Update(VisitToken(node.KeyToken), VisitToken(node.SeparatorToken), VisitToken(node.ValueToken));
+        return node.Update(VisitToken(node.KeyToken), VisitToken(node.SeparatorToken), VisitToken(node.ValueToken), VisitList(node.ContinuationTokens));
     }
 
     public override SyntaxNode? VisitIniSkippedText(IniSkippedTextSyntax node)

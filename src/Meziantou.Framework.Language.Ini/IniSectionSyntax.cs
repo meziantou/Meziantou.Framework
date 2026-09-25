@@ -20,18 +20,7 @@ public sealed class IniSectionSyntax : IniEntrySyntax
 
     /// <summary>Gets the properties under this header: the ones that follow it, up to the next header.</summary>
     /// <remarks>A header that is not part of a document has none.</remarks>
-    public IReadOnlyList<IniPropertySyntax> Properties
-    {
-        get
-        {
-            if (Parent is not IniDocumentSyntax document)
-                return [];
-
-            var entries = document.Entries;
-            var index = entries.IndexOf(this);
-            return index < 0 ? [] : IniDocumentSyntax.GetProperties(entries, index + 1);
-        }
-    }
+    public IReadOnlyList<IniPropertySyntax> Properties => Parent is IniDocumentSyntax document ? document.GetSectionProperties(this) : [];
 
     /// <summary>Returns this section with the given parts, or itself when nothing changed.</summary>
     public IniSectionSyntax Update(SyntaxToken openBracketToken, SyntaxToken nameToken, SyntaxToken closeBracketToken)

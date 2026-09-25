@@ -11,14 +11,18 @@ namespace Meziantou.Framework.Language.Ini;
 /// </para>
 /// <para>
 /// The methods that take a key, a section name, or a value check that the text reads back as that same key, name, or
-/// value, whatever <see cref="IniParseOptions.InlineComments"/> is, so an edit cannot change the rest of the document.
-/// <see cref="Value(string)"/> quotes a value that would not read back otherwise.
+/// value, so an edit cannot change the rest of the document. Without <see cref="IniParseOptions"/>, they check it
+/// whatever <see cref="IniParseOptions.InlineComments"/> is, and <see cref="Value(string)"/> quotes a value that would
+/// not read back otherwise. With options, they check it the way a document read with those options reads it, and quote
+/// only what those options require.
 /// </para>
 /// </remarks>
 public static class SyntaxFactory
 {
     /// <summary>Options under which <c>;</c> and <c>#</c> start a comment anywhere, the strictest way to read a line.</summary>
     private static readonly IniParseOptions StrictOptions = new() { InlineComments = IniInlineCommentMode.Anywhere };
+
+    private const string ByteOrderMark = "\ufeff";
 
     /// <summary>A single space.</summary>
     public static SyntaxTrivia Space => Whitespace(" ");
@@ -32,6 +36,7 @@ public static class SyntaxFactory
     /// <summary>A Windows line break.</summary>
     public static SyntaxTrivia CarriageReturnLineFeed => Trivia(SyntaxKind.EndOfLineTrivia, "\r\n");
 
+    /// <remarks>A byte order mark, which only the start of a document can hold, is whitespace of its own.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="text"/> is empty or holds something other than whitespace.</exception>
     public static SyntaxTrivia Whitespace(string text) => Trivia(SyntaxKind.WhitespaceTrivia, text);
@@ -54,7 +59,7 @@ public static class SyntaxFactory
 
         var isValid = kind switch
         {
-            SyntaxKind.WhitespaceTrivia => text.Length > 0 && text.All(Green.Lexer.IsWhitespace),
+            SyntaxKind.WhitespaceTrivia => text is ByteOrderMark || (text.Length > 0 && text.All(Green.Lexer.IsWhitespace)),
             SyntaxKind.EndOfLineTrivia => text is "\n" or "\r\n" or "\r",
             SyntaxKind.CommentTrivia => text is [';' or '#', ..] && text.AsSpan().IndexOfAny('\r', '\n') < 0,
             _ => throw new ArgumentException($"{kind} is not a kind of trivia.", nameof(kind)),
@@ -107,7 +112,7 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return Lex(text, Green.LexerMode.LineStart, SyntaxKind.KeyToken) ?? throw new ArgumentException($"'{text}' cannot be written as an INI key.", nameof(text));
+        return Lex(text, Green.LexerMode.LineStart, SyntaxKind.KeyToken, StrictOptions, rejectCommentStart: true) ?? throw new ArgumentException($"'{text}' cannot be written as an INI key.", nameof(text));
     }
 
     /// <summary>Creates a section name token written exactly as <paramref name="text"/>.</summary>
@@ -120,7 +125,7 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return Lex(text, Green.LexerMode.SectionName, SyntaxKind.KeyToken) ?? throw new ArgumentException($"'{text}' cannot be written as an INI section name.", nameof(text));
+        return Lex(text, Green.LexerMode.SectionName, SyntaxKind.KeyToken, StrictOptions, rejectCommentStart: true) ?? throw new ArgumentException($"'{text}' cannot be written as an INI section name.", nameof(text));
     }
 
     /// <summary>Creates a value token that reads back as <paramref name="value"/>, in quotes when it has to be.</summary>
@@ -137,19 +142,27 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (value.AsSpan().IndexOfAny('\r', '\n') < 0)
-        {
-            if (LexValue(value) is { } token)
-                return token;
+        return ValueLine(value, StrictOptions, isContinuation: false)
+            ?? throw new ArgumentException("The value cannot be written as an INI value: it holds a line break, or needs quotes and holds both kinds of quote.", nameof(value));
+    }
 
-            var quote = value.Contains('"', StringComparison.Ordinal) ? '\'' : '"';
-            if (LexValue(quote + value + quote) is { } quoted)
-                return quoted;
-        }
+    /// <summary>Creates a value token that reads back as <paramref name="value"/> in a document read with <paramref name="options"/>.</summary>
+    /// <remarks>
+    /// The value is quoted only when it would otherwise lose part of itself under <paramref name="options"/>, and never when
+    /// <see cref="IniParseOptions.AllowQuotedValues"/> is <see langword="false"/>, since quotes are then part of the value.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="value"/> holds a line break, or cannot be written so that <paramref name="options"/> read it back:
+    /// it needs quotes and they are not allowed, or it holds both kinds of quote.
+    /// </exception>
+    public static SyntaxToken Value(string value, IniParseOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(options);
 
-        throw new ArgumentException("The value cannot be written as an INI value: it holds a line break, or needs quotes and holds both kinds of quote.", nameof(value));
-
-        SyntaxToken? LexValue(string text) => Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken) is { } token && token.ValueText == value ? token : null;
+        return ValueLine(value, options, isContinuation: false)
+            ?? throw new ArgumentException("The value cannot be written as an INI value with these options: it holds a line break, needs quotes they do not allow, or needs quotes and holds both kinds of quote.", nameof(value));
     }
 
     /// <summary>Creates a value token written exactly as <paramref name="text"/>, quotes included.</summary>
@@ -162,7 +175,7 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        return Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken) ?? throw new ArgumentException($"'{text}' cannot be written as an INI value.", nameof(text));
+        return Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken, StrictOptions, rejectCommentStart: true) ?? throw new ArgumentException($"'{text}' cannot be written as an INI value.", nameof(text));
     }
 
     public static SyntaxTokenList TokenList() => default;
@@ -196,11 +209,16 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        return IniDocument(List(entries.Select(entry => EndLine(entry, LineFeed))), Token(SyntaxKind.EndOfFileToken));
+        return IniDocument(List(entries.Select(entry => EndLine(entry, LineFeed, replaceLineBreaks: false))), Token(SyntaxKind.EndOfFileToken));
     }
 
+    /// <summary>Creates a document from <paramref name="entries"/>, ending the line of each one that another follows.</summary>
+    /// <remarks>An entry followed by <see cref="IniSkippedTextSyntax"/> is left as it is, since that text is the rest of its line.</remarks>
     public static IniDocumentSyntax IniDocument(SyntaxList<IniEntrySyntax> entries, SyntaxToken endOfFileToken)
-        => (IniDocumentSyntax)new Green.IniDocumentSyntax(entries.Green, endOfFileToken.Node ?? Green.SyntaxFactory.Token(SyntaxKind.EndOfFileToken)).CreateRed();
+        => IniDocument(entries, endOfFileToken, IniParseOptions.Default);
+
+    internal static IniDocumentSyntax IniDocument(SyntaxList<IniEntrySyntax> entries, SyntaxToken endOfFileToken, IniParseOptions options)
+        => (IniDocumentSyntax)Green.IniDocumentSyntax.Create(entries.Green, endOfFileToken.Node ?? Green.SyntaxFactory.Token(SyntaxKind.EndOfFileToken), options).CreateRed();
 
     /// <summary>Creates a section header such as <c>[database]</c>, ending with a line feed like every line of a document.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
@@ -218,14 +236,55 @@ public static class SyntaxFactory
     /// </exception>
     public static IniPropertySyntax IniProperty(string key, string value) => IniProperty(Key(key), Token(SyntaxKind.EqualsToken), Value(value).WithTrailingTrivia(LineFeed));
 
+    /// <summary>
+    /// Creates <c>key=value</c> for a document read with <paramref name="options"/>, quoting <paramref name="value"/> only
+    /// when they require it, and ending with a line feed like every line of a document.
+    /// </summary>
+    /// <remarks>
+    /// When <see cref="IniParseOptions.AllowMultilineValues"/> is <see langword="true"/>, a value with line breaks continues
+    /// on the lines below the key, indented by four spaces.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">An argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="key"/> cannot be written as a key, or <paramref name="value"/> as a value under <paramref name="options"/>;
+    /// see <see cref="Key(string)"/> and <see cref="Value(string, IniParseOptions)"/>. A value with line breaks cannot end
+    /// with an empty line.
+    /// </exception>
+    public static IniPropertySyntax IniProperty(string key, string value, IniParseOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var keyToken = Key(key);
+        var (valueToken, continuations) = ValueLines(value, options, "    ", LineFeed, nameof(value));
+
+        return IniProperty(keyToken, Token(SyntaxKind.EqualsToken), valueToken, TokenList(continuations));
+    }
+
     /// <exception cref="ArgumentException"><paramref name="separatorToken"/> is neither <c>=</c> nor <c>:</c>.</exception>
     public static IniPropertySyntax IniProperty(SyntaxToken keyToken, SyntaxToken separatorToken, SyntaxToken valueToken)
+        => IniProperty(keyToken, separatorToken, valueToken, default);
+
+    /// <summary>Creates a property whose value continues on the lines of <paramref name="continuationTokens"/>.</summary>
+    /// <remarks>
+    /// Each continuation token is a <see cref="SyntaxKind.ValueToken"/> for one line, whose leading trivia holds the blank
+    /// lines and comment lines in front of it and its indentation. Only a document read with
+    /// <see cref="IniParseOptions.AllowMultilineValues"/> reads them back as part of the value.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="separatorToken"/> is neither <c>=</c> nor <c>:</c>, or one of <paramref name="continuationTokens"/>
+    /// is not a <see cref="SyntaxKind.ValueToken"/>.
+    /// </exception>
+    public static IniPropertySyntax IniProperty(SyntaxToken keyToken, SyntaxToken separatorToken, SyntaxToken valueToken, SyntaxTokenList continuationTokens)
     {
         var separatorKind = separatorToken.Kind();
         if (separatorKind is not (SyntaxKind.EqualsToken or SyntaxKind.ColonToken))
             throw new ArgumentException("An INI property separator is '=' or ':'.", nameof(separatorToken));
 
-        return (IniPropertySyntax)new Green.IniPropertySyntax(Required(keyToken, SyntaxKind.KeyToken), separatorToken.Node!, Required(valueToken, SyntaxKind.ValueToken)).CreateRed();
+        if (continuationTokens.Any(token => !token.IsKind(SyntaxKind.ValueToken)))
+            throw new ArgumentException("An INI value continues on value tokens.", nameof(continuationTokens));
+
+        return (IniPropertySyntax)new Green.IniPropertySyntax(Required(keyToken, SyntaxKind.KeyToken), separatorToken.Node!, Required(valueToken, SyntaxKind.ValueToken), continuationTokens.Node).CreateRed();
     }
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
@@ -255,9 +314,22 @@ public static class SyntaxFactory
         => oldNode is null ? newNode is null : oldNode.IsEquivalentTo(newNode);
 
     /// <summary>Returns <paramref name="entry"/> ending with a line break, which every entry of a document but the last needs.</summary>
-    internal static IniEntrySyntax EndLine(IniEntrySyntax entry, SyntaxTrivia endOfLine)
+    /// <param name="entry">The entry.</param>
+    /// <param name="endOfLine">The line break to end it with.</param>
+    /// <param name="replaceLineBreaks">Whether the line breaks it already has are replaced by <paramref name="endOfLine"/>, so that it matches the document it goes into.</param>
+    internal static IniEntrySyntax EndLine(IniEntrySyntax entry, SyntaxTrivia endOfLine, bool replaceLineBreaks)
     {
         ArgumentNullException.ThrowIfNull(entry);
+
+        if (replaceLineBreaks)
+        {
+            var text = endOfLine.ToFullString();
+            var others = entry.DescendantTrivia().Where(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia) && !string.Equals(trivia.ToFullString(), text, StringComparison.Ordinal)).ToArray();
+            if (others.Length > 0)
+            {
+                entry = entry.ReplaceTrivia(others, (_, _) => endOfLine);
+            }
+        }
 
         var trailing = entry.GetTrailingTrivia();
         if (trailing.Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia)))
@@ -266,16 +338,92 @@ public static class SyntaxFactory
         return entry.WithTrailingTrivia([.. trailing, endOfLine]);
     }
 
-    /// <summary>Reads <paramref name="text"/> as <paramref name="mode"/> would, and returns the token if it is the whole text and nothing else.</summary>
-    private static SyntaxToken? Lex(string text, Green.LexerMode mode, SyntaxKind kind)
+    /// <summary>Gets the first line break of the document holding <paramref name="node"/>, or a line feed when it has none.</summary>
+    internal static SyntaxTrivia GetEndOfLine(SyntaxNode node)
     {
-        var lexer = new Green.Lexer(SourceText.From(text), StrictOptions);
+        var endOfLine = node.AncestorsAndSelf().Last().DescendantTrivia().FirstOrDefault(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia));
+
+        return endOfLine.RawKind == 0 ? LineFeed : endOfLine;
+    }
+
+    /// <summary>Splits <paramref name="value"/> at its line breaks: <c>\r\n</c>, <c>\r</c>, or <c>\n</c>.</summary>
+    internal static string[] SplitLines(string value) => value.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+
+    /// <summary>Writes a value that may have line breaks as the tokens of its lines, each ending with <paramref name="endOfLine"/>.</summary>
+    /// <param name="value">The value.</param>
+    /// <param name="options">The options of the document it goes into.</param>
+    /// <param name="indentation">The whitespace in front of each line the value continues on.</param>
+    /// <param name="endOfLine">The line break ending each line, and making each blank line.</param>
+    /// <param name="parameterName">The name of the parameter <paramref name="value"/> came from.</param>
+    /// <exception cref="ArgumentException">The value cannot be written so that <paramref name="options"/> read it back.</exception>
+    internal static (SyntaxToken First, SyntaxToken[] Continuations) ValueLines(string value, IniParseOptions options, string indentation, SyntaxTrivia endOfLine, string parameterName)
+    {
+        var lines = SplitLines(value);
+        if (lines.Length > 1 && !options.AllowMultilineValues)
+            throw new ArgumentException("The value holds a line break, which a document read without AllowMultilineValues cannot read back.", parameterName);
+
+        // configparser drops the empty lines at the end of a value, and so does this parser, as they continue nothing.
+        if (lines.Length > 1 && lines[^1].Length == 0)
+            throw new ArgumentException("A value with line breaks cannot end with an empty line.", parameterName);
+
+        var first = ValueLine(lines[0], options, isContinuation: false)
+            ?? throw new ArgumentException($"'{lines[0]}' cannot be written as an INI value with these options.", parameterName);
+
+        var continuations = new List<SyntaxToken>();
+        var leading = new List<SyntaxTrivia>();
+        foreach (var line in lines.AsSpan(1))
+        {
+            if (line.Length == 0)
+            {
+                leading.Add(endOfLine);
+                continue;
+            }
+
+            var token = ValueLine(line, options, isContinuation: true)
+                ?? throw new ArgumentException($"'{line}' cannot be written as a line of an INI value with these options.", parameterName);
+
+            leading.Add(Whitespace(indentation));
+            continuations.Add(token.WithLeadingTrivia(leading).WithTrailingTrivia(endOfLine));
+            leading.Clear();
+        }
+
+        return (first.WithTrailingTrivia(endOfLine), [.. continuations]);
+    }
+
+    /// <summary>Writes one line of a value so that <paramref name="options"/> read it back, quoted if it has to be and they allow it.</summary>
+    /// <param name="value">The line.</param>
+    /// <param name="options">The options of the document it goes into.</param>
+    /// <param name="isContinuation">Whether the line starts a line of its own, where <c>;</c> and <c>#</c> always start a comment.</param>
+    internal static SyntaxToken? ValueLine(string value, IniParseOptions options, bool isContinuation)
+    {
+        if (value.AsSpan().IndexOfAny('\r', '\n') >= 0)
+            return null;
+
+        // A value is read after whitespace, so a comment character it starts with would start a comment there, unless
+        // comments never start after a value begins. A line of its own is a comment whatever the mode.
+        var rejectCommentStart = isContinuation || options.InlineComments != IniInlineCommentMode.None;
+        if (LexValue(value) is { } token)
+            return token;
+
+        if (!options.AllowQuotedValues)
+            return null;
+
+        var quote = value.Contains('"', StringComparison.Ordinal) ? '\'' : '"';
+        return LexValue(quote + value + quote);
+
+        SyntaxToken? LexValue(string text)
+            => Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken, options, rejectCommentStart) is { } lexed && lexed.ValueText == value ? lexed : null;
+    }
+
+    /// <summary>Reads <paramref name="text"/> as <paramref name="mode"/> would, and returns the token if it is the whole text and nothing else.</summary>
+    private static SyntaxToken? Lex(string text, Green.LexerMode mode, SyntaxKind kind, IniParseOptions options, bool rejectCommentStart)
+    {
+        var lexer = new Green.Lexer(SourceText.From(text), options);
         var token = lexer.Lex(mode);
         if (token.RawKind != (int)kind || token.LeadingTrivia is not null || token.TrailingTrivia is not null || token.Width != text.Length)
             return null;
 
-        // A value is read after whitespace, so a comment character it starts with would start a comment there.
-        if (text is [';' or '#', ..])
+        if (rejectCommentStart && text is [';' or '#', ..])
             return null;
 
         return new SyntaxToken(parent: null, token, position: 0, index: 0);

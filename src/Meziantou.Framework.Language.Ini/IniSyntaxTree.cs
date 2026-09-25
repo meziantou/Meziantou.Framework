@@ -19,10 +19,10 @@ public sealed class IniSyntaxTree : SyntaxTree
     private readonly IniDocumentSyntax _root;
     private IReadOnlyList<Diagnostic>? _diagnostics;
 
-    private IniSyntaxTree(SourceText text, IniParseOptions options, Green.IniDocumentSyntax green, string? path)
+    private IniSyntaxTree(SourceText text, Green.IniDocumentSyntax green, string? path)
     {
         _text = text;
-        Options = options;
+        Options = green.Options;
         FilePath = path;
         _root = (IniDocumentSyntax)green.CreateRed();
         _root.AttachToTree(this);
@@ -67,22 +67,34 @@ public sealed class IniSyntaxTree : SyntaxTree
         ArgumentNullException.ThrowIfNull(text);
 
         options ??= IniParseOptions.Default;
-        return new IniSyntaxTree(text, options, new Green.LanguageParser(text, options).ParseDocument(), path);
+        return new IniSyntaxTree(text, new Green.LanguageParser(text, options).ParseDocument(), path);
     }
 
-    /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
+    /// <summary>Creates a tree over <paramref name="root"/>, taking its text and its options from the root itself.</summary>
     /// <remarks>The diagnostics are those <paramref name="root"/> carries; the text is not parsed again.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static IniSyntaxTree Create(IniDocumentSyntax root, string? path = null) => Create(root, options: null, path);
 
     /// <summary>Creates a tree over <paramref name="root"/>, taking its text from the root itself.</summary>
-    /// <remarks>The diagnostics are those <paramref name="root"/> carries; the text is not parsed again.</remarks>
+    /// <remarks>
+    /// The diagnostics are those <paramref name="root"/> carries; the text is not parsed again. The root of the tree is read
+    /// with <paramref name="options"/> from then on, which decides how an edit writes values.
+    /// </remarks>
+    /// <param name="root">The root of the tree.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the <see cref="IniDocumentSyntax.Options"/> of <paramref name="root"/>.</param>
+    /// <param name="path">Where the text came from, for the diagnostics to refer to.</param>
     /// <exception cref="ArgumentNullException"><paramref name="root"/> is <see langword="null"/>.</exception>
     public static IniSyntaxTree Create(IniDocumentSyntax root, IniParseOptions? options, string? path = null)
     {
         ArgumentNullException.ThrowIfNull(root);
 
-        return new IniSyntaxTree(SourceText.From(root.ToFullString()), options ?? IniParseOptions.Default, (Green.IniDocumentSyntax)root.Green, path);
+        var green = (Green.IniDocumentSyntax)root.Green;
+        if (options is not null)
+        {
+            green = green.WithOptions(options);
+        }
+
+        return new IniSyntaxTree(SourceText.From(root.ToFullString()), green, path);
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>

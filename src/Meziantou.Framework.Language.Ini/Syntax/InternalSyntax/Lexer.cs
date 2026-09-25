@@ -1,4 +1,3 @@
-using System.Text;
 using Meziantou.Framework.Language.InternalSyntax;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 
@@ -26,8 +25,7 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
 
     /// <summary>Reads the next token.</summary>
     /// <param name="mode">What the parser expects next.</param>
-    /// <param name="indentation">For a value, how indented its key is; a line continues the value only when it is indented more.</param>
-    public GreenToken Lex(LexerMode mode, int indentation = 0)
+    public GreenToken Lex(LexerMode mode)
     {
         var leading = mode is LexerMode.Value or LexerMode.RestOfLine ? LexWhitespace() : LexLeadingTrivia();
         if (IsAtEnd && mode != LexerMode.Value)
@@ -37,9 +35,40 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
         {
             LexerMode.LineStart => LexLineStart(leading),
             LexerMode.SectionName => LexSectionName(leading),
-            LexerMode.Value => LexValue(leading, indentation),
+            LexerMode.Value or LexerMode.ValueContinuation => LexValue(leading),
             _ => LexRestOfLine(leading),
         };
+    }
+
+    /// <summary>
+    /// Determines whether the line starting at <paramref name="position"/> continues a value, once the blank lines and
+    /// comment lines in front of it are passed over: it is indented more than the key of the value.
+    /// </summary>
+    /// <param name="position">The start of a line.</param>
+    /// <param name="indentation">How indented the key of the value is.</param>
+    public bool IsContinuation(int position, int indentation)
+    {
+        while (true)
+        {
+            var textStart = position;
+            while (textStart < _text.Length && IsWhitespace(_text[textStart]))
+            {
+                textStart++;
+            }
+
+            if (textStart >= _text.Length)
+                return false;
+
+            if (_text[textStart] is not ('\r' or '\n' or ';' or '#'))
+                return textStart - position > indentation;
+
+            // A blank line or a comment line does not end the value: the line after it may still continue it.
+            position = _text.IndexOfAny(['\r', '\n'], textStart);
+            if (position < 0)
+                return false;
+
+            position += _text[position] == '\r' && position + 1 < _text.Length && _text[position + 1] == '\n' ? 2 : 1;
+        }
     }
 
     /// <summary>Gets how many whitespace characters come before <paramref name="position"/> on its line.</summary>
@@ -112,51 +141,28 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
         return Text(leading, SyntaxKind.BadToken, start);
     }
 
-    private GreenToken LexValue(GreenNode? leading, int indentation)
+    /// <summary>Reads one line of a value: the first one, after the separator, or one it continues on.</summary>
+    private GreenToken LexValue(GreenNode? leading)
     {
         var start = Position;
-        var contentEnd = ScanValueLine(allowQuotes: true, out var isQuoted);
-        var valueText = isQuoted ? _text[(start + 1)..(contentEnd - 1)] : null;
-
-        if (options.AllowMultilineValues)
-        {
-            StringBuilder? lines = null;
-            SkipToEndOfLine();
-            while (TryStartContinuationLine(indentation))
-            {
-                lines ??= new StringBuilder().Append(_text, start, contentEnd - start);
-
-                var lineStart = Position;
-                var lineEnd = ScanValueLine(allowQuotes: false, out _);
-                lines.Append('\n').Append(_text, lineStart, lineEnd - lineStart);
-                contentEnd = lineEnd;
-                SkipToEndOfLine();
-            }
-
-            // The lines of the value are read without their indentation and without the comments between them.
-            if (lines is not null)
-            {
-                valueText = lines.ToString();
-            }
-        }
-
-        Position = contentEnd;
-        var text = _text[start..contentEnd];
+        var end = ScanValueLine(out var isQuoted);
+        Position = end;
+        var text = _text[start..end];
         var trailing = LexTrailingTrivia(alwaysAllowComment: false);
+        if (!isQuoted)
+            return SyntaxFactory.Token(leading, SyntaxKind.ValueToken, text, trailing);
 
-        return valueText is null
-            ? SyntaxFactory.Token(leading, SyntaxKind.ValueToken, text, trailing)
-            : SyntaxFactory.TokenWithValue(leading, SyntaxKind.ValueToken, text, valueText, valueText, trailing);
+        var valueText = text[1..^1];
+        return SyntaxFactory.TokenWithValue(leading, SyntaxKind.ValueToken, text, valueText, valueText, trailing);
     }
 
     /// <summary>Reads one line of a value, and returns where its text ends once the whitespace after it is left out.</summary>
-    /// <param name="allowQuotes">Whether a quote at the start of the line opens a quoted value.</param>
-    /// <param name="isQuoted">Whether the whole text is one quoted string, such as <c>"a;b"</c>.</param>
-    private int ScanValueLine(bool allowQuotes, out bool isQuoted)
+    /// <param name="isQuoted">Whether the whole text is one quoted string, such as <c>"a;b"</c>, whose quotes are left out.</param>
+    private int ScanValueLine(out bool isQuoted)
     {
         var start = Position;
         var quoteEnd = -1;
-        if (allowQuotes && Current is '"' or '\'')
+        if (options.AllowQuotedValues && Current is '"' or '\'')
         {
             // A comment cannot start inside quotes, so the quoted part is read as a whole. A quote that is not closed on
             // the line is an ordinary character.
@@ -181,29 +187,6 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
 
         isQuoted = quoteEnd == end;
         return end;
-    }
-
-    /// <summary>
-    /// Moves to the start of the text of the next line when that line continues a value: it is indented more than the
-    /// key, and it is neither blank nor a comment.
-    /// </summary>
-    private bool TryStartContinuationLine(int indentation)
-    {
-        if (IsAtEnd)
-            return false;
-
-        var lineStart = Position + (Current == '\r' && LookAhead == '\n' ? 2 : 1);
-        var textStart = lineStart;
-        while (textStart < _text.Length && IsWhitespace(_text[textStart]))
-        {
-            textStart++;
-        }
-
-        if (textStart - lineStart <= indentation || textStart >= _text.Length || _text[textStart] is '\r' or '\n' or ';' or '#')
-            return false;
-
-        Position = textStart;
-        return true;
     }
 
     private void SkipToEndOfLine()
@@ -298,10 +281,12 @@ internal sealed class Lexer(SourceText source, IniParseOptions options)
     {
         var start = Position;
 
-        // A byte order mark is not part of the document it starts.
+        // A byte order mark is not part of the document it starts. It is trivia of its own, so that the whitespace after
+        // it can be edited like any other.
         if (Position == 0 && Current == '﻿')
         {
             Position++;
+            return true;
         }
 
         while (!IsAtEnd && IsWhitespace(Current))

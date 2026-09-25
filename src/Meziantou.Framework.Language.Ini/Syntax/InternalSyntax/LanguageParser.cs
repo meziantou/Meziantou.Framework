@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
 
 /// <summary>Builds the immutable tree for an INI document, keeping every character of it.</summary>
 /// <remarks>
-/// Every entry is one line: a section header, or a key with its separator and value. What follows an entry on its line,
-/// other than a comment, is kept as skipped text and reported once.
+/// Every entry is one line: a section header, or a key with its separator and value, which may continue on the lines
+/// below it. What follows an entry on its line, other than a comment, is kept as skipped text and reported once.
 /// </remarks>
 internal sealed class LanguageParser
 {
@@ -66,7 +66,7 @@ internal sealed class LanguageParser
             }
         }
 
-        var node = new IniDocumentSyntax(SyntaxFactory.List(entries.ToArray()), EatToken(LexerMode.LineStart));
+        var node = new IniDocumentSyntax(SyntaxFactory.List(entries.ToArray()), EatToken(LexerMode.LineStart), _options);
 
         return (IniDocumentSyntax)Finish(node, nodeFullStart: 0, mark);
     }
@@ -143,10 +143,15 @@ internal sealed class LanguageParser
 
         GreenToken separator;
         GreenToken value;
+        GreenNode? continuations = null;
         if ((key.IsMissing || !_previousTokenEndedTheLine) && CurrentKind is SyntaxKind.EqualsToken or SyntaxKind.ColonToken)
         {
             separator = EatToken(LexerMode.Value);
             value = EatToken(LexerMode.LineStart);
+            if (_options.AllowMultilineValues)
+            {
+                continuations = ParseContinuationLines();
+            }
         }
         else
         {
@@ -161,9 +166,22 @@ internal sealed class LanguageParser
             key = key.WithTrivia(key.LeadingTrivia, trailingTrivia: null);
         }
 
-        var node = new IniPropertySyntax(key, separator, value);
+        var node = new IniPropertySyntax(key, separator, value, continuations);
 
         return (IniPropertySyntax)Finish(node, start, mark);
+    }
+
+    /// <summary>Reads the lines a value continues on: the ones below it that are indented more than its key.</summary>
+    private GreenNode? ParseContinuationLines()
+    {
+        List<GreenNode?>? lines = null;
+        while (_previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation))
+        {
+            EnsureMode(LexerMode.ValueContinuation);
+            (lines ??= []).Add(EatToken(LexerMode.LineStart));
+        }
+
+        return lines is null ? null : SyntaxFactory.List(lines.ToArray());
     }
 
     /// <summary>Keeps what follows an entry on its line, where INI allows nothing but a comment.</summary>
@@ -186,7 +204,7 @@ internal sealed class LanguageParser
         _previousTokenTextEnd = _currentFullStart + eaten.GetLeadingTriviaWidth() + eaten.Width;
         _previousTokenEndedTheLine = EndsTheLine(eaten.TrailingTrivia);
         _lexer.Position = _currentFullStart + eaten.FullWidth;
-        _current = _lexer.Lex(nextMode, _valueIndentation);
+        _current = _lexer.Lex(nextMode);
         _currentMode = nextMode;
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
@@ -200,7 +218,7 @@ internal sealed class LanguageParser
             return;
 
         _lexer.Position = _currentFullStart;
-        _current = _lexer.Lex(mode, _valueIndentation);
+        _current = _lexer.Lex(mode);
         _currentMode = mode;
     }
 

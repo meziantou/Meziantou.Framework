@@ -439,6 +439,7 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("public required int Count { get; set; }")]
     [InlineData("public int Count { get; init; }")]
     [InlineData("public int Count { get; set; }")]
+    [InlineData("")]
     public void Generator_ExtensionDataWithConstructorOrInitializer_CompilesWithoutWarnings(string member)
     {
         var source = """
@@ -500,6 +501,30 @@ public sealed class SourceGenerationDiagnosticsTests
 
             [TomlSerializable(typeof(Person))]
             [TomlSerializable(typeof(Ctor))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
+    public void Generator_TypeWithoutMembers_CompilesWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Empty { }
+
+            public sealed class EmptyWithConstructor
+            {
+                public EmptyWithConstructor(int value) { }
+            }
+
+            [TomlSerializable(typeof(Empty))]
+            [TomlSerializable(typeof(EmptyWithConstructor))]
             internal partial class Ctx : TomlSerializerContext { }
             """;
 

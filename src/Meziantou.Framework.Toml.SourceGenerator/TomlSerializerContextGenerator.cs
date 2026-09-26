@@ -1636,6 +1636,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("                        switch (hash)");
         builder.AppendLine("                        {");
 
+        // A type without members would produce an empty switch (warning CS1522)
+        if (actionsByHash.Count == 0)
+        {
+            builder.AppendLine("                            default:");
+            builder.AppendLine("                                break;");
+        }
+
         foreach (var kvp in actionsByHash.OrderBy(static pair => pair.Key))
         {
             builder.Append("                            case 0x").Append(kvp.Key.ToString("X", CultureInfo.InvariantCulture)).AppendLine("UL:");
@@ -2884,6 +2891,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("                    {");
         builder.AppendLine("                        switch (hash)");
         builder.AppendLine("                        {");
+
+        // A type without members would produce an empty switch (warning CS1522)
+        if (membersByHash.Count == 0)
+        {
+            builder.AppendLine("                            default:");
+            builder.AppendLine("                                break;");
+        }
 
         foreach (var kvp in membersByHash.OrderBy(static pair => pair.Key))
         {

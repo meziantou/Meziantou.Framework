@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Globalization;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Html;
 
@@ -43,6 +44,17 @@ public class HtmlFootnoteLinkRenderer : HtmlObjectRenderer<FootnoteLink>
     protected override void Write(HtmlRenderer renderer, FootnoteLink link)
     {
         var order = link.Footnote.Order;
+        if (!renderer.EnableHtmlForInline)
+        {
+            // In text contexts, such as the alt text of an image, only keep the footnote number
+            if (!link.IsBackLink)
+            {
+                renderer.Write(order.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return;
+        }
+
         renderer.Write(link.IsBackLink
             ? $"<a href=\"#fnref:{link.Index}\" class=\"{FootnoteBackLinkClass}\">{BackLinkString}</a>"
             : $"<a id=\"fnref:{link.Index}\" href=\"#fn:{order}\" class=\"{FootnoteLinkClass}\"><sup>{order}</sup></a>");

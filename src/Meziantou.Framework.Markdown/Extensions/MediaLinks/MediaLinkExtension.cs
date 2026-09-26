@@ -60,7 +60,8 @@ public class MediaLinkExtension : IMarkdownExtension
 
     private bool TryLinkInlineRenderer(HtmlRenderer renderer, LinkInline linkInline)
     {
-        if (!linkInline.IsImage || linkInline.Url is null)
+        // Let the link renderer handle text contexts, such as the alt text of an image
+        if (!renderer.EnableHtmlForInline || !linkInline.IsImage || linkInline.Url is null)
         {
             return false;
         }

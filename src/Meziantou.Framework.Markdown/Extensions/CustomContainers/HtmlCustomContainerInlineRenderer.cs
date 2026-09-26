@@ -18,6 +18,12 @@ public class HtmlCustomContainerInlineRenderer : HtmlObjectRenderer<CustomContai
     /// </summary>
     protected override void Write(HtmlRenderer renderer, CustomContainerInline obj)
     {
+        if (!renderer.EnableHtmlForInline)
+        {
+            renderer.WriteChildren(obj);
+            return;
+        }
+
         renderer.Write("<span").WriteAttributes(obj).Write('>');
         renderer.WriteChildren(obj);
         renderer.Write("</span>");

@@ -675,6 +675,8 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Default\")]", "conflicts with a member of the context")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Helper\")]", "conflicts with a member of the context")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Item\")][TomlSerializable(typeof(Address), TypeInfoPropertyName = \"Item\")]", "is used for both 'Person' and 'Address'")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Foo\")][TomlSerializable(typeof(Address), TypeInfoPropertyName = \"_Foo\")]", "generated for another TypeInfoPropertyName")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"CreateFoo\")][TomlSerializable(typeof(Address), TypeInfoPropertyName = \"Foo\")]", "generated for another TypeInfoPropertyName")]
     public void Generator_ReportsInvalidTypeInfoPropertyName(string attributes, string message)
     {
         var source = $$"""

@@ -4013,17 +4013,22 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
 
             string? error = null;
-            if (!SyntaxFacts.IsValidIdentifier(name))
+            if (typesByName.TryGetValue(name, out var otherType))
+            {
+                if (SymbolEqualityComparer.Default.Equals(otherType, root.Type))
+                {
+                    continue;
+                }
+
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' is used for both '{otherType.ToDisplayString()}' and '{root.Type.ToDisplayString()}'.";
+            }
+            else if (!SyntaxFacts.IsValidIdentifier(name))
             {
                 error = $"TomlSerializable TypeInfoPropertyName '{name}' must be a valid C# identifier.";
             }
             else if (IsReservedTypeInfoName(reservedIdentifiers, name))
             {
-                error = $"TomlSerializable TypeInfoPropertyName '{name}' conflicts with a member of the context.";
-            }
-            else if (typesByName.TryGetValue(name, out var otherType) && !SymbolEqualityComparer.Default.Equals(otherType, root.Type))
-            {
-                error = $"TomlSerializable TypeInfoPropertyName '{name}' is used for both '{otherType.ToDisplayString()}' and '{root.Type.ToDisplayString()}'.";
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' conflicts with a member of the context, or with a member generated for another TypeInfoPropertyName.";
             }
 
             if (error is not null)
@@ -4032,7 +4037,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return false;
             }
 
+            // The members generated for this name, such as _Foo and CreateFoo, cannot be used by another name
             typesByName[name] = root.Type;
+            reservedIdentifiers.Add(name);
+            reservedIdentifiers.Add("_" + name);
+            reservedIdentifiers.Add("Create" + name);
+            reservedIdentifiers.Add("__TomlTypeInfo_" + name);
         }
 
         return true;

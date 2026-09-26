@@ -62,6 +62,40 @@ public class NewApiAttributeContractTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TomlStringStyleAttribute(TomlStringStyle.Basic) { AllowHexEscapes = (TomlBooleanPreference)42 });
     }
 
+    [Theory]
+    [InlineData(typeof(InvalidIgnoreCondition))]
+    [InlineData(typeof(InvalidUnknownDerivedTypeHandling))]
+    [InlineData(typeof(InvalidHexEscapes))]
+    public void ReflectionMetadata_AttributeWithAnUndefinedValue_IsAConfigurationError(Type type)
+    {
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\n", type, out _));
+
+        Assert.Contains("has an undefined value", exception.Message, StringComparison.Ordinal);
+    }
+
+    private sealed class InvalidIgnoreCondition
+    {
+        [TomlIgnore(Condition = (TomlIgnoreCondition)42)]
+        public int A { get; set; }
+    }
+
+    [TomlPolymorphic(UnknownDerivedTypeHandling = (TomlUnknownDerivedTypeHandling)42)]
+    [TomlDerivedType(typeof(InvalidUnknownDerivedTypeHandlingDerived), "d")]
+    private class InvalidUnknownDerivedTypeHandling
+    {
+        public int A { get; set; }
+    }
+
+    private sealed class InvalidUnknownDerivedTypeHandlingDerived : InvalidUnknownDerivedTypeHandling
+    {
+    }
+
+    private sealed class InvalidHexEscapes
+    {
+        [TomlStringStyle(TomlStringStyle.Basic, AllowHexEscapes = (TomlBooleanPreference)42)]
+        public string? A { get; set; }
+    }
+
     [Fact]
     public void BehaviorAttributes_RejectInvalidEnumValues()
     {

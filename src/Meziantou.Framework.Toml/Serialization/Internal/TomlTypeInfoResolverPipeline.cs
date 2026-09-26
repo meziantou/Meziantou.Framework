@@ -75,6 +75,21 @@ internal static class TomlTypeInfoResolverPipeline
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     private static TomlTypeInfo? ResolveUncached(TomlSerializationOperationState state, Type type, out string? errorMessage)
     {
+        try
+        {
+            return ResolveUncachedCore(state, type, out errorMessage);
+        }
+        catch (CustomAttributeFormatException ex) when (ex.InnerException is TargetInvocationException { InnerException: ArgumentOutOfRangeException valueError })
+        {
+            // The runtime reports an attribute property that throws as a property that does not exist
+            throw TomlException.CreateConfigurationError($"A TOML attribute of '{type.FullName}' or of one of its members has an undefined value: {valueError.Message}", ex);
+        }
+    }
+
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    private static TomlTypeInfo? ResolveUncachedCore(TomlSerializationOperationState state, Type type, out string? errorMessage)
+    {
         errorMessage = null;
         var options = state.Options;
         var fromTypeConverterAttribute = TryResolveFromConverterAttributes(options, type);

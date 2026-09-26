@@ -670,6 +670,34 @@ internal sealed partial class TestTomlSerializerContextJsonWebDefaults : TomlSer
 {
 }
 
+public sealed class GeneratedDomHolder
+{
+    public TomlTable? Table { get; set; }
+
+    public TomlArray? Array { get; set; }
+
+    public TomlTableArray? Items { get; set; }
+
+    public GeneratedDomAnimal? Animal { get; set; }
+}
+
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(GeneratedDomCat), "cat")]
+public abstract class GeneratedDomAnimal
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class GeneratedDomCat : GeneratedDomAnimal
+{
+    public int Lives { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedDomHolder))]
+internal sealed partial class TestTomlSerializerContextDom : TomlSerializerContext
+{
+}
+
 [JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web, PropertyNamingPolicy = JsonKnownNamingPolicy.KebabCaseUpper)]
 [TomlSerializable(typeof(GeneratedPerson))]
 internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy : TomlSerializerContext
@@ -1468,6 +1496,27 @@ public class NewApiSourceGenerationTests
 
         Assert.Contains("Field = 1", toml);
         Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_DomMembers_AreWritten()
+    {
+        var value = new GeneratedDomHolder
+        {
+            Table = new TomlTable { ["a"] = 1L },
+            Array = new TomlArray { 1L, "x" },
+            Items = new TomlTableArray { new TomlTable { ["b"] = 2L } },
+            Animal = new GeneratedDomCat { Name = "Tom", Lives = 9 },
+        };
+
+        var toml = TomlSerializer.Serialize(value, TestTomlSerializerContextDom.Default.GeneratedDomHolder);
+
+        Assert.Equal(TomlSerializer.Serialize(value), toml);
+        var roundtrip = TomlSerializer.Deserialize(toml, TestTomlSerializerContextDom.Default.GeneratedDomHolder)!;
+        Assert.Equal(1L, roundtrip.Table!["a"]);
+        Assert.Equal("x", roundtrip.Array![1]);
+        Assert.Equal(2L, roundtrip.Items![0]["b"]);
+        Assert.Equal(9, Assert.IsType<GeneratedDomCat>(roundtrip.Animal).Lives);
     }
 
     [Fact]

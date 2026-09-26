@@ -48,6 +48,21 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             return;
         }
 
+        // The type info a generated context returns for a DOM type writes it through this converter, so asking the resolver
+        // first would recurse until the stack overflows
+        switch (value)
+        {
+            case TomlTable table:
+                WriteTable(writer, table);
+                return;
+            case TomlArray array:
+                WriteArray(writer, array);
+                return;
+            case TomlTableArray tableArray:
+                WriteTableArray(writer, tableArray);
+                return;
+        }
+
         var fromResolver = options.TypeInfoResolver?.GetTypeInfo(runtimeType, options);
         if (fromResolver is not null)
         {
@@ -140,15 +155,6 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 return;
             case Version version:
                 TomlVersionConverter.Instance.Write(writer, version);
-                return;
-            case TomlTable table:
-                WriteTable(writer, table);
-                return;
-            case TomlArray array:
-                WriteArray(writer, array);
-                return;
-            case TomlTableArray tableArray:
-                WriteTableArray(writer, tableArray);
                 return;
             case Enum:
                 TomlEnumConverter.Instance.Write(writer, value);

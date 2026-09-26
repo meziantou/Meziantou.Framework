@@ -33,14 +33,6 @@ internal sealed class SegmentedBitStorage
 
     public long BitCount { get; }
 
-    public void Clear()
-    {
-        foreach (var segment in _segments)
-        {
-            Array.Clear(segment);
-        }
-    }
-
     public long CountSetBits()
     {
         long count = 0;

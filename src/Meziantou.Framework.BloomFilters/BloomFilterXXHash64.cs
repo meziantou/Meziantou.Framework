@@ -49,7 +49,7 @@ public sealed partial class BloomFilterXXHash64 : BloomFilter
 
             for (var lane = 0; lane < Vector<ulong>.Count; lane++)
             {
-                AddHash(new Hash64(hashes[lane]));
+                AddHash(BloomFilterHash.FromUInt64(hashes[lane]));
             }
 
             index += Vector<ulong>.Count;
@@ -62,9 +62,9 @@ public sealed partial class BloomFilterXXHash64 : BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash64.HashToUInt64(value));
+        return BloomFilterHash.FromUInt64(XxHash64.HashToUInt64(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

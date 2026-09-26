@@ -896,6 +896,7 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public (int A, string B) Pair { get; set; } }")]
     [InlineData("MFTOML017", "[TomlSerializable(typeof((int, string)))] internal partial class Ctx : TomlSerializerContext { }")]
     [InlineData("MFTOML004", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Dictionary<int, string> X { get; set; } = new(); }")]
+    [InlineData("MFTOML011", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public Root(int x) { X = x; } public int X { get; } [TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)] public System.Collections.Generic.List<int> Items { get; } = []; }")]
     public void Generator_UnsupportedContextOrType_ReportsOnlyADiagnostic(string id, string declarations)
     {
         var source = "#nullable enable\nusing Meziantou.Framework.Toml.Serialization;\n" + declarations;

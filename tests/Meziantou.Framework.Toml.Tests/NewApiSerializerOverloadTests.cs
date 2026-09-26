@@ -183,6 +183,7 @@ public sealed class NewApiSerializerOverloadTests
     [InlineData(typeof(ConfigTwoExtensionData))]
     [InlineData(typeof(ConfigDuplicateDiscriminator))]
     [InlineData(typeof(ConfigSingleOrArrayOnInt))]
+    [InlineData(typeof(ConfigPopulateOnConstructorType))]
     public void TryDeserialize_ModelConfigurationError_Throws(Type type)
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\nItems = [{ A = 1 }]\n", type, out _));
@@ -232,6 +233,16 @@ public sealed class NewApiSerializerOverloadTests
 
     private sealed class ConfigDerivedB : ConfigDuplicateDiscriminator
     {
+    }
+
+    private sealed class ConfigPopulateOnConstructorType
+    {
+        public ConfigPopulateOnConstructorType(int a) => A = a;
+
+        public int A { get; }
+
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+        public List<int> Items { get; } = [];
     }
 
     private sealed class ConfigSingleOrArrayOnInt

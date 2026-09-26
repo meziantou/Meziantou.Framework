@@ -4956,6 +4956,23 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     memberIndexByClrName[membersSoFar[i].MemberName] = i;
                 }
 
+                // The instance is created after the members are read, so a get-only member cannot be populated; like the
+                // reflection resolver, an explicit Populate on it is an error rather than a silently lost value
+                var parameterNames = new HashSet<string>(selectedConstructor.Parameters.Select(static parameter => parameter.Name), StringComparer.OrdinalIgnoreCase);
+                foreach (var member in membersSoFar)
+                {
+                    if (!member.CanSet && !member.HasSingleOrArray && member.HasExplicitObjectCreationHandling &&
+                        member.ObjectCreationHandling == ObjectCreationHandlingKind.Populate && !parameterNames.Contains(member.MemberName))
+                    {
+                        context.ReportDiagnostic(DiagnosticInfo.Create(
+                            InvalidAttributeUsage,
+                            member.Symbol?.Locations.FirstOrDefault() ?? named.Locations.FirstOrDefault(),
+                            type.ToDisplayString(),
+                            member.MemberName,
+                            "[TomlObjectCreationHandling(Populate)] cannot be used on a get-only member of a type created with a constructor that has parameters."));
+                    }
+                }
+
                 var parameterComparer = GetEffectivePropertyNameCaseInsensitive(model.Options) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
                 var parameterKeys = new HashSet<string>(parameterComparer);
                 var parameters = ImmutableArray.CreateBuilder<PocoConstructorParameter>(selectedConstructor.Parameters.Length);

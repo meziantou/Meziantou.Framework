@@ -1472,6 +1472,12 @@ internal static class TomlReflectionTypeInfoResolver
 
                     if (member.Setter is null && !member.HasSingleOrArray)
                     {
+                        // The instance is created after the members are read, so the value would be lost
+                        if (member.HasExplicitObjectCreationHandling && member.ObjectCreationHandling == TomlObjectCreationHandling.Populate)
+                        {
+                            throw TomlException.CreateConfigurationError($"Member '{member.Member.Name}' on '{Type.FullName}' uses {nameof(TomlObjectCreationHandling)}.{nameof(TomlObjectCreationHandling.Populate)} but cannot be populated because '{Type.FullName}' is created with a constructor that has parameters.");
+                        }
+
                         reader.Skip();
                         continue;
                     }

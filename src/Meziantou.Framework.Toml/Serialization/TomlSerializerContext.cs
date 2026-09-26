@@ -196,18 +196,18 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlException CreateConfigurationException(string message) => TomlException.CreateConfigurationError(message);
 
     /// <summary>
-    /// Records an error found after a table was read, such as a missing required key, with the other deserialization
-    /// diagnostics.
+    /// Reports an error found after a table was read, such as a missing required key. It is recorded with the other
+    /// deserialization diagnostics, and <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int, TomlSourceSpan?)"/> throws
+    /// once every error of the table is found. It is thrown directly when the diagnostics cannot be recorded.
     /// </summary>
     /// <param name="reader">The TOML reader.</param>
     /// <param name="span">The location of the error.</param>
     /// <param name="message">The error message.</param>
-    /// <returns>The exception to throw.</returns>
-    protected static TomlException CreateDeserializationException(TomlReader reader, TomlSourceSpan? span, string message)
+    protected static void ReportDeserializationError(TomlReader reader, TomlSourceSpan? span, string message)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
 
-        return span is { } locatedSpan ? reader.OperationState.RecordValueError(new TomlException(locatedSpan, message)) : new TomlException(message);
+        reader.OperationState.RecordOrThrow(span is { } locatedSpan ? new TomlException(locatedSpan, message) : new TomlException(message));
     }
 
     /// <summary>

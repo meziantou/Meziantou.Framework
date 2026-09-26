@@ -55,18 +55,18 @@ internal sealed class TomlSerializationOperationState
         }
     }
 
-    // For an error found after the value was read, such as a missing required key
-    public TomlException RecordValueError(TomlException exception)
+    // For an error found after the value was read, such as a missing required key: it is recorded with the others, and the
+    // table checks for errors once all of them are found
+    public void RecordOrThrow(TomlException exception)
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
         if (!CanAddDiagnostics(exception))
         {
-            return exception;
+            throw exception;
         }
 
         AddDiagnostics(exception);
-        return TomlException.CreateRecordedValueError(Diagnostics!, exception.Span);
     }
 
     public bool CanAddDiagnostics(TomlException exception)

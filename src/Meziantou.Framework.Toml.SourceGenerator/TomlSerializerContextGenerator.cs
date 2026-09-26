@@ -1365,7 +1365,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            }");
             builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
             builder.AppendLine("            reader.Read();");
-            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
             if (hasRequiredMembers)
             {
                 if (poco.Members.Length <= 64)
@@ -1383,11 +1382,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                         builder.AppendLine("                {");
-                        builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                        builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                             .Append(serializedName)
                             .Append("' when deserializing '{typeof(")
                             .Append(typeName)
-                            .Append(").FullName}'.\");");
+                            .AppendLine(").FullName}'.\");");
                         builder.AppendLine("                }");
                     }
                     builder.AppendLine("            }");
@@ -1407,16 +1406,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                         builder.AppendLine("                {");
-                        builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                        builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                             .Append(serializedName)
                             .Append("' when deserializing '{typeof(")
                             .Append(typeName)
-                            .Append(").FullName}'.\");");
+                            .AppendLine(").FullName}'.\");");
                         builder.AppendLine("                }");
                     }
                     builder.AppendLine("            }");
                 }
             }
+            // The missing required keys are reported with the errors of the values
+            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
             builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
             if (callsOnDeserialized)
             {
@@ -2115,7 +2116,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
         builder.AppendLine("            reader.Read();");
-        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
 
         // Validate constructor parameters.
         for (var i = 0; i < ctor.Parameters.Length; i++)
@@ -2137,11 +2137,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 var keyName = EscapeInterpolatedStringLiteral(parameter.KeyName);
                 builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
-                builder.Append("                throw CreateDeserializationException(reader, span, $\"Missing required constructor parameter '")
+                builder.Append("                ReportDeserializationError(reader, span, $\"Missing required constructor parameter '")
                     .Append(keyName)
                     .Append("' when deserializing '{typeof(")
                     .Append(typeName)
-                    .Append(").FullName}'.\");");
+                    .AppendLine(").FullName}'.\");");
                 builder.AppendLine();
                 builder.AppendLine("            }");
             }
@@ -2165,11 +2165,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                    builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
-                        .Append(").FullName}'.\");");
+                        .AppendLine(").FullName}'.\");");
                     builder.AppendLine("                }");
                 }
                 builder.AppendLine("            }");
@@ -2189,16 +2189,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                    builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
-                        .Append(").FullName}'.\");");
+                        .AppendLine(").FullName}'.\");");
                     builder.AppendLine("                }");
                 }
                 builder.AppendLine("            }");
             }
         }
+
+        // The values of this table that have errors, or that are missing, prevent creating the instance
+        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
 
         // Construct instance.
         var initAccessors = new List<(string Name, string SetterName, ITypeSymbol DeclaringType, ITypeSymbol ValueType)>();
@@ -2739,11 +2742,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                    builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
-                        .Append(").FullName}'.\");");
+                        .AppendLine(").FullName}'.\");");
                     builder.AppendLine("                }");
                 }
                 builder.AppendLine("            }");
@@ -2763,17 +2766,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
+                    builder.Append("                    ReportDeserializationError(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
-                        .Append(").FullName}'.\");");
+                        .AppendLine(").FullName}'.\");");
                     builder.AppendLine("                }");
                 }
                 builder.AppendLine("            }");
             }
         }
 
+        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
         builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {

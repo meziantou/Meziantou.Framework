@@ -1057,7 +1057,9 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (seen is not null)
             {
+                var diagnosticCount = reader.OperationState.DiagnosticCount;
                 ValidateRequiredMembers(reader, seen, tableStartSpan ?? endTableSpan);
+                reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
             }
 
             if (propertiesMetadata is not null)
@@ -1538,10 +1540,6 @@ internal static class TomlReflectionTypeInfoResolver
             var endTableSpan = reader.CurrentSpan;
             reader.Read(); // consume EndTable
 
-            // The values of this table that have errors are missing, so the instance cannot be created. Errors of the rest of the
-            // document do not prevent it.
-            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
-
             for (var i = 0; i < _parameters.Length; i++)
             {
                 if (ctorSeen[i])
@@ -1563,15 +1561,15 @@ internal static class TomlReflectionTypeInfoResolver
                 }
 
                 // The end of the table has the span of whatever follows it, possibly another table
-                if ((tableStartSpan ?? endTableSpan) is { } span)
-                {
-                    throw reader.OperationState.RecordValueError(new TomlException(span, $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'."));
-                }
-
-                throw new TomlException($"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
+                var message = $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.";
+                reader.OperationState.RecordOrThrow((tableStartSpan ?? endTableSpan) is { } span ? new TomlException(span, message) : new TomlException(message));
             }
 
             ValidateRequiredMembers(reader, memberSeen, tableStartSpan ?? endTableSpan);
+
+            // The values of this table that have errors are missing, so the instance cannot be created. Errors of the rest of the
+            // document do not prevent it.
+            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
 
             object instance;
             try
@@ -1714,14 +1712,11 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
+                // Every missing key is reported
                 if (!seen[i])
                 {
-                    if (span is { } locatedSpan)
-                    {
-                        throw reader.OperationState.RecordValueError(new TomlException(locatedSpan, $"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'."));
-                    }
-
-                    throw new TomlException($"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'.");
+                    var message = $"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'.";
+                    reader.OperationState.RecordOrThrow(span is { } locatedSpan ? new TomlException(locatedSpan, message) : new TomlException(message));
                 }
             }
         }

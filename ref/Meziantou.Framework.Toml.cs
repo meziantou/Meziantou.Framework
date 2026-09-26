@@ -931,7 +931,7 @@ namespace Meziantou.Framework.Toml.Serialization
         protected static int GetDeserializationDiagnosticCount(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
         protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader, int diagnosticCount, Meziantou.Framework.Toml.Text.TomlSourceSpan? tableStartSpan) { }
         protected static Meziantou.Framework.Toml.TomlException CreateConfigurationException(string message) => throw null;
-        protected static Meziantou.Framework.Toml.TomlException CreateDeserializationException(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Text.TomlSourceSpan? span, string message) => throw null;
+        protected static void ReportDeserializationError(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Text.TomlSourceSpan? span, string message) { }
         protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader) { }
         protected static void WritePropertyName(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.TomlDottedKeyHandling? dottedKeyHandling) { }
         protected static void ApplyPropertyMetadata(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.Model.TomlPropertyMetadata metadata) { }

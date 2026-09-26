@@ -1440,9 +1440,24 @@ public sealed class GeneratedRequiredLocationChild
 
 public sealed record GeneratedRequiredLocationRecord(int Y, int W);
 
+public sealed class GeneratedSeveralRequired
+{
+    public int B { get; set; }
+
+    [TomlRequired]
+    public int Req { get; set; }
+
+    [TomlRequired]
+    public int Req2 { get; set; }
+}
+
+public sealed record GeneratedSeveralRequiredRecord(int B, int Req, int Req2);
+
 [TomlSourceGenerationOptions(RespectRequiredConstructorParameters = true)]
 [TomlSerializable(typeof(GeneratedRequiredLocationRoot))]
 [TomlSerializable(typeof(GeneratedRequiredLocationChild))]
+[TomlSerializable(typeof(GeneratedSeveralRequired))]
+[TomlSerializable(typeof(GeneratedSeveralRequiredRecord))]
 internal sealed partial class TestTomlSerializerContextRequiredLocation : TomlSerializerContext
 {
 }
@@ -3357,6 +3372,27 @@ public class NewApiSourceGenerationTests
         foreach (var exception in new[] { reflection, generated })
         {
             Assert.Equal([0, 0, 2, 4, 6, 8, 9, 11], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
+        }
+    }
+
+    [Fact]
+    public void MissingRequiredKeys_AreAllReportedWithTheValueErrors()
+    {
+        const string Toml = "B = 'z'\n";
+        var context = TestTomlSerializerContextRequiredLocation.Default;
+        var options = new TomlSerializerOptions { RespectRequiredConstructorParameters = true };
+
+        var exceptions = new[]
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedSeveralRequired>(Toml)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, context.GeneratedSeveralRequired)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedSeveralRequiredRecord>(Toml, options)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, context.GeneratedSeveralRequiredRecord)),
+        };
+
+        foreach (var exception in exceptions)
+        {
+            Assert.HasCount(3, exception.Diagnostics);
         }
     }
 

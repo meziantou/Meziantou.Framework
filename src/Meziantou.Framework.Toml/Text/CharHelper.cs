@@ -19,7 +19,8 @@ internal static partial class CharHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsControlCharacter(Char32 c)
     {
-        return c <= 0x1F || c == 0x7F;
+        // The end-of-file sentinel is negative, and is not a character
+        return (c >= 0 && c <= 0x1F) || c == 0x7F;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

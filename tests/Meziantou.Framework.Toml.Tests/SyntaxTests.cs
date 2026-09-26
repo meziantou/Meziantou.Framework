@@ -201,4 +201,16 @@ val = true
         Assert.Equal(3, doc.KeyValues.ChildrenCount);
         Assert.Equal(toml, doc.ToString());
     }
+
+    [Theory]
+    [InlineData("a = \"\\")]
+    [InlineData("a = \"\"\"x\\")]
+    public void Parse_EscapeAtEndOfFile_DoesNotReportAControlCharacter(string toml)
+    {
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.Contains(doc.Diagnostics, diagnostic => diagnostic.Message.Contains("end of file in an escape sequence", StringComparison.Ordinal));
+        Assert.DoesNotContain(doc.Diagnostics, diagnostic => diagnostic.Message.Contains("control character", StringComparison.Ordinal));
+        Assert.Equal(toml, doc.ToString());
+    }
 }

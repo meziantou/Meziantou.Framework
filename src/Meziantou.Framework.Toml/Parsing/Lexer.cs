@@ -1257,7 +1257,13 @@ internal sealed class Lexer
 
             if (c != '\\' || !TryReadEscapeChar(ref end, isMultiLine))
             {
+                // An escape cut by the end of the file is already reported; the loop reports the unterminated string
                 c = CurrentCharacter;
+                if (c == Eof)
+                {
+                    continue;
+                }
+
                 if (!isMultiLine && CharHelper.IsNewLine(c))
                 {
                     AddError("Invalid newline in a string", CurrentPosition, CurrentPosition);

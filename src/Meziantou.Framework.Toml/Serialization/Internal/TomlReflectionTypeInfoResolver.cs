@@ -1065,7 +1065,8 @@ internal static class TomlReflectionTypeInfoResolver
                         continue;
                     }
 
-                    if (seen is not null && seen[memberIndex])
+                    // seen also tracks the required members, so it can exist when duplicate keys are allowed
+                    if (seen is not null && seen[memberIndex] && Options.DuplicateKeyHandling == TomlDuplicateKeyHandling.Error)
                     {
                         if (TryReadTableHeaderExtension(reader, instance, member))
                         {

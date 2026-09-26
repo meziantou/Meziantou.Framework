@@ -303,6 +303,26 @@ public class NewApiParsingPipelineTests
         Assert.Contains("The key `a` is already defined at (1,1)", ex.Message, StringComparison.Ordinal);
     }
 
+    private sealed class LastWinsWithRequiredMember
+    {
+        public int A { get; set; }
+
+        [TomlRequired]
+        public int B { get; set; }
+    }
+
+    [Fact]
+    public void Deserialize_LastWins_TypeWithARequiredMember_KeepsTheLastValue()
+    {
+        var options = new TomlSerializerOptions { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+
+        var value = TomlSerializer.Deserialize<LastWinsWithRequiredMember>("A = 1\nA = 2\nB = 3\n", options)!;
+
+        Assert.Equal(2, value.A);
+        Assert.Equal(3, value.B);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<LastWinsWithRequiredMember>("A = 1\nA = 2\nB = 3\n"));
+    }
+
     [Fact]
     public void Deserialize_LastWins_AcceptsRedefinedValues()
     {

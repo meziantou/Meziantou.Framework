@@ -384,7 +384,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         {
             if (_baseTypeInfo is null)
             {
-                throw new TomlException($"Unknown discriminator '{discriminator}' when deserializing '{Type.FullName}'.");
+                throw new TomlException($"Unknown discriminator '{discriminator.ToPrintableInputText()}' when deserializing '{Type.FullName}'.");
             }
 
             targetTypeInfo = _baseTypeInfo;
@@ -393,10 +393,10 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         {
             if ((discriminatorSpan ?? tableStartSpan) is { } span)
             {
-                throw new TomlException(span, $"Unknown discriminator '{discriminator}' when deserializing '{Type.FullName}'.");
+                throw new TomlException(span, $"Unknown discriminator '{discriminator.ToPrintableInputText()}' when deserializing '{Type.FullName}'.");
             }
 
-            throw new TomlException($"Unknown discriminator '{discriminator}' when deserializing '{Type.FullName}'.");
+            throw new TomlException($"Unknown discriminator '{discriminator.ToPrintableInputText()}' when deserializing '{Type.FullName}'.");
         }
 
         var payloadReader = TomlReader.Create(buffer, propertyNameToFilter);

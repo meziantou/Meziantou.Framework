@@ -22,7 +22,7 @@ internal sealed class TomlVersionConverter : TomlConverter<Version>
 
         if (!Version.TryParse(raw, out var version))
         {
-            throw reader.CreateException($"Invalid version literal `{raw}`.");
+            throw reader.CreateException($"Invalid version literal `{raw.ToPrintableInputText()}`.");
         }
 
         reader.Read();

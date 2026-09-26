@@ -826,18 +826,9 @@ internal partial class Parser
     }
 
     // A token can be as long as the document, and every diagnostic would keep a copy of it
-    private const int MaxTokenTextLengthInMessage = 64;
-
     private string? ToPrintable(SyntaxTokenValue localToken)
     {
-        var text = ToText(localToken);
-        if (text is { Length: > MaxTokenTextLengthInMessage })
-        {
-            var length = char.IsHighSurrogate(text[MaxTokenTextLengthInMessage - 1]) ? MaxTokenTextLengthInMessage - 1 : MaxTokenTextLengthInMessage;
-            text = string.Concat(text.AsSpan(0, length), "...");
-        }
-
-        return text.ToPrintableString();
+        return ToText(localToken).ToPrintableInputText();
     }
 
     private string? ToText(SyntaxTokenValue localToken)

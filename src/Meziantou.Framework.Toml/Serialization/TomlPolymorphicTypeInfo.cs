@@ -296,10 +296,10 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         {
             if ((discriminatorSpan ?? tableStartSpan) is { } span)
             {
-                throw new TomlException(span, $"Unknown discriminator '{discriminator}' when deserializing '{typeof(TBase).FullName}'.");
+                throw new TomlException(span, $"Unknown discriminator '{discriminator.ToPrintableInputText()}' when deserializing '{typeof(TBase).FullName}'.");
             }
 
-            throw new TomlException($"Unknown discriminator '{discriminator}' when deserializing '{typeof(TBase).FullName}'.");
+            throw new TomlException($"Unknown discriminator '{discriminator.ToPrintableInputText()}' when deserializing '{typeof(TBase).FullName}'.");
         }
 
         var payloadReader = TomlReader.Create(buffer, _discriminatorPropertyName);

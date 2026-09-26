@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -45,7 +46,7 @@ public sealed class TomlStringEnumConverter : TomlConverter
             var name = reader.GetString();
             if (!Enum.TryParse(typeToConvert, GetMemberNames(typeToConvert).ToEnumNames(name), ignoreCase: false, out var parsed))
             {
-                throw reader.CreateException($"Invalid enum name `{name}` for type '{typeToConvert.FullName}'.");
+                throw reader.CreateException($"Invalid enum name `{name.ToPrintableInputText()}` for type '{typeToConvert.FullName}'.");
             }
 
             reader.Read();

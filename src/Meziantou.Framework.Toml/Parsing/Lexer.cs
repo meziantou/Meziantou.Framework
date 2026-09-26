@@ -882,7 +882,7 @@ internal sealed class Lexer
 
             if (hasLeadingSign)
             {
-                AddError($"Invalid prefix `{signPrefix!.Value}` for the following offset/local date/time `{dateTimeAsString}`", start, end);
+                AddError($"Invalid prefix `{signPrefix!.Value}` for the following offset/local date/time `{dateTimeAsString.ToPrintableInputText()}`", start, end);
                 // Still try to recover
                 dateTimeAsString = dateTimeAsString.Substring(1);
             }
@@ -909,7 +909,7 @@ internal sealed class Lexer
             else if (DateTimeRFC3339.TryGetUnsupportedReason(dateTimeAsString, out var unsupportedReason))
             {
                 _token = new SyntaxTokenValue(TokenKind.LocalDateTime, start, end, stringValue: dateTimeAsString);
-                AddError($"The date or time `{dateTimeAsString}` is valid TOML but cannot be represented: {unsupportedReason}", start, end);
+                AddError($"The date or time `{dateTimeAsString.ToPrintableInputText()}` is valid TOML but cannot be represented: {unsupportedReason}", start, end);
             }
             else
             {
@@ -919,13 +919,13 @@ internal sealed class Lexer
                     _token = new SyntaxTokenValue(TokenKind.LocalDateTime, start, end, stringValue: dateTimeAsString);
 
                     // But we produce an error anyway
-                    AddError($"Invalid format of date time/offset `{dateTimeAsString}` not following RFC3339", start, end);
+                    AddError($"Invalid format of date time/offset `{dateTimeAsString.ToPrintableInputText()}` not following RFC3339", start, end);
                 }
                 else
                 {
                     _token = new SyntaxTokenValue(TokenKind.LocalDateTime, start, end, stringValue: dateTimeAsString);
                     // But we produce an error anyway
-                    AddError($"Unable to parse the date time/offset `{dateTimeAsString}`", start, end);
+                    AddError($"Unable to parse the date time/offset `{dateTimeAsString.ToPrintableInputText()}`", start, end);
                 }
             }
 
@@ -985,21 +985,21 @@ internal sealed class Lexer
             if (!TryParseDecimalDouble(out var doubleValue))
             {
                 var numberAsText = _textBuilder.ToString();
-                AddError($"Unable to parse floating point `{numberAsText}`", start, end);
+                AddError($"Unable to parse floating point `{numberAsText.ToPrintableInputText()}`", start, end);
                 doubleValue = 0.0;
             }
             else if (double.IsInfinity(doubleValue))
             {
                 // A literal can only be infinite by overflowing, as `inf` is a keyword
                 var numberAsText = _textBuilder.ToString();
-                AddError($"The float `{numberAsText}` is outside the range of a 64-bit floating-point number", start, end);
+                AddError($"The float `{numberAsText.ToPrintableInputText()}` is outside the range of a 64-bit floating-point number", start, end);
                 doubleValue = 0.0;
             }
 
             if (hasLeadingZero && HasMultipleDigitsInIntegerPart())
             {
                 var numberAsText = _textBuilder.ToString();
-                AddError($"Unexpected leading zero (`0`) for float `{numberAsText}`", positionFirstDigit, positionFirstDigit);
+                AddError($"Unexpected leading zero (`0`) for float `{numberAsText.ToPrintableInputText()}`", positionFirstDigit, positionFirstDigit);
             }
 
             var bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(doubleValue));
@@ -1010,14 +1010,14 @@ internal sealed class Lexer
             if (!TryParseDecimalInt64(out var longValue))
             {
                 var numberAsText = _textBuilder.ToString();
-                AddError($"Unable to parse integer `{numberAsText}`", start, end);
+                AddError($"Unable to parse integer `{numberAsText.ToPrintableInputText()}`", start, end);
                 longValue = 0;
             }
 
             if (hasLeadingZero && longValue != 0)
             {
                 var numberAsText = _textBuilder.ToString();
-                AddError($"Unexpected leading zero (`0`) for integer `{numberAsText}`", positionFirstDigit, positionFirstDigit);
+                AddError($"Unexpected leading zero (`0`) for integer `{numberAsText.ToPrintableInputText()}`", positionFirstDigit, positionFirstDigit);
             }
 
             _token = new SyntaxTokenValue(TokenKind.Integer, start, end, stringValue: null, data: unchecked((ulong)longValue));

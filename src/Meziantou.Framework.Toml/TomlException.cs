@@ -166,7 +166,16 @@ public sealed class TomlException : Exception
                 break;
             }
 
-            builder.AppendLine(diagnostics[i].ToString());
+            // A single diagnostic can embed long input text too
+            var text = diagnostics[i].ToString();
+            var remaining = MaxMessageLength - builder.Length;
+            if (text.Length > remaining)
+            {
+                var length = char.IsHighSurrogate(text[remaining - 1]) ? remaining - 1 : remaining;
+                text = string.Concat(text.AsSpan(0, length), "...");
+            }
+
+            builder.AppendLine(text);
         }
 
         return builder.ToString();

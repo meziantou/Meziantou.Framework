@@ -21,7 +21,7 @@ internal sealed class TomlUriConverter : TomlConverter<Uri>
         var raw = reader.GetString();
         if (!Uri.TryCreate(raw, UriKind.RelativeOrAbsolute, out var uri))
         {
-            throw reader.CreateException($"Invalid URI literal `{raw}`.");
+            throw reader.CreateException($"Invalid URI literal `{raw.ToPrintableInputText()}`.");
         }
 
         reader.Read();

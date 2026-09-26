@@ -1844,7 +1844,7 @@ public sealed partial class TomlParser
             var span = new TomlSourceSpan(_lexer.SourcePath,
                 new TomlTextPosition(token.Start.Offset, token.Start.Line, token.Start.Column),
                 new TomlTextPosition(token.End.Offset, token.End.Line, token.End.Column));
-            return _lexer.GetString(span.Offset, span.Length).ToPrintableString() ?? token.Kind.ToString();
+            return _lexer.GetString(span.Offset, span.Length).ToPrintableInputText() ?? token.Kind.ToString();
         }
 
         private void RecordDiagnostics(TomlException exception)

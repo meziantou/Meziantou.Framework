@@ -38,7 +38,7 @@ internal sealed class TomlEnumConverter : TomlConverter
             var name = reader.GetString();
             if (!Enum.TryParse(typeToConvert, name, ignoreCase: false, out var parsed) && !Enum.TryParse(typeToConvert, name, ignoreCase: true, out parsed))
             {
-                throw reader.CreateException($"Invalid enum name `{name}` for type '{typeToConvert.FullName}'.");
+                throw reader.CreateException($"Invalid enum name `{name.ToPrintableInputText()}` for type '{typeToConvert.FullName}'.");
             }
 
             reader.Read();

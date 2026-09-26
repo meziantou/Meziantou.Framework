@@ -21,7 +21,7 @@ internal sealed class TomlGuidConverter : TomlConverter<Guid>
         var raw = reader.GetString();
         if (!Guid.TryParse(raw, out var value))
         {
-            throw reader.CreateException($"Invalid GUID literal `{raw}`.");
+            throw reader.CreateException($"Invalid GUID literal `{raw.ToPrintableInputText()}`.");
         }
 
         reader.Read();

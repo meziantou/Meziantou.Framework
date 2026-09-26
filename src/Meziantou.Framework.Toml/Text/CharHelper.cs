@@ -189,6 +189,24 @@ internal static partial class CharHelper
         return null;
     }
 
+    // Input text embedded in a message, such as a token, is shortened: a message would otherwise be as long as the input,
+    // and messages are typically logged
+    internal const int MaxInputTextLengthInMessage = 64;
+
+    /// <summary>
+    /// Converts input text to a printable string of a bounded length, to include it in a message
+    /// </summary>
+    public static string? ToPrintableInputText(this string? text)
+    {
+        if (text is { Length: > MaxInputTextLengthInMessage })
+        {
+            var length = char.IsHighSurrogate(text[MaxInputTextLengthInMessage - 1]) ? MaxInputTextLengthInMessage - 1 : MaxInputTextLengthInMessage;
+            text = string.Concat(text.AsSpan(0, length), "...");
+        }
+
+        return text.ToPrintableString();
+    }
+
     /// <summary>
     /// Converts a string that may have control characters to a printable string
     /// </summary>

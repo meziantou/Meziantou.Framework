@@ -232,6 +232,43 @@ val = true
     }
 
     [Fact]
+    public void TomlException_SingleLongDiagnostic_IsTruncated()
+    {
+        var diagnostics = new DiagnosticsBag();
+        diagnostics.Error(new SourceSpan("", new TextPosition(0, 0, 0), new TextPosition(0, 0, 0)), new string('m', 1_000_000));
+
+        var exception = new TomlException(diagnostics);
+
+        Assert.HasCountLessThan(100_100, exception.Message);
+    }
+
+    [Theory]
+    [InlineData("a = 0", "1")]
+    [InlineData("a = 1979-05-27T07:32:00", "1")]
+    [InlineData("a = 1e", "9")]
+    [InlineData("a = 1 \"", "x")]
+    public void LongTokens_AreTruncatedInMessages(string prefix, string repeated)
+    {
+        var toml = prefix + string.Concat(Enumerable.Repeat(repeated, 1_000_000)) + "\n";
+
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+
+        Assert.HasCountLessThan(1_000, deserialize.Message);
+        Assert.HasCountLessThan(1_000, parseStrict.Message);
+    }
+
+    [Fact]
+    public void LongInputValues_AreTruncatedInSerializerMessages()
+    {
+        var toml = "value = '" + new string('x', 1_000_000) + "'\n";
+
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, DayOfWeek>>(toml));
+
+        Assert.HasCountLessThan(1_000, exception.Message);
+    }
+
+    [Fact]
     public void TomlException_MessageListsTheFirstDiagnosticsOnly()
     {
         var comment = "# " + string.Concat(Enumerable.Repeat("\0a", 1000)) + "\n";

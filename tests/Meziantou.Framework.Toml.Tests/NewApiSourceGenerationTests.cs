@@ -1641,6 +1641,31 @@ public sealed class GeneratedObsoleteConstructor
     public int B { get; set; }
 }
 
+public class GeneratedHidingAccessorBase
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedHidingAccessorDerived : GeneratedHidingAccessorBase
+{
+    [TomlInclude]
+    public new string X { get; private set; } = "d";
+}
+
+public sealed class GeneratedPrivateHidingAccessorDerived : GeneratedHidingAccessorBase
+{
+    [TomlInclude]
+    private new string X { get; set; } = "d2";
+
+    public string GetX() => X;
+}
+
+[TomlSerializable(typeof(GeneratedHidingAccessorDerived))]
+[TomlSerializable(typeof(GeneratedPrivateHidingAccessorDerived))]
+internal sealed partial class TestTomlSerializerContextHidingAccessors : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedObsoleteModel))]
 [TomlSerializable(typeof(GeneratedObsoleteConstructor))]
 internal sealed partial class TestTomlSerializerContextObsolete : TomlSerializerContext
@@ -3158,6 +3183,16 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Point.X);
             Assert.Equal(5, value.Point.Y);
         }
+    }
+
+    [Fact]
+    public void NonPublicAccessors_OfAMemberHidingABaseMember_UseTheDeclaringTypeMember()
+    {
+        var context = TestTomlSerializerContextHidingAccessors.Default;
+
+        Assert.Equal("q", TomlSerializer.Deserialize("X = 'q'", context.GeneratedHidingAccessorDerived)!.X);
+        Assert.Equal("q", TomlSerializer.Deserialize("X = 'q'", context.GeneratedPrivateHidingAccessorDerived)!.GetX());
+        Assert.Equal("X = \"d2\"\n", TomlSerializer.Serialize(new GeneratedPrivateHidingAccessorDerived(), context.GeneratedPrivateHidingAccessorDerived).ReplaceLineEndings("\n"));
     }
 
     [Fact]

@@ -1477,7 +1477,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var declaringTypeName = member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
-            var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic";
+            // The member of the declaring type only: a member of a base type can have the same name
+            var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.DeclaredOnly";
             builder.Append("        private static ").Append(memberTypeName).Append(' ').Append(member.GetterAccessorName).Append('(').Append(declaringTypeName).AppendLine(" __instance)");
             builder.AppendLine("        {");
             if (member.IsField)
@@ -1527,7 +1528,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         var declaringTypeName = declaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var memberTypeName = memberType.ToDisplayString(FullyQualifiedNullableFormat);
-        var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic";
+        // The member of the declaring type only: a member of a base type can have the same name
+        var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.DeclaredOnly";
         var memberLookup = "typeof(" + declaringTypeName + ")." + (isField ? "GetField" : "GetProperty") + "(\"" + EscapeStringLiteral(memberName) + "\", " + bindingFlags + ")!";
         var isValueType = declaringType.IsValueType;
         builder.Append("        private static void ").Append(accessorName).Append('(').Append(isValueType ? "ref " : "").Append(declaringTypeName).Append(" __instance, ").Append(memberTypeName).AppendLine(" __value)");

@@ -1153,6 +1153,12 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
 
+        // The non-generic overloads accept any value, which the metadata of another type cannot write
+        if (value is not null && !typeInfo.Type.IsInstanceOfType(value))
+        {
+            throw new ArgumentException($"The value of type '{value.GetType().FullName}' is not compatible with the type '{typeInfo.Type.FullName}'.", nameof(value));
+        }
+
         var options = typeInfo.Options;
         // The table is written directly when the converters would not change any value
         if (options.RootValueHandling != TomlRootValueHandling.WrapInRootKey &&

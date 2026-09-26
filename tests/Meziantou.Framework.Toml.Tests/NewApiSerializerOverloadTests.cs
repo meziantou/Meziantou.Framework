@@ -159,6 +159,17 @@ public sealed class NewApiSerializerOverloadTests
     }
 
     [Fact]
+    public void Serialize_ValueOfAnotherType_ThrowsArgumentException()
+    {
+        var person = new GeneratedPerson { Name = "Ada" };
+
+        Assert.Throws<ArgumentException>(() => TomlSerializer.Serialize(person, typeof(string)));
+        Assert.Throws<ArgumentException>(() => TomlSerializer.Serialize("text", typeof(GeneratedPerson), TestTomlSerializerContext.Default));
+        Assert.Throws<ArgumentException>(() => TomlSerializer.Serialize(42, (TomlTypeInfo)TestTomlSerializerContext.Default.GeneratedPerson));
+        Assert.Equal("value = 1\n", TomlSerializer.Serialize(1, typeof(int?), new TomlSerializerOptions { RootValueHandling = TomlRootValueHandling.WrapInRootKey }).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public void TryDeserialize_TypeMissingFromTheContext_Throws()
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<NotInContext>(SampleToml, TestTomlSerializerContext.Default, out _));

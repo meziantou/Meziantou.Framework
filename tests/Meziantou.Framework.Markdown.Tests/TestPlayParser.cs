@@ -93,33 +93,6 @@ Later in a text we are using HTML and it becomes an abbr tag HTML
     }
 
     [Fact]
-    public void TestSelfPipeline1()
-    {
-        var text = @" <!--markdig:pipetables-->
-
-a | b
-- | -
-0 | 1
-";
-        TestParser.TestSpec(text, @"<!--markdig:pipetables-->
-<table>
-<thead>
-<tr>
-<th>a</th>
-<th>b</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-", "self");
-    }
-
-    [Fact]
     public void TestListBug()
     {
         // TODO: Add this test back to the CommonMark specs

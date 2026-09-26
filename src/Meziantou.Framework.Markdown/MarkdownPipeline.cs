@@ -4,7 +4,6 @@
 
 using System.IO;
 
-using Meziantou.Framework.Markdown.Extensions.SelfPipeline;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers;
@@ -35,8 +34,6 @@ public sealed class MarkdownPipeline
         InlineParsers = inlineParsers;
         DebugLog = debugLog;
         _documentProcessed = documentProcessed;
-
-        _selfPipeline = Extensions.Find<SelfPipelineExtension>();
     }
 
     internal bool PreciseSourceLocation { get; set; }
@@ -54,8 +51,6 @@ public sealed class MarkdownPipeline
     internal TextWriter? DebugLog { get; }
 
     internal ProcessDocumentDelegate? _documentProcessed;
-
-    internal SelfPipelineExtension? _selfPipeline;
 
     /// <summary>
     /// True to parse trivia such as whitespace, extra heading characters and unescaped

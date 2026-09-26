@@ -156,13 +156,6 @@ public sealed class TestExtensionSpanCoverage
             document => AssertNodesHaveNonEmptySpan<YamlFrontMatterBlock>(document));
 
         yield return Case(
-            "SelfPipeline",
-            builder => builder.UseSelfPipeline(),
-            "<!--markdig:tasklists-->\n- [x] done",
-            document => AssertNodesHaveNonEmptySpan<TaskList>(document),
-            validateSpanTree: false);
-
-        yield return Case(
             "PragmaLines",
             builder => builder.UsePragmaLines(),
             "# Heading\n\nParagraph");

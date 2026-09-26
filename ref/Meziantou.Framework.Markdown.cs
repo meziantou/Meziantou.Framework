@@ -35,7 +35,6 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseAutoLinks(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions? options = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseNonAsciiNoEscape(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseYamlFrontMatter(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
-        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseSelfPipeline(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, string defaultTag = "markdig", string? defaultExtensions = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UsePragmaLines(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseDiagrams(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UsePreciseSourceLocation(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
@@ -670,19 +669,6 @@ namespace Meziantou.Framework.Markdown.Extensions.ReferralLinks
         public ReferralLinksExtension(string[] rels) { }
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) { }
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipeline pipeline, Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer renderer) { }
-    }
-}
-namespace Meziantou.Framework.Markdown.Extensions.SelfPipeline
-{
-    public sealed class SelfPipelineExtension : Meziantou.Framework.Markdown.IMarkdownExtension
-    {
-        public const string DefaultTag = "markdig";
-        public string? DefaultExtensions { get => throw null; }
-        public string SelfPipelineHintTagStart { get => throw null; }
-        public SelfPipelineExtension(string? tag = null, string? defaultExtensions = null) { }
-        public void Setup(Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) { }
-        public void Setup(Meziantou.Framework.Markdown.MarkdownPipeline pipeline, Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer renderer) { }
-        public Meziantou.Framework.Markdown.MarkdownPipeline CreatePipelineFromInput(string inputText) => throw null;
     }
 }
 namespace Meziantou.Framework.Markdown.Extensions.SmartyPants

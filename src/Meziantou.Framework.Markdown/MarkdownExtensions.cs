@@ -26,7 +26,6 @@ using Meziantou.Framework.Markdown.Extensions.MediaLinks;
 using Meziantou.Framework.Markdown.Extensions.NonAsciiNoEscape;
 using Meziantou.Framework.Markdown.Extensions.PragmaLines;
 using Meziantou.Framework.Markdown.Extensions.ReferralLinks;
-using Meziantou.Framework.Markdown.Extensions.SelfPipeline;
 using Meziantou.Framework.Markdown.Extensions.SmartyPants;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Extensions.TaskLists;
@@ -141,24 +140,6 @@ public static class MarkdownExtensions
     public static MarkdownPipelineBuilder UseYamlFrontMatter(this MarkdownPipelineBuilder pipeline)
     {
         pipeline.Extensions.AddIfNotAlready<YamlFrontMatterExtension>();
-        return pipeline;
-    }
-
-    /// <summary>
-    /// Uses the self pipeline extension that will detect the pipeline to use from the markdown input that contains a special tag. See <see cref="SelfPipelineExtension"/>
-    /// </summary>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="defaultTag">The default tag to use to match the self pipeline configuration. By default, <see cref="SelfPipelineExtension.DefaultTag"/>, meaning that the HTML tag will be &lt;--markdig:extensions--&gt;</param>
-    /// <param name="defaultExtensions">The default extensions to configure if no pipeline setup was found from the Markdown document</param>
-    /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseSelfPipeline(this MarkdownPipelineBuilder pipeline, string defaultTag = SelfPipelineExtension.DefaultTag, string? defaultExtensions = null)
-    {
-        if (pipeline.Extensions.Count != 0)
-        {
-            ThrowHelper.InvalidOperationException("The SelfPipeline extension cannot be used with other extensions");
-        }
-
-        pipeline.Extensions.Add(new SelfPipelineExtension(defaultTag, defaultExtensions));
         return pipeline;
     }
 

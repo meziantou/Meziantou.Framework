@@ -160,7 +160,7 @@ public class TestParser
             }
             else
             {
-                builder = extensionsText == "self" ? builder.UseSelfPipeline() : builder.Configure(extensionsText);
+                builder = builder.Configure(extensionsText);
             }
             yield return new KeyValuePair<string, MarkdownPipeline>(extensionsText, builder.Build());
         }

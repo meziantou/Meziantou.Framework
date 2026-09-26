@@ -30,20 +30,7 @@ public static class MarkdownConverter
     [field: MaybeNull]
     private static MarkdownPipeline DefaultTrackTriviaPipeline => field ??= new MarkdownPipelineBuilder().EnableTrackTrivia().Build();
 
-    private static MarkdownPipeline GetPipeline(MarkdownPipeline? pipeline, string markdown)
-    {
-        if (pipeline is null)
-        {
-            return DefaultPipeline;
-        }
-
-        if (pipeline._selfPipeline is not null)
-        {
-            return pipeline._selfPipeline.CreatePipelineFromInput(markdown);
-        }
-
-        return pipeline;
-    }
+    private static MarkdownPipeline GetPipeline(MarkdownPipeline? pipeline) => pipeline ?? DefaultPipeline;
 
 
     /// <summary>
@@ -74,7 +61,7 @@ public static class MarkdownConverter
     {
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         var document = MarkdownParser.Parse(markdown, pipeline, context);
 
@@ -99,7 +86,7 @@ public static class MarkdownConverter
     {
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         var document = MarkdownParser.Parse(markdown, pipeline, context);
 
@@ -163,7 +150,7 @@ public static class MarkdownConverter
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
         if (writer is null) ThrowHelper.ArgumentNullException_writer();
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         var document = MarkdownParser.Parse(markdown, pipeline, context);
 
@@ -185,7 +172,7 @@ public static class MarkdownConverter
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
         if (renderer is null) ThrowHelper.ArgumentNullException(nameof(renderer));
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         var document = MarkdownParser.Parse(markdown, pipeline, context);
 
@@ -221,7 +208,7 @@ public static class MarkdownConverter
     {
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         return MarkdownParser.Parse(markdown, pipeline, context);
     }
@@ -240,7 +227,7 @@ public static class MarkdownConverter
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
         if (writer is null) ThrowHelper.ArgumentNullException_writer();
 
-        pipeline = GetPipeline(pipeline, markdown);
+        pipeline = GetPipeline(pipeline);
 
         var document = MarkdownParser.Parse(markdown, pipeline, context);
 

@@ -201,3 +201,5 @@ them. These properties are only populated when trivia tracking is enabled.
 - The static `Markdig.Markdown` class is named `MarkdownConverter`, so it does not share its name with the namespace.
 - The package targets .NET 10 and later only. .NET Framework and .NET Standard are not supported.
 - `HostProviderBuilder` is a static class.
+- The self pipeline extension (`UseSelfPipeline`) is removed: it let the Markdown document choose the extensions of the
+  pipeline, including removing the ones that the host used to make the output safe.

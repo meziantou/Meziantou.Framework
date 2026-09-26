@@ -107,6 +107,18 @@ public class NewApiIgnoreConditionTests
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value, TestTomlNullNeverIgnoredContext.Default.NonNullableSkippedWhenNullModel));
     }
 
+    [Fact]
+    public void NullCollectionElementOrDictionaryValue_ThrowsATomlExceptionNamingIt()
+    {
+        var list = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new Dictionary<string, List<string?>> { ["a"] = ["x", null] }));
+        var set = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new Dictionary<string, HashSet<string?>> { ["a"] = [null] }));
+        var dictionary = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new Dictionary<string, string?> { ["key"] = null }));
+
+        Assert.Contains("The element at index 1 of 'System.Collections.Generic.List`1", list.Message, StringComparison.Ordinal);
+        Assert.Contains("An element of 'System.Collections.Generic.HashSet`1", set.Message, StringComparison.Ordinal);
+        Assert.Contains("The value of the key 'key' in 'System.Collections.Generic.Dictionary`2", dictionary.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(nameof(NullNeverIgnoredModel.Name))]
     [InlineData(nameof(NullNeverIgnoredModel.Items))]

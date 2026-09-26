@@ -103,13 +103,15 @@ internal sealed class TomlSourceGeneratedImmutableHashSetTypeInfo<TElement> : To
         return _elementTypeInfo!.WritesTable;
     }
 
-    private void WriteElement(TomlWriter writer, TElement element)
+    private void WriteElement(TomlWriter writer, TElement element, int index = -1)
     {
         EnsureElementTypeInfo();
 
         if (element is null)
         {
-            throw new TomlException("TOML does not support null values.");
+            throw new TomlException(index >= 0
+                ? $"The element at index {index} of '{Type.FullName}' is null, which TOML cannot represent."
+                : $"An element of '{Type.FullName}' is null, which TOML cannot represent.");
         }
 
         if (_typedElementTypeInfo is not null)

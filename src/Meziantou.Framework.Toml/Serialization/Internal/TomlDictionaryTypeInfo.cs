@@ -57,7 +57,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
             }
 
             writer.WritePropertyName(key);
-            WriteValue(writer, pair.Value);
+            WriteValue(writer, pair.Key, pair.Value);
         }
 
         writer.WriteEndTable();
@@ -194,13 +194,13 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
         _typedValueTypeInfo = resolved as TomlTypeInfo<TValue>;
     }
 
-    private void WriteValue(TomlWriter writer, TValue value)
+    private void WriteValue(TomlWriter writer, string key, TValue value)
     {
         EnsureValueTypeInfo();
 
         if (value is null)
         {
-            throw new TomlException("TOML does not support null values.");
+            throw new TomlException($"The value of the key '{key}' in '{Type.FullName}' is null, which TOML cannot represent.");
         }
 
         if (_typedValueTypeInfo is not null)

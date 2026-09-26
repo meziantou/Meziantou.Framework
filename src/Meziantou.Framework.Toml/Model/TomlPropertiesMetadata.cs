@@ -22,6 +22,11 @@ public class TomlPropertiesMetadata
         _properties = new Dictionary<string, TomlPropertyMetadata>();
     }
 
+    private TomlPropertiesMetadata(Dictionary<string, TomlPropertyMetadata> properties)
+    {
+        _properties = new Dictionary<string, TomlPropertyMetadata>(properties);
+    }
+
     /// <summary>
     /// Clears all property metadata.
     /// </summary>
@@ -57,4 +62,7 @@ public class TomlPropertiesMetadata
     {
         _properties[propertyKey] = propertyMetadata;
     }
+
+    // A copy that shares the property metadata objects, so they must be replaced rather than modified
+    internal TomlPropertiesMetadata Clone() => new(_properties);
 }

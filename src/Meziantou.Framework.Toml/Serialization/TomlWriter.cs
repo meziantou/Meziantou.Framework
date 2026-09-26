@@ -67,9 +67,10 @@ public sealed class TomlWriter
             return;
         }
 
+        // The writer adds the formatting of the members to the metadata of the table, which must not change the store
         if (CurrentTable is { } table)
         {
-            table.PropertiesMetadata = metadata;
+            table.PropertiesMetadata = metadata.Clone();
         }
     }
 
@@ -401,10 +402,13 @@ public sealed class TomlWriter
             throw new InvalidOperationException("Property metadata can only be applied inside a table.");
         }
 
+        // The metadata objects are shared with the store or with every instance of the type, so they are never modified
         table.PropertiesMetadata ??= new TomlPropertiesMetadata();
-        if (table.PropertiesMetadata.TryGetProperty(propertyName, out var existing) && existing is not null)
+        if (table.PropertiesMetadata.TryGetProperty(propertyName, out var existing))
         {
-            existing.MergeFormattingFrom(metadata);
+            var merged = existing.Clone();
+            merged.MergeFormattingFrom(metadata);
+            table.PropertiesMetadata.SetProperty(propertyName, merged);
         }
         else
         {

@@ -67,6 +67,8 @@ public class TomlPropertyMetadata
     /// </summary>
     public SourceSpan Span {get; set;}
 
+    internal TomlPropertyMetadata Clone() => (TomlPropertyMetadata)MemberwiseClone();
+
     internal void MergeFormattingFrom(TomlPropertyMetadata metadata)
     {
         if (metadata.DisplayKind != TomlPropertyDisplayKind.Default)

@@ -133,6 +133,24 @@ public sealed class NewApiMetadataStoreTests
     }
 
     [Fact]
+    public void Serialize_DoesNotModifyTheStoreOrShareMemberMetadata()
+    {
+        var store = new TomlMetadataStore();
+        var options = new TomlSerializerOptions { MetadataStore = store };
+        var first = new StyledChild();
+        var firstMetadata = new TomlPropertiesMetadata();
+        var textMetadata = new TomlPropertyMetadata();
+        firstMetadata.SetProperty(nameof(StyledChild.Text), textMetadata);
+        store.SetProperties(first, firstMetadata);
+
+        TomlSerializer.Serialize(first, options);
+
+        // The formatting metadata of Path is shared by every instance: in the store, a comment added to it would apply to all
+        Assert.False(firstMetadata.ContainsProperty(nameof(StyledChild.Path)));
+        Assert.Null(textMetadata.StringStyle);
+    }
+
+    [Fact]
     public void NoInlineDisplayKind_OverridesInlineTablePolicy()
     {
         var table = TomlSerializer.Deserialize<TomlTable>("Nested = {C = 2}\n")!;

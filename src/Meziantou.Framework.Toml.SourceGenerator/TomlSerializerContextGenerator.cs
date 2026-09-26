@@ -6395,7 +6395,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     break;
             }
         }
+
+        // JsonSerializerDefaults.Web, as in System.Text.Json: camelCase names, matched case-insensitively. The named
+        // arguments, and the TOML attribute, take precedence.
+        if (attribute.ConstructorArguments is [{ Kind: TypedConstantKind.Enum, Value: JsonSerializerDefaultsWeb }])
+        {
+            options.PropertyNamingPolicyExpression ??= "global::Meziantou.Framework.Toml.TomlNamingPolicy.CamelCase";
+            options.PropertyNameCaseInsensitive ??= true;
+        }
     }
+
+    private const int JsonSerializerDefaultsWeb = 1;
 
     private static void ApplyTomlSourceGenerationOptionsAttribute(AttributeData attribute, SourceGenOptions options)
     {

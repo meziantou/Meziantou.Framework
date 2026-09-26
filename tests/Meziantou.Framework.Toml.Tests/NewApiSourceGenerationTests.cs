@@ -664,6 +664,25 @@ internal sealed partial class TestTomlSerializerContextIgnoreReadOnlyMembers : T
 {
 }
 
+[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web)]
+[TomlSerializable(typeof(GeneratedPerson))]
+internal sealed partial class TestTomlSerializerContextJsonWebDefaults : TomlSerializerContext
+{
+}
+
+[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web, PropertyNamingPolicy = JsonKnownNamingPolicy.KebabCaseUpper)]
+[TomlSerializable(typeof(GeneratedPerson))]
+internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy : TomlSerializerContext
+{
+}
+
+[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseUpper)]
+[TomlSerializable(typeof(GeneratedPerson))]
+internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithTomlOptions : TomlSerializerContext
+{
+}
+
 public sealed class ValidationModel
 {
     public string Name { get; set; } = "";
@@ -1449,6 +1468,23 @@ public class NewApiSourceGenerationTests
 
         Assert.Contains("Field = 1", toml);
         Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_JsonSerializerDefaultsWeb_UsesCaseInsensitiveCamelCase()
+    {
+        var context = TestTomlSerializerContextJsonWebDefaults.Default;
+
+        Assert.Equal("name = \"Ada\"\nage = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, context.GeneratedPerson));
+        Assert.Equal("Ada", TomlSerializer.Deserialize("NAME = \"Ada\"", context.GeneratedPerson)!.Name);
+        Assert.True(context.Options.PropertyNameCaseInsensitive);
+    }
+
+    [Fact]
+    public void GeneratedContext_JsonSerializerDefaultsWeb_ExplicitOptionsTakePrecedence()
+    {
+        Assert.Equal("NAME = \"Ada\"\nAGE = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy.Default.GeneratedPerson));
+        Assert.Equal("NAME = \"Ada\"\nAGE = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, TestTomlSerializerContextJsonWebDefaultsWithTomlOptions.Default.GeneratedPerson));
     }
 
     [Fact]

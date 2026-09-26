@@ -486,6 +486,8 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`), and the validation (`UnmappedMemberHandling`,
   `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) are computed when building, so the naming policy
   is not called at runtime.
+- `[JsonSourceGenerationOptions]` is honored for the options TOML shares with JSON, and `JsonSerializerDefaults.Web`
+  selects case-insensitive camelCase names, as in `System.Text.Json`. `[TomlSourceGenerationOptions]` takes precedence.
 - `init` and `required` members are supported.
 - `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The
   converter type must be public or internal. A member with a converter is always replaced, never populated.

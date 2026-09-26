@@ -1,0 +1,617 @@
+# Meziantou.Framework.Toml
+
+`Meziantou.Framework.Toml` is a [TOML 1.1](https://toml.io/en/v1.1.0) parser, round-trippable syntax tree, and
+`System.Text.Json`-style serializer for .NET. It serializes object graphs, deserializes typed models or an untyped
+document model, and generates serialization metadata at compile time for NativeAOT and trimming scenarios.
+
+The source generator ships inside the package. No additional package is required to use generated
+`TomlSerializerContext` types.
+
+The library is based on [Tomlyn](https://github.com/xoofx/Tomlyn) by Alexandre Mutel. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for its license.
+
+## Install the package
+
+```bash
+dotnet add package Meziantou.Framework.Toml
+```
+
+## Table of contents
+
+- [Overview](#overview)
+- [Serialize and deserialize objects](#serialize-and-deserialize-objects)
+- [Supported types](#supported-types)
+- [Configure serialization](#configure-serialization)
+- [Attributes](#attributes)
+- [Lifecycle callbacks](#lifecycle-callbacks)
+- [Custom converters](#custom-converters)
+- [Extension data](#extension-data)
+- [Polymorphism](#polymorphism)
+- [Source generation](#source-generation)
+- [NativeAOT and trimming](#nativeaot-and-trimming)
+- [Document Object Model](#document-object-model)
+- [Syntax tree](#syntax-tree)
+- [Lexer and parser](#lexer-and-parser)
+- [Error handling](#error-handling)
+
+## Overview
+
+The package targets **TOML 1.1**. There is no TOML 1.0 mode: documents are always read and validated with the TOML 1.1
+rules.
+
+| Namespace | Content |
+| --- | --- |
+| `Meziantou.Framework.Toml` | `TomlSerializer`, `TomlSerializerOptions`, `TomlTypeInfo<T>`, `TomlDateTime`, `TomlException` |
+| `Meziantou.Framework.Toml.Serialization` | Attributes, `TomlSerializerContext`, converters, `TomlReader`, `TomlWriter`, metadata store |
+| `Meziantou.Framework.Toml.Model` | Document Object Model: `TomlTable`, `TomlArray`, `TomlTableArray` |
+| `Meziantou.Framework.Toml.Parsing` | `TomlLexer`, `TomlParser`, `SyntaxParser` |
+| `Meziantou.Framework.Toml.Syntax` | Lossless syntax tree: `DocumentSyntax`, `KeyValueSyntax`, `SyntaxVisitor`, diagnostics |
+
+The serializer reuses `System.Text.Json` types where it makes sense: naming policies (`JsonNamingPolicy`), object
+creation handling (`JsonObjectCreationHandling`), and the common `System.Text.Json.Serialization` attributes. A model can
+be shared between JSON and TOML; when both a TOML-specific and a JSON attribute are present, the TOML attribute wins.
+
+## Serialize and deserialize objects
+
+```csharp
+using Meziantou.Framework.Toml;
+
+var toml = TomlSerializer.Serialize(new Person("Ada", 37));
+var person = TomlSerializer.Deserialize<Person>(toml);
+
+public sealed record Person(string Name, int Age);
+```
+
+`TomlSerializer` provides overloads for `string`, `Stream` (UTF-8), `TextReader`, and `TextWriter`:
+
+```csharp
+using var stream = File.OpenRead("config.toml");
+var config = TomlSerializer.Deserialize<ServerConfig>(stream);
+
+using var writer = new StreamWriter("output.toml");
+TomlSerializer.Serialize(writer, config);
+```
+
+`TryDeserialize` returns `false` instead of throwing when the input is not valid TOML or does not match the model. It is
+available for every input type and metadata style:
+
+```csharp
+if (!TomlSerializer.TryDeserialize<ServerConfig>(toml, out var config))
+{
+    // Invalid input
+}
+```
+
+The metadata used to map objects comes from one of two sources:
+
+1. **Source-generated metadata** from a `TomlSerializerContext`. This is the recommended mode for NativeAOT, trimming,
+   and hot paths. See [Source generation](#source-generation).
+2. **Reflection**, enabled by default. See [NativeAOT and trimming](#nativeaot-and-trimming) to disable it.
+
+## Supported types
+
+| Category | Types |
+| --- | --- |
+| Boolean | `bool` |
+| Numeric | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128` |
+| Text | `char`, `string` |
+| Date/time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TomlDateTime` |
+| Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums |
+| Collections | `T[]`, `List<T>`, `IList<T>`, `IReadOnlyList<T>`, `HashSet<T>`, `SortedSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, immutable collections |
+| Dictionaries | `Dictionary<string, T>`, `IDictionary<string, T>`, `IReadOnlyDictionary<string, T>`, `SortedDictionary<string, T>`, `ImmutableDictionary<string, T>` |
+| Document Object Model | `TomlTable`, `TomlArray`, `TomlTableArray`, `TomlObject`, `object` |
+| Objects | Classes, records, and structs, with property setters or constructor parameters |
+
+TOML table keys are strings, so dictionaries must use `string` keys. A member typed as `TomlObject` accepts any TOML
+container (`TomlTable`, `TomlArray`, or `TomlTableArray`).
+
+Collections of objects are written as arrays of tables:
+
+```csharp
+public sealed class Config
+{
+    public Package[] Package { get; set; } = [];
+}
+
+public sealed class Package
+{
+    public string Name { get; set; } = "";
+}
+```
+
+```toml
+[[Package]]
+Name = "core"
+[[Package]]
+Name = "tools"
+```
+
+An empty collection of objects is written as an empty array (`Package = []`), because TOML has no header syntax for an
+empty array of tables.
+
+## Configure serialization
+
+`TomlSerializerOptions` is an immutable record. It caches metadata on first use, so create an instance once and reuse it.
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Meziantou.Framework.Toml;
+
+var options = new TomlSerializerOptions
+{
+    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+    PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+    WriteIndented = true,
+    IndentSize = 4,
+    MaxDepth = 64,
+    DefaultIgnoreCondition = TomlIgnoreCondition.WhenWritingNull,
+};
+
+var toml = TomlSerializer.Serialize(config, options);
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `PropertyNamingPolicy` | `null` | Naming policy for member names, for example `JsonNamingPolicy.CamelCase` or `JsonNamingPolicy.SnakeCaseLower`. `null` uses the CLR names, like `System.Text.Json`. |
+| `DictionaryKeyPolicy` | `null` | Naming policy for dictionary keys when writing. |
+| `PropertyNameCaseInsensitive` | `false` | Matches member names case-insensitively when reading. |
+| `PreferredObjectCreationHandling` | `Replace` | Replaces or populates object and collection members when reading. |
+| `DefaultIgnoreCondition` | `WhenWritingNull` | Skips `null` (or default) values when writing. |
+| `DuplicateKeyHandling` | `Error` | Behavior when a key is defined twice. |
+| `MaxDepth` | `0` (64) | Maximum nesting depth of tables and arrays. |
+| `WriteIndented` | `true` | Indents nested tables. |
+| `IndentSize` | `2` | Number of spaces per indentation level. |
+| `NewLine` | `Lf` | Line ending style (`Lf` or `CrLf`). |
+| `MappingOrder` | `Declaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. |
+| `DottedKeyHandling` | `Literal` | Writes keys containing a dot as quoted keys (`Literal`) or expands them into subtables (`Expand`). |
+| `RootValueHandling` | `Error` | Behavior when the root value is not a table. `WrapInRootKey` writes it under `RootValueKeyName` (`"value"`). |
+| `InlineTablePolicy` | `Never` | When nested objects are written as inline tables: `Never`, `WhenSmall`, or `Always`. |
+| `TableArrayStyle` | `Headers` | Writes arrays of tables as `[[name]]` headers (`Headers`) or as inline arrays of inline tables (`InlineArrayOfTables`). |
+| `StringStylePreferences` | Basic strings | Default string style (`Basic`, `Literal`, `MultilineBasic`, `MultilineLiteral`), literal preference, and hex escapes. |
+| `PolymorphismOptions` | `$type` discriminator | Discriminator property name, unknown derived type handling, and runtime derived type mappings. |
+| `Converters` | Empty | Custom converters. They take precedence over the built-in converters. |
+| `TypeInfoResolver` | `null` | Metadata resolver, for example a source-generated context. |
+| `MetadataStore` | `null` | Captures comments and source locations when reading. See [Metadata and trivia](#metadata-and-trivia). |
+| `SourceName` | `null` | File name reported in `TomlException` messages. |
+
+### Populating existing values
+
+As in `System.Text.Json`, the default `JsonObjectCreationHandling.Replace` assigns new values to writable members and
+leaves read-only members untouched. `Populate` reuses the existing object and collection instances; collections are
+appended to, not cleared. It can be enabled globally with `PreferredObjectCreationHandling`, on a type, or on a member
+with `[JsonObjectCreationHandling]`:
+
+```csharp
+[JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+public sealed class ReleaserConfiguration
+{
+    public List<string> Channels { get; } = ["stable"];
+}
+```
+
+A member-level `Populate` on a member that cannot be populated (for example a struct without a setter) throws. Type-level
+and global preferences are best-effort and leave such members unchanged. Populate does not apply to types deserialized
+through a parameterized constructor.
+
+### Single value or array
+
+`[TomlSingleOrArray]` lets a collection member accept either a single value or an array:
+
+```csharp
+public sealed class PackagingConfiguration
+{
+    [TomlSingleOrArray]
+    [JsonPropertyName("rid")]
+    public List<string> RuntimeIdentifiers { get; } = [];
+}
+```
+
+Both `rid = "win-x64"` and `rid = ["win-x64", "linux-x64"]` are accepted. Without the attribute, a collection member
+requires an array.
+
+### Formatting attributes
+
+Formatting options can be overridden for a member or a type. These attributes only affect how values are written:
+
+```csharp
+[TomlMappingOrder(TomlMappingOrderPolicy.Alphabetical)]
+[TomlDottedKeyHandling(TomlDottedKeyHandling.Expand)]
+public sealed class FormattedConfig
+{
+    [TomlTableArrayStyle(TomlTableArrayStyle.Headers)]
+    public Package[] Package { get; set; } = [];
+
+    [TomlInlineTable(TomlInlineTablePolicy.Always)]
+    public Owner Owner { get; set; } = new();
+
+    [TomlStringStyle(TomlStringStyle.Literal, PreferLiteralWhenNoEscapes = TomlBooleanPreference.True)]
+    public string Description { get; set; } = "plain text";
+}
+```
+
+| Attribute | Target | Overrides |
+| --- | --- | --- |
+| `[TomlTableArrayStyle]` | Collection member | `TableArrayStyle` |
+| `[TomlInlineTable]` | Member | `InlineTablePolicy`, for this value only |
+| `[TomlStringStyle]` | `string` member | `StringStylePreferences` |
+| `[TomlMappingOrder]` | Class or struct | `MappingOrder` |
+| `[TomlDottedKeyHandling]` | Class or struct | `DottedKeyHandling`, for the member names of the type |
+
+## Attributes
+
+| Attribute | `System.Text.Json` equivalent | Description |
+| --- | --- | --- |
+| `[TomlPropertyName]` | `[JsonPropertyName]` | Overrides the key name. |
+| `[TomlIgnore]` | `[JsonIgnore]` | Ignores the member, always or conditionally (`WhenWritingNull`, `WhenWritingDefault`). |
+| `[TomlInclude]` | `[JsonInclude]` | Includes a non-public member. |
+| `[TomlPropertyOrder]` | `[JsonPropertyOrder]` | Sets the order of the member in the table. |
+| `[TomlRequired]` | `[JsonRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too. |
+| `[TomlConstructor]` | `[JsonConstructor]` | Selects the constructor used when reading. Parameters are matched by name to the members of the type. |
+| `[TomlExtensionData]` | `[JsonExtensionData]` | Collects unmapped keys. See [Extension data](#extension-data). |
+| `[TomlConverter]` | `[JsonConverter]` | Selects a converter for a type or member (reflection only). |
+| `[TomlPolymorphic]` | `[JsonPolymorphic]` | Enables polymorphism on a base type. |
+| `[TomlDerivedType]` | `[JsonDerivedType]` | Registers a derived type and its discriminator. |
+| | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
+| `[TomlSingleOrArray]` | | Accepts a single value for a collection member. |
+
+```csharp
+public sealed class DatabaseConfig
+{
+    [TomlRequired]
+    public string Host { get; set; } = "";
+
+    [JsonPropertyName("port_number")]
+    public int Port { get; set; }
+
+    [JsonIgnore]
+    public string ConnectionString => $"{Host}:{Port}";
+}
+
+public sealed class Endpoint
+{
+    [JsonConstructor]
+    public Endpoint(string host, int port)
+    {
+        Host = host;
+        Port = port;
+    }
+
+    public string Host { get; }
+    public int Port { get; }
+}
+```
+
+## Lifecycle callbacks
+
+Implement the callback interfaces to run code around serialization:
+
+| Interface | Called |
+| --- | --- |
+| `ITomlOnSerializing` | Before the object is written. |
+| `ITomlOnSerialized` | After the object is written. |
+| `ITomlOnDeserializing` | Before the members are read. |
+| `ITomlOnDeserialized` | After the members are read. |
+
+```csharp
+public sealed class ValidatedConfig : ITomlOnDeserialized
+{
+    public int Port { get; set; } = 8080;
+
+    public void OnTomlDeserialized()
+    {
+        if (Port is < 1 or > 65535)
+            throw new InvalidOperationException($"Invalid port: {Port}");
+    }
+}
+```
+
+## Custom converters
+
+Derive from `TomlConverter<T>`, or from `TomlConverterFactory` for open generic types or types chosen at runtime:
+
+```csharp
+using Meziantou.Framework.Toml.Serialization;
+
+public sealed class UpperCaseStringConverter : TomlConverter<string>
+{
+    public override string Read(TomlReader reader) => reader.GetString().ToUpperInvariant();
+
+    public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
+}
+```
+
+Register it in the options, with `[TomlConverter]` (reflection only), or on a source-generated context:
+
+```csharp
+var options = new TomlSerializerOptions { Converters = [new UpperCaseStringConverter()] };
+
+[TomlSourceGenerationOptions(Converters = [typeof(UpperCaseStringConverter)])]
+[TomlSerializable(typeof(ServerConfig))]
+internal partial class ConverterContext : TomlSerializerContext;
+```
+
+`TomlReader` exposes `Read`, `Skip`, `GetString`, `GetInt64`, `GetDouble`, `GetDecimal`, `GetBoolean`,
+`GetTomlDateTime`, `GetRawText`, and `PropertyNameEquals`. `TomlWriter` exposes `WritePropertyName`, the
+`Write*Value` methods, and the start and end methods for tables, inline tables, arrays, and arrays of tables.
+
+## Extension data
+
+`[TomlExtensionData]` (or `[JsonExtensionData]`) collects the keys that do not match a member. The member must be a
+dictionary with `string` keys, such as `IDictionary<string, object?>` or `TomlTable`:
+
+```csharp
+public sealed class ExtensibleConfig
+{
+    public string Name { get; set; } = "";
+
+    [TomlExtensionData]
+    public IDictionary<string, object?>? Extra { get; set; }
+}
+```
+
+## Polymorphism
+
+Polymorphism uses a discriminator key, `$type` by default:
+
+```csharp
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(Cat), "cat")]
+[TomlDerivedType(typeof(Dog), "dog")]
+public abstract class Animal
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class Cat : Animal
+{
+    public bool Indoor { get; set; }
+}
+
+public sealed class Dog : Animal
+{
+    public string Breed { get; set; } = "";
+}
+```
+
+```toml
+[[animals]]
+kind = "cat"
+Name = "Whiskers"
+Indoor = true
+
+[[animals]]
+kind = "dog"
+Name = "Rex"
+Breed = "Labrador"
+```
+
+- `[JsonPolymorphic]` and `[JsonDerivedType]` work as well.
+- A derived type registered without a discriminator is the default type: it is used when the discriminator is missing,
+  and it is written without a discriminator.
+- Integer discriminators (`[TomlDerivedType(typeof(Circle), 1)]`) are written as strings.
+- An unknown discriminator throws by default. Set `UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType`
+  on the attribute or on `TomlPolymorphismOptions` to read it as the base type instead.
+
+### Registering derived types outside the base type
+
+When the base type cannot reference its derived types, for example because they live in another project, register them
+in the options (reflection) or on the context (source generation):
+
+```csharp
+var options = new TomlSerializerOptions
+{
+    PolymorphismOptions = new TomlPolymorphismOptions
+    {
+        TypeDiscriminatorPropertyName = "kind",
+        DerivedTypeMappings = new Dictionary<Type, IReadOnlyList<TomlDerivedType>>
+        {
+            [typeof(Animal)] = [new(typeof(Cat), "cat"), new(typeof(Dog), "dog")],
+        },
+    },
+};
+
+[TomlSerializable(typeof(Animal))]
+[TomlDerivedTypeMapping(typeof(Animal), typeof(Cat), "cat")]
+[TomlDerivedTypeMapping(typeof(Animal), typeof(Dog), "dog")]
+internal partial class AnimalContext : TomlSerializerContext;
+```
+
+Registrations are merged. `[TomlDerivedType]` on the base type wins over `[JsonDerivedType]`, then over the context
+mappings, then over the options mappings.
+
+## Source generation
+
+Declare a `partial` class deriving from `TomlSerializerContext`, with a `[TomlSerializable]` attribute for each root
+type. Types reachable from a root are discovered automatically.
+
+```csharp
+using System.Text.Json.Serialization;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Serialization;
+
+[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSerializable(typeof(ServerConfig))]
+internal partial class ServerContext : TomlSerializerContext;
+
+public sealed class ServerConfig
+{
+    public string Host { get; set; } = "localhost";
+    public int Port { get; set; } = 8080;
+}
+
+var toml = TomlSerializer.Serialize(config, ServerContext.Default.ServerConfig);
+var roundTrip = TomlSerializer.Deserialize(toml, ServerContext.Default.ServerConfig);
+
+// APIs taking a Type accept a context
+var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext.Default);
+```
+
+- The generator creates a `Default` instance and one `TomlTypeInfo<T>` property per root.
+  `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property.
+- `[TomlSourceGenerationOptions]` sets the options at build time. Member names are computed when building, so the naming
+  policy is not called at runtime.
+- `init` and `required` members are supported.
+- `[TomlConverter]` and `[JsonConverter]` are not supported by generated metadata. Register converters with
+  `[TomlSourceGenerationOptions(Converters = [...])]` or `TomlSerializerOptions.Converters`.
+
+### Diagnostics
+
+| Id | Severity | Description |
+| --- | --- | --- |
+| `MFTOML001` | Error | The context type must be declared `partial`. |
+| `MFTOML002` | Error | A converter type is invalid. |
+| `MFTOML003` | Error | A member uses a type the generator cannot serialize. |
+| `MFTOML004` | Error | A dictionary member uses non-string keys. |
+| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` value is invalid. |
+| `MFTOML006` | Error | An extension data member is invalid. |
+| `MFTOML007` | Error | A polymorphism configuration is invalid. |
+| `MFTOML008` | Warning | The context uses `[JsonSerializable]` instead of `[TomlSerializable]`. |
+| `MFTOML009` | Error | A `[TomlDerivedTypeMapping]` is invalid. |
+| `MFTOML010` | Warning | The base type of a `[TomlDerivedTypeMapping]` has no polymorphic configuration; serializer defaults are used. |
+| `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
+
+## NativeAOT and trimming
+
+The package is annotated `IsAotCompatible` and `IsTrimmable`. Source generation avoids reflection-based metadata
+discovery and is the preferred mode for NativeAOT and trimming-sensitive applications.
+
+Reflection-based serialization can be disabled entirely for applications that only use source-generated metadata, via
+the `MeziantouFrameworkTomlIsReflectionEnabledByDefault` MSBuild property:
+
+```xml
+<PropertyGroup>
+  <MeziantouFrameworkTomlIsReflectionEnabledByDefault>false</MeziantouFrameworkTomlIsReflectionEnabledByDefault>
+</PropertyGroup>
+```
+
+The property is published as the `Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault` runtime host
+configuration option and as a trimmer feature switch, so the reflection code paths are removed from the trimmed output.
+It defaults to `false` when `PublishAot` or `NativeAot` is `true`; set it explicitly to override that. The switch can also
+be set with `AppContext.SetSwitch` before the first use of the serializer. `TomlSerializer.IsReflectionEnabledByDefault`
+reports the effective value at runtime.
+
+When reflection is disabled, use source-generated `TomlSerializerContext` metadata for typed serialization and
+deserialization. Built-in scalar types and the Document Object Model keep working without it.
+
+## Document Object Model
+
+Deserialize to `TomlTable` to read a document without a model. Tables implement `IDictionary<string, object>`, arrays
+implement `IList<object?>`, and scalar values are `string`, `long`, `double`, `bool`, or `TomlDateTime`:
+
+```csharp
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Model;
+
+var table = TomlSerializer.Deserialize<TomlTable>("""
+    title = "My App"
+
+    [database]
+    host = "localhost"
+    ports = [8000, 8001]
+    """)!;
+
+var title = (string)table["title"];
+var database = (TomlTable)table["database"];
+var firstPort = (long)((TomlArray)database["ports"])[0]!;
+```
+
+Build a document and serialize it:
+
+```csharp
+var document = new TomlTable
+{
+    ["title"] = "My App",
+    ["owner"] = new TomlTable(inline: true) { ["name"] = "Ada" },
+    ["database"] = new TomlTable
+    {
+        ["ports"] = new TomlArray { 8000L, 8001L },
+    },
+    ["servers"] = new TomlTableArray
+    {
+        new TomlTable { ["name"] = "alpha" },
+        new TomlTable { ["name"] = "beta" },
+    },
+};
+
+var toml = TomlSerializer.Serialize(document);
+```
+
+`TomlDateTime` keeps the kind of TOML date and time (`OffsetDateTimeByZ`, `OffsetDateTimeByNumber`, `LocalDateTime`,
+`LocalDate`, or `LocalTime`) and the precision of the fractional seconds.
+
+### Metadata and trivia
+
+A metadata store captures comments, source locations, and how each value was written, without changing the model types:
+
+```csharp
+var store = new TomlMetadataStore();
+var options = new TomlSerializerOptions { MetadataStore = store };
+var model = TomlSerializer.Deserialize<TomlTable>(toml, options)!;
+
+if (store.TryGetProperties(model, out var metadata) && metadata is not null && metadata.TryGetProperty("title", out var property) && property is not null)
+{
+    // property.LeadingTrivia, property.TrailingTrivia, property.Span, property.DisplayKind
+}
+```
+
+## Syntax tree
+
+`SyntaxParser` builds a lossless syntax tree that keeps every character of the input, including comments and whitespace.
+`ToString()` returns the original text, which makes it suitable for formatters, linters, and editors:
+
+```csharp
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Syntax;
+
+var document = SyntaxParser.Parse("# config\nname = \"Ada\"\n", sourceName: "config.toml");
+if (document.HasErrors)
+{
+    foreach (var diagnostic in document.Diagnostics)
+        Console.WriteLine(diagnostic);
+}
+
+Console.WriteLine(document.ToString()); // Same text as the input
+
+foreach (var node in document.Descendants())
+{
+    if (node is StringValueSyntax value)
+        Console.WriteLine(value.Value);
+}
+```
+
+`SyntaxParser.Parse` collects errors in `Diagnostics`, while `SyntaxParser.ParseStrict` throws a `TomlException`. A
+`DocumentSyntax` contains the root `KeyValues` and the `Tables`. Every node has `LeadingTrivia` and `TrailingTrivia`.
+Derive from `SyntaxVisitor` to walk the tree, and use `Tokens()` to enumerate the tokens.
+
+## Lexer and parser
+
+`TomlLexer` produces tokens, and `TomlParser` produces parse events without building a tree. Both avoid allocations
+where possible:
+
+```csharp
+using Meziantou.Framework.Toml.Parsing;
+
+var lexer = TomlLexer.Create("name = \"Ada\"", sourceName: "config.toml");
+while (lexer.MoveNext())
+{
+    Console.WriteLine($"{lexer.Current.Kind} {lexer.CurrentSpan}");
+}
+
+var parser = TomlParser.Create("[server]\nport = 8080", new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+while (parser.MoveNext())
+{
+    var kind = parser.Current.Kind;
+    Console.WriteLine(kind == TomlParseEventKind.PropertyName ? $"{kind} {parser.GetPropertyName()}" : kind.ToString());
+}
+```
+
+`TomlParserOptions` controls the error mode (`Strict` throws on the first error, `Tolerant` collects diagnostics),
+whether escape sequences are decoded, whether trivia is reported, and whether string values are materialized eagerly.
+
+## Error handling
+
+Parsing and mapping errors throw `TomlException`. It exposes the location of the first error (`SourceName`, `Line` and
+`Column` 1-based, `Offset` 0-based, and `Span`) and every diagnostic in `Diagnostics`. Set
+`TomlSerializerOptions.SourceName` to include a file name in the messages. Use `TryDeserialize` when invalid input is
+expected, for example user-provided configuration files.

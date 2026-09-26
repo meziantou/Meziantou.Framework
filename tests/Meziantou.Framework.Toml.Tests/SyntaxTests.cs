@@ -8,6 +8,21 @@ namespace Meziantou.Framework.Toml.Tests;
 
 public class SyntaxTests
 {
+    [Theory]
+    [InlineData("note\nadmin = true")]
+    [InlineData("note\r")]
+    [InlineData("\u007F")]
+    public void Comment_WithControlCharacter_Throws(string comment)
+    {
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.Comment(comment));
+    }
+
+    [Fact]
+    public void Comment_WithTab_IsAccepted()
+    {
+        Assert.Equal("# a\tb", SyntaxFactory.Comment("a\tb").Text);
+    }
+
     [Fact]
     public void TestDocument()
     {

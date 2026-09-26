@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Syntax;
 
@@ -31,9 +32,20 @@ public static class SyntaxFactory
     /// </summary>
     /// <param name="comment">A comment trivia</param>
     /// <returns>A comment trivia</returns>
+    /// <exception cref="ArgumentException"><paramref name="comment"/> contains a control character other than tab, such as a newline.</exception>
     public static SyntaxTrivia Comment(string comment)
     {
         ArgumentNullException.ThrowIfNull(comment);
+
+        // A newline would end the comment, and turn the rest of the text into TOML
+        foreach (var c in comment)
+        {
+            if (c != '\t' && CharHelper.IsControlCharacter(c))
+            {
+                throw new ArgumentException("A comment cannot contain a control character other than tab. Create one comment per line.", nameof(comment));
+            }
+        }
+
         return new SyntaxTrivia(TokenKind.Comment, $"# {comment}");
     }
 

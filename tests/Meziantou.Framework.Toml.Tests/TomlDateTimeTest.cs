@@ -90,6 +90,34 @@ public class TomlDateTimeTest
             toml);
     }
 
+    [Fact]
+    public void ImplicitConversion_FromDateTime_MatchesTheSerializer()
+    {
+        TomlDateTime utc = new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Utc);
+        TomlDateTime unspecified = new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Unspecified);
+        TomlDateTime minValue = DateTime.MinValue;
+        TomlDateTime maxValue = DateTime.MaxValue;
+
+        Assert.Equal("2024-01-02T03:04:05.678Z", utc.ToString());
+        Assert.Equal(TomlDateTimeKind.OffsetDateTimeByZ, utc.Kind);
+        Assert.Equal("2024-01-02T03:04:05.678", unspecified.ToString());
+        Assert.Equal(TomlDateTimeKind.LocalDateTime, unspecified.Kind);
+        Assert.Equal(TimeSpan.Zero, unspecified.DateTime.Offset);
+        Assert.Equal("0001-01-01T00:00:00", minValue.ToString());
+        Assert.Equal("9999-12-31T23:59:59.9999999", maxValue.ToString());
+        Assert.Equal(new TomlDateTime(DateTime.MinValue), minValue);
+    }
+
+    [Fact]
+    public void Constructor_FromDateTime_KeepsFractionalSeconds()
+    {
+        var value = new TomlDateTime(new DateTime(2024, 1, 2, 3, 4, 5, 500, DateTimeKind.Utc));
+
+        Assert.Equal(TomlDateTimeKind.LocalDateTime, value.Kind);
+        Assert.Equal(1, value.SecondPrecision);
+        Assert.Equal("2024-01-02T03:04:05.5", value.ToString());
+    }
+
     private sealed class DateTimeModel
     {
         public DateTime Utc { get; set; }

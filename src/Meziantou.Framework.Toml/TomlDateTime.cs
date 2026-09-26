@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml;
 using System;
@@ -31,8 +32,8 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     /// <summary>
     /// Initializes a local-date-time TOML value from a <see cref="DateTime"/>.
     /// </summary>
-    /// <param name="datetime">The date/time value.</param>
-    public TomlDateTime(DateTime datetime) : this(new DateTimeOffset(System.DateTime.SpecifyKind(datetime, DateTimeKind.Unspecified), TimeSpan.Zero), 0, TomlDateTimeKind.LocalDateTime)
+    /// <param name="datetime">The date/time value. Its wall-clock value is used, whatever its <see cref="DateTime.Kind"/>, and its fractional seconds are kept.</param>
+    public TomlDateTime(DateTime datetime) : this(new DateTimeOffset(System.DateTime.SpecifyKind(datetime, DateTimeKind.Unspecified), TimeSpan.Zero), TomlFormatHelper.GetSecondPrecision(datetime.Ticks), TomlDateTimeKind.LocalDateTime)
     {
     }
 
@@ -210,10 +211,15 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     }
 
     /// <summary>
-    /// Converts a datetime to TomlDateTime.
+    /// Converts a datetime to TomlDateTime, the way the serializer writes it.
     /// </summary>
+    /// <remarks>
+    /// A <see cref="DateTimeKind.Utc"/> value is an offset date-time with <c>Z</c>, a <see cref="DateTimeKind.Local"/> value an
+    /// offset date-time with the offset of the machine, and an <see cref="DateTimeKind.Unspecified"/> value a local
+    /// date-time. The fractional seconds are kept.
+    /// </remarks>
     public static implicit operator TomlDateTime(DateTime dateTime)
     {
-        return new TomlDateTime(new DateTimeOffset(dateTime), 0, TomlDateTimeKind.LocalDateTime);
+        return TomlFormatHelper.ToTomlDateTime(dateTime);
     }
 }

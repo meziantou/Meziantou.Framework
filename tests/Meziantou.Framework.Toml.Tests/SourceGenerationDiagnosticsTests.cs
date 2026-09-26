@@ -475,6 +475,40 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_PropertyNamesWithSpecialCharacters_Compile()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Person
+            {
+                [TomlRequired, TomlPropertyName("{name}")]
+                public string? A { get; set; }
+
+                [TomlRequired, TomlPropertyName("line\nbreak")]
+                public string? B { get; set; }
+
+                [TomlRequired, TomlPropertyName("line\u2028separator")]
+                public string? C { get; set; }
+
+                [TomlRequired, TomlPropertyName("quote\"back\\slash")]
+                public string? D { get; set; }
+            }
+
+            public sealed record Ctor([property: TomlPropertyName("{key}")] string Value);
+
+            [TomlSerializable(typeof(Person))]
+            [TomlSerializable(typeof(Ctor))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

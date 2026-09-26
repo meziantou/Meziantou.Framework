@@ -388,6 +388,13 @@ public sealed record GeneratedKeywordRecord(string @class, int @base)
 }
 #pragma warning restore IDE1006
 
+public sealed class GeneratedBraceNameModel
+{
+    [TomlRequired]
+    [TomlPropertyName("{name}")]
+    public string? Name { get; set; }
+}
+
 public enum GeneratedEnumKind
 {
     A = 0,
@@ -538,6 +545,7 @@ internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : 
 }
 
 [TomlSerializable(typeof(GeneratedKeywordRecord))]
+[TomlSerializable(typeof(GeneratedBraceNameModel))]
 [TomlSerializable(typeof(GeneratedRequiredModifierModel))]
 [TomlSerializable(typeof(GeneratedSetsRequiredMembersModel))]
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterPayload))]
@@ -1809,6 +1817,14 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal(value, TomlSerializer.Deserialize(toml, typeInfo));
         Assert.Contains("class = \"a\"", toml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GeneratedContext_MissingKeyWithBraces_ReportsTheName()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("x = 1\n", TestTomlSerializerContextNonPublicSetters.Default.GeneratedBraceNameModel));
+
+        Assert.Contains("Missing required TOML key '{name}'", ex.Message, StringComparison.Ordinal);
     }
 
     [Fact]

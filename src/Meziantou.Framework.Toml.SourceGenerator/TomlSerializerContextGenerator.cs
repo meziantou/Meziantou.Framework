@@ -1145,7 +1145,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                             continue;
                         }
 
-                        var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                        var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                         builder.AppendLine("                {");
                         builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -1173,7 +1173,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                             continue;
                         }
 
-                        var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                        var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                         builder.AppendLine("                {");
                         builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -1835,7 +1835,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else
             {
-                var keyName = EscapeStringLiteral(parameter.KeyName);
+                var keyName = EscapeInterpolatedStringLiteral(parameter.KeyName);
                 builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
                 builder.Append("                throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required constructor parameter '")
                     .Append(keyName)
@@ -1866,7 +1866,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                    var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
                     builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -1894,7 +1894,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                    var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
                     builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -2201,7 +2201,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                    var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
                     builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -2229,7 +2229,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         continue;
                     }
 
-                    var serializedName = EscapeStringLiteral(poco.Members[i].SerializedName);
+                    var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
                     builder.Append("                    throw span is { } locatedSpan ? new TomlException(locatedSpan, $\"Missing required TOML key '")
@@ -6479,8 +6479,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return expression is not null;
     }
 
+    // The content of a regular string literal: also escapes control characters, newlines and U+2028/U+2029
     private static string EscapeStringLiteral(string value)
-        => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
+    {
+        var literal = SymbolDisplay.FormatLiteral(value, quote: true);
+        return literal.Substring(1, literal.Length - 2);
+    }
 
     private static ulong ComputePropertyNameHash56(string value)
     {

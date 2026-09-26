@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
@@ -9,13 +11,18 @@ namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal sealed class TomlSerializationOperationState
 {
-    private readonly Dictionary<Type, TomlTypeInfo> _typeInfoCache = new();
+    // The metadata is cached per options instance (the options are immutable) and shared by all the operations. The
+    // table compares the options by reference, so a copy created with a 'with' expression has its own cache.
+    private static readonly ConditionalWeakTable<TomlSerializerOptions, ConcurrentDictionary<Type, TomlTypeInfo>> TypeInfoCaches = new();
+
+    private readonly ConcurrentDictionary<Type, TomlTypeInfo> _typeInfoCache;
 
     public TomlSerializationOperationState(TomlSerializerOptions options)
     {
         ArgumentGuard.ThrowIfNull(options, nameof(options));
 
         Options = options;
+        _typeInfoCache = TypeInfoCaches.GetValue(options, static _ => new ConcurrentDictionary<Type, TomlTypeInfo>());
         SingleOrArrayCollections = new TomlSingleOrArrayCollectionHelper();
     }
 

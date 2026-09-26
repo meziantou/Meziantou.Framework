@@ -166,4 +166,17 @@ public sealed class NewApiOptionsValidationTests
     {
         public string? Name { get; set; }
     }
+
+    [Fact]
+    public void Options_CacheMetadataAcrossCalls()
+    {
+        var options = new TomlSerializerOptions();
+
+        var first = options.GetTypeInfo<System.Collections.Generic.List<int>>();
+
+        Assert.Same(first, options.GetTypeInfo<System.Collections.Generic.List<int>>());
+        Assert.NotSame(first, (options with { MaxDepth = 10 }).GetTypeInfo<System.Collections.Generic.List<int>>());
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<System.Collections.Generic.List<int>>("value = [\"x\"]\n", options with { RootValueHandling = TomlRootValueHandling.WrapInRootKey }));
+        Assert.Equal([1, 2], TomlSerializer.Deserialize<System.Collections.Generic.List<int>>("value = [1, 2]\n", options with { RootValueHandling = TomlRootValueHandling.WrapInRootKey })!);
+    }
 }

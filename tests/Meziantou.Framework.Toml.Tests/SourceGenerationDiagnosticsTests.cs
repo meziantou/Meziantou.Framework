@@ -330,6 +330,34 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_ContextsWithTheSameNameInDifferentNamespaces_Compile()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Person { public string? Name { get; set; } }
+
+            namespace A
+            {
+                [TomlSerializable(typeof(Person))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
+
+            namespace B
+            {
+                [TomlSerializable(typeof(Person))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+        Assert.HasCount(2, result.GeneratedSources);
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

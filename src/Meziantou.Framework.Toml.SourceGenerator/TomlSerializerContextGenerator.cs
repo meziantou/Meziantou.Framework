@@ -499,7 +499,20 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("}");
 
-        context.AddSource($"{model.TypeName}.TomlSerializerContext.g.cs", builder.ToString());
+        context.AddSource(GetHintName(model.ContextSymbol), builder.ToString());
+    }
+
+    // Two contexts can have the same name in different namespaces or containing types
+    private static string GetHintName(INamedTypeSymbol contextSymbol)
+    {
+        var name = contextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "", StringComparison.Ordinal);
+        var builder = new StringBuilder(name.Length + 26);
+        foreach (var c in name)
+        {
+            builder.Append(char.IsLetterOrDigit(c) || c is '.' or '_' ? c : '_');
+        }
+
+        return builder.Append(".TomlSerializerContext.g.cs").ToString();
     }
 
     private static void AppendGeneratedTypeAttributes(StringBuilder builder, string indent)

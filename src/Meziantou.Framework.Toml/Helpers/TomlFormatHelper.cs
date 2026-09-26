@@ -61,13 +61,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(int i32, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{i32:x8}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(i32, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(i32, 2)}",
-            _ => (i32.ToString(CultureInfo.InvariantCulture))
-        };
+        return FormatInteger(i32, displayKind);
     }
 
     /// <summary>
@@ -78,13 +72,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(long i64, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{i64:x16}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(i64, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(i64, 2)}",
-            _ => i64.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(i64, displayKind);
     }
 
     /// <summary>
@@ -95,13 +83,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(uint u32, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{u32:x8}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(u32, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(u32, 2)}",
-            _ => u32.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(u32, displayKind);
     }
 
     /// <summary>
@@ -112,7 +94,12 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(ulong u64, TomlPropertyDisplayKind displayKind)
     {
-        return ToString(unchecked((long) u64), displayKind);
+        if (u64 > long.MaxValue)
+        {
+            return u64.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return FormatInteger((long)u64, displayKind);
     }
 
     /// <summary>
@@ -123,13 +110,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(sbyte i8, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{i8:x2}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(i8, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(i8, 2)}",
-            _ => i8.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(i8, displayKind);
     }
 
     /// <summary>
@@ -140,13 +121,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(byte u8, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{u8:x2}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(u8, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(u8, 2)}",
-            _ => u8.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(u8, displayKind);
     }
     /// <summary>
     /// Converts a 16-bit signed integer to its TOML representation.
@@ -156,13 +131,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(short i16, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{i16:x4}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(i16, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(i16, 2)}",
-            _ => i16.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(i16, displayKind);
     }
 
     /// <summary>
@@ -173,13 +142,7 @@ public static class TomlFormatHelper
     /// <returns>The TOML string.</returns>
     public static string ToString(ushort u16, TomlPropertyDisplayKind displayKind)
     {
-        return displayKind switch
-        {
-            TomlPropertyDisplayKind.IntegerHexadecimal => $"0x{u16:x4}",
-            TomlPropertyDisplayKind.IntegerOctal => $"0o{Convert.ToString(u16, 8)}",
-            TomlPropertyDisplayKind.IntegerBinary => $"0b{Convert.ToString(u16, 2)}",
-            _ => u16.ToString(CultureInfo.InvariantCulture)
-        };
+        return FormatInteger(u16, displayKind);
     }
 
     /// <summary>
@@ -328,6 +291,23 @@ public static class TomlFormatHelper
         }
 
         return precision;
+    }
+
+    // TOML has no negative hexadecimal, octal or binary integers, so a negative value is written in decimal
+    private static string FormatInteger(long value, TomlPropertyDisplayKind displayKind)
+    {
+        if (value < 0)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return displayKind switch
+        {
+            TomlPropertyDisplayKind.IntegerHexadecimal => "0x" + value.ToString("x", CultureInfo.InvariantCulture),
+            TomlPropertyDisplayKind.IntegerOctal => "0o" + Convert.ToString(value, 8),
+            TomlPropertyDisplayKind.IntegerBinary => "0b" + Convert.ToString(value, 2),
+            _ => value.ToString(CultureInfo.InvariantCulture),
+        };
     }
 
     private static string AppendDecimalPoint(string text)

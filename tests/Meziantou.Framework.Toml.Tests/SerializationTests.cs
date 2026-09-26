@@ -91,4 +91,26 @@ public class SerializationTests
         var result = TomlSerializer.Serialize(outer).ReplaceLineEndings("\n").Trim();
         AssertHelper.AreEqualNormalizeNewLine(expecting, result);
     }
+
+    [Theory]
+    [InlineData(255L, TomlPropertyDisplayKind.IntegerHexadecimal, "0xff")]
+    [InlineData(8L, TomlPropertyDisplayKind.IntegerOctal, "0o10")]
+    [InlineData(5L, TomlPropertyDisplayKind.IntegerBinary, "0b101")]
+    [InlineData(-1L, TomlPropertyDisplayKind.IntegerHexadecimal, "-1")]
+    [InlineData(-8L, TomlPropertyDisplayKind.IntegerOctal, "-8")]
+    [InlineData(long.MinValue, TomlPropertyDisplayKind.IntegerBinary, "-9223372036854775808")]
+    public void Serialize_PreservedIntegerFormat_WritesValidToml(long value, TomlPropertyDisplayKind displayKind, string expected)
+    {
+        var store = new TomlMetadataStore();
+        var model = new TomlTable { ["a"] = value };
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("a", new TomlPropertyMetadata { DisplayKind = displayKind });
+        store.SetProperties(model, metadata);
+
+        var toml = TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store });
+
+        Assert.Equal("a = " + expected, toml.TrimEnd());
+        Assert.Equal(value, TomlSerializer.Deserialize<TomlTable>(toml)!["a"]);
+        Assert.Equal(expected, Helpers.TomlFormatHelper.ToString(value, displayKind));
+    }
 }

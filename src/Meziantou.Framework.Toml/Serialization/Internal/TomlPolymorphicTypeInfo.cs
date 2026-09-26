@@ -269,6 +269,9 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         return !derivedTypeByDiscriminator.ContainsKey(discriminator);
     }
 
+    // A polymorphic value is always a table, so a collection of them is written as an array of tables
+    public override bool WritesTable => true;
+
     public override void Write(TomlWriter writer, object? value)
     {
         ArgumentGuard.ThrowIfNull(writer, nameof(writer));
@@ -328,7 +331,8 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             throw new TomlException($"The discriminator key '{_discriminatorPropertyName}' conflicts with an existing member when serializing '{runtimeType.FullName}'.");
         }
 
-        table[_discriminatorPropertyName] = discriminator;
+        // Like System.Text.Json, the discriminator comes first, so a reader finds it without buffering the table
+        table.AddFirst(_discriminatorPropertyName, discriminator);
         TomlUntypedObjectConverter.Instance.Write(writer, table);
     }
 

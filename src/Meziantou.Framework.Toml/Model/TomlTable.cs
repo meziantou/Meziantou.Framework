@@ -138,6 +138,27 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         }
     }
 
+    // Adds a key before the other keys, such as the discriminator of a polymorphic value
+    internal void AddFirst(string key, object value)
+    {
+        Add(key, value);
+        if (_order.Count == 1)
+        {
+            return;
+        }
+
+        var entry = _order[^1];
+        _order.RemoveAt(_order.Count - 1);
+        _order.Insert(0, entry);
+        if (_map is not null)
+        {
+            for (var i = 0; i < _order.Count; i++)
+            {
+                _map[_order[i].Key] = i;
+            }
+        }
+    }
+
     /// <inheritdoc />
     public bool ContainsKey(string key)
     {

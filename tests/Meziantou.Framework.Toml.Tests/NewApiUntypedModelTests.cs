@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Meziantou.Framework.Toml.Model;
 
 namespace Meziantou.Framework.Toml.Tests;
@@ -84,6 +85,28 @@ public sealed class NewApiUntypedModelTests
         Assert.Throws<ArgumentNullException>(() => table.TryGetValue(null!, out _));
         Assert.Throws<ArgumentNullException>(() => table.Remove(null!));
         Assert.HasCount(count, table);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(100)]
+    public void TomlTable_AddFirst_KeepsEveryKeyReachable(int count)
+    {
+        var table = new TomlTable();
+        for (var i = 0; i < count; i++)
+        {
+            table[$"k{i}"] = (long)i;
+        }
+
+        table.AddFirst("first", -1L);
+
+        Assert.Equal("first", table.Keys.First());
+        Assert.HasCount(count + 1, table);
+        Assert.Equal(-1L, table["first"]);
+        for (var i = 0; i < count; i++)
+        {
+            Assert.Equal((long)i, table[$"k{i}"]);
+        }
     }
 
     [Fact]

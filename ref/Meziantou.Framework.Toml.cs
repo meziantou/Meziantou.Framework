@@ -868,6 +868,7 @@ namespace Meziantou.Framework.Toml.Serialization
 
     public sealed class TomlPolymorphicTypeInfo<TBase> : Meziantou.Framework.Toml.TomlTypeInfo<TBase>
     {
+        public override bool WritesTable { get => throw null; }
         public TomlPolymorphicTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.TomlTypeInfo<TBase>? baseTypeInfo, string? discriminatorPropertyName, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Toml.TomlTypeInfo> derivedTypeInfoByDiscriminator) { }
         public TomlPolymorphicTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.TomlTypeInfo<TBase>? baseTypeInfo, string? discriminatorPropertyName, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Toml.TomlTypeInfo> derivedTypeInfoByDiscriminator, Meziantou.Framework.Toml.TomlTypeInfo? defaultDerivedTypeInfo) { }
         public TomlPolymorphicTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.TomlTypeInfo<TBase>? baseTypeInfo, string? discriminatorPropertyName, System.Collections.Generic.IReadOnlyDictionary<string, Meziantou.Framework.Toml.TomlTypeInfo> derivedTypeInfoByDiscriminator, Meziantou.Framework.Toml.TomlTypeInfo? defaultDerivedTypeInfo, Meziantou.Framework.Toml.TomlUnknownDerivedTypeHandling? unknownDerivedTypeHandling) { }

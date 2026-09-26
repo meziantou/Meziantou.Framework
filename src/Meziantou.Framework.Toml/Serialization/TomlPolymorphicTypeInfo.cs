@@ -144,6 +144,9 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
     }
 
     /// <inheritdoc />
+    public override bool WritesTable => true;
+
+    /// <inheritdoc />
     public override void Write(TomlWriter writer, TBase value)
     {
         ArgumentGuard.ThrowIfNull(writer, nameof(writer));
@@ -200,7 +203,8 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             throw new TomlException($"The discriminator key '{_discriminatorPropertyName}' conflicts with an existing member when serializing '{runtimeType.FullName}'.");
         }
 
-        table[_discriminatorPropertyName] = discriminator;
+        // Like System.Text.Json, the discriminator comes first, so a reader finds it without buffering the table
+        table.AddFirst(_discriminatorPropertyName, discriminator);
         TomlUntypedObjectConverter.Instance.Write(writer, table);
     }
 

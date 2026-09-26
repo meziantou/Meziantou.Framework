@@ -1105,6 +1105,17 @@ internal sealed partial class TestTomlSerializerContextDefaultDerivedType : Toml
 {
 }
 
+public sealed class GeneratedShapeCollectionHolder
+{
+    public IList<GeneratedDefaultShape> Shapes { get; set; } = [];
+}
+
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
+[TomlSerializable(typeof(GeneratedShapeCollectionHolder))]
+internal sealed partial class TestTomlSerializerContextShapeCollection : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind", UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType)]
 [TomlDerivedType(typeof(GeneratedAttrFallbackDerived), "derived")]
 public class GeneratedAttrFallbackBase
@@ -2313,6 +2324,37 @@ public class NewApiSourceGenerationTests
         Assert.DoesNotContain("type", toml);
         Assert.Contains("color = \"red\"", toml);
         Assert.Contains("radius = 5", toml);
+    }
+
+    [Fact]
+    public void PolymorphicCollection_IsWrittenAsAnArrayOfTables()
+    {
+        var model = new GeneratedShapeCollectionHolder
+        {
+            Shapes = [new GeneratedDefaultCircle { Color = "red", Radius = 5.0 }, new GeneratedDefaultSquare { Color = "blue", Side = 2.0 }],
+        };
+        var options = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
+
+        var generated = TomlSerializer.Serialize(model, TestTomlSerializerContextShapeCollection.Default.GeneratedShapeCollectionHolder);
+        var reflection = TomlSerializer.Serialize(model, options);
+
+        Assert.Equal(
+            """
+            [[shapes]]
+            color = "red"
+            radius = 5.0
+
+            [[shapes]]
+            type = "square"
+            color = "blue"
+            side = 2.0
+
+            """.ReplaceLineEndings("\n"),
+            generated.ReplaceLineEndings("\n"));
+        Assert.Equal(generated, reflection);
+        var roundtrip = TomlSerializer.Deserialize(generated, TestTomlSerializerContextShapeCollection.Default.GeneratedShapeCollectionHolder)!;
+        Assert.IsType<GeneratedDefaultCircle>(roundtrip.Shapes[0]);
+        Assert.Equal(2.0, Assert.IsType<GeneratedDefaultSquare>(roundtrip.Shapes[1]).Side);
     }
 
     [Fact]

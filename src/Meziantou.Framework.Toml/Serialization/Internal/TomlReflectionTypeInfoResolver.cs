@@ -1531,14 +1531,14 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
-                // Extension data is not captured for types deserialized through a parameterized constructor
+                // Extension data is collected here and added to the member once the instance exists
                 if (_extensionDataIndex == -1)
                 {
                     SkipUnmappedMember(reader, name);
                 }
                 else
                 {
-                    reader.Skip();
+                    (extensionData ??= new Dictionary<string, object?>(StringComparer.Ordinal))[name] = ReadExtensionValue(reader);
                 }
             }
 

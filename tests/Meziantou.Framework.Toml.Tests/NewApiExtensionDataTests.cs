@@ -50,6 +50,28 @@ public sealed class NewApiExtensionDataTests
         }
     }
 
+    [Fact]
+    public void ExtensionData_WithParameterizedConstructor_CollectsUnmappedKeys()
+    {
+        const string Toml = "Name = \"api\"\nPort = 80\nTimeout = 30\n[Logging]\nLevel = \"debug\"\n";
+
+        var value = TomlSerializer.Deserialize<ConstructorExtensionDataModel>(Toml)!;
+        var disallowed = TomlSerializer.Deserialize<ConstructorExtensionDataModel>(Toml, new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow })!;
+
+        Assert.Equal("api", value.Name);
+        Assert.Equal(80, value.Port);
+        Assert.NotNull(value.Extra);
+        Assert.Equal(30L, value.Extra["Timeout"]);
+        Assert.Equal("debug", ((Model.TomlTable)value.Extra["Logging"]!)["Level"]);
+        Assert.HasCount(2, disallowed.Extra!);
+    }
+
+    private sealed record ConstructorExtensionDataModel(string Name, int Port)
+    {
+        [Serialization.TomlExtensionData]
+        public Dictionary<string, object?>? Extra { get; set; }
+    }
+
     private sealed class ExtensionDataModel
     {
         public int Known { get; set; }

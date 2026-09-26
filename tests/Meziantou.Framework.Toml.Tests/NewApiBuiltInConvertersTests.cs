@@ -199,4 +199,35 @@ public sealed class NewApiBuiltInConvertersTests
     {
         public decimal D { get; set; }
     }
+
+    [Theory]
+    [InlineData("V = 300\n")]
+    [InlineData("V = -1\n")]
+    [InlineData("V = \"300\"\n")]
+    [InlineData("V = \"Unknown\"\n")]
+    public void Enum_OutOfRange_ThrowsTomlException(string toml)
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ByteEnumModel>(toml));
+        Assert.False(TomlSerializer.TryDeserialize<ByteEnumModel>(toml, out _));
+    }
+
+    [Theory]
+    [InlineData("V = 255\n", ByteEnum.Max)]
+    [InlineData("V = \"max\"\n", ByteEnum.Max)]
+    [InlineData("V = 0\n", ByteEnum.Zero)]
+    public void Enum_InRange_IsRead(string toml, ByteEnum expected)
+    {
+        Assert.Equal(expected, TomlSerializer.Deserialize<ByteEnumModel>(toml)!.V);
+    }
+
+    public enum ByteEnum : byte
+    {
+        Zero = 0,
+        Max = 255,
+    }
+
+    private sealed class ByteEnumModel
+    {
+        public ByteEnum V { get; set; }
+    }
 }

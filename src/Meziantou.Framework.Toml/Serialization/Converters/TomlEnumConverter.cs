@@ -23,6 +23,11 @@ internal sealed class TomlEnumConverter : TomlConverter
         if (reader.TokenType == TomlTokenType.Integer)
         {
             var raw = reader.GetInt64();
+            if (!FitsUnderlyingType(typeToConvert, raw))
+            {
+                throw reader.CreateException($"The value {raw} is out of the range of the enum '{typeToConvert.FullName}'.");
+            }
+
             reader.Read();
             return Enum.ToObject(typeToConvert, raw);
         }
@@ -36,13 +41,29 @@ internal sealed class TomlEnumConverter : TomlConverter
                 reader.Read();
                 return parsed;
             }
-            catch (ArgumentException)
+            catch (Exception ex) when (ex is ArgumentException or OverflowException)
             {
                 throw reader.CreateException($"Invalid enum name `{name}` for type '{typeToConvert.FullName}'.");
             }
         }
 
         throw reader.CreateException($"Expected {TomlTokenType.Integer} or {TomlTokenType.String} token but was {reader.TokenType}.");
+    }
+
+    // Enum.ToObject silently truncates a value that does not fit in the underlying type
+    private static bool FitsUnderlyingType(Type enumType, long value)
+    {
+        return Type.GetTypeCode(Enum.GetUnderlyingType(enumType)) switch
+        {
+            TypeCode.SByte => value is >= sbyte.MinValue and <= sbyte.MaxValue,
+            TypeCode.Byte => value is >= byte.MinValue and <= byte.MaxValue,
+            TypeCode.Int16 => value is >= short.MinValue and <= short.MaxValue,
+            TypeCode.UInt16 => value is >= ushort.MinValue and <= ushort.MaxValue,
+            TypeCode.Int32 => value is >= int.MinValue and <= int.MaxValue,
+            TypeCode.UInt32 => value is >= uint.MinValue and <= uint.MaxValue,
+            TypeCode.UInt64 => value >= 0,
+            _ => true,
+        };
     }
 
     public override void Write(TomlWriter writer, object? value)

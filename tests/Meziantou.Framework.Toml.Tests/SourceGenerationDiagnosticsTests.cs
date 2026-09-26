@@ -1018,6 +1018,29 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.Equal(expectedLine, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
     }
 
+    [Fact]
+    public void Generator_DisallowNullOnNullableMembers_Compiles()
+    {
+        var source = """
+            #nullable enable
+            using System.Diagnostics.CodeAnalysis;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(M))]
+            [TomlSerializable(typeof(C))]
+            [TomlSerializable(typeof(G<string?>))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public class M { [DisallowNull] public string? A { get; set; } [DisallowNull] public int? B { get; set; } }
+            public class C { public C([DisallowNull] string? a) { A = a; } public string? A { get; } }
+            public class G<T> where T : class { public T? A { get; set; } }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

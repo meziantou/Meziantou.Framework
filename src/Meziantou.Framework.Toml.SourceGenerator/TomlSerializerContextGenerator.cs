@@ -2446,6 +2446,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
 
                 builder.Append("__arg").Append(i.ToString(CultureInfo.InvariantCulture));
+
+                // The value was checked for null when it was read, but the local has the annotation of the parameter
+                if (parameters[i].DisallowNull && !parameters[i].ParameterType.IsValueType)
+                {
+                    builder.Append('!');
+                }
             }
 
             builder.Append(')');
@@ -6101,6 +6107,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static string EscapeInterpolatedStringLiteral(string value)
         => EscapeStringLiteral(value).Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
 
+    // The type of the cast before '?? throw': it accepts null whatever the annotation of the declared type, for example a
+    // [DisallowNull] string? member
+    private static string GetNullableTypeDisplay(ITypeSymbol type)
+    {
+        if (type.IsValueType)
+        {
+            var display = type.ToDisplayString(FullyQualifiedNullableFormat);
+            return type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ? display : display + "?";
+        }
+
+        return type.WithNullableAnnotation(NullableAnnotation.Annotated).ToDisplayString(FullyQualifiedNullableFormat);
+    }
+
     // Reads a member value, rejecting null when the member is declared as non-nullable
     private static string GetMemberTypeInfoAccess(PocoMember member)
         => member.ConverterTypeInfoName ?? GetTypeInfoAccess(member.Type);
@@ -6112,7 +6131,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return "(" + member.Type.ToDisplayString(FullyQualifiedNullableFormat) + ")" + GetMemberTypeInfoAccess(member) + ".ReadAsObject(reader)!";
         }
 
-        return "((" + member.Type.ToDisplayString(FullyQualifiedNullableFormat) + "?)" + GetMemberTypeInfoAccess(member) + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The TOML key '" +
+        return "((" + GetNullableTypeDisplay(member.Type) + ")" + GetMemberTypeInfoAccess(member) + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The TOML key '" +
             EscapeInterpolatedStringLiteral(member.SerializedName) + "' cannot be null because '{typeof(" + member.OwnerTypeName + ").FullName}' declares it as non-nullable.\"))";
     }
 
@@ -6124,7 +6143,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return "(" + parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + ")" + typeInfoAccess + ".ReadAsObject(reader)!";
         }
 
-        return "((" + parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + "?)" + typeInfoAccess + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The constructor parameter '" +
+        return "((" + GetNullableTypeDisplay(parameter.ParameterType) + ")" + typeInfoAccess + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The constructor parameter '" +
             EscapeInterpolatedStringLiteral(parameter.ParameterName) + "' on '{typeof(" + typeName + ").FullName}' cannot be null because it is declared as non-nullable.\"))";
     }
 

@@ -383,4 +383,19 @@ public sealed class TestPipeTable
         Assert.Equal(expected, html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
+
+    [Fact]
+    public void ManyColonsBeforePipesOnALineAreParsedInLinearTime()
+    {
+        // Each ":|" checked whether its whole line is a header separator line
+        var markdown = string.Concat(Enumerable.Repeat(":| ", 50_000));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.Equal("<p>" + markdown.TrimEnd() + "</p>\n", html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
 }

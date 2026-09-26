@@ -54,7 +54,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         if (c == ':')
         {
             var tableStateForColon = processor.ParserStates[Index] as TableState;
-            if (tableStateForColon is null || !IsHeaderSeparatorColonBeforePipe(slice))
+            if (tableStateForColon is null || !IsHeaderSeparatorColonBeforePipe(slice, tableStateForColon))
             {
                 return false;
             }
@@ -128,24 +128,39 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         return true;
     }
 
-    private static bool IsHeaderSeparatorColonBeforePipe(StringSlice slice)
+    private static bool IsHeaderSeparatorColonBeforePipe(StringSlice slice, TableState tableState)
     {
         if (slice.PeekChar() != '|')
         {
             return false;
         }
 
+        // The result only depends on the line, which is scanned entirely: reuse it for the other colons of the line,
+        // otherwise a long line of ":|" is quadratic.
         var text = slice.Text;
-        int currentLineStart = FindLineStart(text, slice.Start);
-        int currentLineEnd = FindLineEnd(text, slice.Start, slice.End);
-
-        if (!IsHeaderSeparatorLine(text, currentLineStart, currentLineEnd))
+        if (ReferenceEquals(tableState.ColonCheckText, text)
+            && tableState.ColonCheckSliceEnd == slice.End
+            && slice.Start >= tableState.ColonCheckLineStart
+            && slice.Start <= tableState.ColonCheckLineEnd)
         {
-            return false;
+            return tableState.ColonCheckResult;
         }
 
-        int previousLineStart = FindPreviousLineStart(text, currentLineStart);
-        return previousLineStart >= 0 && LineHasPipe(text, previousLineStart, currentLineStart - 1);
+        int currentLineStart = FindLineStart(text, slice.Start);
+        int currentLineEnd = FindLineEnd(text, slice.Start, slice.End);
+        var result = IsHeaderSeparatorLine(text, currentLineStart, currentLineEnd);
+        if (result)
+        {
+            int previousLineStart = FindPreviousLineStart(text, currentLineStart);
+            result = previousLineStart >= 0 && LineHasPipe(text, previousLineStart, currentLineStart - 1);
+        }
+
+        tableState.ColonCheckText = text;
+        tableState.ColonCheckSliceEnd = slice.End;
+        tableState.ColonCheckLineStart = currentLineStart;
+        tableState.ColonCheckLineEnd = currentLineEnd;
+        tableState.ColonCheckResult = result;
+        return result;
     }
 
     private static void MatchLiteralColon(InlineProcessor processor, ref StringSlice slice)
@@ -1192,5 +1207,16 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         public List<TableCell> Cells { get; } = [];
 
         public List<Inline> EndOfLines { get; } = [];
+
+        // Result of IsHeaderSeparatorColonBeforePipe for the line from ColonCheckLineStart to ColonCheckLineEnd
+        public string? ColonCheckText { get; set; }
+
+        public int ColonCheckSliceEnd { get; set; }
+
+        public int ColonCheckLineStart { get; set; }
+
+        public int ColonCheckLineEnd { get; set; } = -1;
+
+        public bool ColonCheckResult { get; set; }
     }
 }

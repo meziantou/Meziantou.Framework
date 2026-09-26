@@ -1575,11 +1575,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var throwOnDuplicate = ShouldThrowOnDuplicate(model.Options);
         var wrapConstructionErrors = !ctor.Parameters.IsDefaultOrEmpty;
 
+        // A parameter of another type than its member cannot give the member its value
         string? GetLinkedParameterExpression(int memberIndex)
         {
             for (var i = 0; i < ctor.Parameters.Length; i++)
             {
-                if (ctor.Parameters[i].LinkedMemberIndex == memberIndex)
+                if (ctor.Parameters[i].LinkedMemberIndex == memberIndex && SymbolEqualityComparer.Default.Equals(ctor.Parameters[i].ParameterType, poco.Members[memberIndex].Type))
                 {
                     return "__arg" + i.ToString(CultureInfo.InvariantCulture);
                 }
@@ -1735,11 +1736,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                 }
 
-                if (linkedMember.CanSet && SymbolEqualityComparer.Default.Equals(linkedMember.Type, parameter.ParameterType))
-                {
-                    builder.Append("                        __memberValue").Append(parameter.LinkedMemberIndex.ToString(CultureInfo.InvariantCulture)).Append(" = __arg").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
-                    builder.Append("                        __memberSeen").Append(parameter.LinkedMemberIndex.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
-                }
             }
 
             builder.AppendLine("                        continue;");
@@ -1963,11 +1959,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                             }
                         }
 
-                        if (linkedMember.CanSet && SymbolEqualityComparer.Default.Equals(linkedMember.Type, parameter.ParameterType))
-                        {
-                            builder.Append("                                    __memberValue").Append(parameter.LinkedMemberIndex.ToString(CultureInfo.InvariantCulture)).Append(" = __arg").Append(action.Index.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
-                            builder.Append("                                    __memberSeen").Append(parameter.LinkedMemberIndex.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
-                        }
                     }
 
                     builder.AppendLine("                                    continue;");

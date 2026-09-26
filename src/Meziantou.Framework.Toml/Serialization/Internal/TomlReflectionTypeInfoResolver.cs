@@ -718,6 +718,10 @@ internal static class TomlReflectionTypeInfoResolver
         private readonly ConstructorInfo? _constructor;
         private readonly string? _constructorError;
         private readonly ParameterBinding[] _parameters;
+
+        // Like System.Text.Json, a member bound to a constructor parameter gets its value from the constructor only, so the
+        // constructor can validate or normalize it
+        private readonly bool[] _memberBoundToConstructor = [];
         private readonly Dictionary<string, int>? _parameterIndexByName;
         private readonly bool _hasRequiredMembers;
         private readonly int _extensionDataIndex;
@@ -810,6 +814,7 @@ internal static class TomlReflectionTypeInfoResolver
             }
 
             _parameters = new ParameterBinding[ctorParameters.Length];
+            _memberBoundToConstructor = new bool[_members.Count];
             var nullabilityContext = CreateNullabilityContext(options);
             _parameterIndexByName = new Dictionary<string, int>(
                 ctorParameters.Length,
@@ -839,6 +844,10 @@ internal static class TomlReflectionTypeInfoResolver
 
                 _parameterIndexByName.Add(keyName, i);
                 _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, GetParameterDefaultValue(parameter), memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
+                if (memberIndex >= 0)
+                {
+                    _memberBoundToConstructor[memberIndex] = true;
+                }
             }
         }
 
@@ -1515,7 +1524,6 @@ internal static class TomlReflectionTypeInfoResolver
                     if (binding.MemberIndex is { } linkedMemberIndex && linkedMemberIndex >= 0 && linkedMemberIndex < _members.Count)
                     {
                         memberSeen[linkedMemberIndex] = true;
-                        memberValues[linkedMemberIndex] = value;
                     }
 
                     continue;
@@ -1648,7 +1656,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             for (var i = 0; i < _members.Count; i++)
             {
-                if (!memberSeen[i])
+                if (!memberSeen[i] || _memberBoundToConstructor[i])
                 {
                     continue;
                 }

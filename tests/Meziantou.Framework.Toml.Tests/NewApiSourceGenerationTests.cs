@@ -1104,6 +1104,43 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+public sealed class GeneratedNormalizingConstructor
+{
+    public GeneratedNormalizingConstructor(string name) => Name = name.ToUpperInvariant();
+
+    public string Name { get; set; }
+}
+
+public sealed class GeneratedConvertingConstructor
+{
+    public GeneratedConvertingConstructor(string x) => X = int.Parse(x, System.Globalization.CultureInfo.InvariantCulture);
+
+    public int X { get; set; }
+}
+
+public sealed class GeneratedRequiredOfAnotherType
+{
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public GeneratedRequiredOfAnotherType(int? age) => Age = (age ?? 0) + 100;
+
+    public required int Age { get; init; }
+}
+
+// The generated code used to assign the int? parameter to the int member (CS0266)
+public sealed class GeneratedRequiredOfAnotherTypeWithoutSetsRequiredMembers
+{
+    public GeneratedRequiredOfAnotherTypeWithoutSetsRequiredMembers(int? age) => Age = (age ?? 0) + 100;
+
+    public required int Age { get; init; }
+}
+
+public sealed class GeneratedInitOfAnotherType
+{
+    public GeneratedInitOfAnotherType(int? age) => Age = (age ?? 0) + 100;
+
+    public int Age { get; init; }
+}
+
 public enum GeneratedDefaultColor
 {
     Negative = -1,
@@ -1133,6 +1170,11 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedNormalizingConstructor))]
+[TomlSerializable(typeof(GeneratedConvertingConstructor))]
+[TomlSerializable(typeof(GeneratedRequiredOfAnotherType))]
+[TomlSerializable(typeof(GeneratedInitOfAnotherType))]
+[TomlSerializable(typeof(GeneratedRequiredOfAnotherTypeWithoutSetsRequiredMembers))]
 [TomlSerializable(typeof(GeneratedDefaultValues))]
 [TomlSerializable(typeof(GeneratedReorderedPerson))]
 [TomlSerializable(typeof(GeneratedAmbiguousConstructors))]
@@ -1326,6 +1368,22 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void MembersBoundToConstructorParameters_GetTheirValueFromTheConstructorOnly()
+    {
+        var context = TestTomlSerializerContextSingleConstruction.Default;
+
+        Assert.Equal("ABC", TomlSerializer.Deserialize<GeneratedNormalizingConstructor>("Name = \"abc\"\n")!.Name);
+        Assert.Equal("ABC", TomlSerializer.Deserialize("Name = \"abc\"\n", context.GeneratedNormalizingConstructor)!.Name);
+        Assert.True(TomlSerializer.TryDeserialize<GeneratedConvertingConstructor>("X = \"5\"\n", out var reflection));
+        Assert.Equal(5, reflection.X);
+        Assert.Equal(5, TomlSerializer.Deserialize("X = \"5\"\n", context.GeneratedConvertingConstructor)!.X);
+        Assert.Equal(103, TomlSerializer.Deserialize<GeneratedInitOfAnotherType>("Age = 3\n")!.Age);
+        Assert.Equal(103, TomlSerializer.Deserialize("Age = 3\n", context.GeneratedInitOfAnotherType)!.Age);
+        Assert.Equal(103, TomlSerializer.Deserialize<GeneratedRequiredOfAnotherType>("Age = 3\n")!.Age);
+        Assert.Equal(103, TomlSerializer.Deserialize("Age = 3\n", context.GeneratedRequiredOfAnotherType)!.Age);
+    }
+
     [Fact]
     public void ConstructorDefaultValues_OfNullableAndEnumParameters_AreUsed()
     {

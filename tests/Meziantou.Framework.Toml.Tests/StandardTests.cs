@@ -99,6 +99,12 @@ public static class StandardTests
                 }
 
                 Assert.True(doc.HasErrors, message: "The TOML requires parsing/validation errors");
+                Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+                Assert.Throws<TomlException>(() => ReadAllEvents(TomlParser.Create(toml)));
+
+                var tolerantParser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+                ReadAllEvents(tolerantParser);
+                Assert.True(tolerantParser.HasErrors, message: "The tolerant parser must report an error");
                 break;
         }
 
@@ -112,6 +118,13 @@ public static class StandardTests
                 Dump(toml, doc, roundtrip);
             }
             Assert.Equal(roundtrip, roundtripFromReader, message: "The TextReader version doesn't match with the string version");
+        }
+    }
+
+    private static void ReadAllEvents(TomlParser parser)
+    {
+        while (parser.MoveNext())
+        {
         }
     }
 

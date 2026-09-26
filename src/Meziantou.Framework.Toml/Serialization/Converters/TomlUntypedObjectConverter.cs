@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization.Internal;
 using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
 
@@ -228,7 +229,8 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 capturedAnyMetadata |= CapturePropertyMetadata(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, GetDisplayKind(reader));
             }
 
-            if (reader.TokenType == TomlTokenType.StartTable &&
+            // A table header or a dotted key extends the existing table; any other value replaces it (DuplicateKeyHandling.LastWins)
+            if (TomlTableHeaderExtensionHelper.IsTableHeaderExtension(reader) &&
                 table.TryGetValue(name, out var existingValue) &&
                 existingValue is TomlTable existingTable)
             {

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Toml.Parsing;
 /// <summary>
 /// Parses TOML into an incremental event stream.
 /// </summary>
-public sealed class TomlParser
+public sealed partial class TomlParser
 {
     private readonly TomlSerializerOptions _options;
     private readonly TomlParserOptions _parserOptions;
@@ -47,7 +47,7 @@ public sealed class TomlParser
             diagnostics = new DiagnosticsBag();
         }
 
-        var core = new ParserCore(toml, sourcePath, parserOptions, diagnostics);
+        var core = new ParserCore(toml, sourcePath, parserOptions, effectiveOptions.DuplicateKeyHandling == TomlDuplicateKeyHandling.LastWins, diagnostics);
         return new TomlParser(core, effectiveOptions, parserOptions, diagnostics);
     }
 
@@ -287,7 +287,7 @@ public sealed class TomlParser
         TomlSyntaxTriviaMetadata[]? TrailingTrivia { get; }
     }
 
-    private sealed class ParserCore : IParserCore
+    private sealed partial class ParserCore : IParserCore
     {
         private readonly TomlParserMode _mode;
         private readonly bool _decodeScalars;
@@ -344,9 +344,10 @@ public sealed class TomlParser
 
         private DocumentState _state;
 
-        public ParserCore(ReadOnlyMemory<char> text, string sourcePath, TomlParserOptions parserOptions, DiagnosticsBag? diagnostics)
+        public ParserCore(ReadOnlyMemory<char> text, string sourcePath, TomlParserOptions parserOptions, bool allowDuplicateKeys, DiagnosticsBag? diagnostics)
         {
             _mode = parserOptions.Mode;
+            _allowDuplicateKeys = allowDuplicateKeys;
             _decodeScalars = parserOptions.DecodeScalars;
             _eagerStringValues = parserOptions.EagerStringValues;
             _captureTrivia = parserOptions.CaptureTrivia;
@@ -688,6 +689,7 @@ public sealed class TomlParser
                             }
 
                             _containers.RemoveAt(_containers.Count - 1);
+                            PopStructureValueScope();
                             SetPendingEvent(frame.Kind == ContainerKind.Array
                                 ? new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0)
                                 : new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
@@ -985,6 +987,7 @@ public sealed class TomlParser
                     {
                         Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
                         _containers.RemoveAt(_containers.Count - 1);
+                        PopStructureValueScope();
                         SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
                         return true;
                     }
@@ -1011,6 +1014,7 @@ public sealed class TomlParser
                     {
                         Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
                         _containers.RemoveAt(_containers.Count - 1);
+                        PopStructureValueScope();
                         SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
                         return true;
                     }
@@ -1024,6 +1028,7 @@ public sealed class TomlParser
                 {
                     Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
                     _containers.RemoveAt(_containers.Count - 1);
+                    PopStructureValueScope();
                     SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
                     return true;
                 }
@@ -1064,6 +1069,7 @@ public sealed class TomlParser
 
                         Consume(TokenKind.CloseBrace, DetermineLexerStateAfterContainerClose());
                         _containers.RemoveAt(_containers.Count - 1);
+                        PopStructureValueScope();
                         SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
                         return true;
                     }
@@ -1146,6 +1152,8 @@ public sealed class TomlParser
                 throw ParserCore.CreateException(CurrentSpan(), $"Expected end-of-line after table header but was `{ToPrintable(_token)}`.");
             }
 
+            DefineStructureTableHeader(_pathSegments, isTableArray);
+
             _targetExplicitFrames.Clear();
             BuildExplicitTargetFrames(_pathSegments, isTableArray, _explicitFrames, _targetExplicitFrames);
             var prefixLength = GetExplicitCommonPrefixLength(_targetExplicitFrames, isTableArray);
@@ -1170,6 +1178,8 @@ public sealed class TomlParser
                 {
                     throw ParserCore.CreateException(CurrentSpan(), $"Expected `=` after key but was `{ToPrintable(_token)}`.");
                 }
+
+                DefineStructureKey(path: null, firstSegment);
 
                 // Common case: a single-segment key/value entry at the current implicit frame depth.
                 if (_implicitFrames.Count == implicitBaseIndex)
@@ -1227,6 +1237,8 @@ public sealed class TomlParser
             {
                 throw ParserCore.CreateException(CurrentSpan(), $"Expected `=` after key but was `{ToPrintable(_token)}`.");
             }
+
+            DefineStructureKey(_pathSegments, default);
 
             var prefixLength = _pathSegments.Count - 1;
             var common = 0;
@@ -1418,6 +1430,7 @@ public sealed class TomlParser
                 SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartArray, span: span, propertyName: null, stringValue: null, data: 0));
                 Consume(TokenKind.OpenBracket, LexerState.Value);
                 _containers.Add(new ContainerFrame(ContainerKind.Array, inlineImplicitBase: 0));
+                PushStructureValueScope(isInlineTable: false);
                 return;
             }
 
@@ -1429,9 +1442,11 @@ public sealed class TomlParser
                 SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: span, propertyName: null, stringValue: null, data: 0));
                 Consume(TokenKind.OpenBrace, LexerState.Key);
                 _containers.Add(new ContainerFrame(ContainerKind.InlineTable, inlineImplicitBase: _implicitFrames.Count));
+                PushStructureValueScope(isInlineTable: true);
                 return;
             }
 
+            _pendingStructureValue = -1;
             var eventSpan = new TomlSourceSpan(_lexer.SourcePath,
                 new TomlTextPosition(spanStart.Offset, spanStart.Line, spanStart.Column),
                 new TomlTextPosition(_token.End.Offset, _token.End.Line, _token.End.Column));

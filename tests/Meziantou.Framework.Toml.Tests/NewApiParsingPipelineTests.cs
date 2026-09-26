@@ -229,4 +229,86 @@ public class NewApiParsingPipelineTests
         Assert.Equal(1L, a["x"]);
         Assert.Equal(2L, ((TomlTable)a["b"])["y"]);
     }
+
+    [Theory]
+    [InlineData("a = 1\na = 2\n")]
+    [InlineData("a = 1\n'a' = 2\n")]
+    [InlineData("[a]\nx = 1\n[a]\ny = 2\n")]
+    [InlineData("t = {a = 1, a = 2}\n")]
+    [InlineData("t = {a.b = 1, a = 2}\n")]
+    [InlineData("a = 1\n[a.b.c]\n")]
+    [InlineData("a = [1]\n[[a]]\n")]
+    [InlineData("a = [{b = 1}]\n[a.c]\n")]
+    [InlineData("a.b = 1\n[a]\n")]
+    [InlineData("[a]\nb.c = 1\n[a.b]\n")]
+    [InlineData("sub = {x = 1}\n[sub]\nw = 2\n")]
+    [InlineData("sub = {x = 1}\nsub.w = 2\n")]
+    [InlineData("[[a]]\n[a]\n")]
+    [InlineData("[a]\n[[a]]\n")]
+    [InlineData("[a.b.c]\nz = 9\n[a]\nb.c.t = 1\n")]
+    [InlineData("[a.b]\n[a]\nb.c = 1\n[a.b]\n")]
+    [InlineData("[[a]]\nb = {}\n[[c]]\n[a.b.d]\n")]
+    public void Deserialize_RedefinedKey_Throws(string toml)
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, object>>(toml));
+    }
+
+    [Theory]
+    [InlineData("[a.b]\n[a]\n")]
+    [InlineData("[a]\nb.c = 1\nb.d = 2\n[a.b.e]\n")]
+    [InlineData("[a.b.c]\n[a]\nb.d = 1\n")]
+    [InlineData("[[a]]\nb = 1\n[[a]]\nb = 2\n[a.c]\n")]
+    [InlineData("a = [{b = 1, c.d = 1}, {b = 1, c.d = 1}]\n")]
+    [InlineData("t = {a.b = 1, a.c = 2}\n")]
+    public void Deserialize_ExtendedTable_IsValid(string toml)
+    {
+        Assert.NotNull(TomlSerializer.Deserialize<TomlTable>(toml));
+    }
+
+    [Fact]
+    public void Deserialize_RedefinedKey_ReportsBothLocations()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>("a = 1\nb = 2\na = 3\n"));
+
+        Assert.Equal(3, ex.Line);
+        Assert.Contains("The key `a` is already defined at (1,1)", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Deserialize_LastWins_AcceptsRedefinedValues()
+    {
+        var options = new TomlSerializerOptions { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+
+        var root = TomlSerializer.Deserialize<TomlTable>("a = 1\na = 2\nt = {x = 1}\nt = {x = 2, y = 3}\n", options)!;
+
+        Assert.Equal(2L, root["a"]);
+        var t = (TomlTable)root["t"];
+        Assert.Equal(2L, t["x"]);
+        Assert.Equal(3L, t["y"]);
+    }
+
+    [Theory]
+    [InlineData("a = 1\n[a]\n")]
+    [InlineData("a = 1\na.b = 2\n")]
+    [InlineData("[a]\nb.c = 1\n[a.b]\n")]
+    [InlineData("[[a]]\n[a]\n")]
+    [InlineData("[a]\n[a]\n")]
+    public void Deserialize_LastWins_RejectsConflictingDefinitions(string toml)
+    {
+        var options = new TomlSerializerOptions { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml, options));
+    }
+
+    [Fact]
+    public void TomlParser_Tolerant_ReportsRedefinedKey()
+    {
+        var parser = TomlParser.Create("a = 1\na = 2\n", new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.True(parser.HasErrors);
+    }
 }

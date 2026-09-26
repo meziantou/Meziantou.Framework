@@ -153,4 +153,36 @@ val = true
         Assert.Equal("t = { a = 1, b = 2 }\n", doc.ToString().ReplaceLineEndings("\n"));
         Assert.False(SyntaxParser.Parse(doc.ToString()).HasErrors);
     }
+
+    [Fact]
+    public void RunOfInvalidCharacters_IsReportedOnce()
+    {
+        var comment = "# " + new string('\0', 100_000) + "\na = 1\n";
+        var inString = "a = \"" + new string('\u0001', 1000) + "\"\n";
+
+        var strict = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(comment));
+        var commentDoc = SyntaxParser.Parse(comment);
+        var stringDoc = SyntaxParser.Parse(inString);
+
+        Assert.Single(strict.Diagnostics);
+        Assert.HasCountLessThan(200, strict.Message);
+        var commentDiagnostic = Assert.Single(commentDoc.Diagnostics);
+        Assert.Equal(2, commentDiagnostic.Span.Start.Column);
+        Assert.Equal(100_001, commentDiagnostic.Span.End.Column);
+        Assert.Single(stringDoc.Diagnostics);
+    }
+
+    [Fact]
+    public void TomlException_MessageListsTheFirstDiagnosticsOnly()
+    {
+        var comment = "# " + string.Concat(Enumerable.Repeat("\0a", 1000)) + "\n";
+
+        var doc = SyntaxParser.Parse(comment);
+        var exception = new TomlException(doc.Diagnostics);
+
+        Assert.HasCount(1000, doc.Diagnostics);
+        Assert.HasCount(1000, exception.Diagnostics);
+        Assert.HasCount(101, exception.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        Assert.EndsWith("... and 900 more diagnostics.", exception.Message.TrimEnd());
+    }
 }

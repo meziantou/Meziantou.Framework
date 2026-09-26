@@ -413,6 +413,7 @@ public sealed partial class TomlParser
                 DecodeScalars = _decodeScalars,
                 EmitHiddenTokens = _captureTrivia,
                 EagerStringValues = _eagerStringValues,
+                MaxErrorCount = _mode == TomlParserMode.Strict ? 1 : int.MaxValue,
             };
             _token = default;
             _initialized = false;

@@ -13,7 +13,7 @@ public sealed class TomlException : Exception
     /// Initializes a new instance of the <see cref="TomlException"/> class.
     /// </summary>
     /// <param name="diagnostics">The diagnostics that caused the exception.</param>
-    public TomlException(DiagnosticsBag diagnostics) : base(diagnostics.ToString())
+    public TomlException(DiagnosticsBag diagnostics) : base(FormatDiagnostics(diagnostics))
     {
         Diagnostics = diagnostics;
         Span = GetFirstSpanOrNull(diagnostics);
@@ -111,4 +111,26 @@ public sealed class TomlException : Exception
 
     private static SourceSpan ToLegacySpan(TomlSourceSpan span)
         => new SourceSpan(span.SourceName, new TextPosition(span.Start.Offset, span.Start.Line, span.Start.Column), new TextPosition(span.End.Offset, span.End.Line, span.End.Column));
+
+    // The message lists the first diagnostics only: a document with an error on every line would build a message as long as
+    // the document, which callers typically log. Diagnostics holds all of them.
+    private const int MaxDiagnosticsInMessage = 100;
+
+    private static string FormatDiagnostics(DiagnosticsBag diagnostics)
+    {
+        ArgumentNullException.ThrowIfNull(diagnostics);
+        if (diagnostics.Count <= MaxDiagnosticsInMessage)
+        {
+            return diagnostics.ToString();
+        }
+
+        var builder = new System.Text.StringBuilder();
+        for (var i = 0; i < MaxDiagnosticsInMessage; i++)
+        {
+            builder.AppendLine(diagnostics[i].ToString());
+        }
+
+        builder.Append("... and ").Append(diagnostics.Count - MaxDiagnosticsInMessage).AppendLine(" more diagnostics.");
+        return builder.ToString();
+    }
 }

@@ -70,6 +70,10 @@ internal sealed class Lexer
     /// </summary>
     public bool EagerStringValues { get; set; }
 
+    // The number of errors the lexer records. A strict parser stops at the first one, so it does not need the others, and a
+    // document with one invalid character per byte would record one error per byte.
+    public int MaxErrorCount { get; set; } = int.MaxValue;
+
     /// <summary>
     /// Gets or sets a value indicating whether the lexer should emit hidden tokens (whitespace and comments).
     /// </summary>
@@ -1889,11 +1893,21 @@ internal sealed class Lexer
 
     private void AddError(string message, TextPosition start, TextPosition end)
     {
-        if (_errors == null)
+        _errors ??= new List<DiagnosticMessage>();
+
+        // A run of the same invalid character, such as NUL characters in a comment, is reported once over the whole run
+        if (_errors.Count > 0 && _errors[^1] is { } previous &&
+            previous.Span.End.Offset + 1 == start.Offset &&
+            string.Equals(previous.Message, message, StringComparison.Ordinal))
         {
-            _errors = new List<DiagnosticMessage>();
+            _errors[^1] = new DiagnosticMessage(previous.Kind, new SourceSpan(previous.Span.FileName, previous.Span.Start, end), message);
+            return;
         }
-        _errors.Add(new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message));
+
+        if (_errors.Count < MaxErrorCount)
+        {
+            _errors.Add(new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message));
+        }
     }
 
     private void Reset()

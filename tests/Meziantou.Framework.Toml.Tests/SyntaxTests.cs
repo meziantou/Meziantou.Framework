@@ -246,6 +246,19 @@ val = true
     }
 
     [Theory]
+    [InlineData("x = 1\na = [\n")]
+    [InlineData("x = 1\na = { b = \n")]
+    [InlineData("x = 1\n[a\n")]
+    public void Parse_ErrorsAfterTheEndOfFile_AreReportedAtTheEndOfFile(string toml)
+    {
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.NotEmpty(doc.Diagnostics);
+        Assert.All(doc.Diagnostics, diagnostic => Assert.NotEqual(0, diagnostic.Span.Start.Line));
+        Assert.Equal(toml, doc.ToString());
+    }
+
+    [Theory]
     [InlineData("\\u00", "Invalid escape `\\u`. Expected 4 hexadecimal digits.")]
     [InlineData("\\U0001F6", "Invalid escape `\\U`. Expected 8 hexadecimal digits.")]
     [InlineData("\\x4", "Invalid escape `\\x`. Expected 2 hexadecimal digits.")]

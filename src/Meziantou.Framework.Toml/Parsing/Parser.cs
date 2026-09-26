@@ -855,7 +855,8 @@ internal partial class Parser
             result = _lexer.MoveNext();
             if (!result)
             {
-                _token = new SyntaxTokenValue(TokenKind.Eof, new TextPosition(), new TextPosition());
+                // The lexer returns its end-of-file token once; keep its position for the diagnostics reported after it
+                _token = _lexer.Token.Kind == TokenKind.Eof ? _lexer.Token : new SyntaxTokenValue(TokenKind.Eof, new TextPosition(), new TextPosition());
                 return;
             }
 

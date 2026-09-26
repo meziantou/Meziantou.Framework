@@ -344,6 +344,11 @@ internal partial class ConverterContext : TomlSerializerContext;
 `GetTomlDateTime`, `GetRawText`, and `PropertyNameEquals`. `TomlWriter` exposes `WritePropertyName`, the
 `Write*Value` methods, and the start and end methods for tables, inline tables, arrays, and arrays of tables.
 
+TOML lets a document define a table in several places: an array of tables can be reopened after another table, and
+dotted keys can extend a table after another key. `TomlReader` parses the whole document on the first `Read`, so it
+reports syntax errors before any value is created, and it returns each table and array of tables as one block. A
+converter reads each key of a table once.
+
 ## Extension data
 
 `[TomlExtensionData]` (or `[JsonExtensionData]`) collects the keys that do not match a member. The member must be a
@@ -597,7 +602,8 @@ Derive from `SyntaxVisitor` to walk the tree, and use `Tokens()` to enumerate th
 ## Lexer and parser
 
 `TomlLexer` produces tokens, and `TomlParser` produces parse events without building a tree. Both avoid allocations
-where possible:
+where possible. `TomlParser` emits the events in document order, so a table defined in several places produces
+several `PropertyName`/`StartTable` fragments with the same name:
 
 ```csharp
 using Meziantou.Framework.Toml.Parsing;

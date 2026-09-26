@@ -146,7 +146,12 @@ public sealed partial class TomlParser
             throw new InvalidOperationException($"Expected {TomlParseEventKind.String} but was {_current.Kind}.");
         }
 
-        if (_current.Span is not { } span)
+        return DecodeString(_current);
+    }
+
+    internal string DecodeString(in TomlParseEvent parseEvent)
+    {
+        if (parseEvent.Span is not { } span)
         {
             return string.Empty;
         }
@@ -159,7 +164,7 @@ public sealed partial class TomlParser
 
         try
         {
-            return TomlStringDecoder.Decode(raw, (TokenKind)_current.Data);
+            return TomlStringDecoder.Decode(raw, (TokenKind)parseEvent.Data);
         }
         catch (FormatException ex)
         {
@@ -179,12 +184,17 @@ public sealed partial class TomlParser
             throw new InvalidOperationException($"Expected {TomlParseEventKind.PropertyName} but was {_current.Kind}.");
         }
 
-        if (_current.PropertyName is not null)
+        return DecodePropertyName(_current);
+    }
+
+    internal string DecodePropertyName(in TomlParseEvent parseEvent)
+    {
+        if (parseEvent.PropertyName is not null)
         {
-            return _current.PropertyName;
+            return parseEvent.PropertyName;
         }
 
-        if (_current.Span is not { } span)
+        if (parseEvent.Span is not { } span)
         {
             return string.Empty;
         }
@@ -195,7 +205,7 @@ public sealed partial class TomlParser
             return string.Empty;
         }
 
-        var tokenKind = TomlParseEventData.UnpackPropertyNameTokenKind(_current.Data);
+        var tokenKind = TomlParseEventData.UnpackPropertyNameTokenKind(parseEvent.Data);
         if (tokenKind == TokenKind.BasicKey)
         {
             return raw.ToString();

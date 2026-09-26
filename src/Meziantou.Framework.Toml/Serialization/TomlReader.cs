@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -14,11 +15,27 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// <summary>
 /// Reads TOML tokens for use by <see cref="TomlConverter"/> implementations.
 /// </summary>
+/// <remarks>
+/// The reader parses the whole document on the first <see cref="Read"/>, and returns the keys of a table defined in
+/// several places (for example an array of tables reopened after another table) as a single table.
+/// </remarks>
 public sealed class TomlReader
 {
     private readonly TomlSerializerOptions _options;
     private readonly TomlSerializationOperationState _operationState;
     private readonly TomlParser? _parser;
+    private readonly string _sourceName;
+
+    // The parser events of the whole document, in the order they are read (see TomlParseEventMerger)
+    private TomlBufferedParseEvent[]? _events;
+    private TomlDateTime[]? _eventDateTimes;
+    private TomlSyntaxTriviaMetadata[]?[]? _eventLeadingTrivia;
+    private TomlSyntaxTriviaMetadata[]?[]? _eventTrailingTrivia;
+    private int[]? _eventOrder;
+    private int _eventCount;
+    private bool _eventsLoaded;
+    private int _eventPosition;
+    private int _currentEventIndex;
     private readonly TomlReaderToken[]? _buffer;
     private readonly string? _filteredPropertyName;
     private int _bufferIndex;
@@ -39,6 +56,7 @@ public sealed class TomlReader
     private TomlReader(TomlParser parser, TomlSerializerOptions options, TomlSerializationOperationState operationState)
     {
         _parser = parser;
+        _sourceName = options?.SourceName ?? string.Empty;
         _buffer = null;
         _filteredPropertyName = null;
         _bufferIndex = 0;
@@ -51,6 +69,7 @@ public sealed class TomlReader
     private TomlReader(TomlReaderToken[] buffer, TomlSerializerOptions options, string? filteredPropertyName, TomlSerializationOperationState operationState)
     {
         _parser = null;
+        _sourceName = options?.SourceName ?? string.Empty;
         _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
         _filteredPropertyName = filteredPropertyName;
         _bufferIndex = 0;
@@ -71,7 +90,7 @@ public sealed class TomlReader
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = effectiveOptions.MetadataStore is not null,
-            EagerStringValues = true,
+            EagerStringValues = false,
         };
         var parser = TomlParser.Create(toml, parserOptions, effectiveOptions);
         return new TomlReader(parser, effectiveOptions, operationState);
@@ -88,7 +107,7 @@ public sealed class TomlReader
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = effectiveOptions.MetadataStore is not null,
-            EagerStringValues = true,
+            EagerStringValues = false,
         };
         var parser = TomlParser.Create(reader, parserOptions, effectiveOptions);
         return new TomlReader(parser, effectiveOptions, operationState);
@@ -103,7 +122,7 @@ public sealed class TomlReader
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = options.MetadataStore is not null,
-            EagerStringValues = true,
+            EagerStringValues = false,
         };
         var parser = TomlParser.Create(toml, parserOptions, options);
         return new TomlReader(parser, options, operationState);
@@ -118,7 +137,7 @@ public sealed class TomlReader
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = options.MetadataStore is not null,
-            EagerStringValues = true,
+            EagerStringValues = false,
         };
         var parser = TomlParser.Create(reader, parserOptions, options);
         return new TomlReader(parser, options, operationState);
@@ -157,7 +176,7 @@ public sealed class TomlReader
                 return null;
             }
 
-            _currentPropertyName = _parser.GetPropertyName();
+            _currentPropertyName = _parser.DecodePropertyName(GetCurrentParseEvent());
             return _currentPropertyName;
         }
     }
@@ -174,7 +193,9 @@ public sealed class TomlReader
 
     internal TomlSerializationOperationState OperationState => _operationState;
 
-    internal TomlReaderState CurrentState => new(_tokenType, _currentSpan, _bufferIndex);
+    internal TomlReaderState CurrentState => new(_tokenType, _currentSpan, CurrentPosition);
+
+    private int CurrentPosition => _buffer is not null ? _bufferIndex : _eventPosition;
 
     /// <summary>
     /// Gets the current line number (1-based).
@@ -200,6 +221,7 @@ public sealed class TomlReader
     /// <summary>
     /// Advances the reader to the next token.
     /// </summary>
+    /// <exception cref="TomlException">The TOML document is invalid. The first call reports errors anywhere in the document.</exception>
     public bool Read()
     {
         if (_buffer is not null)
@@ -240,8 +262,15 @@ public sealed class TomlReader
             }
         }
 
-        if (_parser is null || !_parser.MoveNext())
+        if (_parser is not null && !_eventsLoaded)
         {
+            _eventsLoaded = true;
+            ReadAllEvents(_parser);
+        }
+
+        if (_events is null || _eventPosition >= _eventCount)
+        {
+            ReleaseEvents();
             _tokenType = TomlTokenType.EndDocument;
             _currentSpan = null;
             _currentLeadingTrivia = null;
@@ -249,10 +278,12 @@ public sealed class TomlReader
             return false;
         }
 
-        ref readonly var parseEvent = ref _parser.Current;
-        _currentSpan = parseEvent.Span;
-        _currentLeadingTrivia = _parser.CurrentLeadingTrivia;
-        _currentTrailingTrivia = _parser.CurrentTrailingTrivia;
+        _currentEventIndex = _eventOrder is null ? _eventPosition : _eventOrder[_eventPosition];
+        _eventPosition++;
+        ref readonly var parseEvent = ref _events[_currentEventIndex];
+        _currentSpan = parseEvent.GetSpan(_sourceName);
+        _currentLeadingTrivia = _eventLeadingTrivia?[_currentEventIndex];
+        _currentTrailingTrivia = _eventTrailingTrivia?[_currentEventIndex];
         switch (parseEvent.Kind)
         {
             case TomlParseEventKind.StartDocument:
@@ -269,7 +300,7 @@ public sealed class TomlReader
                 break;
             case TomlParseEventKind.PropertyName:
                 _tokenType = TomlTokenType.PropertyName;
-                _currentPropertyName = parseEvent.PropertyName;
+                _currentPropertyName = null;
                 _currentPropertyNameTokenKind = TomlParseEventData.UnpackPropertyNameTokenKind(parseEvent.Data);
                 _currentData = TomlParseEventData.UnpackPropertyNameHash(parseEvent.Data);
                 break;
@@ -282,7 +313,7 @@ public sealed class TomlReader
             case TomlParseEventKind.String:
                 _tokenType = TomlTokenType.String;
                 _currentStringTokenKind = (TokenKind)parseEvent.Data;
-                _currentString = parseEvent.StringValue;
+                _currentString = null;
                 break;
             case TomlParseEventKind.Integer:
                 _tokenType = TomlTokenType.Integer;
@@ -298,11 +329,17 @@ public sealed class TomlReader
                 break;
             case TomlParseEventKind.DateTime:
                 _tokenType = TomlTokenType.DateTime;
-                _currentDateTime = parseEvent.GetTomlDateTime();
+                _currentDateTime = _eventDateTimes![(int)parseEvent.Data];
                 _hasDateTime = true;
                 break;
             default:
                 throw CreateException($"Unsupported TOML parse event `{parseEvent.Kind}`.");
+        }
+
+        // The last event is EndDocument, which does not need the buffer
+        if (_eventPosition >= _eventCount)
+        {
+            ReleaseEvents();
         }
 
         return true;
@@ -362,10 +399,10 @@ public sealed class TomlReader
                     }
                 }
 
-                _currentPropertyName = _parser.GetPropertyName();
+                _currentPropertyName = _parser.DecodePropertyName(GetCurrentParseEvent());
                 return string.Equals(_currentPropertyName, expected, StringComparison.Ordinal);
             default:
-                _currentPropertyName = _parser.GetPropertyName();
+                _currentPropertyName = _parser.DecodePropertyName(GetCurrentParseEvent());
                 return string.Equals(_currentPropertyName, expected, StringComparison.Ordinal);
         }
     }
@@ -387,6 +424,85 @@ public sealed class TomlReader
 
         hash = _currentData;
         return true;
+    }
+
+    // A table can be split across the document, so the reader cannot stream the parser events: consumers expect each key
+    // of a table once. Reading the whole document first also reports every syntax error before any value is created.
+    private void ReadAllEvents(TomlParser parser)
+    {
+        var captureTrivia = parser.ParserOptions.CaptureTrivia;
+        var events = ArrayPool<TomlBufferedParseEvent>.Shared.Rent(256);
+        var leadingTrivia = captureTrivia ? new TomlSyntaxTriviaMetadata[]?[events.Length] : null;
+        var trailingTrivia = captureTrivia ? new TomlSyntaxTriviaMetadata[]?[events.Length] : null;
+        List<TomlDateTime>? dateTimes = null;
+        var count = 0;
+        try
+        {
+            while (parser.MoveNext())
+            {
+                if (count == events.Length)
+                {
+                    var larger = ArrayPool<TomlBufferedParseEvent>.Shared.Rent(events.Length * 2);
+                    Array.Copy(events, larger, count);
+                    ArrayPool<TomlBufferedParseEvent>.Shared.Return(events);
+                    events = larger;
+                    if (captureTrivia)
+                    {
+                        Array.Resize(ref leadingTrivia, events.Length);
+                        Array.Resize(ref trailingTrivia, events.Length);
+                    }
+                }
+
+                ref readonly var parseEvent = ref parser.Current;
+                var data = parseEvent.Data;
+                if (parseEvent.Kind == TomlParseEventKind.DateTime)
+                {
+                    dateTimes ??= [];
+                    data = (ulong)dateTimes.Count;
+                    dateTimes.Add(parseEvent.GetTomlDateTime());
+                }
+
+                events[count] = new TomlBufferedParseEvent(parseEvent.Kind, parseEvent.Span, data);
+                if (captureTrivia)
+                {
+                    leadingTrivia![count] = parser.CurrentLeadingTrivia;
+                    trailingTrivia![count] = parser.CurrentTrailingTrivia;
+                }
+
+                count++;
+            }
+
+            _eventOrder = TomlParseEventMerger.GetMergedOrder(events, count, parser, _sourceName);
+        }
+        catch
+        {
+            ArrayPool<TomlBufferedParseEvent>.Shared.Return(events);
+            throw;
+        }
+
+        _eventDateTimes = dateTimes?.ToArray();
+        _eventLeadingTrivia = leadingTrivia;
+        _eventTrailingTrivia = trailingTrivia;
+        _eventCount = _eventOrder?.Length ?? count;
+        _events = events;
+    }
+
+    private TomlParseEvent GetCurrentParseEvent() => _events![_currentEventIndex].ToParseEvent(_sourceName);
+
+    private void ReleaseEvents()
+    {
+        if (_events is null)
+        {
+            return;
+        }
+
+        ArrayPool<TomlBufferedParseEvent>.Shared.Return(_events);
+        _events = null;
+        _eventDateTimes = null;
+        _eventOrder = null;
+        _eventLeadingTrivia = null;
+        _eventTrailingTrivia = null;
+        _eventCount = 0;
     }
 
     private void ApplyBufferedToken(TomlReaderToken token)
@@ -647,7 +763,7 @@ public sealed class TomlReader
     internal bool IsStateUnchanged(TomlReaderState state)
         => _tokenType == state.TokenType &&
             Nullable.Equals(_currentSpan, state.Span) &&
-            _bufferIndex == state.BufferIndex;
+            CurrentPosition == state.BufferIndex;
 
     [RequiresUnreferencedCode(TomlTypeInfoResolverPipeline.ReflectionBasedSerializationMessage)]
     [RequiresDynamicCode(TomlTypeInfoResolverPipeline.ReflectionBasedSerializationMessage)]

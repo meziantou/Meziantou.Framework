@@ -29,10 +29,9 @@ public class NewApiExceptionLocationTests
         var options = new TomlSerializerOptions { SourceName = "test.toml" };
 
         var reader = TomlReader.Create("a =\n", options);
-        reader.Read(); // StartDocument
-        reader.Read(); // StartTable
-        reader.Read(); // PropertyName
-        var ex = Assert.Throws<TomlException>(() => reader.Read()); // missing value
+
+        // The reader parses the whole document on the first read
+        var ex = Assert.Throws<TomlException>(() => reader.Read());
         Assert.NotNull(ex);
         Assert.NotNull(ex!.Span);
         Assert.True(ex.Line > 0);
@@ -66,10 +65,7 @@ public class NewApiExceptionLocationTests
         var options = new TomlSerializerOptions { SourceName = "dt.toml" };
         var reader = TomlReader.Create("dt = 1979-05-27T07:32:00+24:00\n", options);
 
-        reader.Read(); // StartDocument
-        reader.Read(); // StartTable
-        reader.Read(); // PropertyName
-
+        // The reader parses the whole document on the first read
         var ex = Assert.Throws<TomlException>(() => reader.Read());
         Assert.NotNull(ex);
         Assert.NotNull(ex!.Span);

@@ -956,7 +956,7 @@ internal static class TomlReflectionTypeInfoResolver
                 return ReadWithConstructor(reader, tableStartSpan);
             }
 
-            var instance = CreateInstance();
+            var instance = CreateInstance(tableStartSpan);
             return ReadIntoExistingInstance(reader, instance, tableStartSpan, invokeDeserializingCallback: true);
         }
 
@@ -1247,7 +1247,7 @@ internal static class TomlReflectionTypeInfoResolver
             return reader.OperationState.SingleOrArrayCollections.ReadSingleElementAsCollection(reader, member.MemberType);
         }
 
-        private object CreateInstance()
+        private object CreateInstance(TomlSourceSpan? span)
         {
             try
             {
@@ -1260,8 +1260,14 @@ internal static class TomlReflectionTypeInfoResolver
             }
             catch (Exception ex)
             {
-                throw new TomlException($"Failed to create an instance of '{Type.FullName}'.", ex);
+                throw CreateInstanceException(span, ex);
             }
+        }
+
+        private TomlException CreateInstanceException(TomlSourceSpan? span, Exception innerException)
+        {
+            var message = $"Failed to create an instance of '{Type.FullName}'.";
+            return span is { } value ? new TomlException(value, message, innerException) : new TomlException(message, innerException);
         }
 
         // An extension data member is a non-generic IDictionary (Dictionary<string, T>) or an IDictionary<string, object>
@@ -1582,7 +1588,7 @@ internal static class TomlReflectionTypeInfoResolver
             }
             catch (Exception ex)
             {
-                throw new TomlException($"Failed to create an instance of '{Type.FullName}'.", ex);
+                throw CreateInstanceException(tableStartSpan ?? endTableSpan, ex);
             }
 
             if (_invokeOnDeserializing)

@@ -1105,6 +1105,37 @@ internal sealed partial class TestTomlSerializerContextDefaultDerivedType : Toml
 {
 }
 
+public sealed class GeneratedThrowingConstructor
+{
+    public GeneratedThrowingConstructor(int value)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+        Value = value;
+    }
+
+    public int Value { get; }
+}
+
+public sealed class GeneratedThrowingConstructorHolder
+{
+    public GeneratedThrowingConstructor? Inner { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedThrowingConstructorHolder))]
+internal sealed partial class TestTomlSerializerContextThrowingConstructor : TomlSerializerContext
+{
+}
+
+public abstract class AbstractWithoutPolymorphism
+{
+    public int Value { get; set; }
+}
+
+public sealed class AbstractWithoutPolymorphismHolder
+{
+    public AbstractWithoutPolymorphism? Inner { get; set; }
+}
+
 public sealed class GeneratedShapeCollectionHolder
 {
     public IList<GeneratedDefaultShape> Shapes { get; set; } = [];
@@ -2324,6 +2355,22 @@ public class NewApiSourceGenerationTests
         Assert.DoesNotContain("type", toml);
         Assert.Contains("color = \"red\"", toml);
         Assert.Contains("radius = 5", toml);
+    }
+
+    [Fact]
+    public void InstanceCreationError_HasALocation()
+    {
+        const string Toml = "\n[Inner]\nValue = -1\n";
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedThrowingConstructorHolder>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextThrowingConstructor.Default.GeneratedThrowingConstructorHolder));
+        var abstractType = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<AbstractWithoutPolymorphismHolder>(Toml));
+
+        foreach (var exception in new[] { reflection, generated, abstractType })
+        {
+            Assert.Contains("Failed to create an instance", exception.Message);
+            Assert.Equal(1, Assert.Single(exception.Diagnostics).Span.Start.Line);
+        }
     }
 
     [Fact]

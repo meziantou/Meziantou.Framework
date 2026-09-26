@@ -2500,7 +2500,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            }");
         builder.AppendLine("            catch (global::System.Exception ex)");
         builder.AppendLine("            {");
-        builder.AppendLine("                throw new global::Meziantou.Framework.Toml.TomlException($\"Failed to create an instance of '{typeof(" + typeName + ").FullName}'.\", ex);");
+        builder.AppendLine("                var __message = $\"Failed to create an instance of '{typeof(" + typeName + ").FullName}'.\";");
+        builder.AppendLine("                throw (tableStartSpan ?? endTableSpan) is { } __span ? new global::Meziantou.Framework.Toml.TomlException(__span, __message, ex) : new global::Meziantou.Framework.Toml.TomlException(__message, ex);");
         builder.AppendLine("            }");
     }
 

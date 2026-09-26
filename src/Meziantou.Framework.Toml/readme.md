@@ -323,7 +323,7 @@ Implement the callback interfaces to run code around serialization:
 | --- | --- |
 | `ITomlOnSerializing` | Before the object is written. |
 | `ITomlOnSerialized` | After the object is written. |
-| `ITomlOnDeserializing` | Before the members are read. |
+| `ITomlOnDeserializing` | When the instance is created, before its members are set. The constructor arguments are set before. So are `required` members with the source generator, which sets them in an object initializer; reflection-based metadata sets them after. |
 | `ITomlOnDeserialized` | After the members are read. |
 
 ```csharp

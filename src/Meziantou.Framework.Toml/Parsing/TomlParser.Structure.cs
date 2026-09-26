@@ -1,6 +1,9 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Parsing;
@@ -9,18 +12,20 @@ public sealed partial class TomlParser
 {
     // Tracks the tables and keys defined by the document to reject what TOML forbids: duplicate keys, table redefinitions,
     // extended inline tables, and static arrays reopened as arrays of tables. The rules mirror SyntaxValidator.
-    // Nodes and entries are stored in arrays, so the parser does not allocate once they are large enough.
+    // Nodes and entries are stored in arrays, so the parser does not allocate once they are large enough. There is an entry
+    // and a node for every key of the document, so they are kept small: a node has no reference, and an entry keeps the
+    // offset of its key rather than its span. The arrays are rented, and returned at the end of the document.
     private sealed partial class ParserCore
     {
         private const int RootStructureNode = 0;
         private const int ArrayStructureScope = -1;
 
         private readonly bool _allowDuplicateKeys;
-        private StructureNode[] _structureNodes = new StructureNode[16];
+        private StructureNode[] _structureNodes = RentStructureNodes();
         private int _structureNodeCount = 1;
-        private StructureEntry[] _structureEntries = new StructureEntry[16];
+        private StructureEntry[] _structureEntries = ArrayPool<StructureEntry>.Shared.Rent(16);
         private int _structureEntryCount;
-        private int[] _structureBuckets = new int[16];
+        private int[] _structureBuckets = RentStructureBuckets(16);
         private int[] _structureScopes = new int[8];
         private int _structureScopeCount;
         private int _currentStructureTable = RootStructureNode;
@@ -120,7 +125,8 @@ public sealed partial class TomlParser
             if (node is { Kind: StructureNodeKind.Table, IsImplicit: true, FromDottedKeys: false })
             {
                 node.IsImplicit = false;
-                node.Span = key.Span;
+                node.HasPosition = true;
+                node.Position = key.Span.Start;
                 return nodeIndex;
             }
 
@@ -198,7 +204,7 @@ public sealed partial class TomlParser
             while (entryIndex >= 0)
             {
                 ref var entry = ref _structureEntries[entryIndex];
-                if (entry.Parent == parent && KeySegmentsEqual(entry.Key, key))
+                if (entry.Parent == parent && StructureKeyEquals(entry, key))
                 {
                     return entryIndex;
                 }
@@ -214,20 +220,21 @@ public sealed partial class TomlParser
         {
             if (_structureEntryCount == _structureEntries.Length)
             {
-                Array.Resize(ref _structureEntries, _structureEntries.Length * 2);
+                _structureEntries = Grow(_structureEntries, _structureEntryCount);
             }
 
             if (_structureEntryCount == _structureBuckets.Length)
             {
-                var buckets = new int[_structureBuckets.Length * 2];
+                var buckets = RentStructureBuckets(_structureBuckets.Length * 2);
                 for (var i = 0; i < _structureEntryCount; i++)
                 {
                     ref var existing = ref _structureEntries[i];
-                    var existingBucket = GetStructureBucket(existing.Parent, existing.Key.Hash, buckets.Length);
+                    var existingBucket = GetStructureBucket(existing.Parent, existing.KeyHash, buckets.Length);
                     existing.Next = buckets[existingBucket];
                     buckets[existingBucket] = i + 1;
                 }
 
+                ArrayPool<int>.Shared.Return(_structureBuckets);
                 _structureBuckets = buckets;
             }
 
@@ -241,7 +248,7 @@ public sealed partial class TomlParser
         {
             if (_structureNodeCount == _structureNodes.Length)
             {
-                Array.Resize(ref _structureNodes, _structureNodes.Length * 2);
+                _structureNodes = Grow(_structureNodes, _structureNodeCount);
             }
 
             _structureNodes[_structureNodeCount] = new StructureNode
@@ -249,11 +256,53 @@ public sealed partial class TomlParser
                 Kind = kind,
                 IsImplicit = isImplicit,
                 FromDottedKeys = fromDottedKeys,
+                HasPosition = span.HasValue,
                 CurrentElement = -1,
-                Span = span,
+                Position = span?.Start ?? default,
             };
 
             return _structureNodeCount++;
+        }
+
+        // A rented array is not cleared, and the root node is not added like the other nodes
+        private static StructureNode[] RentStructureNodes()
+        {
+            var nodes = ArrayPool<StructureNode>.Shared.Rent(16);
+            nodes[RootStructureNode] = default;
+            return nodes;
+        }
+
+        // The bucket count must be a power of two, which the length of a rented array is
+        private static int[] RentStructureBuckets(int length)
+        {
+            var buckets = ArrayPool<int>.Shared.Rent(length);
+            buckets.AsSpan().Clear();
+            return buckets;
+        }
+
+        private static T[] Grow<T>(T[] array, int count)
+        {
+            var larger = ArrayPool<T>.Shared.Rent(array.Length * 2);
+            Array.Copy(array, larger, count);
+            ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            return larger;
+        }
+
+        // Called once the document ends, when no key can be defined anymore
+        private void ReleaseStructure()
+        {
+            if (_structureBuckets.Length == 0)
+            {
+                return;
+            }
+
+            ArrayPool<StructureNode>.Shared.Return(_structureNodes);
+            _structureEntries.AsSpan(0, _structureEntryCount).Clear();
+            ArrayPool<StructureEntry>.Shared.Return(_structureEntries);
+            ArrayPool<int>.Shared.Return(_structureBuckets);
+            _structureNodes = [];
+            _structureEntries = [];
+            _structureBuckets = [];
         }
 
         private static int GetStructureBucket(int parent, ulong hash, int bucketCount)
@@ -283,8 +332,9 @@ public sealed partial class TomlParser
                 }
             }
 
-            var message = _structureNodes[existingNode].Span is { } existingSpan
-                ? $"The key `{name}` is already defined at {existingSpan.Start} and cannot be redefined."
+            ref var existing = ref _structureNodes[existingNode];
+            var message = existing.HasPosition
+                ? $"The key `{name}` is already defined at {existing.Position} and cannot be redefined."
                 : $"The key `{name}` is already defined and cannot be redefined.";
             return CreateException(key.Span, message);
         }
@@ -298,29 +348,55 @@ public sealed partial class TomlParser
             Value,
         }
 
+        private bool StructureKeyEquals(in StructureEntry entry, in KeySegment key)
+        {
+            if (entry.KeyHash != key.Hash)
+            {
+                return false;
+            }
+
+            if (entry.KeyValue is not null && key.Value is not null)
+            {
+                return string.Equals(entry.KeyValue, key.Value, StringComparison.Ordinal);
+            }
+
+            return GetDecodedKey(entry.KeyTokenKind, entry.KeyOffset, entry.KeyLength, entry.KeyValue).SequenceEqual(GetDecodedKey(key));
+        }
+
         private struct StructureNode
         {
             public StructureNodeKind Kind;
             public bool IsImplicit;
             public bool FromDottedKeys;
+            public bool HasPosition;
             public int CurrentElement;
-            public TomlSourceSpan? Span;
+
+            // Where the key is defined, for the error message of a redefinition
+            public TomlTextPosition Position;
         }
 
         private struct StructureEntry
         {
-            public StructureEntry(int parent, int node, int next, KeySegment key)
+            public StructureEntry(int parent, int node, int next, in KeySegment key)
             {
                 Parent = parent;
                 Node = node;
                 Next = next;
-                Key = key;
+                KeyTokenKind = key.TokenKind;
+                KeyOffset = key.Span.Offset;
+                KeyLength = key.Span.Length;
+                KeyHash = key.Hash;
+                KeyValue = key.Value;
             }
 
             public int Parent;
             public int Node;
             public int Next;
-            public KeySegment Key;
+            public TokenKind KeyTokenKind;
+            public int KeyOffset;
+            public int KeyLength;
+            public ulong KeyHash;
+            public string? KeyValue;
         }
     }
 }

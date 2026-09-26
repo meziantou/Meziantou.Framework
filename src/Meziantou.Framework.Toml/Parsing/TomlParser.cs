@@ -775,6 +775,7 @@ public sealed partial class TomlParser
                             SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndDocument, span: null, propertyName: null, stringValue: null, data: 0));
                             _pendingOperation = PendingOperationKind.None;
                             _state = DocumentState.Ended;
+                            ReleaseStructure();
                             return true;
                         }
 
@@ -1451,15 +1452,17 @@ public sealed partial class TomlParser
             return GetDecodedKey(left).SequenceEqual(GetDecodedKey(right));
         }
 
-        private ReadOnlySpan<char> GetDecodedKey(in KeySegment segment)
+        private ReadOnlySpan<char> GetDecodedKey(in KeySegment segment) => GetDecodedKey(segment.TokenKind, segment.Span.Offset, segment.Span.Length, segment.Value);
+
+        private ReadOnlySpan<char> GetDecodedKey(TokenKind tokenKind, int offset, int length, string? value)
         {
-            if (segment.Value is not null)
+            if (value is not null)
             {
-                return segment.Value;
+                return value;
             }
 
-            var raw = _lexer.GetSpanUnchecked(segment.Span.Offset, segment.Span.Length);
-            switch (segment.TokenKind)
+            var raw = _lexer.GetSpanUnchecked(offset, length);
+            switch (tokenKind)
             {
                 case TokenKind.BasicKey:
                     return raw;
@@ -1472,7 +1475,7 @@ public sealed partial class TomlParser
                         return content;
                     }
 
-                    return TomlStringDecoder.Decode(raw, segment.TokenKind);
+                    return TomlStringDecoder.Decode(raw, tokenKind);
             }
         }
 

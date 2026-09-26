@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Meziantou.Framework.Toml.Parsing;
 
 namespace Meziantou.Framework.Toml.Tests;
@@ -74,6 +75,39 @@ public sealed class AllocationFreeParsingTests
         var after = GC.GetAllocatedBytesForCurrentThread();
 
         Assert.NotEqual(0, checksum, message: "Sanity check: event loop should execute.");
+        Assert.Equal(0, after - before, message: "Parser iteration should not allocate.");
+    }
+
+    // The parser tracks every key to reject duplicates. Its buffers are rented, and returned at the end of the document.
+    [Fact]
+    public void TomlParser_MoveNext_ManyKeys_ReusesItsBuffers()
+    {
+        var builder = new StringBuilder();
+        for (var i = 0; i < 2000; i++)
+        {
+            builder.Append('k').Append(i).Append(" = ").Append(i).Append('\n');
+        }
+
+        var toml = builder.ToString();
+        var parserOptions = new TomlParserOptions
+        {
+            DecodeScalars = false,
+            Mode = TomlParserMode.Strict,
+        };
+
+        WarmUpParser(toml, parserOptions);
+
+        var parser = TomlParser.Create(toml, parserOptions);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var count = 0;
+        while (parser.MoveNext())
+        {
+            count++;
+        }
+
+        var after = GC.GetAllocatedBytesForCurrentThread();
+
+        Assert.True(count > 4000, message: "Sanity check: event loop should execute.");
         Assert.Equal(0, after - before, message: "Parser iteration should not allocate.");
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -63,12 +64,27 @@ internal static partial class CharHelper
         return IsDigit(c) || c == ':' || c == '-' || c == 'Z' || c == 'T' || c == 'z' || c == 't' || c == '+' || c == '.';
     }
 
+    // The generic IndexOfAnyInRange boxes its bounds before the method is optimized, which a short-lived process, such as one
+    // that loads its configuration once, never gets past
+    private static readonly SearchValues<char> Surrogates = CreateSurrogates();
+
+    private static SearchValues<char> CreateSurrogates()
+    {
+        Span<char> surrogates = stackalloc char['\uDFFF' - '\uD800' + 1];
+        for (var i = 0; i < surrogates.Length; i++)
+        {
+            surrogates[i] = (char)('\uD800' + i);
+        }
+
+        return SearchValues.Create(surrogates);
+    }
+
     /// <summary>
     /// Gets the index of the first surrogate that is not part of a pair, which no TOML string or key can hold, or -1.
     /// </summary>
     public static int IndexOfUnpairedSurrogate(ReadOnlySpan<char> text)
     {
-        var start = text.IndexOfAnyInRange('\uD800', '\uDFFF');
+        var start = text.IndexOfAny(Surrogates);
         if (start < 0)
         {
             return -1;

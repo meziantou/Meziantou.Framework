@@ -398,6 +398,9 @@ public enum LogLevel
 var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
 ```
 
+A name set with `[TomlStringEnumMemberName]` is the one written, and the one read first: an exact match wins over a match in
+another case. The C# name of a renamed value is read too. Only a flags enum reads a comma-separated list.
+
 ## Extension data
 
 `[TomlExtensionData]` collects the keys that do not match a member. The member must be a

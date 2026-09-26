@@ -562,6 +562,21 @@ public enum GeneratedCaseEnum
     a,
 }
 
+public enum GeneratedRenamedEnum
+{
+    Information,
+    [TomlStringEnumMemberName("warn")]
+    Warning,
+}
+
+[Flags]
+public enum GeneratedFlagsEnum
+{
+    None = 0,
+    A = 1,
+    B = 2,
+}
+
 public enum GeneratedCaseCustomEnum
 {
     [TomlStringEnumMemberName("b")]
@@ -3405,6 +3420,28 @@ public class NewApiSourceGenerationTests
         static T Roundtrip<T>(T value)
             where T : struct, Enum
             => TomlSerializer.Deserialize<GeneratedEnumNamesHolder<T>>(TomlSerializer.Serialize(new GeneratedEnumNamesHolder<T> { V = value }))!.V;
+    }
+
+    [Theory]
+    [InlineData("warn", GeneratedRenamedEnum.Warning)]
+    [InlineData("WARN", GeneratedRenamedEnum.Warning)]
+    [InlineData("Warning", GeneratedRenamedEnum.Warning)]
+    [InlineData("warning", GeneratedRenamedEnum.Warning)]
+    [InlineData("information", GeneratedRenamedEnum.Information)]
+    public void TomlStringEnumConverter_ReadsNamesInAnyCase(string name, GeneratedRenamedEnum expected)
+    {
+        var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
+
+        Assert.Equal(expected, TomlSerializer.Deserialize<Dictionary<string, GeneratedRenamedEnum>>($"V = '{name}'", options)!["V"]);
+    }
+
+    [Fact]
+    public void TomlStringEnumConverter_ReadsAListOfNamesForAFlagsEnumOnly()
+    {
+        var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, GeneratedRenamedEnum>>("V = 'Information, warn'", options));
+        Assert.Equal(GeneratedFlagsEnum.A | GeneratedFlagsEnum.B, TomlSerializer.Deserialize<Dictionary<string, GeneratedFlagsEnum>>("V = 'A, B'", options)!["V"]);
     }
 
     [Fact]

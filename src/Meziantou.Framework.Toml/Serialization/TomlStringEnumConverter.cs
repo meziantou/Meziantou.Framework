@@ -19,7 +19,8 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// sets the name of an enum value. A flags value is written as a comma-separated list of names.
 /// </para>
 /// <para>
-/// Names are read case-insensitively, and integers are read as numeric values.
+/// Names are read case-insensitively, an exact match first, and integers are read as numeric values. The C# name of a value
+/// renamed with <see cref="TomlStringEnumMemberNameAttribute"/> is read too.
 /// </para>
 /// </remarks>
 public sealed class TomlStringEnumConverter : TomlConverter
@@ -44,7 +45,10 @@ public sealed class TomlStringEnumConverter : TomlConverter
         if (reader.TokenType == TomlTokenType.String && typeToConvert.IsEnum)
         {
             var name = reader.GetString();
-            if (!Enum.TryParse(typeToConvert, GetMemberNames(typeToConvert).ToEnumNames(name), ignoreCase: false, out var parsed))
+
+            // Only a flags value is a list of names: Enum.TryParse would combine the values of any enum
+            if ((name.Contains(',', StringComparison.Ordinal) && !typeToConvert.IsDefined(typeof(FlagsAttribute), inherit: false)) ||
+                !Enum.TryParse(typeToConvert, GetMemberNames(typeToConvert).ToEnumNames(name), ignoreCase: false, out var parsed))
             {
                 throw reader.CreateException($"Invalid enum name `{name.ToPrintableInputText()}` for type '{typeToConvert.FullName}'.");
             }
@@ -121,6 +125,18 @@ public sealed class TomlStringEnumConverter : TomlConverter
                 }
 
                 ignoreCase.TryAdd(name, field.Name);
+            }
+
+            // The C# name of a renamed member is read too, in any case, unless another member is written with it
+            if (toCustom is not null)
+            {
+                foreach (var memberName in toCustom.Keys)
+                {
+                    if (!exact.ContainsKey(memberName))
+                    {
+                        ignoreCase.TryAdd(memberName, memberName);
+                    }
+                }
             }
 
             return new EnumMemberNames(toCustom, exact, ignoreCase);

@@ -53,6 +53,32 @@ public class NewApiPolymorphismTests
         public required string Field2 { get; set; }
     }
 
+    [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+    [TomlDerivedType(typeof(LiteralDottedShape), "literal")]
+    private abstract class DottedShape
+    {
+    }
+
+    [TomlDottedKeyHandling(TomlDottedKeyHandling.Literal)]
+    private sealed class LiteralDottedShape : DottedShape
+    {
+        [TomlPropertyName("size.width")]
+        public int Width { get; set; }
+    }
+
+    [Fact]
+    public void Serialize_Polymorphic_KeepsLiteralDottedKeysOfTheDerivedType()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+        DottedShape value = new LiteralDottedShape { Width = 3 };
+
+        var toml = TomlSerializer.Serialize(value, options);
+
+        Assert.Contains("\"size.width\" = 3", toml, StringComparison.Ordinal);
+        var roundtrip = Assert.IsType<LiteralDottedShape>(TomlSerializer.Deserialize<DottedShape>(toml, options));
+        Assert.Equal(3, roundtrip.Width);
+    }
+
     [Fact]
     public void Serialize_Polymorphic_WritesDiscriminator()
     {

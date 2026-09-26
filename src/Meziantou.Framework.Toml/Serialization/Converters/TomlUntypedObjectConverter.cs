@@ -424,9 +424,11 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             current.PropertiesMetadata = metadata;
         }
 
+        // The keys of a table are final: DottedKeyHandling applies to the names of members and dictionary keys, which
+        // become table keys once, so a key such as "a.b" is not expanded again
         foreach (var pair in table)
         {
-            writer.WritePropertyName(pair.Key);
+            writer.WritePropertyNameLiteral(pair.Key);
             Instance.Write(writer, pair.Value);
         }
 

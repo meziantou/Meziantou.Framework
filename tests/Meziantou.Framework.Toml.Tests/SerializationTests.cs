@@ -152,6 +152,24 @@ public class SerializationTests
         Assert.Equal(2L, table["Y"]);
     }
 
+    [Fact]
+    public void Serialize_TomlTableMemberWithDottedKey_WritesTheKeyLiterally()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+        var value = new WithTable { Table = new TomlTable { ["a.b"] = 1L } };
+
+        var toml = TomlSerializer.Serialize(value, options);
+
+        Assert.Equal("[Table]\n\"a.b\" = 1\n", toml);
+        Assert.Equal(toml, TomlSerializer.Serialize<object>(value, options));
+        Assert.Equal(1L, TomlSerializer.Deserialize<WithTable>(toml, options)!.Table["a.b"]);
+    }
+
+    private sealed class WithTable
+    {
+        public TomlTable Table { get; set; } = [];
+    }
+
     private sealed class CollidingMembers
     {
         public int A { get; set; } = 1;

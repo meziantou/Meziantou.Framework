@@ -1021,6 +1021,48 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_MembersWithAnInaccessibleGetter_Compile()
+    {
+        var source = """
+            #nullable enable
+            using System;
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Child { public int X { get; set; } }
+
+            public sealed class GetOnly
+            {
+                [TomlInclude] private Child C { get; } = new();
+                [TomlInclude] private List<int> L { get; } = [1];
+                [TomlInclude, TomlSingleOrArray] private List<int> S { get; } = [1];
+                [Obsolete("x", true)] public Child O { get; } = new();
+            }
+
+            public sealed class PrivateGetter
+            {
+                [TomlInclude] public Child? C { private get; set; }
+                [TomlInclude, TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)] public List<int>? L { private get; set; } = [1];
+            }
+
+            public sealed class Generic<T>
+            {
+                public required T R { get; init; }
+                [TomlInclude, TomlSingleOrArray] private List<int> S { get; } = [1];
+            }
+
+            [TomlSerializable(typeof(GetOnly))]
+            [TomlSerializable(typeof(PrivateGetter))]
+            [TomlSerializable(typeof(Generic<int>))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
     public void Generator_PrivateTypeNextToANestedContext_Compiles()
     {
         var source = """

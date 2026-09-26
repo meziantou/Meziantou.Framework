@@ -1491,6 +1491,47 @@ internal sealed partial class TestTomlSerializerContextAggregation : TomlSeriali
 {
 }
 
+public sealed class GeneratedPrivateGetterChild
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedPrivateGetterModel
+{
+    [TomlInclude]
+    [TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)]
+    private GeneratedPrivateGetterChild Child { get; } = new();
+
+    [TomlInclude]
+    private List<int> Items { get; } = [1];
+
+    [TomlInclude]
+    public GeneratedPrivateGetterChild? Settable { private get; set; }
+
+    [TomlInclude]
+    [TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)]
+    public List<int>? Populated { private get; set; } = [1];
+
+    [TomlInclude]
+    [TomlSingleOrArray]
+    private List<int> Single { get; } = [1];
+
+    public GeneratedPrivateGetterChild GetChild() => Child;
+
+    public List<int> GetItems() => Items;
+
+    public GeneratedPrivateGetterChild? GetSettable() => Settable;
+
+    public List<int>? GetPopulated() => Populated;
+
+    public List<int> GetSingle() => Single;
+}
+
+[TomlSerializable(typeof(GeneratedPrivateGetterModel))]
+internal sealed partial class TestTomlSerializerContextPrivateGetter : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3371,6 +3412,26 @@ public class NewApiSourceGenerationTests
         Assert.Equal(Toml, TomlSerializer.Serialize(value, TestTomlSerializerContextObsolete.Default.GeneratedObsoleteModel).ReplaceLineEndings("\n"));
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedObsoleteModel>(Toml)!).ReplaceLineEndings("\n"));
         Assert.Equal(4, created.B);
+    }
+
+    [Fact]
+    public void MembersWithANonPublicGetter_AreReadThroughTheirAccessor()
+    {
+        const string Toml = "Items = [2]\nPopulated = [2]\nSingle = 3\n[Child]\nX = 5\n[Settable]\nX = 6\n";
+
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextPrivateGetter.Default.GeneratedPrivateGetterModel)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedPrivateGetterModel>(Toml)!;
+
+        foreach (var value in new[] { generated, reflection })
+        {
+            Assert.Equal(5, value.GetChild().X);
+            Assert.Equal([1], value.GetItems());
+            Assert.Equal(6, value.GetSettable()!.X);
+            Assert.Equal([1, 2], value.GetPopulated()!);
+            Assert.Equal([1, 3], value.GetSingle());
+        }
+
+        Assert.Equal(TomlSerializer.Serialize(reflection), TomlSerializer.Serialize(generated, TestTomlSerializerContextPrivateGetter.Default.GeneratedPrivateGetterModel));
     }
 
     [Fact]

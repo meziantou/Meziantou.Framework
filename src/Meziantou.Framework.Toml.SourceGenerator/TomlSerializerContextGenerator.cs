@@ -2248,7 +2248,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var addCollectionExpression = GetSingleOrArrayAddCollectionExpression(member.Type, "__existing", "__memberValue" + i.ToString(CultureInfo.InvariantCulture) + "!");
                         builder.Append("            if (__memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
                         builder.AppendLine("            {");
-                        builder.Append("                var __existing = value.").Append(member.Identifier).AppendLine(";");
+                        builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
                         builder.AppendLine("                if (__existing is null)");
                         builder.AppendLine("                {");
                         builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
@@ -2643,7 +2643,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var addCollectionExpression = GetSingleOrArrayAddCollectionExpression(member.Type, "__existing", "__memberValue" + index.ToString(CultureInfo.InvariantCulture) + "!");
         builder.Append("            if (__memberSeen").Append(index.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
         builder.AppendLine("            {");
-        builder.Append("                var __existing = value.").Append(member.Identifier).AppendLine(";");
+        builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
         builder.AppendLine("                if (__existing is null)");
         builder.AppendLine("                {");
         builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
@@ -3012,7 +3012,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static void EmitRepeatedTableExtensionIntoReadOnlyMember(StringBuilder builder, PocoMember member, string indent)
     {
-        var memberAccess = "value." + member.Identifier;
+        var memberAccess = GetMemberReadExpression(member, "value");
         var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
         builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer && ").Append(memberAccess).AppendLine(" is not null)");
         builder.Append(indent).AppendLine("{");
@@ -3156,7 +3156,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static void EmitMemberRead(StringBuilder builder, PocoMember member, int index, string indent, SourceGenOptions options)
     {
         var setterAccessorName = member.SetterAccessorName ?? member.InitSetterAccessorName;
-        if (setterAccessorName is null)
+        if (setterAccessorName is null && member.GetterAccessorName is null)
         {
             EmitMemberRead(builder, member, index, indent, options, "value." + member.Identifier);
             return;
@@ -3168,7 +3168,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("{");
         builder.Append(indent).Append("    var ").Append(local).Append(" = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
         EmitMemberRead(builder, member, index, indent + "    ", options, local);
-        builder.Append(indent).Append("    ").Append(setterAccessorName).Append('(').Append(member.DeclaringType.IsValueType ? "ref " : "").Append("value, ").Append(local).AppendLine(");");
+        if (setterAccessorName is not null)
+        {
+            builder.Append(indent).Append("    ").Append(setterAccessorName).Append('(').Append(member.DeclaringType.IsValueType ? "ref " : "").Append("value, ").Append(local).AppendLine(");");
+        }
+        else if (member.CanSet)
+        {
+            builder.Append(indent).Append("    value.").Append(member.Identifier).Append(" = ").Append(local).AppendLine(";");
+        }
+
         builder.Append(indent).AppendLine("}");
     }
 
@@ -3364,7 +3372,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                            ");
                             }
                         }
                         else
@@ -3394,7 +3402,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                            ");
                             }
                         }
                         else
@@ -3503,7 +3511,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                                        ");
                             }
                         }
                         else
@@ -3542,7 +3550,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                                        ");
                             }
                         }
                         else

@@ -597,6 +597,8 @@ internal static class TomlModelTextWriter
             {
                 TomlDepthHelper.ThrowDepthExceeded(_effectiveMaxDepth);
             }
+
+            TomlDepthHelper.EnsureSufficientExecutionStack();
         }
 
         private void WriteKey(string name)

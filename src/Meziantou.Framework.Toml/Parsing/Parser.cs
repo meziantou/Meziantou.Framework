@@ -554,10 +554,11 @@ internal partial class Parser
     private bool EnterContainer()
     {
         _currentContainerDepth++;
-        if (_currentContainerDepth > _effectiveMaxDepth)
+        var isTooDeep = _currentContainerDepth > _effectiveMaxDepth;
+        if (isTooDeep || !TomlDepthHelper.HasSufficientExecutionStack())
         {
             // Containers are read recursively, so the rest of the document is kept as trivia instead of being read
-            LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            LogError(isTooDeep ? TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth) : TomlDepthHelper.InsufficientExecutionStackMessage);
             _currentContainerDepth--;
             while (_token.Kind != TokenKind.Eof)
             {

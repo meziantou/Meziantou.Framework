@@ -123,7 +123,8 @@ public sealed record TomlSerializerOptions
 
     /// <summary>Gets or sets the maximum allowed nesting depth for TOML tables and arrays during serialization and deserialization.</summary>
     /// <remarks>
-    /// A value of <c>0</c> uses the default limit of 64.
+    /// A value of <c>0</c> uses the default limit of 64. There is no upper limit: a document nested deeper than the stack of
+    /// the current thread allows throws a <see cref="TomlException"/> instead of overflowing the stack.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is less than 0.</exception>
     public int MaxDepth

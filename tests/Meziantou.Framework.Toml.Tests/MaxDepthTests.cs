@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Parsing;
 using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Syntax;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -164,6 +167,78 @@ public sealed class MaxDepthTests
         }
 
         return depth;
+    }
+
+    [Fact]
+    public void Deserialize_UnlimitedMaxDepth_ThrowsBeforeTheStackOverflows()
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var toml = CreateNestedArrayToml(100_000);
+
+        AssertNestedTooDeeply(RunWithSmallStack(() => TomlSerializer.Deserialize<TomlTable>(toml, options)));
+        AssertNestedTooDeeply(RunWithSmallStack(() => TomlSerializer.Deserialize<object>(toml, options)));
+    }
+
+    [Fact]
+    public void SyntaxParser_UnlimitedMaxDepth_ReportsADiagnosticBeforeTheStackOverflows()
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var toml = CreateNestedArrayToml(100_000);
+        DocumentSyntax? doc = null;
+
+        Assert.Null(RunWithSmallStack(() => doc = SyntaxParser.Parse(toml, options)));
+
+        Assert.Contains(doc!.Diagnostics, diagnostic => diagnostic.Message.Contains("nested too deeply", StringComparison.Ordinal));
+        Assert.Equal(toml, doc.ToString());
+    }
+
+    [Fact]
+    public void Serialize_UnlimitedMaxDepth_ThrowsBeforeTheStackOverflows()
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var model = new TomlArray();
+        var list = new List<object>();
+        var currentModel = model;
+        var currentList = list;
+        for (var i = 0; i < 100_000; i++)
+        {
+            var nextModel = new TomlArray();
+            currentModel.Add(nextModel);
+            currentModel = nextModel;
+
+            var nextList = new List<object>();
+            currentList.Add(nextList);
+            currentList = nextList;
+        }
+
+        AssertNestedTooDeeply(RunWithSmallStack(() => TomlSerializer.Serialize(new TomlTable { ["value"] = model }, options)));
+        AssertNestedTooDeeply(RunWithSmallStack(() => TomlSerializer.Serialize(new Dictionary<string, object> { ["value"] = list }, options)));
+    }
+
+    private static void AssertNestedTooDeeply(Exception? exception)
+    {
+        var tomlException = Assert.IsType<TomlException>(exception);
+        Assert.Contains("nested too deeply", tomlException.Message, StringComparison.Ordinal);
+    }
+
+    // The default stack of a thread differs between platforms, so the tests choose one
+    private static Exception? RunWithSmallStack(Action action)
+    {
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        }, maxStackSize: 512 * 1024);
+        thread.Start();
+        thread.Join();
+        return exception;
     }
 
     private static TomlTable CreateNestedTableChain(int depth)

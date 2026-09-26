@@ -317,6 +317,7 @@ public sealed class TomlReader
                 _tokenType = TomlTokenType.EndDocument;
                 break;
             case TomlParseEventKind.StartTable:
+                TomlDepthHelper.EnsureSufficientExecutionStack(_currentSpan);
                 _tokenType = TomlTokenType.StartTable;
                 break;
             case TomlParseEventKind.EndTable:
@@ -329,6 +330,7 @@ public sealed class TomlReader
                 _currentData = TomlParseEventData.UnpackPropertyNameHash(parseEvent.Data);
                 break;
             case TomlParseEventKind.StartArray:
+                TomlDepthHelper.EnsureSufficientExecutionStack(_currentSpan);
                 _tokenType = TomlTokenType.StartArray;
                 break;
             case TomlParseEventKind.EndArray:
@@ -534,6 +536,11 @@ public sealed class TomlReader
 
     private void ApplyBufferedToken(TomlReaderToken token)
     {
+        if (token.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
+        {
+            TomlDepthHelper.EnsureSufficientExecutionStack(token.Span);
+        }
+
         _tokenType = token.TokenType;
         _currentSpan = token.Span;
         _currentRawText = token.RawText;

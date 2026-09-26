@@ -472,5 +472,7 @@ public sealed class TomlWriter
         {
             TomlDepthHelper.ThrowDepthExceeded(_effectiveMaxDepth);
         }
+
+        TomlDepthHelper.EnsureSufficientExecutionStack();
     }
 }

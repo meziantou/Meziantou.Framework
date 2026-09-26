@@ -2,7 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
+
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Html;
 
 namespace Meziantou.Framework.Markdown.Tests;
@@ -145,5 +148,86 @@ public class TestHtmlAttributes
     public void GenericAttributesIsSafeAttributeName(string name, bool expected)
     {
         Assert.Equal(expected, GenericAttributesExtension.IsSafeAttributeName(name));
+    }
+
+    [Theory]
+    [InlineData("{#a", "")]
+    [InlineData("{.a", "")]
+    [InlineData("={a", "")]
+    [InlineData("x{#ab", "")]
+    [InlineData("{#a", " !}")]
+    [InlineData("{.a", " !}")]
+    [InlineData("={a", " !}")]
+    [InlineData("{a={a", " !}")]
+    public void GenericAttributesWithoutValidClosingBraceAreParsedInLinearTime(string item, string suffix)
+    {
+        // Each '{' used to scan, and copy, the rest of the paragraph, even when a '}' follows
+        var markdown = string.Concat(Enumerable.Repeat(item, 160 * 1024 / item.Length)) + suffix;
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.Equal("<p>" + markdown + "</p>\n", html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("{#a{#a{#a", "<p>{#a{#a{#a</p>\n")]
+    [InlineData("={a={a={a", "<p>={a={a={a</p>\n")]
+    [InlineData("{#ab{#ab{#ab !}", "<p>{#ab{#ab{#ab !}</p>\n")]
+    [InlineData("={a={a={a !}", "<p>={a={a={a !}</p>\n")]
+    [InlineData("{#a{#a{#ab}", "<p id=\"a{#a{#ab\"></p>\n")]
+    [InlineData("text {#a {#ab}", "<p id=\"ab\">text {#a </p>\n")]
+    [InlineData("{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a {.cls}", "<p class=\"cls\">{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a </p>\n")]
+    [InlineData("={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a *b*{title=t lang=fr}", "<p>={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a <em title=\"t\" lang=\"fr\">b</em></p>\n")]
+    [InlineData("{#a{#a{#a\n{#ab}", "<p>{#a{#a{#a</p>\n")]
+    [InlineData("# t {#a{#a{#a", "<h1 id=\"t-aaa\">t {#a{#a{#a</h1>\n")]
+    [InlineData("# t {#ab}{#ab", "<h1 id=\"ab\">t</h1>\n")]
+    [InlineData("[l](u){#a{#a{#a{title=\"x}", "<p><a href=\"u\" id=\"a{#a{#a{title=&quot;x\">l</a></p>\n")]
+    [InlineData("[l](u){title='a{#a{#a' lang=fr}", "<p><a href=\"u\" title=\"a{#a{#a\" lang=\"fr\">l</a></p>\n")]
+    [InlineData("```js {#a{#a{#a", "<pre><code class=\"language-js\"></code></pre>\n")]
+    public void GenericAttributesWithoutValidClosingBrace(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void GenericAttributesScanOutcomesMatchTryParse()
+    {
+        // The outcomes computed in linear time must follow the steps of TryParse exactly
+        const string Alphabet = "{{}}##..=='\" \t\n \0aZ1_:-!";
+        var state = 42UL;
+        int Next(int maxValue)
+        {
+            // Deterministic pseudo-random numbers
+            state = (state * 6364136223846793005UL) + 1442695040888963407UL;
+            return (int)((state >> 33) % (ulong)maxValue);
+        }
+
+        for (var i = 0; i < 5000; i++)
+        {
+            var chars = new char[1 + Next(40)];
+            for (var j = 0; j < chars.Length; j++)
+            {
+                chars[j] = Alphabet[Next(Alphabet.Length)];
+            }
+
+            var text = new string(chars);
+            var end = Next(text.Length);
+            var start = Next(end + 2);
+            var outcomes = new byte[end + 2 - start];
+            GenericAttributesParser.ComputeScanOutcomes(text, start, end, outcomes);
+            for (var position = Math.Max(0, start - 1); position <= end; position++)
+            {
+                var slice = new StringSlice(text, position, end);
+                var expected = GenericAttributesParser.TryParse(ref slice, out _);
+                var actual = (position == 0 || text[position - 1] != '{') && GenericAttributesParser.IsValidScanOutcome(outcomes[position + 1 - start]);
+                Assert.Equal(expected, actual, $"Text: '{text}', start: {start}, end: {end}, position: {position}");
+            }
+        }
     }
 }

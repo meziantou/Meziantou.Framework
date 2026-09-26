@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
@@ -34,6 +35,7 @@ public class InlineProcessor
     internal ContainerBlock? _newContainerToReplace;
     private InlineLinkScanCache? _linkScanCache;
     private InlineHtmlScanCache? _htmlScanCache;
+    private GenericAttributesScanCache? _genericAttributesScanCache;
     private readonly InlineContainerChain _openContainers = new();
     private bool _isParsingInlines;
     private bool _isOpenContainersEngaged;
@@ -114,6 +116,11 @@ public class InlineProcessor
     /// Gets the cache used by <see cref="AutolinkInlineParser"/> to avoid searching the same characters again for the end of each inline raw HTML construct.
     /// </summary>
     internal InlineHtmlScanCache HtmlScanCache => _htmlScanCache ??= new();
+
+    /// <summary>
+    /// Gets the cache used by <see cref="GenericAttributesParser"/> to avoid scanning the same characters again for each '{'.
+    /// </summary>
+    internal GenericAttributesScanCache GenericAttributesScanCache => _genericAttributesScanCache ??= new();
 
     private long _referenceExpansionLength;
 
@@ -294,6 +301,7 @@ public class InlineProcessor
         _previousLineIndexForSliceOffset = 0;
         _lineOffsets.Clear();
         _htmlScanCache?.Clear();
+        _genericAttributesScanCache?.Clear();
         var text = leafBlock.Lines.ToSlice(_lineOffsets);
         _unescapedSourceStart = text.Start;
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
@@ -846,6 +854,7 @@ public class InlineProcessor
         Array.Clear(ParserStates, 0, ParserStates.Length);
         _linkScanCache?.Clear();
         _htmlScanCache?.Clear();
+        _genericAttributesScanCache?.Clear();
         _referenceExpansionLength = 0;
         MaximumReferenceExpansionLength = long.MaxValue;
     }

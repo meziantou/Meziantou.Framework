@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -38,7 +39,16 @@ public class GenericAttributesParser : InlineParser
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
     {
         var startPosition = slice.Start;
-        if (TryParse(ref slice, out HtmlAttributes? attributes))
+
+        // Remembers the failed scans of this inline text, so that a '{' that cannot start attributes fails without scanning the text again
+        var scanCache = processor.GenericAttributesScanCache;
+        scanCache.SetText(slice);
+        if (scanCache.IsKnownInvalid(startPosition))
+        {
+            return false;
+        }
+
+        if (TryParse(ref slice, out HtmlAttributes? attributes, out var scanEnd))
         {
             RemoveFilteredProperties(attributes, AttributeFilter);
 
@@ -82,6 +92,7 @@ public class GenericAttributesParser : InlineParser
             return true;
         }
 
+        scanCache.AddFailedScan(startPosition, scanEnd);
         return false;
     }
 
@@ -93,9 +104,23 @@ public class GenericAttributesParser : InlineParser
     /// <returns><c>true</c> if parsing the HTML attributes was successful</returns>
     public static bool TryParse(ref StringSlice slice, [NotNullWhen(true)] out HtmlAttributes? attributes)
     {
+        return TryParse(ref slice, out attributes, out _);
+    }
+
+    /// <summary>
+    /// Tries to extract HTML attributes {...} from the current position of a slice, and reports where the scan stopped.
+    /// </summary>
+    /// <param name="slice">The slice to parse.</param>
+    /// <param name="attributes">The output attributes or null if not found or invalid</param>
+    /// <param name="scanEnd">The position where the scan stopped.</param>
+    /// <returns><c>true</c> if parsing the HTML attributes was successful</returns>
+    /// <remarks><see cref="ComputeScanOutcomes"/> follows the same steps: keep them in sync.</remarks>
+    internal static bool TryParse(ref StringSlice slice, [NotNullWhen(true)] out HtmlAttributes? attributes, out int scanEnd)
+    {
         attributes = null;
         if (slice.PeekCharExtra(-1) == '{')
         {
+            scanEnd = slice.Start;
             return false;
         }
 
@@ -170,7 +195,7 @@ public class GenericAttributesParser : InlineParser
                 while (true)
                 {
                     c = line.NextChar();
-                    if (!(c.IsAlphaNumeric() || c == '_' || c == ':' || c == '.' || c == '-'))
+                    if (!IsAttributeNameChar(c))
                     {
                         break;
                     }
@@ -217,6 +242,7 @@ public class GenericAttributesParser : InlineParser
                         c = line.NextChar();
                         if (c == '\0')
                         {
+                            scanEnd = line.Start;
                             return false;
                         }
                         if (c == openingStringChar)
@@ -236,6 +262,7 @@ public class GenericAttributesParser : InlineParser
                     {
                         if (c == '\0')
                         {
+                            scanEnd = line.Start;
                             return false;
                         }
                         if (c.IsWhitespace() || c == '}')
@@ -274,12 +301,152 @@ public class GenericAttributesParser : InlineParser
             // Assign back the current processor of the line to
             slice = line;
         }
+
+        scanEnd = line.Start;
         return isValid;
     }
 
     private static bool IsStartAttributeName(char c)
     {
         return c.IsAlpha() || c == '_' || c == ':';
+    }
+
+    private static bool IsAttributeNameChar(char c)
+    {
+        return c.IsAlphaNumeric() || c == '_' || c == ':' || c == '.' || c == '-';
+    }
+
+    // The steps of TryParse that can be reached at a position of the text. Their outcome only depends on this position.
+    private const byte AttributesValid = 1;     // In the main loop, the current character leads to the closing '}'
+    private const byte ValueValid = 2;          // A value (quoted or not) starting here leads to the closing '}'
+    private const byte AfterEqualsValid = 4;    // The value that follows the '=' just before this position leads to the closing '}'
+    private const byte AfterNameValid = 8;      // The attribute name that ends just before this position leads to the closing '}'
+
+    /// <summary>
+    /// Determines whether a value computed by <see cref="ComputeScanOutcomes"/> for the position following a '{' means that
+    /// <see cref="TryParse(ref StringSlice, out HtmlAttributes?, out int)"/> can succeed at this '{'.
+    /// </summary>
+    internal static bool IsValidScanOutcome(byte outcome) => (outcome & AttributesValid) != 0;
+
+    /// <summary>
+    /// Computes, in linear time, whether <see cref="TryParse(ref StringSlice, out HtmlAttributes?, out int)"/> succeeds
+    /// when it starts at each '{' of <paramref name="text"/> from <paramref name="start"/> - 1 to <paramref name="end"/>.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="start">The position of the first character following a '{'.</param>
+    /// <param name="end">The position of the last character of the slice.</param>
+    /// <param name="outcomes">Receives an outcome for each position from <paramref name="start"/> to <paramref name="end"/> + 1, to pass to <see cref="IsValidScanOutcome(byte)"/>.</param>
+    /// <remarks>
+    /// This follows the steps of <see cref="TryParse(ref StringSlice, out HtmlAttributes?, out int)"/>, except the
+    /// check of the character preceding the '{'. Each step only goes forward and only depends on its position, so the
+    /// outcome of the steps is computed from the end of the text, where no attributes can succeed.
+    /// </remarks>
+    internal static void ComputeScanOutcomes(string text, int start, int end, Span<byte> outcomes)
+    {
+        Debug.Assert(outcomes.Length == end + 2 - start);
+
+        // The first position at or after the current one where each scan of TryParse stops. Beyond the end, the scans read '\0'.
+        var nextIdentifierEnd = end + 1;    // '}', a whitespace or '\0' ends an id, a class or an unquoted value
+        var nextNonWhitespace = end + 1;
+        var nextSingleQuote = end + 1;      // '\0' ends a quoted value too
+        var nextDoubleQuote = end + 1;
+        var nextNameEnd = end + 1;
+
+        for (var position = end + 1; position >= start; position--)
+        {
+            var c = position <= end ? text[position] : '\0';
+
+            // The scans that start after the current position
+            var identifierEndAfter = nextIdentifierEnd;
+            var singleQuoteAfter = nextSingleQuote;
+            var doubleQuoteAfter = nextDoubleQuote;
+            var nameEndAfter = nextNameEnd;
+
+            if (c == '}' || c.IsWhiteSpaceOrZero())
+            {
+                nextIdentifierEnd = position;
+            }
+
+            if (!c.IsWhitespace())
+            {
+                nextNonWhitespace = position;
+            }
+
+            if (c is '\'' or '\0')
+            {
+                nextSingleQuote = position;
+            }
+
+            if (c is '"' or '\0')
+            {
+                nextDoubleQuote = position;
+            }
+
+            if (!IsAttributeNameChar(c))
+            {
+                nextNameEnd = position;
+            }
+
+            // The main loop, reading c
+            bool attributesValid;
+            if (c == '}')
+            {
+                attributesValid = true;
+            }
+            else if (c == '\0')
+            {
+                attributesValid = false;
+            }
+            else if (c is '#' or '.')
+            {
+                // An id or a class runs to the next '}' or whitespace. Note that a one-character id or class is rejected.
+                attributesValid = identifierEndAfter != position + 2 && Get(outcomes, start, identifierEndAfter, AttributesValid);
+            }
+            else if (!c.IsWhitespace())
+            {
+                attributesValid = IsStartAttributeName(c) && Get(outcomes, start, nameEndAfter, AfterNameValid);
+            }
+            else
+            {
+                attributesValid = Get(outcomes, start, position + 1, AttributesValid);
+            }
+
+            // A value starting with c
+            bool valueValid;
+            if (c is '\'' or '"')
+            {
+                var closingQuote = c == '\'' ? singleQuoteAfter : doubleQuoteAfter;
+                valueValid = closingQuote <= end && text[closingQuote] == c && Get(outcomes, start, closingQuote + 1, AttributesValid);
+            }
+            else
+            {
+                // An unquoted value cannot be empty, and fails when it reaches '\0'
+                valueValid = nextIdentifierEnd != position && nextIdentifierEnd <= end && text[nextIdentifierEnd] != '\0' && Get(outcomes, start, nextIdentifierEnd, AttributesValid);
+            }
+
+            // After a '=', the whitespaces are skipped
+            var afterEqualsValid = nextNonWhitespace == position ? valueValid : Get(outcomes, start, nextNonWhitespace, ValueValid);
+
+            // After an attribute name, the whitespaces are skipped
+            bool afterNameValid;
+            var next = nextNonWhitespace <= end ? text[nextNonWhitespace] : '\0';
+            if ((c.IsSpaceOrTab() && (next == '.' || next == '#' || IsStartAttributeName(next))) || next == '}')
+            {
+                // A boolean attribute
+                afterNameValid = nextNonWhitespace == position ? attributesValid : Get(outcomes, start, nextNonWhitespace, AttributesValid);
+            }
+            else
+            {
+                afterNameValid = next == '=' && Get(outcomes, start, nextNonWhitespace + 1, AfterEqualsValid);
+            }
+
+            outcomes[position - start] = (byte)((attributesValid ? AttributesValid : 0) | (valueValid ? ValueValid : 0) | (afterEqualsValid ? AfterEqualsValid : 0) | (afterNameValid ? AfterNameValid : 0));
+        }
+
+        static bool Get(Span<byte> outcomes, int start, int position, byte step)
+        {
+            return (outcomes[position - start] & step) != 0;
+        }
     }
 
     internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)

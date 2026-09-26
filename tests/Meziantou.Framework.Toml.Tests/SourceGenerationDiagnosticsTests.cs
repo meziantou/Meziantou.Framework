@@ -646,21 +646,33 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.True(diagnostics.Any(d => d.Id == "MFTOML008"));
     }
 
-    [Fact]
-    public void Generator_ReportsInvalidTypeInfoPropertyName()
+    [Theory]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"not-valid\")]", "must be a valid C# identifier")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Options\")]", "conflicts with a member of the context")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Default\")]", "conflicts with a member of the context")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Helper\")]", "conflicts with a member of the context")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Item\")][TomlSerializable(typeof(Address), TypeInfoPropertyName = \"Item\")]", "is used for both 'Person' and 'Address'")]
+    public void Generator_ReportsInvalidTypeInfoPropertyName(string attributes, string message)
     {
-        var source = """
+        var source = $$"""
             #nullable enable
             using Meziantou.Framework.Toml.Serialization;
 
-            [TomlSerializable(typeof(Person), TypeInfoPropertyName = "not-valid")]
-            internal partial class Ctx : TomlSerializerContext { }
+            {{attributes}}
+            internal partial class Ctx : TomlSerializerContext
+            {
+                public static void Helper() { }
+            }
 
             public sealed class Person { public string Name { get; set; } = ""; }
+            public sealed class Address { public string City { get; set; } = ""; }
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "MFTOML005" && d.GetMessage().Contains("TypeInfoPropertyName", StringComparison.Ordinal)));
+
+        var diagnostic = Assert.Single(diagnostics, d => d.Id == "MFTOML005");
+        Assert.Contains(message, diagnostic.GetMessage(CultureInfo.InvariantCulture));
+        Assert.All(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != "MFTOML005"), d => Assert.Equal("CS0534", d.Id));
     }
 
     [Fact]

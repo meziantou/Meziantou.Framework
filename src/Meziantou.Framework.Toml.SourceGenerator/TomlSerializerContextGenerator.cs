@@ -3697,22 +3697,36 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static bool ValidateRootAttributes(GeneratorOutput context, ContextModel model)
     {
+        var reservedIdentifiers = GetReservedIdentifiers(model);
+        var typesByName = new Dictionary<string, ITypeSymbol>(StringComparer.Ordinal);
         foreach (var root in model.RootTypes)
         {
-            if (root.TypeInfoPropertyName is null)
+            if (root.TypeInfoPropertyName is not { } name)
             {
                 continue;
             }
 
-            if (!SyntaxFacts.IsValidIdentifier(root.TypeInfoPropertyName))
+            string? error = null;
+            if (!SyntaxFacts.IsValidIdentifier(name))
             {
-                context.ReportDiagnostic(DiagnosticInfo.Create(
-                    InvalidSourceGenerationOption,
-                    model.ContextSymbol.Locations.FirstOrDefault(),
-                    model.ContextSymbol.ToDisplayString(),
-                    $"TomlSerializable TypeInfoPropertyName '{root.TypeInfoPropertyName}' must be a valid C# identifier."));
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' must be a valid C# identifier.";
+            }
+            else if (IsReservedTypeInfoName(reservedIdentifiers, name))
+            {
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' conflicts with a member of the context.";
+            }
+            else if (typesByName.TryGetValue(name, out var otherType) && !SymbolEqualityComparer.Default.Equals(otherType, root.Type))
+            {
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' is used for both '{otherType.ToDisplayString()}' and '{root.Type.ToDisplayString()}'.";
+            }
+
+            if (error is not null)
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(InvalidSourceGenerationOption, root.Location ?? model.ContextSymbol.Locations.FirstOrDefault(), model.ContextSymbol.ToDisplayString(), error));
                 return false;
             }
+
+            typesByName[name] = root.Type;
         }
 
         return true;
@@ -6113,24 +6127,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static Dictionary<ITypeSymbol, string> CreateTypeInfoNames(ContextModel model, ImmutableArray<ITypeSymbol> types)
     {
         var names = new Dictionary<ITypeSymbol, string>(SymbolEqualityComparer.Default);
-        var usedIdentifiers = new HashSet<string>(StringComparer.Ordinal)
-        {
-            model.TypeName,
-            "Default",
-            "Options",
-            "GetTypeInfo",
-            "CreateDefaultOptions",
-            "s_sourceGenerationConverterTypes",
-        };
-
-        // The members inherited from TomlSerializerContext and object, and the members declared by the user
-        for (var current = model.ContextSymbol; current is not null; current = current.BaseType)
-        {
-            foreach (var member in current.GetMembers())
-            {
-                usedIdentifiers.Add(member.Name);
-            }
-        }
+        var usedIdentifiers = GetReservedIdentifiers(model);
 
         // Explicit names first, then the roots keep their simple name when possible, then the other types
         foreach (var root in model.RootTypes)
@@ -6185,11 +6182,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
-        bool IsAvailable(string name)
-            => !usedIdentifiers.Contains(name) &&
-               !usedIdentifiers.Contains("_" + name) &&
-               !usedIdentifiers.Contains("Create" + name) &&
-               !usedIdentifiers.Contains("__TomlTypeInfo_" + name);
+        bool IsAvailable(string name) => !IsReservedTypeInfoName(usedIdentifiers, name);
 
         void Assign(ITypeSymbol type, string name)
         {
@@ -6200,6 +6193,38 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             usedIdentifiers.Add("__TomlTypeInfo_" + name);
         }
     }
+
+    // The members generated for the context, the members inherited from TomlSerializerContext and object, and the members
+    // declared by the user
+    private static HashSet<string> GetReservedIdentifiers(ContextModel model)
+    {
+        var identifiers = new HashSet<string>(StringComparer.Ordinal)
+        {
+            model.TypeName,
+            "Default",
+            "Options",
+            "GetTypeInfo",
+            "CreateDefaultOptions",
+            "s_sourceGenerationConverterTypes",
+        };
+
+        for (var current = model.ContextSymbol; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers())
+            {
+                identifiers.Add(member.Name);
+            }
+        }
+
+        return identifiers;
+    }
+
+    // The metadata of a type uses a property, a field, a factory method, and a nested class named after it
+    private static bool IsReservedTypeInfoName(HashSet<string> reservedIdentifiers, string name)
+        => reservedIdentifiers.Contains(name) ||
+           reservedIdentifiers.Contains("_" + name) ||
+           reservedIdentifiers.Contains("Create" + name) ||
+           reservedIdentifiers.Contains("__TomlTypeInfo_" + name);
 
     private static string GetTypeInfoAccess(ITypeSymbol type)
         => "GetTypeInfo<" + type.ToDisplayString(FullyQualifiedNullableFormat) + ">(_context." + GetTypeInfoPropertyName(type) + ")";

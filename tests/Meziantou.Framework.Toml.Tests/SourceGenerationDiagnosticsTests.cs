@@ -647,6 +647,27 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Theory]
+    [InlineData("JsonIgnoreCondition.Never", false)]
+    [InlineData("JsonIgnoreCondition.WhenWritingNull", false)]
+    [InlineData("JsonIgnoreCondition.WhenWritingDefault", false)]
+    [InlineData("JsonIgnoreCondition.Always", true)]
+    public void Generator_JsonDefaultIgnoreCondition_IsValidatedLikeToml(string condition, bool isError)
+    {
+        var diagnostics = RunGenerator($$"""
+            using System.Text.Json.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [JsonSourceGenerationOptions(DefaultIgnoreCondition = {{condition}})]
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person { public string Name { get; set; } = ""; }
+            """);
+
+        Assert.Equal(isError, diagnostics.Any(d => d.Id == "MFTOML005"));
+    }
+
+    [Theory]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"not-valid\")]", "must be a valid C# identifier")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Options\")]", "conflicts with a member of the context")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Default\")]", "conflicts with a member of the context")]

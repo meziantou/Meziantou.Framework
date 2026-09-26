@@ -691,6 +691,19 @@ internal sealed partial class TestTomlSerializerContextJsonWebDefaults : TomlSer
 {
 }
 
+[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.Never, WriteIndented = true, IndentSize = 4, MaxDepth = 12)]
+[TomlSerializable(typeof(GeneratedPerson))]
+internal sealed partial class TestTomlSerializerContextJsonSharedOptions : TomlSerializerContext
+{
+}
+
+[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, MaxDepth = 12)]
+[TomlSourceGenerationOptions(MaxDepth = 20)]
+[TomlSerializable(typeof(GeneratedPerson))]
+internal sealed partial class TestTomlSerializerContextJsonSharedOptionsOverridden : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedDomHolder
 {
     public TomlTable? Table { get; set; }
@@ -1675,6 +1688,20 @@ public class NewApiSourceGenerationTests
         Assert.Equal("Field = 1\nReadOnlyField = 2\nGetOnly = 3\nInitOnly = 4", toml.Trim());
         Assert.Equal(10, model.Field);
         Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_JsonSourceGenerationOptions_SharedOptionsAreApplied()
+    {
+        var options = TestTomlSerializerContextJsonSharedOptions.Default.Options;
+        var overridden = TestTomlSerializerContextJsonSharedOptionsOverridden.Default.Options;
+
+        Assert.Equal(TomlIgnoreCondition.Never, options.DefaultIgnoreCondition);
+        Assert.True(options.WriteIndented);
+        Assert.Equal(4, options.IndentSize);
+        Assert.Equal(12, options.MaxDepth);
+        Assert.Equal(TomlIgnoreCondition.WhenWritingDefault, overridden.DefaultIgnoreCondition);
+        Assert.Equal(20, overridden.MaxDepth);
     }
 
     [Fact]

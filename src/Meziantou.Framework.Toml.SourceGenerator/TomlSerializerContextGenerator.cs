@@ -6864,6 +6864,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     // JsonUnmappedMemberHandling uses the same values as TomlUnmappedMemberHandling
                     if (options.UnmappedMemberHandling is null && value.Value is int unmappedMemberHandling) options.UnmappedMemberHandling = unmappedMemberHandling;
                     break;
+                case "DefaultIgnoreCondition":
+                    if (options.DefaultIgnoreCondition is null && value.Value is int jsonIgnoreCondition) options.DefaultIgnoreCondition = ToTomlIgnoreCondition(jsonIgnoreCondition);
+                    break;
+                case "WriteIndented":
+                    if (options.WriteIndented is null && value.Value is bool writeIndented) options.WriteIndented = writeIndented;
+                    break;
+                case "IndentSize":
+                    if (options.IndentSize is null && value.Value is int indentSize) options.IndentSize = indentSize;
+                    break;
+                case "MaxDepth":
+                    if (options.MaxDepth is null && value.Value is int maxDepth) options.MaxDepth = maxDepth;
+                    break;
             }
         }
 
@@ -6877,6 +6889,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     }
 
     private const int JsonSerializerDefaultsWeb = 1;
+
+    // JsonIgnoreCondition and TomlIgnoreCondition do not use the same values
+    private static int ToTomlIgnoreCondition(int jsonIgnoreCondition) => jsonIgnoreCondition switch
+    {
+        0 => 0, // Never
+        1 => 3, // Always
+        2 => 2, // WhenWritingDefault
+        3 => 1, // WhenWritingNull
+        _ => jsonIgnoreCondition, // WhenWriting and WhenReading
+    };
 
     private static void ApplyTomlSourceGenerationOptionsAttribute(AttributeData attribute, SourceGenOptions options)
     {

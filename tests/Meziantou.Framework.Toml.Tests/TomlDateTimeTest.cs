@@ -141,6 +141,15 @@ public class TomlDateTimeTest
         Assert.NotEqual(utc, zeroOffset);
     }
 
+    [Fact]
+    public void Deserialize_LocalTime_HasTheFirstDate()
+    {
+        var value = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>("a = 07:32:00.5")!["a"];
+
+        Assert.Equal(new DateTimeOffset(1, 1, 1, 7, 32, 0, 500, TimeSpan.Zero), value.DateTime);
+        Assert.Equal(Helpers.TomlFormatHelper.ToTomlDateTime(new TimeOnly(7, 32, 0, 500)), value);
+    }
+
     private sealed class DateTimeModel
     {
         public DateTime Utc { get; set; }

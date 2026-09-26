@@ -178,7 +178,9 @@ internal static class DateTimeRFC3339
 
     public static bool TryParseLocalTime(string str, out TomlDateTime time)
     {
-        return TryParseExactWithPrecision(TruncateFractionalSeconds(str.ToUpperInvariant()), LocalTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalTime, out time);
+        // Without NoCurrentDateDefault, the date would be today, so two reads of the same time would differ after midnight.
+        // 0001-01-01 is also the date of the local times written from a TimeOnly or a TimeSpan.
+        return TryParseExactWithPrecision(TruncateFractionalSeconds(str.ToUpperInvariant()), LocalTimeFormats, TryParseDateTime, DateTimeStyles.NoCurrentDateDefault, TomlDateTimeKind.LocalTime, out time);
     }
 
     /// <summary>

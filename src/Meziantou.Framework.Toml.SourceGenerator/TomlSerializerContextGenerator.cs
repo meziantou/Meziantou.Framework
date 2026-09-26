@@ -671,9 +671,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        options = options with { RootValueHandling = ").Append(rootValueHandlingExpression).AppendLine(" };");
         }
 
-        if (!string.IsNullOrWhiteSpace(model.Options.RootValueKeyName))
+        if (model.Options.RootValueKeyName is { } rootValueKeyName && !string.IsNullOrWhiteSpace(rootValueKeyName))
         {
-            builder.Append("        options = options with { RootValueKeyName = \"").Append(EscapeStringLiteral(model.Options.RootValueKeyName!)).AppendLine("\" };");
+            builder.Append("        options = options with { RootValueKeyName = \"").Append(EscapeStringLiteral(rootValueKeyName)).AppendLine("\" };");
         }
 
         if (model.Options.InlineTablePolicy is not null && TryGetTomlInlineTablePolicyExpression(model.Options.InlineTablePolicy.Value, out var inlineTableExpression))
@@ -1049,7 +1049,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        public override ").Append(readReturnType).AppendLine(" Read(global::Meziantou.Framework.Toml.Serialization.TomlReader reader)");
             builder.AppendLine("        {");
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
-            builder.Append("            throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage!)).AppendLine("\");");
+            builder.Append("            throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage)).AppendLine("\");");
             builder.AppendLine("        }");
         }
         else if (poco.RequiresGeneratedObjectInitializer)

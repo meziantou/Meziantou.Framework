@@ -1398,6 +1398,41 @@ internal sealed partial class TestTomlSerializerContextJsonAttrFallback : TomlSe
 {
 }
 
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind", IgnoreUnrecognizedTypeDiscriminators = true)]
+[JsonDerivedType(typeof(GeneratedJsonIgnoreUnknownDerived), "derived")]
+public class GeneratedJsonIgnoreUnknownBase
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class GeneratedJsonIgnoreUnknownDerived : GeneratedJsonIgnoreUnknownBase
+{
+    public int Extra { get; set; }
+}
+
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind", UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
+[JsonDerivedType(typeof(GeneratedJsonAncestorDerived), "derived")]
+public class GeneratedJsonAncestorBase
+{
+    public string Name { get; set; } = "";
+}
+
+public class GeneratedJsonAncestorDerived : GeneratedJsonAncestorBase
+{
+    public int Extra { get; set; }
+}
+
+public sealed class GeneratedJsonAncestorUnregistered : GeneratedJsonAncestorBase
+{
+    public int Other { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedJsonIgnoreUnknownBase))]
+[TomlSerializable(typeof(GeneratedJsonAncestorBase))]
+internal sealed partial class TestTomlSerializerContextJsonUnknownHandling : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [TomlDerivedType(typeof(GeneratedIntDiscrimCircle), 1)]
 [TomlDerivedType(typeof(GeneratedIntDiscrimSquare), 2)]
@@ -2862,6 +2897,29 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Fact]
+    public void JsonPolymorphic_IgnoreUnrecognizedTypeDiscriminators_ReadsTheBaseType()
+    {
+        const string Toml = "kind = \"unknown\"\nName = \"test\"\n";
+
+        var reflection = TomlSerializer.Deserialize<GeneratedJsonIgnoreUnknownBase>(Toml);
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextJsonUnknownHandling.Default.GeneratedJsonIgnoreUnknownBase);
+
+        Assert.IsType<GeneratedJsonIgnoreUnknownBase>(reflection);
+        Assert.Equal("test", reflection!.Name);
+        Assert.IsType<GeneratedJsonIgnoreUnknownBase>(generated);
+        Assert.Equal("test", generated!.Name);
+    }
+
+    [Fact]
+    public void JsonPolymorphic_FallBackToNearestAncestor_WritesTheBaseType()
+    {
+        GeneratedJsonAncestorBase value = new GeneratedJsonAncestorUnregistered { Name = "test", Other = 1 };
+
+        Assert.Equal("Name = \"test\"\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
+        Assert.Equal("Name = \"test\"\n", TomlSerializer.Serialize(value, TestTomlSerializerContextJsonUnknownHandling.Default.GeneratedJsonAncestorBase).ReplaceLineEndings("\n"));
     }
 
     // --- Feature 3: Integer Discriminators (source-gen) ---

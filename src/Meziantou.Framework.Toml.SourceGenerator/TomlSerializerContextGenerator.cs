@@ -5181,8 +5181,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                     else if (kvp.Key == "UnknownDerivedTypeHandling" && kvp.Value.Value is int intVal)
                     {
-                        // JsonUnknownDerivedTypeHandling: FailSerialization=0, FallBackToBaseType=1, FallBackToNearestAncestor=2
-                        jsonUnknownHandling = intVal == 1 ? 1 : 0; // 1 => FallBackToBaseType, anything else => Fail
+                        // JsonUnknownDerivedTypeHandling: FailSerialization=0, FallBackToBaseType=1, FallBackToNearestAncestor=2.
+                        // System.Text.Json has a setting for writing and one for reading, TOML has one for both.
+                        jsonUnknownHandling = intVal is 1 or 2 || jsonUnknownHandling == 1 ? 1 : 0;
+                    }
+                    else if (kvp.Key == "IgnoreUnrecognizedTypeDiscriminators" && kvp.Value.Value is true)
+                    {
+                        jsonUnknownHandling = 1;
                     }
                 }
             }

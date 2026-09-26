@@ -425,7 +425,9 @@ Name = "Rex"
 Breed = "Labrador"
 ```
 
-- `[JsonPolymorphic]` and `[JsonDerivedType]` work as well.
+- `[JsonPolymorphic]` and `[JsonDerivedType]` work as well. TOML has a single unknown type setting, for reading and
+  writing: it falls back to the base type when `IgnoreUnrecognizedTypeDiscriminators` is `true` or `UnknownDerivedTypeHandling`
+  is `FallBackToBaseType` or `FallBackToNearestAncestor`, and never to a nearer ancestor.
 - A derived type registered without a discriminator is the default type: it is used when the discriminator is missing
   or unknown, and it is written without a discriminator. System.Text.Json throws on an unknown discriminator instead.
 - Integer discriminators (`[TomlDerivedType(typeof(Circle), 1)]`) are written as strings.

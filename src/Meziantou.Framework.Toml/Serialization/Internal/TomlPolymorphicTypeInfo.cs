@@ -166,11 +166,11 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         }
         else if (jsonPolymorphicAttribute is not null)
         {
-            unknownHandling = jsonPolymorphicAttribute.UnknownDerivedTypeHandling switch
-            {
-                JsonUnknownDerivedTypeHandling.FallBackToBaseType => TomlUnknownDerivedTypeHandling.FallBackToBaseType,
-                _ => TomlUnknownDerivedTypeHandling.Fail,
-            };
+            // System.Text.Json has a setting for writing and one for reading, TOML has one for both
+            unknownHandling = jsonPolymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators ||
+                jsonPolymorphicAttribute.UnknownDerivedTypeHandling is JsonUnknownDerivedTypeHandling.FallBackToBaseType or JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
+                ? TomlUnknownDerivedTypeHandling.FallBackToBaseType
+                : TomlUnknownDerivedTypeHandling.Fail;
         }
         return new TomlPolymorphicTypeInfo(
             type,

@@ -1,5 +1,6 @@
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Syntax;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -148,6 +149,34 @@ public sealed class NewApiMetadataStoreTests
         // The formatting metadata of Path is shared by every instance: in the store, a comment added to it would apply to all
         Assert.False(firstMetadata.ContainsProperty(nameof(StyledChild.Path)));
         Assert.Null(textMetadata.StringStyle);
+    }
+
+    [Theory]
+    [InlineData(TokenKind.Comment, "# note\nadmin = true")]
+    [InlineData(TokenKind.Comment, "note")]
+    [InlineData(TokenKind.Whitespaces, " \nadmin = true")]
+    [InlineData(TokenKind.NewLine, "\nadmin = true\n")]
+    public void Serialize_InvalidMetadataTrivia_Throws(TokenKind kind, string text)
+    {
+        var store = new TomlMetadataStore();
+        var model = new TomlTable { ["name"] = "safe" };
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("name", new TomlPropertyMetadata { TrailingTrivia = [new TomlSyntaxTriviaMetadata(kind, text)] });
+        store.SetProperties(model, metadata);
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store }));
+    }
+
+    [Fact]
+    public void Serialize_ValidMetadataTrivia_IsWritten()
+    {
+        var store = new TomlMetadataStore();
+        var model = new TomlTable { ["name"] = "safe" };
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("name", new TomlPropertyMetadata { TrailingTrivia = [new TomlSyntaxTriviaMetadata(TokenKind.Whitespaces, " \t"), new TomlSyntaxTriviaMetadata(TokenKind.Comment, "# note\t1")] });
+        store.SetProperties(model, metadata);
+
+        Assert.Equal("name = \"safe\" \t# note\t1\n", TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store }).ReplaceLineEndings("\n"));
     }
 
     [Fact]

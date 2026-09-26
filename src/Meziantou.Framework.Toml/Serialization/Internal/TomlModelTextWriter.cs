@@ -963,6 +963,10 @@ internal static class TomlModelTextWriter
             _writer.Write(_newLine);
         }
 
+        // The control characters a comment cannot contain: all of them but tab
+        private static readonly System.Buffers.SearchValues<char> InvalidCommentCharacters = System.Buffers.SearchValues.Create(
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u000A\u000B\u000C\u000D\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F\u007F");
+
         private void WriteLeadingTrivia(TomlPropertiesMetadata? metadata, string key)
         {
             if (metadata is null || !metadata.TryGetProperty(key, out var propertyMetadata) || propertyMetadata?.LeadingTrivia is null)
@@ -975,7 +979,7 @@ internal static class TomlModelTextWriter
             {
                 if (trivia.Text is not null)
                 {
-                    _writer.Write(trivia.Text);
+                    WriteTrivia(trivia);
                     endsWithComment = trivia.Kind == TokenKind.Comment || (endsWithComment && trivia.Kind == TokenKind.Whitespaces);
                 }
             }
@@ -998,7 +1002,7 @@ internal static class TomlModelTextWriter
             {
                 if (trivia.Text is not null)
                 {
-                    _writer.Write(trivia.Text);
+                    WriteTrivia(trivia);
                 }
             }
         }
@@ -1014,9 +1018,29 @@ internal static class TomlModelTextWriter
             {
                 if (trivia.Text is not null)
                 {
-                    _writer.Write(trivia.Text);
+                    WriteTrivia(trivia);
                 }
             }
+        }
+
+        // The trivia comes from the metadata store, so it can be any text: a comment containing a newline would add keys
+        private void WriteTrivia(TomlSyntaxTriviaMetadata trivia)
+        {
+            var text = trivia.Text!;
+            var isValid = trivia.Kind switch
+            {
+                TokenKind.Comment => text.Length > 0 && text[0] == '#' && !text.AsSpan(1).ContainsAny(InvalidCommentCharacters),
+                TokenKind.Whitespaces => text.AsSpan().IndexOfAnyExcept(' ', '\t') < 0,
+                TokenKind.NewLine => text is "\n" or "\r\n",
+                _ => false,
+            };
+
+            if (!isValid)
+            {
+                throw new TomlException($"The {trivia.Kind} trivia `{text.ToPrintableString()}` of the metadata is not valid TOML.");
+            }
+
+            _writer.Write(text);
         }
     }
 }

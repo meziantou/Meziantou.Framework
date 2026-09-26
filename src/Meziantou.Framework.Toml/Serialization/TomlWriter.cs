@@ -298,6 +298,13 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
+    // Writes the float with its own round-trip formatting. Widening it to double would add digits, such as 0.10000000149011612
+    // for 0.1f.
+    internal void WriteSingleValue(float value)
+    {
+        WriteValue(value);
+    }
+
     // Writes the decimal as a TOML float without going through double, which would lose digits
     internal void WriteDecimalValue(decimal value)
     {

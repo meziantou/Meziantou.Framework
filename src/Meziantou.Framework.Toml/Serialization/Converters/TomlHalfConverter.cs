@@ -28,5 +28,5 @@ internal sealed class TomlHalfConverter : TomlConverter<Half>
         return (Half)raw;
     }
 
-    public override void Write(TomlWriter writer, Half value) => writer.WriteFloatValue((double)value);
+    public override void Write(TomlWriter writer, Half value) => writer.WriteSingleValue((float)value);
 }

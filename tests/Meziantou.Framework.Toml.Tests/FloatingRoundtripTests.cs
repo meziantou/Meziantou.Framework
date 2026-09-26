@@ -58,11 +58,11 @@ public class FloatingRoundtripTests
     [InlineData(float.NaN)]
     [InlineData(float.Epsilon)]
     [InlineData(-float.Epsilon)]
-    // [TestCase(0.1f)] - These fail due to float-as-double roundtrip behavior in TomlTable.
-    // [TestCase(0.99f)]
-    // [TestCase(0.3f)]
-    // [TestCase(float.MinValue)]
-    // [TestCase(float.MaxValue)]
+    [InlineData(0.1f)]
+    [InlineData(0.99f)]
+    [InlineData(0.3f)]
+    [InlineData(float.MinValue)]
+    [InlineData(float.MaxValue)]
     public void TestFloatsRoundtrip(float number)
     {
         var model = new TomlTable
@@ -80,5 +80,31 @@ public class FloatingRoundtripTests
         Assert.True((double)number == parsedDouble || double.IsNaN(number), message: $"(f32->f64->str->f64) expected double {(double)number:g64} but got double {parsedDouble:g64}. \nString form: \n{toml}");
         Assert.True(number == (float)parsedFloatAsDouble || double.IsNaN(number), message: $"(f32->str->f64->f32) expected float {number:g64} but got float {(float)parsedFloatAsDouble:g64}. \nString form: \n{toml}");
 
+    }
+
+    [Theory]
+    [InlineData(0.1f, "0.1")]
+    [InlineData(0.3f, "0.3")]
+    [InlineData(1e30f, "1E+30")]
+    [InlineData(16777216f, "16777216.0")]
+    public void Float_IsWrittenWithItsOwnPrecisionByEveryPath(float number, string expected)
+    {
+        Assert.Equal($"value = {expected}\n", TomlSerializer.Serialize(new TomlTable { ["value"] = number }).ReplaceLineEndings("\n"));
+        Assert.Equal($"value = {expected}\n", TomlSerializer.Serialize(new Dictionary<string, float> { ["value"] = number }).ReplaceLineEndings("\n"));
+        Assert.Equal($"value = {expected}\n", TomlSerializer.Serialize(new Dictionary<string, object> { ["value"] = number }).ReplaceLineEndings("\n"));
+    }
+
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(65504.0)]
+    [InlineData(6e-8)]
+    public void Half_Roundtrips(double number)
+    {
+        var value = (Half)number;
+
+        var toml = TomlSerializer.Serialize(new Dictionary<string, Half> { ["value"] = value });
+
+        Assert.Equal(value, TomlSerializer.Deserialize<Dictionary<string, Half>>(toml)!["value"]);
+        Assert.DoesNotContain("00000", toml);
     }
 }

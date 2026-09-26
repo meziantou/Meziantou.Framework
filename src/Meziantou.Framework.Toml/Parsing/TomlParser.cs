@@ -340,6 +340,11 @@ public sealed partial class TomlParser
         private bool _pendingTableHeaderHasOpenFrame;
         private bool _pendingTableHeaderClosingsCompleted;
 
+        // The comments before a header and on its line; the comments on the lines after it belong to the first key
+        private TomlSyntaxTriviaMetadata[]? _pendingTableHeaderLeadingTrivia;
+        private TomlSyntaxTriviaMetadata[]? _pendingTableHeaderTrailingTrivia;
+        private int _pendingTableHeaderFrameIndex;
+
         // Pending document termination.
         private DocumentEndStage _pendingDocumentEndStage;
         private bool _pendingDocumentEndRootTableClosed;
@@ -800,9 +805,11 @@ public sealed partial class TomlParser
 
                     // The span of the key segment that opens the container, so errors about its type have a location
                     var openSpan = openFrame.Name?.Span;
+                    var trailingTrivia = _pendingTableHeaderOpenIndex - 1 == _pendingTableHeaderFrameIndex ? TakeTableHeaderTrivia(ref _pendingTableHeaderTrailingTrivia) : null;
                     SetPendingEvent(openFrame.Kind == ExplicitFrameKind.Array
                         ? new TomlParseEvent(TomlParseEventKind.StartArray, span: openSpan, propertyName: null, stringValue: null, data: 0)
-                        : new TomlParseEvent(TomlParseEventKind.StartTable, span: openSpan, propertyName: null, stringValue: null, data: 0));
+                        : new TomlParseEvent(TomlParseEventKind.StartTable, span: openSpan, propertyName: null, stringValue: null, data: 0),
+                        trailingTrivia: trailingTrivia);
                     _explicitFrames.Add(openFrame);
                     return true;
                 }
@@ -829,7 +836,7 @@ public sealed partial class TomlParser
                     _pendingTableHeaderHasOpenFrame = true;
                     _pendingTableHeaderOpenEmitPropertyName = false;
 
-                    var leadingTrivia = ExtractPendingTrivia();
+                    var leadingTrivia = _pendingTableHeaderOpenIndex == _pendingTableHeaderFrameIndex ? TakeTableHeaderTrivia(ref _pendingTableHeaderLeadingTrivia) : null;
                     SetPendingEvent(new TomlParseEvent(
                         TomlParseEventKind.PropertyName,
                         span: name.Span,
@@ -843,8 +850,43 @@ public sealed partial class TomlParser
                 throw ParserCore.CreateException(CurrentSpan(), "Invalid table header open state.");
             }
 
+            RequeueTableHeaderTrivia();
             _pendingOperation = PendingOperationKind.None;
             return false;
+        }
+
+        private static TomlSyntaxTriviaMetadata[]? TakeTableHeaderTrivia(ref TomlSyntaxTriviaMetadata[]? trivia)
+        {
+            var result = trivia;
+            trivia = null;
+            return result;
+        }
+
+        // A header that reopens a table or adds an element to an array of tables has no key to hold its comments, so they
+        // go to the first key of the table instead of being lost
+        private void RequeueTableHeaderTrivia()
+        {
+            if (_pendingTrivia is null || (_pendingTableHeaderLeadingTrivia is null && _pendingTableHeaderTrailingTrivia is null))
+            {
+                return;
+            }
+
+            var trivia = new List<TomlSyntaxTriviaMetadata>();
+            trivia.AddRange(TakeTableHeaderTrivia(ref _pendingTableHeaderLeadingTrivia) ?? []);
+            if (TakeTableHeaderTrivia(ref _pendingTableHeaderTrailingTrivia) is { } trailingTrivia)
+            {
+                foreach (var item in trailingTrivia)
+                {
+                    if (item.Kind != TokenKind.Whitespaces)
+                    {
+                        trivia.Add(item);
+                    }
+                }
+
+                trivia.Add(new TomlSyntaxTriviaMetadata(TokenKind.NewLine, "\n"));
+            }
+
+            _pendingTrivia.InsertRange(0, trivia);
         }
 
         private bool ProducePendingKeyValueEntry()
@@ -1143,6 +1185,7 @@ public sealed partial class TomlParser
 
         private void ParseTableHeader(bool isTableArray)
         {
+            _pendingTableHeaderLeadingTrivia = ExtractPendingTrivia();
             Consume(isTableArray ? TokenKind.OpenBracketDouble : TokenKind.OpenBracket, LexerState.Key);
 
             _pathSegments.Clear();
@@ -1153,6 +1196,7 @@ public sealed partial class TomlParser
             }
 
             Consume(isTableArray ? TokenKind.CloseBracketDouble : TokenKind.CloseBracket, LexerState.Key);
+            _pendingTableHeaderTrailingTrivia = ExtractPendingTrivia();
 
             if (_token.Kind == TokenKind.NewLine)
             {
@@ -1171,6 +1215,7 @@ public sealed partial class TomlParser
 
             _pendingTableHeaderExplicitPrefixLength = prefixLength;
             _pendingTableHeaderOpenIndex = prefixLength;
+            _pendingTableHeaderFrameIndex = _targetExplicitFrames.Count - (isTableArray ? 2 : 1);
             _pendingTableHeaderOpenEmitPropertyName = true;
             _pendingTableHeaderHasOpenFrame = false;
             _pendingTableHeaderClosingsCompleted = false;

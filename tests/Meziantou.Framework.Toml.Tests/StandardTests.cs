@@ -382,19 +382,10 @@ public static class StandardTests
     }
 
     /// <summary>Lists the toml-test cases of the TOML 1.1 list.</summary>
-    public static TheoryData<string> ListTomlFiles(string type)
-    {
-        var tests = new TheoryData<string>();
-        foreach (var testCase in Corpus.Value.Values)
-        {
-            if (testCase.IsToml11 && testCase.Name.StartsWith(type + "/", StringComparison.Ordinal))
-            {
-                tests.Add(testCase.Name);
-            }
-        }
+    public static TheoryData<string> ListTomlFiles(string type) => new(ListToml11CaseNames(type));
 
-        return tests;
-    }
+    internal static IEnumerable<string> ListToml11CaseNames(string type)
+        => Corpus.Value.Values.Where(testCase => testCase.IsToml11 && testCase.Name.StartsWith(type + "/", StringComparison.Ordinal)).Select(testCase => testCase.Name);
 
     /// <summary>Lists the documents that are invalid in TOML 1.0 only, which are the TOML 1.1 extensions.</summary>
     public static TheoryData<string> ListToml10OnlyInvalidFiles()

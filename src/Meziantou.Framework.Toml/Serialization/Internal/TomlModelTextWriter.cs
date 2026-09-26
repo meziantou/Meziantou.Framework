@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
@@ -91,7 +92,8 @@ internal static class TomlModelTextWriter
             _indentSize = options.WriteIndented ? options.IndentSize : 0;
         }
 
-        public void WriteTableBody(TomlTable table, List<string> path, HeaderKind headerKind, int depth)
+        // The comments of a header are in the metadata of the table that contains it, under the key of the header
+        public void WriteTableBody(TomlTable table, List<string> path, HeaderKind headerKind, int depth, TomlPropertiesMetadata? headerMetadata = null)
         {
             ValidateDepth(depth);
 
@@ -99,7 +101,7 @@ internal static class TomlModelTextWriter
             _indent = _indentSize == 0 || path.Count <= 1 ? string.Empty : new string(' ', _indentSize * (path.Count - 1));
             if (headerKind != HeaderKind.None)
             {
-                WriteHeader(path, headerKind, table.PropertiesMetadata);
+                WriteHeader(path, headerKind, headerMetadata);
             }
 
             // 1) scalar/array/inline-table key-values
@@ -135,7 +137,7 @@ internal static class TomlModelTextWriter
                 if (pair.Value is TomlTable subTable && !ShouldInlineTable(subTable, depth + 1, propertyMetadata?.InlineTablePolicy))
                 {
                     path.Add(pair.Key);
-                    WriteTableBody(subTable, path, HeaderKind.Table, depth + 1);
+                    WriteTableBody(subTable, path, HeaderKind.Table, depth + 1, table.PropertiesMetadata);
                     path.RemoveAt(path.Count - 1);
                 }
             }
@@ -157,12 +159,12 @@ internal static class TomlModelTextWriter
                 }
 
                 path.Add(pair.Key);
-                WriteTableArray(tableArray, path, depth + 1);
+                WriteTableArray(tableArray, path, depth + 1, table.PropertiesMetadata);
                 path.RemoveAt(path.Count - 1);
             }
         }
 
-        private void WriteTableArray(TomlTableArray tableArray, List<string> path, int depth)
+        private void WriteTableArray(TomlTableArray tableArray, List<string> path, int depth, TomlPropertiesMetadata? headerMetadata)
         {
             ValidateDepth(depth);
             for (var index = 0; index < tableArray.Count; index++)
@@ -172,7 +174,8 @@ internal static class TomlModelTextWriter
                     WriteNewLine();
                 }
 
-                WriteTableBody(tableArray[index], path, HeaderKind.TableArrayElement, depth + 1);
+                // The key holds the comments of the first header only
+                WriteTableBody(tableArray[index], path, HeaderKind.TableArrayElement, depth + 1, index == 0 ? headerMetadata : null);
             }
         }
 
@@ -942,12 +945,20 @@ internal static class TomlModelTextWriter
                 return;
             }
 
+            var endsWithComment = false;
             foreach (var trivia in propertyMetadata.LeadingTrivia)
             {
                 if (trivia.Text is not null)
                 {
                     _writer.Write(trivia.Text);
+                    endsWithComment = trivia.Kind == TokenKind.Comment || (endsWithComment && trivia.Kind == TokenKind.Whitespaces);
                 }
+            }
+
+            // A comment runs to the end of its line, so what follows must start on a new line
+            if (endsWithComment)
+            {
+                WriteNewLine();
             }
         }
 

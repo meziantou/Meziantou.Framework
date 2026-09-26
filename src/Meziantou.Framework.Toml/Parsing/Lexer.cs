@@ -792,6 +792,7 @@ internal sealed class Lexer
 
         // Skip leading zeros
         var previousCharIsDigit = false;
+        var hasUnderscore = false;
         if (hasLeadingZero)
         {
             int zeroDigit = 0;
@@ -799,6 +800,7 @@ internal sealed class Lexer
             while (CurrentCharacter == '0' || CurrentCharacter == '_')
             {
                 previousCharIsDigit = CurrentCharacter == '0';
+                hasUnderscore |= !previousCharIsDigit;
                 if (previousCharIsDigit)
                 {
                     _textBuilder.Append((char)CurrentCharacter);
@@ -811,11 +813,16 @@ internal sealed class Lexer
             hasMultipleLeadingZero = zeroDigit > 0;
         }
 
-        ReadDigits(ref end, previousCharIsDigit);
+        hasUnderscore |= ReadDigits(ref end, previousCharIsDigit);
 
         // We are in the case of a date
         if (CurrentCharacter == '-' || CurrentCharacter == ':')
         {
+            if (hasUnderscore)
+            {
+                AddError("An underscore `_` is not allowed in a date or a time", start, CurrentPosition);
+            }
+
             // Offset Date-Time
             // odt1 = 1979-05-27T07:32:00Z
             // odt2 = 1979-05-27T00:32:00-07:00
@@ -1141,8 +1148,10 @@ internal sealed class Lexer
         return (end - index) > 1;
     }
 
-    private void ReadDigits(ref TextPosition end, bool isPreviousDigit)
+    /// <returns><see langword="true"/> when the digits contain an underscore.</returns>
+    private bool ReadDigits(ref TextPosition end, bool isPreviousDigit)
     {
+        var hasUnderscore = false;
         while (true)
         {
             var c = CurrentCharacter;
@@ -1159,10 +1168,12 @@ internal sealed class Lexer
             }
             else if (!isPreviousDigit)
             {
+                hasUnderscore = true;
                 AddError("An underscore `_` must follow a digit and not another `_`", CurrentPosition, CurrentPosition);
             }
             else
             {
+                hasUnderscore = true;
                 isPreviousDigit = false;
             }
             end = CurrentPosition;
@@ -1173,6 +1184,8 @@ internal sealed class Lexer
         {
             AddError("Missing a digit after a trailing underscore `_`", CurrentPosition, CurrentPosition);
         }
+
+        return hasUnderscore;
     }
 
     private void ReadString(TextPosition start, bool allowMultiline, bool materializeSimpleValue)

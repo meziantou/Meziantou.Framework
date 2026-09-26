@@ -116,6 +116,20 @@ public sealed class Toml11ScalarTests
     }
 
     [Theory]
+    [InlineData("0_001-01-01")]
+    [InlineData("1_979-05-27T07:32:00Z")]
+    [InlineData("0_7:32:00")]
+    [InlineData("1979-05-27T0_7:32:00")]
+    [InlineData("1979-0_5-27")]
+    public void Deserialize_DateTimeWithUnderscore_Throws(string literal)
+    {
+        var toml = "a = " + literal + "\n";
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+    }
+
+    [Theory]
     [InlineData("2000-02-30")]
     [InlineData("2000-01-01T24:00:00")]
     [InlineData("2000-01-01T00:00:61Z")]

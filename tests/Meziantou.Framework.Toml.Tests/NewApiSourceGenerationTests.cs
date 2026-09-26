@@ -1433,6 +1433,28 @@ internal sealed partial class TestTomlSerializerContextJsonUnknownHandling : Tom
 {
 }
 
+public class GeneratedPrivateHidingBase
+{
+    public string Name { get; set; } = "base";
+}
+
+public class GeneratedPrivateHidingMiddle : GeneratedPrivateHidingBase
+{
+    private new string Name { get; set; } = "private";
+
+    public string GetPrivateName() => Name;
+}
+
+public sealed class GeneratedPrivateHidingDerived : GeneratedPrivateHidingMiddle
+{
+    public int Extra { get; set; } = 1;
+}
+
+[TomlSerializable(typeof(GeneratedPrivateHidingDerived))]
+internal sealed partial class TestTomlSerializerContextPrivateHiding : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [TomlDerivedType(typeof(GeneratedIntDiscrimCircle), 1)]
 [TomlDerivedType(typeof(GeneratedIntDiscrimSquare), 2)]
@@ -2897,6 +2919,22 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Fact]
+    public void PrivateNewMember_DoesNotHideThePublicBaseMember()
+    {
+        const string Expected = "Name = \"base\"\nExtra = 1\n";
+
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedPrivateHidingDerived()).ReplaceLineEndings("\n"));
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedPrivateHidingDerived(), TestTomlSerializerContextPrivateHiding.Default.GeneratedPrivateHidingDerived).ReplaceLineEndings("\n"));
+
+        var reflection = TomlSerializer.Deserialize<GeneratedPrivateHidingDerived>("Name = 'x'")!;
+        var generated = TomlSerializer.Deserialize("Name = 'x'", TestTomlSerializerContextPrivateHiding.Default.GeneratedPrivateHidingDerived)!;
+        Assert.Equal("x", ((GeneratedPrivateHidingBase)reflection).Name);
+        Assert.Equal("private", reflection.GetPrivateName());
+        Assert.Equal("x", ((GeneratedPrivateHidingBase)generated).Name);
+        Assert.Equal("private", generated.GetPrivateName());
     }
 
     [Fact]

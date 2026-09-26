@@ -126,14 +126,25 @@ internal static class TomlReflectionTypeInfoResolver
     }
 
     // A member hidden with 'new' by a member of the same name in a derived type is not serialized, like in System.Text.Json
-    // and the source generator
+    // and the source generator. Only a member that could be serialized hides: a private 'new' member does not.
     private static T[] RemoveHiddenMembers<T>(T[] members)
         where T : MemberInfo
     {
         return Array.FindAll(members, member => !Array.Exists(members, other =>
             !ReferenceEquals(other, member) &&
             string.Equals(other.Name, member.Name, StringComparison.Ordinal) &&
-            other.DeclaringType!.IsSubclassOf(member.DeclaringType!)));
+            other.DeclaringType!.IsSubclassOf(member.DeclaringType!) &&
+            CanHideBaseMember(other)));
+    }
+
+    private static bool CanHideBaseMember(MemberInfo member)
+    {
+        return member switch
+        {
+            PropertyInfo property => property.GetMethod?.IsPublic == true || property.SetMethod?.IsPublic == true || HasIncludeAttribute(property),
+            FieldInfo field => field.IsPublic || HasIncludeAttribute(field),
+            _ => true,
+        };
     }
 
     // Type.GetProperties and Type.GetFields do not return the private members of the base types, which [TomlInclude] can

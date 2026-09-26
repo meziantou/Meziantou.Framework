@@ -5080,9 +5080,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                if (!hiddenPropertyNames.Add(member.Name))
+                if (hiddenPropertyNames.Contains(member.Name))
                 {
                     continue;
+                }
+
+                // Only a member that could be serialized hides the base members: a private 'new' member does not, like in
+                // System.Text.Json
+                if (member.GetMethod?.DeclaredAccessibility == Accessibility.Public ||
+                    member.SetMethod?.DeclaredAccessibility == Accessibility.Public ||
+                    HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
+                    HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute"))
+                {
+                    hiddenPropertyNames.Add(member.Name);
                 }
 
                 yield return member;

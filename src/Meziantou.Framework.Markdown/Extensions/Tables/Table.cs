@@ -74,7 +74,9 @@ public class Table : ContainerBlock
     }
 
     // Same bound as cmark-gfm on the number of empty cells added to short rows. Without it, a row with many columns
-    // followed by many short rows makes the table, and the HTML, grow quadratically with the size of the Markdown.
+    // followed by many short rows makes the table, and the HTML, grow quadratically with the size of the Markdown. When
+    // the table is parsed, the bound applies to all the tables of the document: a per-table bound lets a document repeat
+    // tables that stay just under it.
     internal const int MaximumAutocompletedCells = 0x80000;
 
     /// <summary>
@@ -83,7 +85,9 @@ public class Table : ContainerBlock
     /// <remarks>
     /// Rows are left unchanged when more than 524,288 empty cells would be needed.
     /// </remarks>
-    public void NormalizeUsingMaxWidth()
+    public void NormalizeUsingMaxWidth() => NormalizeUsingMaxWidth(document: null);
+
+    internal void NormalizeUsingMaxWidth(MarkdownDocument? document)
     {
         var maxColumn = 0;
         for (int i = 0; i < this.Count; i++)
@@ -94,7 +98,7 @@ public class Table : ContainerBlock
             }
         }
 
-        if (GetMissingCellCount(maxColumn) > MaximumAutocompletedCells)
+        if (!TryAddAutocompletedCells(document, GetMissingCellCount(maxColumn)))
         {
             return;
         }
@@ -109,6 +113,19 @@ public class Table : ContainerBlock
                 }
             }
         }
+    }
+
+    // Reserves the cells in the budget of the document, or in a budget for this table only when there is no document
+    internal static bool TryAddAutocompletedCells(MarkdownDocument? document, long count)
+    {
+        if (document is null)
+            return count <= MaximumAutocompletedCells;
+
+        if (count > MaximumAutocompletedCells - document.AutocompletedTableCells)
+            return false;
+
+        document.AutocompletedTableCells += count;
+        return true;
     }
 
     private long GetMissingCellCount(int columnCount)
@@ -132,7 +149,9 @@ public class Table : ContainerBlock
     /// <remarks>
     /// Short rows are not completed when more than 524,288 empty cells would be needed.
     /// </remarks>
-    public void NormalizeUsingHeaderRow()
+    public void NormalizeUsingHeaderRow() => NormalizeUsingHeaderRow(document: null);
+
+    internal void NormalizeUsingHeaderRow(MarkdownDocument? document)
     {
         if (this.Count == 0)
         {
@@ -147,7 +166,7 @@ public class Table : ContainerBlock
             maxColumn = headerRow.Count;
         }
 
-        var completeShortRows = GetMissingCellCount(maxColumn) <= MaximumAutocompletedCells;
+        var completeShortRows = TryAddAutocompletedCells(document, GetMissingCellCount(maxColumn));
         for (int i = 0; i < this.Count; i++)
         {
             if (this[i] is TableRow row)

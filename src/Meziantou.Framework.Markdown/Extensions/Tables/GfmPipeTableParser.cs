@@ -271,8 +271,6 @@ internal sealed class GfmPipeTableParser : BlockParser
         public Table Table { get; }
 
         public int MatchedLine { get; set; } = -1;
-
-        public int AutocompletedCells { get; set; }
     }
 
     internal sealed class RowParser : BlockParser
@@ -282,12 +280,12 @@ internal sealed class GfmPipeTableParser : BlockParser
             if (processor.CurrentBlock is not TableBlock pending || processor.IsBlankLine) return BlockState.None;
             // Tables, unlike paragraphs, cannot lazily continue a quote/list.
             if (pending.MatchedLine != processor.LineIndex) return BlockState.None;
-            // Match cmark-gfm's bound on amplification from padding short rows.
-            if (pending.AutocompletedCells > Table.MaximumAutocompletedCells) return BlockState.None;
+            // Match cmark-gfm's bound on amplification from padding short rows, for the whole document.
+            if (processor.Document.AutocompletedTableCells > Table.MaximumAutocompletedCells) return BlockState.None;
             var line = new StringLine(processor.Line, processor.LineIndex, processor.Column, processor.Line.Start, processor.Line.NewLine);
             var cells = SplitRow(line.Slice);
             if (cells.Count == 0) return BlockState.None;
-            pending.AutocompletedCells += Math.Max(0, pending.Table.ColumnDefinitions.Count - cells.Count);
+            processor.Document.AutocompletedTableCells += Math.Max(0, pending.Table.ColumnDefinitions.Count - cells.Count);
             AddRow(pending.Table, line, cells, false);
             pending.IsOpen = true;
             return BlockState.BreakDiscard;

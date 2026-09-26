@@ -611,11 +611,11 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         // Normalize the table
         if (Options.UseHeaderForColumnCount)
         {
-            table.NormalizeUsingHeaderRow();
+            table.NormalizeUsingHeaderRow(state.Document);
         }
         else
         {
-            table.NormalizeUsingMaxWidth();
+            table.NormalizeUsingMaxWidth(state.Document);
         }
 
         if (state.Block is ParagraphBlock { Inline.FirstChild: not null } leadingParagraph)

@@ -27,4 +27,7 @@ public class MarkdownDocument : ContainerBlock
     /// <para>Available if <see cref="MarkdownPipelineBuilder.PreciseSourceLocation"/> is used, otherwise null</para>
     /// </summary>
     public List<int>? LineStartIndexes { get; set; }
+
+    // Empty cells added to the short rows of all the tables of the document (see Table.MaximumAutocompletedCells)
+    internal long AutocompletedTableCells { get; set; }
 }

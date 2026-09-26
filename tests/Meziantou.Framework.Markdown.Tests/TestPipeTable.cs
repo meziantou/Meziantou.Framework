@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 using Meziantou.Framework.Markdown;
 using Meziantou.Framework.Markdown.Extensions.Tables;
@@ -292,6 +293,28 @@ public sealed class TestPipeTable
         Assert.HasCount(Count + 1, table);
         Assert.HasCount(Count, (TableRow)table[0]);
         Assert.HasCount(1, (TableRow)table[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShortRowsAreNotCompletedBeyondTheDocumentBudget(bool useGfmRules)
+    {
+        // Each table needs 519,480 empty cells, just under the budget, so the budget must apply to the whole document
+        var builder = new StringBuilder();
+        for (var i = 0; i < 10; i++)
+        {
+            builder.Append(string.Concat(Enumerable.Repeat("|a", 1000))).Append("|\n");
+            builder.Append(string.Concat(Enumerable.Repeat("|-", 1000))).Append("|\n");
+            builder.Append(string.Concat(Enumerable.Repeat(useGfmRules ? "x\n" : "|x\n", 520)));
+            builder.Append('\n');
+        }
+
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = useGfmRules }).Build();
+        var document = MarkdownConverter.Parse(builder.ToString(), pipeline);
+
+        var cellCount = document.Descendants<TableCell>().Count();
+        Assert.InRange(cellCount, 524_288, 600_000);
     }
 
     [Theory]

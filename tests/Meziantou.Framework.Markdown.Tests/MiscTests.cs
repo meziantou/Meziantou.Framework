@@ -95,6 +95,30 @@ public class MiscTests
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
+    [Theory]
+    [InlineData("+-----+\nsome text\n", "<p>+-----+\nsome text</p>\n")]
+    [InlineData("+---+\n+---+\n", "<p>+---+\n+---+</p>\n")]
+    [InlineData("Total\n+----+\n+----+\n\nNext paragraph\n", "<p>Total</p>\n<p>+----+\n+----+</p>\n<p>Next paragraph</p>\n")]
+    [InlineData("+----+\n\n\ntext\n", "<p>+----+</p>\n<p>text</p>\n")]
+    public void InvalidGridTableIsRenderedAsParagraph(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGridTables().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void InvalidGridTableParagraphHasTheTablePosition()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGridTables().UsePreciseSourceLocation().Build();
+        var document = MarkdownConverter.Parse("a\n\n+-----+\nsome text\n", pipeline);
+
+        var paragraph = Assert.IsType<ParagraphBlock>(document[1]);
+        Assert.Equal(2, paragraph.Line);
+        Assert.Equal(3, paragraph.Span.Start);
+        Assert.Equal(19, paragraph.Span.End);
+    }
+
     [Fact]
     public void PooledRendererIsRestoredAfterAnExceptionInCustomWriter()
     {

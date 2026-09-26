@@ -109,14 +109,18 @@ public class GridTableParser : BlockParser
     {
         var gridTable = (Table)block;
         var tableState = (GridTableState)block.GetData(typeof(GridTableState))!;
-        tableState.AddLine(ref processor.Line);
+
+        // Only store the lines that belong to the table: if the table is invalid, they become a paragraph, and the
+        // current line is processed again once the table is closed
         if (processor.CurrentChar == '+')
         {
+            tableState.AddLine(ref processor.Line);
             gridTable.UpdateSpanEnd(processor.Line.End);
             return HandleNewRow(processor, tableState, gridTable);
         }
         if (processor.CurrentChar == '|')
         {
+            tableState.AddLine(ref processor.Line);
             gridTable.UpdateSpanEnd(processor.Line.End);
             return HandleContents(processor, tableState, gridTable);
         }
@@ -125,7 +129,14 @@ public class GridTableParser : BlockParser
         // and create a ParagraphBlock with the slices
         if (!gridTable.IsValid())
         {
-            Undo(processor, tableState, gridTable);
+            var paragraph = Undo(processor, tableState, gridTable);
+
+            // The paragraph is opened after the blocks that could handle the current line, so a blank line would not
+            // end it
+            if (processor.IsBlankLine)
+            {
+                processor.Close(paragraph);
+            }
         }
         return BlockState.Break;
     }
@@ -361,7 +372,7 @@ public class GridTableParser : BlockParser
         return true;
     }
 
-    private static void Undo(BlockProcessor processor, GridTableState tableState, Table gridTable)
+    private static ParagraphBlock Undo(BlockProcessor processor, GridTableState tableState, Table gridTable)
     {
         var parser = processor.Parsers.FindExact<ParagraphBlockParser>();
         // Discard the grid table
@@ -370,9 +381,13 @@ public class GridTableParser : BlockParser
         var paragraphBlock = new ParagraphBlock(parser)
         {
             Lines = tableState.Lines,
+            Line = gridTable.Line,
+            Column = gridTable.Column,
+            Span = gridTable.Span,
         };
         parent.Add(paragraphBlock);
         processor.Open(paragraphBlock);
+        return paragraphBlock;
     }
 
     /// <summary>

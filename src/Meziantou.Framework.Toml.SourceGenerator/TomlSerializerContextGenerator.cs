@@ -1088,10 +1088,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             builder.AppendLine("        var __derivedTypeInfoByDiscriminator = new global::System.Collections.Generic.Dictionary<string, global::Meziantou.Framework.Toml.TomlTypeInfo>(global::System.StringComparer.Ordinal)");
             builder.AppendLine("        {");
+            // The base type can be one of its own derived types: its metadata is the base metadata, as the polymorphic metadata
+            // would create itself again
+            string GetDerivedTypeInfoExpression(ITypeSymbol derivedType)
+                => SymbolEqualityComparer.Default.Equals(derivedType, type) ? "__baseTypeInfo!" : "Create" + GetTypeInfoPropertyName(derivedType) + "(options)";
+
             foreach (var derived in polymorphic.DerivedTypes)
             {
                 if (derived.Discriminator is null) continue; // skip default derived type in dictionary
-                builder.Append("            [\"").Append(EscapeStringLiteral(derived.Discriminator)).Append("\"] = Create").Append(GetTypeInfoPropertyName(derived.Type)).AppendLine("(options),");
+                builder.Append("            [\"").Append(EscapeStringLiteral(derived.Discriminator)).Append("\"] = ").Append(GetDerivedTypeInfoExpression(derived.Type)).AppendLine(",");
             }
             builder.AppendLine("        };");
 
@@ -1100,7 +1105,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 : "\"" + EscapeStringLiteral(polymorphic.DiscriminatorPropertyName) + "\"";
 
             var defaultDerivedTypeExpression = polymorphic.DefaultDerivedType is not null
-                ? "Create" + GetTypeInfoPropertyName(polymorphic.DefaultDerivedType) + "(options)"
+                ? GetDerivedTypeInfoExpression(polymorphic.DefaultDerivedType)
                 : "null";
 
             var unknownHandlingExpression = polymorphic.UnknownDerivedTypeHandlingOverride is { } handlingValue

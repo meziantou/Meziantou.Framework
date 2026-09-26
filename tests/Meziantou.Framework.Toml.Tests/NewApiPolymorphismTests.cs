@@ -564,6 +564,29 @@ public class NewApiPolymorphismTests
         Assert.Equal([.. Enumerable.Range(0, 30).Select(i => i.ToString(CultureInfo.InvariantCulture)), "last"], values);
     }
 
+    // Like System.Text.Json, the base type can be one of its own derived types
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BaseType_RegisteredAsItsOwnDerivedType_UsesTheBaseMetadata(bool generated)
+    {
+        var context = SelfDerivedTomlSerializerContext.Default;
+        string Serialize<T>(T value, TomlTypeInfo<T> typeInfo) => generated ? TomlSerializer.Serialize(value, typeInfo) : TomlSerializer.Serialize(value);
+        T? Deserialize<T>(string toml, TomlTypeInfo<T> typeInfo) => generated ? TomlSerializer.Deserialize(toml, typeInfo) : TomlSerializer.Deserialize<T>(toml);
+
+        var toml = Serialize(new SelfDerivedHolder { S = new SelfDerivedShape { Size = 3 } }, context.SelfDerivedHolder);
+        var shape = Deserialize(toml, context.SelfDerivedHolder)!.S;
+        var circle = Deserialize("[S]\n\"$type\" = \"circle\"\nRadius = 2\n", context.SelfDerivedHolder)!.S;
+        var defaultToml = Serialize(new SelfDefaultHolder { S = new SelfDefaultShape { Size = 4 } }, context.SelfDefaultHolder);
+        var defaultShape = Deserialize("[S]\nSize = 5\n", context.SelfDefaultHolder)!.S;
+
+        Assert.Equal("[S]\n\"$type\" = \"base\"\nSize = 3\n", toml.ReplaceLineEndings("\n"));
+        Assert.Equal(3, Assert.IsType<SelfDerivedShape>(shape).Size);
+        Assert.Equal(2, Assert.IsType<SelfDerivedCircle>(circle).Radius);
+        Assert.Equal("[S]\nSize = 4\n", defaultToml.ReplaceLineEndings("\n"));
+        Assert.Equal(5, Assert.IsType<SelfDefaultShape>(defaultShape).Size);
+    }
+
     [Fact]
     public void Deserialize_DeeplyNestedPolymorphicValues_AllocatesLinearly()
     {
@@ -621,3 +644,44 @@ public class NewApiPolymorphismTests
     {
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+[TomlDerivedType(typeof(SelfDerivedShape), "base")]
+[TomlDerivedType(typeof(SelfDerivedCircle), "circle")]
+internal class SelfDerivedShape
+{
+    public int Size { get; set; }
+}
+
+internal sealed class SelfDerivedCircle : SelfDerivedShape
+{
+    public int Radius { get; set; }
+}
+
+internal sealed class SelfDerivedHolder
+{
+    public SelfDerivedShape? S { get; set; }
+}
+
+[TomlDerivedType(typeof(SelfDefaultShape))]
+[TomlDerivedType(typeof(SelfDefaultSquare), "square")]
+internal class SelfDefaultShape
+{
+    public int Size { get; set; }
+}
+
+internal sealed class SelfDefaultSquare : SelfDefaultShape
+{
+}
+
+internal sealed class SelfDefaultHolder
+{
+    public SelfDefaultShape? S { get; set; }
+}
+
+[TomlSerializable(typeof(SelfDerivedHolder))]
+[TomlSerializable(typeof(SelfDefaultHolder))]
+internal sealed partial class SelfDerivedTomlSerializerContext : TomlSerializerContext
+{
+}
+#pragma warning restore MA0048

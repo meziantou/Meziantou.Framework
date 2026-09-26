@@ -243,7 +243,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         }
 
         var runtimeType = value.GetType();
-        if (runtimeType == Type)
+        if (runtimeType == Type && !_discriminatorByDerivedType.ContainsKey(runtimeType))
         {
             if (_baseTypeInfo is null)
             {
@@ -270,7 +270,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             throw new TomlException($"Type '{runtimeType.FullName}' is not registered as a derived type for '{Type.FullName}'.");
         }
 
-        var runtimeTypeInfo = writer.ResolveTypeInfo(runtimeType);
+        var runtimeTypeInfo = GetDerivedTypeInfo(runtimeType, writer.ResolveTypeInfo);
 
         // Default derived type (null discriminator) - serialize without discriminator
         if (discriminator is null)
@@ -298,6 +298,18 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         TomlUntypedObjectConverter.WriteWrittenTable(writer, table);
     }
 
+    // The base type can be one of its own derived types: its metadata is then the base metadata, as the polymorphic metadata
+    // would select itself again
+    private TomlTypeInfo GetDerivedTypeInfo(Type derivedType, Func<Type, TomlTypeInfo> resolveTypeInfo)
+    {
+        if (derivedType == Type)
+        {
+            return _baseTypeInfo ?? throw TomlException.CreateConfigurationError($"Type '{Type.FullName}' cannot be created, so it cannot be one of its own derived types.");
+        }
+
+        return resolveTypeInfo(derivedType);
+    }
+
     public override object? ReadAsObject(TomlReader reader)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
@@ -318,7 +330,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             // No discriminator found - try default derived type first
             if (_defaultDerivedType is not null)
             {
-                var defaultTypeInfo = reader.ResolveTypeInfo(_defaultDerivedType);
+                var defaultTypeInfo = GetDerivedTypeInfo(_defaultDerivedType, reader.ResolveTypeInfo);
                 var defaultReader = TomlReader.Create(buffer);
                 defaultReader.Read(); // StartDocument
                 defaultReader.Read(); // value start
@@ -347,12 +359,12 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
         if (_derivedTypeByDiscriminator.TryGetValue(discriminator, out var derivedType))
         {
-            targetTypeInfo = reader.ResolveTypeInfo(derivedType);
+            targetTypeInfo = GetDerivedTypeInfo(derivedType, reader.ResolveTypeInfo);
         }
         else if (_defaultDerivedType is not null)
         {
             // Unknown discriminator - use default derived type
-            targetTypeInfo = reader.ResolveTypeInfo(_defaultDerivedType);
+            targetTypeInfo = GetDerivedTypeInfo(_defaultDerivedType, reader.ResolveTypeInfo);
         }
         else if (_unknownDerivedTypeHandling == TomlUnknownDerivedTypeHandling.FallBackToBaseType && !Type.IsInterface && !Type.IsAbstract)
         {

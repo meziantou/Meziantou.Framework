@@ -193,6 +193,90 @@ public class SerializationTests
         Assert.Equal("a\U0001F600b", roundtrip["\U0001F600"]);
     }
 
+    public static TheoryData<string> ClrValueNames() => new(
+        "string", "bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "nint", "nuint", "float", "float-nan",
+        "double", "double-negative-zero", "decimal", "decimal-integer", "half", "int128", "uint128", "char", "guid", "timespan", "uri",
+        "version", "enum", "toml-datetime", "datetime-utc", "datetime-local", "datetime-unspecified", "datetimeoffset", "dateonly",
+        "timeonly", "poco", "list");
+
+    private static object CreateClrValue(string name) => name switch
+    {
+        "string" => "a",
+        "bool" => true,
+        "sbyte" => (sbyte)-1,
+        "byte" => (byte)1,
+        "short" => (short)-2,
+        "ushort" => (ushort)2,
+        "int" => -3,
+        "uint" => 3u,
+        "long" => -4L,
+        "ulong" => 4UL,
+        "nint" => (nint)5,
+        "nuint" => (nuint)5,
+        "float" => 1.5f,
+        "float-nan" => float.NaN,
+        "double" => 1e300,
+        "double-negative-zero" => -0.0,
+        "decimal" => 1.25m,
+        "decimal-integer" => 2m,
+        "half" => (Half)1.5,
+        "int128" => (Int128)6,
+        "uint128" => (UInt128)6,
+        "char" => 'c',
+        "guid" => new Guid("3f2504e0-4f89-11d3-9a0c-0305e82c3301"),
+        "timespan" => TimeSpan.FromMinutes(90),
+        "uri" => new Uri("https://example.com/"),
+        "version" => new Version(1, 2, 3),
+        "enum" => DayOfWeek.Monday,
+        "toml-datetime" => new TomlDateTime(new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), 0, TomlDateTimeKind.OffsetDateTimeByNumber),
+        "datetime-utc" => new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+        "datetime-local" => new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Local),
+        "datetime-unspecified" => new DateTime(2020, 1, 2, 3, 4, 5, 678, DateTimeKind.Unspecified),
+        "datetimeoffset" => new DateTimeOffset(2020, 1, 2, 3, 4, 5, TimeSpan.FromHours(-7)),
+        "dateonly" => new DateOnly(2020, 1, 2),
+        "timeonly" => new TimeOnly(3, 4, 5),
+        "poco" => new GroupItem { Name = "n" },
+        "list" => new List<int> { 1, 2 },
+        _ => throw new ArgumentOutOfRangeException(nameof(name)),
+    };
+
+    /// <summary>A <see cref="TomlTable"/> is written without the converters when it can be; the output must be the same.</summary>
+    [Theory]
+    [MemberData(nameof(ClrValueNames))]
+    public void Serialize_TomlTableWithClrValue_WritesTheSameAsTheConverters(string name)
+    {
+        var table = new TomlTable
+        {
+            ["value"] = CreateClrValue(name),
+            ["array"] = new TomlArray { CreateClrValue(name) },
+            ["inline"] = new TomlTable(inline: true) { ["x"] = CreateClrValue(name) },
+            ["table"] = new TomlTable { ["x"] = CreateClrValue(name) },
+        };
+
+        var direct = TomlSerializer.Serialize(table);
+
+        // A metadata store makes the serializer write the table with the converters
+        var withConverters = TomlSerializer.Serialize(table, new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() });
+        Assert.Equal(withConverters, direct);
+    }
+
+    [Fact]
+    public void Serialize_TomlTableWithCustomConverter_UsesTheConverter()
+    {
+        var options = new TomlSerializerOptions { Converters = [new UpperCaseStringConverter()] };
+
+        var toml = TomlSerializer.Serialize(new TomlTable { ["value"] = "a" }, options);
+
+        Assert.Equal("value = \"A\"\n", toml);
+    }
+
+    private sealed class UpperCaseStringConverter : TomlConverter<string>
+    {
+        public override string? Read(TomlReader reader) => reader.GetString();
+
+        public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
+    }
+
     private sealed class WithTable
     {
         public TomlTable Table { get; set; } = [];

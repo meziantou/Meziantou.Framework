@@ -10,6 +10,51 @@ namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal static class TomlModelTextWriter
 {
+    /// <summary>
+    /// Gets a value indicating whether every value of the table is one the converters write unchanged, such as a string
+    /// or an integer, rather than a value they convert, such as a <see cref="Guid"/>, an enum or an object.
+    /// </summary>
+    public static bool CanWriteDirectly(TomlTable root)
+    {
+        // A loop rather than a recursion, as the depth is only checked when writing
+        var pending = new Stack<object>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            switch (pending.Pop())
+            {
+                case TomlTable table:
+                    foreach (var pair in table)
+                    {
+                        pending.Push(pair.Value);
+                    }
+
+                    break;
+                case TomlArray array:
+                    foreach (var item in array)
+                    {
+                        pending.Push(item!);
+                    }
+
+                    break;
+                case TomlTableArray tableArray:
+                    foreach (var item in tableArray)
+                    {
+                        pending.Push(item);
+                    }
+
+                    break;
+                case string or bool or sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal:
+                case TomlDateTime or DateTime or DateTimeOffset or DateOnly or TimeOnly:
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     public static void WriteDocument(TextWriter writer, TomlTable root, TomlSerializerOptions options)
     {
         ArgumentGuard.ThrowIfNull(writer, nameof(writer));

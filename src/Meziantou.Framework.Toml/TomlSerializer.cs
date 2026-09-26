@@ -820,10 +820,13 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
 
         var options = typeInfo.Options;
+        // The table is written directly when the converters would not change any value
         if (options.RootValueHandling != TomlRootValueHandling.WrapInRootKey &&
             options.MetadataStore is null &&
+            options.Converters.Count == 0 &&
             typeInfo.Type == typeof(Meziantou.Framework.Toml.Model.TomlTable) &&
-            value is Meziantou.Framework.Toml.Model.TomlTable rootTable)
+            value is Meziantou.Framework.Toml.Model.TomlTable rootTable &&
+            Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.CanWriteDirectly(rootTable))
         {
             Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.WriteDocument(writer, rootTable, options);
             return;

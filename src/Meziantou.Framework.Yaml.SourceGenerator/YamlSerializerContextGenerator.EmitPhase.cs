@@ -1917,7 +1917,7 @@ public sealed partial class YamlSerializerContextGenerator
         }
         if (unmappedMemberHandling is null && extensionData is null)
         {
-            builder.AppendLine("        var unmappedMemberHandling = options.RejectUnmatchedProperties ? global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling;");
+            builder.AppendLine("        var unmappedMemberHandling = options.UnmappedMemberHandling;");
         }
         builder.AppendLine("        if (reader.TokenType != global::Meziantou.Framework.Yaml.Serialization.YamlTokenType.StartMapping)");
         builder.AppendLine("        {");
@@ -7351,13 +7351,6 @@ public sealed partial class YamlSerializerContextGenerator
                 .AppendLine(",");
         }
 
-        if (options.RejectUnmatchedProperties.HasValue)
-        {
-            builder.Append("            RejectUnmatchedProperties = ")
-                .Append(options.RejectUnmatchedProperties.Value ? "true" : "false")
-                .AppendLine(",");
-        }
-
         if (options.RespectRequiredConstructorParameters.HasValue)
         {
             builder.Append("            RespectRequiredConstructorParameters = ")
@@ -7590,7 +7583,7 @@ public sealed partial class YamlSerializerContextGenerator
         builder.AppendLine("    {");
         if (dependsOnRuntimeUnmappedMemberHandling)
         {
-            builder.AppendLine("        if (options.RejectUnmatchedProperties || options.UnmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
+            builder.AppendLine("        if (options.UnmappedMemberHandling == global::Meziantou.Framework.Yaml.YamlUnmappedMemberHandling.Disallow)");
             builder.AppendLine("        {");
             builder.Append("            return ").Append(fieldName).Append("DisallowUnmapped ??= ");
             AppendCSharpUnionClassifierContextCreation(builder, unionType, readCases, runtimeDisallowUnmappedProperties: true, derivedTypeMappings, propertyNamingPolicy, accessors, sourceGenerationOptions, "            ");

@@ -347,19 +347,9 @@ public sealed class YamlObjectConverterContractTests
     }
 
     [Fact]
-    public void RejectUnmatchedProperties_DisallowsUnknownMembers()
+    public void UnmappedMemberHandlingOption_DoesNotConflictWithExtensionData()
     {
-        var options = new YamlSerializerOptions { RejectUnmatchedProperties = true };
-
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Person>("FirstName: Ada\nLastName: Lovelace\n", options));
-
-        Assert.Contains("LastName", exception.Message);
-    }
-
-    [Fact]
-    public void RejectUnmatchedProperties_DoesNotConflictWithExtensionData()
-    {
-        var options = new YamlSerializerOptions { RejectUnmatchedProperties = true };
+        var options = new YamlSerializerOptions { UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow };
 
         var person = YamlSerializer.Deserialize<StrictExtensionDataPerson>("FirstName: Ada\nLastName: Lovelace\n", options);
 

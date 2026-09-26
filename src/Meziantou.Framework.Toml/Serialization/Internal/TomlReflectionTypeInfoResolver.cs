@@ -902,6 +902,11 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
+                if (memberValue is null)
+                {
+                    throw new TomlException($"The member '{member.Member.Name}' on '{Type.FullName}' is null, which TOML cannot represent. Use {nameof(TomlIgnoreCondition)}.{nameof(TomlIgnoreCondition.WhenWritingNull)} to skip it.");
+                }
+
                 if (member.FormattingMetadata is not null)
                 {
                     writer.ApplyPropertyMetadata(member.SerializedName, member.FormattingMetadata);

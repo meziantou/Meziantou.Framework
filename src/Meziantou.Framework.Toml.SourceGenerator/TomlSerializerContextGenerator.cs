@@ -3319,6 +3319,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return;
         }
 
+        if (canBeNull)
+        {
+            builder.Append(openIndent).Append("if (").Append(localName).Append(" is null) throw new global::Meziantou.Framework.Toml.TomlException($\"The member '")
+                .Append(EscapeInterpolatedStringLiteral(member.MemberName))
+                .Append("' on '{typeof(")
+                .Append(member.OwnerTypeName)
+                .AppendLine(").FullName}' is null, which TOML cannot represent. Use TomlIgnoreCondition.WhenWritingNull to skip it.\");");
+        }
+
         EmitPropertyName(openIndent);
         if (usedKeysVariable is not null)
         {

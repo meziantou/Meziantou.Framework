@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
@@ -62,8 +63,53 @@ internal sealed partial class TestTomlNeverIgnoreContext : TomlSerializerContext
 {
 }
 
+public sealed class NullNeverIgnoredModel
+{
+    [TomlIgnore(Condition = TomlIgnoreCondition.Never)]
+    public string? Name { get; set; } = "a";
+
+    [TomlIgnore(Condition = TomlIgnoreCondition.Never)]
+    public IList<int>? Items { get; set; } = [1];
+
+    [TomlIgnore(Condition = TomlIgnoreCondition.Never)]
+    public int? Count { get; set; } = 1;
+}
+
+[TomlSerializable(typeof(NullNeverIgnoredModel))]
+internal sealed partial class TestTomlNullNeverIgnoredContext : TomlSerializerContext
+{
+}
+
 public class NewApiIgnoreConditionTests
 {
+    [Theory]
+    [InlineData(nameof(NullNeverIgnoredModel.Name))]
+    [InlineData(nameof(NullNeverIgnoredModel.Items))]
+    [InlineData(nameof(NullNeverIgnoredModel.Count))]
+    public void NullMemberWrittenWithNever_ThrowsATomlExceptionNamingTheMember(string memberName)
+    {
+        var value = new NullNeverIgnoredModel();
+        switch (memberName)
+        {
+            case nameof(NullNeverIgnoredModel.Name):
+                value.Name = null;
+                break;
+            case nameof(NullNeverIgnoredModel.Items):
+                value.Items = null;
+                break;
+            default:
+                value.Count = null;
+                break;
+        }
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value, TestTomlNullNeverIgnoredContext.Default.NullNeverIgnoredModel));
+
+        Assert.Contains($"'{memberName}'", reflection.Message);
+        Assert.Contains("is null", reflection.Message);
+        Assert.Equal(reflection.Message, generated.Message);
+    }
+
     [Fact]
     public void GeneratedContext_RespectsIgnoreConditions()
     {

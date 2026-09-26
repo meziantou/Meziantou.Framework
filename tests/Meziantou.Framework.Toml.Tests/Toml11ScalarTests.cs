@@ -73,4 +73,30 @@ public sealed class Toml11ScalarTests
         Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ulong>(toml, new TomlSerializerOptions { RootValueHandling = TomlRootValueHandling.WrapInRootKey, RootValueKeyName = "a" }));
     }
+
+    [Theory]
+    [InlineData("1979-05-27T00:32:00.123456789Z", TomlDateTimeKind.OffsetDateTimeByZ, "00:32:00.1234567+00:00")]
+    [InlineData("1979-05-27T00:32:00.999999999-07:00", TomlDateTimeKind.OffsetDateTimeByNumber, "00:32:00.9999999-07:00")]
+    [InlineData("1979-05-27 00:32:00.12345678", TomlDateTimeKind.LocalDateTime, "00:32:00.1234567+00:00")]
+    [InlineData("00:32:00.99999999999999999999", TomlDateTimeKind.LocalTime, "00:32:00.9999999+00:00")]
+    public void Deserialize_TomlDateTime_TruncatesExtraFractionalDigits(string literal, TomlDateTimeKind kind, string expected)
+    {
+        var table = TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n")!;
+
+        var value = (TomlDateTime)table["a"];
+        Assert.Equal(kind, value.Kind);
+        Assert.Equal(7, value.SecondPrecision);
+        Assert.Equal(expected, value.DateTime.ToString("HH:mm:ss.fffffffzzz", System.Globalization.CultureInfo.InvariantCulture));
+        Assert.False(Parsing.SyntaxParser.Parse("a = " + literal + "\n").HasErrors);
+    }
+
+    [Fact]
+    public void Deserialize_DateTimeOffset_TruncatesNanoseconds()
+    {
+        var options = new TomlSerializerOptions { RootValueHandling = TomlRootValueHandling.WrapInRootKey };
+
+        var value = TomlSerializer.Deserialize<DateTimeOffset>("value = 2024-01-01T00:00:00.123456789Z\n", options);
+
+        Assert.Equal(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero).AddTicks(1234567), value);
+    }
 }

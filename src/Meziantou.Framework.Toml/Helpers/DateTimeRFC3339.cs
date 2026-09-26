@@ -111,9 +111,12 @@ internal static class DateTimeRFC3339
         "HH:mm:ss.fffffff",
     };
 
+    // .NET stores 7 fractional digits (ticks)
+    private const int MaxFractionalSecondDigits = 7;
+
     public static bool TryParseOffsetDateTime(string str, out TomlDateTime time)
     {
-        var upper = str.ToUpperInvariant();
+        var upper = TruncateFractionalSeconds(str.ToUpperInvariant());
 
         // Enforce RFC 3339/TOML offset format: "Z" or ±HH:MM.
         // DateTimeOffset parsing is permissive and may accept invalid forms like "+0900"/"+0909".
@@ -156,7 +159,7 @@ internal static class DateTimeRFC3339
 
     public static bool TryParseLocalDateTime(string str, out TomlDateTime time)
     {
-        return TryParseExactWithPrecision(str.ToUpperInvariant(), LocalDateTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalDateTime,  out time);
+        return TryParseExactWithPrecision(TruncateFractionalSeconds(str.ToUpperInvariant()), LocalDateTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalDateTime, out time);
     }
 
     public static bool TryParseLocalDate(string str, out TomlDateTime time)
@@ -174,7 +177,31 @@ internal static class DateTimeRFC3339
 
     public static bool TryParseLocalTime(string str, out TomlDateTime time)
     {
-        return TryParseExactWithPrecision(str.ToUpperInvariant(), LocalTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalTime, out time);
+        return TryParseExactWithPrecision(TruncateFractionalSeconds(str.ToUpperInvariant()), LocalTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalTime, out time);
+    }
+
+    // toml-specs: if the value contains greater precision than the implementation can support, the additional precision
+    // must be truncated, not rounded.
+    private static string TruncateFractionalSeconds(string str)
+    {
+        var dotIndex = str.IndexOf('.', StringComparison.Ordinal);
+        if (dotIndex < 0)
+        {
+            return str;
+        }
+
+        var end = dotIndex + 1;
+        while (end < str.Length && char.IsAsciiDigit(str[end]))
+        {
+            end++;
+        }
+
+        if (end - dotIndex - 1 <= MaxFractionalSecondDigits)
+        {
+            return str;
+        }
+
+        return string.Concat(str.AsSpan(0, dotIndex + 1 + MaxFractionalSecondDigits), str.AsSpan(end));
     }
 
     private static readonly ParseDelegate TryParseDateTime = (string text, string format, CultureInfo culture, DateTimeStyles style, out DateTimeOffset time) =>

@@ -1014,12 +1014,20 @@ internal static class TomlModelTextWriter
                 return;
             }
 
+            var endsWithComment = false;
             foreach (var trivia in propertyMetadata.TrailingTriviaAfterEndOfLine)
             {
                 if (trivia.Text is not null)
                 {
                     WriteTrivia(trivia);
+                    endsWithComment = trivia.Kind == TokenKind.Comment || (endsWithComment && trivia.Kind == TokenKind.Whitespaces);
                 }
+            }
+
+            // The next key or header starts on the line after the comment
+            if (endsWithComment)
+            {
+                WriteNewLine();
             }
         }
 

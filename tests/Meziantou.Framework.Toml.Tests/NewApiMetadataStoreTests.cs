@@ -179,6 +179,25 @@ public sealed class NewApiMetadataStoreTests
         Assert.Equal("name = \"safe\" \t# note\t1\n", TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store }).ReplaceLineEndings("\n"));
     }
 
+    // A comment runs to the end of its line, so the next key or header must not be written on it
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Serialize_CommentAfterTheEndOfLine_DoesNotCommentOutTheNextKey(bool nextIsTable)
+    {
+        var store = new TomlMetadataStore();
+        var model = new TomlTable { ["a"] = 1L };
+        model["b"] = nextIsTable ? new TomlTable { ["c"] = 2L } : 2L;
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("a", new TomlPropertyMetadata { TrailingTriviaAfterEndOfLine = [new TomlSyntaxTriviaMetadata(TokenKind.Comment, "# note"), new TomlSyntaxTriviaMetadata(TokenKind.Whitespaces, " ")] });
+        store.SetProperties(model, metadata);
+
+        var toml = TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store });
+
+        Assert.Contains("# note", toml, StringComparison.Ordinal);
+        Assert.Equal(TomlSerializer.Serialize(model), TomlSerializer.Serialize(TomlSerializer.Deserialize<TomlTable>(toml)!));
+    }
+
     [Fact]
     public void NoInlineDisplayKind_OverridesInlineTablePolicy()
     {

@@ -1567,6 +1567,12 @@ internal sealed class Lexer
         }
 
         c = CurrentCharacter;
+        if (c == Eof)
+        {
+            AddError("Unexpected end of file in an escape sequence", CurrentPosition, CurrentPosition);
+            return false;
+        }
+
         AddError($"Unexpected escape character [{c}] in string. Only b t n f r e \\ \" xHH u0000-uFFFF U00000000-UFFFFFFFF are allowed", CurrentPosition, CurrentPosition);
         return false;
     }

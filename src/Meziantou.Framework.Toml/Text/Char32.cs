@@ -42,6 +42,12 @@ internal readonly struct Char32
 
     public override string ToString()
     {
-        return char.ConvertFromUtf32(Code);
+        // The lexer uses -1 for the end of the input
+        if (Code < 0)
+        {
+            return "EOF";
+        }
+
+        return System.Text.Rune.IsValid(Code) ? char.ConvertFromUtf32(Code) : $"U+{Code:X4}";
     }
 }

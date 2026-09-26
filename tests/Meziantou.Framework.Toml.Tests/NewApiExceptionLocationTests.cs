@@ -6,6 +6,32 @@ namespace Meziantou.Framework.Toml.Tests;
 
 public class NewApiExceptionLocationTests
 {
+    [Theory]
+    [InlineData("a = \"\\")]
+    [InlineData("a = \"\\u")]
+    [InlineData("a = \"\\u12")]
+    [InlineData("a = \"\\U1234567")]
+    [InlineData("a = \"\\x")]
+    [InlineData("a = \"\\x4")]
+    [InlineData("a = \"\"\"\\")]
+    [InlineData("a = \"\"\"\\u12")]
+    [InlineData("a = { \"\\")]
+    [InlineData("\"\\u12")]
+    public void UnfinishedEscapeAtEndOfInput_ReportsError(string toml)
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        Assert.NotNull(ex.Span);
+        Assert.False(TomlSerializer.TryDeserialize<Model.TomlTable>(toml, out _));
+        Assert.True(SyntaxParser.Parse(toml).HasErrors);
+
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant, DecodeScalars = true });
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.True(parser.HasErrors);
+    }
+
     [Fact]
     public void Deserialize_InvalidScalarType_IncludesLocation()
     {

@@ -520,7 +520,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML002` | Error | A converter type is invalid. |
 | `MFTOML003` | Error | A member uses a type the generator cannot serialize. |
 | `MFTOML004` | Error | A dictionary member uses non-string keys. |
-| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` value is invalid. |
+| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` or `[JsonSourceGenerationOptions]` value is invalid, or a `[TomlSerializable]` `TypeInfoPropertyName` is not a valid identifier, is used for two types, or clashes with a member of the context or with a member generated for another name (`_Name`, `CreateName`). |
 | `MFTOML006` | Error | An extension data member is invalid. |
 | `MFTOML007` | Error | A polymorphism configuration is invalid. |
 | `MFTOML008` | Warning | The context uses `[JsonSerializable]` instead of `[TomlSerializable]`. |
@@ -530,7 +530,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML012` | Warning | A converter factory in `[TomlSourceGenerationOptions(Converters)]` is not used by generated code. |
 | `MFTOML013` | Error | A constructor annotated with `[TomlConstructor]` or `[JsonConstructor]` is private or protected. |
 | `MFTOML014` | Error | The context type is generic. It can be nested in a generic type. |
-| `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. |
+| `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. The context has a public property for each type, so every type must be accessible wherever the context is: for example, an `internal` type cannot be used by a `protected` nested context, which derived types in other assemblies can access. |
 | `MFTOML016` | Error | A member is a `ref struct`, a delegate, or a pointer, which cannot be serialized. |
 | `MFTOML017` | Error | A type registered with `[TomlSerializable]` cannot be serialized: an abstract class or an interface without polymorphism configuration, an open generic type, a multi-dimensional array, a delegate, a ref struct, or a pointer. |
 

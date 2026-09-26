@@ -1806,9 +1806,11 @@ internal sealed class Lexer
         {
             if ((uint)position < (uint)_textLength)
             {
-                var c2 = unsafe(Unsafe.Add(ref start, position++));
+                // The next code unit is only part of this character when it completes the pair
+                var c2 = unsafe(Unsafe.Add(ref start, position));
                 if (((uint)c2 & 0xFC00u) == 0xDC00u)
                 {
+                    position++;
                     return char.ConvertToUtf32(c1, c2);
                 }
 

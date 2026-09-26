@@ -1593,14 +1593,15 @@ public sealed partial class TomlParser
                 // High surrogate; requires a following low surrogate.
                 if ((uint)position < (uint)span.Length)
                 {
-                    var c2 = unsafe(Unsafe.Add(ref start, position++));
+                    var c2 = unsafe(Unsafe.Add(ref start, position));
                     if (((uint)c2 & 0xFC00u) == 0xDC00u)
                     {
+                        position++;
                         codePoint = char.ConvertToUtf32(c1, c2);
                         return true;
                     }
 
-                    // Invalid pair; keep consuming and return U+FFFD.
+                    // Invalid pair: the next code unit is another character
                     codePoint = 0xFFFD;
                     return true;
                 }

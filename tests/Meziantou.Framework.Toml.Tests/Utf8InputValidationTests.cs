@@ -41,4 +41,18 @@ public sealed class BomInputTests
         Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
     }
+
+    [Theory]
+    [InlineData("a = \"x", "\"\n")]
+    [InlineData("a = \"\"\"x", " y\"\"\"\n")]
+    [InlineData("# x", "\na = 1\n")]
+    public void UnpairedHighSurrogate_DoesNotHideTheNextCharacter(string prefix, string suffix)
+    {
+        var toml = prefix + (char)0xD800 + suffix;
+
+        var doc = Parsing.SyntaxParser.Parse(toml);
+
+        var diagnostic = Assert.Single(doc.Diagnostics);
+        Assert.Contains("surrogate", diagnostic.Message, StringComparison.Ordinal);
+    }
 }

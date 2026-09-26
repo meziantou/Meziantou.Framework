@@ -21,6 +21,7 @@ internal partial class Parser
     private TableSyntaxBase? _currentTable;
     private DiagnosticsBag? _diagnostics;
     private int _currentContainerDepth;
+    private TableArrayPathNode _tableArrayPaths;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Parser"/> class.
@@ -34,6 +35,7 @@ internal partial class Parser
         _currentTrivias = new List<SyntaxTrivia>();
         _effectiveMaxDepth = TomlDepthHelper.GetEffectiveMaxDepth((options ?? throw new ArgumentNullException(nameof(options))).MaxDepth);
         _currentContainerDepth = 1;
+        _tableArrayPaths = new TableArrayPathNode();
     }
 
     // private Stack<ScriptNode> Blocks { get; }
@@ -46,6 +48,7 @@ internal partial class Parser
         _currentTable = null;
         _hideNewLine = true;
         _currentContainerDepth = 1;
+        _tableArrayPaths = new TableArrayPathNode();
         NextToken();
         while (TryParseTableEntry(out var itemEntry))
         {
@@ -134,7 +137,7 @@ internal partial class Parser
         try
         {
             var keyValueSyntax = Open<KeyValueSyntax>();
-            keyValueSyntax.Key = ParseKey(isTableHeader: false);
+            keyValueSyntax.Key = ParseKey(isTableHeader: false, out var keyDepth);
 
             if (_token.Kind != TokenKind.Equal)
             {
@@ -147,13 +150,17 @@ internal partial class Parser
             {
                 // Switch the lexer to value parser
                 _lexer.State = LexerState.Value;
+                var containerDepth = _currentContainerDepth;
                 try
                 {
+                    // The tables of a dotted key contain the value
+                    _currentContainerDepth = keyDepth;
                     keyValueSyntax.EqualToken = EatToken();
                     keyValueSyntax.Value = ParseValue();
                 }
                 finally
                 {
+                    _currentContainerDepth = containerDepth;
                     _lexer.State = LexerState.Key;
                 }
 
@@ -495,7 +502,16 @@ internal partial class Parser
         try
         {
             table.OpenBracket = EatToken();
-            table.Name = ParseKey(isTableHeader: true);
+            table.Name = ParseKey(isTableHeader: true, out var tableDepth);
+            if (isTableArray)
+            {
+                // The element of the array of tables is a table too
+                tableDepth = IncrementDepth(tableDepth, 1);
+                AddTableArrayPath(table.Name);
+            }
+
+            // The key/value pairs of the table are read at its depth
+            _currentContainerDepth = tableDepth;
             table.CloseBracket = EatToken(isTableArray ? TokenKind.CloseBracketDouble : TokenKind.CloseBracket);
 
             if (_token.Kind != TokenKind.Eof)
@@ -512,26 +528,54 @@ internal partial class Parser
         return table;
     }
 
-    private KeySyntax ParseKey(bool isTableHeader)
+    private KeySyntax ParseKey(bool isTableHeader, out int depth)
     {
         var key = Open<KeySyntax>();
         key.Key = ParseBaseKey();
 
-        // Each segment of a table header, and each segment but the last of a dotted key, is a table, so it counts toward
-        // the maximum depth
-        var depth = isTableHeader ? _currentContainerDepth + 1 : _currentContainerDepth;
+        // Count the depth the way TomlParser does. Each segment of a table header, and each segment but the last of a
+        // dotted key, is a table. A table header starts from the root, and goes through the last element of each array
+        // of tables it names.
+        depth = _currentContainerDepth;
+        TableArrayPathNode? tableArrayPath = null;
+        if (isTableHeader)
+        {
+            depth = IncrementDepth(1, 1);
+            tableArrayPath = _tableArrayPaths.GetChild(key.Key);
+        }
+
         while (_token.Kind == TokenKind.Dot)
         {
-            depth++;
-            if (depth == _effectiveMaxDepth + 1)
-            {
-                // The segments are read in a loop, so the key can still be read
-                LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
-            }
-
-            AddToListAndUpdateSpan(key.DotKeys, ParseDotKey());
+            depth = IncrementDepth(depth, tableArrayPath is { IsTableArray: true } ? 2 : 1);
+            var dotKey = ParseDotKey();
+            AddToListAndUpdateSpan(key.DotKeys, dotKey);
+            tableArrayPath = tableArrayPath?.GetChild(dotKey.Key);
         }
         return Close(key);
+    }
+
+    // Reports an error when the depth goes past the maximum. The segments of a key are read in a loop, so the key can
+    // still be read.
+    private int IncrementDepth(int depth, int levels)
+    {
+        var newDepth = depth + levels;
+        if (depth <= _effectiveMaxDepth && newDepth > _effectiveMaxDepth)
+        {
+            LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+        }
+
+        return newDepth;
+    }
+
+    private void AddTableArrayPath(KeySyntax key)
+    {
+        var node = _tableArrayPaths.GetOrAddChild(key.Key);
+        foreach (var dotKey in key.DotKeys)
+        {
+            node = node?.GetOrAddChild(dotKey.Key);
+        }
+
+        node?.IsTableArray = true;
     }
 
     private BareKeyOrStringValueSyntax? ParseBaseKey()
@@ -557,8 +601,17 @@ internal partial class Parser
         var isTooDeep = _currentContainerDepth > _effectiveMaxDepth;
         if (isTooDeep || !TomlDepthHelper.HasSufficientExecutionStack())
         {
-            // Containers are read recursively, so the rest of the document is kept as trivia instead of being read
-            LogError(isTooDeep ? TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth) : TomlDepthHelper.InsufficientExecutionStackMessage);
+            // Containers are read recursively, so the rest of the document is kept as trivia instead of being read. When
+            // the key or the table of the container already went past the maximum depth, the error is already reported.
+            if (!isTooDeep)
+            {
+                LogError(TomlDepthHelper.InsufficientExecutionStackMessage);
+            }
+            else if (_currentContainerDepth - 1 <= _effectiveMaxDepth)
+            {
+                LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            }
+
             _currentContainerDepth--;
             while (_token.Kind != TokenKind.Eof)
             {
@@ -844,5 +897,42 @@ internal partial class Parser
     {
         ArgumentNullException.ThrowIfNull(diagnosticMessage);
         _diagnostics!.Add(diagnosticMessage);
+    }
+
+    // The paths of the arrays of tables, so that a table header counts the elements it goes through
+    private sealed class TableArrayPathNode
+    {
+        private Dictionary<string, TableArrayPathNode>? _children;
+
+        public bool IsTableArray { get; set; }
+
+        public TableArrayPathNode? GetChild(BareKeyOrStringValueSyntax? key)
+        {
+            return _children is not null && GetKey(key) is { } name && _children.TryGetValue(name, out var child) ? child : null;
+        }
+
+        public TableArrayPathNode? GetOrAddChild(BareKeyOrStringValueSyntax? key)
+        {
+            if (GetKey(key) is not { } name)
+            {
+                return null;
+            }
+
+            _children ??= new Dictionary<string, TableArrayPathNode>(StringComparer.Ordinal);
+            if (!_children.TryGetValue(name, out var child))
+            {
+                child = new TableArrayPathNode();
+                _children.Add(name, child);
+            }
+
+            return child;
+        }
+
+        private static string? GetKey(BareKeyOrStringValueSyntax? key) => key switch
+        {
+            BareKeySyntax bareKey => bareKey.Key?.Text,
+            StringValueSyntax stringKey => stringKey.Value,
+            _ => null,
+        };
     }
 }

@@ -157,6 +157,46 @@ public sealed class MaxDepthTests
         Assert.NotNull(TomlSerializer.Deserialize<TomlTable>(toml, options));
     }
 
+    [Theory]
+    [InlineData("[[a.a.a]]\n")]
+    [InlineData("[a.a.a]\nx = [[[]]]\n")]
+    [InlineData("[[a]]\n[a.b]\n")]
+    [InlineData("[[\"a\"]]\n[a.b.c]\nx = 1\n")]
+    [InlineData("[[a]]\n[[a.b]]\n[a.b.c]\ny.z = [1]\n")]
+    [InlineData("[[a]]\n[[a]]\n[a.b.c]\n")]
+    [InlineData("[a]\nb.c.d = {e = [1]}\n")]
+    [InlineData("a.b.c = [{d.e = [1]}]\n")]
+    [InlineData("x = {a.b = {c = [[1]]}}\n")]
+    public void SyntaxParser_CountsDepthLikeTheDeserializer(string toml)
+    {
+        for (var maxDepth = 1; maxDepth <= 12; maxDepth++)
+        {
+            var options = TomlSerializerOptions.Default with { MaxDepth = maxDepth };
+            var deserializerFails = false;
+            try
+            {
+                TomlSerializer.Deserialize<TomlTable>(toml, options);
+            }
+            catch (TomlException)
+            {
+                deserializerFails = true;
+            }
+
+            var doc = SyntaxParser.Parse(toml, options);
+            Assert.Equal(deserializerFails, doc.HasErrors, message: $"MaxDepth = {maxDepth}: {doc.Diagnostics}");
+        }
+    }
+
+    [Theory]
+    [InlineData(63, true)]
+    [InlineData(62, false)]
+    public void SyntaxParser_TableArrayHeaderCountsTheElement(int segments, bool isError)
+    {
+        var toml = $"[[{string.Join('.', Enumerable.Repeat("a", segments))}]]\n";
+
+        Assert.Equal(isError, SyntaxParser.Parse(toml).HasErrors);
+    }
+
     [Fact]
     public void SyntaxParser_HeadersWithLongSharedPrefix_AreRejectedQuickly()
     {

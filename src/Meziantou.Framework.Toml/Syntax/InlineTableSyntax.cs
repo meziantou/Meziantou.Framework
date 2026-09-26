@@ -30,7 +30,9 @@ public sealed class InlineTableSyntax : ValueSyntax
 
         for (var i = 0; i < keyValues.Length; i++)
         {
+            // An entry of an inline table ends with a comma, not a newline, which TOML 1.0 does not allow in inline tables
             var keyValue = keyValues[i];
+            keyValue.EndOfLineToken = null;
             Items.Add(new InlineTableItemSyntax(keyValue)
             {
                 Comma = (i + 1 < keyValues.Length) ? SyntaxFactory.Token(TokenKind.Comma).AddTrailingWhitespace() : null

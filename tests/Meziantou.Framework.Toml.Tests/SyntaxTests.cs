@@ -141,4 +141,16 @@ val = true
         Assert.Equal(toml.AsSpan(0, index).Count('\n'), diagnostic.Span.Start.Line);
         Assert.Equal(index - toml.AsSpan(0, index).LastIndexOf('\n') - 1, diagnostic.Span.Start.Column);
     }
+
+    [Fact]
+    public void InlineTableSyntax_FromKeyValues_IsWrittenOnOneLine()
+    {
+        var inlineTable = new InlineTableSyntax(new KeyValueSyntax("a", new IntegerValueSyntax(1)), new KeyValueSyntax("b", new IntegerValueSyntax(2)));
+        var doc = new DocumentSyntax();
+        doc.KeyValues.Add(new KeyValueSyntax("t", inlineTable));
+
+        Assert.Equal("{ a = 1, b = 2 }", inlineTable.ToString());
+        Assert.Equal("t = { a = 1, b = 2 }\n", doc.ToString().ReplaceLineEndings("\n"));
+        Assert.False(SyntaxParser.Parse(doc.ToString()).HasErrors);
+    }
 }

@@ -16,7 +16,8 @@ public sealed class Toml11TomlTestInvalidFolderTests
     [MemberData(nameof(ListToml11InvalidFolderExtensions))]
     public static void Toml11Extensions_SyntaxParser_Roundtrips(string name)
     {
-        var (inputName, toml, _) = StandardTests.GetCase(name);
+        var testCase = StandardTests.GetCase(name);
+        var (inputName, toml) = (testCase.InputName, testCase.Toml!);
         var doc = SyntaxParser.Parse(toml, inputName);
         var roundtrip = doc.ToString();
 
@@ -39,7 +40,8 @@ public sealed class Toml11TomlTestInvalidFolderTests
     [MemberData(nameof(ListToml11InvalidFolderExtensions))]
     public static void Toml11Extensions_UntypedModel_RoundtripsSemantics(string name)
     {
-        var (inputName, toml, _) = StandardTests.GetCase(name);
+        var testCase = StandardTests.GetCase(name);
+        var (inputName, toml) = (testCase.InputName, testCase.Toml!);
         var model = TomlSerializer.Deserialize<TomlTable>(toml)!;
         var tomlFromModel = TomlSerializer.Serialize(model);
         var model2 = TomlSerializer.Deserialize<TomlTable>(tomlFromModel)!;
@@ -121,18 +123,5 @@ public sealed class Toml11TomlTestInvalidFolderTests
         Assert.Equal(2L, (long)inline["b"]);
     }
 
-    public static TheoryData<string> ListToml11InvalidFolderExtensions() => new(Toml11ValidButTomlTestMarksInvalid);
-
-    private static readonly string[] Toml11ValidButTomlTestMarksInvalid =
-    [
-        "invalid/datetime/no-secs",
-        "invalid/local-datetime/no-secs",
-        "invalid/local-time/no-secs",
-        "invalid/string/basic-byte-escapes",
-        "invalid/inline-table/trailing-comma",
-        "invalid/inline-table/linebreak-01",
-        "invalid/inline-table/linebreak-02",
-        "invalid/inline-table/linebreak-03",
-        "invalid/inline-table/linebreak-04",
-    ];
+    public static TheoryData<string> ListToml11InvalidFolderExtensions() => StandardTests.ListToml10OnlyInvalidFiles();
 }

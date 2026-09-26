@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,7 @@ using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Parsing;
 using Meziantou.Framework.Toml.Syntax;
+using LanguageToml = Meziantou.Framework.Language.Toml;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -23,34 +25,14 @@ public static class StandardTests
     private const string InvalidSpec = "invalid";
     private const string ValidSpec = "valid";
 
-    private static readonly Lazy<Dictionary<string, System.Text.Json.JsonElement>> Corpus = new(LoadCorpus);
-
-    private static readonly string[] Toml11ValidButTomlTestMarksInvalid =
-    [
-        // TOML v1.1.0 additions (toml-test suite still marks them invalid).
-        "/invalid/datetime/no-secs.toml",            // minute-only times
-        "/invalid/local-datetime/no-secs.toml",
-        "/invalid/local-time/no-secs.toml",
-        "/invalid/string/basic-byte-escapes.toml",   // \xHH basic string escape
-        "/invalid/inline-table/trailing-comma.toml", // trailing commas in inline tables
-        "/invalid/inline-table/linebreak-01.toml",   // TOML 1.1 allows newlines in inline tables
-        "/invalid/inline-table/linebreak-02.toml",
-        "/invalid/inline-table/linebreak-03.toml",
-        "/invalid/inline-table/linebreak-04.toml",
-    ];
-
-    private static readonly string[] Toml10SpecFolders =
-    [
-        "/valid/spec-1.0.0/",
-        "/invalid/spec-1.0.0/",
-    ];
+    private static readonly Lazy<Dictionary<string, TomlTestCase>> Corpus = new(LoadCorpus);
 
     [Theory]
     [MemberData(nameof(ListTomlFiles), ValidSpec)]
     public static void SpecValid(string name)
     {
         var testCase = GetCase(name);
-        ValidateSpec(ValidSpec, testCase.InputName, testCase.Toml, testCase.Json!);
+        ValidateSpec(ValidSpec, testCase);
     }
 
     [Theory]
@@ -58,11 +40,50 @@ public static class StandardTests
     public static void SpecInvalid(string name)
     {
         var testCase = GetCase(name);
-        ValidateSpec(InvalidSpec, testCase.InputName, testCase.Toml, testCase.Json!);
+        ValidateSpec(InvalidSpec, testCase);
     }
 
-    private static void ValidateSpec(string type, string inputName, string toml, string json)
+    /// <summary>A valid document stays valid, and means the same, with Windows line breaks.</summary>
+    [Theory]
+    [MemberData(nameof(ListTomlFiles), ValidSpec)]
+    public static void SpecValid_WithCarriageReturnLineFeeds(string name)
     {
+        var testCase = GetCase(name);
+        Assert.NotNull(testCase.Toml);
+        var toml = testCase.Toml.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
+
+        var doc = SyntaxParser.Parse(toml, testCase.InputName);
+        Assert.False(doc.HasErrors, message: "Unexpected parsing errors");
+        Assert.Equal(toml, doc.ToString(), message: "The roundtrip doesn't match");
+
+        // A parser may normalize the line breaks of a multiline string, and this one keeps them
+        var expectedJson = NormalizeLineEndings(NormalizeJson(ParseTomlTestJson(testCase.Json!))!);
+        var actualJson = NormalizeLineEndings(ModelHelper.ToJson(TomlSerializer.Deserialize<TomlTable>(toml)));
+        AssertTomlTestJsonEquivalent(expectedJson, actualJson, testCase.InputName, toml, doc, doc.ToString());
+    }
+
+    private static JsonNode NormalizeLineEndings(JsonNode node)
+    {
+        return node switch
+        {
+            JsonObject obj => new JsonObject(obj.Select(property => KeyValuePair.Create(property.Key, (JsonNode?)NormalizeLineEndings(property.Value!)))),
+            JsonArray array => new JsonArray(array.Select(item => (JsonNode?)NormalizeLineEndings(item!)).ToArray()),
+            JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(text.Replace("\r\n", "\n", StringComparison.Ordinal)),
+            _ => node.DeepClone(),
+        };
+    }
+
+    private static void ValidateSpec(string type, TomlTestCase testCase)
+    {
+        var inputName = testCase.InputName;
+        if (testCase.Toml is not { } toml)
+        {
+            // A file that is not valid UTF-8 is rejected by the decoder, before there is any text to parse
+            Assert.Equal(InvalidSpec, type);
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(new MemoryStream(testCase.Bytes)));
+            return;
+        }
+
         var doc = SyntaxParser.Parse(toml, inputName);
         var roundtrip = doc.ToString();
         switch (type)
@@ -78,12 +99,19 @@ public static class StandardTests
                 Assert.Equal(toml, roundtrip, message: "The roundtrip doesn't match");
 
                 // Read the original json (toml-test encodes datetimes as strings; avoid Json.NET date coercion).
-                var expectedJson = (JsonObject)NormalizeJson(ParseTomlTestJson(json))!;
+                var expectedJson = (JsonObject)NormalizeJson(ParseTomlTestJson(testCase.Json!))!;
                 // Convert to the untyped model.
                 var model = TomlSerializer.Deserialize<TomlTable>(toml);
                 // Convert the model into the expected json
                 var computedJson = ModelHelper.ToJson(model);
                 AssertTomlTestJsonEquivalent(expectedJson, computedJson, inputName, toml, doc, roundtrip);
+
+                var modelFromStream = TomlSerializer.Deserialize<TomlTable>(new MemoryStream(testCase.Bytes));
+                AssertTomlTestJsonEquivalent(expectedJson, ModelHelper.ToJson(modelFromStream), inputName, toml, doc, roundtrip);
+
+                var tolerantParser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+                ReadAllEvents(tolerantParser);
+                Assert.False(tolerantParser.HasErrors, message: "The tolerant parser must not report an error");
 
                 var tomlFromModel = TomlSerializer.Serialize(model);
 
@@ -100,11 +128,12 @@ public static class StandardTests
 
                 Assert.True(doc.HasErrors, message: "The TOML requires parsing/validation errors");
                 Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+                Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(new MemoryStream(testCase.Bytes)));
                 Assert.Throws<TomlException>(() => ReadAllEvents(TomlParser.Create(toml)));
 
-                var tolerantParser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
-                ReadAllEvents(tolerantParser);
-                Assert.True(tolerantParser.HasErrors, message: "The tolerant parser must report an error");
+                var tolerantInvalidParser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+                ReadAllEvents(tolerantInvalidParser);
+                Assert.True(tolerantInvalidParser.HasErrors, message: "The tolerant parser must report an error");
                 break;
         }
 
@@ -119,6 +148,136 @@ public static class StandardTests
             }
             Assert.Equal(roundtrip, roundtripFromReader, message: "The TextReader version doesn't match with the string version");
         }
+    }
+
+    public static TheoryData<int> DifferentialSeeds() => new(Enumerable.Range(0, 8));
+
+    /// <summary>
+    /// Mutates the documents of the corpus and checks that every parser agrees with
+    /// <c>Meziantou.Framework.Language.Toml</c>, an independent implementation, about which ones are valid.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DifferentialSeeds))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public static void Differential_AgreesWithLanguageToml(int seed)
+    {
+        var sources = Corpus.Value.Values
+            .Where(testCase => testCase.IsToml11 && testCase.Toml is not null)
+            .Select(testCase => testCase.Toml!)
+            .ToArray();
+        var random = new Random(seed);
+        var failures = new List<string>();
+        for (var i = 0; i < 1500 && failures.Count < 10; i++)
+        {
+            var toml = sources[random.Next(sources.Length)];
+            var mutationCount = random.Next(1, 4);
+            for (var j = 0; j < mutationCount; j++)
+            {
+                toml = Mutate(toml, random);
+            }
+
+            var failure = CompareWithLanguageToml(toml);
+            if (failure is not null)
+            {
+                failures.Add($"{failure}: {JsonSerializer.Serialize(toml)}");
+            }
+        }
+
+        Assert.Empty(failures, string.Join(Environment.NewLine, failures));
+    }
+
+    private const string MutationAlphabet = "=[]{},.\"'#\n\r\t _-+:0123456789eExobTZaz\\";
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    private static string Mutate(string toml, Random random)
+    {
+        var position = random.Next(toml.Length + 1);
+        switch (random.Next(5))
+        {
+            case 0 when toml.Length > 0 && position < toml.Length:
+                return toml.Remove(position, 1);
+
+            case 1 when toml.Length > 0 && position < toml.Length:
+                return string.Concat(toml.AsSpan(0, position), MutationAlphabet[random.Next(MutationAlphabet.Length)].ToString(), toml.AsSpan(position + 1));
+
+            case 2:
+                var lines = toml.Split('\n');
+                var line = random.Next(lines.Length);
+                return string.Join('\n', lines.Take(line + 1).Append(lines[line]).Concat(lines.Skip(line + 1)));
+
+            case 3:
+                var allLines = toml.Split('\n');
+                var from = random.Next(allLines.Length);
+                var to = random.Next(allLines.Length);
+                (allLines[from], allLines[to]) = (allLines[to], allLines[from]);
+                return string.Join('\n', allLines);
+
+            default:
+                return toml.Insert(position, MutationAlphabet[random.Next(MutationAlphabet.Length)].ToString());
+        }
+    }
+
+    private static string? CompareWithLanguageToml(string toml)
+    {
+        var expected = LanguageToml.TomlSyntaxTree.ParseText(toml, new LanguageToml.TomlParseOptions { Version = LanguageToml.TomlVersion.V1_1 }).GetDiagnostics().Count == 0;
+
+        var doc = SyntaxParser.Parse(toml);
+        if (doc.HasErrors == expected)
+        {
+            // A few valid values do not fit in the .NET types, and both implementations do not handle them the same way
+            if (expected && doc.Diagnostics.Any(diagnostic => diagnostic.Message.Contains("cannot be represented", StringComparison.Ordinal)))
+            {
+                return null;
+            }
+
+            return $"SyntaxParser: expected valid={expected}";
+        }
+
+        if (expected && doc.ToString() != toml)
+        {
+            return "SyntaxParser: the roundtrip doesn't match";
+        }
+
+        var tolerantParser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        ReadAllEvents(tolerantParser);
+        if (tolerantParser.HasErrors == expected)
+        {
+            return $"TomlParser (tolerant): expected valid={expected}";
+        }
+
+        try
+        {
+            ReadAllEvents(TomlParser.Create(toml));
+            if (!expected)
+            {
+                return "TomlParser: expected an error";
+            }
+        }
+        catch (TomlException ex)
+        {
+            if (expected)
+            {
+                return $"TomlParser: unexpected error {ex.Message}";
+            }
+        }
+
+        TomlTable model;
+        try
+        {
+            model = TomlSerializer.Deserialize<TomlTable>(toml)!;
+            if (!expected)
+            {
+                return "Deserialize: expected an error";
+            }
+        }
+        catch (TomlException ex)
+        {
+            return expected ? $"Deserialize: unexpected error {ex.Message}" : null;
+        }
+
+        var json = ModelHelper.ToJson(model);
+        var roundtrip = ModelHelper.ToJson(TomlSerializer.Deserialize<TomlTable>(TomlSerializer.Serialize(model)));
+        return JsonNode.DeepEquals(json, roundtrip) ? null : "Serialize: the document doesn't roundtrip";
     }
 
     private static void ReadAllEvents(TomlParser parser)
@@ -202,87 +361,86 @@ public static class StandardTests
         TestContext.Current.TestOutputHelper?.WriteLine($"// ----------------------------------------------------------");
     }
 
+    /// <summary>Lists the toml-test cases of the TOML 1.1 list.</summary>
     public static TheoryData<string> ListTomlFiles(string type)
     {
         var tests = new TheoryData<string>();
-        foreach (var name in Corpus.Value.Keys)
+        foreach (var testCase in Corpus.Value.Values)
         {
-            if (!name.StartsWith(type + "/", StringComparison.Ordinal))
+            if (testCase.IsToml11 && testCase.Name.StartsWith(type + "/", StringComparison.Ordinal))
             {
-                continue;
+                tests.Add(testCase.Name);
             }
-
-            var normalizedFile = "/" + name + ".toml";
-
-            for (var i = 0; i < Toml10SpecFolders.Length; i++)
-            {
-                if (normalizedFile.Contains(Toml10SpecFolders[i], StringComparison.OrdinalIgnoreCase))
-                {
-                    goto next_file;
-                }
-            }
-
-            if (type == InvalidSpec)
-            {
-                // The toml-test "invalid/encoding" suite validates raw UTF-8 byte-level correctness.
-                // This test harness feeds TOML as text (string/TextReader), so these cases are not applicable here.
-                if (normalizedFile.Contains("/invalid/encoding/", StringComparison.OrdinalIgnoreCase))
-                {
-                    goto next_file;
-                }
-
-                for (var i = 0; i < Toml11ValidButTomlTestMarksInvalid.Length; i++)
-                {
-                    if (normalizedFile.EndsWith(Toml11ValidButTomlTestMarksInvalid[i], StringComparison.OrdinalIgnoreCase))
-                    {
-                        goto next_file;
-                    }
-                }
-            }
-
-            tests.Add(name);
-
-            next_file: ;
         }
+
+        return tests;
+    }
+
+    /// <summary>Lists the documents that are invalid in TOML 1.0 only, which are the TOML 1.1 extensions.</summary>
+    public static TheoryData<string> ListToml10OnlyInvalidFiles()
+    {
+        var tests = new TheoryData<string>();
+        foreach (var testCase in Corpus.Value.Values)
+        {
+            // The examples of the 1.0 specification are listed under another name for 1.1
+            if (!testCase.IsToml11 && testCase.Name.StartsWith(InvalidSpec + "/", StringComparison.Ordinal) && !testCase.Name.StartsWith("invalid/spec-1.0.0/", StringComparison.Ordinal))
+            {
+                tests.Add(testCase.Name);
+            }
+        }
+
         return tests;
     }
 
     /// <summary>
-    /// Gets a toml-test case from the embedded corpus (see files/toml-test/README.md).
+    /// Gets a toml-test case from the embedded corpus (see files/toml-test/README.md in Meziantou.Framework.Language.Toml.Tests).
     /// </summary>
     /// <param name="name">The path of the case relative to the toml-test <c>tests</c> folder, without the extension.</param>
-    internal static (string InputName, string Toml, string? Json) GetCase(string name)
+    internal static TomlTestCase GetCase(string name)
     {
         Assert.True(Corpus.Value.TryGetValue(name, out var testCase), message: $"The toml-test case `{name}` does not exist");
-
-        var inputName = Path.GetFileName(name) + ".toml";
-        string toml;
-        if (testCase.TryGetProperty("toml", out var text))
-        {
-            toml = text.GetString()!;
-        }
-        else
-        {
-            // Same decoding as File.ReadAllText: invalid UTF-8 sequences are replaced
-            toml = Encoding.UTF8.GetString(Convert.FromBase64String(testCase.GetProperty("tomlBase64").GetString()!));
-        }
-
-        var json = testCase.TryGetProperty("expected", out var expected) ? expected.GetRawText() : null;
-        return (inputName, toml, json);
+        return testCase;
     }
 
-    private static Dictionary<string, System.Text.Json.JsonElement> LoadCorpus()
+    private static Dictionary<string, TomlTestCase> LoadCorpus()
     {
         using var stream = typeof(StandardTests).Assembly.GetManifestResourceStream("Meziantou.Framework.Toml.Tests.files.toml-test.cases.json")!;
-        using var document = System.Text.Json.JsonDocument.Parse(stream);
-        var result = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal);
-        foreach (var testCase in document.RootElement.EnumerateArray())
+        using var document = JsonDocument.Parse(stream);
+        var result = new Dictionary<string, TomlTestCase>(StringComparer.Ordinal);
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        foreach (var item in document.RootElement.EnumerateArray())
         {
-            result.Add(testCase.GetProperty("name").GetString()!, testCase.Clone());
+            var name = item.GetProperty("name").GetString()!;
+            string? toml;
+            byte[] bytes;
+            if (item.TryGetProperty("toml", out var text))
+            {
+                toml = text.GetString()!;
+                bytes = Encoding.UTF8.GetBytes(toml);
+            }
+            else
+            {
+                bytes = Convert.FromBase64String(item.GetProperty("tomlBase64").GetString()!);
+                try
+                {
+                    toml = utf8.GetString(bytes);
+                }
+                catch (DecoderFallbackException)
+                {
+                    toml = null;
+                }
+            }
+
+            var versions = item.GetProperty("versions").EnumerateArray().Select(version => version.GetString()).ToArray();
+            var json = item.TryGetProperty("expected", out var expected) ? expected.GetRawText() : null;
+            result.Add(name, new TomlTestCase(name, Path.GetFileName(name) + ".toml", toml, bytes, json, versions.Contains("1.1.0", StringComparer.Ordinal)));
         }
 
         return result;
     }
+
+    /// <param name="Toml">The text of the case, or <see langword="null"/> when <paramref name="Bytes"/> is not valid UTF-8.</param>
+    internal sealed record TomlTestCase(string Name, string InputName, string? Toml, byte[] Bytes, string? Json, bool IsToml11);
 
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true };
 

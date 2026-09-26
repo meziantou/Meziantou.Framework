@@ -4,7 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="files/toml-test/cases.json" LogicalName="Meziantou.Framework.Toml.Tests.files.toml-test.cases.json" />
+    <!-- toml-test v2.2.0, shared with the syntax tree library -->
+    <EmbeddedResource Include="../Meziantou.Framework.Language.Toml.Tests/files/toml-test/cases.json" Link="files/toml-test/cases.json" LogicalName="Meziantou.Framework.Toml.Tests.files.toml-test.cases.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -12,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Toml\Meziantou.Framework.Language.Toml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Toml\Meziantou.Framework.Toml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Toml.SourceGenerator\Meziantou.Framework.Toml.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>

@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
@@ -12,12 +11,6 @@ public sealed class NewApiConverterAttributeValidationTests
 
     [TomlConverter(typeof(NotAConverter))]
     private sealed class BadTypeConverterType
-    {
-        public int Value { get; set; }
-    }
-
-    [JsonConverter(typeof(NotAConverter))]
-    private sealed class BadJsonConverterType
     {
         public int Value { get; set; }
     }
@@ -49,12 +42,6 @@ public sealed class NewApiConverterAttributeValidationTests
     public void TomlConverterAttribute_InvalidConverterType_ThrowsTomlException()
     {
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new BadTypeConverterType()));
-    }
-
-    [Fact]
-    public void JsonConverterAttribute_InvalidConverterType_ThrowsTomlException()
-    {
-        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new BadJsonConverterType()));
     }
 
     [Fact]

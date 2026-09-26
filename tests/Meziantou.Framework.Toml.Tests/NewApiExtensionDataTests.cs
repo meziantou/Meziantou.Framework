@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -76,7 +75,7 @@ public sealed class NewApiExtensionDataTests
     {
         public int Known { get; set; }
 
-        [JsonExtensionData]
+        [Serialization.TomlExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
     }
 
@@ -84,7 +83,7 @@ public sealed class NewApiExtensionDataTests
     {
         public int Known { get; set; }
 
-        [JsonExtensionData]
+        [Serialization.TomlExtensionData]
         public Dictionary<string, object?>? Extra { get; set; }
     }
 

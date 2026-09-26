@@ -104,14 +104,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor JsonSerializableNotSupported = new(
-        id: "MFTOML008",
-        title: "JsonSerializable is not supported on TOML contexts",
-        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and uses [JsonSerializable]. Replace [JsonSerializable(...)] with [TomlSerializable(...)] on the context.",
-        category: "Meziantou.Framework.Toml.SourceGeneration",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
     private static readonly DiagnosticDescriptor InvalidDerivedTypeMapping = new(
         id: "MFTOML009",
         title: "Invalid derived type mapping",
@@ -123,7 +115,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor MissingPolymorphicConfigurationOnDerivedTypeMappingBase = new(
         id: "MFTOML010",
         title: "Derived type mapping base type has no polymorphic configuration",
-        messageFormat: "Context '{0}' registers a derived type mapping for base type '{1}' without [TomlPolymorphic], [TomlDerivedType], [JsonPolymorphic], or [JsonDerivedType]. Serializer options defaults will be used.",
+        messageFormat: "Context '{0}' registers a derived type mapping for base type '{1}' without [TomlPolymorphic] or [TomlDerivedType]. Serializer options defaults will be used.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -139,7 +131,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor InaccessibleConstructor = new(
         id: "MFTOML013",
         title: "Deserialization constructor is not accessible",
-        messageFormat: "The constructor of '{0}' annotated with [TomlConstructor] or [JsonConstructor] must be public or internal to be used by the generated code",
+        messageFormat: "The constructor of '{0}' annotated with [TomlConstructor] must be public or internal to be used by the generated code",
         category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -157,15 +149,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private const string TomlSerializableAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSerializableAttribute";
     private const string TomlDerivedTypeMappingAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute";
-    private const string JsonSerializableAttributeMetadataName = "System.Text.Json.Serialization.JsonSerializableAttribute";
-    private const string JsonSourceGenerationOptionsAttributeMetadataName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
-    private const string JsonObjectCreationHandlingAttributeMetadataName = "System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute";
     private const string TomlObjectCreationHandlingAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlObjectCreationHandlingAttribute";
     private const string TomlSourceGenerationOptionsAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSourceGenerationOptionsAttribute";
     private const string TomlConverterMetadataName = "Meziantou.Framework.Toml.Serialization.TomlConverter";
     private const string TomlConverterFactoryMetadataName = "Meziantou.Framework.Toml.Serialization.TomlConverterFactory";
     private const string TomlConverterAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlConverterAttribute";
-    private const string JsonConverterAttributeMetadataName = "System.Text.Json.Serialization.JsonConverterAttribute";
     private const string TomlSingleOrArrayAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSingleOrArrayAttribute";
     private const string TomlOnSerializingMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnSerializing";
     private const string TomlOnSerializedMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnSerialized";
@@ -190,7 +178,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings,
             SourceGenOptions options,
             bool isValid,
-            bool usesJsonSerializable,
             Compilation compilation)
         {
             Compilation = compilation;
@@ -201,7 +188,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             DerivedTypeMappings = derivedTypeMappings;
             Options = options;
             IsValid = isValid;
-            UsesJsonSerializable = usesJsonSerializable;
         }
 
         public Compilation Compilation { get; }
@@ -212,7 +198,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public ImmutableArray<DerivedTypeMappingModel> DerivedTypeMappings { get; }
         public SourceGenOptions Options { get; }
         public bool IsValid { get; }
-        public bool UsesJsonSerializable { get; }
 
         // Under the updated memory safety rules, an extern member must be marked safe or unsafe, and older language
         // versions reject both
@@ -299,19 +284,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Only the classes with [TomlSerializable] or [JsonSerializable] can be contexts. The transform emits the code, so
-        // the pipeline carries equatable values and an edit that does not change the output does not add the source again.
+        // Only the classes with [TomlSerializable] can be contexts. The transform emits the code, so the pipeline carries
+        // equatable values and an edit that does not change the output does not add the source again.
         var tomlContexts = context.SyntaxProvider.ForAttributeWithMetadataName(
             TomlSerializableAttributeMetadataName,
             static (node, _) => node is ClassDeclarationSyntax,
             static (ctx, cancellationToken) => CreateContextOutput(ctx, cancellationToken));
-        var jsonContexts = context.SyntaxProvider.ForAttributeWithMetadataName(
-            JsonSerializableAttributeMetadataName,
-            static (node, _) => node is ClassDeclarationSyntax,
-            static (ctx, cancellationToken) => CreateContextOutput(ctx, cancellationToken));
 
-        var outputs = tomlContexts.Collect().Combine(jsonContexts.Collect())
-            .Select(static (input, _) => DeduplicateContexts(input.Left, input.Right))
+        var outputs = tomlContexts.Collect()
+            .Select(static (contexts, _) => DeduplicateContexts(contexts))
             .WithTrackingName(ContextOutputsTrackingName);
 
         context.RegisterSourceOutput(outputs, static (spc, outputs) =>
@@ -349,12 +330,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         });
     }
 
-    private static ImmutableEquatableArray<ContextOutput> DeduplicateContexts(ImmutableArray<ContextOutput?> tomlContexts, ImmutableArray<ContextOutput?> jsonContexts)
+    private static ImmutableEquatableArray<ContextOutput> DeduplicateContexts(ImmutableArray<ContextOutput?> contexts)
     {
-        // A context is found once per attribute kind and per attributed partial declaration
+        // A context is found once per attributed partial declaration
         var emitted = new HashSet<string>(StringComparer.Ordinal);
         var result = new List<ContextOutput>();
-        foreach (var output in tomlContexts.Concat(jsonContexts))
+        foreach (var output in contexts)
         {
             if (output is not null && emitted.Add(output.Key))
             {
@@ -408,7 +389,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var roots = ImmutableArray.CreateBuilder<RootTypeModel>();
         var derivedTypeMappings = ImmutableArray.CreateBuilder<DerivedTypeMappingModel>();
         var options = new SourceGenOptions();
-        var usesJsonSerializable = false;
 
         foreach (var attribute in classSymbol.GetAttributes())
         {
@@ -435,25 +415,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (IsJsonSerializableAttribute(attribute))
-            {
-                usesJsonSerializable = true;
-                continue;
-            }
-
-            if (IsJsonSourceGenerationOptionsAttribute(attribute))
-            {
-                ApplyJsonSourceGenerationOptionsAttribute(attribute, options);
-                continue;
-            }
-
             if (IsTomlSourceGenerationOptionsAttribute(attribute))
             {
                 ApplyTomlSourceGenerationOptionsAttribute(attribute, options);
             }
         }
 
-        if (roots.Count == 0 && !usesJsonSerializable)
+        if (roots.Count == 0)
         {
             return null;
         }
@@ -473,17 +441,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             derivedTypeMappings.ToImmutable(),
             options,
             isValid: isPartial,
-            usesJsonSerializable: usesJsonSerializable,
             compilation: compilation);
     }
 
     private static void EmitContext(GeneratorOutput context, ContextModel model)
     {
-        if (model.UsesJsonSerializable)
-        {
-            context.ReportDiagnostic(DiagnosticInfo.Create(JsonSerializableNotSupported, model.ContextSymbol.Locations.FirstOrDefault(), model.ContextSymbol.ToDisplayString()));
-        }
-
         if (model.RootTypes.Length == 0)
         {
             return;
@@ -964,9 +926,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             : propertyName;
         var propertyAccessibility = string.Equals(publicPropertyName, propertyName, StringComparison.Ordinal) ? "public" : "private";
         var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var usesJsonStringEnumConverter = type.TypeKind == TypeKind.Enum && (HasJsonStringEnumConverterAttribute(type) || HasOptionsStringEnumConverter(model.Options));
+        // Same precedence as the reflection resolver: the converter declared on the type wins
+        var declaredConverter = GetDeclaredConverter(type, type, model);
+        var usesStringEnumConverter = type.TypeKind == TypeKind.Enum && (declaredConverter is { Error: null, IsStringEnum: true } || HasOptionsStringEnumConverter(model.Options));
         ITypeSymbol? staticOptionsConverterType = null;
-        var usesStaticOptionsConverter = !usesJsonStringEnumConverter && TryGetStaticOptionsConverterType(model.Options, type, out staticOptionsConverterType);
+        var usesStaticOptionsConverter = !usesStringEnumConverter && TryGetStaticOptionsConverterType(model.Options, type, out staticOptionsConverterType);
 
         builder.Append("    private global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).Append(">? _").Append(propertyName).AppendLine(";");
         builder.Append("    ").Append(propertyAccessibility).Append(" global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).Append("> ").Append(propertyName).AppendLine();
@@ -982,8 +946,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("    private global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).Append("> Create").Append(propertyName).AppendLine("(global::Meziantou.Framework.Toml.TomlSerializerOptions options)");
         builder.AppendLine("    {");
 
-        // Same precedence as the reflection resolver: the converter declared on the type wins
-        var declaredConverter = GetDeclaredConverter(type, type, model);
         if (declaredConverter is { Error: null, IsStringEnum: false })
         {
             builder.Append("        return ").Append(GetDeclaredConverterTypeInfoExpression(declaredConverter, type, "options")).AppendLine(";");
@@ -1002,7 +964,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else if (IsBuiltInType(type))
         {
-            if (usesJsonStringEnumConverter)
+            if (usesStringEnumConverter)
             {
                 builder.Append("        return CreateStringEnumTypeInfo<").Append(typeName).AppendLine(">(options);");
             }
@@ -4106,9 +4068,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             if (attrName == "global::Meziantou.Framework.Toml.Serialization.TomlPolymorphicAttribute" ||
-                attrName == "global::System.Text.Json.Serialization.JsonPolymorphicAttribute" ||
-                attrName == "global::Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute" ||
-                     attrName == "global::System.Text.Json.Serialization.JsonDerivedTypeAttribute")
+                attrName == "global::Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute")
             {
                 return true;
             }
@@ -4325,7 +4285,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool DisallowNullOnSerialize { get; set; }
         public bool DisallowNullOnDeserialize { get; set; }
 
-        // The converter declared on the member with [TomlConverter] or [JsonConverter]
+        // The converter declared on the member with [TomlConverter]
         public DeclaredConverter? Converter { get; set; }
 
         // The generated property returning the member's converter type info, when the member has a converter
@@ -4520,7 +4480,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         WhenWritingDefault = 2,
         WhenWriting = 4,
 
-        // An explicit [TomlIgnore(Condition = Never)] or [JsonIgnore(Condition = Never)]: overrides DefaultIgnoreCondition
+        // An explicit [TomlIgnore(Condition = Never)]: overrides DefaultIgnoreCondition
         Never = 8,
     }
 
@@ -4615,14 +4575,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var annotated = named.InstanceConstructors
                 .Where(static ctor =>
                     !ctor.IsStatic &&
-                    (HasAttribute(ctor, "Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute") ||
-                     HasAttribute(ctor, "System.Text.Json.Serialization.JsonConstructorAttribute")))
+                    HasAttribute(ctor, "Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute"))
                 .ToArray();
 
             if (annotated.Length > 1)
             {
                 constructorError = "Multiple constructors on type '";
-                constructorErrorSuffix = "' are annotated with [TomlConstructor] or [JsonConstructor].";
+                constructorErrorSuffix = "' are annotated with [TomlConstructor].";
                 selectedConstructor = annotated[0];
             }
             else if (annotated.Length == 1)
@@ -4690,8 +4649,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
-                HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute");
+            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
             if (member.GetMethod.DeclaredAccessibility != Accessibility.Public && !hasInclude)
             {
                 continue;
@@ -4723,7 +4681,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
-                        "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]/[JsonExtensionData]."));
+                        "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]."));
                     continue;
                 }
 
@@ -4842,7 +4800,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
-                        "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]/[JsonExtensionData]."));
+                        "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]."));
                     continue;
                 }
 
@@ -4872,8 +4830,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
-                HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute");
+            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
             if (!hasInclude && !(model.Options.IncludeFields == true && member.DeclaredAccessibility == Accessibility.Public))
             {
                 continue;
@@ -5132,8 +5089,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 // System.Text.Json
                 if (member.GetMethod?.DeclaredAccessibility == Accessibility.Public ||
                     member.SetMethod?.DeclaredAccessibility == Accessibility.Public ||
-                    HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
-                    HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute"))
+                    HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute"))
                 {
                     hiddenPropertyNames.Add(member.Name);
                 }
@@ -5199,9 +5155,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         string? tomlDiscriminatorPropertyName = null;
-        string? jsonDiscriminatorPropertyName = null;
         int? tomlUnknownHandling = null;
-        int? jsonUnknownHandling = null;
 
         foreach (var attr in named.GetAttributes())
         {
@@ -5221,26 +5175,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             tomlUnknownHandling = intVal;
                         }
-                    }
-                }
-            }
-            else if (attrName == "global::System.Text.Json.Serialization.JsonPolymorphicAttribute")
-            {
-                foreach (var kvp in attr.NamedArguments)
-                {
-                    if (kvp.Key == "TypeDiscriminatorPropertyName" && kvp.Value.Value is string s && !string.IsNullOrEmpty(s))
-                    {
-                        jsonDiscriminatorPropertyName = s;
-                    }
-                    else if (kvp.Key == "UnknownDerivedTypeHandling" && kvp.Value.Value is int intVal)
-                    {
-                        // JsonUnknownDerivedTypeHandling: FailSerialization=0, FallBackToBaseType=1, FallBackToNearestAncestor=2.
-                        // System.Text.Json has a setting for writing and one for reading, TOML has one for both.
-                        jsonUnknownHandling = intVal is 1 or 2 || jsonUnknownHandling == 1 ? 1 : 0;
-                    }
-                    else if (kvp.Key == "IgnoreUnrecognizedTypeDiscriminators" && kvp.Value.Value is true)
-                    {
-                        jsonUnknownHandling = 1;
                     }
                 }
             }
@@ -5335,44 +5269,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
             }
-            else if (attrName == "global::System.Text.Json.Serialization.JsonDerivedTypeAttribute")
-            {
-                if (attr.ConstructorArguments.Length < 1 ||
-                    attr.ConstructorArguments[0].Kind != TypedConstantKind.Type ||
-                    attr.ConstructorArguments[0].Value is not ITypeSymbol derivedType)
-                {
-                    if (reportDiagnostics)
-                    {
-                        context.ReportDiagnostic(DiagnosticInfo.Create(
-                            InvalidPolymorphismConfiguration,
-                            GetDiagnosticLocation(model, attr),
-                            type.ToDisplayString(),
-                            "JsonDerivedTypeAttribute must specify a derived type."));
-                    }
-                    continue;
-                }
-
-                if (attr.ConstructorArguments.Length < 2 || attr.ConstructorArguments[1].IsNull)
-                {
-                    TryAddLowerPrecedenceDefaultDerivedType(derivedType, GetDiagnosticLocation(model, attr));
-                    continue;
-                }
-
-                var discriminatorObj = attr.ConstructorArguments[1].Value;
-                var discriminator = discriminatorObj switch
-                {
-                    string s => s,
-                    IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-                    _ => discriminatorObj?.ToString() ?? string.Empty,
-                };
-
-                if (string.IsNullOrEmpty(discriminator))
-                {
-                    continue;
-                }
-
-                TryAddLowerPrecedenceDerivedType(derivedType, discriminator, GetDiagnosticLocation(model, attr));
-            }
         }
 
         foreach (var mapping in derivedTypeMappings)
@@ -5397,10 +5293,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return false;
         }
 
-        var discriminatorPropertyName = tomlDiscriminatorPropertyName ?? jsonDiscriminatorPropertyName;
-        // Priority chain: TomlPolymorphicAttribute → JsonPolymorphicAttribute → options (null = use options)
-        int? resolvedUnknownHandling = tomlUnknownHandling ?? jsonUnknownHandling;
-        shape = new PolymorphicShape(discriminatorPropertyName, derived.ToImmutable(), defaultDerivedType, resolvedUnknownHandling);
+        // Priority chain: TomlPolymorphicAttribute → options (null = use options)
+        shape = new PolymorphicShape(tomlDiscriminatorPropertyName, derived.ToImmutable(), defaultDerivedType, tomlUnknownHandling);
         return true;
 
         void AddStrictDerivedType(ITypeSymbol derivedType, string discriminator, Location? location)
@@ -5579,14 +5473,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                    IFieldSymbol field when field.IsRequired => true,
                    _ => false,
                }) ||
-               HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlRequiredAttribute") ||
-               HasAttribute(member, "System.Text.Json.Serialization.JsonRequiredAttribute");
+               HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlRequiredAttribute");
     }
 
     private static bool IsExtensionData(ISymbol member)
     {
-        return HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlExtensionDataAttribute") ||
-               HasAttribute(member, "System.Text.Json.Serialization.JsonExtensionDataAttribute");
+        return HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlExtensionDataAttribute");
     }
 
     private static bool TryGetExtensionDataValueType(ITypeSymbol type, out ITypeSymbol valueType)
@@ -6080,30 +5972,22 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return true;
     }
 
-    // The converter declared with [TomlConverter] or [JsonConverter], resolved like the reflection resolver does
+    // The converter declared with [TomlConverter], resolved like the reflection resolver does
     // Without a model, only the shape of the converter is checked, which is enough to know whether there is one
     private static DeclaredConverter? GetDeclaredConverter(ISymbol symbol, ITypeSymbol convertedType, ContextModel? model = null)
     {
-        ITypeSymbol? converterType;
-        if (TryGetAttribute(symbol, TomlConverterAttributeMetadataName, out var attribute))
-        {
-            converterType = attribute.ConstructorArguments.Length == 1 ? attribute.ConstructorArguments[0].Value as ITypeSymbol : null;
-        }
-        else if (TryGetAttribute(symbol, JsonConverterAttributeMetadataName, out attribute) &&
-            attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is ITypeSymbol jsonConverterType)
-        {
-            // Like System.Text.Json, a converter for T also converts a T? member
-            var enumType = TryGetNullableUnderlyingType(convertedType, out var underlyingType) ? underlyingType : convertedType;
-            if (enumType.TypeKind == TypeKind.Enum && IsJsonStringEnumConverter(jsonConverterType))
-            {
-                return new DeclaredConverter(jsonConverterType, isStringEnum: true, error: null);
-            }
-
-            converterType = jsonConverterType;
-        }
-        else
+        if (!TryGetAttribute(symbol, TomlConverterAttributeMetadataName, out var attribute))
         {
             return null;
+        }
+
+        var converterType = attribute.ConstructorArguments.Length == 1 ? attribute.ConstructorArguments[0].Value as ITypeSymbol : null;
+
+        // The string enum converter has its own metadata, which also converts a T? member
+        var enumType = TryGetNullableUnderlyingType(convertedType, out var underlyingType) ? underlyingType : convertedType;
+        if (enumType.TypeKind == TypeKind.Enum && converterType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlStringEnumConverterMetadataName)
+        {
+            return new DeclaredConverter(converterType, isStringEnum: true, error: null);
         }
 
         string? error = null;
@@ -6144,42 +6028,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static bool HasOptionsStringEnumConverter(SourceGenOptions options)
         => !options.ConverterTypes.IsDefaultOrEmpty &&
            options.ConverterTypes.Any(static converterType => converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlStringEnumConverterMetadataName);
-
-    private static bool HasJsonStringEnumConverterAttribute(ITypeSymbol type)
-    {
-        foreach (var attr in type.GetAttributes())
-        {
-            if (attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) != "global::System.Text.Json.Serialization.JsonConverterAttribute" ||
-                attr.ConstructorArguments.Length == 0 ||
-                attr.ConstructorArguments[0].Kind != TypedConstantKind.Type ||
-                attr.ConstructorArguments[0].Value is not ITypeSymbol converterType)
-            {
-                continue;
-            }
-
-            if (IsJsonStringEnumConverter(converterType))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsJsonStringEnumConverter(ITypeSymbol converterType)
-    {
-        if (converterType is not INamedTypeSymbol named)
-        {
-            return false;
-        }
-
-        var constructedFrom = named.IsGenericType
-            ? named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-            : named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        return constructedFrom is
-            "global::System.Text.Json.Serialization.JsonStringEnumConverter" or
-            "global::System.Text.Json.Serialization.JsonStringEnumConverter<TEnum>";
-    }
 
     private static bool HasAttribute(ISymbol symbol, string attributeMetadataName)
         => TryGetAttribute(symbol, attributeMetadataName, out _);
@@ -6253,13 +6101,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return tomlName;
         }
 
-        if (TryGetAttribute(member, "System.Text.Json.Serialization.JsonPropertyNameAttribute", out var jsonAttr) &&
-            jsonAttr.ConstructorArguments.Length == 1 &&
-            jsonAttr.ConstructorArguments[0].Value is string jsonName)
-        {
-            return jsonName;
-        }
-
         if (namingPolicyExpression is not null && TryConvertKnownName(memberName, namingPolicyExpression, out var converted))
         {
             return converted;
@@ -6268,11 +6109,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return memberName;
     }
 
-    // [TomlObjectCreationHandling] takes precedence over [JsonObjectCreationHandling]
     private static ObjectCreationHandlingKind GetObjectCreationHandling(ISymbol symbol)
     {
-        if (TryGetAttribute(symbol, TomlObjectCreationHandlingAttributeMetadataName, out var attr) ||
-            TryGetAttribute(symbol, JsonObjectCreationHandlingAttributeMetadataName, out attr))
+        if (TryGetAttribute(symbol, TomlObjectCreationHandlingAttributeMetadataName, out var attr))
         {
             if (attr.ConstructorArguments.Length == 1 && attr.ConstructorArguments[0].Value is int constructorValue)
             {
@@ -6308,13 +6147,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             tomlAttr.ConstructorArguments[0].Value is int tomlOrder)
         {
             return tomlOrder;
-        }
-
-        if (TryGetAttribute(member, "System.Text.Json.Serialization.JsonPropertyOrderAttribute", out var jsonAttr) &&
-            jsonAttr.ConstructorArguments.Length == 1 &&
-            jsonAttr.ConstructorArguments[0].Value is int jsonOrder)
-        {
-            return jsonOrder;
         }
 
         return 0;
@@ -6430,21 +6262,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             };
         }
 
-        if (TryGetAttribute(symbol, "System.Text.Json.Serialization.JsonIgnoreAttribute", out var jsonAttr))
-        {
-            var condition = JsonIgnoreAttributeModel.From(jsonAttr).Condition ?? 1;
-            return condition switch
-            {
-                0 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.Never),
-                1 => new IgnoreBehavior(ignoreAlways: true, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None),
-                2 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingDefault),
-                3 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingNull),
-                4 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWriting),
-                5 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: true, writeIgnore: WriteIgnoreKind.None),
-                _ => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None),
-            };
-        }
-
         return new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None);
     }
 
@@ -6469,30 +6286,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             // Default: Always.
             return new TomlIgnoreAttributeModel(3);
-        }
-    }
-
-    private readonly struct JsonIgnoreAttributeModel
-    {
-        public JsonIgnoreAttributeModel(int? condition)
-        {
-            Condition = condition;
-        }
-
-        public int? Condition { get; }
-
-        public static JsonIgnoreAttributeModel From(AttributeData attribute)
-        {
-            foreach (var namedArg in attribute.NamedArguments)
-            {
-                if (namedArg.Key == "Condition" && namedArg.Value.Value is int value)
-                {
-                    return new JsonIgnoreAttributeModel(value);
-                }
-            }
-
-            // Default: Always.
-            return new JsonIgnoreAttributeModel(null);
         }
     }
 
@@ -6776,19 +6569,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("reader.Skip();");
     }
 
-    // [TomlUnmappedMemberHandling] takes precedence over [JsonUnmappedMemberHandling]; both apply to the declaring type only
+    // [TomlUnmappedMemberHandling] applies to the declaring type only, and takes precedence over the options
     private static int GetUnmappedMemberHandling(INamedTypeSymbol type, SourceGenOptions options)
     {
-        foreach (var metadataName in new[] { "Meziantou.Framework.Toml.Serialization.TomlUnmappedMemberHandlingAttribute", "System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute" })
+        foreach (var attribute in type.GetAttributes())
         {
-            foreach (var attribute in type.GetAttributes())
+            if (attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::Meziantou.Framework.Toml.Serialization.TomlUnmappedMemberHandlingAttribute" &&
+                attribute.ConstructorArguments.Length == 1 &&
+                attribute.ConstructorArguments[0].Value is int value)
             {
-                if (attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + metadataName &&
-                    attribute.ConstructorArguments.Length == 1 &&
-                    attribute.ConstructorArguments[0].Value is int value)
-                {
-                    return value;
-                }
+                return value;
             }
         }
 
@@ -6895,8 +6685,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static bool IsJsonSerializableAttribute(AttributeData attribute)
-        => attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + JsonSerializableAttributeMetadataName;
 
     private static bool IsTomlSerializableAttribute(AttributeData attribute)
         => attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlSerializableAttributeMetadataName;
@@ -6948,8 +6736,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static bool IsJsonSourceGenerationOptionsAttribute(AttributeData attribute)
-        => attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + JsonSourceGenerationOptionsAttributeMetadataName;
 
     private static bool IsTomlSourceGenerationOptionsAttribute(AttributeData attribute)
         => attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlSourceGenerationOptionsAttributeMetadataName;
@@ -7009,83 +6795,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         return builder.ToImmutable();
     }
-
-    private static void ApplyJsonSourceGenerationOptionsAttribute(AttributeData attribute, SourceGenOptions options)
-    {
-        foreach (var namedArgument in attribute.NamedArguments)
-        {
-            var name = namedArgument.Key;
-            var value = namedArgument.Value;
-            switch (name)
-            {
-                case "PropertyNamingPolicy":
-                    options.PropertyNamingPolicyExpression ??= ToNamingPolicyExpression(value);
-                    break;
-                case "DictionaryKeyPolicy":
-                    options.DictionaryKeyPolicyExpression ??= ToNamingPolicyExpression(value);
-                    break;
-                case "PreferredObjectCreationHandling":
-                    if (options.PreferredObjectCreationHandling is null && value.Value is int objectCreationHandling) options.PreferredObjectCreationHandling = objectCreationHandling;
-                    break;
-                case "PropertyNameCaseInsensitive":
-                    if (options.PropertyNameCaseInsensitive is null && value.Value is bool pnci) options.PropertyNameCaseInsensitive = pnci;
-                    break;
-                case "IncludeFields":
-                    if (options.IncludeFields is null && value.Value is bool includeFields) options.IncludeFields = includeFields;
-                    break;
-                case "IgnoreReadOnlyFields":
-                    if (options.IgnoreReadOnlyFields is null && value.Value is bool ignoreReadOnlyFields) options.IgnoreReadOnlyFields = ignoreReadOnlyFields;
-                    break;
-                case "IgnoreReadOnlyProperties":
-                    if (options.IgnoreReadOnlyProperties is null && value.Value is bool ignoreReadOnlyProperties) options.IgnoreReadOnlyProperties = ignoreReadOnlyProperties;
-                    break;
-                case "RespectRequiredConstructorParameters":
-                    if (options.RespectRequiredConstructorParameters is null && value.Value is bool respectRequiredConstructorParameters) options.RespectRequiredConstructorParameters = respectRequiredConstructorParameters;
-                    break;
-                case "RespectNullableAnnotations":
-                    if (options.RespectNullableAnnotations is null && value.Value is bool respectNullableAnnotations) options.RespectNullableAnnotations = respectNullableAnnotations;
-                    break;
-                case "UnmappedMemberHandling":
-                    // JsonUnmappedMemberHandling uses the same values as TomlUnmappedMemberHandling
-                    if (options.UnmappedMemberHandling is null && value.Value is int unmappedMemberHandling) options.UnmappedMemberHandling = unmappedMemberHandling;
-                    break;
-                // A value System.Text.Json accepts but TOML cannot represent, WhenWriting, WhenReading, or IndentSize = 0, is
-                // ignored rather than reported: the attribute configures JSON first. Always is invalid for both, and reported.
-                case "DefaultIgnoreCondition":
-                    if (options.DefaultIgnoreCondition is null && value.Value is int jsonIgnoreCondition && ToTomlIgnoreCondition(jsonIgnoreCondition) is not (4 or 5) and var tomlIgnoreCondition) options.DefaultIgnoreCondition = tomlIgnoreCondition;
-                    break;
-                case "WriteIndented":
-                    if (options.WriteIndented is null && value.Value is bool writeIndented) options.WriteIndented = writeIndented;
-                    break;
-                case "IndentSize":
-                    if (options.IndentSize is null && value.Value is int indentSize and >= 1) options.IndentSize = indentSize;
-                    break;
-                case "MaxDepth":
-                    if (options.MaxDepth is null && value.Value is int maxDepth) options.MaxDepth = maxDepth;
-                    break;
-            }
-        }
-
-        // JsonSerializerDefaults.Web, as in System.Text.Json: camelCase names, matched case-insensitively. The named
-        // arguments, and the TOML attribute, take precedence.
-        if (attribute.ConstructorArguments is [{ Kind: TypedConstantKind.Enum, Value: JsonSerializerDefaultsWeb }])
-        {
-            options.PropertyNamingPolicyExpression ??= "global::Meziantou.Framework.Toml.TomlNamingPolicy.CamelCase";
-            options.PropertyNameCaseInsensitive ??= true;
-        }
-    }
-
-    private const int JsonSerializerDefaultsWeb = 1;
-
-    // JsonIgnoreCondition and TomlIgnoreCondition do not use the same values
-    private static int ToTomlIgnoreCondition(int jsonIgnoreCondition) => jsonIgnoreCondition switch
-    {
-        0 => 0, // Never
-        1 => 3, // Always
-        2 => 2, // WhenWritingDefault
-        3 => 1, // WhenWritingNull
-        _ => jsonIgnoreCondition, // WhenWriting and WhenReading
-    };
 
     private static void ApplyTomlSourceGenerationOptionsAttribute(AttributeData attribute, SourceGenOptions options)
     {
@@ -7353,8 +7062,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return false;
     }
 
-    // TomlKnownNamingPolicy uses the same values as System.Text.Json's JsonKnownNamingPolicy, so this also maps
-    // the values of [JsonSourceGenerationOptions]
     private static string? ToNamingPolicyExpression(TypedConstant constant)
     {
         if (constant.Kind != TypedConstantKind.Enum || constant.Value is not int value)

@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
@@ -57,15 +56,14 @@ internal static class TomlReflectionTypeInfoResolver
         for (var i = 0; i < ctors.Length; i++)
         {
             var ctor = ctors[i];
-            if (!ctor.IsDefined(typeof(TomlConstructorAttribute), inherit: true) &&
-                !ctor.IsDefined(typeof(JsonConstructorAttribute), inherit: true))
+            if (!ctor.IsDefined(typeof(TomlConstructorAttribute), inherit: true))
             {
                 continue;
             }
 
             if (annotated is not null)
             {
-                error = $"Multiple constructors on type '{type.FullName}' are annotated with [TomlConstructor] or [JsonConstructor].";
+                error = $"Multiple constructors on type '{type.FullName}' are annotated with [TomlConstructor].";
                 return null;
             }
 
@@ -292,17 +290,7 @@ internal static class TomlReflectionTypeInfoResolver
 
     private static bool HasIncludeAttribute(MemberInfo member)
     {
-        if (member.IsDefined(typeof(TomlIncludeAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        if (member.IsDefined(typeof(JsonIncludeAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        return false;
+        return member.IsDefined(typeof(TomlIncludeAttribute), inherit: true);
     }
 
     private static bool IsRequired(MemberInfo member, bool honorRequiredModifier)
@@ -312,32 +300,12 @@ internal static class TomlReflectionTypeInfoResolver
             return true;
         }
 
-        if (member.IsDefined(typeof(TomlRequiredAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        if (member.IsDefined(typeof(JsonRequiredAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        return false;
+        return member.IsDefined(typeof(TomlRequiredAttribute), inherit: true);
     }
 
     private static bool IsExtensionData(MemberInfo member)
     {
-        if (member.IsDefined(typeof(TomlExtensionDataAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        if (member.IsDefined(typeof(JsonExtensionDataAttribute), inherit: true))
-        {
-            return true;
-        }
-
-        return false;
+        return member.IsDefined(typeof(TomlExtensionDataAttribute), inherit: true);
     }
 
     private static TomlPropertyMetadata? CreateFormattingMetadata(MemberInfo member, Type memberType)
@@ -391,29 +359,7 @@ internal static class TomlReflectionTypeInfoResolver
             return CreateConverterFromAttribute(tomlConverter.ConverterType, memberType, options);
         }
 
-        var jsonConverter = member.GetCustomAttribute<JsonConverterAttribute>(inherit: true);
-        if (jsonConverter is not null && jsonConverter.ConverterType is not null)
-        {
-            if ((Nullable.GetUnderlyingType(memberType) ?? memberType).IsEnum && IsJsonStringEnumConverter(jsonConverter.ConverterType))
-            {
-                return TomlTypeInfoResolverPipeline.ResolveAttributeConverter(TomlStringEnumConverter.Instance, memberType, options);
-            }
-
-            return CreateConverterFromAttribute(jsonConverter.ConverterType, memberType, options);
-        }
-
         return null;
-    }
-
-    private static bool IsJsonStringEnumConverter(Type converterType)
-    {
-        if (converterType.FullName == "System.Text.Json.Serialization.JsonStringEnumConverter")
-        {
-            return true;
-        }
-
-        return converterType.IsGenericType &&
-            converterType.GetGenericTypeDefinition().FullName == "System.Text.Json.Serialization.JsonStringEnumConverter`1";
     }
 
     private static TomlConverter CreateConverterFromAttribute(Type converterType, Type typeToConvert, TomlSerializerOptions options)
@@ -497,21 +443,6 @@ internal static class TomlReflectionTypeInfoResolver
             };
         }
 
-        var jsonIgnore = member.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true);
-        if (jsonIgnore is not null)
-        {
-            return (int)jsonIgnore.Condition switch
-            {
-                0 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.Never),
-                1 => new IgnoreBehavior(IgnoreAlways: true, IgnoreOnRead: false, WriteIgnoreCondition: null),
-                2 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingDefault),
-                3 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingNull),
-                4 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWriting),
-                5 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: true, WriteIgnoreCondition: null),
-                _ => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: null),
-            };
-        }
-
         return new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: null);
     }
 
@@ -560,26 +491,9 @@ internal static class TomlReflectionTypeInfoResolver
         return GetDeclaredObjectCreationHandling(member) is not null;
     }
 
-    // [TomlObjectCreationHandling] takes precedence over [JsonObjectCreationHandling]
     private static TomlObjectCreationHandling? GetDeclaredObjectCreationHandling(MemberInfo member)
     {
-        var tomlAttribute = member.GetCustomAttribute<TomlObjectCreationHandlingAttribute>(inherit: true);
-        if (tomlAttribute is not null)
-        {
-            return tomlAttribute.Handling;
-        }
-
-        var jsonAttribute = member.GetCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: true);
-        if (jsonAttribute is not null)
-        {
-            return jsonAttribute.Handling switch
-            {
-                JsonObjectCreationHandling.Populate => TomlObjectCreationHandling.Populate,
-                _ => TomlObjectCreationHandling.Replace,
-            };
-        }
-
-        return null;
+        return member.GetCustomAttribute<TomlObjectCreationHandlingAttribute>(inherit: true)?.Handling;
     }
 
     private static bool HasSingleOrArrayAttribute(MemberInfo member)
@@ -595,12 +509,6 @@ internal static class TomlReflectionTypeInfoResolver
             return tomlName.Name;
         }
 
-        var jsonName = member.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: true);
-        if (jsonName is not null)
-        {
-            return jsonName.Name;
-        }
-
         var namingPolicy = options.PropertyNamingPolicy;
         if (namingPolicy is not null)
         {
@@ -612,19 +520,7 @@ internal static class TomlReflectionTypeInfoResolver
 
     private static int GetOrder(MemberInfo member)
     {
-        var tomlOrder = member.GetCustomAttribute<TomlPropertyOrderAttribute>(inherit: true);
-        if (tomlOrder is not null)
-        {
-            return tomlOrder.Order;
-        }
-
-        var jsonOrder = member.GetCustomAttribute<JsonPropertyOrderAttribute>(inherit: true);
-        if (jsonOrder is not null)
-        {
-            return jsonOrder.Order;
-        }
-
-        return 0;
+        return member.GetCustomAttribute<TomlPropertyOrderAttribute>(inherit: true)?.Order ?? 0;
     }
 
     private static List<MemberModel> OrderMembers(List<MemberModel> members, TomlMappingOrderPolicy mappingOrder)
@@ -861,22 +757,10 @@ internal static class TomlReflectionTypeInfoResolver
 
         public override bool WritesTable => true;
 
-        // [TomlUnmappedMemberHandling] takes precedence over [JsonUnmappedMemberHandling], then over the options
+        // [TomlUnmappedMemberHandling] takes precedence over the options
         private static TomlUnmappedMemberHandling GetUnmappedMemberHandling(Type type, TomlSerializerOptions options)
         {
-            var tomlAttribute = type.GetCustomAttribute<TomlUnmappedMemberHandlingAttribute>(inherit: false);
-            if (tomlAttribute is not null)
-            {
-                return tomlAttribute.Handling;
-            }
-
-            var jsonAttribute = type.GetCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
-            if (jsonAttribute is not null)
-            {
-                return jsonAttribute.UnmappedMemberHandling == JsonUnmappedMemberHandling.Disallow ? TomlUnmappedMemberHandling.Disallow : TomlUnmappedMemberHandling.Skip;
-            }
-
-            return options.UnmappedMemberHandling;
+            return type.GetCustomAttribute<TomlUnmappedMemberHandlingAttribute>(inherit: false)?.Handling ?? options.UnmappedMemberHandling;
         }
 
         private void SkipUnmappedMember(TomlReader reader, string name)

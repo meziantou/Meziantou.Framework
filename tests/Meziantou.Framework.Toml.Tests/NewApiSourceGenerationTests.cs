@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -30,25 +29,25 @@ public sealed class GeneratedSnakePerson
 
 public abstract class GeneratedBaseOptions
 {
-    [JsonPropertyName("baseValue")]
+    [TomlPropertyName("baseValue")]
     public string? Base { get; init; }
 }
 
 public sealed class GeneratedDerivedOptions : GeneratedBaseOptions
 {
-    [JsonPropertyName("derivedValue")]
+    [TomlPropertyName("derivedValue")]
     public string? Derived { get; init; }
 }
 
 public abstract class GeneratedOverriddenBaseOptions
 {
-    [JsonPropertyName("baseValue")]
+    [TomlPropertyName("baseValue")]
     public virtual required string? Base { get; init; }
 }
 
 public sealed class GeneratedOverriddenDerivedOptions : GeneratedOverriddenBaseOptions
 {
-    [JsonPropertyName("derivedValue")]
+    [TomlPropertyName("derivedValue")]
     public string? Derived { get; init; }
 
     public override required string? Base { get; init; }
@@ -107,10 +106,10 @@ public sealed class GeneratedTransitiveBaz
 
 public sealed class GeneratedOrderedPerson
 {
-    [JsonPropertyOrder(-10)]
+    [TomlPropertyOrder(-10)]
     public int Age { get; set; }
 
-    [JsonPropertyOrder(10)]
+    [TomlPropertyOrder(10)]
     public string Name { get; set; } = "";
 }
 
@@ -121,13 +120,13 @@ public sealed class GeneratedReorderedPerson
     [TomlPropertyOrder(-1)]
     public int Age { get; set; }
 
-    [JsonPropertyOrder(-2)]
+    [TomlPropertyOrder(-2)]
     public int Id { get; set; }
 }
 
 public sealed class GeneratedRequiredPerson
 {
-    [JsonRequired]
+    [TomlRequired]
     public string Name { get; set; } = "";
 
     public int Age { get; set; }
@@ -149,7 +148,7 @@ public sealed class GeneratedRequiredInitPerson
 
 public sealed class GeneratedCtorInitRequiredPerson
 {
-    [JsonConstructor]
+    [TomlConstructor]
     public GeneratedCtorInitRequiredPerson(string name)
     {
         Name = name;
@@ -164,20 +163,20 @@ public sealed class GeneratedExtensionDataPerson
 {
     public string Name { get; set; } = "";
 
-    [JsonExtensionData]
+    [TomlExtensionData]
     public Dictionary<string, object?>? Extra { get; set; }
 }
 
 public sealed class GeneratedCtorPerson
 {
-    [JsonConstructor]
+    [TomlConstructor]
     public GeneratedCtorPerson(string firstName, int age = 42)
     {
         FirstName = firstName;
         Age = age;
     }
 
-    [JsonPropertyName("first_name")]
+    [TomlPropertyName("first_name")]
     public string FirstName { get; }
 
     public int Age { get; }
@@ -190,7 +189,7 @@ public sealed class GeneratedCtorSelectionPerson
         Name = "default";
     }
 
-    [JsonConstructor]
+    [TomlConstructor]
     public GeneratedCtorSelectionPerson(string name)
     {
         Name = name;
@@ -199,9 +198,9 @@ public sealed class GeneratedCtorSelectionPerson
     public string Name { get; }
 }
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
-[JsonDerivedType(typeof(GeneratedCat), "cat")]
-[JsonDerivedType(typeof(GeneratedDog), "dog")]
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(GeneratedCat), "cat")]
+[TomlDerivedType(typeof(GeneratedDog), "dog")]
 public interface IGeneratedAnimal
 {
 }
@@ -523,29 +522,12 @@ public enum GeneratedEnumKind
     B = 1,
 }
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[TomlConverter(typeof(TomlStringEnumConverter))]
 public enum GeneratedStringEnumKind
 {
     LogLevel,
     Time,
     Component,
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-[Flags]
-public enum GeneratedCustomNameEnum
-{
-    None = 0,
-    [JsonStringEnumMemberName("first-value")]
-    First = 1,
-    Second = 2,
-}
-
-public sealed class GeneratedCustomNameEnumPayload
-{
-    public GeneratedCustomNameEnum One { get; set; } = GeneratedCustomNameEnum.First;
-
-    public GeneratedCustomNameEnum Both { get; set; } = GeneratedCustomNameEnum.First | GeneratedCustomNameEnum.Second;
 }
 
 [TomlConverter(typeof(TomlStringEnumConverter))]
@@ -731,34 +713,9 @@ internal sealed partial class TestTomlSerializerContextIncludeFields : TomlSeria
 {
 }
 
-[JsonSourceGenerationOptions(IncludeFields = true)]
-[TomlSerializable(typeof(GeneratedMemberSelectionModel))]
-internal sealed partial class TestTomlSerializerContextJsonIncludeFields : TomlSerializerContext
-{
-}
-
 [TomlSourceGenerationOptions(IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true)]
 [TomlSerializable(typeof(GeneratedMemberSelectionModel))]
 internal sealed partial class TestTomlSerializerContextIgnoreReadOnlyMembers : TomlSerializerContext
-{
-}
-
-[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web)]
-[TomlSerializable(typeof(GeneratedPerson))]
-internal sealed partial class TestTomlSerializerContextJsonWebDefaults : TomlSerializerContext
-{
-}
-
-[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.Never, WriteIndented = true, IndentSize = 4, MaxDepth = 12)]
-[TomlSerializable(typeof(GeneratedPerson))]
-internal sealed partial class TestTomlSerializerContextJsonSharedOptions : TomlSerializerContext
-{
-}
-
-[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, MaxDepth = 12)]
-[TomlSourceGenerationOptions(MaxDepth = 20)]
-[TomlSerializable(typeof(GeneratedPerson))]
-internal sealed partial class TestTomlSerializerContextJsonSharedOptionsOverridden : TomlSerializerContext
 {
 }
 
@@ -857,19 +814,6 @@ internal sealed partial class TestTomlSerializerContextSetsRequiredMembers : Tom
 {
 }
 
-[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web, PropertyNamingPolicy = JsonKnownNamingPolicy.KebabCaseUpper)]
-[TomlSerializable(typeof(GeneratedPerson))]
-internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy : TomlSerializerContext
-{
-}
-
-[JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web)]
-[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseUpper)]
-[TomlSerializable(typeof(GeneratedPerson))]
-internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithTomlOptions : TomlSerializerContext
-{
-}
-
 public sealed class ValidationModel
 {
     public string Name { get; set; } = "";
@@ -902,12 +846,6 @@ public sealed class TomlDisallowUnmappedModel
     public string Name { get; set; } = "";
 }
 
-[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed class JsonDisallowUnmappedModel
-{
-    public string Name { get; set; } = "";
-}
-
 [TomlUnmappedMemberHandling(TomlUnmappedMemberHandling.Skip)]
 public sealed class TomlSkipUnmappedModel
 {
@@ -936,7 +874,6 @@ public sealed class NullStringConverter : TomlConverter<string>
 [TomlSerializable(typeof(ValidationModel))]
 [TomlSerializable(typeof(ValidationCtorModel))]
 [TomlSerializable(typeof(TomlDisallowUnmappedModel))]
-[TomlSerializable(typeof(JsonDisallowUnmappedModel))]
 internal sealed partial class TestTomlSerializerContextValidationDefault : TomlSerializerContext
 {
 }
@@ -954,12 +891,6 @@ internal sealed partial class TestTomlSerializerContextDisallowUnmapped : TomlSe
 [TomlSerializable(typeof(ValidationModel))]
 [TomlSerializable(typeof(ValidationCtorModel))]
 internal sealed partial class TestTomlSerializerContextDisallowUnmappedCaseInsensitive : TomlSerializerContext
-{
-}
-
-[JsonSourceGenerationOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
-[TomlSerializable(typeof(ValidationModel))]
-internal sealed partial class TestTomlSerializerContextJsonDisallowUnmapped : TomlSerializerContext
 {
 }
 
@@ -1110,7 +1041,6 @@ internal sealed partial class TestTomlSerializerContextStringEnumOptions : TomlS
 
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedStringEnumPayload))]
-[TomlSerializable(typeof(GeneratedCustomNameEnumPayload))]
 [TomlSerializable(typeof(GeneratedTomlStringEnumPayload))]
 internal sealed partial class TestTomlSerializerContextStringEnums : TomlSerializerContext
 {
@@ -1435,59 +1365,6 @@ internal sealed partial class TestTomlSerializerContextAttrFallback : TomlSerial
 {
 }
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind", UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
-[JsonDerivedType(typeof(GeneratedJsonAttrFallbackDerived), "derived")]
-public class GeneratedJsonAttrFallbackBase
-{
-    public string Name { get; set; } = "";
-}
-
-public sealed class GeneratedJsonAttrFallbackDerived : GeneratedJsonAttrFallbackBase
-{
-    public int Extra { get; set; }
-}
-
-[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
-[TomlSerializable(typeof(GeneratedJsonAttrFallbackBase))]
-internal sealed partial class TestTomlSerializerContextJsonAttrFallback : TomlSerializerContext
-{
-}
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind", IgnoreUnrecognizedTypeDiscriminators = true)]
-[JsonDerivedType(typeof(GeneratedJsonIgnoreUnknownDerived), "derived")]
-public class GeneratedJsonIgnoreUnknownBase
-{
-    public string Name { get; set; } = "";
-}
-
-public sealed class GeneratedJsonIgnoreUnknownDerived : GeneratedJsonIgnoreUnknownBase
-{
-    public int Extra { get; set; }
-}
-
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "kind", UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
-[JsonDerivedType(typeof(GeneratedJsonAncestorDerived), "derived")]
-public class GeneratedJsonAncestorBase
-{
-    public string Name { get; set; } = "";
-}
-
-public class GeneratedJsonAncestorDerived : GeneratedJsonAncestorBase
-{
-    public int Extra { get; set; }
-}
-
-public sealed class GeneratedJsonAncestorUnregistered : GeneratedJsonAncestorBase
-{
-    public int Other { get; set; }
-}
-
-[TomlSerializable(typeof(GeneratedJsonIgnoreUnknownBase))]
-[TomlSerializable(typeof(GeneratedJsonAncestorBase))]
-internal sealed partial class TestTomlSerializerContextJsonUnknownHandling : TomlSerializerContext
-{
-}
-
 public class GeneratedPrivateHidingBase
 {
     public string Name { get; set; } = "base";
@@ -1691,7 +1568,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_RespectsJsonPropertyOrder_WhenWriting()
+    public void GeneratedContext_RespectsTomlPropertyOrder_WhenWriting()
     {
         var context = TestTomlSerializerContextOrdering.Default;
         var toml = TomlSerializer.Serialize(new GeneratedOrderedPerson { Name = "Ada", Age = 37 }, context.GeneratedOrderedPerson);
@@ -1829,7 +1706,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_CapturesJsonExtensionData_WhenReading()
+    public void GeneratedContext_CapturesTomlExtensionData_WhenReading()
     {
         var context = TestTomlSerializerContextExtensionData.Default;
         var toml = """
@@ -1865,7 +1742,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_CanDeserializeUsingJsonConstructor_AndDefaultValues()
+    public void GeneratedContext_CanDeserializeUsingTomlConstructor_AndDefaultValues()
     {
         var context = TestTomlSerializerContextConstructor.Default;
         var toml = """
@@ -1897,7 +1774,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_PrefersAnnotatedJsonConstructor_WhenMultipleAreAvailable()
+    public void GeneratedContext_PrefersAnnotatedTomlConstructor_WhenMultipleAreAvailable()
     {
         var context = TestTomlSerializerContextConstructorSelection.Default;
         var toml = """
@@ -2077,31 +1954,6 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_JsonSourceGenerationOptions_SharedOptionsAreApplied()
-    {
-        var options = TestTomlSerializerContextJsonSharedOptions.Default.Options;
-        var overridden = TestTomlSerializerContextJsonSharedOptionsOverridden.Default.Options;
-
-        Assert.Equal(TomlIgnoreCondition.Never, options.DefaultIgnoreCondition);
-        Assert.True(options.WriteIndented);
-        Assert.Equal(4, options.IndentSize);
-        Assert.Equal(12, options.MaxDepth);
-        Assert.Equal(TomlIgnoreCondition.WhenWritingDefault, overridden.DefaultIgnoreCondition);
-        Assert.Equal(20, overridden.MaxDepth);
-    }
-
-    [Fact]
-    public void GeneratedContext_JsonSourceGenerationOptions_IncludeFieldsIsApplied()
-    {
-        var context = TestTomlSerializerContextJsonIncludeFields.Default;
-
-        var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
-
-        Assert.Contains("Field = 1", toml);
-        Assert.True(context.Options.IncludeFields);
-    }
-
-    [Fact]
     public void GeneratedContext_PolymorphicBaseInstance_IsWrittenLikeReflection()
     {
         var typeInfo = TestTomlSerializerContextConcretePolymorphicBase.Default.GeneratedConcreteShape;
@@ -2169,23 +2021,6 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_JsonSerializerDefaultsWeb_UsesCaseInsensitiveCamelCase()
-    {
-        var context = TestTomlSerializerContextJsonWebDefaults.Default;
-
-        Assert.Equal("name = \"Ada\"\nage = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, context.GeneratedPerson));
-        Assert.Equal("Ada", TomlSerializer.Deserialize("NAME = \"Ada\"", context.GeneratedPerson)!.Name);
-        Assert.True(context.Options.PropertyNameCaseInsensitive);
-    }
-
-    [Fact]
-    public void GeneratedContext_JsonSerializerDefaultsWeb_ExplicitOptionsTakePrecedence()
-    {
-        Assert.Equal("NAME = \"Ada\"\nAGE = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy.Default.GeneratedPerson));
-        Assert.Equal("NAME = \"Ada\"\nAGE = 37\n", TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, TestTomlSerializerContextJsonWebDefaultsWithTomlOptions.Default.GeneratedPerson));
-    }
-
-    [Fact]
     public void GeneratedContext_IgnoreReadOnlyMembers_SkipsReadOnlyMembersDuringSerialization()
     {
         var context = TestTomlSerializerContextIgnoreReadOnlyMembers.Default;
@@ -2239,19 +2074,9 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_JsonSourceGenerationOptions_UnmappedMemberHandlingIsApplied()
-    {
-        var context = TestTomlSerializerContextJsonDisallowUnmapped.Default;
-
-        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Unknown = 1", context.ValidationModel));
-        Assert.Equal(TomlUnmappedMemberHandling.Disallow, context.Options.UnmappedMemberHandling);
-    }
-
-    [Fact]
     public void GeneratedContext_UnmappedMemberHandlingAttribute_OverridesOptions()
     {
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Unknown = 1", TestTomlSerializerContextValidationDefault.Default.TomlDisallowUnmappedModel));
-        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Unknown = 1", TestTomlSerializerContextValidationDefault.Default.JsonDisallowUnmappedModel));
         Assert.Equal("a", TomlSerializer.Deserialize("Name = \"a\"\nUnknown = 1", TestTomlSerializerContextDisallowUnmapped.Default.TomlSkipUnmappedModel)!.Name);
     }
 
@@ -2350,7 +2175,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_CanDeserializeOverriddenProperties_WithInheritedJsonPropertyName()
+    public void GeneratedContext_CanDeserializeOverriddenProperties_WithInheritedTomlPropertyName()
     {
         var context = TestTomlSerializerContextOverriddenMembers.Default;
         var toml = """
@@ -2366,7 +2191,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_CanSerializeOverriddenProperties_WithInheritedJsonPropertyName()
+    public void GeneratedContext_CanSerializeOverriddenProperties_WithInheritedTomlPropertyName()
     {
         var context = TestTomlSerializerContextOverriddenMembers.Default;
         var original = new GeneratedOverriddenDerivedOptions
@@ -2820,7 +2645,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_EnumWithJsonStringEnumConverter_UsesStrings()
+    public void GeneratedContext_EnumWithTomlStringEnumConverter_UsesStrings()
     {
         var context = TestTomlSerializerContextStringEnums.Default;
 
@@ -2872,24 +2697,6 @@ public class NewApiSourceGenerationTests
     public void TomlStringEnumMemberNameAttribute_RejectsAnEmptyName()
     {
         Assert.Throws<ArgumentException>(() => new TomlStringEnumMemberNameAttribute(""));
-    }
-
-    [Fact]
-    public void JsonStringEnumMemberName_IsUsedForReadingAndWriting()
-    {
-        const string Expected = "one = \"first-value\"\nboth = \"first-value, Second\"\n";
-        var typeInfo = TestTomlSerializerContextStringEnums.Default.GeneratedCustomNameEnumPayload;
-        var camelCase = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
-
-        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedCustomNameEnumPayload(), typeInfo).ReplaceLineEndings("\n"));
-        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedCustomNameEnumPayload(), camelCase).ReplaceLineEndings("\n"));
-
-        const string Toml = "one = 'FIRST-VALUE'\nboth = 'Second, first-value'\n";
-        foreach (var value in new[] { TomlSerializer.Deserialize(Toml, typeInfo)!, TomlSerializer.Deserialize<GeneratedCustomNameEnumPayload>(Toml, camelCase)! })
-        {
-            Assert.Equal(GeneratedCustomNameEnum.First, value.One);
-            Assert.Equal(GeneratedCustomNameEnum.First | GeneratedCustomNameEnum.Second, value.Both);
-        }
     }
 
     // --- Feature 1: Default Derived Type (source-gen) ---
@@ -3096,21 +2903,6 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_UnknownDiscriminator_FallbackViaJsonAttribute()
-    {
-        var context = TestTomlSerializerContextJsonAttrFallback.Default;
-        var toml = """
-            kind = "unknown"
-            name = "test"
-            """;
-
-        var result = TomlSerializer.Deserialize(toml, context.GeneratedJsonAttrFallbackBase);
-
-        Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
-        Assert.Equal("test", result!.Name);
-    }
-
-    [Fact]
     public void RequiredMembers_ArePopulatedAndKeepTheirInitializerWhenUnread()
     {
         const string Toml = "Required = ['x']\nOther = ['x']\nName = 'n'\nPoint = { Y = 5 }\n";
@@ -3189,29 +2981,6 @@ public class NewApiSourceGenerationTests
         Assert.Equal("private", reflection.GetPrivateName());
         Assert.Equal("x", ((GeneratedPrivateHidingBase)generated).Name);
         Assert.Equal("private", generated.GetPrivateName());
-    }
-
-    [Fact]
-    public void JsonPolymorphic_IgnoreUnrecognizedTypeDiscriminators_ReadsTheBaseType()
-    {
-        const string Toml = "kind = \"unknown\"\nName = \"test\"\n";
-
-        var reflection = TomlSerializer.Deserialize<GeneratedJsonIgnoreUnknownBase>(Toml);
-        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextJsonUnknownHandling.Default.GeneratedJsonIgnoreUnknownBase);
-
-        Assert.IsType<GeneratedJsonIgnoreUnknownBase>(reflection);
-        Assert.Equal("test", reflection!.Name);
-        Assert.IsType<GeneratedJsonIgnoreUnknownBase>(generated);
-        Assert.Equal("test", generated!.Name);
-    }
-
-    [Fact]
-    public void JsonPolymorphic_FallBackToNearestAncestor_WritesTheBaseType()
-    {
-        GeneratedJsonAncestorBase value = new GeneratedJsonAncestorUnregistered { Name = "test", Other = 1 };
-
-        Assert.Equal("Name = \"test\"\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
-        Assert.Equal("Name = \"test\"\n", TomlSerializer.Serialize(value, TestTomlSerializerContextJsonUnknownHandling.Default.GeneratedJsonAncestorBase).ReplaceLineEndings("\n"));
     }
 
     // --- Feature 3: Integer Discriminators (source-gen) ---

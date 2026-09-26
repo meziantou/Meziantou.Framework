@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -56,35 +55,35 @@ public class NewApiReflectionPocoTests
         public long Age { get; set; }
     }
 
-    private sealed class JsonNamedPerson
+    private sealed class NamedPerson
     {
-        [JsonPropertyName("first_name")]
+        [TomlPropertyName("first_name")]
         public string Name { get; set; } = "";
 
         public long Age { get; set; }
     }
 
-    private abstract class JsonNamedBaseOptions
+    private abstract class NamedBaseOptions
     {
-        [JsonPropertyName("baseValue")]
+        [TomlPropertyName("baseValue")]
         public string? Base { get; init; }
     }
 
-    private sealed class JsonNamedDerivedOptions : JsonNamedBaseOptions
+    private sealed class NamedDerivedOptions : NamedBaseOptions
     {
-        [JsonPropertyName("derivedValue")]
+        [TomlPropertyName("derivedValue")]
         public string? Derived { get; init; }
     }
 
-    private abstract class JsonNamedOverriddenBaseOptions
+    private abstract class NamedOverriddenBaseOptions
     {
-        [JsonPropertyName("baseValue")]
+        [TomlPropertyName("baseValue")]
         public virtual string? Base { get; init; }
     }
 
-    private sealed class JsonNamedOverriddenDerivedOptions : JsonNamedOverriddenBaseOptions
+    private sealed class NamedOverriddenDerivedOptions : NamedOverriddenBaseOptions
     {
-        [JsonPropertyName("derivedValue")]
+        [TomlPropertyName("derivedValue")]
         public string? Derived { get; init; }
 
         public override string? Base { get; init; }
@@ -92,13 +91,13 @@ public class NewApiReflectionPocoTests
 
     private sealed class PrivateSetterModel
     {
-        [JsonInclude]
+        [TomlInclude]
         public int Value { get; private set; }
     }
 
     private sealed class IncludedFieldModel
     {
-        [JsonInclude]
+        [TomlInclude]
         public int Value;
     }
 
@@ -115,7 +114,7 @@ public class NewApiReflectionPocoTests
         public List<StringEnumValue> Values { get; set; } = new();
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [TomlConverter(typeof(TomlStringEnumConverter))]
     private enum StringEnumValue
     {
         First,
@@ -127,9 +126,9 @@ public class NewApiReflectionPocoTests
         public int Value { get; } = 42;
     }
 
-    private sealed class JsonConstructorModel
+    private sealed class ParameterizedConstructorModel
     {
-        public JsonConstructorModel(int value)
+        public ParameterizedConstructorModel(int value)
         {
             Value = value;
         }
@@ -137,15 +136,15 @@ public class NewApiReflectionPocoTests
         public int Value { get; }
     }
 
-    private sealed class AnnotatedJsonConstructorModel
+    private sealed class AnnotatedConstructorModel
     {
-        public AnnotatedJsonConstructorModel()
+        public AnnotatedConstructorModel()
         {
             Value = -1;
         }
 
-        [JsonConstructor]
-        public AnnotatedJsonConstructorModel(int value)
+        [TomlConstructor]
+        public AnnotatedConstructorModel(int value)
         {
             Value = value;
         }
@@ -165,7 +164,7 @@ public class NewApiReflectionPocoTests
 
     private sealed class RequiredModel
     {
-        [JsonRequired]
+        [TomlRequired]
         public int Value { get; set; }
     }
 
@@ -180,7 +179,7 @@ public class NewApiReflectionPocoTests
 
     private sealed class MultipleAnnotatedConstructorsModel
     {
-        [JsonConstructor]
+        [TomlConstructor]
         public MultipleAnnotatedConstructorsModel(int value)
         {
             Value = value;
@@ -223,14 +222,14 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void Deserialize_Poco_RespectsJsonPropertyName()
+    public void Deserialize_Poco_RespectsTomlPropertyName()
     {
         var toml = """
             first_name = "Ada"
             Age = 37
             """;
 
-        var person = TomlSerializer.Deserialize<JsonNamedPerson>(toml);
+        var person = TomlSerializer.Deserialize<NamedPerson>(toml);
 
         Assert.NotNull(person);
         Assert.Equal("Ada", person!.Name);
@@ -238,16 +237,16 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void SerializeDeserialize_InheritedProperties_RespectJsonPropertyName()
+    public void SerializeDeserialize_InheritedProperties_RespectTomlPropertyName()
     {
-        var original = new JsonNamedDerivedOptions
+        var original = new NamedDerivedOptions
         {
             Base = "shared",
             Derived = "leaf",
         };
 
         var toml = TomlSerializer.Serialize(original);
-        var roundtrip = TomlSerializer.Deserialize<JsonNamedDerivedOptions>(toml);
+        var roundtrip = TomlSerializer.Deserialize<NamedDerivedOptions>(toml);
 
         Assert.Contains("baseValue = \"shared\"", toml);
         Assert.Contains("derivedValue = \"leaf\"", toml);
@@ -257,16 +256,16 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void SerializeDeserialize_OverriddenProperties_RespectInheritedJsonPropertyName()
+    public void SerializeDeserialize_OverriddenProperties_RespectInheritedTomlPropertyName()
     {
-        var original = new JsonNamedOverriddenDerivedOptions
+        var original = new NamedOverriddenDerivedOptions
         {
             Base = "shared",
             Derived = "leaf",
         };
 
         var toml = TomlSerializer.Serialize(original);
-        var roundtrip = TomlSerializer.Deserialize<JsonNamedOverriddenDerivedOptions>(toml);
+        var roundtrip = TomlSerializer.Deserialize<NamedOverriddenDerivedOptions>(toml);
 
         Assert.Contains("baseValue = \"shared\"", toml);
         Assert.Contains("derivedValue = \"leaf\"", toml);
@@ -276,7 +275,7 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void Deserialize_PrivateSetter_WithJsonInclude_Works()
+    public void Deserialize_PrivateSetter_WithTomlInclude_Works()
     {
         var model = TomlSerializer.Deserialize<PrivateSetterModel>("Value = 123\n");
         Assert.NotNull(model);
@@ -284,7 +283,7 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void SerializeDeserialize_PublicField_WithJsonInclude_Works()
+    public void SerializeDeserialize_PublicField_WithTomlInclude_Works()
     {
         var original = new IncludedFieldModel { Value = 7 };
         var toml = TomlSerializer.Serialize(original);
@@ -313,7 +312,7 @@ public class NewApiReflectionPocoTests
     }
 
     [Fact]
-    public void SerializeDeserialize_EnumWithJsonStringEnumConverter_UsesStrings()
+    public void SerializeDeserialize_EnumWithTomlStringEnumConverter_UsesStrings()
     {
         var original = new StringEnumModel { Values = [StringEnumValue.First, StringEnumValue.Second] };
         var toml = TomlSerializer.Serialize(original);
@@ -335,15 +334,15 @@ public class NewApiReflectionPocoTests
     [Fact]
     public void Deserialize_BindsConstructorParameter_ByMemberName()
     {
-        var model = TomlSerializer.Deserialize<JsonConstructorModel>("Value = 5\n");
+        var model = TomlSerializer.Deserialize<ParameterizedConstructorModel>("Value = 5\n");
         Assert.NotNull(model);
         Assert.Equal(5, model!.Value);
     }
 
     [Fact]
-    public void Deserialize_UsesJsonConstructor_WhenAnnotated()
+    public void Deserialize_UsesTomlConstructor_WhenAnnotated()
     {
-        var model = TomlSerializer.Deserialize<AnnotatedJsonConstructorModel>("Value = 6\n");
+        var model = TomlSerializer.Deserialize<AnnotatedConstructorModel>("Value = 6\n");
         Assert.NotNull(model);
         Assert.Equal(6, model!.Value);
     }
@@ -553,7 +552,6 @@ public class NewApiReflectionPocoTests
         var disallow = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow };
 
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlDisallowUnmappedModel>("Unknown = 1"));
-        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<JsonDisallowUnmappedModel>("Unknown = 1"));
         Assert.Equal("a", TomlSerializer.Deserialize<TomlSkipUnmappedModel>("Name = \"a\"\nUnknown = 1", disallow)!.Name);
     }
 

@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
@@ -64,21 +63,18 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         }
 
         var tomlDerivedAttributes = type.GetCustomAttributes<TomlDerivedTypeAttribute>(inherit: false).ToArray();
-        var jsonDerivedAttributes = type.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false).ToArray();
         var hasRuntimeMappings = options.PolymorphismOptions.DerivedTypeMappings.TryGetValue(type, out var runtimeDerivedTypes) &&
                                  runtimeDerivedTypes.Count > 0;
 
-        if (tomlDerivedAttributes.Length == 0 && jsonDerivedAttributes.Length == 0 && !hasRuntimeMappings)
+        if (tomlDerivedAttributes.Length == 0 && !hasRuntimeMappings)
         {
             return null;
         }
 
         var tomlPolymorphicAttribute = type.GetCustomAttribute<TomlPolymorphicAttribute>(inherit: false);
-        var jsonPolymorphicAttribute = type.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false);
 
         var discriminatorPropertyName =
             tomlPolymorphicAttribute?.TypeDiscriminatorPropertyName ??
-            jsonPolymorphicAttribute?.TypeDiscriminatorPropertyName ??
             options.PolymorphismOptions.TypeDiscriminatorPropertyName;
 
         if (string.IsNullOrEmpty(discriminatorPropertyName))
@@ -99,33 +95,6 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             else
             {
                 AddDerivedType(type, derivedByDiscriminator, discriminatorByDerived, attr.DerivedType, attr.Discriminator);
-            }
-        }
-
-        foreach (var attr in jsonDerivedAttributes)
-        {
-            var discriminator = attr.TypeDiscriminator;
-            if (discriminator is null)
-            {
-                ValidateDefaultDerivedType(type, attr.DerivedType);
-                if (ShouldAddLowerPrecedenceMapping(attr.DerivedType, discriminator: null, defaultDerivedType, derivedByDiscriminator, discriminatorByDerived))
-                {
-                    SetDefaultDerivedType(type, ref defaultDerivedType, discriminatorByDerived, attr.DerivedType);
-                }
-                continue;
-            }
-
-            var discriminatorText = discriminator switch
-            {
-                string s => s,
-                IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-                _ => discriminator.ToString() ?? string.Empty,
-            };
-
-            ValidateDerivedType(type, attr.DerivedType, discriminatorText);
-            if (ShouldAddLowerPrecedenceMapping(attr.DerivedType, discriminatorText, defaultDerivedType, derivedByDiscriminator, discriminatorByDerived))
-            {
-                AddDerivedType(type, derivedByDiscriminator, discriminatorByDerived, attr.DerivedType, discriminatorText);
             }
         }
 
@@ -157,21 +126,14 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             return null;
         }
 
-        // Priority chain: TomlPolymorphicAttribute → JsonPolymorphicAttribute → options
+        // Priority chain: TomlPolymorphicAttribute → options
         var unknownHandling = options.PolymorphismOptions.UnknownDerivedTypeHandling;
         if (tomlPolymorphicAttribute is not null &&
             tomlPolymorphicAttribute.UnknownDerivedTypeHandling != TomlUnknownDerivedTypeHandling.Unspecified)
         {
             unknownHandling = tomlPolymorphicAttribute.UnknownDerivedTypeHandling;
         }
-        else if (jsonPolymorphicAttribute is not null)
-        {
-            // System.Text.Json has a setting for writing and one for reading, TOML has one for both
-            unknownHandling = jsonPolymorphicAttribute.IgnoreUnrecognizedTypeDiscriminators ||
-                jsonPolymorphicAttribute.UnknownDerivedTypeHandling is JsonUnknownDerivedTypeHandling.FallBackToBaseType or JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor
-                ? TomlUnknownDerivedTypeHandling.FallBackToBaseType
-                : TomlUnknownDerivedTypeHandling.Fail;
-        }
+
         return new TomlPolymorphicTypeInfo(
             type,
             options,

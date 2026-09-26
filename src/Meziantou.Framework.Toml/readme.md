@@ -54,9 +54,8 @@ Values are read into .NET types, which rejects a few documents that TOML accepts
 | `Meziantou.Framework.Toml.Parsing` | `TomlLexer`, `TomlParser`, `SyntaxParser` |
 | `Meziantou.Framework.Toml.Syntax` | Lossless syntax tree: `DocumentSyntax`, `KeyValueSyntax`, `SyntaxVisitor`, diagnostics |
 
-The serializer follows the `System.Text.Json` API shape and also honors the common `System.Text.Json.Serialization`
-attributes, so a model can be shared between JSON and TOML. When both a TOML-specific and a JSON attribute are present,
-the TOML attribute wins.
+The serializer follows the `System.Text.Json` API shape, with its own attributes: `System.Text.Json.Serialization`
+attributes, such as `[JsonPropertyName]`, are not recognized.
 
 ## Serialize and deserialize objects
 
@@ -191,7 +190,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `WriteIndented` | `false` | Indents the header and the key/value pairs of a table once for each table it is nested in. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
 | `NewLine` | `Lf` | Line ending style (`Lf` or `CrLf`). |
-| `MappingOrder` | `OrderThenDeclaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. The default honors `[TomlPropertyOrder]` and `[JsonPropertyOrder]`, like `System.Text.Json`. |
+| `MappingOrder` | `OrderThenDeclaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. The default honors `[TomlPropertyOrder]`, like `System.Text.Json` honors `[JsonPropertyOrder]`. |
 | `DottedKeyHandling` | `Literal` | Writes member names and dictionary keys containing a dot as quoted keys (`Literal`) or expands them into subtables (`Expand`). The keys of a `TomlTable` are always written as they are. Reading is not affected: expanded keys are read back as nested tables, so such a model does not round-trip with `Expand`. |
 | `RootValueHandling` | `Error` | Behavior when the root value is not a table. `WrapInRootKey` writes it under `RootValueKeyName` (`"value"`). |
 | `InlineTablePolicy` | `Never` | When nested objects are written as inline tables: `Never`, `WhenSmall`, or `Always`. |
@@ -212,7 +211,7 @@ metadata is available.
 As in `System.Text.Json`, the default `TomlObjectCreationHandling.Replace` assigns new values to writable members and
 leaves read-only members untouched. `Populate` reuses the existing object and collection instances; collections are
 appended to, not cleared. It can be enabled globally with `PreferredObjectCreationHandling`, on a type, or on a member
-with `[TomlObjectCreationHandling]` (or `[JsonObjectCreationHandling]`):
+with `[TomlObjectCreationHandling]`:
 
 ```csharp
 [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
@@ -234,7 +233,7 @@ through a parameterized constructor.
 public sealed class PackagingConfiguration
 {
     [TomlSingleOrArray]
-    [JsonPropertyName("rid")]
+    [TomlPropertyName("rid")]
     public List<string> RuntimeIdentifiers { get; } = [];
 }
 ```
@@ -272,22 +271,22 @@ public sealed class FormattedConfig
 
 ## Attributes
 
-| Attribute | `System.Text.Json` equivalent | Description |
-| --- | --- | --- |
-| `[TomlPropertyName]` | `[JsonPropertyName]` | Overrides the key name. |
-| `[TomlIgnore]` | `[JsonIgnore]` | Ignores the member, always or conditionally (`WhenWritingNull`, `WhenWritingDefault`). |
-| `[TomlInclude]` | `[JsonInclude]` | Includes a non-public member. |
-| `[TomlPropertyOrder]` | `[JsonPropertyOrder]` | Sets the order of the member in the table. |
-| `[TomlRequired]` | `[JsonRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too, unless the constructor used has `[SetsRequiredMembers]`. |
-| `[TomlConstructor]` | `[JsonConstructor]` | Selects the constructor used when reading. Parameters are matched by name to the members of the type. |
-| `[TomlExtensionData]` | `[JsonExtensionData]` | Collects unmapped keys. See [Extension data](#extension-data). |
-| `[TomlConverter]` | `[JsonConverter]` | Selects a converter (or a converter factory) for a type or member. |
-| `[TomlPolymorphic]` | `[JsonPolymorphic]` | Enables polymorphism on a base type. |
-| `[TomlDerivedType]` | `[JsonDerivedType]` | Registers a derived type and its discriminator. |
-| `[TomlObjectCreationHandling]` | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
-| `[TomlUnmappedMemberHandling]` | `[JsonUnmappedMemberHandling]` | Skips or rejects unknown keys for a type. |
-| `[TomlSingleOrArray]` | | Accepts a single value for a collection member. |
-| `[TomlStringEnumMemberName]` | `[JsonStringEnumMemberName]` | Sets the name `TomlStringEnumConverter` uses for an enum value. |
+| Attribute | Description |
+| --- | --- |
+| `[TomlPropertyName]` | Overrides the key name. |
+| `[TomlIgnore]` | Ignores the member, always or conditionally (`WhenWritingNull`, `WhenWritingDefault`). |
+| `[TomlInclude]` | Includes a non-public member. |
+| `[TomlPropertyOrder]` | Sets the order of the member in the table. |
+| `[TomlRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too, unless the constructor used has `[SetsRequiredMembers]`. |
+| `[TomlConstructor]` | Selects the constructor used when reading. Parameters are matched by name to the members of the type. |
+| `[TomlExtensionData]` | Collects unmapped keys. See [Extension data](#extension-data). |
+| `[TomlConverter]` | Selects a converter (or a converter factory) for a type or member. |
+| `[TomlPolymorphic]` | Enables polymorphism on a base type. |
+| `[TomlDerivedType]` | Registers a derived type and its discriminator. |
+| `[TomlObjectCreationHandling]` | Replaces or populates a type or member when reading. |
+| `[TomlUnmappedMemberHandling]` | Skips or rejects unknown keys for a type. |
+| `[TomlSingleOrArray]` | Accepts a single value for a collection member. |
+| `[TomlStringEnumMemberName]` | Sets the name `TomlStringEnumConverter` uses for an enum value. |
 
 ```csharp
 public sealed class DatabaseConfig
@@ -295,16 +294,16 @@ public sealed class DatabaseConfig
     [TomlRequired]
     public string Host { get; set; } = "";
 
-    [JsonPropertyName("port_number")]
+    [TomlPropertyName("port_number")]
     public int Port { get; set; }
 
-    [JsonIgnore]
+    [TomlIgnore]
     public string ConnectionString => $"{Host}:{Port}";
 }
 
 public sealed class Endpoint
 {
-    [JsonConstructor]
+    [TomlConstructor]
     public Endpoint(string host, int port)
     {
         Host = host;
@@ -396,7 +395,7 @@ var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConver
 
 ## Extension data
 
-`[TomlExtensionData]` (or `[JsonExtensionData]`) collects the keys that do not match a member. The member must be a
+`[TomlExtensionData]` collects the keys that do not match a member. The member must be a
 dictionary with `string` keys, such as `IDictionary<string, object?>` or `TomlTable`:
 
 ```csharp
@@ -445,9 +444,6 @@ Name = "Rex"
 Breed = "Labrador"
 ```
 
-- `[JsonPolymorphic]` and `[JsonDerivedType]` work as well. TOML has a single unknown type setting, for reading and
-  writing: it falls back to the base type when `IgnoreUnrecognizedTypeDiscriminators` is `true` or `UnknownDerivedTypeHandling`
-  is `FallBackToBaseType` or `FallBackToNearestAncestor`, and never to a nearer ancestor.
 - A derived type registered without a discriminator is the default type: it is used when the discriminator is missing
   or unknown, and it is written without a discriminator. System.Text.Json throws on an unknown discriminator instead.
 - Integer discriminators (`[TomlDerivedType(typeof(Circle), 1)]`) are written as strings.
@@ -479,8 +475,8 @@ var options = new TomlSerializerOptions
 internal partial class AnimalContext : TomlSerializerContext;
 ```
 
-Registrations are merged. `[TomlDerivedType]` on the base type wins over `[JsonDerivedType]`, then over the context
-mappings, then over the options mappings.
+Registrations are merged. `[TomlDerivedType]` on the base type wins over the context mappings, then over the options
+mappings.
 
 ## Source generation
 
@@ -516,18 +512,11 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`), and the validation (`UnmappedMemberHandling`,
   `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) are computed when building, so the naming policy
   is not called at runtime.
-- `[JsonSourceGenerationOptions]` is honored for the options TOML shares with JSON: `PropertyNamingPolicy`,
-  `DictionaryKeyPolicy`, `PropertyNameCaseInsensitive`, `IncludeFields`, `IgnoreReadOnlyFields`,
-  `IgnoreReadOnlyProperties`, `PreferredObjectCreationHandling`, `DefaultIgnoreCondition`, `UnmappedMemberHandling`,
-  `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`, `WriteIndented`, `IndentSize`, and `MaxDepth`.
-  `JsonSerializerDefaults.Web` selects case-insensitive camelCase names, as in `System.Text.Json`. A value TOML cannot
-  represent, such as `IndentSize = 0` or `DefaultIgnoreCondition = WhenWriting`, is ignored.
-  `[TomlSourceGenerationOptions]` takes precedence.
 - `init` and `required` members are supported. A class is created with an `[UnsafeAccessor]` to its constructor, so its
   members keep their initial values and can be populated. A struct, a generic type, or a type created with a constructor
   that has parameters is created with an object initializer instead: its `required` members are replaced, and set to
   `default` when they are not read.
-- `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The
+- `[TomlConverter]` on a type or member is supported, including converter factories. The
   converter type must be accessible from the context: public, or internal to the same assembly. A member with a converter is always replaced, never populated.
 - Converters of `[TomlSourceGenerationOptions(Converters = [...])]` are resolved at build time, so converter factories
   listed there are not used (`MFTOML012`). Apply `[TomlConverter]` to the type or member instead.
@@ -540,15 +529,14 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML002` | Error | A converter type is invalid. |
 | `MFTOML003` | Error | A member uses a type the generator cannot serialize. |
 | `MFTOML004` | Error | A dictionary member uses non-string keys. |
-| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` or `[JsonSourceGenerationOptions]` value is invalid, or a `[TomlSerializable]` `TypeInfoPropertyName` is not a valid identifier, is used for two types, or clashes with a member of the context or with a member generated for another name (`_Name`, `CreateName`). |
+| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` value is invalid, or a `[TomlSerializable]` `TypeInfoPropertyName` is not a valid identifier, is used for two types, or clashes with a member of the context or with a member generated for another name (`_Name`, `CreateName`). |
 | `MFTOML006` | Error | An extension data member is invalid. |
 | `MFTOML007` | Error | A polymorphism configuration is invalid. |
-| `MFTOML008` | Warning | The context uses `[JsonSerializable]` instead of `[TomlSerializable]`. |
 | `MFTOML009` | Error | A `[TomlDerivedTypeMapping]` is invalid. |
 | `MFTOML010` | Warning | The base type of a `[TomlDerivedTypeMapping]` has no polymorphic configuration; serializer defaults are used. |
 | `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
 | `MFTOML012` | Warning | A converter factory in `[TomlSourceGenerationOptions(Converters)]` is not used by generated code. |
-| `MFTOML013` | Error | A constructor annotated with `[TomlConstructor]` or `[JsonConstructor]` is private or protected. |
+| `MFTOML013` | Error | A constructor annotated with `[TomlConstructor]` is private or protected. |
 | `MFTOML014` | Error | The context type is generic. It can be nested in a generic type. |
 | `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. The context has a public property for each type, so every type must be accessible wherever the context is: for example, an `internal` type cannot be used by a `protected` nested context, which derived types in other assemblies can access. |
 | `MFTOML016` | Error | A member is a `ref struct`, a delegate, or a pointer, which cannot be serialized. |

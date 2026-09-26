@@ -325,7 +325,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Creates metadata for a converter declared with <see cref="TomlConverterAttribute"/> or <c>JsonConverterAttribute</c>.
+    /// Creates metadata for a converter declared with <see cref="TomlConverterAttribute"/>.
     /// </summary>
     /// <typeparam name="T">The type handled by the converter.</typeparam>
     /// <param name="options">The serializer options.</param>

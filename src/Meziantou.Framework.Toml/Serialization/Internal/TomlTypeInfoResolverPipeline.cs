@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Converters;
@@ -205,30 +204,7 @@ internal static class TomlTypeInfoResolverPipeline
             return new ConverterTomlTypeInfo(type, options, converter);
         }
 
-        var jsonConverterAttribute = type.GetCustomAttribute<JsonConverterAttribute>(inherit: true);
-        if (jsonConverterAttribute is not null && jsonConverterAttribute.ConverterType is not null)
-        {
-            if (type.IsEnum && IsJsonStringEnumConverter(jsonConverterAttribute.ConverterType))
-            {
-                return new ConverterTomlTypeInfo(type, options, TomlStringEnumConverter.Instance);
-            }
-
-            var converter = CreateConverterFromAttribute(jsonConverterAttribute.ConverterType, type, options);
-            return new ConverterTomlTypeInfo(type, options, converter);
-        }
-
         return null;
-    }
-
-    private static bool IsJsonStringEnumConverter(Type converterType)
-    {
-        if (converterType.FullName == "System.Text.Json.Serialization.JsonStringEnumConverter")
-        {
-            return true;
-        }
-
-        return converterType.IsGenericType &&
-            converterType.GetGenericTypeDefinition().FullName == "System.Text.Json.Serialization.JsonStringEnumConverter`1";
     }
 
     [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]

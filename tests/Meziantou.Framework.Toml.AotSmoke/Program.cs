@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
@@ -145,7 +144,7 @@ enabled = true
         return 0;
     }
 
-    // Generated code creates a class with required members through an [UnsafeAccessor], and reads [JsonStringEnumMemberName]
+    // Generated code creates a class with required members through an [UnsafeAccessor], and reads [TomlStringEnumMemberName]
     // with reflection on the enum fields: both must work once trimmed and compiled ahead of time
     private static List<string> ValidateRequiredMembersAndEnumNames()
     {
@@ -364,11 +363,11 @@ enabled = true
         public Level Level { get; set; }
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter<Level>))]
+    [TomlConverter(typeof(TomlStringEnumConverter))]
     internal enum Level
     {
         Low,
-        [JsonStringEnumMemberName("very-high")]
+        [TomlStringEnumMemberName("very-high")]
         VeryHigh,
     }
 }

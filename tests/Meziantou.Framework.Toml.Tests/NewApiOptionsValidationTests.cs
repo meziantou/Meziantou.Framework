@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 

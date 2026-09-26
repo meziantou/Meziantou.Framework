@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -12,10 +10,10 @@ namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class OutOfOrderSubtableRoot
 {
-    [JsonPropertyName("msbuild")]
+    [TomlPropertyName("msbuild")]
     public OutOfOrderSubtableMsBuild MSBuild { get; } = new();
 
-    [JsonPropertyName("github")]
+    [TomlPropertyName("github")]
     public OutOfOrderSubtableGitHub GitHub { get; } = new();
 }
 
@@ -136,7 +134,7 @@ public sealed class SplitExtensionDataRoot
 {
     public SplitSection? Other { get; set; }
 
-    [JsonExtensionData]
+    [TomlExtensionData]
     public Dictionary<string, object?>? Extra { get; set; }
 }
 

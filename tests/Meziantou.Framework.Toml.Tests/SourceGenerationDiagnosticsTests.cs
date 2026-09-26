@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.SourceGeneration;
 using Microsoft.CodeAnalysis;
@@ -20,7 +19,6 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Collections.Generic;
-            using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml;
             using Meziantou.Framework.Toml.Serialization;
 
@@ -46,7 +44,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
             public sealed class CtorPerson
             {
-                [JsonConstructor]
+                [TomlConstructor]
                 public CtorPerson(string? name, int age)
                 {
                     Name = name;
@@ -74,7 +72,6 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Collections.Generic;
-            using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Person))]
@@ -92,7 +89,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
             public sealed class CtorPerson
             {
-                [JsonConstructor]
+                [TomlConstructor]
                 public CtorPerson(string? name, int age)
                 {
                     Name = name;
@@ -253,7 +250,6 @@ public sealed class SourceGenerationDiagnosticsTests
 
     [Theory]
     [InlineData("[TomlConverter(typeof(NotAConverter))]")]
-    [InlineData("[System.Text.Json.Serialization.JsonConverter(typeof(NotAConverter))]")]
     [InlineData("[TomlConverter(typeof(Holder.PrivateConverter))]")]
     public void Generator_ReportsInvalidMemberConverter(string attribute)
     {
@@ -628,47 +624,6 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.Contains(diagnostics, d => d.Id == "MFTOML013" && d.Severity == DiagnosticSeverity.Error);
     }
 
-    [Fact]
-    public void Generator_WarnsForJsonSerializableUsage()
-    {
-        var source = """
-            #nullable enable
-            using System.Text.Json.Serialization;
-            using Meziantou.Framework.Toml.Serialization;
-
-            [JsonSerializable(typeof(Person))]
-            internal partial class Ctx : TomlSerializerContext { }
-
-            public sealed class Person { public string Name { get; set; } = ""; }
-            """;
-
-        var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "MFTOML008"));
-    }
-
-    [Theory]
-    [InlineData("JsonIgnoreCondition.Never", false)]
-    [InlineData("JsonIgnoreCondition.WhenWritingNull", false)]
-    [InlineData("JsonIgnoreCondition.WhenWritingDefault", false)]
-    [InlineData("JsonIgnoreCondition.Always", true)]
-    [InlineData("JsonIgnoreCondition.WhenWriting", false)]
-    [InlineData("JsonIgnoreCondition.WhenReading", false)]
-    public void Generator_JsonDefaultIgnoreCondition_IsValidatedLikeToml(string condition, bool isError)
-    {
-        var diagnostics = RunGenerator($$"""
-            using System.Text.Json.Serialization;
-            using Meziantou.Framework.Toml.Serialization;
-
-            [JsonSourceGenerationOptions(DefaultIgnoreCondition = {{condition}}, IndentSize = 0)]
-            [TomlSerializable(typeof(Person))]
-            internal partial class Ctx : TomlSerializerContext { }
-
-            public sealed class Person { public string Name { get; set; } = ""; }
-            """);
-
-        Assert.Equal(isError, diagnostics.Any(d => d.Id == "MFTOML005"));
-    }
-
     [Theory]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"not-valid\")]", "must be a valid C# identifier")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Options\")]", "conflicts with a member of the context")]
@@ -705,7 +660,6 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml.Serialization;
 
             // A generic type cannot use accessors, so its init-only members are set in an object initializer from locals
@@ -717,7 +671,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
             public sealed class CtorOptions
             {
-                [JsonConstructor]
+                [TomlConstructor]
                 public CtorOptions(string? nullableMock, string nonNullableMock)
                 {
                     NullableMock = nullableMock;
@@ -779,12 +733,11 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml.Serialization;
 
             public sealed class Root
             {
-                [JsonPropertyName("child")]
+                [TomlPropertyName("child")]
                 public Child Child { get; } = new();
             }
 
@@ -1430,7 +1383,6 @@ public sealed class SourceGenerationDiagnosticsTests
         Add(typeof(object).Assembly.Location);
         Add(typeof(Enumerable).Assembly.Location);
         Add(typeof(List<>).Assembly.Location);
-        Add(typeof(JsonSerializableAttribute).Assembly.Location);
         Add(typeof(TomlSerializerContext).Assembly.Location);
 
         return references;

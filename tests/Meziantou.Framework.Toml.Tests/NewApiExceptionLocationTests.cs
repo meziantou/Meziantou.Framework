@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Parsing;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -134,7 +133,7 @@ public class NewApiExceptionLocationTests
 
     public sealed class MissingRequiredModel
     {
-        [JsonRequired]
+        [TomlRequired]
         public string Name { get; set; } = string.Empty;
     }
 

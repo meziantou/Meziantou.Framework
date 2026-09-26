@@ -199,7 +199,7 @@ public sealed record TomlSerializerOptions
 
     /// <summary>
     /// Gets or sets member ordering behavior for emitted tables. The default, <see cref="TomlMappingOrderPolicy.OrderThenDeclaration"/>,
-    /// honors <see cref="Serialization.TomlPropertyOrderAttribute"/> and <c>JsonPropertyOrderAttribute</c> like <c>System.Text.Json</c>.
+    /// honors <see cref="Serialization.TomlPropertyOrderAttribute"/>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlMappingOrderPolicy"/>.</exception>
     public TomlMappingOrderPolicy MappingOrder

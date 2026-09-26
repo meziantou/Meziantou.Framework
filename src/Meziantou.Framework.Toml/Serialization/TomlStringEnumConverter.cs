@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 
@@ -77,7 +76,7 @@ public sealed class TomlStringEnumConverter : TomlConverter
         writer.WriteStringValue(GetMemberNames(type) is { } memberNames ? memberNames.ToCustomNames(text) : text);
     }
 
-    // The names set with [TomlStringEnumMemberName] or [JsonStringEnumMemberName]
+    // The names set with [TomlStringEnumMemberName]
     [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "The trimmer keeps every field of an enum type.")]
     private static EnumMemberNames? GetMemberNames(Type enumType)
     {
@@ -87,7 +86,7 @@ public sealed class TomlStringEnumConverter : TomlConverter
             Dictionary<string, string>? fromCustom = null;
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
             {
-                var name = field.GetCustomAttribute<TomlStringEnumMemberNameAttribute>()?.Name ?? field.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name;
+                var name = field.GetCustomAttribute<TomlStringEnumMemberNameAttribute>()?.Name;
                 if (name is not null)
                 {
                     (toCustom ??= new(StringComparer.Ordinal))[field.Name] = name;

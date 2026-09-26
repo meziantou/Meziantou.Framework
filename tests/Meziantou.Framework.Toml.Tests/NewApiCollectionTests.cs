@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -54,14 +52,14 @@ public sealed class SingleOrArrayCollectionHolder
     }
 
     [TomlSingleOrArray]
-    [JsonPropertyName("rid")]
+    [TomlPropertyName("rid")]
     public List<string> RuntimeIdentifiers { get; }
 }
 
 public sealed class SingleOrArraySettableCollectionHolder
 {
     [TomlSingleOrArray]
-    [JsonPropertyName("rid")]
+    [TomlPropertyName("rid")]
     public List<string> RuntimeIdentifiers { get; set; } = new() { "existing" };
 }
 

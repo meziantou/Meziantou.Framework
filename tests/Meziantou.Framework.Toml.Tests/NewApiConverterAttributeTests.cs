@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
@@ -67,7 +66,7 @@ internal sealed class GeneratedConverterModel
 
     public GeneratedHexValue Hex { get; set; } = new();
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [TomlConverter(typeof(TomlStringEnumConverter))]
     public GeneratedColor Color { get; set; }
 }
 
@@ -81,7 +80,7 @@ internal sealed class GeneratedFactoryModel
 
 internal sealed class GeneratedNullableConverterModel
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [TomlConverter(typeof(TomlStringEnumConverter))]
     public GeneratedColor? StringEnum { get; set; }
 
     [TomlConverter(typeof(GeneratedColorNameConverter))]
@@ -185,7 +184,7 @@ public sealed class NewApiConverterAttributeTests
 
     private sealed class MemberLevelConverterModel
     {
-        [JsonConverter(typeof(UppercaseStringConverter))]
+        [TomlConverter(typeof(UppercaseStringConverter))]
         public string Name { get; set; } = "";
     }
 
@@ -282,7 +281,7 @@ public sealed class NewApiConverterAttributeTests
     }
 
     [Fact]
-    public void MemberLevelJsonConverter_IsUsed()
+    public void MemberLevelTomlConverter_IsUsed()
     {
         var model = new MemberLevelConverterModel { Name = "ada" };
         var toml = TomlSerializer.Serialize(model);

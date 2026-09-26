@@ -190,7 +190,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `RootValueHandling` | `Error` | Behavior when the root value is not a table. `WrapInRootKey` writes it under `RootValueKeyName` (`"value"`). |
 | `InlineTablePolicy` | `Never` | When nested objects are written as inline tables: `Never`, `WhenSmall`, or `Always`. |
 | `TableArrayStyle` | `Headers` | Writes arrays of tables as `[[name]]` headers (`Headers`) or as inline arrays of inline tables (`InlineArrayOfTables`). |
-| `StringStylePreferences` | Basic strings | Default string style (`Basic`, `Literal`, `MultilineBasic`, `MultilineLiteral`), literal preference, and hex escapes. |
+| `StringStylePreferences` | Basic strings | Default string style (`Basic`, `Literal`, `MultilineBasic`, `MultilineLiteral`), literal preference, and `AllowHexEscapes` (off by default), which escapes control characters with the TOML 1.1 `\xHH` and `\e` instead of `\uXXXX`. |
 | `PolymorphismOptions` | `$type` discriminator | Discriminator property name, unknown derived type handling, and runtime derived type mappings. |
 | `Converters` | Empty | Custom converters. They take precedence over the built-in converters. |
 | `TypeInfoResolver` | `null` | Metadata resolver, for example a source-generated context. |

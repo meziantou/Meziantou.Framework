@@ -19,6 +19,9 @@ public sealed record TomlStringStylePreferences
     /// <summary>If true, prefer literal strings when no escaping is required.</summary>
     public bool PreferLiteralWhenNoEscapes { get; init; }
 
-    /// <summary>If true, allow emitting <c>\\xHH</c> escapes for control characters.</summary>
-    public bool AllowHexEscapes { get; init; } = true;
+    /// <summary>
+    /// If true, control characters up to U+00FF are escaped with the TOML 1.1 <c>\xHH</c> and <c>\e</c> escapes. Otherwise,
+    /// they are escaped with <c>\uXXXX</c>, which TOML 1.0 readers also accept. Keys use this option too.
+    /// </summary>
+    public bool AllowHexEscapes { get; init; }
 }

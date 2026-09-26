@@ -53,6 +53,14 @@ public sealed class MultilineStringStyleHolder
     public string Literal { get; set; } = "";
 }
 
+public sealed class HexEscapeStringStyleHolder
+{
+    [TomlStringStyle(TomlStringStyle.Basic, AllowHexEscapes = TomlBooleanPreference.True)]
+    public string Hex { get; set; } = "\u0001\u001B\u007F";
+
+    public string Default { get; set; } = "\u0001\u001B\u007F";
+}
+
 public sealed class InvalidStringStyleAttributeHolder
 {
     [TomlStringStyle(TomlStringStyle.Basic)]
@@ -64,12 +72,43 @@ public sealed class InvalidStringStyleAttributeHolder
 [TomlSerializable(typeof(AttributeDottedKeyHolder))]
 [TomlSerializable(typeof(AttributeStringStyleHolder))]
 [TomlSerializable(typeof(MultilineStringStyleHolder))]
+[TomlSerializable(typeof(HexEscapeStringStyleHolder))]
 internal sealed partial class TestTomlStyleAttributesContext : TomlSerializerContext
 {
 }
 
 public class NewApiStyleAttributeTests
 {
+    [Fact]
+    public void StringStyleAllowHexEscapes_UsesTheToml11Escapes()
+    {
+        var value = new HexEscapeStringStyleHolder();
+        var expected = "Hex = \"\\x01\\e\\x7F\"\nDefault = \"\\u0001\\u001B\\u007F\"\n";
+
+        var reflectionToml = TomlSerializer.Serialize(value);
+        var generatedToml = TomlSerializer.Serialize(value, TestTomlStyleAttributesContext.Default.HexEscapeStringStyleHolder);
+
+        Assert.Equal(expected, reflectionToml.ReplaceLineEndings("\n"));
+        Assert.Equal(expected, generatedToml.ReplaceLineEndings("\n"));
+        var roundtrip = TomlSerializer.Deserialize<HexEscapeStringStyleHolder>(reflectionToml)!;
+        Assert.Equal(value.Hex, roundtrip.Hex);
+        Assert.Equal(value.Default, roundtrip.Default);
+    }
+
+    [Theory]
+    [InlineData(false, "\"k\\u0001\" = \"v\\u0080\"\n")]
+    [InlineData(true, "\"k\\x01\" = \"v\\x80\"\n")]
+    public void StringStylePreferencesAllowHexEscapes_AppliesToKeysAndValues(bool allowHexEscapes, string expected)
+    {
+        var options = TomlSerializerOptions.Default with { StringStylePreferences = new TomlStringStylePreferences { AllowHexEscapes = allowHexEscapes } };
+        var value = new Dictionary<string, string> { ["k\u0001"] = "v\u0080" };
+
+        var toml = TomlSerializer.Serialize(value, options);
+
+        Assert.Equal(expected, toml.ReplaceLineEndings("\n"));
+        Assert.Equal(value, TomlSerializer.Deserialize<Dictionary<string, string>>(toml));
+    }
+
     [Fact]
     public void PropertyInlineTableOverride_AppliesOnlyToAnnotatedProperty()
     {

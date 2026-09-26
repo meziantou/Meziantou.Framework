@@ -666,7 +666,7 @@ internal static class TomlModelTextWriter
             if (string.IsNullOrWhiteSpace(name))
             {
                 _writer.Write('\"');
-                WriteEscapedBasicStringContent(name, allowNewLinesAndTabs: false);
+                WriteEscapedBasicStringContent(name, allowNewLinesAndTabs: false, _options.StringStylePreferences.AllowHexEscapes);
                 _writer.Write('\"');
                 return;
             }
@@ -683,7 +683,7 @@ internal static class TomlModelTextWriter
                     c == '.')
                 {
                     _writer.Write('\"');
-                    WriteEscapedBasicStringContent(name, allowNewLinesAndTabs: false);
+                    WriteEscapedBasicStringContent(name, allowNewLinesAndTabs: false, _options.StringStylePreferences.AllowHexEscapes);
                     _writer.Write('\"');
                     return;
                 }
@@ -761,7 +761,7 @@ internal static class TomlModelTextWriter
             _writer.Write('\"');
         }
 
-        private void WriteEscapedBasicStringContent(string value, bool allowNewLinesAndTabs, bool allowHexEscapes = true)
+        private void WriteEscapedBasicStringContent(string value, bool allowNewLinesAndTabs, bool allowHexEscapes)
         {
             if (!RequiresEscaping(value, allowNewLinesAndTabs))
             {
@@ -820,14 +820,17 @@ internal static class TomlModelTextWriter
                         case '\\':
                             _writer.Write("\\\\");
                             continue;
+                        case '\u001B' when allowHexEscapes:
+                            _writer.Write("\\e");
+                            continue;
+                        case <= '\u00FF' when allowHexEscapes:
+                            _writer.Write("\\x");
+                            WriteHexDigit(c >> 4);
+                            WriteHexDigit(c & 0xF);
+                            continue;
                         default:
-                            if (!allowHexEscapes)
-                            {
-                                throw new TomlException("The string contains a control character that requires a hexadecimal escape, but hexadecimal escapes are disabled.");
-                            }
-
                             _writer.Write("\\u");
-                            WriteHex4((ushort)c);
+                            WriteHex4(c);
                             continue;
                     }
                 }

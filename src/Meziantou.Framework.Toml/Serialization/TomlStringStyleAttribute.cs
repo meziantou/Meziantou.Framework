@@ -36,7 +36,8 @@ public sealed class TomlStringStyleAttribute : TomlAttribute
     public TomlBooleanPreference PreferLiteralWhenNoEscapes { get; set; }
 
     /// <summary>
-    /// Gets or sets whether hexadecimal escapes may be emitted for control characters.
+    /// Gets or sets whether control characters up to U+00FF are escaped with the TOML 1.1 <c>\xHH</c> and <c>\e</c> escapes
+    /// instead of <c>\uXXXX</c>.
     /// </summary>
     public TomlBooleanPreference AllowHexEscapes { get; set; }
 }

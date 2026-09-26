@@ -199,7 +199,8 @@ internal static class TomlReflectionTypeInfoResolver
             Action<object, object?>? setter = null;
             if (property.SetMethod is not null && (property.SetMethod.IsPublic || HasIncludeAttribute(property)))
             {
-                setter = (instance, value) => property.SetValue(instance, value);
+                // Like generated code and System.Text.Json, an exception thrown by the setter is not wrapped
+                setter = (instance, value) => property.SetValue(instance, value, BindingFlags.DoNotWrapExceptions, binder: null, index: null, culture: null);
             }
 
             // A property without an accessible setter is read-only; an init accessor makes it writable
@@ -209,7 +210,7 @@ internal static class TomlReflectionTypeInfoResolver
                 property,
                 name,
                 property.PropertyType,
-                instance => property.GetValue(instance),
+                instance => property.GetValue(instance, BindingFlags.DoNotWrapExceptions, binder: null, index: null, culture: null),
                 setter,
                 GetOrder(property),
                 writeIgnoreCondition,
@@ -1310,10 +1311,10 @@ internal static class TomlReflectionTypeInfoResolver
             {
                 if (_constructor is not null && _constructor.GetParameters().Length == 0)
                 {
-                    return _constructor.Invoke(Array.Empty<object>())!;
+                    return _constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, Array.Empty<object>(), culture: null)!;
                 }
 
-                return Activator.CreateInstance(Type)!;
+                return Activator.CreateInstance(Type, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, binder: null, args: null, culture: null)!;
             }
             catch (Exception ex)
             {
@@ -1640,7 +1641,7 @@ internal static class TomlReflectionTypeInfoResolver
             object instance;
             try
             {
-                instance = _constructor!.Invoke(ctorArgs)!;
+                instance = _constructor!.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, ctorArgs, culture: null)!;
             }
             catch (Exception ex)
             {

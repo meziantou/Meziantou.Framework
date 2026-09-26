@@ -1104,6 +1104,32 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+public sealed class GeneratedThrowingSetter
+{
+    public int Q { get => GetType().Name.Length; set => throw new ArgumentOutOfRangeException(nameof(value), GetType().Name); }
+}
+
+public sealed class GeneratedThrowingGetter
+{
+    public int Q => throw new InvalidOperationException(GetType().Name);
+}
+
+public sealed class GeneratedThrowingConstructorWithoutParameters
+{
+    public GeneratedThrowingConstructorWithoutParameters() => throw new InvalidOperationException("constructor");
+
+    public int Q { get; set; }
+}
+
+public sealed class GeneratedThrowingMembersHolder
+{
+    public GeneratedThrowingSetter? Setter { get; set; }
+
+    public GeneratedThrowingGetter? Getter { get; set; }
+
+    public GeneratedThrowingConstructorWithoutParameters? Constructor { get; set; }
+}
+
 public sealed class GeneratedPrivateSetterExtensionData
 {
     public int A { get; set; }
@@ -1197,6 +1223,7 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedThrowingMembersHolder))]
 [TomlSerializable(typeof(GeneratedPrivateSetterExtensionData))]
 [TomlSerializable(typeof(GeneratedPrivateInitExtensionData))]
 [TomlSerializable(typeof(GeneratedStructWithConstructor))]
@@ -1398,6 +1425,23 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void ExceptionsFromTheModel_AreTheSameOnBothPaths()
+    {
+        var typeInfo = TestTomlSerializerContextSingleConstruction.Default.GeneratedThrowingMembersHolder;
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializer.Deserialize<GeneratedThrowingMembersHolder>("[Setter]\nQ = 1\n"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializer.Deserialize("[Setter]\nQ = 1\n", typeInfo));
+        Assert.Throws<InvalidOperationException>(() => TomlSerializer.Serialize(new GeneratedThrowingMembersHolder { Getter = new() }));
+        Assert.Throws<InvalidOperationException>(() => TomlSerializer.Serialize(new GeneratedThrowingMembersHolder { Getter = new() }, typeInfo));
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedThrowingMembersHolder>("[Constructor]\nQ = 1\n"));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("[Constructor]\nQ = 1\n", typeInfo));
+        Assert.Equal(reflection.Message, generated.Message);
+        Assert.Contains("Failed to create an instance", generated.Message);
+        Assert.False(TomlSerializer.TryDeserialize("[Constructor]\nQ = 1\n", typeInfo, out _));
+    }
+
     [Fact]
     public void ExtensionDataWithANonPublicSetter_IsInitializedByBothPaths()
     {

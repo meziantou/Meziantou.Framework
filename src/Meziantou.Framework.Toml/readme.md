@@ -90,7 +90,9 @@ await TomlSerializer.SerializeAsync(response.Body, config, cancellationToken: ca
 Set `MaxInputLength` to reject a document that is too long before it is loaded, for example one sent by a user.
 
 `TryDeserialize` returns `false` instead of throwing when the input is not valid TOML or does not match the model. It is
-available for every input type and metadata style:
+available for every input type and metadata style. An exception thrown by the model itself, such as a setter or a
+deserialization callback that validates a value, is not caught, like in `System.Text.Json`; a constructor that throws is
+reported as a `TomlException`:
 
 ```csharp
 if (!TomlSerializer.TryDeserialize<ServerConfig>(toml, out var config))

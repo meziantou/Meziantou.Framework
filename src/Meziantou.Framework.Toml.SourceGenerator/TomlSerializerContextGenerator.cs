@@ -1333,7 +1333,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
             builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
             builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
-            builder.Append("            var value = new ").Append(typeName).AppendLine("();");
+
+            // Like the reflection-based metadata, an exception thrown by the constructor is reported with the table
+            builder.Append("            ").Append(typeName).AppendLine(" value;");
+            builder.AppendLine("            try");
+            builder.AppendLine("            {");
+            builder.Append("                value = new ").Append(typeName).AppendLine("();");
+            builder.AppendLine("            }");
+            builder.AppendLine("            catch (global::System.Exception ex)");
+            builder.AppendLine("            {");
+            builder.Append("                var __message = $\"Failed to create an instance of '{typeof(").Append(typeName).AppendLine(").FullName}'.\";");
+            builder.AppendLine("                throw tableStartSpan is { } __span ? new global::Meziantou.Framework.Toml.TomlException(__span, __message, ex) : new global::Meziantou.Framework.Toml.TomlException(__message, ex);");
+            builder.AppendLine("            }");
             if (callsOnDeserializing)
             {
                 builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");

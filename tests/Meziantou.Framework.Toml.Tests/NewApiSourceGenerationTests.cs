@@ -1466,6 +1466,69 @@ internal sealed partial class TestTomlSerializerContextManyErrors : TomlSerializ
 {
 }
 
+public sealed record GeneratedEscapeRecord(int X);
+
+public sealed class GeneratedEscapeChild
+{
+    public string? A { get; set; }
+
+    [TomlExtensionData]
+    public Dictionary<string, GeneratedEscapeRecord>? Ext { get; set; }
+}
+
+public sealed class GeneratedEscapeHolder
+{
+    public GeneratedEscapeRecord? Rec { get; set; }
+
+    public string? N { get; set; }
+}
+
+// Reads a nested value with the metadata of the options, like a user converter composing other types
+public sealed class GeneratedEscapeHolderConverter : TomlConverter<GeneratedEscapeHolder>
+{
+    public override GeneratedEscapeHolder Read(TomlReader reader)
+    {
+        var value = new GeneratedEscapeHolder();
+        reader.Read();
+        while (reader.TokenType == TomlTokenType.PropertyName)
+        {
+            var name = reader.PropertyName;
+            reader.Read();
+            if (name == "Rec")
+            {
+                value.Rec = reader.Options.GetTypeInfo<GeneratedEscapeRecord>().Read(reader);
+            }
+            else
+            {
+                value.N = reader.GetString();
+                reader.Read();
+            }
+        }
+
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, GeneratedEscapeHolder value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedEscapeRoot
+{
+    public GeneratedEscapeChild? Child { get; set; }
+
+    [TomlConverter(typeof(GeneratedEscapeHolderConverter))]
+    public GeneratedEscapeHolder? W { get; set; }
+
+    public int A { get; set; }
+
+    public int N { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedEscapeRoot))]
+internal sealed partial class TestTomlSerializerContextEscape : TomlSerializerContext
+{
+}
+
 public class GeneratedAccessorBase
 {
     public string X { get; init; } = "x-init";
@@ -3035,6 +3098,22 @@ public class NewApiSourceGenerationTests
         Assert.Equal("y-toml", derived.GetY());
         Assert.Equal("p-toml", sameType.P);
         Assert.Equal("f-toml", sameType.GetF());
+    }
+
+    [Theory]
+    [InlineData("[Child]\nExt = { X = 'bad' }\nA = 'text'\n", 1)]
+    [InlineData("W = { Rec = { X = 'bad' }, N = 'text' }\n", 0)]
+    public void RecordedError_OfANestedValueItsReaderHasNotFinished_StopsTheReading(string toml, int line)
+    {
+        // The parent must not continue inside the table: the keys that follow belong to the child
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedEscapeRoot>(toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, TestTomlSerializerContextEscape.Default.GeneratedEscapeRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            var diagnostic = Assert.Single(exception.Diagnostics);
+            Assert.Equal(line, diagnostic.Span.Start.Line);
+        }
     }
 
     [Theory]

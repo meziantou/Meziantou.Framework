@@ -142,9 +142,11 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
+        // The errors of the value that started at span were recorded when it was read. An error recorded for a nested value
+        // that its reader has not finished, such as a converter reading a nested value, stops the reading.
         if (reader.OperationState.IsRecordedValueError(exception))
         {
-            return true;
+            return reader.OperationState.IsRecordedValueError(exception, span);
         }
 
         if (reader.TokenType != tokenType || !Nullable.Equals(reader.CurrentSpan, span) || !reader.OperationState.CanAddDiagnostics(exception))
@@ -159,7 +161,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
 
     /// <summary>
     /// Gets the number of recoverable deserialization diagnostics recorded for the reader, to pass to
-    /// <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int)"/> at the end of a table.
+    /// <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int, TomlSourceSpan?)"/> at the end of a table.
     /// </summary>
     /// <param name="reader">The TOML reader.</param>
     /// <returns>The number of diagnostics.</returns>
@@ -177,11 +179,12 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </summary>
     /// <param name="reader">The TOML reader.</param>
     /// <param name="diagnosticCount">The number of diagnostics when the table started.</param>
-    protected static void ThrowIfDeserializationDiagnostics(TomlReader reader, int diagnosticCount)
+    /// <param name="tableStartSpan">The location of the start of the table, which identifies the value that was read.</param>
+    protected static void ThrowIfDeserializationDiagnostics(TomlReader reader, int diagnosticCount, TomlSourceSpan? tableStartSpan)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
 
-        reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount);
+        reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
     }
 
     /// <summary>

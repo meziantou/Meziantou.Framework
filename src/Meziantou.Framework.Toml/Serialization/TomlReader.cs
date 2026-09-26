@@ -914,7 +914,7 @@ public sealed class TomlReader
     {
         if (_operationState.IsRecordedValueError(exception))
         {
-            return true;
+            return _operationState.IsRecordedValueError(exception, startState.Span);
         }
 
         if (!_operationState.CanAddDiagnostics(exception) || !IsStateUnchanged(startState))

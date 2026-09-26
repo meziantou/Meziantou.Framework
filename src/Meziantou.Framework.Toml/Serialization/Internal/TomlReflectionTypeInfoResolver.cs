@@ -1524,7 +1524,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             // The values of this table that have errors are missing, so the instance cannot be created. Errors of the rest of the
             // document do not prevent it.
-            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount);
+            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
 
             for (var i = 0; i < _parameters.Length; i++)
             {

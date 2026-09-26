@@ -21,11 +21,12 @@ public sealed class TomlException : Exception
 
     // A recorded value error is thrown for every table with an error, and caught by its parent: formatting its message
     // eagerly would copy the first diagnostics once per table
-    private TomlException(DiagnosticsBag operationDiagnostics, bool isRecordedValueError)
+    private TomlException(DiagnosticsBag operationDiagnostics, TomlSourceSpan? recordedValueStart)
     {
         Diagnostics = operationDiagnostics;
         Span = GetFirstSpanOrNull(operationDiagnostics);
-        IsRecordedValueError = isRecordedValueError;
+        IsRecordedValueError = true;
+        RecordedValueStart = recordedValueStart;
     }
 
     private string? _lazyMessage;
@@ -83,7 +84,11 @@ public sealed class TomlException : Exception
     // continue with the next value to report the errors of the rest of the document
     internal bool IsRecordedValueError { get; }
 
-    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics) => new(operationDiagnostics, isRecordedValueError: true);
+    // The start of the value that was read: only the reader of that value can continue with the next one. The error can go
+    // through frames that have not finished their own value, such as a converter reading a nested value.
+    internal TomlSourceSpan? RecordedValueStart { get; }
+
+    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics, TomlSourceSpan? valueStart) => new(operationDiagnostics, valueStart);
 
     // An error of the program rather than of the TOML input, such as a type without metadata: TryDeserialize does not hide it
     internal bool IsConfigurationError { get; private init; }

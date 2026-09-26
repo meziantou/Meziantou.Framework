@@ -1361,7 +1361,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            }");
             builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
             builder.AppendLine("            reader.Read();");
-            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount);");
+            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
             if (hasRequiredMembers)
             {
                 if (poco.Members.Length <= 64)
@@ -2094,7 +2094,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
         builder.AppendLine("            reader.Read();");
-        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount);");
+        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount, tableStartSpan);");
 
         // Validate constructor parameters.
         for (var i = 0; i < ctor.Parameters.Length; i++)

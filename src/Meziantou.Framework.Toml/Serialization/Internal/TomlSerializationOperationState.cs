@@ -38,12 +38,16 @@ internal sealed class TomlSerializationOperationState
 
     public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
 
+    // The error of the value that started at valueStart, which was read completely
+    public bool IsRecordedValueError(TomlException exception, TomlSourceSpan? valueStart)
+        => IsRecordedValueError(exception) && Nullable.Equals(exception.RecordedValueStart, valueStart);
+
     // A table with errors cannot be used, but it was read completely, so its parent continues with its next value
-    public void ThrowIfDiagnosticsSince(int diagnosticCount)
+    public void ThrowIfDiagnosticsSince(int diagnosticCount, TomlSourceSpan? tableStart)
     {
         if (DiagnosticCount > diagnosticCount)
         {
-            throw TomlException.CreateRecordedValueError(Diagnostics!);
+            throw TomlException.CreateRecordedValueError(Diagnostics!, tableStart);
         }
     }
 
@@ -58,7 +62,7 @@ internal sealed class TomlSerializationOperationState
         }
 
         AddDiagnostics(exception);
-        return TomlException.CreateRecordedValueError(Diagnostics!);
+        return TomlException.CreateRecordedValueError(Diagnostics!, exception.Span);
     }
 
     public bool CanAddDiagnostics(TomlException exception)

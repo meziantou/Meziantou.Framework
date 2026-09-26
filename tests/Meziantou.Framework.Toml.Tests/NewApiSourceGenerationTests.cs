@@ -114,6 +114,17 @@ public sealed class GeneratedOrderedPerson
     public string Name { get; set; } = "";
 }
 
+public sealed class GeneratedReorderedPerson
+{
+    public string Name { get; set; } = "";
+
+    [TomlPropertyOrder(-1)]
+    public int Age { get; set; }
+
+    [JsonPropertyOrder(-2)]
+    public int Id { get; set; }
+}
+
 public sealed class GeneratedRequiredPerson
 {
     [JsonRequired]
@@ -1113,6 +1124,7 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedReorderedPerson))]
 [TomlSerializable(typeof(GeneratedAmbiguousConstructors))]
 [TomlSerializable(typeof(GeneratedMultipleAnnotatedConstructors))]
 [TomlSerializable(typeof(GeneratedConstructionCounter))]
@@ -1304,6 +1316,19 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void DefaultMappingOrder_HonorsPropertyOrderAttributes()
+    {
+        var value = new GeneratedReorderedPerson { Name = "Ada", Age = 37, Id = 1 };
+
+        var reflection = TomlSerializer.Serialize(value);
+        var generated = TomlSerializer.Serialize(value, TestTomlSerializerContextSingleConstruction.Default.GeneratedReorderedPerson);
+
+        Assert.Equal("Id = 1\nAge = 37\nName = \"Ada\"\n", reflection);
+        Assert.Equal(reflection, generated);
+        Assert.Equal(TomlMappingOrderPolicy.OrderThenDeclaration, TomlSerializerOptions.Default.MappingOrder);
+    }
+
     [Fact]
     public void GeneratedContext_RespectsJsonPropertyOrder_WhenWriting()
     {

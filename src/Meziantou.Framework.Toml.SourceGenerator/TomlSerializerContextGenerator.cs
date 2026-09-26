@@ -279,7 +279,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private const bool DefaultPropertyNameCaseInsensitive = false;
     private const int DefaultDefaultIgnoreCondition = 1;
     private const int DefaultDuplicateKeyHandling = 0;
-    private const int DefaultMappingOrder = 0;
+    private const int DefaultMappingOrder = 2; // OrderThenDeclaration
 
     private static bool GetEffectivePropertyNameCaseInsensitive(SourceGenOptions options) => options.PropertyNameCaseInsensitive ?? DefaultPropertyNameCaseInsensitive;
 

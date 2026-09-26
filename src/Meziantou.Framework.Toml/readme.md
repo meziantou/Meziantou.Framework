@@ -189,7 +189,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `WriteIndented` | `false` | Indents the header and the key/value pairs of a table once for each table it is nested in. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
 | `NewLine` | `Lf` | Line ending style (`Lf` or `CrLf`). |
-| `MappingOrder` | `Declaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. |
+| `MappingOrder` | `OrderThenDeclaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. The default honors `[TomlPropertyOrder]` and `[JsonPropertyOrder]`, like `System.Text.Json`. |
 | `DottedKeyHandling` | `Literal` | Writes member names and dictionary keys containing a dot as quoted keys (`Literal`) or expands them into subtables (`Expand`). The keys of a `TomlTable` are always written as they are. Reading is not affected: expanded keys are read back as nested tables, so such a model does not round-trip with `Expand`. |
 | `RootValueHandling` | `Error` | Behavior when the root value is not a table. `WrapInRootKey` writes it under `RootValueKeyName` (`"value"`). |
 | `InlineTablePolicy` | `Never` | When nested objects are written as inline tables: `Never`, `WhenSmall`, or `Always`. |

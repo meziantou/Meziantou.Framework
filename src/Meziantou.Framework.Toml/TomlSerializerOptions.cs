@@ -187,8 +187,11 @@ public sealed record TomlSerializerOptions
     /// <summary>Gets or sets behavior when duplicate keys are encountered while reading.</summary>
     public TomlDuplicateKeyHandling DuplicateKeyHandling { get; init; } = TomlDuplicateKeyHandling.Error;
 
-    /// <summary>Gets or sets member ordering behavior for emitted tables.</summary>
-    public TomlMappingOrderPolicy MappingOrder { get; init; } = TomlMappingOrderPolicy.Declaration;
+    /// <summary>
+    /// Gets or sets member ordering behavior for emitted tables. The default, <see cref="TomlMappingOrderPolicy.OrderThenDeclaration"/>,
+    /// honors <see cref="Serialization.TomlPropertyOrderAttribute"/> and <c>JsonPropertyOrderAttribute</c> like <c>System.Text.Json</c>.
+    /// </summary>
+    public TomlMappingOrderPolicy MappingOrder { get; init; } = TomlMappingOrderPolicy.OrderThenDeclaration;
 
     /// <summary>Gets or sets how member names and dictionary keys containing '.' are written. Reading is not affected.</summary>
     public TomlDottedKeyHandling DottedKeyHandling { get; init; } = TomlDottedKeyHandling.Literal;

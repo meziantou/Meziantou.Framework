@@ -626,6 +626,8 @@ public sealed class SourceGenerationDiagnosticsTests
 
     [Theory]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"not-valid\")]", "must be a valid C# identifier")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"class\")]", "must be a valid C# identifier")]
+    [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"X1\")][TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Y1\")]", "are both used for 'Person'")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Options\")]", "conflicts with a member of the context")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Default\")]", "conflicts with a member of the context")]
     [InlineData("[TomlSerializable(typeof(Person), TypeInfoPropertyName = \"Helper\")]", "conflicts with a member of the context")]

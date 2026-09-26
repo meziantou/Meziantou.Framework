@@ -3997,6 +3997,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         var reservedIdentifiers = GetReservedIdentifiers(model);
         var typesByName = new Dictionary<string, ITypeSymbol>(StringComparer.Ordinal);
+        var namesByType = new Dictionary<ITypeSymbol, string>(SymbolEqualityComparer.Default);
         foreach (var root in model.RootTypes)
         {
             if (root.TypeInfoPropertyName is not { } name)
@@ -4014,9 +4015,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
                 error = $"TomlSerializable TypeInfoPropertyName '{name}' is used for both '{otherType.ToDisplayString()}' and '{root.Type.ToDisplayString()}'.";
             }
-            else if (!SyntaxFacts.IsValidIdentifier(name))
+            else if (!SyntaxFacts.IsValidIdentifier(name) || SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None)
             {
-                error = $"TomlSerializable TypeInfoPropertyName '{name}' must be a valid C# identifier.";
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' must be a valid C# identifier, and not a keyword.";
+            }
+            else if (namesByType.TryGetValue(root.Type, out var otherName))
+            {
+                error = $"TomlSerializable TypeInfoPropertyName '{name}' and '{otherName}' are both used for '{root.Type.ToDisplayString()}'.";
             }
             else if (IsReservedTypeInfoName(reservedIdentifiers, name))
             {
@@ -4031,6 +4036,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             // The members generated for this name, such as _Foo and CreateFoo, cannot be used by another name
             typesByName[name] = root.Type;
+            namesByType[root.Type] = name;
             reservedIdentifiers.Add(name);
             reservedIdentifiers.Add("_" + name);
             reservedIdentifiers.Add("Create" + name);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
@@ -980,6 +981,21 @@ public sealed class SourceGenerationDiagnosticsTests
         var diagnostics = RunGenerator(source);
 
         Assert.Single(diagnostics, d => d.Id == "MFTOML011");
+    }
+
+    [Theory]
+    [InlineData("[TomlPropertyName(\"\")] public int Value { get; set; }")]
+    [InlineData("[TomlPropertyName(\"\")] [TomlInclude] public int Value;")]
+    public void Generator_EmptyPropertyName_ReportsDiagnostic(string member)
+    {
+        var source = "using Meziantou.Framework.Toml.Serialization;\n[TomlSerializable(typeof(Person))]\ninternal partial class Ctx : TomlSerializerContext { }\npublic sealed class Person { " + member + " }";
+
+        var diagnostics = RunGenerator(source);
+
+        var diagnostic = Assert.Single(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal("MFTOML011", diagnostic.Id);
+        Assert.Contains("[TomlPropertyName] cannot be empty", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Equal(3, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
     }
 
     private static ImmutableArray<Diagnostic> RunGenerator(string source)

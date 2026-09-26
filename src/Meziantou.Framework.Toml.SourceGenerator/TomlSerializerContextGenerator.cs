@@ -4228,6 +4228,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var writeIgnore = isReadOnlyProperty && model.Options.IgnoreReadOnlyProperties == true ? WriteIgnoreKind.WhenWriting : ignore.WriteIgnore;
 
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
+            if (HasEmptyTomlPropertyName(member))
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(
+                    InvalidAttributeUsage,
+                    member.Locations.FirstOrDefault(),
+                    type.ToDisplayString(),
+                    member.Name,
+                    "[TomlPropertyName] cannot be empty. Its constructor throws an ArgumentException."));
+                continue;
+            }
+
             var order = GetOrder(member);
             var required = IsRequired(member, honorRequiredModifier) && !ignore.IgnoreOnRead;
             var formatting = GetFormattingMetadata(member);
@@ -4342,6 +4353,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
 
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
+            if (HasEmptyTomlPropertyName(member))
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(
+                    InvalidAttributeUsage,
+                    member.Locations.FirstOrDefault(),
+                    type.ToDisplayString(),
+                    member.Name,
+                    "[TomlPropertyName] cannot be empty. Its constructor throws an ArgumentException."));
+                continue;
+            }
+
             var order = GetOrder(member);
             var required = IsRequired(member, honorRequiredModifier) && !ignore.IgnoreOnRead;
             var fieldAccessible = IsAccessibleFromGeneratedContext(model, member);
@@ -5585,6 +5607,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         return false;
     }
+
+    private static bool HasEmptyTomlPropertyName(ISymbol member)
+        => TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlPropertyNameAttribute", out var attribute) &&
+            attribute.ConstructorArguments is [{ Value: string { Length: 0 } }];
 
     private static string GetSerializedName(ISymbol member, string memberName, string? namingPolicyExpression)
     {

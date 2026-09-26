@@ -426,11 +426,12 @@ Breed = "Labrador"
 ```
 
 - `[JsonPolymorphic]` and `[JsonDerivedType]` work as well.
-- A derived type registered without a discriminator is the default type: it is used when the discriminator is missing,
-  and it is written without a discriminator.
+- A derived type registered without a discriminator is the default type: it is used when the discriminator is missing
+  or unknown, and it is written without a discriminator. System.Text.Json throws on an unknown discriminator instead.
 - Integer discriminators (`[TomlDerivedType(typeof(Circle), 1)]`) are written as strings.
-- An unknown discriminator throws by default. Set `UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType`
-  on the attribute or on `TomlPolymorphismOptions` to read it as the base type instead.
+- Without a default type, an unknown discriminator throws by default. Set
+  `UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType` on the attribute or on
+  `TomlPolymorphismOptions` to read it as the base type instead.
 
 ### Registering derived types outside the base type
 

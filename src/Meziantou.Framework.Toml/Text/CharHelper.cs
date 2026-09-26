@@ -64,6 +64,36 @@ internal static partial class CharHelper
     }
 
     /// <summary>
+    /// Gets the index of the first surrogate that is not part of a pair, which no TOML string or key can hold, or -1.
+    /// </summary>
+    public static int IndexOfUnpairedSurrogate(ReadOnlySpan<char> text)
+    {
+        var start = text.IndexOfAnyInRange('\uD800', '\uDFFF');
+        if (start < 0)
+        {
+            return -1;
+        }
+
+        for (var i = start; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                i++;
+            }
+            else if (char.IsSurrogate(c))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public static string GetUnpairedSurrogateMessage(string text, int index, string kind)
+        => $"The {kind} contains an unpaired surrogate (U+{(int)text[index]:X4}) at index {index}, which TOML cannot represent.";
+
+    /// <summary>
     /// Escape a C# string to a TOML string
     /// </summary>
     public static string EscapeForToml(this string text, bool allowNewLinesAndSpace = false)

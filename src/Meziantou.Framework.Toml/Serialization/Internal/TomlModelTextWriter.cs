@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -603,6 +604,7 @@ internal static class TomlModelTextWriter
 
         private void WriteKey(string name)
         {
+            ThrowIfUnpairedSurrogate(name, "key");
             if (string.IsNullOrWhiteSpace(name))
             {
                 _writer.Write('\"');
@@ -632,8 +634,18 @@ internal static class TomlModelTextWriter
             _writer.Write(name);
         }
 
+        private static void ThrowIfUnpairedSurrogate(string value, string kind)
+        {
+            var index = CharHelper.IndexOfUnpairedSurrogate(value);
+            if (index >= 0)
+            {
+                throw new TomlException(CharHelper.GetUnpairedSurrogateMessage(value, index, kind));
+            }
+        }
+
         private void WriteString(string value, TomlPropertyDisplayKind displayKind, TomlPropertyMetadata? propertyMetadata)
         {
+            ThrowIfUnpairedSurrogate(value, "string");
             var preferences = _options.StringStylePreferences;
             var allowHexEscapes = propertyMetadata?.AllowHexEscapes ?? preferences.AllowHexEscapes;
             if (displayKind == TomlPropertyDisplayKind.Default)

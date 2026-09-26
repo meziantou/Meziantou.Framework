@@ -23,9 +23,16 @@ public sealed class StringValueSyntax : BareKeyOrStringValueSyntax
     /// Creates a new instance of <see cref="StringValueSyntax"/>
     /// </summary>
     /// <param name="text">String value used for this node</param>
+    /// <exception cref="ArgumentException"><paramref name="text"/> contains an unpaired surrogate, which TOML cannot represent.</exception>
     public StringValueSyntax(string text) : this()
     {
         ArgumentNullException.ThrowIfNull(text);
+        var index = CharHelper.IndexOfUnpairedSurrogate(text);
+        if (index >= 0)
+        {
+            throw new ArgumentException(CharHelper.GetUnpairedSurrogateMessage(text, index, "string"), nameof(text));
+        }
+
         Token = new SyntaxToken(TokenKind.String, $"\"{text.EscapeForToml()}\"");
         Value = text;
     }

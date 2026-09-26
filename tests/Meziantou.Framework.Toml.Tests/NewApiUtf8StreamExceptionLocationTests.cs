@@ -63,6 +63,6 @@ public sealed class NewApiUtf8StreamExceptionLocationTests
 
         var ex = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new MemoryStream(), table));
 
-        Assert.IsType<EncoderFallbackException>(ex.InnerException);
+        Assert.Contains("unpaired surrogate", ex.Message, StringComparison.Ordinal);
     }
 }

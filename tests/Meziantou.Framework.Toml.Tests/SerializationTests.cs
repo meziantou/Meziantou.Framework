@@ -165,6 +165,34 @@ public class SerializationTests
         Assert.Equal(1L, TomlSerializer.Deserialize<WithTable>(toml, options)!.Table["a.b"]);
     }
 
+    // xunit serializes the data of the test cases as UTF-8, which replaces a lone surrogate, so the text is built here
+    [Theory]
+    [InlineData(0xD800, "")]
+    [InlineData(0xDC00, "x")]
+    [InlineData(0xDBFF, "\"")]
+    public void Serialize_UnpairedSurrogate_Throws(int surrogate, string suffix)
+    {
+        var text = "a" + (char)surrogate + suffix;
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new TomlTable { ["key"] = text }));
+        Assert.Contains("unpaired surrogate", ex.Message, StringComparison.Ordinal);
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new TomlTable { [text] = 1L }));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GroupItem { Name = text }));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new Dictionary<string, int>(StringComparer.Ordinal) { [text] = 1 }));
+        Assert.Throws<ArgumentException>(() => new Syntax.StringValueSyntax(text));
+    }
+
+    [Fact]
+    public void Serialize_SurrogatePair_RoundTrips()
+    {
+        var table = new TomlTable { ["\U0001F600"] = "a\U0001F600b" };
+
+        var toml = TomlSerializer.Serialize(table);
+
+        var roundtrip = TomlSerializer.Deserialize<TomlTable>(toml)!;
+        Assert.Equal("a\U0001F600b", roundtrip["\U0001F600"]);
+    }
+
     private sealed class WithTable
     {
         public TomlTable Table { get; set; } = [];

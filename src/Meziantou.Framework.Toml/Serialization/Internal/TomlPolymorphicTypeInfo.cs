@@ -324,7 +324,21 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             return _baseTypeInfo.ReadAsObject(reader);
         }
 
+        var tableStartSpan = reader.CurrentSpan;
         var buffer = reader.CaptureCurrentValueToBuffer();
+        try
+        {
+            return ReadBufferedValue(reader, buffer, tableStartSpan);
+        }
+        catch (TomlException ex) when (reader.OperationState.TryRecordErrorOfReadValue(ex))
+        {
+            // The value was read completely from the reader, so the table that contains it continues with its next value
+            throw TomlException.CreateRecordedValueError(reader.OperationState.Diagnostics!, tableStartSpan);
+        }
+    }
+
+    private object? ReadBufferedValue(TomlReader reader, TomlReaderBuffer buffer, TomlSourceSpan? tableStartSpan)
+    {
         if (!TryReadDiscriminator(buffer, out var discriminator, out var discriminatorSpan, out var discriminatorMetadata))
         {
             // No discriminator found - try default derived type first
@@ -377,7 +391,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         }
         else
         {
-            if (discriminatorSpan is { } span)
+            if ((discriminatorSpan ?? tableStartSpan) is { } span)
             {
                 throw new TomlException(span, $"Unknown discriminator '{discriminator}' when deserializing '{Type.FullName}'.");
             }

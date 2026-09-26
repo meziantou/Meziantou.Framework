@@ -1042,7 +1042,17 @@ internal static class TomlReflectionTypeInfoResolver
                 if (_extensionDataIndex != -1)
                 {
                     var extensionDictionary = EnsureExtensionDataDictionary(instance);
-                    var extensionValue = ReadExtensionValue(reader);
+                    var extensionValueStartState = reader.CurrentState;
+                    object? extensionValue;
+                    try
+                    {
+                        extensionValue = ReadExtensionValue(reader);
+                    }
+                    catch (TomlException ex) when (reader.TryRecoverValue(ex, extensionValueStartState))
+                    {
+                        continue;
+                    }
+
                     SetExtensionData(extensionDictionary, name, extensionValue);
                     continue;
                 }
@@ -1531,7 +1541,18 @@ internal static class TomlReflectionTypeInfoResolver
                 }
                 else
                 {
-                    (extensionData ??= new Dictionary<string, object?>(StringComparer.Ordinal))[name] = ReadExtensionValue(reader);
+                    var extensionValueStartState = reader.CurrentState;
+                    object? extensionValue;
+                    try
+                    {
+                        extensionValue = ReadExtensionValue(reader);
+                    }
+                    catch (TomlException ex) when (reader.TryRecoverValue(ex, extensionValueStartState))
+                    {
+                        continue;
+                    }
+
+                    (extensionData ??= new Dictionary<string, object?>(StringComparer.Ordinal))[name] = extensionValue;
                 }
             }
 

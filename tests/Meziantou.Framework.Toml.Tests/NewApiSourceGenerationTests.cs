@@ -1700,6 +1700,37 @@ internal sealed partial class TestTomlSerializerContextPrivateGetter : TomlSeria
 {
 }
 
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(GeneratedAggregationDog), "dog")]
+public abstract class GeneratedAggregationAnimal
+{
+}
+
+public sealed class GeneratedAggregationDog : GeneratedAggregationAnimal
+{
+    public int Age { get; set; }
+}
+
+public sealed class GeneratedAggregationTypedExtension
+{
+    [TomlExtensionData]
+    public Dictionary<string, int>? Extra { get; set; }
+}
+
+public sealed class GeneratedAggregationPolymorphicRoot
+{
+    public List<GeneratedAggregationAnimal>? Animals { get; set; }
+
+    public GeneratedAggregationTypedExtension? A { get; set; }
+
+    public GeneratedAggregationTypedExtension? B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedAggregationPolymorphicRoot))]
+internal sealed partial class TestTomlSerializerContextAggregationPolymorphic : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3901,6 +3932,32 @@ public class NewApiSourceGenerationTests
         foreach (var exception in new[] { reflection, generated })
         {
             Assert.Equal([0, 0, 2, 4, 6, 8, 9, 11], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
+        }
+    }
+
+    [Fact]
+    public void Deserialize_ReportsDiscriminatorAndTypedExtensionDataErrors_WithTheOthers()
+    {
+        const string Toml = """
+            [[Animals]]
+            kind = "cat"
+            [[Animals]]
+            kind = "dog"
+            Age = "x"
+            [[Animals]]
+            Age = 1
+            [A]
+            foo = "x"
+            [B]
+            bar = "y"
+            """;
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedAggregationPolymorphicRoot>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextAggregationPolymorphic.Default.GeneratedAggregationPolymorphicRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            Assert.Equal([1, 4, 5, 8, 10], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
         }
     }
 

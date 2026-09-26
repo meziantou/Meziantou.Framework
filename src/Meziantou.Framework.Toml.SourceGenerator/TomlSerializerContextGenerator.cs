@@ -1918,7 +1918,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         if (extensionData is not null)
         {
             builder.AppendLine("                    if (__extensionData is null) __extensionData = new();");
-            builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
+            EmitRecoverableRead(builder, "                    ", readIndent => builder.Append(readIndent).Append("__extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";"));
             builder.AppendLine("                    continue;");
         }
         else
@@ -2154,7 +2154,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                        var name = reader.PropertyName!;");
             builder.AppendLine("                        reader.Read();");
             builder.AppendLine("                        if (__extensionData is null) __extensionData = new();");
-            builder.Append("                        __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
+            EmitRecoverableRead(builder, "                        ", readIndent => builder.Append(readIndent).Append("__extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";"));
             builder.AppendLine("                        continue;");
             builder.AppendLine("                    }");
         }
@@ -3497,7 +3497,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.Append("                        __extensionData = ").Append(extensionData.CreateExpression).AppendLine(";");
                 EmitExtensionDataAssignment(builder, "                        ", extensionData, "__extensionData");
                 builder.AppendLine("                    }");
-                builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
+                EmitRecoverableRead(builder, "                    ", readIndent => builder.Append(readIndent).Append("__extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";"));
                 builder.AppendLine("                    continue;");
                 return;
             }
@@ -3655,7 +3655,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("                            __extensionData = ").Append(extensionDataRead.CreateExpression).AppendLine(";");
             EmitExtensionDataAssignment(builder, "                            ", extensionDataRead, "__extensionData");
             builder.AppendLine("                        }");
-            builder.Append("                        __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionDataRead.ValueType)).AppendLine(";");
+            EmitRecoverableRead(builder, "                        ", readIndent => builder.Append(readIndent).Append("__extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionDataRead.ValueType)).AppendLine(";"));
             builder.AppendLine("                        continue;");
             builder.AppendLine("                    }");
             return;

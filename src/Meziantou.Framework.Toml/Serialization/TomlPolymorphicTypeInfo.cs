@@ -226,6 +226,19 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
         var tableStartSpan = reader.CurrentSpan;
         var buffer = reader.CaptureCurrentValueToBuffer();
+        try
+        {
+            return ReadBufferedValue(buffer, tableStartSpan);
+        }
+        catch (TomlException ex) when (reader.OperationState.TryRecordErrorOfReadValue(ex))
+        {
+            // The value was read completely from the reader, so the table that contains it continues with its next value
+            throw TomlException.CreateRecordedValueError(reader.OperationState.Diagnostics!, tableStartSpan);
+        }
+    }
+
+    private TBase? ReadBufferedValue(TomlReaderBuffer buffer, TomlSourceSpan? tableStartSpan)
+    {
         if (!TryReadDiscriminator(buffer, out var discriminator, out var discriminatorSpan, out var discriminatorMetadata))
         {
             // No discriminator found - try default derived type first
@@ -281,7 +294,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         }
         else
         {
-            if (discriminatorSpan is { } span)
+            if ((discriminatorSpan ?? tableStartSpan) is { } span)
             {
                 throw new TomlException(span, $"Unknown discriminator '{discriminator}' when deserializing '{typeof(TBase).FullName}'.");
             }

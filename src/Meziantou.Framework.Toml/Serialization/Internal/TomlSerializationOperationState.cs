@@ -74,6 +74,24 @@ internal sealed class TomlSerializationOperationState
         AddDiagnostics(exception);
     }
 
+    // The error of a value that was read completely, such as a buffered polymorphic value: it is recorded, unless it already
+    // was, so the table that contains the value continues with its next value
+    public bool TryRecordErrorOfReadValue(TomlException exception)
+    {
+        if (IsRecordedValueError(exception))
+        {
+            return true;
+        }
+
+        if (exception.IsConfigurationError || !CanAddDiagnostics(exception))
+        {
+            return false;
+        }
+
+        AddDiagnostics(exception);
+        return true;
+    }
+
     public bool CanAddDiagnostics(TomlException exception)
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));

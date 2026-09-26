@@ -326,6 +326,20 @@ public class SerializationTests
         Assert.Equal("[a]\n[a.b]\nx = 1\n", TomlSerializer.Serialize(table));
     }
 
+    [Fact]
+    public void Serialize_EmptyTomlTableArray_IsWrittenAsAnEmptyArray()
+    {
+        var table = new TomlTable { ["items"] = new TomlTableArray(), ["t"] = new TomlTable { ["nested"] = new TomlTableArray() } };
+
+        var toml = TomlSerializer.Serialize(table);
+
+        Assert.Equal("items = []\n[t]\nnested = []\n", toml);
+        Assert.Equal(toml, TomlSerializer.Serialize(table, new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() }));
+        var roundtrip = TomlSerializer.Deserialize<TomlTable>(toml)!;
+        Assert.Empty((TomlArray)roundtrip["items"]);
+        Assert.Empty((TomlArray)((TomlTable)roundtrip["t"])["nested"]);
+    }
+
     private sealed class WithTable
     {
         public TomlTable Table { get; set; } = [];

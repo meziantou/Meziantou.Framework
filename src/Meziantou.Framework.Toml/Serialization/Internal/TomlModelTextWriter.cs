@@ -109,8 +109,9 @@ internal static class TomlModelTextWriter
                 var tableArrayStyle = propertyMetadata?.TableArrayStyle ?? _options.TableArrayStyle;
                 if (pair.Value is TomlTableArray tableArray)
                 {
-                    if (tableArrayStyle == TomlTableArrayStyle.InlineArrayOfTables &&
-                        IsInlineableTableArray(tableArray, depth + 1))
+                    // TOML has no header for an empty array of tables, so it is written as an empty array
+                    if (tableArray.Count == 0 || (tableArrayStyle == TomlTableArrayStyle.InlineArrayOfTables &&
+                        IsInlineableTableArray(tableArray, depth + 1)))
                     {
                         WriteTableArrayInline(pair.Key, tableArray, table.PropertiesMetadata, depth);
                         continue;
@@ -142,7 +143,7 @@ internal static class TomlModelTextWriter
             // 3) table arrays
             foreach (var pair in table)
             {
-                if (pair.Value is not TomlTableArray tableArray)
+                if (pair.Value is not TomlTableArray { Count: > 0 } tableArray)
                 {
                     continue;
                 }

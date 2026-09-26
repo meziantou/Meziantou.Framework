@@ -3550,13 +3550,22 @@ public class NewApiSourceGenerationTests
 
         var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedThrowingConstructorHolder>(Toml));
         var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextThrowingConstructor.Default.GeneratedThrowingConstructorHolder));
-        var abstractType = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<AbstractWithoutPolymorphismHolder>(Toml));
-
-        foreach (var exception in new[] { reflection, generated, abstractType })
+        foreach (var exception in new[] { reflection, generated })
         {
             Assert.Contains("Failed to create an instance", exception.Message);
             Assert.Equal(1, Assert.Single(exception.Diagnostics).Span.Start.Line);
         }
+    }
+
+    // Like an interface without metadata, an abstract type without polymorphism is an error of the model
+    [Fact]
+    public void AbstractTypeWithoutPolymorphism_IsAConfigurationError()
+    {
+        const string Toml = "\n[Inner]\nValue = -1\n";
+
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<AbstractWithoutPolymorphismHolder>(Toml, out _));
+
+        Assert.Contains("is abstract and cannot be created", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

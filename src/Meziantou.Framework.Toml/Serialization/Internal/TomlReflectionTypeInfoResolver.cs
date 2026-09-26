@@ -46,7 +46,9 @@ internal static class TomlReflectionTypeInfoResolver
         error = null;
         if (type.IsAbstract)
         {
-            // Abstract base types can participate in polymorphic graphs even though they can't be instantiated.
+            // Abstract base types can participate in polymorphic graphs even though they can't be instantiated. Without
+            // polymorphism, reading one is an error of the model, like an interface without metadata.
+            error = $"Type '{type.FullName}' is abstract and cannot be created. Configure its derived types with [TomlDerivedType].";
             return null;
         }
 

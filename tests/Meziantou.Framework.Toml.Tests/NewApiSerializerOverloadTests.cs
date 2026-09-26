@@ -186,6 +186,7 @@ public sealed class NewApiSerializerOverloadTests
     [InlineData(typeof(ConfigPopulateOnConstructorType))]
     [InlineData(typeof(ConfigDuplicateName))]
     [InlineData(typeof(ConfigThroughConverter))]
+    [InlineData(typeof(ConfigAbstractMember))]
     public void TryDeserialize_ModelConfigurationError_Throws(Type type)
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\nItems = [{ A = 1 }]\n", type, out _));
@@ -235,6 +236,16 @@ public sealed class NewApiSerializerOverloadTests
 
     private sealed class ConfigDerivedB : ConfigDuplicateDiscriminator
     {
+    }
+
+    private abstract class ConfigAbstractItem
+    {
+        public int A { get; set; }
+    }
+
+    private sealed class ConfigAbstractMember
+    {
+        public List<ConfigAbstractItem>? Items { get; set; }
     }
 
     // A converter that reads its value with the metadata of the library, where the configuration error comes from

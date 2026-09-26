@@ -89,12 +89,71 @@ public sealed class CargoTargetSettings
     public string? Opt { get; set; }
 }
 
+public sealed class SplitShapeRoot
+{
+    public SplitShape? Shape { get; set; }
+
+    public SplitSection? Other { get; set; }
+}
+
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[TomlDerivedType(typeof(SplitCircle), "circle")]
+public class SplitShape
+{
+    public SplitPoint? Center { get; set; }
+}
+
+public sealed class SplitCircle : SplitShape
+{
+    public int Radius { get; set; }
+}
+
+public sealed class SplitPoint
+{
+    public int X { get; set; }
+}
+
+public sealed class SplitSection
+{
+    public int Value { get; set; }
+}
+
+public sealed class SplitSectionsRoot
+{
+    public SplitSectionWithChild? A { get; set; }
+
+    public SplitSection? B { get; set; }
+}
+
+public sealed class SplitSectionWithChild
+{
+    public int Y { get; set; }
+
+    public SplitSection? Child { get; set; }
+}
+
+public sealed class SplitExtensionDataRoot
+{
+    public SplitSection? Other { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, object?>? Extra { get; set; }
+}
+
+public sealed record SplitRecordRoot(SplitRecordSection A, SplitSection B);
+
+public sealed record SplitRecordSection(int Y, SplitSection Child);
+
 [TomlSourceGenerationOptions(
     PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower,
     PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
 [TomlSerializable(typeof(OutOfOrderSubtableRoot))]
 [TomlSerializable(typeof(NestedTableArrayRoot))]
 [TomlSerializable(typeof(CargoManifest))]
+[TomlSerializable(typeof(SplitShapeRoot))]
+[TomlSerializable(typeof(SplitSectionsRoot))]
+[TomlSerializable(typeof(SplitExtensionDataRoot))]
+[TomlSerializable(typeof(SplitRecordRoot))]
 internal sealed partial class TestOutOfOrderSubtableContext : TomlSerializerContext
 {
 }
@@ -303,6 +362,73 @@ public class NewApiOutOfOrderSubtableTests
         var c = (TomlTable)((TomlTable)result["t"])["c"];
         Assert.Equal(1L, c["x"]);
         Assert.Equal(3L, c["y"]);
+    }
+
+    // The same naming policy as TestOutOfOrderSubtableContext
+    private static readonly TomlSerializerOptions SnakeCaseOptions = new() { PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower };
+
+    [Fact]
+    public void Polymorphic_SplitTable_KeepsDerivedTypeAndMembers()
+    {
+        const string Toml = "[shape]\ntype = \"circle\"\nradius = 2\n[other]\nvalue = 1\n[shape.center]\nx = 3\n";
+
+        AssertShape(TomlSerializer.Deserialize<SplitShapeRoot>(Toml, SnakeCaseOptions));
+        AssertShape(TomlSerializer.Deserialize(Toml, TestOutOfOrderSubtableContext.Default.SplitShapeRoot));
+
+        static void AssertShape(SplitShapeRoot? result)
+        {
+            var circle = Assert.IsType<SplitCircle>(result?.Shape);
+            Assert.Equal(2, circle.Radius);
+            Assert.Equal(3, circle.Center?.X);
+            Assert.Equal(1, result!.Other?.Value);
+        }
+    }
+
+    [Fact]
+    public void LastWins_SplitTable_KeepsAllFragments()
+    {
+        const string Toml = "[A]\nY = 1\n[B]\nValue = 2\n[A.Child]\nValue = 3\n";
+        var options = new TomlSerializerOptions { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+
+        var result = TomlSerializer.Deserialize<SplitSectionsRoot>(Toml, options);
+
+        Assert.Equal(1, result?.A?.Y);
+        Assert.Equal(3, result?.A?.Child?.Value);
+        Assert.Equal(2, result?.B?.Value);
+    }
+
+    [Fact]
+    public void ExtensionData_SplitTable_KeepsAllFragments()
+    {
+        const string Toml = "[unknown]\nx = 1\n[other]\nvalue = 2\n[unknown.sub]\ny = 3\n";
+
+        AssertExtensionData(TomlSerializer.Deserialize<SplitExtensionDataRoot>(Toml, SnakeCaseOptions));
+        AssertExtensionData(TomlSerializer.Deserialize(Toml, TestOutOfOrderSubtableContext.Default.SplitExtensionDataRoot));
+
+        static void AssertExtensionData(SplitExtensionDataRoot? result)
+        {
+            Assert.Equal(2, result?.Other?.Value);
+            var unknown = Assert.IsType<TomlTable>(result?.Extra?["unknown"]);
+            Assert.Equal(1L, unknown["x"]);
+            Assert.Equal(3L, ((TomlTable)unknown["sub"])["y"]);
+        }
+    }
+
+    [Fact]
+    public void ConstructorParameters_SplitTable_AreBound()
+    {
+        const string Toml = "[a]\ny = 1\n[b]\nvalue = 2\n[a.child]\nvalue = 3\n";
+
+        AssertRecord(TomlSerializer.Deserialize<SplitRecordRoot>(Toml, SnakeCaseOptions));
+        AssertRecord(TomlSerializer.Deserialize(Toml, TestOutOfOrderSubtableContext.Default.SplitRecordRoot));
+
+        static void AssertRecord(SplitRecordRoot? result)
+        {
+            Assert.NotNull(result);
+            Assert.Equal(1, result.A.Y);
+            Assert.Equal(3, result.A.Child.Value);
+            Assert.Equal(2, result.B.Value);
+        }
     }
 
     private static void AssertCargoManifest(CargoManifest? result)

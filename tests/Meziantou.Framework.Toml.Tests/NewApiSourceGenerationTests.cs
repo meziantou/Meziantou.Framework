@@ -1766,6 +1766,29 @@ public struct GeneratedPopulatePoint
     public int Y { get; set; }
 }
 
+public sealed class GeneratedInitExtensionDataModel : ITomlOnDeserializing
+{
+    [TomlIgnore]
+    public required string R { get; init; } = "r-init";
+
+    public required string A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public IList<int> P { get; init; } = [1];
+
+    [TomlExtensionData]
+    public Dictionary<string, object> Ext { get; init; } = [];
+
+    public string? AWhenDeserializing { get; private set; }
+
+    public void OnTomlDeserializing() => AWhenDeserializing = A;
+}
+
+[TomlSerializable(typeof(GeneratedInitExtensionDataModel))]
+internal sealed partial class TestTomlSerializerContextInitExtensionData : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedRequiredPopulateModel))]
 internal sealed partial class TestTomlSerializerContextRequiredPopulate : TomlSerializerContext
 {
@@ -3229,6 +3252,23 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Fact]
+    public void ClassWithInitExtensionData_IsCreatedWithoutAnObjectInitializer()
+    {
+        const string Toml = "A = 'a'\nP = [2]\nZ = 3\n";
+
+        var reflection = TomlSerializer.Deserialize<GeneratedInitExtensionDataModel>(Toml)!;
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextInitExtensionData.Default.GeneratedInitExtensionDataModel)!;
+
+        foreach (var value in new[] { reflection, generated })
+        {
+            Assert.Equal("r-init", value.R);
+            Assert.Equal([1, 2], value.P);
+            Assert.Equal(3L, value.Ext["Z"]);
+            Assert.Null(value.AWhenDeserializing);
+        }
     }
 
     [Fact]

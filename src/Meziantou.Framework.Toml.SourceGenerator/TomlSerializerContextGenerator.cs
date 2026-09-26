@@ -5076,7 +5076,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             named.TypeKind == TypeKind.Class &&
             constructorError is null &&
             selectedConstructor is null or { Parameters.Length: 0 } &&
-            extensionData is not { IsInitOnly: true } &&
             CanUseInitAccessor(model, named) &&
             finalMembers.All(member => !member.IsInitOnly || member.SetterAccessorName is not null || CanUseInitAccessor(model, member.DeclaringType)))
         {

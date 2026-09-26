@@ -20,7 +20,7 @@ internal static class TomlConverterHelper
             reader.SkipIfStateUnchanged(state);
             return value;
         }
-        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !IsBuiltInConverter(converter))
+        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !ex.IsConfigurationError && !IsBuiltInConverter(converter))
         {
             throw CreateReadException(reader, converter, typeToConvert, ex);
         }
@@ -42,7 +42,7 @@ internal static class TomlConverterHelper
             reader.SkipIfStateUnchanged(state);
             return value;
         }
-        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !IsBuiltInConverter(converter))
+        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !ex.IsConfigurationError && !IsBuiltInConverter(converter))
         {
             throw CreateReadException(reader, converter, typeof(T), ex);
         }

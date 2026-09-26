@@ -185,6 +185,7 @@ public sealed class NewApiSerializerOverloadTests
     [InlineData(typeof(ConfigSingleOrArrayOnInt))]
     [InlineData(typeof(ConfigPopulateOnConstructorType))]
     [InlineData(typeof(ConfigDuplicateName))]
+    [InlineData(typeof(ConfigThroughConverter))]
     public void TryDeserialize_ModelConfigurationError_Throws(Type type)
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\nItems = [{ A = 1 }]\n", type, out _));
@@ -234,6 +235,20 @@ public sealed class NewApiSerializerOverloadTests
 
     private sealed class ConfigDerivedB : ConfigDuplicateDiscriminator
     {
+    }
+
+    // A converter that reads its value with the metadata of the library, where the configuration error comes from
+    private sealed class ConfigThroughConverter
+    {
+        [TomlConverter(typeof(ConfigDelegatingConverter))]
+        public List<ConfigDuplicateName>? Items { get; set; }
+    }
+
+    private sealed class ConfigDelegatingConverter : TomlConverter<List<ConfigDuplicateName>>
+    {
+        public override List<ConfigDuplicateName>? Read(TomlReader reader) => reader.Options.GetTypeInfo<List<ConfigDuplicateName>>().Read(reader);
+
+        public override void Write(TomlWriter writer, List<ConfigDuplicateName> value) => throw new NotSupportedException();
     }
 
     private sealed class ConfigDuplicateName

@@ -531,6 +531,23 @@ public enum GeneratedStringEnumKind
     Component,
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+[Flags]
+public enum GeneratedCustomNameEnum
+{
+    None = 0,
+    [JsonStringEnumMemberName("first-value")]
+    First = 1,
+    Second = 2,
+}
+
+public sealed class GeneratedCustomNameEnumPayload
+{
+    public GeneratedCustomNameEnum One { get; set; } = GeneratedCustomNameEnum.First;
+
+    public GeneratedCustomNameEnum Both { get; set; } = GeneratedCustomNameEnum.First | GeneratedCustomNameEnum.Second;
+}
+
 public sealed class GeneratedEnumAndObjectPayload
 {
     public GeneratedEnumKind Kind { get; set; }
@@ -1057,6 +1074,7 @@ internal sealed partial class TestTomlSerializerContextTomlObject : TomlSerializ
 
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedStringEnumPayload))]
+[TomlSerializable(typeof(GeneratedCustomNameEnumPayload))]
 internal sealed partial class TestTomlSerializerContextStringEnums : TomlSerializerContext
 {
 }
@@ -2701,6 +2719,24 @@ public class NewApiSourceGenerationTests
             GeneratedStringEnumKind.Time,
             GeneratedStringEnumKind.Component,
         }, roundtrip!.Order);
+    }
+
+    [Fact]
+    public void JsonStringEnumMemberName_IsUsedForReadingAndWriting()
+    {
+        const string Expected = "one = \"first-value\"\nboth = \"first-value, Second\"\n";
+        var typeInfo = TestTomlSerializerContextStringEnums.Default.GeneratedCustomNameEnumPayload;
+        var camelCase = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
+
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedCustomNameEnumPayload(), typeInfo).ReplaceLineEndings("\n"));
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedCustomNameEnumPayload(), camelCase).ReplaceLineEndings("\n"));
+
+        const string Toml = "one = 'FIRST-VALUE'\nboth = 'Second, first-value'\n";
+        foreach (var value in new[] { TomlSerializer.Deserialize(Toml, typeInfo)!, TomlSerializer.Deserialize<GeneratedCustomNameEnumPayload>(Toml, camelCase)! })
+        {
+            Assert.Equal(GeneratedCustomNameEnum.First, value.One);
+            Assert.Equal(GeneratedCustomNameEnum.First | GeneratedCustomNameEnum.Second, value.Both);
+        }
     }
 
     // --- Feature 1: Default Derived Type (source-gen) ---

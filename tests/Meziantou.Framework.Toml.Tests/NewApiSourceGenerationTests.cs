@@ -1620,6 +1620,33 @@ public sealed class GeneratedMutualB
     public int Value { get; set; }
 }
 
+public sealed class GeneratedObsoleteModel
+{
+    [Obsolete("Use B")]
+    public int Old { get; set; }
+
+    [Obsolete("Use B", error: true)]
+    public int OldError { get; set; }
+
+    public int B { get; set; }
+}
+
+public sealed class GeneratedObsoleteConstructor
+{
+    [Obsolete("Use the factory", error: true)]
+    public GeneratedObsoleteConstructor()
+    {
+    }
+
+    public int B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedObsoleteModel))]
+[TomlSerializable(typeof(GeneratedObsoleteConstructor))]
+internal sealed partial class TestTomlSerializerContextObsolete : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedRecursiveNode))]
 [TomlSerializable(typeof(GeneratedMutualA))]
 internal sealed partial class TestTomlSerializerContextRecursive : TomlSerializerContext
@@ -3131,6 +3158,19 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Point.X);
             Assert.Equal(5, value.Point.Y);
         }
+    }
+
+    [Fact]
+    public void ObsoleteMembersAndConstructors_AreSerialized()
+    {
+        const string Toml = "Old = 1\nOldError = 2\nB = 3\n";
+
+        var value = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextObsolete.Default.GeneratedObsoleteModel)!;
+        var created = TomlSerializer.Deserialize("B = 4", TestTomlSerializerContextObsolete.Default.GeneratedObsoleteConstructor)!;
+
+        Assert.Equal(Toml, TomlSerializer.Serialize(value, TestTomlSerializerContextObsolete.Default.GeneratedObsoleteModel).ReplaceLineEndings("\n"));
+        Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedObsoleteModel>(Toml)!).ReplaceLineEndings("\n"));
+        Assert.Equal(4, created.B);
     }
 
     [Fact]

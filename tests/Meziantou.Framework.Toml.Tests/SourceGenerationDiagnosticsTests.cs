@@ -951,6 +951,43 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_ObsoleteAndExperimentalModel_CompilesWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [Experimental("MYEXP001")]
+            public sealed class ExperimentalType { public int A { get; set; } }
+
+            public sealed class M
+            {
+                [Obsolete("gone")] public int Old { get; set; }
+                [Obsolete("gone", error: true)] public int OldError { get; set; }
+            #pragma warning disable MYEXP001
+                public ExperimentalType? E { get; set; }
+            #pragma warning restore MYEXP001
+            }
+
+            public sealed class ObsoleteConstructor
+            {
+                [Obsolete("x", error: true)] public ObsoleteConstructor() { }
+                public int B { get; set; }
+            }
+
+            [TomlSerializable(typeof(M))]
+            [TomlSerializable(typeof(ObsoleteConstructor))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
     public void Generator_PrivateTypeNextToANestedContext_Compiles()
     {
         var source = """

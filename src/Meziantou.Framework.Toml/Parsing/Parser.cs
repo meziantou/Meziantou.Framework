@@ -516,8 +516,9 @@ internal partial class Parser
             table.Name = ParseKey(isTableHeader: true, out var tableDepth);
             if (isTableArray)
             {
-                // The element of the array of tables is a table too
-                tableDepth = IncrementDepth(tableDepth, 1);
+                // The element of the array of tables is a table too. Like TomlParser, its error is reported on the last segment.
+                var lastSegment = table.Name.DotKeys.ChildrenCount > 0 ? table.Name.DotKeys.GetChild(table.Name.DotKeys.ChildrenCount - 1)!.Key : table.Name.Key;
+                tableDepth = IncrementDepth(tableDepth, 1, lastSegment);
                 AddTableArrayPath(table.Name);
             }
 

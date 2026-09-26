@@ -214,6 +214,8 @@ public sealed class MaxDepthTests
     [InlineData("a.b.c = 1\n", 2)]
     [InlineData("[a.b.c]\n", 2)]
     [InlineData("[[a]]\n[[a.b]]\n", 3)]
+    [InlineData("[[a.b]]\n", 3)]
+    [InlineData("[[a]]\n", 2)]
     [InlineData("x = {a.b.c = 1}\n", 3)]
     public void SyntaxParser_ReportsDepthErrorsWhereTheDeserializerDoes(string toml, int maxDepth)
     {

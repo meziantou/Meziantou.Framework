@@ -135,9 +135,33 @@ internal static class TomlReflectionTypeInfoResolver
             other.DeclaringType!.IsSubclassOf(member.DeclaringType!)));
     }
 
+    // Type.GetProperties and Type.GetFields do not return the private members of the base types, which [TomlInclude] can
+    // select, as in generated code
+    private static PropertyInfo[] GetInstanceProperties(Type type)
+    {
+        var properties = new List<PropertyInfo>();
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            properties.AddRange(current.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
+        }
+
+        return RemoveHiddenMembers(properties.ToArray());
+    }
+
+    private static FieldInfo[] GetInstanceFields(Type type)
+    {
+        var fields = new List<FieldInfo>();
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            fields.AddRange(current.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly));
+        }
+
+        return RemoveHiddenMembers(fields.ToArray());
+    }
+
     private static List<MemberModel> CollectMembers(Type type, TomlSerializerOptions options, TomlMappingOrderPolicy mappingOrder, bool honorRequiredModifier)
     {
-        var properties = RemoveHiddenMembers(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+        var properties = GetInstanceProperties(type);
         var members = new List<MemberModel>(properties.Length);
         var typeObjectCreationHandling = GetObjectCreationHandling(type, options);
         var nullabilityContext = CreateNullabilityContext(options);
@@ -201,7 +225,7 @@ internal static class TomlReflectionTypeInfoResolver
                 DisallowNullOnDeserialize: DisallowNull(property.PropertyType, nullabilityContext?.Create(property).WriteState)));
         }
 
-        var fields = RemoveHiddenMembers(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+        var fields = GetInstanceFields(type);
         foreach (var field in fields)
         {
             if (!HasIncludeAttribute(field) && !(options.IncludeFields && field.IsPublic))

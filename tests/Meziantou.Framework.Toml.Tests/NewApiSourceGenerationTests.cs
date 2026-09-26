@@ -337,6 +337,26 @@ public sealed class GeneratedIncludedNonPublicSetterPayload
     public int GetPrivateProperty() => PrivateProperty;
 }
 
+public class GeneratedIncludedPrivateBaseMembers
+{
+    [TomlInclude]
+    private int BaseProperty { get; set; } = 1;
+
+    [TomlInclude]
+#pragma warning disable IDE0044 // Set by the serializer
+    private int _baseField = 2;
+#pragma warning restore IDE0044
+
+    public int GetBaseProperty() => BaseProperty;
+
+    public int GetBaseField() => _baseField;
+}
+
+public sealed class GeneratedIncludedPrivateBaseMembersDerived : GeneratedIncludedPrivateBaseMembers
+{
+    public int Derived { get; set; } = 3;
+}
+
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
 public struct GeneratedIncludedNonPublicSetterStruct
 {
@@ -642,6 +662,7 @@ internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : 
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterPayload))]
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterStruct))]
 [TomlSerializable(typeof(GeneratedIncludedConstructorPayload))]
+[TomlSerializable(typeof(GeneratedIncludedPrivateBaseMembersDerived))]
 internal sealed partial class TestTomlSerializerContextNonPublicSetters : TomlSerializerContext
 {
 }
@@ -2355,6 +2376,25 @@ public class NewApiSourceGenerationTests
         Assert.DoesNotContain("type", toml);
         Assert.Contains("color = \"red\"", toml);
         Assert.Contains("radius = 5", toml);
+    }
+
+    [Fact]
+    public void IncludedPrivateMembersOfTheBaseType_AreSerializedByBothPaths()
+    {
+        var typeInfo = TestTomlSerializerContextNonPublicSetters.Default.GeneratedIncludedPrivateBaseMembersDerived;
+
+        var reflection = TomlSerializer.Serialize(new GeneratedIncludedPrivateBaseMembersDerived());
+        var generated = TomlSerializer.Serialize(new GeneratedIncludedPrivateBaseMembersDerived(), typeInfo);
+
+        Assert.Equal("_baseField = 2\nBaseProperty = 1\nDerived = 3\n", reflection);
+        Assert.Equal(reflection, generated);
+        const string Toml = "_baseField = 20\nBaseProperty = 10\nDerived = 30\n";
+        foreach (var value in new[] { TomlSerializer.Deserialize<GeneratedIncludedPrivateBaseMembersDerived>(Toml)!, TomlSerializer.Deserialize(Toml, typeInfo)! })
+        {
+            Assert.Equal(10, value.GetBaseProperty());
+            Assert.Equal(20, value.GetBaseField());
+            Assert.Equal(30, value.Derived);
+        }
     }
 
     [Fact]

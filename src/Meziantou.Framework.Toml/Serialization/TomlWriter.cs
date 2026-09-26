@@ -298,6 +298,12 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
+    // Writes the decimal as a TOML float without going through double, which would lose digits
+    internal void WriteDecimalValue(decimal value)
+    {
+        WriteValue(value);
+    }
+
     /// <summary>
     /// Writes a boolean value.
     /// </summary>

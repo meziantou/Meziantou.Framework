@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
@@ -689,6 +690,7 @@ public sealed class TomlReader
     /// <summary>
     /// Gets the current floating value as decimal.
     /// </summary>
+    /// <exception cref="TomlException">The value is not a number, or is outside the range of <see cref="decimal"/>.</exception>
     public decimal GetDecimal()
     {
         if (_tokenType != TomlTokenType.Float && _tokenType != TomlTokenType.Integer)
@@ -701,7 +703,14 @@ public sealed class TomlReader
             return GetInt64();
         }
 
-        return (decimal)GetDouble();
+        // Parse the literal rather than the double, which would lose digits
+        var text = GetRawText();
+        if (decimal.TryParse(text.Replace("_", "", StringComparison.Ordinal), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            return value;
+        }
+
+        throw CreateException($"TOML float literal `{text}` cannot be converted to decimal.");
     }
 
     /// <summary>

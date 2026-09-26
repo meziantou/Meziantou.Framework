@@ -25,26 +25,13 @@ internal sealed class TomlDecimalConverter : TomlConverter<decimal>
             return integer;
         }
 
-        var raw = reader.GetDouble();
-        if (double.IsNaN(raw) || double.IsInfinity(raw))
-        {
-            throw reader.CreateException($"TOML float literal `{reader.GetRawText()}` cannot be converted to decimal.");
-        }
-
-        try
-        {
-            var value = (decimal)raw;
-            reader.Read();
-            return value;
-        }
-        catch (OverflowException)
-        {
-            throw reader.CreateException($"TOML numeric value {raw} is out of range.");
-        }
+        var value = reader.GetDecimal();
+        reader.Read();
+        return value;
     }
 
     public override void Write(TomlWriter writer, decimal value)
     {
-        writer.WriteFloatValue((double)value);
+        writer.WriteDecimalValue(value);
     }
 }

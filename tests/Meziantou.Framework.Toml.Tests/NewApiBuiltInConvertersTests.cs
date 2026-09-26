@@ -158,4 +158,45 @@ public sealed class NewApiBuiltInConvertersTests
         Assert.NotNull(model);
         Assert.Equal(new TimeOnly(7, 32, 0), model!.Time);
     }
+
+    [Theory]
+    [InlineData("0.1234567890123456789")]
+    [InlineData("79228162514264337593543950335")]
+    [InlineData("-79228162514264337593543950335")]
+    [InlineData("12345678.901234567")]
+    [InlineData("1.0")]
+    public void Decimal_RoundtripsWithoutLosingDigits(string text)
+    {
+        var value = decimal.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
+
+        var toml = TomlSerializer.Serialize(new DecimalModel { D = value });
+
+        Assert.Equal(value, TomlSerializer.Deserialize<DecimalModel>(toml)!.D);
+        var literal = text.Contains('.', StringComparison.Ordinal) ? text : text + ".0";
+        Assert.Equal(value, TomlSerializer.Deserialize<DecimalModel>("D = " + literal + "\n")!.D);
+    }
+
+    [Fact]
+    public void Decimal_ReadsLiteralWithUnderscoresAndExponent()
+    {
+        Assert.Equal(1000.0001m, TomlSerializer.Deserialize<DecimalModel>("D = 1_000.000_1\n")!.D);
+        Assert.Equal(12500m, TomlSerializer.Deserialize<DecimalModel>("D = 1.25e4\n")!.D);
+    }
+
+    [Theory]
+    [InlineData("1e300")]
+    [InlineData("nan")]
+    [InlineData("-inf")]
+    public void Decimal_OutOfRange_ThrowsTomlException(string literal)
+    {
+        var toml = "D = " + literal + "\n";
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<DecimalModel>(toml));
+        Assert.False(TomlSerializer.TryDeserialize<DecimalModel>(toml, out _));
+    }
+
+    private sealed class DecimalModel
+    {
+        public decimal D { get; set; }
+    }
 }

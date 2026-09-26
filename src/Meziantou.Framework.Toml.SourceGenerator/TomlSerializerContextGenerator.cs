@@ -4018,8 +4018,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, writeIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes)
             {
                 OwnerTypeName = ownerTypeName,
-                DisallowNullOnSerialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, MaybeNullAttributeMetadataName),
-                DisallowNullOnDeserialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, AllowNullAttributeMetadataName),
+                DisallowNullOnSerialize = respectNullableAnnotations && DisallowsNull(member, member.OriginalDefinition.Type, MaybeNullAttributeMetadataName, NotNullAttributeMetadataName),
+                DisallowNullOnDeserialize = respectNullableAnnotations && DisallowsNull(member, member.OriginalDefinition.Type, AllowNullAttributeMetadataName, DisallowNullAttributeMetadataName),
                 Converter = declaredConverter,
                 ConverterTypeInfoName = declaredConverter is null ? null : "MemberConverterTypeInfo" + members.Count.ToString(CultureInfo.InvariantCulture),
                 SetterAccessorName = setterAccessorName,
@@ -4128,8 +4128,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, fieldWriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, member.IsRequired, canSet, isInitOnly: false, isField: true, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes)
             {
                 OwnerTypeName = ownerTypeName,
-                DisallowNullOnSerialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, MaybeNullAttributeMetadataName),
-                DisallowNullOnDeserialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, AllowNullAttributeMetadataName),
+                DisallowNullOnSerialize = respectNullableAnnotations && DisallowsNull(member, member.OriginalDefinition.Type, MaybeNullAttributeMetadataName, NotNullAttributeMetadataName),
+                DisallowNullOnDeserialize = respectNullableAnnotations && DisallowsNull(member, member.OriginalDefinition.Type, AllowNullAttributeMetadataName, DisallowNullAttributeMetadataName),
                 Converter = declaredConverter,
                 ConverterTypeInfoName = declaredConverter is null ? null : "MemberConverterTypeInfo" + members.Count.ToString(CultureInfo.InvariantCulture),
                 SetterAccessorName = setterAccessorName,
@@ -4192,7 +4192,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         hasDefaultValue = false;
                     }
 
-                    var parameterDisallowNull = respectNullableAnnotations && IsNonNullableReferenceType(parameter.Type) && !HasAttribute(parameter, AllowNullAttributeMetadataName);
+                    var parameterDisallowNull = respectNullableAnnotations && DisallowsNull(parameter, parameter.OriginalDefinition.Type, AllowNullAttributeMetadataName, DisallowNullAttributeMetadataName);
                     parameters.Add(new PocoConstructorParameter(keyName, parameterName, parameter.Type, hasDefaultValue, defaultValueExpression, linkedMemberIndex, parameterDisallowNull)
                     {
                         ConverterTypeInfoName = linkedMemberIndex >= 0 ? membersSoFar[linkedMemberIndex].ConverterTypeInfoName : null,
@@ -5770,6 +5770,35 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private const string AllowNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.AllowNullAttribute";
     private const string MaybeNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.MaybeNullAttribute";
+    private const string NotNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.NotNullAttribute";
+    private const string DisallowNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.DisallowNullAttribute";
+
+    // Whether null is rejected, like NullabilityInfoContext in the reflection resolver: the declared type of the member
+    // decides (a type parameter is nullable unless it has a class constraint), and the attributes override it
+    private static bool DisallowsNull(ISymbol symbol, ITypeSymbol declaredType, string allowAttributeMetadataName, string disallowAttributeMetadataName)
+    {
+        if (declaredType.IsValueType)
+        {
+            return false;
+        }
+
+        if (HasAttribute(symbol, disallowAttributeMetadataName))
+        {
+            return true;
+        }
+
+        if (HasAttribute(symbol, allowAttributeMetadataName))
+        {
+            return false;
+        }
+
+        if (declaredType is ITypeParameterSymbol typeParameter)
+        {
+            return typeParameter.HasReferenceTypeConstraint && typeParameter.ReferenceTypeConstraintNullableAnnotation != NullableAnnotation.Annotated;
+        }
+
+        return IsNonNullableReferenceType(declaredType);
+    }
 
     // Only reference types annotated as non-nullable are enforced, like the reflection resolver
     private static bool IsNonNullableReferenceType(ITypeSymbol type)

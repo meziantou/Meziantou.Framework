@@ -410,6 +410,30 @@ internal sealed partial class TestTomlSerializerContextMemberOrder : TomlSeriali
 {
 }
 
+public sealed class GeneratedNullableGeneric<T>
+{
+    public T Value { get; set; } = default!;
+}
+
+public sealed class GeneratedClassConstrainedGeneric<T>
+    where T : class
+{
+    public T Value { get; set; } = default!;
+}
+
+public sealed class GeneratedNullabilityAttributes
+{
+    [System.Diagnostics.CodeAnalysis.NotNull]
+    public string? NotNullValue { get; set; } = "a";
+}
+
+[TomlSerializable(typeof(GeneratedNullableGeneric<string>))]
+[TomlSerializable(typeof(GeneratedClassConstrainedGeneric<string>))]
+[TomlSerializable(typeof(GeneratedNullabilityAttributes))]
+internal sealed partial class TestTomlSerializerContextGenericNullability : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedBraceNameModel
 {
     [TomlRequired]
@@ -1839,6 +1863,21 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal(value, TomlSerializer.Deserialize(toml, typeInfo));
         Assert.Contains("class = \"a\"", toml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Nullability_OfGenericAndAttributedMembers_IsTheSameInBothPaths()
+    {
+        var context = TestTomlSerializerContextGenericNullability.Default;
+
+        // An unconstrained type parameter is nullable
+        Assert.Equal(TomlSerializer.Serialize(new GeneratedNullableGeneric<string>()), TomlSerializer.Serialize(new GeneratedNullableGeneric<string>(), context.GeneratedNullableGenericString));
+
+        // A class constraint and [NotNull] make the member non-nullable
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedClassConstrainedGeneric<string>()));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedClassConstrainedGeneric<string>(), context.GeneratedClassConstrainedGenericString));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedNullabilityAttributes { NotNullValue = null }));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedNullabilityAttributes { NotNullValue = null }, context.GeneratedNullabilityAttributes));
     }
 
     [Fact]

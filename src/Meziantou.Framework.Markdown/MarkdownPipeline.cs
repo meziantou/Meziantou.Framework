@@ -120,12 +120,14 @@ public sealed class MarkdownPipeline
             TextWriter writer = _customWriter ? DummyWriter : new FastStringWriter();
             var renderer = new HtmlRenderer(writer);
             _pipeline.Setup(renderer);
+            renderer.SaveInitialSettings();
             return renderer;
         }
 
         protected override void Reset(HtmlRenderer instance)
         {
             instance.ResetInternal();
+            instance.RestoreInitialSettings();
 
             if (_customWriter)
             {

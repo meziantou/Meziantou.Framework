@@ -98,6 +98,31 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
     /// </summary>
     public Func<string, string>? LinkRewriter { get; set; }
 
+    private HtmlRendererSettings? _initialSettings;
+
+    // Renderers change these values while they render a node and restore them afterwards, but not when an exception
+    // is thrown. A pooled renderer saves the values set up by the pipeline, and restores them when it is returned.
+    internal void SaveInitialSettings()
+    {
+        _initialSettings = new HtmlRendererSettings(EnableHtmlForInline, EnableHtmlForBlock, EnableHtmlEscape, ImplicitParagraph, UseNonAsciiNoEscape, BaseUrl, LinkRewriter);
+    }
+
+    internal void RestoreInitialSettings()
+    {
+        if (_initialSettings is { } settings)
+        {
+            EnableHtmlForInline = settings.EnableHtmlForInline;
+            EnableHtmlForBlock = settings.EnableHtmlForBlock;
+            EnableHtmlEscape = settings.EnableHtmlEscape;
+            ImplicitParagraph = settings.ImplicitParagraph;
+            UseNonAsciiNoEscape = settings.UseNonAsciiNoEscape;
+            BaseUrl = settings.BaseUrl;
+            LinkRewriter = settings.LinkRewriter;
+        }
+    }
+
+    private sealed record HtmlRendererSettings(bool EnableHtmlForInline, bool EnableHtmlForBlock, bool EnableHtmlEscape, bool ImplicitParagraph, bool UseNonAsciiNoEscape, Uri? BaseUrl, Func<string, string>? LinkRewriter);
+
     /// <summary>
     /// Writes the content escaped for HTML.
     /// </summary>

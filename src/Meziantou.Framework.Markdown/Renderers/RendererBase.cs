@@ -97,6 +97,14 @@ public abstract class RendererBase : IMarkdownRenderer
     /// </summary>
     public bool IsLastInContainer { get; private set; }
 
+    // A rendering that throws leaves these values in an intermediate state
+    internal void ResetRenderingState()
+    {
+        _childrenDepth = 0;
+        IsFirstInContainer = false;
+        IsLastInContainer = false;
+    }
+
     /// <summary>
     /// Gets or sets the maximum nesting depth allowed while rendering Markdown objects.
     /// </summary>

@@ -96,6 +96,70 @@ public class MiscTests
     }
 
     [Fact]
+    public void PooledRendererIsRestoredAfterAnExceptionInCustomWriter()
+    {
+        const string Markdown = "- a\n- ![alt *x*](i.png)\n\n> - q\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\nend";
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+        var expected = MarkdownConverter.ToHtml(Markdown, pipeline);
+
+        for (var length = 0; length < expected.Length; length++)
+        {
+            Assert.Throws<IOException>(() => MarkdownConverter.ToHtml(Markdown, new ThrowingWriter(length), pipeline));
+
+            using var writer = new StringWriter();
+            MarkdownConverter.ToHtml(Markdown, writer, pipeline);
+            Assert.Equal(expected, writer.ToString(), message: $"Output after a failure at character {length}");
+        }
+    }
+
+    [Fact]
+    public void PooledRendererIsRestoredAfterAnExceptionInRenderer()
+    {
+        var deepList = string.Concat(Enumerable.Range(0, 200).Select(i => new string(' ', i * 2) + "- a\n"));
+        var deepPipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = 1000 }.Build();
+        var document = MarkdownConverter.Parse(deepList, deepPipeline);
+
+        var pipeline = new MarkdownPipelineBuilder().Build();
+        Assert.Throws<ArgumentException>(() => document.ToHtml(pipeline));
+
+        Assert.Equal("<p>hello</p>\n<blockquote>\n<p>quote</p>\n</blockquote>\n", MarkdownConverter.ToHtml("hello\n\n> quote", pipeline));
+    }
+
+    private sealed class ThrowingWriter(int maxLength) : StringWriter
+    {
+        private int _length;
+
+        public override void Write(char value)
+        {
+            if (_length++ >= maxLength)
+                throw new IOException("The writer is closed");
+
+            base.Write(value);
+        }
+
+        public override void Write(char[] buffer, int index, int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                Write(buffer[index + i]);
+            }
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            foreach (var c in buffer)
+            {
+                Write(c);
+            }
+        }
+
+        public override void Write(string? value)
+        {
+            Write(value.AsSpan());
+        }
+    }
+
+    [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {
         var markdown = "Krankenhaus\nD. " + string.Join(" ", Enumerable.Repeat("M.", 160));

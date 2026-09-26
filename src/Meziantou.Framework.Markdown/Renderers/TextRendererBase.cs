@@ -149,7 +149,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
 
     internal void ResetInternal()
     {
-        _childrenDepth = 0;
+        ResetRenderingState();
         PreviousWasLine = true;
         _indents.Clear();
     }

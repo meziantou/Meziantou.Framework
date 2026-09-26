@@ -507,6 +507,19 @@ internal static class TomlReflectionTypeInfoResolver
         return new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: null);
     }
 
+    // The default value of an enum parameter is stored as its underlying integer, which cannot be passed for a nullable enum
+    private static object? GetParameterDefaultValue(ParameterInfo parameter)
+    {
+        if (!parameter.HasDefaultValue)
+        {
+            return null;
+        }
+
+        var value = parameter.DefaultValue;
+        var type = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
+        return value is not null && type.IsEnum && value.GetType() != type ? Enum.ToObject(type, value) : value;
+    }
+
     private static object? GetDefaultValue(Type type)
     {
         if (!type.IsValueType)
@@ -810,7 +823,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     var fallback = $"arg{i}";
                     _parameterIndexByName.Add(fallback, i);
-                    _parameters[i] = new ParameterBinding(fallback, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, MemberIndex: null, fallback, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
+                    _parameters[i] = new ParameterBinding(fallback, parameter.ParameterType, parameter.HasDefaultValue, GetParameterDefaultValue(parameter), MemberIndex: null, fallback, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
                     continue;
                 }
 
@@ -825,7 +838,7 @@ internal static class TomlReflectionTypeInfoResolver
                 }
 
                 _parameterIndexByName.Add(keyName, i);
-                _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
+                _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, GetParameterDefaultValue(parameter), memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
             }
         }
 

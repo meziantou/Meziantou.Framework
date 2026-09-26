@@ -5534,34 +5534,31 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return false;
         }
 
+        // The value of a nullable parameter is the value of its underlying type, which converts to the nullable type
+        if (TryGetNullableUnderlyingType(type, out var nullableUnderlyingType))
+        {
+            return TryGetDefaultValueExpression(nullableUnderlyingType, value, out expression);
+        }
+
         if (type.TypeKind == TypeKind.Enum)
         {
+            // The value is in parentheses: (T)-1 would be a subtraction
             var enumTypeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (value is int i32)
+            string? literal = value switch
             {
-                expression = $"({enumTypeName}){i32.ToString(CultureInfo.InvariantCulture)}";
-                return true;
+                sbyte or byte or short or ushort or int => Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
+                uint u32 => u32.ToString(CultureInfo.InvariantCulture) + "U",
+                long i64 => i64.ToString(CultureInfo.InvariantCulture) + "L",
+                ulong u64 => u64.ToString(CultureInfo.InvariantCulture) + "UL",
+                _ => null,
+            };
+            if (literal is null)
+            {
+                return false;
             }
 
-            if (value is byte b)
-            {
-                expression = $"({enumTypeName}){b.ToString(CultureInfo.InvariantCulture)}";
-                return true;
-            }
-
-            if (value is short i16)
-            {
-                expression = $"({enumTypeName}){i16.ToString(CultureInfo.InvariantCulture)}";
-                return true;
-            }
-
-            if (value is long i64)
-            {
-                expression = $"({enumTypeName}){i64.ToString(CultureInfo.InvariantCulture)}L";
-                return true;
-            }
-
-            return false;
+            expression = $"({enumTypeName})({literal})";
+            return true;
         }
 
         if (type.SpecialType == SpecialType.System_String && value is string s)

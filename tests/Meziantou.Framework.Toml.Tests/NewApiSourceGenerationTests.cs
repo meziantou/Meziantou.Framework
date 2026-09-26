@@ -1104,6 +1104,15 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+public enum GeneratedDefaultColor
+{
+    Negative = -1,
+    Red,
+    Green,
+}
+
+public sealed record GeneratedDefaultValues(string Name, GeneratedDefaultColor? Color = GeneratedDefaultColor.Green, GeneratedDefaultColor Negative = GeneratedDefaultColor.Negative, int? Count = 5);
+
 public sealed class GeneratedAmbiguousConstructors
 {
     public GeneratedAmbiguousConstructors(int value) => Value = value;
@@ -1124,6 +1133,7 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedDefaultValues))]
 [TomlSerializable(typeof(GeneratedReorderedPerson))]
 [TomlSerializable(typeof(GeneratedAmbiguousConstructors))]
 [TomlSerializable(typeof(GeneratedMultipleAnnotatedConstructors))]
@@ -1316,6 +1326,15 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void ConstructorDefaultValues_OfNullableAndEnumParameters_AreUsed()
+    {
+        var expected = new GeneratedDefaultValues("a");
+
+        Assert.Equal(expected, TomlSerializer.Deserialize<GeneratedDefaultValues>("Name = \"a\"\n"));
+        Assert.Equal(expected, TomlSerializer.Deserialize("Name = \"a\"\n", TestTomlSerializerContextSingleConstruction.Default.GeneratedDefaultValues));
+    }
+
     [Fact]
     public void DefaultMappingOrder_HonorsPropertyOrderAttributes()
     {

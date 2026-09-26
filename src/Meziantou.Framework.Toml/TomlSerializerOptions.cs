@@ -168,8 +168,12 @@ public sealed record TomlSerializerOptions
         init => field = value ?? throw new ArgumentNullException(nameof(value));
     } = new();
 
-    /// <summary>Gets or sets a value indicating whether output should be indented.</summary>
-    public bool WriteIndented { get; init; } = true;
+    /// <summary>Gets or sets a value indicating whether nested tables are indented.</summary>
+    /// <remarks>
+    /// The header of a table and its key/value pairs are indented by <see cref="IndentSize"/> spaces for each table they are
+    /// nested in: <c>[a]</c> is not indented, and <c>[a.b]</c> is indented once. The default is <see langword="false"/>.
+    /// </remarks>
+    public bool WriteIndented { get; init; }
 
     /// <summary>
     /// Gets or sets the number of spaces to use when <see cref="WriteIndented"/> is enabled.

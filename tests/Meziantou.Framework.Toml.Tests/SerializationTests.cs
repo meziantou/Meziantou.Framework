@@ -277,6 +277,55 @@ public class SerializationTests
         public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
     }
 
+    [Fact]
+    public void Serialize_WriteIndented_IndentsNestedTables()
+    {
+        var table = new TomlTable
+        {
+            ["title"] = "x",
+            ["a"] = new TomlTable
+            {
+                ["k"] = 1L,
+                ["b"] = new TomlTable { ["text"] = "line1\nline2", ["c"] = new TomlTable { ["x"] = new TomlArray { 1L, 2L } } },
+                ["items"] = new TomlTableArray { new TomlTable { ["n"] = 1L }, new TomlTable { ["n"] = 2L } },
+            },
+        };
+        var options = new TomlSerializerOptions { WriteIndented = true, IndentSize = 4, MetadataStore = new TomlMetadataStore() };
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("text", new TomlPropertyMetadata { DisplayKind = TomlPropertyDisplayKind.StringMulti });
+        options.MetadataStore!.SetProperties((TomlTable)((TomlTable)table["a"])["b"], metadata);
+
+        var toml = TomlSerializer.Serialize(table, options);
+
+        Assert.Equal(""""
+            title = "x"
+            [a]
+            k = 1
+                [a.b]
+                text = """
+            line1
+            line2"""
+                    [a.b.c]
+                    x = [1, 2]
+                [[a.items]]
+                n = 1
+
+                [[a.items]]
+                n = 2
+
+            """".ReplaceLineEndings("\n"), toml);
+        Assert.True(System.Text.Json.Nodes.JsonNode.DeepEquals(ModelHelper.ToJson(table), ModelHelper.ToJson(TomlSerializer.Deserialize<TomlTable>(toml))));
+    }
+
+    [Fact]
+    public void Serialize_WriteIndentedIsFalseByDefault()
+    {
+        var table = new TomlTable { ["a"] = new TomlTable { ["b"] = new TomlTable { ["x"] = 1L } } };
+
+        Assert.False(TomlSerializerOptions.Default.WriteIndented);
+        Assert.Equal("[a]\n[a.b]\nx = 1\n", TomlSerializer.Serialize(table));
+    }
+
     private sealed class WithTable
     {
         public TomlTable Table { get; set; } = [];

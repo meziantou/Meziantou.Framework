@@ -79,6 +79,8 @@ internal static class TomlModelTextWriter
         private readonly TomlSerializerOptions _options;
         private readonly int _effectiveMaxDepth;
         private readonly string _newLine;
+        private readonly int _indentSize;
+        private string _indent = string.Empty;
 
         public State(TextWriter writer, TomlSerializerOptions options)
         {
@@ -86,11 +88,15 @@ internal static class TomlModelTextWriter
             _options = options;
             _effectiveMaxDepth = TomlDepthHelper.GetEffectiveMaxDepth(options.MaxDepth);
             _newLine = options.NewLine == TomlNewLineKind.CrLf ? "\r\n" : "\n";
+            _indentSize = options.WriteIndented ? options.IndentSize : 0;
         }
 
         public void WriteTableBody(TomlTable table, List<string> path, HeaderKind headerKind, int depth)
         {
             ValidateDepth(depth);
+
+            // The header of a table and its entries are indented once per table they are nested in, like [a], then [a.b]
+            _indent = _indentSize == 0 || path.Count <= 1 ? string.Empty : new string(' ', _indentSize * (path.Count - 1));
             if (headerKind != HeaderKind.None)
             {
                 WriteHeader(path, headerKind, table.PropertiesMetadata);
@@ -173,6 +179,7 @@ internal static class TomlModelTextWriter
         {
             WriteLeadingTrivia(table.PropertiesMetadata, key);
 
+            _writer.Write(_indent);
             WriteKey(key);
             _writer.Write(" = ");
 
@@ -256,6 +263,7 @@ internal static class TomlModelTextWriter
         private void WriteTableArrayInline(string key, TomlTableArray tableArray, TomlPropertiesMetadata? metadata, int depth)
         {
             WriteLeadingTrivia(metadata, key);
+            _writer.Write(_indent);
             WriteKey(key);
             _writer.Write(" = ");
 
@@ -281,6 +289,7 @@ internal static class TomlModelTextWriter
             var name = path[path.Count - 1];
             WriteLeadingTrivia(metadata, name);
 
+            _writer.Write(_indent);
             if (kind == HeaderKind.TableArrayElement)
             {
                 _writer.Write("[[");

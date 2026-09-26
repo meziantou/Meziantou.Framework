@@ -171,7 +171,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `RespectRequiredConstructorParameters` | `true` | A constructor parameter without a default value must be present. When `false`, it receives the default value of its type. |
 | `RespectNullableAnnotations` | `true` | Rejects `null` in members and constructor parameters declared as non-nullable reference types, when reading and writing. The check applies before `DefaultIgnoreCondition`, so such a member throws instead of being skipped. |
 | `MaxDepth` | `0` (64) | Maximum nesting depth of tables and arrays. With a larger value, a document nested deeper than the stack of the current thread allows throws `TomlException` instead of overflowing the stack. |
-| `WriteIndented` | `true` | Indents nested tables. |
+| `WriteIndented` | `false` | Indents the header and the key/value pairs of a table once for each table it is nested in. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
 | `NewLine` | `Lf` | Line ending style (`Lf` or `CrLf`). |
 | `MappingOrder` | `Declaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. |

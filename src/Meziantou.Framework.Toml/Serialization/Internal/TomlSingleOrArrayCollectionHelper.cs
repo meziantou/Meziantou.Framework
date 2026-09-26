@@ -124,7 +124,7 @@ internal sealed class TomlSingleOrArrayCollectionHelper
     private CollectionHandler GetRequiredHandler(Type collectionType)
     {
         return GetHandler(collectionType)
-            ?? throw new TomlException($"Type '{collectionType.FullName}' does not support [TomlSingleOrArray].");
+            ?? throw TomlException.CreateConfigurationError($"Type '{collectionType.FullName}' does not support [TomlSingleOrArray].");
     }
 
     [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]

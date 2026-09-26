@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -173,6 +174,70 @@ public sealed class NewApiSerializerOverloadTests
     public void TryDeserialize_TypeMissingFromTheContext_Throws()
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<NotInContext>(SampleToml, TestTomlSerializerContext.Default, out _));
+    }
+
+    [Theory]
+    [InlineData(typeof(ConfigMemberConverter))]
+    [InlineData(typeof(ConfigTwoConstructors))]
+    [InlineData(typeof(ConfigStringStyleOnInt))]
+    [InlineData(typeof(ConfigTwoExtensionData))]
+    [InlineData(typeof(ConfigDuplicateDiscriminator))]
+    [InlineData(typeof(ConfigSingleOrArrayOnInt))]
+    public void TryDeserialize_ModelConfigurationError_Throws(Type type)
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\nItems = [{ A = 1 }]\n", type, out _));
+    }
+
+    private sealed class ConfigMemberConverter
+    {
+        [TomlConverter(typeof(string))]
+        public int A { get; set; }
+    }
+
+    private sealed class ConfigTwoConstructors
+    {
+        public ConfigTwoConstructors(int a) => A = a;
+
+        public ConfigTwoConstructors(string a) => A = a.Length;
+
+        public int A { get; }
+    }
+
+    private sealed class ConfigStringStyleOnInt
+    {
+        [TomlStringStyle(TomlStringStyle.Literal)]
+        public int A { get; set; }
+    }
+
+    private sealed class ConfigTwoExtensionData
+    {
+        [TomlExtensionData]
+        public Dictionary<string, object>? First { get; set; }
+
+        [TomlExtensionData]
+        public Dictionary<string, object>? Second { get; set; }
+    }
+
+    [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+    [TomlDerivedType(typeof(ConfigDerivedA), "x")]
+    [TomlDerivedType(typeof(ConfigDerivedB), "x")]
+    private class ConfigDuplicateDiscriminator
+    {
+        public int A { get; set; }
+    }
+
+    private sealed class ConfigDerivedA : ConfigDuplicateDiscriminator
+    {
+    }
+
+    private sealed class ConfigDerivedB : ConfigDuplicateDiscriminator
+    {
+    }
+
+    private sealed class ConfigSingleOrArrayOnInt
+    {
+        [TomlSingleOrArray]
+        public int A { get; set; }
     }
 
     [Fact]

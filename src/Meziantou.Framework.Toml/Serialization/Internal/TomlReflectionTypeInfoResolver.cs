@@ -331,7 +331,7 @@ internal static class TomlReflectionTypeInfoResolver
         {
             if (memberType != typeof(string))
             {
-                throw new TomlException($"[TomlStringStyle] can only be applied to string members. Member '{member.Name}' is of type '{memberType.FullName}'.");
+                throw TomlException.CreateConfigurationError($"[TomlStringStyle] can only be applied to string members. Member '{member.Name}' is of type '{memberType.FullName}'.");
             }
 
             metadata ??= new TomlPropertyMetadata();
@@ -366,12 +366,12 @@ internal static class TomlReflectionTypeInfoResolver
     {
         if (!typeof(TomlConverter).IsAssignableFrom(converterType))
         {
-            throw new TomlException($"Converter type '{converterType.FullName}' must derive from '{typeof(TomlConverter).FullName}'.");
+            throw TomlException.CreateConfigurationError($"Converter type '{converterType.FullName}' must derive from '{typeof(TomlConverter).FullName}'.");
         }
 
         if (converterType.GetConstructor(Type.EmptyTypes) is null)
         {
-            throw new TomlException($"Converter type '{converterType.FullName}' must declare a public parameterless constructor.");
+            throw TomlException.CreateConfigurationError($"Converter type '{converterType.FullName}' must declare a public parameterless constructor.");
         }
 
         TomlConverter converter;
@@ -381,7 +381,7 @@ internal static class TomlReflectionTypeInfoResolver
         }
         catch (Exception ex)
         {
-            throw new TomlException($"Failed to create converter '{converterType.FullName}'.", ex);
+            throw TomlException.CreateConfigurationError($"Failed to create converter '{converterType.FullName}'.", ex);
         }
 
         return TomlTypeInfoResolverPipeline.ResolveAttributeConverter(converter, typeToConvert, options);
@@ -666,12 +666,12 @@ internal static class TomlReflectionTypeInfoResolver
 
                 if (_extensionDataIndex != -1)
                 {
-                    throw new TomlException($"Multiple extension data members are not supported on type '{type.FullName}'.");
+                    throw TomlException.CreateConfigurationError($"Multiple extension data members are not supported on type '{type.FullName}'.");
                 }
 
                 if (!TryGetExtensionDataValueType(_members[i].MemberType, out var valueType))
                 {
-                    throw new TomlException($"Extension data member '{_members[i].Member.Name}' on '{type.FullName}' must be a dictionary-like type with string keys.");
+                    throw TomlException.CreateConfigurationError($"Extension data member '{_members[i].Member.Name}' on '{type.FullName}' must be a dictionary-like type with string keys.");
                 }
 
                 _extensionDataIndex = i;
@@ -743,7 +743,7 @@ internal static class TomlReflectionTypeInfoResolver
 
                 if (_parameterIndexByName.ContainsKey(keyName))
                 {
-                    throw new TomlException($"Constructor parameter name collision for key '{keyName}' on type '{type.FullName}'.");
+                    throw TomlException.CreateConfigurationError($"Constructor parameter name collision for key '{keyName}' on type '{type.FullName}'.");
                 }
 
                 _parameterIndexByName.Add(keyName, i);
@@ -898,7 +898,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (_constructorError is not null)
             {
-                throw reader.CreateException(_constructorError);
+                throw TomlException.CreateConfigurationError(_constructorError);
             }
 
             var tableStartSpan = reader.CurrentSpan;
@@ -1096,7 +1096,7 @@ internal static class TomlReflectionTypeInfoResolver
             {
                 if (member.HasExplicitObjectCreationHandling)
                 {
-                    throw reader.CreateException(
+                    throw TomlException.CreateConfigurationError(
                         $"Member '{member.Member.Name}' on '{Type.FullName}' uses {nameof(TomlObjectCreationHandling)}.{nameof(TomlObjectCreationHandling.Populate)} but requires a setter because '{member.MemberType.FullName}' is a value type.");
                 }
 
@@ -1132,7 +1132,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     if (member.HasExplicitObjectCreationHandling)
                     {
-                        throw reader.CreateException(
+                        throw TomlException.CreateConfigurationError(
                             $"Member '{member.Member.Name}' on '{Type.FullName}' uses {nameof(TomlObjectCreationHandling)}.{nameof(TomlObjectCreationHandling.Populate)} but '{member.MemberType.FullName}' doesn't support populating.");
                     }
 
@@ -1161,7 +1161,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     if (member.Setter is null)
                     {
-                        throw reader.CreateException(
+                        throw TomlException.CreateConfigurationError(
                             $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' doesn't support populating the existing collection.");
                     }
 
@@ -1177,7 +1177,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var populatedValue = typeInfo.ReadInto(reader, existingValue);
                 if (member.Setter is null && !ReferenceEquals(existingValue, populatedValue))
                 {
-                    throw reader.CreateException(
+                    throw TomlException.CreateConfigurationError(
                         $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' doesn't support populating the existing collection.");
                 }
 
@@ -1186,7 +1186,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (!reader.OperationState.SingleOrArrayCollections.IsSupported(member.MemberType))
             {
-                throw reader.CreateException(
+                throw TomlException.CreateConfigurationError(
                     $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' is not a supported collection type.");
             }
 
@@ -1196,7 +1196,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     if (member.Setter is null)
                     {
-                        throw reader.CreateException(
+                        throw TomlException.CreateConfigurationError(
                             $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' doesn't support populating the existing collection.");
                     }
 
@@ -1208,7 +1208,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (member.Setter is null)
             {
-                throw reader.CreateException(
+                throw TomlException.CreateConfigurationError(
                     $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.");
             }
 
@@ -1295,7 +1295,7 @@ internal static class TomlReflectionTypeInfoResolver
             {
                 if (extensionMember.Setter is null)
                 {
-                    throw new TomlException($"Extension data member '{extensionMember.Member.Name}' is null and cannot be initialized.");
+                    throw TomlException.CreateConfigurationError($"Extension data member '{extensionMember.Member.Name}' is null and cannot be initialized.");
                 }
 
                 var created = CreateExtensionDataDictionary(extensionMember.MemberType);
@@ -1303,7 +1303,7 @@ internal static class TomlReflectionTypeInfoResolver
                 return created;
             }
 
-            throw new TomlException($"Extension data member '{extensionMember.Member.Name}' must be a dictionary-like type.");
+            throw TomlException.CreateConfigurationError($"Extension data member '{extensionMember.Member.Name}' must be a dictionary-like type.");
         }
 
         private object CreateExtensionDataDictionary(Type memberType)
@@ -1587,12 +1587,12 @@ internal static class TomlReflectionTypeInfoResolver
                         var existingValue = member.Getter(instance);
                         if (existingValue is null)
                         {
-                            throw new TomlException($"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.");
+                            throw TomlException.CreateConfigurationError($"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.");
                         }
 
                         if (!reader.OperationState.SingleOrArrayCollections.CanPopulate(member.MemberType, existingValue))
                         {
-                            throw new TomlException($"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' doesn't support populating the existing collection.");
+                            throw TomlException.CreateConfigurationError($"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but '{member.MemberType.FullName}' doesn't support populating the existing collection.");
                         }
 
                         reader.OperationState.SingleOrArrayCollections.PopulateExistingFromCollection(member.MemberType, existingValue, memberValues[i]!);

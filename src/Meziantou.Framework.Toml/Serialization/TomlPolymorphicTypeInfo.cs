@@ -92,7 +92,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
         if (string.IsNullOrEmpty(_discriminatorPropertyName))
         {
-            throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' must specify a discriminator property name.");
+            throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' must specify a discriminator property name.");
         }
 
         _derivedTypeInfoByDiscriminator = new Dictionary<string, TomlTypeInfo>(derivedTypeInfoByDiscriminator.Count, StringComparer.Ordinal);
@@ -104,7 +104,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             var typeInfo = pair.Value;
             if (string.IsNullOrEmpty(discriminator))
             {
-                throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' cannot register an empty discriminator.");
+                throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register an empty discriminator.");
             }
 
             if (typeInfo is null)
@@ -114,13 +114,13 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
             if (_derivedTypeInfoByDiscriminator.ContainsKey(discriminator))
             {
-                throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' cannot register discriminator '{discriminator}' more than once.");
+                throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register discriminator '{discriminator}' more than once.");
             }
 
             var runtimeType = typeInfo.Type;
             if (_derivedTypeInfoByRuntimeType.ContainsKey(runtimeType))
             {
-                throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{runtimeType.FullName}' more than once.");
+                throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{runtimeType.FullName}' more than once.");
             }
 
             _derivedTypeInfoByDiscriminator.Add(discriminator, typeInfo);
@@ -132,7 +132,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             var defaultType = defaultDerivedTypeInfo.Type;
             if (_derivedTypeInfoByRuntimeType.ContainsKey(defaultType))
             {
-                throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{defaultType.FullName}' more than once.");
+                throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{defaultType.FullName}' more than once.");
             }
 
             _derivedTypeInfoByRuntimeType.Add(defaultType, (null, defaultDerivedTypeInfo));
@@ -140,7 +140,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
         if (_derivedTypeInfoByDiscriminator.Count == 0 && _defaultDerivedTypeInfo is null)
         {
-            throw new TomlException($"Polymorphic type '{typeof(TBase).FullName}' must register at least one derived type.");
+            throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' must register at least one derived type.");
         }
     }
 

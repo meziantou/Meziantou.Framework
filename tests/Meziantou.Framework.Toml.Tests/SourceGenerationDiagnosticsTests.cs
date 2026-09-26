@@ -1021,6 +1021,64 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_ObsoleteAndExperimentalConverters_Compile()
+    {
+        var source = """
+            #nullable enable
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class ObsoleteConstructorConverter : TomlConverter<int>
+            {
+                [Obsolete("x", true)] public ObsoleteConstructorConverter() { }
+                public override int Read(TomlReader reader) { var value = (int)reader.GetInt64(); reader.Read(); return value; }
+                public override void Write(TomlWriter writer, int value) => writer.WriteIntegerValue(value);
+            }
+
+            [Experimental("EXPC1")]
+            public sealed class ExperimentalConverter : TomlConverter<int>
+            {
+                public override int Read(TomlReader reader) { var value = (int)reader.GetInt64(); reader.Read(); return value; }
+                public override void Write(TomlWriter writer, int value) => writer.WriteIntegerValue(value);
+            }
+
+            public sealed class ExperimentalConstructorConverter : TomlConverter<int>
+            {
+                [Experimental("EXPC2")] public ExperimentalConstructorConverter() { }
+                public override int Read(TomlReader reader) { var value = (int)reader.GetInt64(); reader.Read(); return value; }
+                public override void Write(TomlWriter writer, int value) => writer.WriteIntegerValue(value);
+            }
+
+            [Experimental("EXPC3")]
+            public sealed class ExperimentalOptionsConverter : TomlConverter<long>
+            {
+                public override long Read(TomlReader reader) { var value = reader.GetInt64(); reader.Read(); return value; }
+                public override void Write(TomlWriter writer, long value) => writer.WriteIntegerValue(value);
+            }
+
+            #pragma warning disable EXPC1, EXPC2, EXPC3
+            public sealed class M
+            {
+                [TomlConverter(typeof(ObsoleteConstructorConverter))] public int A { get; set; }
+                [TomlConverter(typeof(ExperimentalConverter))] public int B { get; set; }
+                [TomlConverter(typeof(ExperimentalConstructorConverter))] public int C { get; set; }
+                public long D { get; set; }
+            }
+
+            [TomlSourceGenerationOptions(Converters = [typeof(ExperimentalOptionsConverter)])]
+            [TomlSerializable(typeof(M))]
+            internal partial class Ctx : TomlSerializerContext { }
+            #pragma warning restore EXPC1, EXPC2, EXPC3
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
     public void Generator_MembersWithAnInaccessibleGetter_Compile()
     {
         var source = """

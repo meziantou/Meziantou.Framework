@@ -646,7 +646,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         // The model can use obsolete and experimental types and members. The ones that are errors to use are accessed through
         // accessors instead.
         builder.Append("#pragma warning disable CS0612, CS0618");
-        foreach (var diagnosticId in GetExperimentalDiagnosticIds(ordered))
+        foreach (var diagnosticId in GetExperimentalDiagnosticIds(ordered, model.Options.ConverterTypes))
         {
             builder.Append(", ").Append(diagnosticId);
         }
@@ -814,7 +814,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("        {");
             foreach (var converterType in model.Options.ConverterTypes)
             {
-                builder.Append("            new ").Append(converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine("(),");
+                builder.Append("            ").Append(GetConverterCreationExpression(converterType)).AppendLine(",");
             }
             builder.AppendLine("        };");
             builder.AppendLine("        options = options with { Converters = converters };");
@@ -980,9 +980,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             builder.Append("        return CreateConverterTypeInfo<")
                 .Append(typeName)
-                .Append(">(options, new ")
-                .Append(staticOptionsConverterType!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
-                .AppendLine("());");
+                .Append(">(options, ")
+                .Append(GetConverterCreationExpression(staticOptionsConverterType!))
+                .AppendLine(");");
         }
         else if (IsBuiltInType(type))
         {
@@ -1471,7 +1471,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 : "CreateStringEnumTypeInfo<" + typeName + ">(" + optionsExpression + ")";
         }
 
-        return "CreateAttributeConverterTypeInfo<" + typeName + ">(" + optionsExpression + ", new " + converter.ConverterType!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + "())";
+        return "CreateAttributeConverterTypeInfo<" + typeName + ">(" + optionsExpression + ", " + GetConverterCreationExpression(converter.ConverterType!) + ")";
+    }
+
+    // A converter whose constructor is an error to use is created with reflection, like the reflection resolver does
+    private static string GetConverterCreationExpression(ITypeSymbol converterType)
+    {
+        var converterTypeName = converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        return converterType is INamedTypeSymbol named && named.InstanceConstructors.FirstOrDefault(static constructor => constructor.Parameters.Length == 0) is { } constructor && IsObsoleteError(constructor)
+            ? "((" + converterTypeName + ")global::System.Activator.CreateInstance(typeof(" + converterTypeName + "))!)"
+            : "new " + converterTypeName + "()";
     }
 
     private static void EmitNonPublicGetterAccessors(StringBuilder builder, PocoShape poco)
@@ -6275,14 +6284,28 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
            TryGetAttribute(symbol, "System.ObsoleteAttribute", out var attribute) &&
            attribute.ConstructorArguments is [_, { Value: true }];
 
-    private static ImmutableArray<string> GetExperimentalDiagnosticIds(ImmutableArray<ITypeSymbol> types)
+    private static ImmutableArray<string> GetExperimentalDiagnosticIds(ImmutableArray<ITypeSymbol> types, ImmutableArray<ITypeSymbol> optionsConverterTypes)
     {
         var ids = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var type in types)
         {
+            AddTypeAndMembers(type);
+        }
+
+        // The generated code also creates the converters
+        foreach (var converterType in optionsConverterTypes.IsDefault ? ImmutableArray<ITypeSymbol>.Empty : optionsConverterTypes)
+        {
+            AddTypeAndMembers(converterType);
+        }
+
+        return ids.ToImmutableArray();
+
+        void AddTypeAndMembers(ITypeSymbol type)
+        {
             for (var current = type.OriginalDefinition as INamedTypeSymbol; current is not null; current = current.BaseType)
             {
                 Add(current);
+                AddConverter(current);
                 for (var containing = current.ContainingType; containing is not null; containing = containing.ContainingType)
                 {
                     Add(containing);
@@ -6291,11 +6314,26 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 foreach (var member in current.GetMembers())
                 {
                     Add(member);
+                    AddConverter(member);
                 }
             }
         }
 
-        return ids.ToImmutableArray();
+        void AddConverter(ISymbol symbol)
+        {
+            if (TryGetAttribute(symbol, TomlConverterAttributeMetadataName, out var attribute) &&
+                attribute.ConstructorArguments is [{ Value: INamedTypeSymbol converterType }])
+            {
+                for (var current = converterType; current is not null; current = current.BaseType)
+                {
+                    Add(current);
+                    foreach (var constructor in current.InstanceConstructors)
+                    {
+                        Add(constructor);
+                    }
+                }
+            }
+        }
 
         void Add(ISymbol symbol)
         {

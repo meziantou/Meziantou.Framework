@@ -152,7 +152,19 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             throw new TomlException("TOML does not support null values.");
         }
 
+        // Same rules and messages as the reflection-based polymorphic metadata
         var runtimeType = value.GetType();
+        if (runtimeType == typeof(TBase) && !_derivedTypeInfoByRuntimeType.ContainsKey(runtimeType))
+        {
+            if (_baseTypeInfo is null)
+            {
+                throw new TomlException($"Type '{typeof(TBase).FullName}' is polymorphic and requires a discriminator to serialize derived types.");
+            }
+
+            _baseTypeInfo.Write(writer, value);
+            return;
+        }
+
         if (!_derivedTypeInfoByRuntimeType.TryGetValue(runtimeType, out var dispatch))
         {
             if (_unknownDerivedTypeHandling == TomlUnknownDerivedTypeHandling.FallBackToBaseType && _baseTypeInfo is not null)
@@ -161,7 +173,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
                 return;
             }
 
-            throw new TomlException($"Unknown derived type '{runtimeType.FullName}' when serializing '{typeof(TBase).FullName}'.");
+            throw new TomlException($"Type '{runtimeType.FullName}' is not registered as a derived type for '{typeof(TBase).FullName}'.");
         }
 
         var (discriminator, runtimeTypeInfo) = dispatch;

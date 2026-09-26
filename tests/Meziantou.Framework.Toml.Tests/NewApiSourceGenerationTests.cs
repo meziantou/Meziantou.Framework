@@ -728,6 +728,27 @@ public sealed class GeneratedSetsRequiredMembersWithParameters
     public int B { get; }
 }
 
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(GeneratedConcreteCircle), "circle")]
+public class GeneratedConcreteShape
+{
+    public string Name { get; set; } = "";
+}
+
+public sealed class GeneratedConcreteCircle : GeneratedConcreteShape
+{
+    public double Radius { get; set; }
+}
+
+public sealed class GeneratedConcreteSquare : GeneratedConcreteShape
+{
+}
+
+[TomlSerializable(typeof(GeneratedConcreteShape))]
+internal sealed partial class TestTomlSerializerContextConcretePolymorphicBase : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedSetsRequiredMembers))]
 [TomlSerializable(typeof(GeneratedSetsRequiredMembersWithParameters))]
 internal sealed partial class TestTomlSerializerContextSetsRequiredMembers : TomlSerializerContext
@@ -1532,6 +1553,19 @@ public class NewApiSourceGenerationTests
 
         Assert.Contains("Field = 1", toml);
         Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_PolymorphicBaseInstance_IsWrittenLikeReflection()
+    {
+        var typeInfo = TestTomlSerializerContextConcretePolymorphicBase.Default.GeneratedConcreteShape;
+
+        Assert.Equal("Name = \"s\"\n", TomlSerializer.Serialize(new GeneratedConcreteShape { Name = "s" }, typeInfo));
+        Assert.Equal(TomlSerializer.Serialize<GeneratedConcreteShape>(new GeneratedConcreteShape { Name = "s" }), TomlSerializer.Serialize(new GeneratedConcreteShape { Name = "s" }, typeInfo));
+
+        var generatedError = Assert.Throws<TomlException>(() => TomlSerializer.Serialize<GeneratedConcreteShape>(new GeneratedConcreteSquare(), typeInfo));
+        var reflectionError = Assert.Throws<TomlException>(() => TomlSerializer.Serialize<GeneratedConcreteShape>(new GeneratedConcreteSquare()));
+        Assert.Equal(reflectionError.Message, generatedError.Message);
     }
 
     [Fact]

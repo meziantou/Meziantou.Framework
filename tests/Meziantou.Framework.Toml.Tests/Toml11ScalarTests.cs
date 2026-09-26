@@ -45,4 +45,32 @@ public sealed class Toml11ScalarTests
         Assert.Equal(7, value.DateTime.ToUniversalTime().Hour);
         Assert.Equal(32, value.DateTime.ToUniversalTime().Minute);
     }
+
+    [Theory]
+    [InlineData("0x7FFFFFFFFFFFFFFF", long.MaxValue)]
+    [InlineData("0o777777777777777777777", long.MaxValue)]
+    [InlineData("0b111111111111111111111111111111111111111111111111111111111111111", long.MaxValue)]
+    [InlineData("0xDEAD_BEEF", 0xDEADBEEF)]
+    public void Deserialize_NonDecimalInteger_MaxValue(string literal, long expected)
+    {
+        var table = TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n")!;
+
+        Assert.Equal(expected, table["a"]);
+    }
+
+    [Theory]
+    [InlineData("0x8000000000000000")]
+    [InlineData("0xFFFFFFFFFFFFFFFF")]
+    [InlineData("0o1000000000000000000000")]
+    [InlineData("0b1000000000000000000000000000000000000000000000000000000000000000")]
+    [InlineData("0b1111111111111111111111111111111111111111111111111111111111111111")]
+    public void Deserialize_NonDecimalInteger_GreaterThanInt64_Throws(string literal)
+    {
+        var toml = "a = " + literal + "\n";
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        Assert.Contains("greater than the maximum 64-bit signed integer", ex.Message, StringComparison.Ordinal);
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ulong>(toml, new TomlSerializerOptions { RootValueHandling = TomlRootValueHandling.WrapInRootKey, RootValueKeyName = "a" }));
+    }
 }

@@ -716,6 +716,7 @@ internal sealed class Lexer
                 int maxShift = originalMaxShift;
                 bool hasCharInRange = false;
                 bool lastWasDigit = false;
+                bool isOutOfRange = false;
                 ulong value = 0;
                 while (true)
                 {
@@ -730,6 +731,17 @@ internal sealed class Lexer
                         }
                         else if (nextIsDigit)
                         {
+                            // toml-specs: 64 bit (signed long) range expected (−9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
+                            if (value > ((ulong)long.MaxValue >> shift))
+                            {
+                                if (!isOutOfRange)
+                                {
+                                    AddError($"The {name} integer is greater than the maximum 64-bit signed integer ({long.MaxValue})", start, start);
+                                }
+
+                                isOutOfRange = true;
+                            }
+
                             value = (value << shift) + (ulong)convert(CurrentCharacter);
                             maxShift--;
                             // Log only once the error that the value is beyond
@@ -764,11 +776,13 @@ internal sealed class Lexer
                     AddError($"Invalid {name} integer. Expecting a {range} after the last character", start, start);
                     _token = new SyntaxTokenValue(TokenKind.Invalid, start, end);
                 }
+                else if (isOutOfRange)
+                {
+                    _token = new SyntaxTokenValue(TokenKind.Invalid, start, end);
+                }
                 else
                 {
-                    // toml-specs: 64 bit (signed long) range expected (−9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
-                    var signedValue = unchecked((long)value);
-                    _token = new SyntaxTokenValue(tokenKind, start, end, stringValue: null, data: unchecked((ulong)signedValue));
+                    _token = new SyntaxTokenValue(tokenKind, start, end, stringValue: null, data: value);
                 }
                 return;
             }

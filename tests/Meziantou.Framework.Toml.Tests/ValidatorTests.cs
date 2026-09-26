@@ -119,4 +119,28 @@ d = true
         Assert.False(SyntaxParser.Parse(toml).HasErrors, message: "SyntaxParser should accept the document");
         Assert.NotNull(TomlSerializer.Deserialize<Model.TomlTable>(toml));
     }
+
+    [Fact]
+    public void Validate_LargeArrayOfInlineTables_IsLinear()
+    {
+        var toml = "a = [" + string.Join(",", Enumerable.Range(0, 5000).Select(i => "{x=" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", y={z=1}}")) + "]\n";
+        SyntaxParser.Parse(toml);
+
+        // The path of each key used to include the index of every previous item, so validating allocated O(n²) memory
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var doc = SyntaxParser.Parse(toml);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.False(doc.HasErrors);
+        Assert.True(allocated < 50_000_000, $"Allocated {allocated} bytes");
+    }
+
+    [Theory]
+    [InlineData("a = [{x=1}, {x=2}]\nb = [[{x=1}], [{x=2}, {x=3}]]\n", false)]
+    [InlineData("a = [{x=1, x=2}]\n", true)]
+    [InlineData("a = [[{x=1}], [{y=1, y=2}]]\n", true)]
+    public void Validate_ArrayItems_AreValidatedIndependently(string toml, bool hasErrors)
+    {
+        Assert.Equal(hasErrors, SyntaxParser.Parse(toml).HasErrors);
+    }
 }

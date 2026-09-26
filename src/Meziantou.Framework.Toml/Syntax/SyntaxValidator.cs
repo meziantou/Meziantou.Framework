@@ -356,6 +356,7 @@ internal class SyntaxValidator : SyntaxVisitor
 
     public override void Visit(ArrayItemSyntax arrayItem)
     {
+        // The index is part of the path of this item only, not of the next ones
         _currentPath.Add(_currentArrayIndex);
 
         if (arrayItem.Value == null)
@@ -363,6 +364,7 @@ internal class SyntaxValidator : SyntaxVisitor
             _diagnostics.Error(arrayItem.Span, $"The array item [{_currentArrayIndex}] must have a non null value");
         }
         base.Visit(arrayItem);
+        _currentPath.RemoveAt(_currentPath.Count - 1);
         _currentArrayIndex++;
     }
 

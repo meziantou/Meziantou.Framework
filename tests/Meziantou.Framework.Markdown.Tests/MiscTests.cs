@@ -24,6 +24,30 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("[x](https://evil.example\uFF0F@good.example/path)", "<p><a href=\"https://evil.example%EF%BC%8F@good.example/path\">x</a></p>")]
+    [InlineData("[x](https://evil.example\uFF03@good.example/path)", "<p><a href=\"https://evil.example%EF%BC%83@good.example/path\">x</a></p>")]
+    [InlineData("[x](https://evil.example\uFF1F@good.example/path)", "<p><a href=\"https://evil.example%EF%BC%9F@good.example/path\">x</a></p>")]
+    [InlineData("<https://evil.example\uFF0F@good.example/path>", "<p><a href=\"https://evil.example%EF%BC%8F@good.example/path\">https://evil.example\uFF0F@good.example/path</a></p>")]
+    [InlineData("[x](http://\u00FCnicode.com:8080/a)", "<p><a href=\"http://xn--nicode-2ya.com:8080/a\">x</a></p>")]
+    [InlineData("[x](http://\u00FC:p@\u00FCnicode.com/a)", "<p><a href=\"http://%C3%BC:p@xn--nicode-2ya.com/a\">x</a></p>")]
+    [InlineData("[x](http://\u00FCnicode.com\\a)", "<p><a href=\"http://xn--nicode-2ya.com%5Ca\">x</a></p>")]
+    public void IdnMappingOnlyAppliesToTheHost(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Fact]
+    public void IdnMappingOfTheHostCannotIntroduceADelimiter()
+    {
+        // With ICU, U+FF0F is mapped to '/', so the host is percent-encoded instead; without ICU, it is converted to
+        // punycode. Either way, the browser must not see a '/' in the middle of the host.
+        var html = MarkdownConverter.ToHtml("[x](https://evil.example\uFF0F.good.example/path)");
+
+        Assert.DoesNotContain("evil.example/", html);
+        Assert.Contains(".good.example/path\">x</a>", html);
+    }
+
+    [Theory]
     [InlineData("link [foo [bar]]")] // https://spec.commonmark.org/0.29/#example-508
     [InlineData("link [foo][bar]")]
     [InlineData("link [][foo][bar][]")]

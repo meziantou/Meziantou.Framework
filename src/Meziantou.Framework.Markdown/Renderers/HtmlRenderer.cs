@@ -177,6 +177,9 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
 
     private static readonly SearchValues<char> EscapedChars = SearchValues.Create("<>&\"");
 
+    // Characters that would end the host or move it (user info, port, path...) if the mapped host contained them
+    private static readonly SearchValues<char> UrlStructureChars = SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F #%/:?@[\\]\u007F");
+
     /// <summary>
     /// Writes the content escaped for HTML.
     /// </summary>
@@ -248,25 +251,37 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
             {
                 schemeOffset += 3; // skip ://
 
-                int domainLength = content.AsSpan(schemeOffset).IndexOfAny("/?#:");
-                if (domainLength < 0)
+                int authorityLength = content.AsSpan(schemeOffset).IndexOfAny("/?#\\");
+                if (authorityLength < 0)
                 {
-                    domainLength = content.Length - schemeOffset;
+                    authorityLength = content.Length - schemeOffset;
                 }
 
-                string? domainName = null;
+                // Only map the host, which follows the user info and precedes the port. The mapping turns characters
+                // such as U+FF0F (FULLWIDTH SOLIDUS) into URL delimiters, so mapping the user info, or accepting a host
+                // that maps to a delimiter, would make the browser use another host than the one the URL was checked for.
+                int hostOffset = schemeOffset + content.AsSpan(schemeOffset, authorityLength).LastIndexOf('@') + 1;
+                int hostLength = content.AsSpan(hostOffset, schemeOffset + authorityLength - hostOffset).IndexOf(':');
+                if (hostLength < 0)
+                {
+                    hostLength = schemeOffset + authorityLength - hostOffset;
+                }
+
+                string? hostName = null;
 
                 try
                 {
-                    domainName = IdnMappingInstance.GetAscii(content, schemeOffset, domainLength);
+                    hostName = IdnMappingInstance.GetAscii(content, hostOffset, hostLength);
                 }
-                catch { }
-
-                if (domainName is not null)
+                catch (ArgumentException)
                 {
-                    WriteEscapeUrlCore(content.AsSpan(0, schemeOffset));
-                    WriteEscapeUrlCore(domainName.AsSpan());
-                    WriteEscapeUrlCore(content.AsSpan(schemeOffset + domainLength));
+                }
+
+                if (hostName is not null && hostName.AsSpan().IndexOfAny(UrlStructureChars) < 0)
+                {
+                    WriteEscapeUrlCore(content.AsSpan(0, hostOffset));
+                    WriteEscapeUrlCore(hostName.AsSpan());
+                    WriteEscapeUrlCore(content.AsSpan(hostOffset + hostLength));
                     return this;
                 }
 

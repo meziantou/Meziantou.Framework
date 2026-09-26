@@ -71,6 +71,8 @@ public class TestMediaLinks
         "<p><img src=\"https://www.youtube.com.example.org/embed/abc\" alt=\"v\" /></p>\n")]
     [InlineData("![v](https://evilvimeo.com/8607834)",
         "<p><img src=\"https://evilvimeo.com/8607834\" alt=\"v\" /></p>\n")]
+    [InlineData("![v](https://evil.example\uFF0F@www.youtube.com/embed/x)",
+        "<p><iframe src=\"https://evil.example%EF%BC%8F@www.youtube.com/embed/x\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     [InlineData("![v](https://player.vimeo.com/8607834)",
         "<p><iframe src=\"https://player.vimeo.com/video/8607834\" class=\"vimeo\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     public void TestBuiltInHostsRequireHttpAndExactHost(string markdown, string expected)

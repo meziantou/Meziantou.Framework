@@ -21,5 +21,10 @@ public sealed class TomlPolymorphicAttribute : TomlAttribute
     /// When set to a value other than <see cref="TomlUnknownDerivedTypeHandling.Unspecified"/>,
     /// this overrides the global <see cref="TomlPolymorphismOptions.UnknownDerivedTypeHandling"/>.
     /// </summary>
-    public TomlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; set; } = TomlUnknownDerivedTypeHandling.Unspecified;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlUnknownDerivedTypeHandling"/>.</exception>
+    public TomlUnknownDerivedTypeHandling UnknownDerivedTypeHandling
+    {
+        get;
+        set => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlUnknownDerivedTypeHandling.Unspecified;
 }

@@ -144,6 +144,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor UndefinedAttributeArgument = new(
+        id: "MFTOML018",
+        title: "TOML attribute argument is not a defined enum value",
+        messageFormat: "'{0}' has an invalid [{1}]: {2} is not a defined value. The attribute throws an ArgumentOutOfRangeException.",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private const string TomlSerializerContextMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSerializerContext";
     private const string ContextOutputsTrackingName = "TomlContextOutputs";
 
@@ -4589,6 +4597,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return false;
         }
 
+        ReportUndefinedAttributeArguments(context, model, named);
+
         IMethodSymbol? selectedConstructor = null;
         string? constructorError = null;
         string? constructorErrorSuffix = null;
@@ -4681,6 +4691,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
             if (member.GetMethod.DeclaredAccessibility != Accessibility.Public && !hasInclude)
+            {
+                continue;
+            }
+
+            if (ReportUndefinedAttributeArguments(context, model, member))
             {
                 continue;
             }
@@ -4862,6 +4877,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
             if (!hasInclude && !(model.Options.IncludeFields == true && member.DeclaredAccessibility == Accessibility.Public))
+            {
+                continue;
+            }
+
+            if (ReportUndefinedAttributeArguments(context, model, member))
             {
                 continue;
             }
@@ -5281,6 +5301,21 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                     else if (kvp.Key == "UnknownDerivedTypeHandling" && kvp.Value.Value is int intVal)
                     {
+                        if (!IsDefinedAttributeArgument("TomlPolymorphicAttribute", kvp.Key, intVal))
+                        {
+                            if (reportDiagnostics)
+                            {
+                                context.ReportDiagnostic(DiagnosticInfo.Create(
+                                    UndefinedAttributeArgument,
+                                    GetDiagnosticLocation(model, attr),
+                                    type.ToDisplayString(),
+                                    "TomlPolymorphic",
+                                    kvp.Key + " = " + intVal.ToString(CultureInfo.InvariantCulture)));
+                            }
+
+                            continue;
+                        }
+
                         // -1 = Unspecified, 0 = Fail, 1 = FallBackToBaseType
                         if (intVal != -1)
                         {
@@ -6300,6 +6335,66 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         return 0;
+    }
+
+    // The attributes throw an ArgumentOutOfRangeException for an undefined enum value, so the reflection resolver cannot use them
+    private static bool ReportUndefinedAttributeArguments(GeneratorOutput context, ContextModel model, ISymbol symbol)
+    {
+        const string AttributeNamespace = "global::Meziantou.Framework.Toml.Serialization.";
+        var reported = false;
+        foreach (var attribute in symbol.GetAttributes())
+        {
+            var attributeName = attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (attributeName is null || !attributeName.StartsWith(AttributeNamespace, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            attributeName = attributeName.Substring(AttributeNamespace.Length);
+            if (attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is int constructorValue && !IsDefinedAttributeArgument(attributeName, argumentName: null, constructorValue))
+            {
+                Report(constructorValue.ToString(CultureInfo.InvariantCulture));
+            }
+
+            foreach (var namedArgument in attribute.NamedArguments)
+            {
+                if (namedArgument.Value.Value is int value && !IsDefinedAttributeArgument(attributeName, namedArgument.Key, value))
+                {
+                    Report(namedArgument.Key + " = " + value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            void Report(string argument)
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(
+                    UndefinedAttributeArgument,
+                    GetDiagnosticLocation(model, attribute),
+                    symbol is ITypeSymbol ? symbol.ToDisplayString() : symbol.ContainingType.ToDisplayString() + "." + symbol.Name,
+                    attributeName.Substring(0, attributeName.Length - "Attribute".Length),
+                    argument));
+                reported = true;
+            }
+        }
+
+        return reported;
+    }
+
+    private static bool IsDefinedAttributeArgument(string attributeName, string? argumentName, int value)
+    {
+        return (attributeName, argumentName) switch
+        {
+            ("TomlObjectCreationHandlingAttribute", null) => value is >= 0 and <= 1,
+            ("TomlUnmappedMemberHandlingAttribute", null) => value is >= 0 and <= 1,
+            ("TomlIgnoreAttribute", "Condition") => value is >= 0 and <= 5,
+            ("TomlPolymorphicAttribute", "UnknownDerivedTypeHandling") => value is >= -1 and <= 1,
+            ("TomlStringStyleAttribute", null) => value is >= 0 and <= 3,
+            ("TomlStringStyleAttribute", "PreferLiteralWhenNoEscapes" or "AllowHexEscapes") => value is >= 0 and <= 2,
+            ("TomlTableArrayStyleAttribute", null) => value is >= 0 and <= 1,
+            ("TomlInlineTableAttribute", null) => value is >= 0 and <= 2,
+            ("TomlMappingOrderAttribute", null) => value is >= 0 and <= 3,
+            ("TomlDottedKeyHandlingAttribute", null) => value is >= 0 and <= 1,
+            _ => true,
+        };
     }
 
     private static (int? TableArrayStyle, int? InlineTablePolicy, int? StringStyle, bool? PreferLiteralWhenNoEscapes, bool? AllowHexEscapes) GetFormattingMetadata(ISymbol member)

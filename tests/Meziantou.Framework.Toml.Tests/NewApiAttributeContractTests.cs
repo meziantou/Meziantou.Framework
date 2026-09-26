@@ -58,5 +58,17 @@ public class NewApiAttributeContractTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TomlStringStyleAttribute((TomlStringStyle)42));
         Assert.Throws<ArgumentOutOfRangeException>(() => new TomlMappingOrderAttribute((TomlMappingOrderPolicy)42));
         Assert.Throws<ArgumentOutOfRangeException>(() => new TomlDottedKeyHandlingAttribute((TomlDottedKeyHandling)42));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlStringStyleAttribute(TomlStringStyle.Basic) { PreferLiteralWhenNoEscapes = (TomlBooleanPreference)42 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlStringStyleAttribute(TomlStringStyle.Basic) { AllowHexEscapes = (TomlBooleanPreference)42 });
+    }
+
+    [Fact]
+    public void BehaviorAttributes_RejectInvalidEnumValues()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlObjectCreationHandlingAttribute((TomlObjectCreationHandling)42));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlUnmappedMemberHandlingAttribute((TomlUnmappedMemberHandling)42));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlIgnoreAttribute { Condition = (TomlIgnoreCondition)42 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlPolymorphicAttribute { UnknownDerivedTypeHandling = (TomlUnknownDerivedTypeHandling)(-2) });
+        Assert.Equal(TomlUnknownDerivedTypeHandling.Unspecified, new TomlPolymorphicAttribute { UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.Unspecified }.UnknownDerivedTypeHandling);
     }
 }

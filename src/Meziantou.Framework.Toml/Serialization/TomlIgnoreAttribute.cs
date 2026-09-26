@@ -15,5 +15,10 @@ public sealed class TomlIgnoreAttribute : TomlAttribute
     /// Gets or sets the condition that must be met before the member is ignored.
     /// </summary>
     /// <remarks>The default value is <see cref="TomlIgnoreCondition.Always"/>.</remarks>
-    public TomlIgnoreCondition Condition { get; set; } = TomlIgnoreCondition.Always;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlIgnoreCondition"/>.</exception>
+    public TomlIgnoreCondition Condition
+    {
+        get;
+        set => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlIgnoreCondition.Always;
 }

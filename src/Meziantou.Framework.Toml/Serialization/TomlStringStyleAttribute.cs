@@ -33,11 +33,21 @@ public sealed class TomlStringStyleAttribute : TomlAttribute
     /// <summary>
     /// Gets or sets whether literal strings should be preferred when no escaping is required.
     /// </summary>
-    public TomlBooleanPreference PreferLiteralWhenNoEscapes { get; set; }
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlBooleanPreference"/>.</exception>
+    public TomlBooleanPreference PreferLiteralWhenNoEscapes
+    {
+        get;
+        set => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    }
 
     /// <summary>
     /// Gets or sets whether control characters up to U+00FF are escaped with the TOML 1.1 <c>\xHH</c> and <c>\e</c> escapes
     /// instead of <c>\uXXXX</c>.
     /// </summary>
-    public TomlBooleanPreference AllowHexEscapes { get; set; }
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlBooleanPreference"/>.</exception>
+    public TomlBooleanPreference AllowHexEscapes
+    {
+        get;
+        set => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    }
 }

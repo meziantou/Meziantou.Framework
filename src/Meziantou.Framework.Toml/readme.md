@@ -541,6 +541,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. The context has a public property for each type, so every type must be accessible wherever the context is: for example, an `internal` type cannot be used by a `protected` nested context, which derived types in other assemblies can access. |
 | `MFTOML016` | Error | A member is a `ref struct`, a delegate, or a pointer, which cannot be serialized. |
 | `MFTOML017` | Error | A type registered with `[TomlSerializable]` cannot be serialized: an abstract class or an interface without polymorphism configuration, an open generic type, a multi-dimensional array, a delegate, a ref struct, or a pointer. |
+| `MFTOML018` | Error | A TOML attribute has an undefined enum value, such as `[TomlIgnore(Condition = (TomlIgnoreCondition)42)]`. The attribute throws an `ArgumentOutOfRangeException` at run time. |
 
 ## NativeAOT and trimming
 

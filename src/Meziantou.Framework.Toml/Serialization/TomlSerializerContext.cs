@@ -146,7 +146,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         // that its reader has not finished, such as a converter reading a nested value, stops the reading.
         if (reader.OperationState.IsRecordedValueError(exception))
         {
-            return reader.OperationState.IsRecordedValueError(exception, span);
+            return reader.OperationState.IsRecordedValueError(exception, tokenType, span);
         }
 
         if (reader.TokenType != tokenType || !Nullable.Equals(reader.CurrentSpan, span) || !reader.OperationState.CanAddDiagnostics(exception))

@@ -46,9 +46,10 @@ internal sealed class TomlSerializationOperationState
 
     public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
 
-    // The error of the value that started at valueStart, which was read completely
-    public bool IsRecordedValueError(TomlException exception, TomlSourceSpan? valueStart)
-        => IsRecordedValueError(exception) && Nullable.Equals(exception.RecordedValueStart, valueStart);
+    // The error of the value that started at valueStart, which was read completely. Only a table records its errors, and an
+    // array of tables starts at the same place as its first table, so the token type tells them apart.
+    public bool IsRecordedValueError(TomlException exception, TomlTokenType valueTokenType, TomlSourceSpan? valueStart)
+        => IsRecordedValueError(exception) && valueTokenType == TomlTokenType.StartTable && Nullable.Equals(exception.RecordedValueStart, valueStart);
 
     // A table with errors cannot be used, but it was read completely, so its parent continues with its next value
     public void ThrowIfDiagnosticsSince(int diagnosticCount, TomlSourceSpan? tableStart)

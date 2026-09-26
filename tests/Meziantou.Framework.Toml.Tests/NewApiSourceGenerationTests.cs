@@ -1775,12 +1775,34 @@ public sealed class GeneratedEscapeHolderConverter : TomlConverter<GeneratedEsca
     public override void Write(TomlWriter writer, GeneratedEscapeHolder value) => throw new NotSupportedException();
 }
 
+// Reads the elements of an array one by one; an array of tables starts at the same place as its first element
+public sealed class GeneratedEscapeListConverter : TomlConverter<List<GeneratedEscapeRecord>>
+{
+    public override List<GeneratedEscapeRecord> Read(TomlReader reader)
+    {
+        var value = new List<GeneratedEscapeRecord>();
+        reader.Read();
+        while (reader.TokenType != TomlTokenType.EndArray)
+        {
+            value.Add(reader.Options.GetTypeInfo<GeneratedEscapeRecord>().Read(reader)!);
+        }
+
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, List<GeneratedEscapeRecord> value) => throw new NotSupportedException();
+}
+
 public sealed class GeneratedEscapeRoot
 {
     public GeneratedEscapeChild? Child { get; set; }
 
     [TomlConverter(typeof(GeneratedEscapeHolderConverter))]
     public GeneratedEscapeHolder? W { get; set; }
+
+    [TomlConverter(typeof(GeneratedEscapeListConverter))]
+    public List<GeneratedEscapeRecord>? Items { get; set; }
 
     public int A { get; set; }
 
@@ -3786,6 +3808,8 @@ public class NewApiSourceGenerationTests
     [Theory]
     [InlineData("[Child]\nExt = { X = 'bad' }\nA = 'text'\n", 1)]
     [InlineData("W = { Rec = { X = 'bad' }, N = 'text' }\n", 0)]
+    [InlineData("[[Items]]\nX = 'bad'\n[[Items]]\nX = 2\n", 1)]
+    [InlineData("[[Items]]\nX = 'bad'\n", 1)]
     public void RecordedError_OfANestedValueItsReaderHasNotFinished_StopsTheReading(string toml, int line)
     {
         // The parent must not continue inside the table: the keys that follow belong to the child

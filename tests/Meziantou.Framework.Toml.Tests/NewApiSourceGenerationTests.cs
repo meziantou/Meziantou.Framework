@@ -3035,6 +3035,37 @@ public class NewApiSourceGenerationTests
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedEnumNamesHolder<GeneratedCommaEnum>>("V = 'B'", out _));
     }
 
+    // The names of each enum are cached; the cache must not keep the enums of a collectible assembly alive
+    [Fact(DisableParallelization = true)]
+    public void TomlStringEnumConverter_DoesNotKeepCollectibleEnumsAlive()
+    {
+        var enumType = SerializeCollectibleEnum();
+        for (var i = 0; i < 10 && enumType.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(enumType.IsAlive);
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static WeakReference SerializeCollectibleEnum()
+        {
+            var assembly = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("CollectibleTomlEnum"), System.Reflection.Emit.AssemblyBuilderAccess.RunAndCollect);
+            var enumBuilder = assembly.DefineDynamicModule("CollectibleTomlEnum").DefineEnum("CollectibleEnum", System.Reflection.TypeAttributes.Public, typeof(int));
+            enumBuilder.DefineLiteral("First", 1);
+            var enumType = enumBuilder.CreateType();
+            var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeof(string), enumType);
+            var dictionary = (System.Collections.IDictionary)Activator.CreateInstance(dictionaryType)!;
+            dictionary["V"] = Enum.ToObject(enumType, 1);
+
+            var toml = TomlSerializer.Serialize(dictionary, dictionaryType, new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] });
+
+            Assert.Equal("V = \"First\"", toml.Trim());
+            return new WeakReference(enumType);
+        }
+    }
+
     [Fact]
     public void TomlStringEnumConverter_InOptions_AppliesToEveryEnum()
     {

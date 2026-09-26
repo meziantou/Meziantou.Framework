@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 
@@ -23,7 +23,8 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// </remarks>
 public sealed class TomlStringEnumConverter : TomlConverter
 {
-    private static readonly ConcurrentDictionary<Type, EnumMemberNames> MemberNamesCache = new();
+    // A weak table, so that the enums of a collectible assembly can be unloaded
+    private static readonly ConditionalWeakTable<Type, EnumMemberNames> MemberNamesCache = new();
 
     internal static TomlStringEnumConverter Instance { get; } = new();
 
@@ -73,7 +74,7 @@ public sealed class TomlStringEnumConverter : TomlConverter
     }
 
     // The names set with [TomlStringEnumMemberName]
-    private static EnumMemberNames GetMemberNames(Type enumType) => MemberNamesCache.GetOrAdd(enumType, static type => EnumMemberNames.Create(type));
+    private static EnumMemberNames GetMemberNames(Type enumType) => MemberNamesCache.GetValue(enumType, static type => EnumMemberNames.Create(type));
 
     private sealed class EnumMemberNames
     {

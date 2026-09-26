@@ -131,6 +131,7 @@ enabled = true
 
         var errors = ValidateModel(model);
         errors.AddRange(ValidateTwitterToml());
+        errors.AddRange(ValidateRequiredMembersAndEnumNames());
         if (errors.Count > 0)
         {
             foreach (var error in errors)
@@ -142,6 +143,37 @@ enabled = true
 
         Console.WriteLine("AOT parse OK.");
         return 0;
+    }
+
+    // Generated code creates a class with required members through an [UnsafeAccessor], and reads [JsonStringEnumMemberName]
+    // with reflection on the enum fields: both must work once trimmed and compiled ahead of time
+    private static List<string> ValidateRequiredMembersAndEnumNames()
+    {
+        var errors = new List<string>();
+        var value = TomlSerializer.Deserialize("items = ['x']\nname = 'n'\nlevel = 'very-high'\n", AotTomlSerializerContext.Default.RequiredModel);
+        if (value is null)
+        {
+            errors.Add("Required model: deserialize returned null.");
+            return errors;
+        }
+
+        if (!string.Equals(string.Join(',', value.Items), "pre,x", StringComparison.Ordinal))
+        {
+            errors.Add($"Required model: items was '{string.Join(',', value.Items)}', expected 'pre,x'.");
+        }
+
+        if (!string.Equals(value.Unread, "keep", StringComparison.Ordinal) || !string.Equals(value.Name, "n", StringComparison.Ordinal) || value.Level != Level.VeryHigh)
+        {
+            errors.Add($"Required model: unexpected values '{value.Unread}', '{value.Name}', '{value.Level}'.");
+        }
+
+        var toml = TomlSerializer.Serialize(value, AotTomlSerializerContext.Default.RequiredModel);
+        if (!toml.Contains("level = \"very-high\"", StringComparison.Ordinal))
+        {
+            errors.Add($"Required model: the enum member name was not written: {toml}");
+        }
+
+        return errors;
     }
 
     private static void PrintException(TomlException exception)
@@ -318,10 +350,32 @@ enabled = true
 
         public bool Enabled { get; set; }
     }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    internal sealed class RequiredModel
+    {
+        public required IList<string> Items { get; set; } = ["pre"];
+
+        [TomlIgnore(Condition = TomlIgnoreCondition.WhenReading)]
+        public required string Unread { get; set; } = "keep";
+
+        public string Name { get; init; } = string.Empty;
+
+        public Level Level { get; set; }
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter<Level>))]
+    internal enum Level
+    {
+        Low,
+        [JsonStringEnumMemberName("very-high")]
+        VeryHigh,
+    }
 }
 
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(Program.RootConfig))]
+[TomlSerializable(typeof(Program.RequiredModel))]
 [TomlSerializable(typeof(TomlTable))]
 internal sealed partial class AotTomlSerializerContext : TomlSerializerContext
 {

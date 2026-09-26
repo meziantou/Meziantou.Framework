@@ -34,6 +34,33 @@ internal sealed class TomlSerializationOperationState
 
     public bool HasDiagnostics => Diagnostics is { Count: > 0 };
 
+    public int DiagnosticCount => Diagnostics?.Count ?? 0;
+
+    public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
+
+    // A table with errors cannot be used, but it was read completely, so its parent continues with its next value
+    public void ThrowIfDiagnosticsSince(int diagnosticCount)
+    {
+        if (DiagnosticCount > diagnosticCount)
+        {
+            throw TomlException.CreateRecordedValueError(Diagnostics!);
+        }
+    }
+
+    // For an error found after the value was read, such as a missing required key
+    public TomlException RecordValueError(TomlException exception)
+    {
+        ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+
+        if (!CanAddDiagnostics(exception))
+        {
+            return exception;
+        }
+
+        AddDiagnostics(exception);
+        return TomlException.CreateRecordedValueError(Diagnostics!);
+    }
+
     public bool CanAddDiagnostics(TomlException exception)
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));

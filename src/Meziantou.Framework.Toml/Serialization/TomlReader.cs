@@ -908,6 +908,25 @@ public sealed class TomlReader
         return true;
     }
 
+    // Records the error of a value and continues with the next one: the value is skipped when the error happened on its first
+    // token, and was already read when its errors were recorded
+    internal bool TryRecoverValue(TomlException exception, TomlReaderState startState)
+    {
+        if (_operationState.IsRecordedValueError(exception))
+        {
+            return true;
+        }
+
+        if (!_operationState.CanAddDiagnostics(exception) || !IsStateUnchanged(startState))
+        {
+            return false;
+        }
+
+        _operationState.AddDiagnostics(exception);
+        Skip();
+        return true;
+    }
+
     internal bool IsStateUnchanged(TomlReaderState state)
         => _tokenType == state.TokenType &&
             Nullable.Equals(_currentSpan, state.Span) &&

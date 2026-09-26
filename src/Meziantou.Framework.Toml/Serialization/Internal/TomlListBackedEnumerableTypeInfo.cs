@@ -63,7 +63,15 @@ internal sealed class TomlListBackedEnumerableTypeInfo<TEnumerable, TElement> : 
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndArray)
         {
-            list.Add(ReadElement(reader));
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                list.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
         }
 
         reader.Read();
@@ -86,7 +94,15 @@ internal sealed class TomlListBackedEnumerableTypeInfo<TEnumerable, TElement> : 
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndArray)
         {
-            collection.Add(ReadElement(reader));
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                collection.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
         }
 
         reader.Read();

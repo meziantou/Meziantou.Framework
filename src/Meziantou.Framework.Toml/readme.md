@@ -677,6 +677,8 @@ whether escape sequences are decoded, whether trivia is reported, and whether st
 ## Error handling
 
 Parsing and mapping errors throw `TomlException`. It exposes the location of the first error (`SourceName`, `Line` and
-`Column` 1-based, `Offset` 0-based, and `Span`) and every diagnostic in `Diagnostics`. Set
+`Column` 1-based, `Offset` 0-based, and `Span`) and every diagnostic in `Diagnostics`. Deserialization reports the
+mapping errors of the whole document: a value that cannot be converted, an invalid collection element or a missing
+required key does not stop the reading. Set
 `TomlSerializerOptions.SourceName` to include a file name in the messages. Use `TryDeserialize` when invalid input is
 expected, for example user-provided configuration files.

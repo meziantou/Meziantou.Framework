@@ -136,11 +136,16 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="tokenType">The token type before the read attempt.</param>
     /// <param name="span">The source span before the read attempt.</param>
     /// <param name="exception">The exception raised by the read attempt.</param>
-    /// <returns><c>true</c> when the diagnostic was recorded and the current value was skipped.</returns>
+    /// <returns><c>true</c> when the diagnostic was recorded and the current value was skipped, or when the value was read and its errors were already recorded.</returns>
     protected static bool TryAddDeserializationDiagnostic(TomlReader reader, TomlTokenType tokenType, TomlSourceSpan? span, TomlException exception)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+
+        if (reader.OperationState.IsRecordedValueError(exception))
+        {
+            return true;
+        }
 
         if (reader.TokenType != tokenType || !Nullable.Equals(reader.CurrentSpan, span) || !reader.OperationState.CanAddDiagnostics(exception))
         {
@@ -150,6 +155,48 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         reader.OperationState.AddDiagnostics(exception);
         reader.Skip();
         return true;
+    }
+
+    /// <summary>
+    /// Gets the number of recoverable deserialization diagnostics recorded for the reader, to pass to
+    /// <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int)"/> at the end of a table.
+    /// </summary>
+    /// <param name="reader">The TOML reader.</param>
+    /// <returns>The number of diagnostics.</returns>
+    protected static int GetDeserializationDiagnosticCount(TomlReader reader)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        return reader.OperationState.DiagnosticCount;
+    }
+
+    /// <summary>
+    /// Throws a <see cref="TomlException"/> when recoverable deserialization diagnostics were recorded since
+    /// <see cref="GetDeserializationDiagnosticCount(TomlReader)"/> returned <paramref name="diagnosticCount"/>. The table that
+    /// contains the value continues with its next value, so the errors of the rest of the document are reported as well.
+    /// </summary>
+    /// <param name="reader">The TOML reader.</param>
+    /// <param name="diagnosticCount">The number of diagnostics when the table started.</param>
+    protected static void ThrowIfDeserializationDiagnostics(TomlReader reader, int diagnosticCount)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount);
+    }
+
+    /// <summary>
+    /// Records an error found after a table was read, such as a missing required key, with the other deserialization
+    /// diagnostics.
+    /// </summary>
+    /// <param name="reader">The TOML reader.</param>
+    /// <param name="span">The location of the error.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>The exception to throw.</returns>
+    protected static TomlException CreateDeserializationException(TomlReader reader, TomlSourceSpan? span, string message)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        return span is { } locatedSpan ? reader.OperationState.RecordValueError(new TomlException(locatedSpan, message)) : new TomlException(message);
     }
 
     /// <summary>

@@ -62,7 +62,15 @@ internal sealed class TomlArrayTypeInfo<TElement> : TomlTypeInfo<TElement[]>
             reader.Read();
             while (reader.TokenType != TomlTokenType.EndArray)
             {
-                items.Add(ReadElement(reader));
+                var elementStartState = reader.CurrentState;
+                try
+                {
+                    items.Add(ReadElement(reader));
+                }
+                catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+                {
+                    // The error is recorded with the others, and the next element is read
+                }
             }
 
             reader.Read();

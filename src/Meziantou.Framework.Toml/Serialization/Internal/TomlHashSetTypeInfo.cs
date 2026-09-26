@@ -60,7 +60,15 @@ internal sealed class TomlHashSetTypeInfo<TElement> : TomlTypeInfo<HashSet<TElem
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndArray)
         {
-            set.Add(ReadElement(reader));
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                set.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
         }
 
         reader.Read();
@@ -83,7 +91,15 @@ internal sealed class TomlHashSetTypeInfo<TElement> : TomlTypeInfo<HashSet<TElem
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndArray)
         {
-            set.Add(ReadElement(reader));
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                set.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
         }
 
         reader.Read();

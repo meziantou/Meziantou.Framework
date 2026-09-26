@@ -103,7 +103,15 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
                 }
             }
 
-            dict[key] = ReadValue(reader);
+            var valueStartState = reader.CurrentState;
+            try
+            {
+                dict[key] = ReadValue(reader);
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, valueStartState))
+            {
+                // The error is recorded with the others, and the next value is read
+            }
         }
 
         reader.Read();
@@ -159,7 +167,15 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
                 }
             }
 
-            dict[key] = ReadValue(reader);
+            var valueStartState = reader.CurrentState;
+            try
+            {
+                dict[key] = ReadValue(reader);
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, valueStartState))
+            {
+                // The error is recorded with the others, and the next value is read
+            }
         }
 
         reader.Read();

@@ -1333,6 +1333,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("        {");
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
             builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+            builder.AppendLine("            var __diagnosticCount = GetDeserializationDiagnosticCount(reader);");
             builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
 
             // Like the reflection-based metadata, an exception thrown by the constructor is reported with the table
@@ -1396,7 +1397,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            }");
             builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
             builder.AppendLine("            reader.Read();");
-            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader);");
+            builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount);");
             if (hasRequiredMembers)
             {
                 if (poco.Members.Length <= 64)
@@ -1414,11 +1415,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                         builder.AppendLine("                {");
-                        builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                            .Append(serializedName)
-                            .Append("' when deserializing '{typeof(")
-                            .Append(typeName)
-                            .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                        builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                             .Append(serializedName)
                             .Append("' when deserializing '{typeof(")
                             .Append(typeName)
@@ -1442,11 +1439,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                         builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                         builder.AppendLine("                {");
-                        builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                            .Append(serializedName)
-                            .Append("' when deserializing '{typeof(")
-                            .Append(typeName)
-                            .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                        builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                             .Append(serializedName)
                             .Append("' when deserializing '{typeof(")
                             .Append(typeName)
@@ -1631,6 +1624,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("        {");
         builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
         builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+            builder.AppendLine("            var __diagnosticCount = GetDeserializationDiagnosticCount(reader);");
         builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
 
         // Constructor argument locals.
@@ -2122,7 +2116,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
         builder.AppendLine("            reader.Read();");
-        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader);");
+        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader, __diagnosticCount);");
 
         // Validate constructor parameters.
         for (var i = 0; i < ctor.Parameters.Length; i++)
@@ -2144,11 +2138,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 var keyName = EscapeInterpolatedStringLiteral(parameter.KeyName);
                 builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
-                builder.Append("                throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required constructor parameter '")
-                    .Append(keyName)
-                    .Append("' when deserializing '{typeof(")
-                    .Append(typeName)
-                    .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required constructor parameter '")
+                builder.Append("                throw CreateDeserializationException(reader, span, $\"Missing required constructor parameter '")
                     .Append(keyName)
                     .Append("' when deserializing '{typeof(")
                     .Append(typeName)
@@ -2176,11 +2166,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                        .Append(serializedName)
-                        .Append("' when deserializing '{typeof(")
-                        .Append(typeName)
-                        .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
@@ -2204,11 +2190,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                        .Append(serializedName)
-                        .Append("' when deserializing '{typeof(")
-                        .Append(typeName)
-                        .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
@@ -2685,6 +2667,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            }");
         builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
         builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+            builder.AppendLine("            var __diagnosticCount = GetDeserializationDiagnosticCount(reader);");
         builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
         if (callsOnDeserializing)
         {
@@ -2757,11 +2740,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if ((seenMask & (1UL << ").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")) == 0)");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                        .Append(serializedName)
-                        .Append("' when deserializing '{typeof(")
-                        .Append(typeName)
-                        .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)
@@ -2785,11 +2764,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var serializedName = EscapeInterpolatedStringLiteral(poco.Members[i].SerializedName);
                     builder.Append("                if (!seen[").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine("])");
                     builder.AppendLine("                {");
-                    builder.Append("                    throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required TOML key '")
-                        .Append(serializedName)
-                        .Append("' when deserializing '{typeof(")
-                        .Append(typeName)
-                        .Append(").FullName}'.\") : new global::Meziantou.Framework.Toml.TomlException($\"Missing required TOML key '")
+                    builder.Append("                    throw CreateDeserializationException(reader, span, $\"Missing required TOML key '")
                         .Append(serializedName)
                         .Append("' when deserializing '{typeof(")
                         .Append(typeName)

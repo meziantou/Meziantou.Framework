@@ -65,6 +65,12 @@ public sealed class TomlException : Exception
     /// </summary>
     public DiagnosticsBag Diagnostics { get; }
 
+    // The value that failed was read completely and its errors are in the diagnostics of the operation, so the reading can
+    // continue with the next value to report the errors of the rest of the document
+    internal bool IsRecordedValueError { get; private init; }
+
+    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics) => new(operationDiagnostics) { IsRecordedValueError = true };
+
     /// <summary>
     /// Gets the optional source span associated with this exception.
     /// </summary>

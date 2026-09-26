@@ -1495,6 +1495,35 @@ internal sealed partial class TestTomlSerializerContextRequiredLocation : TomlSe
 {
 }
 
+public sealed class GeneratedAggregationRoot
+{
+    public IList<int> Numbers { get; set; } = [];
+
+    public GeneratedAggregationRecord First { get; set; } = new(0);
+
+    public GeneratedAggregationRecord Second { get; set; } = new(0);
+
+    public GeneratedAggregationChild C1 { get; set; } = new();
+
+    public GeneratedAggregationChild C2 { get; set; } = new();
+
+    public GeneratedRequiredLocationChild R1 { get; set; } = new() { Z = 0 };
+
+    public GeneratedRequiredLocationChild R2 { get; set; } = new() { Z = 0 };
+}
+
+public sealed record GeneratedAggregationRecord(int Value);
+
+public sealed class GeneratedAggregationChild
+{
+    public int Value { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedAggregationRoot))]
+internal sealed partial class TestTomlSerializerContextAggregation : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [TomlDerivedType(typeof(GeneratedIntDiscrimCircle), 1)]
 [TomlDerivedType(typeof(GeneratedIntDiscrimSquare), 2)]
@@ -2977,6 +3006,34 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Fact]
+    public void Deserialize_ReportsTheErrorsOfEveryTableAndElement()
+    {
+        const string Toml = """
+            Numbers = [1, 'x', 3, 'y']
+            [First]
+            Value = 'a'
+            [Second]
+            Value = 'b'
+            [C1]
+            Value = 'c'
+            [C2]
+            Value = 'd'
+            [R1]
+            X = 1
+            [R2]
+            X = 2
+            """;
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedAggregationRoot>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextAggregation.Default.GeneratedAggregationRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            Assert.Equal([0, 0, 2, 4, 6, 8, 9, 11], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
+        }
     }
 
     [Theory]

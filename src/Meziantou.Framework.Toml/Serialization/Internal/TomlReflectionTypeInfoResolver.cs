@@ -1129,10 +1129,8 @@ internal static class TomlReflectionTypeInfoResolver
                     {
                         memberValue = ReadMemberValue(reader, instance, member);
                     }
-                    catch (TomlException ex) when (reader.OperationState.CanAddDiagnostics(ex) && reader.IsStateUnchanged(memberValueStartState))
+                    catch (TomlException ex) when (reader.TryRecoverValue(ex, memberValueStartState))
                     {
-                        reader.OperationState.AddDiagnostics(ex);
-                        reader.Skip();
                         continue;
                     }
 
@@ -1165,7 +1163,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (seen is not null)
             {
-                ValidateRequiredMembers(seen, tableStartSpan ?? endTableSpan);
+                ValidateRequiredMembers(reader, seen, tableStartSpan ?? endTableSpan);
             }
 
             if (propertiesMetadata is not null)
@@ -1459,6 +1457,7 @@ internal static class TomlReflectionTypeInfoResolver
 
         private object ReadWithConstructor(TomlReader reader, TomlSourceSpan? tableStartSpan)
         {
+            var diagnosticCount = reader.OperationState.DiagnosticCount;
             TomlPropertiesMetadata? propertiesMetadata = null;
             if (Options.MetadataStore is not null && !Type.IsValueType)
             {
@@ -1551,10 +1550,8 @@ internal static class TomlReflectionTypeInfoResolver
                             value = typeInfo.ReadAsObject(reader);
                         }
                     }
-                    catch (TomlException ex) when (reader.OperationState.CanAddDiagnostics(ex) && reader.IsStateUnchanged(valueStartState))
+                    catch (TomlException ex) when (reader.TryRecoverValue(ex, valueStartState))
                     {
-                        reader.OperationState.AddDiagnostics(ex);
-                        reader.Skip();
                         continue;
                     }
 
@@ -1613,10 +1610,8 @@ internal static class TomlReflectionTypeInfoResolver
                             value = typeInfo.ReadAsObject(reader);
                         }
                     }
-                    catch (TomlException ex) when (reader.OperationState.CanAddDiagnostics(ex) && reader.IsStateUnchanged(valueStartState))
+                    catch (TomlException ex) when (reader.TryRecoverValue(ex, valueStartState))
                     {
-                        reader.OperationState.AddDiagnostics(ex);
-                        reader.Skip();
                         continue;
                     }
 
@@ -1643,10 +1638,9 @@ internal static class TomlReflectionTypeInfoResolver
             var endTableSpan = reader.CurrentSpan;
             reader.Read(); // consume EndTable
 
-            if (reader.OperationState.Diagnostics is { Count: > 0 } diagnostics)
-            {
-                throw new TomlException(diagnostics);
-            }
+            // The values of this table that have errors are missing, so the instance cannot be created. Errors of the rest of the
+            // document do not prevent it.
+            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount);
 
             for (var i = 0; i < _parameters.Length; i++)
             {
@@ -1671,13 +1665,13 @@ internal static class TomlReflectionTypeInfoResolver
                 // The end of the table has the span of whatever follows it, possibly another table
                 if ((tableStartSpan ?? endTableSpan) is { } span)
                 {
-                    throw new TomlException(span, $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
+                    throw reader.OperationState.RecordValueError(new TomlException(span, $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'."));
                 }
 
                 throw new TomlException($"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
             }
 
-            ValidateRequiredMembers(memberSeen, tableStartSpan ?? endTableSpan);
+            ValidateRequiredMembers(reader, memberSeen, tableStartSpan ?? endTableSpan);
 
             object instance;
             try
@@ -1810,7 +1804,7 @@ internal static class TomlReflectionTypeInfoResolver
             return true;
         }
 
-        private void ValidateRequiredMembers(bool[] seen, TomlSourceSpan? span)
+        private void ValidateRequiredMembers(TomlReader reader, bool[] seen, TomlSourceSpan? span)
         {
             for (var i = 0; i < _members.Count; i++)
             {
@@ -1824,7 +1818,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     if (span is { } locatedSpan)
                     {
-                        throw new TomlException(locatedSpan, $"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'.");
+                        throw reader.OperationState.RecordValueError(new TomlException(locatedSpan, $"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'."));
                     }
 
                     throw new TomlException($"Missing required TOML key '{member.SerializedName}' when deserializing '{Type.FullName}'.");

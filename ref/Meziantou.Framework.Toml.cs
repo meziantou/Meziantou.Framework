@@ -925,6 +925,9 @@ namespace Meziantou.Framework.Toml.Serialization
         protected static Meziantou.Framework.Toml.TomlTypeInfo? ResolveRuntimeConverterTypeInfo(Meziantou.Framework.Toml.TomlSerializerOptions options, System.Type type, System.Type[]? ignoredConverterTypes) => throw null;
         protected static Meziantou.Framework.Toml.TomlTypeInfo<T> GetBuiltInTypeInfo<T>(Meziantou.Framework.Toml.TomlSerializerOptions options) => throw null;
         protected static bool TryAddDeserializationDiagnostic(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Serialization.TomlTokenType tokenType, Meziantou.Framework.Toml.Text.TomlSourceSpan? span, Meziantou.Framework.Toml.TomlException exception) => throw null;
+        protected static int GetDeserializationDiagnosticCount(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
+        protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader, int diagnosticCount) { }
+        protected static Meziantou.Framework.Toml.TomlException CreateDeserializationException(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Text.TomlSourceSpan? span, string message) => throw null;
         protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader) { }
         protected static void WritePropertyName(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.TomlDottedKeyHandling? dottedKeyHandling) { }
         protected static void ApplyPropertyMetadata(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.Model.TomlPropertyMetadata metadata) { }

@@ -60,7 +60,15 @@ internal sealed class TomlImmutableHashSetTypeInfo<TElement> : TomlTypeInfo<Immu
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndArray)
         {
-            builder.Add(ReadElement(reader));
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                builder.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
         }
 
         reader.Read();

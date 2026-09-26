@@ -40,7 +40,7 @@ internal partial class Parser
 
     public DocumentSyntax Run()
     {
-        var doc = new DocumentSyntax();
+        var doc = new DocumentSyntax { HasByteOrderMark = _lexer.HasByteOrderMark };
         _diagnostics = doc.Diagnostics;
 
         _currentTable = null;
@@ -120,7 +120,7 @@ internal partial class Parser
                     return true;
                 default:
                     LogError($"Unexpected token [{ToPrintable(_token)}] found");
-                    NextToken();
+                    SkipToken();
                     break;
             }
         }
@@ -223,7 +223,7 @@ internal partial class Parser
             default:
                 LogError($"Unexpected token `{ToPrintable(_token)}` for a value");
                 // Skip the token as we don't want to loop forever
-                NextToken();
+                SkipToken();
                 break;
         }
         return null;
@@ -327,9 +327,13 @@ internal partial class Parser
         return Close(f64);
     }
 
-    private ArraySyntax ParseArray()
+    private ArraySyntax? ParseArray()
     {
-        EnterContainer();
+        if (!EnterContainer())
+        {
+            return null;
+        }
+
         var array = Open<ArraySyntax>();
         var saveHideNewLine = _hideNewLine;
         _hideNewLine = true;
@@ -383,9 +387,13 @@ internal partial class Parser
         return Close(array);
     }
 
-    private InlineTableSyntax ParseInlineTable()
+    private InlineTableSyntax? ParseInlineTable()
     {
-        EnterContainer();
+        if (!EnterContainer())
+        {
+            return null;
+        }
+
         var inlineTable = Open<InlineTableSyntax>();
 
         var previousState = _lexer.State;
@@ -515,9 +523,10 @@ internal partial class Parser
         while (_token.Kind == TokenKind.Dot)
         {
             depth++;
-            if (depth > _effectiveMaxDepth)
+            if (depth == _effectiveMaxDepth + 1)
             {
-                throw new TomlException(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+                // The segments are read in a loop, so the key can still be read
+                LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
             }
 
             AddToListAndUpdateSpan(key.DotKeys, ParseDotKey());
@@ -538,17 +547,27 @@ internal partial class Parser
         }
 
         LogError($"Unexpected token `{ToPrintable(_token)}` for a base key");
-        NextToken();
+        SkipToken();
         return null;
     }
 
-    private void EnterContainer()
+    private bool EnterContainer()
     {
         _currentContainerDepth++;
         if (_currentContainerDepth > _effectiveMaxDepth)
         {
-            throw new TomlException(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            // Containers are read recursively, so the rest of the document is kept as trivia instead of being read
+            LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            _currentContainerDepth--;
+            while (_token.Kind != TokenKind.Eof)
+            {
+                SkipToken();
+            }
+
+            return false;
         }
+
+        return true;
     }
 
     private void ExitContainer()
@@ -623,7 +642,8 @@ internal partial class Parser
             }
         }
         syntax.TokenKind = tokenKind;
-        syntax.Text = _token.Kind.ToText() ?? GetTokenText(_token);
+        // An invalid token keeps the text that was found, not the text of the expected token
+        syntax.Text = _token.Kind == TokenKind.Eof ? string.Empty : _token.Kind.ToText() ?? GetTokenText(_token);
         if (tokenKind == TokenKind.NewLine)
         {
             // Once we have found a new line, we let all the other NewLines as trivias
@@ -646,12 +666,28 @@ internal partial class Parser
     {
         while (!IsEolOrEof())
         {
-            NextToken();
+            SkipToken();
         }
         if (_token.Kind != TokenKind.Eof)
         {
-            NextToken();
+            SkipToken();
         }
+    }
+
+    // A skipped token is kept as trivia, so that the tree still has every character of the document
+    private void SkipToken()
+    {
+        if (_token.Kind != TokenKind.Eof)
+        {
+            _currentTrivias.Add(new SyntaxTrivia
+            {
+                Span = GetSpanForToken(_token),
+                Kind = _token.Kind,
+                Text = GetTokenText(_token),
+            });
+        }
+
+        NextToken();
     }
 
     private bool IsEolOrEof()

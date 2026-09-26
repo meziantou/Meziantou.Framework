@@ -16,6 +16,12 @@ public sealed class DocumentSyntax : SyntaxNode
     }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the document starts with a byte order mark (U+FEFF).
+    /// </summary>
+    /// <remarks>The byte order mark is written by <see cref="SyntaxNode.WriteTo"/>, before any trivia.</remarks>
+    public bool HasByteOrderMark { get; set; }
+
+    /// <summary>
     /// Gets the diagnostics attached to this document.
     /// </summary>
     public DiagnosticsBag Diagnostics { get; }

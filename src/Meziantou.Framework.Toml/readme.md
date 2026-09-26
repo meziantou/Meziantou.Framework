@@ -610,9 +610,12 @@ foreach (var node in document.Descendants())
 }
 ```
 
-`SyntaxParser.Parse` collects errors in `Diagnostics`, while `SyntaxParser.ParseStrict` throws a `TomlException`. A
-`DocumentSyntax` contains the root `KeyValues` and the `Tables`. Every node has `LeadingTrivia` and `TrailingTrivia`.
-Derive from `SyntaxVisitor` to walk the tree, and use `Tokens()` to enumerate the tokens.
+`SyntaxParser.Parse` collects errors in `Diagnostics`, including when `MaxDepth` is exceeded, while
+`SyntaxParser.ParseStrict` throws a `TomlException`. The tree of an invalid document still keeps every character: the
+tokens the parser skips are kept as trivia, and an `InvalidSyntaxToken` keeps the text found in place of the expected
+token. A byte order mark is not a token either; `DocumentSyntax.HasByteOrderMark` records it. A `DocumentSyntax`
+contains the root `KeyValues` and the `Tables`. Every node has `LeadingTrivia` and `TrailingTrivia`. Derive from
+`SyntaxVisitor` to walk the tree, and use `Tokens()` to enumerate the tokens.
 
 ## Lexer and parser
 

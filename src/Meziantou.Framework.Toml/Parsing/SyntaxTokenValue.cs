@@ -79,7 +79,7 @@ public readonly struct SyntaxTokenValue : IEquatable<SyntaxTokenValue>
         {
             return "<eof>";
         }
-        return End.Offset < text.Length ? text.Substring(Start.Offset, End.Offset - Start.Offset + 1) : null;
+        return End.Offset < text.Length ? text.Substring(Start.Offset, GetLength(text)) : null;
     }
 
     internal string? GetText(ReadOnlySpan<char> text)
@@ -90,7 +90,7 @@ public readonly struct SyntaxTokenValue : IEquatable<SyntaxTokenValue>
         }
 
         var start = Start.Offset;
-        var length = End.Offset - start + 1;
+        var length = GetLength(text);
         if (start < 0 || length < 0)
         {
             return null;
@@ -149,5 +149,18 @@ public readonly struct SyntaxTokenValue : IEquatable<SyntaxTokenValue>
     public static bool operator !=(SyntaxTokenValue left, SyntaxTokenValue right)
     {
         return !left.Equals(right);
+    }
+
+    // The end is the position of the last character, which is the first code unit of a surrogate pair
+    private int GetLength(ReadOnlySpan<char> text)
+    {
+        var length = End.Offset - Start.Offset + 1;
+        var end = End.Offset;
+        if ((uint)(end + 1) < (uint)text.Length && char.IsHighSurrogate(text[end]) && char.IsLowSurrogate(text[end + 1]))
+        {
+            length++;
+        }
+
+        return length;
     }
 }

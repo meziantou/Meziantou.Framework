@@ -34,7 +34,8 @@ public sealed class TomlLexer
         ArgumentNullException.ThrowIfNull(toml);
 
         var memory = toml.AsMemory();
-        if (!memory.IsEmpty && memory.Span[0] == '\uFEFF')
+        var hasByteOrderMark = !memory.IsEmpty && memory.Span[0] == '\uFEFF';
+        if (hasByteOrderMark)
         {
             memory = memory.Slice(1);
         }
@@ -42,6 +43,7 @@ public sealed class TomlLexer
         var lexer = new Lexer(memory, sourceName ?? string.Empty)
         {
             DecodeScalars = false,
+            HasByteOrderMark = hasByteOrderMark,
         };
         return new TomlLexer(lexer);
     }
@@ -62,7 +64,8 @@ public sealed class TomlLexer
         ArgumentNullException.ThrowIfNull(lexerOptions);
 
         var memory = toml.AsMemory();
-        if (!memory.IsEmpty && memory.Span[0] == '\uFEFF')
+        var hasByteOrderMark = !memory.IsEmpty && memory.Span[0] == '\uFEFF';
+        if (hasByteOrderMark)
         {
             memory = memory.Slice(1);
         }
@@ -70,6 +73,7 @@ public sealed class TomlLexer
         var lexer = new Lexer(memory, sourceName ?? string.Empty)
         {
             DecodeScalars = lexerOptions.DecodeScalars,
+            HasByteOrderMark = hasByteOrderMark,
         };
         return new TomlLexer(lexer);
     }

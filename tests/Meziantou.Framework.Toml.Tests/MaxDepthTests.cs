@@ -106,9 +106,24 @@ public sealed class MaxDepthTests
         var key = string.Join('.', Enumerable.Repeat("a", isTableHeader ? 8 : 9));
         var toml = isTableHeader ? $"[{key}]\n" : $"{key} = 1\n";
 
-        var ex = Assert.Throws<TomlException>(() => SyntaxParser.Parse(toml, options));
-        Assert.Contains("maximum depth of 8", ex.Message, StringComparison.Ordinal);
+        var doc = SyntaxParser.Parse(toml, options);
+        Assert.Contains(doc.Diagnostics, diagnostic => diagnostic.Message.Contains("maximum depth of 8", StringComparison.Ordinal));
+        Assert.Equal(toml, doc.ToString());
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml, options));
+    }
+
+    [Theory]
+    [InlineData("value = [[1]]\nother = 2\n")]
+    [InlineData("value = {a = {b = 1}}\n[t]\nx = 1\n")]
+    [InlineData("value = [{a = [1, 2]}]")]
+    public void SyntaxParser_DeepContainer_ReportsADiagnostic(string toml)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = 2 };
+
+        var doc = SyntaxParser.Parse(toml, options);
+
+        Assert.Contains(doc.Diagnostics, diagnostic => diagnostic.Message.Contains("maximum depth of 2", StringComparison.Ordinal));
+        Assert.Equal(toml, doc.ToString());
     }
 
     [Theory]
@@ -129,7 +144,7 @@ public sealed class MaxDepthTests
         var toml = $"[{prefix}.b]\n[{prefix}.c]\n";
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        Assert.Throws<TomlException>(() => SyntaxParser.Parse(toml));
+        Assert.True(SyntaxParser.Parse(toml).HasErrors);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), $"Parsing took {stopwatch.Elapsed}");
     }
 

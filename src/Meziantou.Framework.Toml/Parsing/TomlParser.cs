@@ -576,7 +576,7 @@ public sealed partial class TomlParser
                         _pendingWhitespace = null;
                     }
 
-                    _pendingTrivia.Add(new TomlSyntaxTriviaMetadata(TokenKind.Comment, _lexer.GetString(token.Start.Offset, token.End.Offset - token.Start.Offset + 1) ?? string.Empty));
+                    _pendingTrivia.Add(new TomlSyntaxTriviaMetadata(TokenKind.Comment, token.GetText(_lexer.Text.Span) ?? string.Empty));
                     continue;
                 }
 

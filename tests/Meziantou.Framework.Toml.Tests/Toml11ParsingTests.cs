@@ -47,6 +47,40 @@ public sealed class Toml11ParsingTests
         Assert.True(parser.HasErrors);
     }
 
+    [Theory]
+    [InlineData("\uFEFFa = 1\n", true)]
+    [InlineData("\uFEFF", true)]
+    [InlineData("\uFEFF# comment\n[t]\n", true)]
+    [InlineData("a = 1\n", false)]
+    public void SyntaxParser_ByteOrderMark_IsKept(string toml, bool hasByteOrderMark)
+    {
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.False(doc.HasErrors);
+        Assert.Equal(hasByteOrderMark, doc.HasByteOrderMark);
+        Assert.Equal(toml, doc.ToString());
+        Assert.Equal(toml, SyntaxParser.Parse(new StringReader(toml)).ToString());
+    }
+
+    [Theory]
+    [InlineData("[a\nb=1")]
+    [InlineData("[a\r\nb=1\r\n")]
+    [InlineData("a = \nb = 2\n")]
+    [InlineData("a b c = 1\n")]
+    [InlineData("= 1\n[t]]\n")]
+    [InlineData("a = [1 2]\n")]
+    [InlineData("a = {b = 1 c = 2}\n")]
+    [InlineData("a = 1 2 3\nb = \"x")]
+    [InlineData("[[t]\n")]
+    [InlineData("a.=1\n")]
+    public void SyntaxParser_InvalidDocument_KeepsEveryCharacter(string toml)
+    {
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.True(doc.HasErrors);
+        Assert.Equal(toml, doc.ToString());
+    }
+
     [Fact]
     public void LocalTime_MinuteOnly_IsAccepted()
     {

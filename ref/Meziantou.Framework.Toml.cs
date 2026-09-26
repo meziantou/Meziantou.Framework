@@ -1165,6 +1165,7 @@ namespace Meziantou.Framework.Toml.Syntax
 
     public sealed class DocumentSyntax : Meziantou.Framework.Toml.Syntax.SyntaxNode
     {
+        public bool HasByteOrderMark { get => throw null; set { } }
         public Meziantou.Framework.Toml.Syntax.DiagnosticsBag Diagnostics { get => throw null; }
         public bool HasErrors { get => throw null; }
         public Meziantou.Framework.Toml.Syntax.SyntaxList<Meziantou.Framework.Toml.Syntax.KeyValueSyntax> KeyValues { get => throw null; }

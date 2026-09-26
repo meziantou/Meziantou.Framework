@@ -127,6 +127,7 @@ public static class StandardTests
                 }
 
                 Assert.True(doc.HasErrors, message: "The TOML requires parsing/validation errors");
+                Assert.Equal(toml, roundtrip, message: "The roundtrip doesn't match");
                 Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
                 Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(new MemoryStream(testCase.Bytes)));
                 Assert.Throws<TomlException>(() => ReadAllEvents(TomlParser.Create(toml)));
@@ -179,11 +180,30 @@ public static class StandardTests
             var failure = CompareWithLanguageToml(toml);
             if (failure is not null)
             {
-                failures.Add($"{failure}: {JsonSerializer.Serialize(toml)}");
+                failures.Add($"{failure}: \"{Escape(toml)}\"");
             }
         }
 
         Assert.Empty(failures, string.Join(Environment.NewLine, failures));
+    }
+
+    // Every code unit is visible, including a lone surrogate that JSON would replace with U+FFFD
+    private static string Escape(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (c is < ' ' or > '~' or '"' or '\\')
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"\\u{(int)c:X4}");
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private const string MutationAlphabet = "=[]{},.\"'#\n\r\t _-+:0123456789eExobTZaz\\";
@@ -233,7 +253,7 @@ public static class StandardTests
             return $"SyntaxParser: expected valid={expected}";
         }
 
-        if (expected && doc.ToString() != toml)
+        if (doc.ToString() != toml)
         {
             return "SyntaxParser: the roundtrip doesn't match";
         }

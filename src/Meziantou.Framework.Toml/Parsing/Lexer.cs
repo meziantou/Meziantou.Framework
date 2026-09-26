@@ -61,6 +61,9 @@ internal sealed class Lexer
     /// </summary>
     public bool DecodeScalars { get; set; } = true;
 
+    /// <summary>Gets or sets a value indicating whether the text had a byte order mark, which is not part of <see cref="Text"/>.</summary>
+    public bool HasByteOrderMark { get; set; }
+
     /// <summary>
     /// Gets or sets a value indicating whether the lexer should eagerly materialize simple string values
     /// (single-line basic strings without escape sequences) even when <see cref="DecodeScalars"/> is <c>false</c>.
@@ -1309,6 +1312,8 @@ internal sealed class Lexer
             }
             else
             {
+                // The string takes the rest of the file, including a trailing newline or backslash that did not move the end
+                end = GetEndOfFilePosition(end);
                 AddError("Invalid End-Of-File found for multi-line string", end, end);
             }
             _token = new SyntaxTokenValue(TokenKind.StringMulti, start, end, decodeScalars ? _textBuilder.ToString() : null);
@@ -1322,6 +1327,8 @@ internal sealed class Lexer
             }
             else
             {
+                // The string takes the rest of the file, including a trailing newline or backslash that did not move the end
+                end = GetEndOfFilePosition(end);
                 AddError("Invalid End-Of-File found on string literal", end, end);
             }
             _token = new SyntaxTokenValue(TokenKind.String, start, end, decodeScalars ? _textBuilder.ToString() : null);
@@ -1720,6 +1727,8 @@ internal sealed class Lexer
             }
             else
             {
+                // The string takes the rest of the file, including a trailing newline or backslash that did not move the end
+                end = GetEndOfFilePosition(end);
                 AddError("Invalid End-Of-File found for multi-line literal string", end, end);
             }
             _token = new SyntaxTokenValue(TokenKind.StringLiteralMulti, start, end, decodeScalars ? _textBuilder.ToString() : null);
@@ -1733,6 +1742,8 @@ internal sealed class Lexer
             }
             else
             {
+                // The string takes the rest of the file, including a trailing newline or backslash that did not move the end
+                end = GetEndOfFilePosition(end);
                 AddError("Invalid End-Of-File found on string literal", end, end);
             }
             _token = new SyntaxTokenValue(TokenKind.StringLiteral, start, end, decodeScalars ? _textBuilder.ToString() : null);
@@ -1870,6 +1881,9 @@ internal sealed class Lexer
     }
 
     private Char32 NextCharFromReader() => NextCharFromReaderCore();
+
+    // The position of the last UTF-16 code unit of the text, when a token ends at the end of the file
+    private TextPosition GetEndOfFilePosition(TextPosition end) => _textLength == 0 ? end : new TextPosition(_textLength - 1, CurrentPosition.Line, CurrentPosition.Column);
 
     private void AddError(string message, TextPosition start, TextPosition end)
     {

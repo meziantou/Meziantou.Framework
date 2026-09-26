@@ -46,4 +46,18 @@ public sealed class NewApiMetadataStoreTests
         Assert.NotNull(propertyMetadata.TrailingTrivia);
         Assert.NotEmpty(propertyMetadata.TrailingTrivia);
     }
+
+    [Fact]
+    public void Deserialize_TomlTable_CommentEndingWithASurrogatePair_IsCapturedWhole()
+    {
+        var store = new TomlMetadataStore();
+        var options = new TomlSerializerOptions { MetadataStore = store };
+
+        var table = TomlSerializer.Deserialize<TomlTable>("a = 1 # \U0001F600\n", options)!;
+
+        Assert.True(store.TryGetProperties(table, out var properties));
+        Assert.True(properties!.TryGetProperty("a", out var propertyMetadata));
+        Assert.Contains(propertyMetadata!.TrailingTrivia!, trivia => trivia.Text == "# \U0001F600");
+        Assert.Equal("a = 1 # \U0001F600\n", TomlSerializer.Serialize(table, options));
+    }
 }

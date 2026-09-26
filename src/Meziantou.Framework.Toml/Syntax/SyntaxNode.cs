@@ -84,8 +84,18 @@ public abstract class SyntaxNode : SyntaxNodeBase
 
     private void WriteToInternal(TextWriter writer)
     {
+        if (this is DocumentSyntax { HasByteOrderMark: true })
+        {
+            writer.Write('\uFEFF');
+        }
+
         WriteTriviaTo(LeadingTrivia, writer);
-        if (this is SyntaxToken token)
+        if (this is InvalidSyntaxToken invalidToken)
+        {
+            // The text that was found instead of the expected token
+            writer.Write(invalidToken.Text);
+        }
+        else if (this is SyntaxToken token)
         {
             writer.Write(token.TokenKind.ToText() ?? token.Text);
         }

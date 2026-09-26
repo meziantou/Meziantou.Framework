@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -215,5 +216,25 @@ public class SerializationTests
         public string Name { get; set; } = "";
 
         public List<GroupItem> Children { get; set; } = [];
+    }
+
+    [Fact]
+    public void Serialize_ObjectValuesWithRuntimeTypes_UsesTheirMetadata()
+    {
+        var value = new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["list"] = new List<int> { 1, 2 },
+            ["array"] = new[] { "a", "b" },
+            ["poco"] = new GroupItem { Name = "n" },
+            ["items"] = new List<GroupItem> { new() { Name = "x" } },
+        };
+
+        var table = TomlSerializer.Deserialize<TomlTable>(TomlSerializer.Serialize(value))!;
+
+        Assert.Equal([1L, 2L], ((TomlArray)table["list"]).Cast<long>());
+        Assert.Equal(["a", "b"], ((TomlArray)table["array"]).Cast<string>());
+        Assert.Equal("n", ((TomlTable)table["poco"])["Name"]);
+        Assert.Equal("x", ((TomlTableArray)table["items"])[0]["Name"]);
+        Assert.Contains("Name = \"n\"", TomlSerializer.Serialize<object>(new GroupItem { Name = "n" }), StringComparison.Ordinal);
     }
 }

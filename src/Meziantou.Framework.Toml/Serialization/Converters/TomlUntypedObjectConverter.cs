@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Internal;
@@ -158,8 +159,22 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                     throw new TomlException("An untyped System.Object instance cannot be represented as TOML. Use a supported scalar/container type or a custom converter.");
                 }
 
-                throw new TomlException($"Unsupported untyped TOML value `{runtimeType.FullName}`.");
+                // A collection or a POCO stored in an object member, like the serializer does for its root value
+                if (TomlSerializer.IsReflectionEnabledByDefault)
+                {
+                    WriteUsingRuntimeType(writer, value, runtimeType);
+                    return;
+                }
+
+                throw new TomlException($"Unsupported untyped TOML value `{runtimeType.FullName}`. Reflection-based serialization is disabled, so register metadata for this type with {nameof(TomlSerializerOptions)}.{nameof(TomlSerializerOptions.TypeInfoResolver)}.");
         }
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "Only called when reflection-based serialization is enabled; the feature switch removes the call when trimming.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "Only called when reflection-based serialization is enabled; the feature switch removes the call when trimming.")]
+    private static void WriteUsingRuntimeType(TomlWriter writer, object value, Type runtimeType)
+    {
+        writer.ResolveTypeInfo(runtimeType).Write(writer, value);
     }
 
     internal static object ReadValue(TomlReader reader)

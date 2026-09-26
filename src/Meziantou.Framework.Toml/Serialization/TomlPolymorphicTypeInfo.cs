@@ -205,7 +205,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
         // Like System.Text.Json, the discriminator comes first, so a reader finds it without buffering the table
         table.AddFirst(_discriminatorPropertyName, discriminator);
-        TomlUntypedObjectConverter.Instance.Write(writer, table);
+        TomlUntypedObjectConverter.WriteWrittenTable(writer, table);
     }
 
     /// <inheritdoc />

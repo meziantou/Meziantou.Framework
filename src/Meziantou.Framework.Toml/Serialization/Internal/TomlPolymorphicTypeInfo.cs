@@ -333,7 +333,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
         // Like System.Text.Json, the discriminator comes first, so a reader finds it without buffering the table
         table.AddFirst(_discriminatorPropertyName, discriminator);
-        TomlUntypedObjectConverter.Instance.Write(writer, table);
+        TomlUntypedObjectConverter.WriteWrittenTable(writer, table);
     }
 
     public override object? ReadAsObject(TomlReader reader)

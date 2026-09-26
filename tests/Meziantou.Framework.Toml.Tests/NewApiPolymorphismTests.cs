@@ -66,6 +66,39 @@ public class NewApiPolymorphismTests
         public int Width { get; set; }
     }
 
+    private sealed class PrefixStringConverter : TomlConverter<string>
+    {
+        public override string? Read(TomlReader reader)
+        {
+            var value = reader.GetString();
+            reader.Read();
+            return value.StartsWith("enc:", StringComparison.Ordinal) ? value[4..] : value;
+        }
+
+        public override void Write(TomlWriter writer, string value) => writer.WriteStringValue("enc:" + value);
+    }
+
+    private sealed class Zoo
+    {
+        public Animal? Main { get; set; }
+
+        public System.Collections.Generic.List<Animal> Animals { get; set; } = [];
+    }
+
+    [Fact]
+    public void Serialize_Polymorphic_AppliesConvertersOnceAndNotToTheDiscriminator()
+    {
+        var options = new TomlSerializerOptions { Converters = [new PrefixStringConverter()] };
+        var zoo = new Zoo { Main = new Dog { Name = "rex" }, Animals = [new Cat { Name = "tom", Lives = 9 }] };
+
+        var toml = TomlSerializer.Serialize(zoo, options);
+
+        Assert.Equal("[Main]\nkind = \"dog\"\nName = \"enc:rex\"\nGoodBoy = false\n[[Animals]]\nkind = \"cat\"\nName = \"enc:tom\"\nLives = 9\n", toml.ReplaceLineEndings("\n"));
+        var roundtrip = TomlSerializer.Deserialize<Zoo>(toml, options)!;
+        Assert.Equal("rex", Assert.IsType<Dog>(roundtrip.Main).Name);
+        Assert.Equal("tom", Assert.IsType<Cat>(roundtrip.Animals[0]).Name);
+    }
+
     [Fact]
     public void Serialize_Polymorphic_KeepsLiteralDottedKeysOfTheDerivedType()
     {

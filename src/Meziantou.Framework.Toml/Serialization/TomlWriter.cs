@@ -298,6 +298,12 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
+    // Writes a scalar that another TomlWriter produced, so it is already a TOML value
+    internal void WriteWrittenValue(object value)
+    {
+        WriteValue(value);
+    }
+
     // Writes the float with its own round-trip formatting. Widening it to double would add digits, such as 0.10000000149011612
     // for 0.1f.
     internal void WriteSingleValue(float value)

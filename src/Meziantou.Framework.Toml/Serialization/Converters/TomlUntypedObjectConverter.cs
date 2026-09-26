@@ -53,13 +53,13 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         switch (value)
         {
             case TomlTable table:
-                WriteTable(writer, table);
+                WriteTable(writer, table, isWritten: false);
                 return;
             case TomlArray array:
-                WriteArray(writer, array);
+                WriteArray(writer, array, isWritten: false);
                 return;
             case TomlTableArray tableArray:
-                WriteTableArray(writer, tableArray);
+                WriteTableArray(writer, tableArray, isWritten: false);
                 return;
         }
 
@@ -413,7 +413,38 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         return array;
     }
 
-    private static void WriteTable(TomlWriter writer, TomlTable table)
+    // Writes a table that another TomlWriter produced, such as the derived value of a polymorphic type. Its values went through
+    // the converters already, so they are copied as they are: a converter must not run twice on the same value.
+    internal static void WriteWrittenTable(TomlWriter writer, TomlTable table) => WriteTable(writer, table, isWritten: true);
+
+    private static void WriteValue(TomlWriter writer, object? value, bool isWritten)
+    {
+        if (!isWritten)
+        {
+            Instance.Write(writer, value);
+            return;
+        }
+
+        switch (value)
+        {
+            case TomlTable table:
+                WriteTable(writer, table, isWritten);
+                break;
+            case TomlArray array:
+                WriteArray(writer, array, isWritten);
+                break;
+            case TomlTableArray tableArray:
+                WriteTableArray(writer, tableArray, isWritten);
+                break;
+            case null:
+                throw new TomlException("TOML does not support null values.");
+            default:
+                writer.WriteWrittenValue(value);
+                break;
+        }
+    }
+
+    private static void WriteTable(TomlWriter writer, TomlTable table, bool isWritten)
     {
         if (table.Kind == ObjectKind.InlineTable)
         {
@@ -435,7 +466,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         foreach (var pair in table)
         {
             writer.WritePropertyNameLiteral(pair.Key);
-            Instance.Write(writer, pair.Value);
+            WriteValue(writer, pair.Value, isWritten);
         }
 
         if (table.Kind == ObjectKind.InlineTable)
@@ -448,23 +479,23 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         }
     }
 
-    private static void WriteArray(TomlWriter writer, TomlArray array)
+    private static void WriteArray(TomlWriter writer, TomlArray array, bool isWritten)
     {
         writer.WriteStartArray();
         foreach (var item in array)
         {
-            Instance.Write(writer, item);
+            WriteValue(writer, item, isWritten);
         }
 
         writer.WriteEndArray();
     }
 
-    private static void WriteTableArray(TomlWriter writer, TomlTableArray array)
+    private static void WriteTableArray(TomlWriter writer, TomlTableArray array, bool isWritten)
     {
         writer.WriteStartTableArray();
         foreach (var item in array)
         {
-            WriteTable(writer, item);
+            WriteTable(writer, item, isWritten);
         }
 
         writer.WriteEndTableArray();

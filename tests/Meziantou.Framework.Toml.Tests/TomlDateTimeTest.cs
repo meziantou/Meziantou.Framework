@@ -118,6 +118,29 @@ public class TomlDateTimeTest
         Assert.Equal("2024-01-02T03:04:05.5", value.ToString());
     }
 
+    [Theory]
+    [InlineData("07:32:00.5", "07:32:00.50")]
+    [InlineData("1979-05-27T07:32:00.1Z", "1979-05-27T07:32:00.100Z")]
+    [InlineData("1979-05-27T07:32:00", "1979-05-27T07:32:00.000")]
+    public void Equals_IgnoresTheNumberOfFractionalDigits(string left, string right)
+    {
+        var leftValue = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>("a = " + left)!["a"];
+        var rightValue = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>("a = " + right)!["a"];
+
+        Assert.NotEqual(leftValue.SecondPrecision, rightValue.SecondPrecision);
+        Assert.Equal(leftValue, rightValue);
+        Assert.Equal(leftValue.GetHashCode(), rightValue.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_ComparesTheKind()
+    {
+        var utc = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>("a = 1979-05-27T07:32:00Z")!["a"];
+        var zeroOffset = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>("a = 1979-05-27T07:32:00+00:00")!["a"];
+
+        Assert.NotEqual(utc, zeroOffset);
+    }
+
     private sealed class DateTimeModel
     {
         public DateTime Utc { get; set; }

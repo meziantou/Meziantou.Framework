@@ -18,6 +18,8 @@ namespace Meziantou.Framework.Toml
         public TomlDateTime(int year, int month, int day) { }
         public TomlDateTime(System.DateTime datetime) { }
         public override string ToString() => throw null;
+        public readonly bool Equals(Meziantou.Framework.Toml.TomlDateTime other) => throw null;
+        public readonly override int GetHashCode() => throw null;
         [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
         System.TypeCode System.IConvertible.GetTypeCode() => throw null;
         [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -54,9 +56,7 @@ namespace Meziantou.Framework.Toml
         public static implicit operator Meziantou.Framework.Toml.TomlDateTime(System.DateTime dateTime) => throw null;
         public static bool operator !=(Meziantou.Framework.Toml.TomlDateTime left, Meziantou.Framework.Toml.TomlDateTime right) => throw null;
         public static bool operator ==(Meziantou.Framework.Toml.TomlDateTime left, Meziantou.Framework.Toml.TomlDateTime right) => throw null;
-        public readonly override int GetHashCode() => throw null;
         public readonly override bool Equals(object? obj) => throw null;
-        public readonly bool Equals(Meziantou.Framework.Toml.TomlDateTime other) => throw null;
         public readonly void Deconstruct(out System.DateTimeOffset DateTime, out int SecondPrecision, out Meziantou.Framework.Toml.TomlDateTimeKind Kind) => throw null;
     }
 

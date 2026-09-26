@@ -40,6 +40,17 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     /// <inheritdoc />
     public override string ToString() => ((IConvertible)this).ToString(CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// Indicates whether two values are the same TOML value: the same <see cref="Kind"/> and the same <see cref="DateTime"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="SecondPrecision"/> only affects how the value is written, so <c>07:32:00.5</c> equals <c>07:32:00.50</c>.
+    /// </remarks>
+    public readonly bool Equals(TomlDateTime other) => Kind == other.Kind && DateTime.Equals(other.DateTime);
+
+    /// <inheritdoc />
+    public override readonly int GetHashCode() => HashCode.Combine(Kind, DateTime);
+
     [ExcludeFromCodeCoverage]
     TypeCode IConvertible.GetTypeCode()
     {

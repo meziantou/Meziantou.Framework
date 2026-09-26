@@ -4136,6 +4136,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             });
         }
 
+        // Declaration order, the same as the reflection resolver: the members of the base types first, then in each type
+        // the fields then the properties, in declaration order
+        var orderedMembers = members
+            .Select(static (member, index) => (Member: member, Index: index))
+            .OrderBy(static item => GetInheritanceDepth(item.Member.DeclaringType))
+            .ThenBy(static item => item.Member.IsField ? 0 : 1)
+            .ThenBy(static item => item.Index)
+            .Select(static item => item.Member)
+            .ToArray();
+        members.Clear();
+        members.AddRange(orderedMembers);
+
         PocoConstructor? constructorModel = null;
         if (constructorError is not null && selectedConstructor is null)
         {
@@ -4241,6 +4253,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 yield return member;
             }
         }
+    }
+
+    private static int GetInheritanceDepth(ITypeSymbol type)
+    {
+        var depth = 0;
+        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        {
+            depth++;
+        }
+
+        return depth;
     }
 
     private static IEnumerable<IFieldSymbol> EnumerateSerializableInstanceFields(INamedTypeSymbol type)

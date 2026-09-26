@@ -167,7 +167,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `WriteIndented` | `true` | Indents nested tables. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
 | `NewLine` | `Lf` | Line ending style (`Lf` or `CrLf`). |
-| `MappingOrder` | `Declaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. |
+| `MappingOrder` | `Declaration` | Member order: `Declaration`, `Alphabetical`, `OrderThenDeclaration`, or `OrderThenAlphabetical`. Declaration order lists the members of the base types first, then in each type the fields and then the properties. |
 | `DottedKeyHandling` | `Literal` | Writes keys containing a dot as quoted keys (`Literal`) or expands them into subtables (`Expand`). |
 | `RootValueHandling` | `Error` | Behavior when the root value is not a table. `WrapInRootKey` writes it under `RootValueKeyName` (`"value"`). |
 | `InlineTablePolicy` | `Never` | When nested objects are written as inline tables: `Never`, `WhenSmall`, or `Always`. |

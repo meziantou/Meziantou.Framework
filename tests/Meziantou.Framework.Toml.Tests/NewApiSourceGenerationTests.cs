@@ -388,6 +388,28 @@ public sealed record GeneratedKeywordRecord(string @class, int @base)
 }
 #pragma warning restore IDE1006
 
+#pragma warning disable CA1051 // The test needs public fields
+public class GeneratedOrderBase
+{
+    public int BaseProperty { get; set; } = 1;
+
+    public int BaseField = 2;
+}
+
+public sealed class GeneratedOrderDerived : GeneratedOrderBase
+{
+    public int DerivedField = 4;
+
+    public int DerivedProperty { get; set; } = 3;
+}
+#pragma warning restore CA1051
+
+[TomlSourceGenerationOptions(IncludeFields = true)]
+[TomlSerializable(typeof(GeneratedOrderDerived))]
+internal sealed partial class TestTomlSerializerContextMemberOrder : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedBraceNameModel
 {
     [TomlRequired]
@@ -1344,7 +1366,7 @@ public class NewApiSourceGenerationTests
         var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
         var model = TomlSerializer.Deserialize("Field = 10", context.GeneratedMemberSelectionModel)!;
 
-        Assert.Equal("GetOnly = 3\nInitOnly = 4\nField = 1\nReadOnlyField = 2", toml.Trim());
+        Assert.Equal("Field = 1\nReadOnlyField = 2\nGetOnly = 3\nInitOnly = 4", toml.Trim());
         Assert.Equal(10, model.Field);
         Assert.True(context.Options.IncludeFields);
     }
@@ -1368,7 +1390,7 @@ public class NewApiSourceGenerationTests
         var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
         var model = TomlSerializer.Deserialize("InitOnly = 40", context.GeneratedMemberSelectionModel)!;
 
-        Assert.Equal("InitOnly = 4\nField = 1", toml.Trim());
+        Assert.Equal("Field = 1\nInitOnly = 4", toml.Trim());
         Assert.Equal(40, model.InitOnly);
         Assert.True(context.Options.IgnoreReadOnlyFields);
         Assert.True(context.Options.IgnoreReadOnlyProperties);
@@ -1817,6 +1839,15 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal(value, TomlSerializer.Deserialize(toml, typeInfo));
         Assert.Contains("class = \"a\"", toml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeclarationOrder_IsTheSameInBothPaths()
+    {
+        const string Expected = "BaseField = 2\nBaseProperty = 1\nDerivedField = 4\nDerivedProperty = 3\n";
+
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedOrderDerived(), new TomlSerializerOptions { IncludeFields = true }));
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedOrderDerived(), TestTomlSerializerContextMemberOrder.Default.GeneratedOrderDerived));
     }
 
     [Fact]

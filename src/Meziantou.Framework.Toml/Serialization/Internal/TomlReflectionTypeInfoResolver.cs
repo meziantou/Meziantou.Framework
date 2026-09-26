@@ -594,17 +594,27 @@ internal static class TomlReflectionTypeInfoResolver
 
     private static List<MemberModel> OrderMembers(List<MemberModel> members, TomlMappingOrderPolicy mappingOrder)
     {
-        // Best-effort declaration order using MetadataToken.
-        static int DeclarationOrder(MemberModel m)
+        // Declaration order, the same as generated code: the members of the base types first, then in each type the
+        // fields then the properties, in declaration order (the metadata token)
+        static (int Depth, int Kind, int Token) DeclarationOrder(MemberModel m)
         {
+            var depth = 0;
+            for (var current = m.Member.DeclaringType?.BaseType; current is not null; current = current.BaseType)
+            {
+                depth++;
+            }
+
+            int token;
             try
             {
-                return m.Member.MetadataToken;
+                token = m.Member.MetadataToken;
             }
-            catch
+            catch (InvalidOperationException)
             {
-                return 0;
+                token = 0;
             }
+
+            return (depth, m.Member is FieldInfo ? 0 : 1, token);
         }
 
         var comparer = StringComparer.Ordinal;

@@ -37,15 +37,36 @@ internal static class TomlTypeInfoResolverPipeline
             return cached;
         }
 
-        var resolved = ResolveUncached(state, type);
+        var resolved = ResolveUncached(state, type, out var errorMessage) ?? throw new TomlException(errorMessage!);
         state.CacheTypeInfo(type, resolved);
+        return resolved;
+    }
+
+    /// <summary>
+    /// Resolves the metadata of a type, or returns <see langword="null"/> when no metadata is available.
+    /// </summary>
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    public static TomlTypeInfo? TryResolve(TomlSerializerOptions options, Type type)
+    {
+        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentGuard.ThrowIfNull(type, nameof(type));
+
+        var state = new TomlSerializationOperationState(options);
+        var resolved = ResolveUncached(state, type, out _);
+        if (resolved is not null)
+        {
+            state.CacheTypeInfo(type, resolved);
+        }
+
         return resolved;
     }
 
     [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
-    private static TomlTypeInfo ResolveUncached(TomlSerializationOperationState state, Type type)
+    private static TomlTypeInfo? ResolveUncached(TomlSerializationOperationState state, Type type, out string? errorMessage)
     {
+        errorMessage = null;
         var options = state.Options;
         var fromTypeConverterAttribute = TryResolveFromConverterAttributes(options, type);
         if (fromTypeConverterAttribute is not null)
@@ -79,8 +100,8 @@ internal static class TomlTypeInfoResolverPipeline
 
         if (IsNonStringKeyDictionary(type))
         {
-            throw new TomlException(
-                $"Dictionaries must have string keys to be representable as TOML tables. Type '{type.FullName}' is not supported without a custom converter.");
+            errorMessage = $"Dictionaries must have string keys to be representable as TOML tables. Type '{type.FullName}' is not supported without a custom converter.";
+            return null;
         }
 
         if (TomlSerializer.IsReflectionEnabledByDefault)
@@ -95,10 +116,11 @@ internal static class TomlTypeInfoResolverPipeline
             return polymorphicDispatch;
         }
 
-        throw new TomlException(
+        errorMessage =
             $"Reflection serialization is disabled and no TOML metadata was found for type '{type.FullName}'. " +
             $"Provide {nameof(TomlSerializerOptions)}.{nameof(TomlSerializerOptions.TypeInfoResolver)} (source generation) or a custom resolver, " +
-            $"or enable the '{ReflectionSwitchName}' AppContext switch.");
+            $"or enable the '{ReflectionSwitchName}' AppContext switch.";
+        return null;
     }
 
     [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]

@@ -175,6 +175,10 @@ var toml = TomlSerializer.Serialize(config, options);
 | `MetadataStore` | `null` | Captures comments and source locations when reading. See [Metadata and trivia](#metadata-and-trivia). |
 | `SourceName` | `null` | File name reported in `TomlException` messages. |
 
+`options.GetTypeInfo<T>()` returns the `TomlTypeInfo<T>` the options resolve for a type, from the converters, the
+`TypeInfoResolver`, the built-in types, or reflection. `TryGetTypeInfo<T>()` returns `false` instead of throwing when no
+metadata is available.
+
 ### Populating existing values
 
 As in `System.Text.Json`, the default `JsonObjectCreationHandling.Replace` assigns new values to writable members and

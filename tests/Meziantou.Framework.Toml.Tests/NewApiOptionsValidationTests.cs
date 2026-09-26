@@ -66,4 +66,104 @@ public sealed class NewApiOptionsValidationTests
 
         Assert.Equal("value", ex!.ParamName);
     }
+
+    [Fact]
+    public void StringStylePreferences_Null_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+        {
+            _ = TomlSerializerOptions.Default with
+            {
+                StringStylePreferences = null!,
+            };
+        });
+
+        Assert.Equal("value", ex!.ParamName);
+    }
+
+    [Fact]
+    public void PolymorphismOptions_Null_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+        {
+            _ = TomlSerializerOptions.Default with
+            {
+                PolymorphismOptions = null!,
+            };
+        });
+
+        Assert.Equal("value", ex!.ParamName);
+    }
+
+    [Fact]
+    public void Converters_Null_Throws()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+        {
+            _ = TomlSerializerOptions.Default with
+            {
+                Converters = null!,
+            };
+        });
+
+        Assert.Equal("value", ex!.ParamName);
+    }
+
+    [Fact]
+    public void GetTypeInfo_UsesReflection()
+    {
+        var typeInfo = TomlSerializerOptions.Default.GetTypeInfo<GetTypeInfoModel>();
+
+        Assert.Equal(typeof(GetTypeInfoModel), typeInfo.Type);
+        Assert.Same(TomlSerializerOptions.Default, typeInfo.Options);
+        Assert.Equal("Name = \"a\"", TomlSerializer.Serialize(new GetTypeInfoModel { Name = "a" }, typeInfo).Trim());
+        Assert.Equal("b", TomlSerializer.Deserialize("Name = \"b\"", typeInfo)!.Name);
+    }
+
+    [Fact]
+    public void GetTypeInfo_UsesTypeInfoResolver()
+    {
+        var options = TomlSerializerOptions.Default with { TypeInfoResolver = TestTomlSerializerContext.Default };
+
+        var typeInfo = options.GetTypeInfo<GeneratedPerson>();
+
+        Assert.Equal(typeof(GeneratedPerson), typeInfo.Type);
+        Assert.Equal("Ada", TomlSerializer.Deserialize("name = \"Ada\"", typeInfo)!.Name);
+    }
+
+    [Fact]
+    public void GetTypeInfo_BuiltInType()
+    {
+        var options = TomlSerializerOptions.Default with { RootValueHandling = TomlRootValueHandling.WrapInRootKey };
+
+        var typeInfo = options.GetTypeInfo<int?>();
+
+        Assert.Equal(typeof(int?), typeInfo.Type);
+        Assert.Equal(42, TomlSerializer.Deserialize("value = 42", typeInfo));
+    }
+
+    [Fact]
+    public void GetTypeInfo_Unsupported_Throws()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializerOptions.Default.GetTypeInfo<Dictionary<int, string>>());
+    }
+
+    [Fact]
+    public void TryGetTypeInfo_Supported()
+    {
+        Assert.True(TomlSerializerOptions.Default.TryGetTypeInfo<GetTypeInfoModel>(out var typeInfo));
+        Assert.Equal(typeof(GetTypeInfoModel), typeInfo.Type);
+    }
+
+    [Fact]
+    public void TryGetTypeInfo_Unsupported()
+    {
+        Assert.False(TomlSerializerOptions.Default.TryGetTypeInfo<Dictionary<int, string>>(out var typeInfo));
+        Assert.Null(typeInfo);
+    }
+
+    private sealed class GetTypeInfoModel
+    {
+        public string? Name { get; set; }
+    }
 }

@@ -269,6 +269,12 @@ namespace Meziantou.Framework.Toml
         public Meziantou.Framework.Toml.TomlInlineTablePolicy InlineTablePolicy { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlTableArrayStyle TableArrayStyle { get => throw null; init { } }
         public Meziantou.Framework.Toml.Serialization.ITomlMetadataStore? MetadataStore { get => throw null; init { } }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
+        public Meziantou.Framework.Toml.TomlTypeInfo<T> GetTypeInfo<T>() => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
+        public bool TryGetTypeInfo<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Toml.TomlTypeInfo<T>? typeInfo) => throw null;
         public override string ToString() => throw null;
         public static bool operator !=(Meziantou.Framework.Toml.TomlSerializerOptions? left, Meziantou.Framework.Toml.TomlSerializerOptions? right) => throw null;
         public static bool operator ==(Meziantou.Framework.Toml.TomlSerializerOptions? left, Meziantou.Framework.Toml.TomlSerializerOptions? right) => throw null;

@@ -62,10 +62,10 @@ public sealed class TomlTableArray : TomlObject, IList<TomlTable>
     }
 
     /// <inheritdoc />
-    public bool Contains(TomlTable item)
+    public bool Contains(TomlTable? item)
     {
-        ArgumentNullException.ThrowIfNull(item);
-        return _items.Contains(item);
+        // Like List<T>, looking for null is not an error: the array never contains it
+        return item is not null && _items.Contains(item);
     }
 
     /// <inheritdoc />
@@ -75,10 +75,9 @@ public sealed class TomlTableArray : TomlObject, IList<TomlTable>
     }
 
     /// <inheritdoc />
-    public bool Remove(TomlTable item)
+    public bool Remove(TomlTable? item)
     {
-        ArgumentNullException.ThrowIfNull(item);
-        return _items.Remove(item);
+        return item is not null && _items.Remove(item);
     }
 
     /// <inheritdoc />
@@ -87,10 +86,9 @@ public sealed class TomlTableArray : TomlObject, IList<TomlTable>
     public bool IsReadOnly => false;
 
     /// <inheritdoc />
-    public int IndexOf(TomlTable item)
+    public int IndexOf(TomlTable? item)
     {
-        ArgumentNullException.ThrowIfNull(item);
-        return _items.IndexOf(item);
+        return item is null ? -1 : _items.IndexOf(item);
     }
 
     /// <inheritdoc />

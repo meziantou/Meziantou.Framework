@@ -557,10 +557,10 @@ namespace Meziantou.Framework.Toml.Model
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public void Add(Meziantou.Framework.Toml.Model.TomlTable item) { }
         public void Clear() { }
-        public bool Contains(Meziantou.Framework.Toml.Model.TomlTable item) => throw null;
+        public bool Contains(Meziantou.Framework.Toml.Model.TomlTable? item) => throw null;
         public void CopyTo(Meziantou.Framework.Toml.Model.TomlTable[] array, int arrayIndex) { }
-        public bool Remove(Meziantou.Framework.Toml.Model.TomlTable item) => throw null;
-        public int IndexOf(Meziantou.Framework.Toml.Model.TomlTable item) => throw null;
+        public bool Remove(Meziantou.Framework.Toml.Model.TomlTable? item) => throw null;
+        public int IndexOf(Meziantou.Framework.Toml.Model.TomlTable? item) => throw null;
         public void Insert(int index, Meziantou.Framework.Toml.Model.TomlTable item) { }
         public void RemoveAt(int index) { }
     }

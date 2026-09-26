@@ -109,6 +109,49 @@ public sealed class NewApiUntypedModelTests
         }
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(100)]
+    public void TomlTable_FollowsTheDictionaryContract(int count)
+    {
+        var table = new TomlTable();
+        for (var i = 0; i < count; i++)
+        {
+            table[$"k{i}"] = (long)i;
+        }
+
+        Assert.Throws<ArgumentNullException>(() => table["k0"] = null!);
+        foreach (var pair in table)
+        {
+            table[pair.Key] = (long)pair.Value + 1;
+        }
+
+        Assert.Equal(1L, table["k0"]);
+        Assert.True(table.Keys.IsReadOnly);
+        Assert.True(table.Values.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => table.Keys.Add("x"));
+
+        ICollection<KeyValuePair<string, object>> collection = table;
+        Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null!, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(new KeyValuePair<string, object>[count], -1));
+        Assert.Throws<ArgumentException>(() => collection.CopyTo(new KeyValuePair<string, object>[count], 1));
+        var destination = new KeyValuePair<string, object>[count + 1];
+        collection.CopyTo(destination, 1);
+        Assert.Equal("k0", destination[1].Key);
+    }
+
+    [Fact]
+    public void TomlTableArray_Null_IsNeverFound()
+    {
+        var array = new TomlTableArray { new TomlTable() };
+        TomlTable? missing = null;
+
+        Assert.DoesNotContain(missing!, array);
+        Assert.Equal(-1, array.IndexOf(missing));
+        Assert.False(array.Remove(missing));
+        Assert.HasCount(1, array);
+    }
+
     [Fact]
     public void TomlArray_Null_IsHandledLikeAnyOtherItem()
     {

@@ -81,7 +81,14 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
 
     void ICollection<KeyValuePair<string, object>>.CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
     {
-        if (arrayIndex + _order.Count > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+        ArgumentNullException.ThrowIfNull(array);
+        ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+        if (array.Length - arrayIndex < _order.Count)
+        {
+            throw new ArgumentException("The destination array is not long enough to copy all the items in the table.", nameof(array));
+        }
+
         for (var i = 0; i < _order.Count; i++)
         {
             var item = _order[i];
@@ -248,16 +255,16 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         set
         {
             ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(value);
 
-            // If the key exists, update it without changing insertion order.
+            // If the key exists, update it without changing insertion order. Like Dictionary, updating a value does not
+            // invalidate the enumerators, so the entry is updated in place.
             if (_map is not null)
             {
                 ref var indexRef = ref CollectionsMarshal.GetValueRefOrAddDefault(_map, key, out var exists);
                 if (exists)
                 {
-                    var entry = _order[indexRef];
-                    entry.Value = value;
-                    _order[indexRef] = entry;
+                    CollectionsMarshal.AsSpan(_order)[indexRef].Value = value;
                 }
                 else
                 {
@@ -271,9 +278,7 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
             var linearIndex = IndexOfKey(key);
             if (linearIndex >= 0)
             {
-                var entry = _order[linearIndex];
-                entry.Value = value;
-                _order[linearIndex] = entry;
+                CollectionsMarshal.AsSpan(_order)[linearIndex].Value = value;
                 return;
             }
 
@@ -285,7 +290,9 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets a read-only snapshot of the keys, in insertion order.
+    /// </summary>
     public ICollection<string> Keys
     {
         get
@@ -295,11 +302,13 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
             {
                 list.Add(_order[i].Key);
             }
-            return list;
+            return list.AsReadOnly();
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets a read-only snapshot of the values, in insertion order.
+    /// </summary>
     public ICollection<object> Values
     {
         get
@@ -309,7 +318,7 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
             {
                 list.Add(_order[i].Value);
             }
-            return list;
+            return list.AsReadOnly();
         }
     }
 

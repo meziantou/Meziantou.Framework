@@ -440,6 +440,11 @@ public static class LinkHelper
     /// </summary>
     public static bool TryParseInlineLink(ref StringSlice text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan)
     {
+        return TryParseInlineLink(ref text, out link, out title, out linkSpan, out titleSpan, scanCache: null);
+    }
+
+    internal static bool TryParseInlineLink(ref StringSlice text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan, InlineLinkScanCache? scanCache)
+    {
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
         // 2. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
         // 3. an optional link destination,
@@ -457,11 +462,17 @@ public static class LinkHelper
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
         if (c == '(')
         {
+            var openingParenthesisPosition = text.Start;
             text.SkipChar();
             text.TrimStart(); // this breaks whitespace before an uri
 
             var pos = text.Start;
-            if (TryParseUrl(ref text, out link, out _))
+            if (scanCache is not null && scanCache.IsKnownInvalidDestination(openingParenthesisPosition, text.CurrentChar))
+            {
+                return false;
+            }
+
+            if (TryParseUrl(ref text, out link, out _, isAutoLink: false, scanCache?.BeginDestinationScan()))
             {
                 linkSpan.Start = pos;
                 linkSpan.End = text.Start - 1;
@@ -486,7 +497,11 @@ public static class LinkHelper
                     {
                         isValid = true;
                     }
-                    else if (TryParseTitle(ref text, out title, out _))
+                    else if (scanCache is not null && scanCache.IsKnownFailedTitle(pos, c))
+                    {
+                        return false;
+                    }
+                    else if (TryParseTitle(ref text, out title, out var enclosingCharacter))
                     {
                         titleSpan.Start = pos;
                         titleSpan.End = text.Start - 1;
@@ -494,6 +509,7 @@ public static class LinkHelper
                         {
                             titleSpan = SourceSpan.Empty;
                         }
+                        var titleEnd = text.Start;
                         text.TrimStart();
                         c = text.CurrentChar;
 
@@ -501,8 +517,20 @@ public static class LinkHelper
                         {
                             isValid = true;
                         }
+                        else
+                        {
+                            scanCache?.SetFailedTitle(pos, titleEnd, enclosingCharacter);
+                        }
+                    }
+                    else
+                    {
+                        scanCache?.SetFailedTitle(pos, text.Start, c);
                     }
                 }
+            }
+            else
+            {
+                scanCache?.EndFailedDestinationScan();
             }
         }
 
@@ -533,6 +561,24 @@ public static class LinkHelper
         out SourceSpan triviaAfterTitle,
         out bool urlHasPointyBrackets)
     {
+        return TryParseInlineLinkTrivia(ref text, out link, out unescapedLink, out title, out unescapedTitle, out titleEnclosingCharacter, out linkSpan, out titleSpan, out triviaBeforeLink, out triviaAfterLink, out triviaAfterTitle, out urlHasPointyBrackets, scanCache: null);
+    }
+
+    internal static bool TryParseInlineLinkTrivia(
+        ref StringSlice text,
+        [NotNullWhen(true)] out string? link,
+        out SourceSpan unescapedLink,
+        out string? title,
+        out SourceSpan unescapedTitle,
+        out char titleEnclosingCharacter,
+        out SourceSpan linkSpan,
+        out SourceSpan titleSpan,
+        out SourceSpan triviaBeforeLink,
+        out SourceSpan triviaAfterLink,
+        out SourceSpan triviaAfterTitle,
+        out bool urlHasPointyBrackets,
+        InlineLinkScanCache? scanCache)
+    {
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
         // 2. optional whitespace,  TODO: specs: is it whitespace or multiple whitespaces?
         // 3. an optional link destination,
@@ -557,12 +603,19 @@ public static class LinkHelper
         // 1. An inline link consists of a link text followed immediately by a left parenthesis (,
         if (c == '(')
         {
+            var openingParenthesisPosition = text.Start;
             text.SkipChar();
             var sourcePosition = text.Start;
             text.TrimStart();
             triviaBeforeLink = new SourceSpan(sourcePosition, text.Start - 1);
             var pos = text.Start;
-            if (TryParseUrlTrivia(ref text, out link, out urlHasPointyBrackets))
+            if (scanCache is not null && scanCache.IsKnownInvalidDestination(openingParenthesisPosition, text.CurrentChar))
+            {
+                return false;
+            }
+
+            // TryParseUrlTrivia has the same implementation as TryParseUrl, which can also report the unmatched parentheses
+            if (TryParseUrl(ref text, out link, out urlHasPointyBrackets, isAutoLink: false, scanCache?.BeginDestinationScan()))
             {
                 linkSpan.Start = pos;
                 linkSpan.End = text.Start - 1;
@@ -592,6 +645,10 @@ public static class LinkHelper
                     {
                         isValid = true;
                     }
+                    else if (scanCache is not null && scanCache.IsKnownFailedTitle(pos, c))
+                    {
+                        return false;
+                    }
                     else if (TryParseTitleTrivia(ref text, out title, out titleEnclosingCharacter))
                     {
                         titleSpan.Start = pos;
@@ -611,8 +668,20 @@ public static class LinkHelper
                         {
                             isValid = true;
                         }
+                        else
+                        {
+                            scanCache?.SetFailedTitle(pos, startTrivia, titleEnclosingCharacter);
+                        }
+                    }
+                    else
+                    {
+                        scanCache?.SetFailedTitle(pos, text.Start, c);
                     }
                 }
+            }
+            else
+            {
+                scanCache?.EndFailedDestinationScan();
             }
         }
 
@@ -810,6 +879,14 @@ public static class LinkHelper
     /// </summary>
     public static bool TryParseUrl<T>(ref T text, [NotNullWhen(true)] out string? link, out bool hasPointyBrackets, bool isAutoLink = false) where T : ICharIterator
     {
+        return TryParseUrl(ref text, out link, out hasPointyBrackets, isAutoLink, unmatchedOpeningParentheses: null);
+    }
+
+    /// <summary>
+    /// Attempts to parse url t. When not null, <paramref name="unmatchedOpeningParentheses"/> receives the positions of the unescaped '(' still unmatched when the scan ends.
+    /// </summary>
+    private static bool TryParseUrl<T>(ref T text, [NotNullWhen(true)] out string? link, out bool hasPointyBrackets, bool isAutoLink, List<int>? unmatchedOpeningParentheses) where T : ICharIterator
+    {
         bool isValid = false;
         hasPointyBrackets = false;
         var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
@@ -876,6 +953,7 @@ public static class LinkHelper
                     if (!hasEscape)
                     {
                         openedParent++;
+                        unmatchedOpeningParentheses?.Add(text.Start);
                     }
                 }
 
@@ -889,6 +967,8 @@ public static class LinkHelper
                             isValid = true;
                             break;
                         }
+
+                        unmatchedOpeningParentheses?.RemoveAt(unmatchedOpeningParentheses.Count - 1);
                     }
                 }
 

@@ -27,6 +27,7 @@ public class InlineProcessor
     private int _unescapedSourceStart;
     internal ContainerBlock? _previousContainerToReplace;
     internal ContainerBlock? _newContainerToReplace;
+    private InlineLinkScanCache? _linkScanCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InlineProcessor" /> class.
@@ -94,6 +95,11 @@ public class InlineProcessor
     /// Gets the parser states that can be used by <see cref="InlineParser"/> using their <see cref="ParserBase{Inline}.Index"/> property.
     /// </summary>
     public object[] ParserStates { get; private set; } = null!; // Set in Setup
+
+    /// <summary>
+    /// Gets the cache used by <see cref="LinkInlineParser"/> to avoid scanning the same characters again for each link opener.
+    /// </summary>
+    internal InlineLinkScanCache LinkScanCache => _linkScanCache ??= new();
 
     /// <summary>
     /// Gets or sets the debug log writer. No log if null.
@@ -543,6 +549,7 @@ public class InlineProcessor
 
         _lineOffsets.Clear();
         Array.Clear(ParserStates, 0, ParserStates.Length);
+        _linkScanCache?.Clear();
     }
 
     private static readonly InlineProcessorCache Cache = new();

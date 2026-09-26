@@ -278,13 +278,17 @@ public class LinkInlineParser : InlineParser
         {
             LinkInline? link = null;
 
+            // Remembers the failed scans of this inline text, so nested openers do not scan the same characters again
+            var scanCache = inlineState.LinkScanCache;
+            scanCache.SetText(text);
+
             if (inlineState.TrackTrivia)
             {
-                link = TryParseInlineLinkTrivia(ref text, inlineState, openParent);
+                link = TryParseInlineLinkTrivia(ref text, inlineState, openParent, scanCache);
             }
             else
             {
-                if (LinkHelper.TryParseInlineLink(ref text, out string? url, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan))
+                if (LinkHelper.TryParseInlineLink(ref text, out string? url, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan, scanCache))
                 {
                     // Inline Link
                     link = new LinkInline()
@@ -390,7 +394,7 @@ public class LinkInlineParser : InlineParser
         inlineState.Inline = openParent.ReplaceBy(literal);
         return false;
 
-        static LinkInline? TryParseInlineLinkTrivia(ref StringSlice text, InlineProcessor inlineState, LinkDelimiterInline openParent)
+        static LinkInline? TryParseInlineLinkTrivia(ref StringSlice text, InlineProcessor inlineState, LinkDelimiterInline openParent, InlineLinkScanCache scanCache)
         {
             if (LinkHelper.TryParseInlineLinkTrivia(
                 ref text,
@@ -404,7 +408,8 @@ public class LinkInlineParser : InlineParser
                 out SourceSpan triviaBeforeLink,
                 out SourceSpan triviaAfterLink,
                 out SourceSpan triviaAfterTitle,
-                out bool urlHasPointyBrackets))
+                out bool urlHasPointyBrackets,
+                scanCache))
             {
                 var wsBeforeLink = new StringSlice(text.Text, triviaBeforeLink.Start, triviaBeforeLink.End);
                 var wsAfterLink = new StringSlice(text.Text, triviaAfterLink.Start, triviaAfterLink.End);

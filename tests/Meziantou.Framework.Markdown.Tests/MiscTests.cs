@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
@@ -181,6 +182,53 @@ public class MiscTests
         {
             Write(value.AsSpan());
         }
+    }
+
+    [Theory]
+    [InlineData("[a](", "")]
+    [InlineData("![a](", "")]
+    [InlineData("[a](()", "")]
+    [InlineData("[a]( ", "")]
+    [InlineData("[a]([a](<(>", "")]
+    [InlineData("[a](b (", "")]
+    [InlineData("[a](b (", ")x")]
+    public void UnclosedInlineLinksDoNotTakeQuadraticTime(string pattern, string suffix)
+    {
+        // Each link opener used to scan the rest of the paragraph again, which took minutes for this input
+        var markdown = string.Concat(Enumerable.Repeat(pattern, 50_000)) + suffix;
+        MarkdownPipeline[] pipelines =
+        [
+            new MarkdownPipelineBuilder().Build(),
+            new MarkdownPipelineBuilder().UseAdvancedExtensions().Build(),
+            new MarkdownPipelineBuilder().EnableTrackTrivia().Build(),
+        ];
+
+        foreach (var pipeline in pipelines)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            _ = MarkdownConverter.ToHtml(markdown, pipeline);
+            stopwatch.Stop();
+
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), message: $"Rendering took {stopwatch.Elapsed}");
+        }
+    }
+
+    [Theory]
+    [InlineData("[a]([a]([a](", "<p>[a]([a]([a](</p>")]
+    [InlineData("![a]([a](", "<p>![a]([a](</p>")]
+    [InlineData("[a](()[a](()", "<p>[a](()[a](()</p>")]
+    [InlineData("[a]([a]([a](b )", "<p>[a]([a](<a href=\"b\">a</a></p>")]
+    [InlineData("[a]([a]([a](x)", "<p>[a]([a](<a href=\"x\">a</a></p>")]
+    [InlineData("[a]([a](<(> )", "<p>[a](<a href=\"(\">a</a></p>")]
+    [InlineData("[a]( [a]( [a](b )", "<p>[a]( [a]( <a href=\"b\">a</a></p>")]
+    [InlineData("[a](b ([a](b ([a](b (", "<p>[a](b ([a](b ([a](b (</p>")]
+    [InlineData("[a](b ( [a](b (c) x", "<p>[a](b ( [a](b (c) x</p>")]
+    [InlineData("[a](b (x) y [a](b (c))", "<p>[a](b (x) y <a href=\"b\" title=\"c\">a</a></p>")]
+    public void UnclosedInlineLinks(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+        TestParser.TestSpec(markdown, expected, new MarkdownPipelineBuilder().EnableTrackTrivia().Build());
+        TestRoundtrip.RoundTrip(markdown);
     }
 
     [Fact]

@@ -184,13 +184,32 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public bool Remove(Block item)
     {
-        int index = IndexOf(item);
+        // A block is usually removed just after it was added (for example, a paragraph replaced by a setext heading), so
+        // search from the end: searching from the start makes a document of many such blocks quadratic
+        int index = LastIndexOf(item);
         if (index >= 0)
         {
             RemoveAt(index);
             return true;
         }
         return false;
+    }
+
+    private int LastIndexOf(Block item)
+    {
+        if (item is null)
+            ThrowHelper.ArgumentNullException_item();
+
+        BlockWrapper[] children = _children;
+        for (int i = Math.Min(Count, children.Length) - 1; i >= 0; i--)
+        {
+            if (ReferenceEquals(children[i].Block, item))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     /// <summary>

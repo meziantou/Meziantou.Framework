@@ -145,10 +145,10 @@ public class AutoIdentifierExtension : IMarkdownExtension
     /// <param name="inline">The inline.</param>
     private void HeadingBlock_ProcessInlinesEnd(InlineProcessor processor, Inline? inline)
     {
-        var identifiers = processor.Document.GetData(AutoIdentifierKey) as HashSet<string>;
+        var identifiers = processor.Document.GetData(AutoIdentifierKey) as HeadingIdentifiers;
         if (identifiers is null)
         {
-            identifiers = new HashSet<string>();
+            identifiers = new HeadingIdentifiers();
             processor.Document.SetData(AutoIdentifierKey, identifiers);
         }
 
@@ -183,12 +183,15 @@ public class AutoIdentifierExtension : IMarkdownExtension
 
         // Add a trailing -1, -2, -3...etc. in case of collision
         var headingId = baseHeadingId;
-        if (!identifiers.Add(headingId))
+        if (!identifiers.Ids.Add(headingId))
         {
+            // Identifiers are never removed, so the suffixes below the last one used for this base are all taken: start
+            // after it instead of trying them all again, which is quadratic when many headings have the same text
+            identifiers.LastSuffixes.TryGetValue(baseHeadingId, out uint index);
+
             var headingBuffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
             headingBuffer.Append(baseHeadingId);
             headingBuffer.Append('-');
-            uint index = 0;
             do
             {
                 index++;
@@ -196,11 +199,21 @@ public class AutoIdentifierExtension : IMarkdownExtension
                 headingId = headingBuffer.AsSpan().ToString();
                 headingBuffer.Length = baseHeadingId.Length + 1;
             }
-            while (!identifiers.Add(headingId));
+            while (!identifiers.Ids.Add(headingId));
             headingBuffer.Dispose();
+
+            identifiers.LastSuffixes[baseHeadingId] = index;
         }
 
         attributes.Id = headingId;
+    }
+
+    private sealed class HeadingIdentifiers
+    {
+        public HashSet<string> Ids { get; } = [];
+
+        // Last numeric suffix used for each base identifier
+        public Dictionary<string, uint> LastSuffixes { get; } = [];
     }
 
     private sealed class StripRendererCache : ObjectCache<HtmlRenderer>

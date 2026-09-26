@@ -459,6 +459,32 @@ public class MiscTests
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
+    [Theory]
+    [InlineData("# Example\n\n", "<h1 id=\"example-39999\">Example</h1>\n")]
+    [InlineData("#\n\n", "<h1 id=\"section-39999\"></h1>\n")]
+    public void DuplicateHeadingIdentifiersAreGeneratedInLinearTime(string heading, string expectedLastHeading)
+    {
+        var markdown = string.Concat(Enumerable.Repeat(heading, 40_000));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.EndsWith(expectedLastHeading, html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void DuplicateHeadingIdentifiersSkipTheIdentifiersOfOtherHeadings()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml("# a\n# a-1\n# a\n# a-3\n# a\n# a\n", pipeline);
+
+        Assert.Equal("<h1 id=\"a\">a</h1>\n<h1 id=\"a-1\">a-1</h1>\n<h1 id=\"a-2\">a</h1>\n<h1 id=\"a-3\">a-3</h1>\n<h1 id=\"a-4\">a</h1>\n<h1 id=\"a-5\">a</h1>\n", html);
+    }
+
     [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {

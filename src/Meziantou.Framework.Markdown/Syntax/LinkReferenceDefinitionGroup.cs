@@ -36,7 +36,9 @@ public class LinkReferenceDefinitionGroup : ContainerBlock
     public void Set(string label, LinkReferenceDefinition link)
     {
         if (link is null) ThrowHelper.ArgumentNullException(nameof(link));
-        if (!Contains(link))
+
+        // A block has a single parent, so this is the same as Contains(link) without scanning all the definitions
+        if (link.Parent != this)
         {
             Add(link);
             Links.TryAdd(label, link);

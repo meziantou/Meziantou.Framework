@@ -615,7 +615,7 @@ namespace Meziantou.Framework.Markdown.Extensions.MediaLinks
 {
     public static class HostProviderBuilder
     {
-        public static Meziantou.Framework.Markdown.Extensions.MediaLinks.IHostProvider Create(string hostPrefix, System.Func<System.Uri, string?> handler, bool allowFullScreen = true, string? iframeClass = null) => throw null;
+        public static Meziantou.Framework.Markdown.Extensions.MediaLinks.IHostProvider Create(string host, System.Func<System.Uri, string?> handler, bool allowFullScreen = true, string? iframeClass = null) => throw null;
     }
 
     public interface IHostProvider

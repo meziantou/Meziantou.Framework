@@ -64,6 +64,34 @@ public class TestMediaLinks
         Assert.Equal(expected, html);
     }
 
+    [Theory]
+    [InlineData("![v](javascript://www.youtube.com/embed/%0aalert(document.domain))",
+        "<p><img src=\"javascript://www.youtube.com/embed/%0aalert(document.domain)\" alt=\"v\" /></p>\n")]
+    [InlineData("![v](https://www.youtube.com.example.org/embed/abc)",
+        "<p><img src=\"https://www.youtube.com.example.org/embed/abc\" alt=\"v\" /></p>\n")]
+    [InlineData("![v](https://evilvimeo.com/8607834)",
+        "<p><img src=\"https://evilvimeo.com/8607834\" alt=\"v\" /></p>\n")]
+    [InlineData("![v](https://player.vimeo.com/8607834)",
+        "<p><iframe src=\"https://player.vimeo.com/video/8607834\" class=\"vimeo\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    public void TestBuiltInHostsRequireHttpAndExactHost(string markdown, string expected)
+    {
+        string html = MarkdownConverter.ToHtml(markdown, GetPipeline());
+        Assert.Equal(expected, html);
+    }
+
+    [Fact]
+    public void TestCustomHostProviderCannotReturnScriptUrl()
+    {
+        string html = MarkdownConverter.ToHtml("![p1](https://sample.com/video)", GetPipeline(new MediaOptions
+        {
+            Hosts =
+            {
+                HostProviderBuilder.Create("sample.com", _ => "javascript:alert(1)"),
+            },
+        }));
+        Assert.Equal("<p><img src=\"https://sample.com/video\" alt=\"p1\" /></p>\n", html);
+    }
+
     private sealed class TestHostProvider : IHostProvider
     {
         public string Class { get; } = "regex";

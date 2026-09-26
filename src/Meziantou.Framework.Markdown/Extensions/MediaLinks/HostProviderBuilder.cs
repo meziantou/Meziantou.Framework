@@ -15,12 +15,12 @@ namespace Meziantou.Framework.Markdown.Extensions.MediaLinks;
 public static class HostProviderBuilder
 {
     private sealed class DelegateProvider(
-        string hostPrefix,
+        string host,
         Func<Uri, string?> handler,
         bool allowFullscreen = true,
         string? className = null) : IHostProvider
     {
-        public string HostPrefix { get; } = hostPrefix;
+        public string Host { get; } = host;
 
         public Func<Uri, string?> Delegate { get; } = handler;
 
@@ -30,7 +30,7 @@ public static class HostProviderBuilder
 
         public bool TryHandle(Uri mediaUri, bool isSchemaRelative, [NotNullWhen(true)] out string? iframeUrl)
         {
-            if (!mediaUri.Host.StartsWith(HostPrefix, StringComparison.OrdinalIgnoreCase))
+            if (!IsSameHostOrSubdomain(mediaUri.Host, Host))
             {
                 iframeUrl = null;
                 return false;
@@ -38,24 +38,35 @@ public static class HostProviderBuilder
             iframeUrl = Delegate(mediaUri);
             return !string.IsNullOrEmpty(iframeUrl);
         }
+
+        // A prefix match would accept "www.youtube.com.example.org"
+        private static bool IsSameHostOrSubdomain(string value, string host)
+        {
+            if (string.Equals(value, host, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return value.Length > host.Length
+                && value.EndsWith(host, StringComparison.OrdinalIgnoreCase)
+                && value[value.Length - host.Length - 1] == '.';
+        }
     }
 
     /// <summary>
     /// Create a <see cref="IHostProvider"/> with delegate handler.
     /// </summary>
-    /// <param name="hostPrefix">Prefix of host that can be handled.</param>
+    /// <param name="host">Host that can be handled. Its subdomains are handled too.</param>
     /// <param name="handler">Handler that generate iframe url, if uri cannot be handled, it can return <see langword="null"/>.</param>
     /// <param name="allowFullScreen">Should the generated iframe has allowfullscreen attribute.</param>
     /// <param name="iframeClass">"class" attribute of generated iframe.</param>
     /// <returns>A <see cref="IHostProvider"/> with delegate handler.</returns>
-    public static IHostProvider Create(string hostPrefix, Func<Uri, string?> handler, bool allowFullScreen = true, string? iframeClass = null)
+    public static IHostProvider Create(string host, Func<Uri, string?> handler, bool allowFullScreen = true, string? iframeClass = null)
     {
-        if (string.IsNullOrEmpty(hostPrefix))
-            ThrowHelper.ArgumentException("hostPrefix is null or empty.", nameof(hostPrefix));
+        if (string.IsNullOrEmpty(host))
+            ThrowHelper.ArgumentException("host is null or empty.", nameof(host));
         if (handler is null)
             ThrowHelper.ArgumentNullException(nameof(handler));
 
-        return new DelegateProvider(hostPrefix, handler, allowFullScreen, iframeClass);
+        return new DelegateProvider(host, handler, allowFullScreen, iframeClass);
     }
 
     internal static readonly IHostProvider[] KnownHosts =

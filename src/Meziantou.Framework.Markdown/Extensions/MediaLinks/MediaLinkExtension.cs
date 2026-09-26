@@ -82,7 +82,7 @@ public class MediaLinkExtension : IMarkdownExtension
         }
 
         // iFrame has to be absolute path
-        if (uri.IsAbsoluteUri)
+        if (uri.IsAbsoluteUri && IsHttpOrHttps(uri))
         {
             if (TryRenderIframeFromKnownProviders(uri, isSchemaRelative, renderer, linkInline))
             {
@@ -98,6 +98,8 @@ public class MediaLinkExtension : IMarkdownExtension
 
         return false;
     }
+
+    private static bool IsHttpOrHttps(Uri uri) => uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
 
     private static HtmlAttributes GetHtmlAttributes(LinkInline linkInline)
     {
@@ -165,7 +167,7 @@ public class MediaLinkExtension : IMarkdownExtension
             break;
         }
 
-        if (foundProvider is null)
+        if (foundProvider is null || !Uri.TryCreate(iframeUrl, UriKind.Absolute, out var iframeUri) || !IsHttpOrHttps(iframeUri))
         {
             return false;
         }

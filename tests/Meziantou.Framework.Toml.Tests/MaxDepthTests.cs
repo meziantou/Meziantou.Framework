@@ -97,6 +97,42 @@ public sealed class MaxDepthTests
         Assert.Contains("maximum depth of 2", ex!.Message);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SyntaxParser_LongDottedKey_RespectsMaxDepth(bool isTableHeader)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = 8 };
+        var key = string.Join('.', Enumerable.Repeat("a", isTableHeader ? 8 : 9));
+        var toml = isTableHeader ? $"[{key}]\n" : $"{key} = 1\n";
+
+        var ex = Assert.Throws<TomlException>(() => SyntaxParser.Parse(toml, options));
+        Assert.Contains("maximum depth of 8", ex.Message, StringComparison.Ordinal);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml, options));
+    }
+
+    [Theory]
+    [InlineData("[a.a.a.a.a.a.a]\n")]
+    [InlineData("a.a.a.a.a.a.a.a = 1\n")]
+    public void SyntaxParser_DottedKeyAtMaxDepth_IsAccepted(string toml)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = 8 };
+
+        Assert.False(SyntaxParser.Parse(toml, options).HasErrors);
+        Assert.NotNull(TomlSerializer.Deserialize<TomlTable>(toml, options));
+    }
+
+    [Fact]
+    public void SyntaxParser_HeadersWithLongSharedPrefix_AreRejectedQuickly()
+    {
+        var prefix = string.Join('.', Enumerable.Repeat("a", 20_000));
+        var toml = $"[{prefix}.b]\n[{prefix}.c]\n";
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.Throws<TomlException>(() => SyntaxParser.Parse(toml));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), $"Parsing took {stopwatch.Elapsed}");
+    }
+
     private static string CreateNestedArrayToml(int arrayDepth)
     {
         return $"value = {new string('[', arrayDepth)}1{new string(']', arrayDepth)}";

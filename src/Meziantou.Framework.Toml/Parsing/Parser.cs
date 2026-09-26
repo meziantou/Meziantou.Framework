@@ -134,7 +134,7 @@ internal partial class Parser
         try
         {
             var keyValueSyntax = Open<KeyValueSyntax>();
-            keyValueSyntax.Key = ParseKey();
+            keyValueSyntax.Key = ParseKey(isTableHeader: false);
 
             if (_token.Kind != TokenKind.Equal)
             {
@@ -487,7 +487,7 @@ internal partial class Parser
         try
         {
             table.OpenBracket = EatToken();
-            table.Name = ParseKey();
+            table.Name = ParseKey(isTableHeader: true);
             table.CloseBracket = EatToken(isTableArray ? TokenKind.CloseBracketDouble : TokenKind.CloseBracket);
 
             if (_token.Kind != TokenKind.Eof)
@@ -504,12 +504,22 @@ internal partial class Parser
         return table;
     }
 
-    private KeySyntax ParseKey()
+    private KeySyntax ParseKey(bool isTableHeader)
     {
         var key = Open<KeySyntax>();
         key.Key = ParseBaseKey();
+
+        // Each segment of a table header, and each segment but the last of a dotted key, is a table, so it counts toward
+        // the maximum depth
+        var depth = isTableHeader ? _currentContainerDepth + 1 : _currentContainerDepth;
         while (_token.Kind == TokenKind.Dot)
         {
+            depth++;
+            if (depth > _effectiveMaxDepth)
+            {
+                throw new TomlException(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            }
+
             AddToListAndUpdateSpan(key.DotKeys, ParseDotKey());
         }
         return Close(key);

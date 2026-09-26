@@ -556,6 +556,42 @@ public sealed class GeneratedTomlStringEnumPayload
     public GeneratedEnumKind Plain { get; set; } = GeneratedEnumKind.B;
 }
 
+public enum GeneratedCaseEnum
+{
+    A,
+    a,
+}
+
+public enum GeneratedCaseCustomEnum
+{
+    [TomlStringEnumMemberName("b")]
+    A,
+    B,
+}
+
+public enum GeneratedConflictEnum
+{
+    [TomlStringEnumMemberName("B")]
+    A,
+    B,
+}
+
+[Flags]
+public enum GeneratedCommaEnum
+{
+    None = 0,
+    [TomlStringEnumMemberName("x,y")]
+    A = 1,
+    B = 2,
+}
+
+public sealed class GeneratedEnumNamesHolder<T>
+    where T : struct, Enum
+{
+    [TomlConverter(typeof(TomlStringEnumConverter))]
+    public T V { get; set; }
+}
+
 public sealed class GeneratedEnumOptionsPayload
 {
     public GeneratedEnumKind Kind { get; set; } = GeneratedEnumKind.B;
@@ -2835,6 +2871,28 @@ public class NewApiSourceGenerationTests
             Assert.Equal(GeneratedEnumKind.A, value.NullableMember);
             Assert.Equal(GeneratedEnumKind.A, value.Plain);
         }
+    }
+
+    [Fact]
+    public void TomlStringEnumConverter_PrefersTheExactName()
+    {
+        Assert.Equal(GeneratedCaseEnum.a, Roundtrip(GeneratedCaseEnum.a));
+        Assert.Equal(GeneratedCaseEnum.A, Roundtrip(GeneratedCaseEnum.A));
+        Assert.Equal(GeneratedCaseCustomEnum.A, Roundtrip(GeneratedCaseCustomEnum.A));
+        Assert.Equal(GeneratedCaseCustomEnum.B, Roundtrip(GeneratedCaseCustomEnum.B));
+        Assert.Equal(GeneratedCaseEnum.a, TomlSerializer.Deserialize<Dictionary<string, GeneratedCaseEnum>>("V = 'a'")!["V"]);
+
+        static T Roundtrip<T>(T value)
+            where T : struct, Enum
+            => TomlSerializer.Deserialize<GeneratedEnumNamesHolder<T>>(TomlSerializer.Serialize(new GeneratedEnumNamesHolder<T> { V = value }))!.V;
+    }
+
+    [Fact]
+    public void TomlStringEnumConverter_InvalidMemberNames_AreConfigurationErrors()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedEnumNamesHolder<GeneratedConflictEnum> { V = GeneratedConflictEnum.B }));
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedEnumNamesHolder<GeneratedConflictEnum>>("V = 'B'", out _));
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedEnumNamesHolder<GeneratedCommaEnum>>("V = 'B'", out _));
     }
 
     [Fact]

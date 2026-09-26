@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// </remarks>
 public sealed class TomlStringEnumConverter : TomlConverter
 {
-    private static readonly ConcurrentDictionary<Type, EnumMemberNames?> MemberNamesCache = new();
+    private static readonly ConcurrentDictionary<Type, EnumMemberNames> MemberNamesCache = new();
 
     internal static TomlStringEnumConverter Instance { get; } = new();
 
@@ -39,19 +39,16 @@ public sealed class TomlStringEnumConverter : TomlConverter
     {
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(typeToConvert);
-        if (reader.TokenType == TomlTokenType.String && typeToConvert.IsEnum && GetMemberNames(typeToConvert) is { } memberNames)
+        if (reader.TokenType == TomlTokenType.String && typeToConvert.IsEnum)
         {
             var name = reader.GetString();
-            try
-            {
-                var parsed = Enum.Parse(typeToConvert, memberNames.ToEnumNames(name), ignoreCase: true);
-                reader.Read();
-                return parsed;
-            }
-            catch (Exception ex) when (ex is ArgumentException or OverflowException)
+            if (!Enum.TryParse(typeToConvert, GetMemberNames(typeToConvert).ToEnumNames(name), ignoreCase: false, out var parsed))
             {
                 throw reader.CreateException($"Invalid enum name `{name}` for type '{typeToConvert.FullName}'.");
             }
+
+            reader.Read();
+            return parsed;
         }
 
         return TomlEnumConverter.Instance.Read(reader, typeToConvert);
@@ -72,58 +69,95 @@ public sealed class TomlStringEnumConverter : TomlConverter
             throw new TomlException($"Expected an enum value but was '{type.FullName}'.");
         }
 
-        var text = value.ToString()!;
-        writer.WriteStringValue(GetMemberNames(type) is { } memberNames ? memberNames.ToCustomNames(text) : text);
+        writer.WriteStringValue(GetMemberNames(type).ToCustomNames(value.ToString()!));
     }
 
     // The names set with [TomlStringEnumMemberName]
-    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "The trimmer keeps every field of an enum type.")]
-    private static EnumMemberNames? GetMemberNames(Type enumType)
+    private static EnumMemberNames GetMemberNames(Type enumType) => MemberNamesCache.GetOrAdd(enumType, static type => EnumMemberNames.Create(type));
+
+    private sealed class EnumMemberNames
     {
-        return MemberNamesCache.GetOrAdd(enumType, static type =>
+        // The name written for each member that has a custom name
+        private readonly Dictionary<string, string>? _toCustom;
+
+        // The member of each written name. The exact name wins, so members that differ only by case round-trip; any casing
+        // is accepted otherwise.
+        private readonly Dictionary<string, string> _exact;
+        private readonly Dictionary<string, string> _ignoreCase;
+
+        private EnumMemberNames(Dictionary<string, string>? toCustom, Dictionary<string, string> exact, Dictionary<string, string> ignoreCase)
+        {
+            _toCustom = toCustom;
+            _exact = exact;
+            _ignoreCase = ignoreCase;
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "The trimmer keeps every field of an enum type.")]
+        public static EnumMemberNames Create(Type type)
         {
             Dictionary<string, string>? toCustom = null;
-            Dictionary<string, string>? fromCustom = null;
+            var exact = new Dictionary<string, string>(StringComparer.Ordinal);
+            var ignoreCase = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var field in type.GetFields(BindingFlags.Public | BindingFlags.Static))
             {
-                var name = field.GetCustomAttribute<TomlStringEnumMemberNameAttribute>()?.Name;
-                if (name is not null)
+                var customName = field.GetCustomAttribute<TomlStringEnumMemberNameAttribute>()?.Name;
+                if (customName is not null)
                 {
-                    (toCustom ??= new(StringComparer.Ordinal))[field.Name] = name;
-                    (fromCustom ??= new(StringComparer.OrdinalIgnoreCase))[name] = field.Name;
+                    // A flags value is a comma-separated list of names, which are trimmed when read
+                    if (customName.Contains(',', StringComparison.Ordinal) || customName.Trim().Length != customName.Length)
+                    {
+                        throw TomlException.CreateConfigurationError($"The enum member name '{customName}' of '{type.FullName}.{field.Name}' cannot contain a comma or start or end with white space.");
+                    }
+
+                    (toCustom ??= new(StringComparer.Ordinal))[field.Name] = customName;
                 }
+
+                var name = customName ?? field.Name;
+                if (!exact.TryAdd(name, field.Name))
+                {
+                    throw TomlException.CreateConfigurationError($"The enum member name '{name}' is used by several members of '{type.FullName}'.");
+                }
+
+                ignoreCase.TryAdd(name, field.Name);
             }
 
-            return toCustom is null ? null : new EnumMemberNames(toCustom, fromCustom!);
-        });
-    }
+            return new EnumMemberNames(toCustom, exact, ignoreCase);
+        }
 
-    private sealed class EnumMemberNames(Dictionary<string, string> toCustom, Dictionary<string, string> fromCustom)
-    {
         // A flags value is written as "A, B"
-        public string ToCustomNames(string names) => Map(names, toCustom);
-
-        public string ToEnumNames(string names) => Map(names, fromCustom);
-
-        private static string Map(string names, Dictionary<string, string> map)
+        public string ToCustomNames(string names)
         {
-            if (map.TryGetValue(names, out var mapped))
-            {
-                return mapped;
-            }
-
-            if (!names.Contains(',', StringComparison.Ordinal))
+            if (_toCustom is null)
             {
                 return names;
+            }
+
+            return Map(names, static (map, name) => map.TryGetValue(name, out var customName) ? customName : name, _toCustom);
+        }
+
+        public string ToEnumNames(string names) => Map(names, static (self, name) => self.GetMemberName(name), this);
+
+        private string GetMemberName(string name)
+        {
+            if (_exact.TryGetValue(name, out var memberName) || _ignoreCase.TryGetValue(name, out memberName))
+            {
+                return memberName;
+            }
+
+            return name;
+        }
+
+        private static string Map<TState>(string names, Func<TState, string, string> map, TState state)
+        {
+            if (!names.Contains(',', StringComparison.Ordinal))
+            {
+                return map(state, names.Trim());
             }
 
             var parts = names.Split(',', StringSplitOptions.TrimEntries);
             for (var i = 0; i < parts.Length; i++)
             {
-                if (map.TryGetValue(parts[i], out var part))
-                {
-                    parts[i] = part;
-                }
+                parts[i] = map(state, parts[i]);
             }
 
             return string.Join(", ", parts);

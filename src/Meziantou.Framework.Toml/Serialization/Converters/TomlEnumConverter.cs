@@ -34,17 +34,15 @@ internal sealed class TomlEnumConverter : TomlConverter
 
         if (reader.TokenType == TomlTokenType.String)
         {
+            // The exact name wins, so members that differ only by case are read as written
             var name = reader.GetString();
-            try
-            {
-                var parsed = Enum.Parse(typeToConvert, name, ignoreCase: true);
-                reader.Read();
-                return parsed;
-            }
-            catch (Exception ex) when (ex is ArgumentException or OverflowException)
+            if (!Enum.TryParse(typeToConvert, name, ignoreCase: false, out var parsed) && !Enum.TryParse(typeToConvert, name, ignoreCase: true, out parsed))
             {
                 throw reader.CreateException($"Invalid enum name `{name}` for type '{typeToConvert.FullName}'.");
             }
+
+            reader.Read();
+            return parsed;
         }
 
         throw reader.CreateException($"Expected {TomlTokenType.Integer} or {TomlTokenType.String} token but was {reader.TokenType}.");

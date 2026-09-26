@@ -960,6 +960,28 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    [Fact]
+    public void Generator_MemberDiagnostic_IsReportedOnce()
+    {
+        var source = """
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person
+            {
+                [TomlStringStyle(TomlStringStyle.Literal)]
+                public int Value { get; set; }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.Single(diagnostics, d => d.Id == "MFTOML011");
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

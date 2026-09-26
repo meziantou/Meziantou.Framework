@@ -3738,7 +3738,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         public string? Source { get; private set; }
 
-        public void ReportDiagnostic(DiagnosticInfo diagnostic) => Diagnostics.Add(diagnostic);
+        // The shape of a type is computed while expanding the type graph and again while emitting it, so the same diagnostic
+        // can be reported twice
+        public void ReportDiagnostic(DiagnosticInfo diagnostic)
+        {
+            if (!Diagnostics.Contains(diagnostic))
+            {
+                Diagnostics.Add(diagnostic);
+            }
+        }
 
         public void AddSource(string hintName, string source)
         {

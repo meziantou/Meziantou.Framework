@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
@@ -533,6 +536,32 @@ public class NewApiPolymorphismTests
         var square = (IntDiscrimSquare)result!;
         Assert.Equal("blue", square.Color);
         Assert.Equal(3.0, square.Side);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_NestedPolymorphicValues_SkipTheContainersBeforeTheDiscriminator(bool withMetadata)
+    {
+        var options = new TomlSerializerOptions { MaxDepth = 256, MetadataStore = withMetadata ? new TomlMetadataStore() : null };
+        var builder = new System.Text.StringBuilder("x = [[1, { a = [2] }], []]\nkind = \"leaf\"\nChild = ");
+        for (var i = 0; i < 30; i++)
+        {
+            builder.Append("{ x = { a = [1, [2, { b = 3 }]], c = {} }, Value = \"").Append(i).Append("\", kind = \"leaf\", Child = ");
+        }
+
+        builder.Append("{ kind = \"leaf\", Value = \"last\" }").Append('}', 30).Append('\n');
+
+        var node = TomlSerializer.Deserialize<NestedPolymorphicNode>(builder.ToString(), options);
+
+        var values = new List<string?>();
+        for (node = node!.Child; node is not null; node = node.Child)
+        {
+            Assert.IsType<NestedPolymorphicLeaf>(node);
+            values.Add(node.Value);
+        }
+
+        Assert.Equal([.. Enumerable.Range(0, 30).Select(i => i.ToString(CultureInfo.InvariantCulture)), "last"], values);
     }
 
     [Fact]

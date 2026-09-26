@@ -1,18 +1,17 @@
-namespace Tomlyn.Syntax
+namespace Meziantou.Framework.Toml.Syntax;
+
+/// <summary>
+/// Kind of a <see cref="DiagnosticMessage"/>
+/// </summary>
+public enum DiagnosticMessageKind
 {
     /// <summary>
-    /// Kind of a <see cref="DiagnosticMessage"/>
+    /// An error message.
     /// </summary>
-    public enum DiagnosticMessageKind
-    {
-        /// <summary>
-        /// An error message.
-        /// </summary>
-        Error,
+    Error,
 
-        /// <summary>
-        /// A warning message.
-        /// </summary>
-        Warning,
-    }
+    /// <summary>
+    /// A warning message.
+    /// </summary>
+    Warning,
 }

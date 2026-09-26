@@ -1,6 +1,6 @@
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 internal static class TomlParseEventData
 {

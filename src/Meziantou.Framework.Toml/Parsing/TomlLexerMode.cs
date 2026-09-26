@@ -1,4 +1,4 @@
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Controls whether the lexer reads key-oriented or value-oriented tokens.

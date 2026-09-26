@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Tomlyn.Model;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization.Converters;
+namespace Meziantou.Framework.Toml.Serialization.Converters;
 
 internal sealed class TomlCharConverter : TomlConverter<char>
 {

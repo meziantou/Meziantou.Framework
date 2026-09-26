@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Serialization.Converters;
-using Tomlyn.Serialization.Internal;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization.Converters;
+using Meziantou.Framework.Toml.Serialization.Internal;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Base type for source-generated TOML serializer contexts.

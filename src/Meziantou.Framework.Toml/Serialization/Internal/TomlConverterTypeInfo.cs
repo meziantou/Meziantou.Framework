@@ -1,7 +1,7 @@
 using System;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal sealed class TomlConverterTypeInfo<T> : TomlTypeInfo<T>
 {

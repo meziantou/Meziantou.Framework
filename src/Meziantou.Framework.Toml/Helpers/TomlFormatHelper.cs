@@ -1,9 +1,9 @@
 using System;
 using System.Globalization;
-using Tomlyn.Model;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Helpers;
+namespace Meziantou.Framework.Toml.Helpers;
 
 /// <summary>
 /// Helper methods to format values into TOML-compliant strings.

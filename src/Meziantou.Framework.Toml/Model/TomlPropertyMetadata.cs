@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Model;
+namespace Meziantou.Framework.Toml.Model;
 
 /// <summary>
 /// Metadata describing a single TOML property.
@@ -14,7 +14,7 @@ public class TomlPropertyMetadata
     /// <summary>
     /// Gets the leading trivia attached to this node. Might be null if no leading trivias.
     /// </summary>
-#pragma warning disable CA1002 // List<T> is part of the Tomlyn public API
+#pragma warning disable CA1002 // List<T> is part of the public API
     public List<TomlSyntaxTriviaMetadata>? LeadingTrivia { get; set; }
 #pragma warning restore CA1002
 
@@ -51,14 +51,14 @@ public class TomlPropertyMetadata
     /// <summary>
     /// Gets the trailing trivia attached to this node. Might be null if no trailing trivias.
     /// </summary>
-#pragma warning disable CA1002 // List<T> is part of the Tomlyn public API
+#pragma warning disable CA1002 // List<T> is part of the public API
     public List<TomlSyntaxTriviaMetadata>? TrailingTrivia { get; set; }
 #pragma warning restore CA1002
 
     /// <summary>
     /// Gets the trailing trivia attached to this node. Might be null if no trailing trivias.
     /// </summary>
-#pragma warning disable CA1002 // List<T> is part of the Tomlyn public API
+#pragma warning disable CA1002 // List<T> is part of the public API
     public List<TomlSyntaxTriviaMetadata>? TrailingTriviaAfterEndOfLine { get; set; }
 #pragma warning restore CA1002
 

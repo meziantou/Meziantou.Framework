@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal static class TomlModelTextWriter
 {

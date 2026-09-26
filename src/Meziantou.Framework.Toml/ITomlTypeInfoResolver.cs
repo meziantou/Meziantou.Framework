@@ -1,6 +1,6 @@
 using System;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Resolves type metadata used by <see cref="TomlSerializer"/>.

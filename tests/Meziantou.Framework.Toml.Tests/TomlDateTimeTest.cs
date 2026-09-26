@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using Meziantou.Xunit;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public class TomlDateTimeTest
 {

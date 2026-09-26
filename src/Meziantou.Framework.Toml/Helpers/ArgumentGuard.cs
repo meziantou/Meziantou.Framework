@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Tomlyn.Helpers;
+namespace Meziantou.Framework.Toml.Helpers;
 
 internal static class ArgumentGuard
 {

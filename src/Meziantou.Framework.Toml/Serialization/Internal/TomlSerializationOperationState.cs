@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn.Helpers;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal sealed class TomlSerializationOperationState
 {

@@ -1,9 +1,8 @@
-namespace Tomlyn.Parsing
-{
-    internal enum LexerState
-    {
-        Key,
+namespace Meziantou.Framework.Toml.Parsing;
 
-        Value
-    }
+internal enum LexerState
+{
+    Key,
+
+    Value
 }

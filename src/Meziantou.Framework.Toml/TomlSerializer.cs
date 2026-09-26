@@ -3,11 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using Tomlyn.Helpers;
-using Tomlyn.Serialization;
-using Tomlyn.Serialization.Internal;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Serialization.Internal;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Serializes and deserializes TOML payloads, following a <c>System.Text.Json</c>-style API shape.
@@ -794,10 +794,10 @@ public static class TomlSerializer
         var options = typeInfo.Options;
         if (options.RootValueHandling != TomlRootValueHandling.WrapInRootKey &&
             options.MetadataStore is null &&
-            typeInfo.Type == typeof(Tomlyn.Model.TomlTable) &&
-            value is Tomlyn.Model.TomlTable rootTable)
+            typeInfo.Type == typeof(Meziantou.Framework.Toml.Model.TomlTable) &&
+            value is Meziantou.Framework.Toml.Model.TomlTable rootTable)
         {
-            Tomlyn.Serialization.Internal.TomlModelTextWriter.WriteDocument(writer, rootTable, options);
+            Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.WriteDocument(writer, rootTable, options);
             return;
         }
 

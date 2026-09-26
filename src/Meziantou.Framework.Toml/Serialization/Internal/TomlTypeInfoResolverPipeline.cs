@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Tomlyn.Helpers;
-using Tomlyn.Serialization;
-using Tomlyn.Serialization.Converters;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Serialization.Converters;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal static class TomlTypeInfoResolverPipeline
 {

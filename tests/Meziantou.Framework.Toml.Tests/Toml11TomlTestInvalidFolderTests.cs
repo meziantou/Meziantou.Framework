@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Nodes;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class Toml11TomlTestInvalidFolderTests
 {

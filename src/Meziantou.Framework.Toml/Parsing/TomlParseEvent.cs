@@ -1,8 +1,8 @@
 using System;
-using Tomlyn.Helpers;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Represents a semantic parse event produced by <see cref="TomlParser"/>.
@@ -51,8 +51,8 @@ public readonly struct TomlParseEvent
 
     /// <summary>
     /// Gets the raw scalar payload for numeric and boolean scalars.
-    /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.String"/>, this contains the underlying <see cref="Tomlyn.Syntax.TokenKind"/> for the string literal.
-    /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.PropertyName"/>, this contains an internal packed payload that includes the <see cref="Tomlyn.Syntax.TokenKind"/>
+    /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.String"/>, this contains the underlying <see cref="Meziantou.Framework.Toml.Syntax.TokenKind"/> for the string literal.
+    /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.PropertyName"/>, this contains an internal packed payload that includes the <see cref="Meziantou.Framework.Toml.Syntax.TokenKind"/>
     /// of the key literal (in the low 8 bits) as well as a case-sensitive hash of the decoded property name (in the remaining high bits).
     /// </summary>
     public ulong Data => _data;
@@ -131,7 +131,7 @@ public readonly struct TomlParseEvent
     }
 
     /// <summary>
-    /// Gets the current scalar value as a <see cref="Tomlyn.TomlDateTime"/>.
+    /// Gets the current scalar value as a <see cref="Meziantou.Framework.Toml.TomlDateTime"/>.
     /// </summary>
     /// <exception cref="InvalidOperationException">The current event is not a date/time scalar.</exception>
     public TomlDateTime GetTomlDateTime()

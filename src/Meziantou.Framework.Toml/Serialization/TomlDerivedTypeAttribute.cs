@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Registers a derived type for polymorphic TOML serialization.

@@ -1,6 +1,6 @@
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Helpers;
+namespace Meziantou.Framework.Toml.Helpers;
 
 internal static class TomlDepthHelper
 {

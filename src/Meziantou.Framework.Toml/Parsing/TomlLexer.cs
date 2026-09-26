@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Provides incremental lexical tokenization for TOML text.

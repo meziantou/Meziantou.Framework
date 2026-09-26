@@ -1,8 +1,8 @@
 using System;
 using System.Globalization;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Represents a derived type mapping for runtime polymorphic TOML configuration.

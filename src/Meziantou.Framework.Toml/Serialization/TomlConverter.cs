@@ -1,6 +1,6 @@
 using System;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Converts between TOML tokens and a CLR type.

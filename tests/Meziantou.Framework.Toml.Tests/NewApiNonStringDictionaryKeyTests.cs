@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class NewApiNonStringDictionaryKeyTests
 {

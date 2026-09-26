@@ -1,6 +1,6 @@
 using System;
 
-namespace Tomlyn.Helpers;
+namespace Meziantou.Framework.Toml.Helpers;
 
 internal static class TomlKeyValidation
 {

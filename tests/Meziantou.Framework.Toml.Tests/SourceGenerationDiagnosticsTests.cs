@@ -1,15 +1,15 @@
 using System;
-using System.Collections.Immutable;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
+using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.SourceGeneration;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Tomlyn.Serialization;
-using Tomlyn.SourceGeneration;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class SourceGenerationDiagnosticsTests
 {
@@ -20,8 +20,8 @@ public sealed class SourceGenerationDiagnosticsTests
             #nullable enable
             using System.Collections.Generic;
             using System.Text.Json.Serialization;
-            using Tomlyn;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSourceGenerationOptions(
                 PropertyNameCaseInsensitive = true,
@@ -74,7 +74,7 @@ public sealed class SourceGenerationDiagnosticsTests
             #nullable enable
             using System.Collections.Generic;
             using System.Text.Json.Serialization;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Person))]
             [TomlSerializable(typeof(CtorPerson))]
@@ -130,7 +130,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSourceGenerationOptions(IndentSize = 0)]
             [TomlSerializable(typeof(Person))]
@@ -148,8 +148,8 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSourceGenerationOptions(NewLine = (TomlNewLineKind)42)]
             [TomlSerializable(typeof(Person))]
@@ -167,7 +167,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSourceGenerationOptions(MaxDepth = -1)]
             [TomlSerializable(typeof(Person))]
@@ -186,7 +186,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             public sealed class NotAConverter { public NotAConverter() { } }
 
@@ -207,7 +207,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Text.Json.Serialization;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [JsonSerializable(typeof(Person))]
             internal partial class Ctx : TomlSerializerContext { }
@@ -224,7 +224,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Person), TypeInfoPropertyName = "not-valid")]
             internal partial class Ctx : TomlSerializerContext { }
@@ -242,7 +242,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Text.Json.Serialization;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             public sealed class InitOptions
             {
@@ -283,7 +283,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             public sealed class MetadataPayload
             {
@@ -315,7 +315,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Text.Json.Serialization;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             public sealed class Root
             {
@@ -346,7 +346,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var source = """
             #nullable enable
             using System.Collections.Generic;
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             public sealed class ProviderConfig
             {
@@ -370,7 +370,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Animal))]
             [TomlDerivedTypeMapping(typeof(Animal), typeof(NotAnimal), "cat")]
@@ -391,7 +391,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Animal))]
             [TomlDerivedTypeMapping(typeof(Animal), typeof(Cat), "")]
@@ -412,7 +412,7 @@ public sealed class SourceGenerationDiagnosticsTests
     {
         var source = """
             #nullable enable
-            using Tomlyn.Serialization;
+            using Meziantou.Framework.Toml.Serialization;
 
             [TomlSerializable(typeof(Animal))]
             [TomlDerivedTypeMapping(typeof(Animal), typeof(Cat), "cat")]
@@ -435,7 +435,7 @@ public sealed class SourceGenerationDiagnosticsTests
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
         var compilation = CSharpCompilation.Create(
-            assemblyName: "Tomlyn.SourceGeneration.Tests.Input",
+            assemblyName: "Meziantou.Framework.Toml.SourceGeneration.Tests.Input",
             syntaxTrees: new[] { syntaxTree },
             references: CreateReferences(),
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));

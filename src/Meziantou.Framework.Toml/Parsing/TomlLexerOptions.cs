@@ -1,4 +1,4 @@
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Configures the behavior of <see cref="TomlLexer"/>.

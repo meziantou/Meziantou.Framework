@@ -3,10 +3,10 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Tomlyn.Model;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 #pragma warning disable CA1002 // Test models use List<T> on purpose
 #pragma warning disable CA1819 // Test models use arrays on purpose

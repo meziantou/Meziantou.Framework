@@ -1,8 +1,8 @@
 using System;
-using Tomlyn.Helpers;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Represents metadata and operations for a serializable type.

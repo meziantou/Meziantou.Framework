@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Tomlyn.Text;
+namespace Meziantou.Framework.Toml.Text;
 
 /// <summary>
 /// Represents a position within a TOML payload (offset, line, column).

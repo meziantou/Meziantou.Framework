@@ -1,4 +1,4 @@
-namespace Tomlyn.Text;
+namespace Meziantou.Framework.Toml.Text;
 
 /// <summary>
 /// Represents a textual source span within a TOML payload.

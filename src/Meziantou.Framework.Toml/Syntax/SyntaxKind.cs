@@ -1,73 +1,72 @@
-namespace Tomlyn.Syntax
-{
-    /// <summary>
-    /// Defines the kind for a <see cref="SyntaxNode"/>
-    /// </summary>
+namespace Meziantou.Framework.Toml.Syntax;
+
+/// <summary>
+/// Defines the kind for a <see cref="SyntaxNode"/>
+/// </summary>
 #pragma warning disable CA1720 // The members are named after the TOML value types
-    public enum SyntaxKind
-    {
-        /// <summary>Array value.</summary>
-        Array,
+public enum SyntaxKind
+{
+    /// <summary>Array value.</summary>
+    Array,
 
-        /// <summary>Array item.</summary>
-        ArrayItem,
+    /// <summary>Array item.</summary>
+    ArrayItem,
 
-        /// <summary>Basic key.</summary>
-        BasicKey,
+    /// <summary>Basic key.</summary>
+    BasicKey,
 
-        /// <summary>Boolean value.</summary>
-        Boolean,
+    /// <summary>Boolean value.</summary>
+    Boolean,
 
-        /// <summary>Offset date-time with Z suffix.</summary>
-        OffsetDateTimeByZ,
+    /// <summary>Offset date-time with Z suffix.</summary>
+    OffsetDateTimeByZ,
 
-        /// <summary>Offset date-time with numeric offset.</summary>
-        OffsetDateTimeByNumber,
+    /// <summary>Offset date-time with numeric offset.</summary>
+    OffsetDateTimeByNumber,
 
-        /// <summary>Local date-time value.</summary>
-        LocalDateTime,
+    /// <summary>Local date-time value.</summary>
+    LocalDateTime,
 
-        /// <summary>Local date value.</summary>
-        LocalDate,
+    /// <summary>Local date value.</summary>
+    LocalDate,
 
-        /// <summary>Local time value.</summary>
-        LocalTime,
+    /// <summary>Local time value.</summary>
+    LocalTime,
 
-        /// <summary>Document root.</summary>
-        Document,
+    /// <summary>Document root.</summary>
+    Document,
 
-        /// <summary>Dotted key item.</summary>
-        DottedKeyItem,
+    /// <summary>Dotted key item.</summary>
+    DottedKeyItem,
 
-        /// <summary>Float value.</summary>
-        Float,
+    /// <summary>Float value.</summary>
+    Float,
 
-        /// <summary>Inline table.</summary>
-        InlineTable,
+    /// <summary>Inline table.</summary>
+    InlineTable,
 
-        /// <summary>Integer value.</summary>
-        Integer,
+    /// <summary>Integer value.</summary>
+    Integer,
 
-        /// <summary>Key node.</summary>
-        Key,
+    /// <summary>Key node.</summary>
+    Key,
 
-        /// <summary>Key/value pair.</summary>
-        KeyValue,
+    /// <summary>Key/value pair.</summary>
+    KeyValue,
 
-        /// <summary>Syntax list node.</summary>
-        List,
+    /// <summary>Syntax list node.</summary>
+    List,
 
-        /// <summary>String value.</summary>
-        String,
+    /// <summary>String value.</summary>
+    String,
 
-        /// <summary>Table.</summary>
-        Table,
+    /// <summary>Table.</summary>
+    Table,
 
-        /// <summary>Table array.</summary>
-        TableArray,
+    /// <summary>Table array.</summary>
+    TableArray,
 
-        /// <summary>Token node.</summary>
-        Token,
-    }
-#pragma warning restore CA1720
+    /// <summary>Token node.</summary>
+    Token,
 }
+#pragma warning restore CA1720

@@ -1,7 +1,7 @@
 using System.Linq;
-using Tomlyn.Serialization.Internal;
+using Meziantou.Framework.Toml.Serialization.Internal;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public class PooledArrayBuilderTests
 {

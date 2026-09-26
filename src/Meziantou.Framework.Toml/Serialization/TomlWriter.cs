@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using Tomlyn;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Serialization.Internal;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization.Internal;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Writes TOML tokens for use by <see cref="TomlConverter"/> implementations.

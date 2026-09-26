@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json.Serialization;
-using Tomlyn.Model;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 #pragma warning disable CA1002 // Test models use List<T> on purpose
 #pragma warning disable CA1040 // Test models use empty interfaces on purpose

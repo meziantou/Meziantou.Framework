@@ -6,12 +6,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Serialization.Converters;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization.Converters;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
 [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]

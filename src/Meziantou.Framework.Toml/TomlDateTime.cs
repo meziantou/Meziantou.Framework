@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 using System;
 using System.Runtime.InteropServices;
 

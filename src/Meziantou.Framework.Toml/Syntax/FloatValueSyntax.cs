@@ -1,80 +1,79 @@
 using System;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Syntax
+namespace Meziantou.Framework.Toml.Syntax;
+
+/// <summary>
+/// A float TOML value syntax node.
+/// </summary>
+public sealed class FloatValueSyntax : ValueSyntax
 {
+    private SyntaxToken? _token;
+
     /// <summary>
-    /// A float TOML value syntax node.
+    /// Creates an instance of <see cref="FloatValueSyntax"/>
     /// </summary>
-    public sealed class FloatValueSyntax : ValueSyntax
+    public FloatValueSyntax() : base(SyntaxKind.Float)
     {
-        private SyntaxToken? _token;
+    }
 
-        /// <summary>
-        /// Creates an instance of <see cref="FloatValueSyntax"/>
-        /// </summary>
-        public FloatValueSyntax() : base(SyntaxKind.Float)
+    /// <summary>
+    /// Creates an instance of <see cref="FloatValueSyntax"/>
+    /// </summary>
+    /// <param name="value">The double value</param>
+    public FloatValueSyntax(double value) : this()
+    {
+        if (double.IsNaN(value))
         {
+            Token = new SyntaxToken(TokenKind.Nan, value < 0 ? TokenKind.NegativeNan.ToText() : TokenKind.Nan.ToText());
         }
-
-        /// <summary>
-        /// Creates an instance of <see cref="FloatValueSyntax"/>
-        /// </summary>
-        /// <param name="value">The double value</param>
-        public FloatValueSyntax(double value) : this()
+        else if (double.IsPositiveInfinity(value))
         {
-            if (double.IsNaN(value))
-            {
-                Token = new SyntaxToken(TokenKind.Nan, value < 0 ? TokenKind.NegativeNan.ToText() : TokenKind.Nan.ToText());
-            }
-            else if (double.IsPositiveInfinity(value))
-            {
-                Token = new SyntaxToken(TokenKind.PositiveInfinite, TokenKind.PositiveInfinite.ToText());
-            }
-            else if (double.IsNegativeInfinity(value))
-            {
-                Token = new SyntaxToken(TokenKind.NegativeInfinite, TokenKind.NegativeInfinite.ToText());
-            }
-            else
-            {
-                Token = new SyntaxToken(TokenKind.Float, TomlFormatHelper.ToString(value));
-            }
-            Value = value;
+            Token = new SyntaxToken(TokenKind.PositiveInfinite, TokenKind.PositiveInfinite.ToText());
         }
-
-        /// <summary>
-        /// The token storing the float value.
-        /// </summary>
-        public SyntaxToken? Token
+        else if (double.IsNegativeInfinity(value))
         {
-            get => _token;
-            set => ParentToThis(ref _token, value, value != null && value.TokenKind.IsFloat(), TokenKind.Float);
+            Token = new SyntaxToken(TokenKind.NegativeInfinite, TokenKind.NegativeInfinite.ToText());
         }
-
-        /// <summary>
-        /// The parsed value of the <see cref="Token"/>
-        /// </summary>
-        public double Value { get; set; }
-
-        /// <inheritdoc />
-        public override void Accept(SyntaxVisitor visitor)
+        else
         {
-            visitor.Visit(this);
+            Token = new SyntaxToken(TokenKind.Float, TomlFormatHelper.ToString(value));
         }
+        Value = value;
+    }
 
-        /// <inheritdoc />
-        public override int ChildrenCount => 1;
+    /// <summary>
+    /// The token storing the float value.
+    /// </summary>
+    public SyntaxToken? Token
+    {
+        get => _token;
+        set => ParentToThis(ref _token, value, value != null && value.TokenKind.IsFloat(), TokenKind.Float);
+    }
 
-        /// <inheritdoc />
-        protected override SyntaxNode? GetChildImpl(int index)
-        {
-            return Token;
-        }
+    /// <summary>
+    /// The parsed value of the <see cref="Token"/>
+    /// </summary>
+    public double Value { get; set; }
 
-        /// <inheritdoc />
-        protected override string ToDebuggerDisplay()
-        {
-            return $"{base.ToDebuggerDisplay()}: {TomlFormatHelper.ToString(Value)}";
-        }
+    /// <inheritdoc />
+    public override void Accept(SyntaxVisitor visitor)
+    {
+        visitor.Visit(this);
+    }
+
+    /// <inheritdoc />
+    public override int ChildrenCount => 1;
+
+    /// <inheritdoc />
+    protected override SyntaxNode? GetChildImpl(int index)
+    {
+        return Token;
+    }
+
+    /// <inheritdoc />
+    protected override string ToDebuggerDisplay()
+    {
+        return $"{base.ToDebuggerDisplay()}: {TomlFormatHelper.ToString(Value)}";
     }
 }

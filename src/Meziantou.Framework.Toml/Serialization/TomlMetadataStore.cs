@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
-using Tomlyn.Model;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Default <see cref="ITomlMetadataStore"/> implementation backed by a <see cref="ConditionalWeakTable{TKey,TValue}"/>.

@@ -1,10 +1,10 @@
 using System;
 using System.Buffers;
 using System.Text;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 internal static class TomlStringDecoder
 {

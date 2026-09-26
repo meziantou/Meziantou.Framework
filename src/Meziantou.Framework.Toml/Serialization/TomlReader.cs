@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Serialization.Internal;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization.Internal;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Reads TOML tokens for use by <see cref="TomlConverter"/> implementations.
@@ -68,7 +68,7 @@ public sealed class TomlReader
         ArgumentGuard.ThrowIfNull(toml, nameof(toml));
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var operationState = new TomlSerializationOperationState(effectiveOptions);
-        var parserOptions = new Tomlyn.Parsing.TomlParserOptions
+        var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = effectiveOptions.MetadataStore is not null,
             EagerStringValues = true,
@@ -85,7 +85,7 @@ public sealed class TomlReader
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var operationState = new TomlSerializationOperationState(effectiveOptions);
-        var parserOptions = new Tomlyn.Parsing.TomlParserOptions
+        var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = effectiveOptions.MetadataStore is not null,
             EagerStringValues = true,
@@ -100,7 +100,7 @@ public sealed class TomlReader
         ArgumentGuard.ThrowIfNull(options, nameof(options));
         ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
 
-        var parserOptions = new Tomlyn.Parsing.TomlParserOptions
+        var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = options.MetadataStore is not null,
             EagerStringValues = true,
@@ -115,7 +115,7 @@ public sealed class TomlReader
         ArgumentGuard.ThrowIfNull(options, nameof(options));
         ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
 
-        var parserOptions = new Tomlyn.Parsing.TomlParserOptions
+        var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             CaptureTrivia = options.MetadataStore is not null,
             EagerStringValues = true,

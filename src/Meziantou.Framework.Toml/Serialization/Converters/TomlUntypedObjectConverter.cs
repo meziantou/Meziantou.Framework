@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Tomlyn.Model;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization.Converters;
+namespace Meziantou.Framework.Toml.Serialization.Converters;
 
 internal sealed class TomlUntypedObjectConverter : TomlConverter
 {
@@ -39,7 +39,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         var runtimeType = value.GetType();
 
         // Custom converters always win (mirrors serializer pipeline).
-        var fromConverters = Tomlyn.Serialization.Internal.TomlTypeInfoResolverPipeline.TryResolveFromConverters(options, runtimeType);
+        var fromConverters = Meziantou.Framework.Toml.Serialization.Internal.TomlTypeInfoResolverPipeline.TryResolveFromConverters(options, runtimeType);
         if (fromConverters is not null)
         {
             fromConverters.Write(writer, value);

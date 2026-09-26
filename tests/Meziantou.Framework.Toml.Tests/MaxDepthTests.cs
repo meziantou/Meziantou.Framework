@@ -1,10 +1,10 @@
 using System;
 using System.IO;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class MaxDepthTests
 {

@@ -1,8 +1,8 @@
-using Tomlyn.Parsing;
-using Tomlyn.Serialization;
 using System.Text.Json.Serialization;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public class NewApiExceptionLocationTests
 {

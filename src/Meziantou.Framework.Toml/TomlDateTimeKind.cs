@@ -1,4 +1,4 @@
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Offsets used for a <see cref="TomlDateTime"/>

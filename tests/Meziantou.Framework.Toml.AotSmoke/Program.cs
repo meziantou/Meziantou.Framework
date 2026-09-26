@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using Tomlyn;
-using Tomlyn.Model;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.AotTests;
+namespace Meziantou.Framework.Toml.AotSmoke;
 
 #pragma warning disable MA0048 // File name must match type name
 

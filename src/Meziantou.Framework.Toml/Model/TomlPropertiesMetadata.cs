@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Model;
+namespace Meziantou.Framework.Toml.Model;
 
 /// <summary>
 /// Stores metadata for TOML properties, including trivia and display hints.

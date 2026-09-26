@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal sealed class TomlSourceGeneratedMutableCollectionTypeInfo<TCollection, TElement> : TomlTypeInfo<TCollection>
     where TCollection : ICollection<TElement>, new()

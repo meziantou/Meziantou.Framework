@@ -1,4 +1,4 @@
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Defines a callback that is invoked before an instance is serialized to TOML.

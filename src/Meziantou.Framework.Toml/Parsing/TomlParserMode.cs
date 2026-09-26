@@ -1,4 +1,4 @@
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Specifies how <see cref="TomlParser"/> handles syntax errors.

@@ -1,4 +1,4 @@
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Represents the semantic event kinds emitted by <see cref="TomlParser"/>.

@@ -1,8 +1,8 @@
 using System.IO;
 using System.Text;
-using Tomlyn.Model;
+using Meziantou.Framework.Toml.Model;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class NewApiUtf8StreamExceptionLocationTests
 {

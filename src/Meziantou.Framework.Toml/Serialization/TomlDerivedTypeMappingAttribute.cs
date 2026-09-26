@@ -1,8 +1,8 @@
 using System;
 using System.Globalization;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Registers a derived type mapping on a source-generated <see cref="TomlSerializerContext"/>, enabling cross-project polymorphism.

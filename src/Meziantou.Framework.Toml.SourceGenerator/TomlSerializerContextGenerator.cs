@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Tomlyn.SourceGeneration;
+namespace Meziantou.Framework.Toml.SourceGeneration;
 
 [Generator]
 public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
@@ -18,8 +18,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
         id: "TOMLYN001",
         title: "Toml serializer context must be partial",
-        messageFormat: "Type '{0}' derives from Tomlyn.Serialization.TomlSerializerContext and must be declared partial to support source generation",
-        category: "Tomlyn.SourceGeneration",
+        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and must be declared partial to support source generation",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -27,7 +27,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN002",
         title: "Invalid converter type",
         messageFormat: "Converter type '{0}' is invalid: {1}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -35,7 +35,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN003",
         title: "Unsupported member type",
         messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Add [TomlSerializable(typeof({2}))] to the context or change the member type.",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -43,7 +43,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN004",
         title: "Unsupported dictionary key type",
         messageFormat: "Type '{0}' contains member '{1}' of dictionary-like type '{2}' with non-string keys. TOML table keys must be strings.",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -51,7 +51,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN005",
         title: "Invalid source generation option",
         messageFormat: "Invalid source generation option on context '{0}': {1}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -59,7 +59,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN006",
         title: "Invalid extension data member",
         messageFormat: "Type '{0}' extension data member '{1}' is invalid: {2}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -67,15 +67,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN007",
         title: "Invalid polymorphism configuration",
         messageFormat: "Type '{0}' polymorphism configuration is invalid: {1}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor JsonSerializableNotSupported = new(
         id: "TOMLYN008",
         title: "JsonSerializable is not supported on TOML contexts",
-        messageFormat: "Type '{0}' derives from Tomlyn.Serialization.TomlSerializerContext and uses [JsonSerializable]. Replace [JsonSerializable(...)] with [TomlSerializable(...)] on the context.",
-        category: "Tomlyn.SourceGeneration",
+        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and uses [JsonSerializable]. Replace [JsonSerializable(...)] with [TomlSerializable(...)] on the context.",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
@@ -83,7 +83,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN009",
         title: "Invalid derived type mapping",
         messageFormat: "Context '{0}' derived type mapping is invalid: {1}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
@@ -91,7 +91,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN010",
         title: "Derived type mapping base type has no polymorphic configuration",
         messageFormat: "Context '{0}' registers a derived type mapping for base type '{1}' without [TomlPolymorphic], [TomlDerivedType], [JsonPolymorphic], or [JsonDerivedType]. Serializer options defaults will be used.",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
@@ -99,23 +99,23 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         id: "TOMLYN011",
         title: "Invalid TOML attribute usage",
         messageFormat: "Type '{0}' member '{1}' has invalid TOML attribute usage: {2}",
-        category: "Tomlyn.SourceGeneration",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private const string TomlSerializerContextMetadataName = "Tomlyn.Serialization.TomlSerializerContext";
-    private const string TomlSerializableAttributeMetadataName = "Tomlyn.Serialization.TomlSerializableAttribute";
-    private const string TomlDerivedTypeMappingAttributeMetadataName = "Tomlyn.Serialization.TomlDerivedTypeMappingAttribute";
+    private const string TomlSerializerContextMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSerializerContext";
+    private const string TomlSerializableAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSerializableAttribute";
+    private const string TomlDerivedTypeMappingAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute";
     private const string JsonSerializableAttributeMetadataName = "System.Text.Json.Serialization.JsonSerializableAttribute";
     private const string JsonSourceGenerationOptionsAttributeMetadataName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
     private const string JsonObjectCreationHandlingAttributeMetadataName = "System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute";
-    private const string TomlSourceGenerationOptionsAttributeMetadataName = "Tomlyn.Serialization.TomlSourceGenerationOptionsAttribute";
-    private const string TomlConverterMetadataName = "Tomlyn.Serialization.TomlConverter";
-    private const string TomlSingleOrArrayAttributeMetadataName = "Tomlyn.Serialization.TomlSingleOrArrayAttribute";
-    private const string TomlOnSerializingMetadataName = "Tomlyn.Serialization.ITomlOnSerializing";
-    private const string TomlOnSerializedMetadataName = "Tomlyn.Serialization.ITomlOnSerialized";
-    private const string TomlOnDeserializingMetadataName = "Tomlyn.Serialization.ITomlOnDeserializing";
-    private const string TomlOnDeserializedMetadataName = "Tomlyn.Serialization.ITomlOnDeserialized";
+    private const string TomlSourceGenerationOptionsAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSourceGenerationOptionsAttribute";
+    private const string TomlConverterMetadataName = "Meziantou.Framework.Toml.Serialization.TomlConverter";
+    private const string TomlSingleOrArrayAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSingleOrArrayAttribute";
+    private const string TomlOnSerializingMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnSerializing";
+    private const string TomlOnSerializedMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnSerialized";
+    private const string TomlOnDeserializingMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing";
+    private const string TomlOnDeserializedMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized";
     private const string SetsRequiredMembersAttributeMetadataName = "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute";
     private const string GeneratedCodeTool = "Meziantou.Framework.Toml.SourceGenerator";
     private static readonly string GeneratedCodeVersion = typeof(TomlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
@@ -380,8 +380,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("using System;");
         builder.AppendLine("using System.Collections.Generic;");
         builder.AppendLine("using System.Text.Json;");
-        builder.AppendLine("using Tomlyn;");
-        builder.AppendLine("using Tomlyn.Serialization;");
+        builder.AppendLine("using Meziantou.Framework.Toml;");
+        builder.AppendLine("using Meziantou.Framework.Toml.Serialization;");
         builder.AppendLine();
 
         if (!string.IsNullOrEmpty(model.NamespaceName))
@@ -431,8 +431,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            if (!global::System.Object.ReferenceEquals(options.TypeInfoResolver, this))");
         builder.AppendLine("            {");
         builder.AppendLine("                throw new global::System.InvalidOperationException(");
-        builder.AppendLine("                    $\"The provided {nameof(global::Tomlyn.TomlSerializerOptions)} instance does not match the options associated with the context '{GetType()}'. \" +");
-        builder.AppendLine("                    $\"Use overloads that accept a {nameof(global::Tomlyn.Serialization.TomlSerializerContext)} or a {nameof(global::Tomlyn.TomlTypeInfo)} directly.\");");
+        builder.AppendLine("                    $\"The provided {nameof(global::Meziantou.Framework.Toml.TomlSerializerOptions)} instance does not match the options associated with the context '{GetType()}'. \" +");
+        builder.AppendLine("                    $\"Use overloads that accept a {nameof(global::Meziantou.Framework.Toml.Serialization.TomlSerializerContext)} or a {nameof(global::Meziantou.Framework.Toml.TomlTypeInfo)} directly.\");");
         builder.AppendLine("            }");
         builder.AppendLine();
         builder.Append("            var __runtimeTypeInfo = ResolveRuntimeConverterTypeInfo(options, type, ")
@@ -720,13 +720,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else if (TryGetPolymorphicShape(context, model, derivedTypeMappings, type, out var polymorphic, reportDiagnostics: false))
         {
-            builder.Append("        global::Tomlyn.TomlTypeInfo<").Append(typeName).AppendLine(">? __baseTypeInfo = null;");
+            builder.Append("        global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).AppendLine(">? __baseTypeInfo = null;");
             if (TryGetPocoShape(context, model, type, out _))
             {
                 builder.Append("        __baseTypeInfo = new __TomlTypeInfo_").Append(propertyName).AppendLine("(this, options);");
             }
 
-            builder.AppendLine("        var __derivedTypeInfoByDiscriminator = new global::System.Collections.Generic.Dictionary<string, global::Tomlyn.TomlTypeInfo>(global::System.StringComparer.Ordinal)");
+            builder.AppendLine("        var __derivedTypeInfoByDiscriminator = new global::System.Collections.Generic.Dictionary<string, global::Meziantou.Framework.Toml.TomlTypeInfo>(global::System.StringComparer.Ordinal)");
             builder.AppendLine("        {");
             foreach (var derived in polymorphic.DerivedTypes)
             {
@@ -744,10 +744,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 : "null";
 
             var unknownHandlingExpression = polymorphic.UnknownDerivedTypeHandlingOverride is { } handlingValue
-                ? $"(global::Tomlyn.TomlUnknownDerivedTypeHandling){handlingValue}"
+                ? $"(global::Meziantou.Framework.Toml.TomlUnknownDerivedTypeHandling){handlingValue}"
                 : "null";
 
-            builder.Append("        return new global::Tomlyn.Serialization.TomlPolymorphicTypeInfo<")
+            builder.Append("        return new global::Meziantou.Framework.Toml.Serialization.TomlPolymorphicTypeInfo<")
                 .Append(typeName)
                 .Append(">(options, __baseTypeInfo, ")
                 .Append(discriminatorExpression)
@@ -833,7 +833,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         if (callsOnSerializing)
         {
-            builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnSerializing)value).OnTomlSerializing();");
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnSerializing)value).OnTomlSerializing();");
         }
         builder.AppendLine("            writer.WriteStartTable();");
         string? usedKeysVariable = null;
@@ -920,7 +920,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            writer.WriteEndTable();");
         if (callsOnSerialized)
         {
-            builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnSerialized)value).OnTomlSerialized();");
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnSerialized)value).OnTomlSerialized();");
         }
         builder.AppendLine("        }");
         builder.AppendLine();
@@ -960,7 +960,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("            var value = new ").Append(typeName).AppendLine("();");
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
             }
             var hasRequiredMembers = poco.Members.Any(static m => m.IsRequired);
             var throwOnDuplicate = ShouldThrowOnDuplicate(model.Options);
@@ -1070,7 +1070,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             if (callsOnDeserialized)
             {
-                builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
             }
             builder.AppendLine("            return value;");
             builder.AppendLine("        }");
@@ -1820,7 +1820,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
             }
 
             if (extensionData is { CanSet: false })
@@ -1847,7 +1847,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
             }
 
             for (var i = 0; i < poco.Members.Length; i++)
@@ -1884,7 +1884,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         if (callsOnDeserialized)
         {
-            builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
         }
 
         builder.AppendLine("            return value;");
@@ -1910,7 +1910,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
         if (callsOnDeserializing)
         {
-            builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
         }
 
         var hasRequiredMembers = poco.Members.Any(static m => m.IsRequired);
@@ -2024,7 +2024,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         if (callsOnDeserialized)
         {
-            builder.AppendLine("            ((global::Tomlyn.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
         }
 
         builder.AppendLine("            return value;");
@@ -2883,7 +2883,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static void EmitPropertyMetadataInitializer(StringBuilder builder, PocoMember member)
     {
-        builder.Append("new global::Tomlyn.Model.TomlPropertyMetadata { ");
+        builder.Append("new global::Meziantou.Framework.Toml.Model.TomlPropertyMetadata { ");
         var hasPrevious = false;
 
         void AppendSeparator()
@@ -3143,9 +3143,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         foreach (var attr in type.GetAttributes())
         {
             var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (attrName == "global::Tomlyn.Serialization.TomlPolymorphicAttribute" ||
+            if (attrName == "global::Meziantou.Framework.Toml.Serialization.TomlPolymorphicAttribute" ||
                 attrName == "global::System.Text.Json.Serialization.JsonPolymorphicAttribute" ||
-                attrName == "global::Tomlyn.Serialization.TomlDerivedTypeAttribute" ||
+                attrName == "global::Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute" ||
                      attrName == "global::System.Text.Json.Serialization.JsonDerivedTypeAttribute")
             {
                 return true;
@@ -3524,7 +3524,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 var annotated = publicConstructors
                     .Where(static ctor =>
-                        HasAttribute(ctor, "Tomlyn.Serialization.TomlConstructorAttribute") ||
+                        HasAttribute(ctor, "Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute") ||
                         HasAttribute(ctor, "System.Text.Json.Serialization.JsonConstructorAttribute"))
                     .ToArray();
 
@@ -3573,7 +3573,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var hasInclude = HasAttribute(member, "Tomlyn.Serialization.TomlIncludeAttribute") ||
+            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
                 HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute");
             if (member.GetMethod.DeclaredAccessibility != Accessibility.Public && !hasInclude)
             {
@@ -3704,7 +3704,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var hasInclude = HasAttribute(member, "Tomlyn.Serialization.TomlIncludeAttribute") ||
+            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
                 HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute");
             if (!hasInclude)
             {
@@ -3890,7 +3890,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         foreach (var attr in named.GetAttributes())
         {
             var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (attrName == "global::Tomlyn.Serialization.TomlPolymorphicAttribute")
+            if (attrName == "global::Meziantou.Framework.Toml.Serialization.TomlPolymorphicAttribute")
             {
                 foreach (var kvp in attr.NamedArguments)
                 {
@@ -3933,7 +3933,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         foreach (var attr in named.GetAttributes())
         {
             var attrName = attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (attrName == "global::Tomlyn.Serialization.TomlDerivedTypeAttribute")
+            if (attrName == "global::Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute")
             {
                 if (attr.ConstructorArguments.Length == 1 &&
                     attr.ConstructorArguments[0].Kind == TypedConstantKind.Type &&
@@ -4258,13 +4258,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                    IFieldSymbol field when field.IsRequired => true,
                    _ => false,
                } ||
-               HasAttribute(member, "Tomlyn.Serialization.TomlRequiredAttribute") ||
+               HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlRequiredAttribute") ||
                HasAttribute(member, "System.Text.Json.Serialization.JsonRequiredAttribute");
     }
 
     private static bool IsExtensionData(ISymbol member)
     {
-        return HasAttribute(member, "Tomlyn.Serialization.TomlExtensionDataAttribute") ||
+        return HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlExtensionDataAttribute") ||
                HasAttribute(member, "System.Text.Json.Serialization.JsonExtensionDataAttribute");
     }
 
@@ -4324,9 +4324,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var memberTypeNoOuterNullability = memberType.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
         var memberTypeNameNoNullability = memberTypeNoOuterNullability.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var memberTypeName = memberTypeNoOuterNullability.ToDisplayString(FullyQualifiedNullableFormat);
-        if (memberTypeNameNoNullability == "global::Tomlyn.Model.TomlTable")
+        if (memberTypeNameNoNullability == "global::Meziantou.Framework.Toml.Model.TomlTable")
         {
-            createExpression = "new global::Tomlyn.Model.TomlTable()";
+            createExpression = "new global::Meziantou.Framework.Toml.Model.TomlTable()";
             return true;
         }
 
@@ -4829,7 +4829,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static string GetSerializedName(ISymbol member, string memberName, string? namingPolicyExpression)
     {
-        if (TryGetAttribute(member, "Tomlyn.Serialization.TomlPropertyNameAttribute", out var tomlAttr) &&
+        if (TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlPropertyNameAttribute", out var tomlAttr) &&
             tomlAttr.ConstructorArguments.Length == 1 &&
             tomlAttr.ConstructorArguments[0].Value is string tomlName)
         {
@@ -4884,7 +4884,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static int GetOrder(ISymbol member)
     {
-        if (TryGetAttribute(member, "Tomlyn.Serialization.TomlPropertyOrderAttribute", out var tomlAttr) &&
+        if (TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlPropertyOrderAttribute", out var tomlAttr) &&
             tomlAttr.ConstructorArguments.Length == 1 &&
             tomlAttr.ConstructorArguments[0].Value is int tomlOrder)
         {
@@ -4909,21 +4909,21 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         bool? preferLiteralWhenNoEscapes = null;
         bool? allowHexEscapes = null;
 
-        if (TryGetAttribute(member, "Tomlyn.Serialization.TomlTableArrayStyleAttribute", out var tableArrayStyleAttr) &&
+        if (TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlTableArrayStyleAttribute", out var tableArrayStyleAttr) &&
             tableArrayStyleAttr.ConstructorArguments.Length == 1 &&
             tableArrayStyleAttr.ConstructorArguments[0].Value is int tableArrayStyleValue)
         {
             tableArrayStyle = tableArrayStyleValue;
         }
 
-        if (TryGetAttribute(member, "Tomlyn.Serialization.TomlInlineTableAttribute", out var inlineTableAttr) &&
+        if (TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlInlineTableAttribute", out var inlineTableAttr) &&
             inlineTableAttr.ConstructorArguments.Length == 1 &&
             inlineTableAttr.ConstructorArguments[0].Value is int inlineTablePolicyValue)
         {
             inlineTablePolicy = inlineTablePolicyValue;
         }
 
-        if (TryGetAttribute(member, "Tomlyn.Serialization.TomlStringStyleAttribute", out var stringStyleAttr) &&
+        if (TryGetAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlStringStyleAttribute", out var stringStyleAttr) &&
             stringStyleAttr.ConstructorArguments.Length == 1 &&
             stringStyleAttr.ConstructorArguments[0].Value is int stringStyleValue)
         {
@@ -4959,14 +4959,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     }
 
     private static int? GetTypeLevelMappingOrder(ITypeSymbol type)
-        => TryGetAttribute(type, "Tomlyn.Serialization.TomlMappingOrderAttribute", out var attr) &&
+        => TryGetAttribute(type, "Meziantou.Framework.Toml.Serialization.TomlMappingOrderAttribute", out var attr) &&
            attr.ConstructorArguments.Length == 1 &&
            attr.ConstructorArguments[0].Value is int value
             ? value
             : null;
 
     private static int? GetTypeLevelDottedKeyHandling(ITypeSymbol type)
-        => TryGetAttribute(type, "Tomlyn.Serialization.TomlDottedKeyHandlingAttribute", out var attr) &&
+        => TryGetAttribute(type, "Meziantou.Framework.Toml.Serialization.TomlDottedKeyHandlingAttribute", out var attr) &&
            attr.ConstructorArguments.Length == 1 &&
            attr.ConstructorArguments[0].Value is int value
             ? value
@@ -4996,7 +4996,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static IgnoreBehavior GetIgnoreBehavior(ISymbol symbol)
     {
-        if (TryGetAttribute(symbol, "Tomlyn.Serialization.TomlIgnoreAttribute", out var tomlAttr))
+        if (TryGetAttribute(symbol, "Meziantou.Framework.Toml.Serialization.TomlIgnoreAttribute", out var tomlAttr))
         {
             var toml = TomlIgnoreAttributeModel.From(tomlAttr);
             return toml.Condition switch
@@ -5119,13 +5119,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::System.Half" or
             "global::System.Int128" or
             "global::System.UInt128" or
-            "global::Tomlyn.TomlDateTime" or
+            "global::Meziantou.Framework.Toml.TomlDateTime" or
             "global::System.DateOnly" or
             "global::System.TimeOnly" or
-            "global::Tomlyn.Model.TomlObject" or
-            "global::Tomlyn.Model.TomlTable" or
-            "global::Tomlyn.Model.TomlArray" or
-            "global::Tomlyn.Model.TomlTableArray";
+            "global::Meziantou.Framework.Toml.Model.TomlObject" or
+            "global::Meziantou.Framework.Toml.Model.TomlTable" or
+            "global::Meziantou.Framework.Toml.Model.TomlArray" or
+            "global::Meziantou.Framework.Toml.Model.TomlTableArray";
     }
 
     private static string GetTypeInfoPropertyName(ITypeSymbol type)
@@ -5586,7 +5586,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 for (var current = named.BaseType; current is not null; current = current.BaseType)
                 {
                     if (current.IsGenericType &&
-                        current.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::Tomlyn.Serialization.TomlConverter<T>" &&
+                        current.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::Meziantou.Framework.Toml.Serialization.TomlConverter<T>" &&
                         current.TypeArguments.Length == 1 &&
                         SymbolEqualityComparer.Default.Equals(current.TypeArguments[0], type))
                     {
@@ -5637,12 +5637,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlIgnoreCondition.Never",
-            1 => "global::Tomlyn.TomlIgnoreCondition.WhenWritingNull",
-            2 => "global::Tomlyn.TomlIgnoreCondition.WhenWritingDefault",
-            3 => "global::Tomlyn.TomlIgnoreCondition.Always",
-            4 => "global::Tomlyn.TomlIgnoreCondition.WhenWriting",
-            5 => "global::Tomlyn.TomlIgnoreCondition.WhenReading",
+            0 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.Never",
+            1 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenWritingNull",
+            2 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenWritingDefault",
+            3 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.Always",
+            4 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenWriting",
+            5 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenReading",
             _ => null!,
         };
 
@@ -5665,8 +5665,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlDuplicateKeyHandling.Error",
-            1 => "global::Tomlyn.TomlDuplicateKeyHandling.LastWins",
+            0 => "global::Meziantou.Framework.Toml.TomlDuplicateKeyHandling.Error",
+            1 => "global::Meziantou.Framework.Toml.TomlDuplicateKeyHandling.LastWins",
             _ => null!,
         };
 
@@ -5677,10 +5677,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlMappingOrderPolicy.Declaration",
-            1 => "global::Tomlyn.TomlMappingOrderPolicy.Alphabetical",
-            2 => "global::Tomlyn.TomlMappingOrderPolicy.OrderThenDeclaration",
-            3 => "global::Tomlyn.TomlMappingOrderPolicy.OrderThenAlphabetical",
+            0 => "global::Meziantou.Framework.Toml.TomlMappingOrderPolicy.Declaration",
+            1 => "global::Meziantou.Framework.Toml.TomlMappingOrderPolicy.Alphabetical",
+            2 => "global::Meziantou.Framework.Toml.TomlMappingOrderPolicy.OrderThenDeclaration",
+            3 => "global::Meziantou.Framework.Toml.TomlMappingOrderPolicy.OrderThenAlphabetical",
             _ => null!,
         };
 
@@ -5691,8 +5691,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlDottedKeyHandling.Literal",
-            1 => "global::Tomlyn.TomlDottedKeyHandling.Expand",
+            0 => "global::Meziantou.Framework.Toml.TomlDottedKeyHandling.Literal",
+            1 => "global::Meziantou.Framework.Toml.TomlDottedKeyHandling.Expand",
             _ => null!,
         };
 
@@ -5703,8 +5703,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlRootValueHandling.Error",
-            1 => "global::Tomlyn.TomlRootValueHandling.WrapInRootKey",
+            0 => "global::Meziantou.Framework.Toml.TomlRootValueHandling.Error",
+            1 => "global::Meziantou.Framework.Toml.TomlRootValueHandling.WrapInRootKey",
             _ => null!,
         };
 
@@ -5715,8 +5715,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlNewLineKind.Lf",
-            1 => "global::Tomlyn.TomlNewLineKind.CrLf",
+            0 => "global::Meziantou.Framework.Toml.TomlNewLineKind.Lf",
+            1 => "global::Meziantou.Framework.Toml.TomlNewLineKind.CrLf",
             _ => null!,
         };
 
@@ -5727,9 +5727,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlInlineTablePolicy.Never",
-            1 => "global::Tomlyn.TomlInlineTablePolicy.WhenSmall",
-            2 => "global::Tomlyn.TomlInlineTablePolicy.Always",
+            0 => "global::Meziantou.Framework.Toml.TomlInlineTablePolicy.Never",
+            1 => "global::Meziantou.Framework.Toml.TomlInlineTablePolicy.WhenSmall",
+            2 => "global::Meziantou.Framework.Toml.TomlInlineTablePolicy.Always",
             _ => null!,
         };
 
@@ -5740,8 +5740,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlTableArrayStyle.Headers",
-            1 => "global::Tomlyn.TomlTableArrayStyle.InlineArrayOfTables",
+            0 => "global::Meziantou.Framework.Toml.TomlTableArrayStyle.Headers",
+            1 => "global::Meziantou.Framework.Toml.TomlTableArrayStyle.InlineArrayOfTables",
             _ => null!,
         };
 
@@ -5752,10 +5752,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         expression = value switch
         {
-            0 => "global::Tomlyn.TomlStringStyle.Basic",
-            1 => "global::Tomlyn.TomlStringStyle.Literal",
-            2 => "global::Tomlyn.TomlStringStyle.MultilineBasic",
-            3 => "global::Tomlyn.TomlStringStyle.MultilineLiteral",
+            0 => "global::Meziantou.Framework.Toml.TomlStringStyle.Basic",
+            1 => "global::Meziantou.Framework.Toml.TomlStringStyle.Literal",
+            2 => "global::Meziantou.Framework.Toml.TomlStringStyle.MultilineBasic",
+            3 => "global::Meziantou.Framework.Toml.TomlStringStyle.MultilineLiteral",
             _ => null!,
         };
 

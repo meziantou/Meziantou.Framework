@@ -1,6 +1,6 @@
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 #pragma warning disable MA0048 // File name must match type name
 

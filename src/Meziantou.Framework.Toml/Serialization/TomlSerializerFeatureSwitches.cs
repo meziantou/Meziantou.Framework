@@ -1,11 +1,11 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 internal static class TomlSerializerFeatureSwitches
 {
-    internal const string ReflectionSwitchName = "Tomlyn.TomlSerializer.IsReflectionEnabledByDefault";
+    internal const string ReflectionSwitchName = "Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault";
 
     // This property is stubbed by ILLink.Substitutions.xml when the feature switch is disabled.
     [FeatureSwitchDefinition(ReflectionSwitchName)]

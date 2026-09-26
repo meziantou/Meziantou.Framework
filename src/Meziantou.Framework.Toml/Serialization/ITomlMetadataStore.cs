@@ -1,6 +1,6 @@
-using Tomlyn.Model;
+using Meziantou.Framework.Toml.Model;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Associates TOML trivia/comment metadata with object instances.

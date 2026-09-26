@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Serialization.Internal;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization.Internal;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 internal readonly struct TomlReaderToken
 {

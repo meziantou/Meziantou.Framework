@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Tomlyn.Helpers;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn;
+namespace Meziantou.Framework.Toml;
 
 /// <summary>
 /// Configures string scalar style preferences for TOML serialization.

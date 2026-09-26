@@ -2,7 +2,7 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal struct PooledArrayBuilder<T> : IDisposable
 {

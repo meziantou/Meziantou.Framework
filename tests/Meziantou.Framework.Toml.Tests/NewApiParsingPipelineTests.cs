@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Serialization;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public class NewApiParsingPipelineTests
 {
@@ -115,7 +115,7 @@ public class NewApiParsingPipelineTests
     {
         var parser = TomlParser.Create(
             "a =\n",
-            new Tomlyn.Parsing.TomlParserOptions { Mode = Tomlyn.Parsing.TomlParserMode.Tolerant },
+            new Meziantou.Framework.Toml.Parsing.TomlParserOptions { Mode = Meziantou.Framework.Toml.Parsing.TomlParserMode.Tolerant },
             new TomlSerializerOptions { SourceName = "test.toml" });
 
         var events = new List<TomlParseEventKind>();

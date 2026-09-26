@@ -1,10 +1,10 @@
 using System;
 using System.IO;
-using Tomlyn;
-using Tomlyn.Syntax;
-using Tomlyn.Text;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Provides a full-fidelity TOML syntax parser producing a round-trippable <see cref="DocumentSyntax"/>.

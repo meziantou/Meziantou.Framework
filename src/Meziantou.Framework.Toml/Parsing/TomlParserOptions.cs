@@ -1,4 +1,4 @@
-namespace Tomlyn.Parsing;
+namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
 /// Configures the behavior of <see cref="TomlParser"/>.
@@ -22,7 +22,7 @@ public sealed record TomlParserOptions
     /// </summary>
     /// <remarks>
     /// This option can improve performance for deserialization scenarios that always consume string values
-    /// (for example, via <see cref="Tomlyn.Serialization.TomlReader.GetString"/>), while still avoiding eager
+    /// (for example, via <see cref="Meziantou.Framework.Toml.Serialization.TomlReader.GetString"/>), while still avoiding eager
     /// decoding for complex strings that contain escape sequences.
     /// </remarks>
     public bool EagerStringValues { get; init; }
@@ -32,7 +32,7 @@ public sealed record TomlParserOptions
     /// </summary>
     /// <remarks>
     /// When enabled, the parser records comment trivia around property names and scalar values so that higher-level
-    /// layers can populate <see cref="Tomlyn.Serialization.ITomlMetadataStore"/> instances.
+    /// layers can populate <see cref="Meziantou.Framework.Toml.Serialization.ITomlMetadataStore"/> instances.
     /// </remarks>
     public bool CaptureTrivia { get; init; }
 }

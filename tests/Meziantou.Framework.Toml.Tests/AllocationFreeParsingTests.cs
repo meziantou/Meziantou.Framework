@@ -1,7 +1,7 @@
 using System;
-using Tomlyn.Parsing;
+using Meziantou.Framework.Toml.Parsing;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class AllocationFreeParsingTests
 {
@@ -50,7 +50,7 @@ public sealed class AllocationFreeParsingTests
                    "  d = 2,\n" +
                    "}\n";
 
-        var parserOptions = new Tomlyn.Parsing.TomlParserOptions
+        var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
             DecodeScalars = false,
             Mode = TomlParserMode.Strict,
@@ -85,7 +85,7 @@ public sealed class AllocationFreeParsingTests
         }
     }
 
-    private static void WarmUpParser(string toml, Tomlyn.Parsing.TomlParserOptions parserOptions)
+    private static void WarmUpParser(string toml, Meziantou.Framework.Toml.Parsing.TomlParserOptions parserOptions)
     {
         var parser = TomlParser.Create(toml, parserOptions);
         while (parser.MoveNext())

@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Serialization.Converters;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization.Converters;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal static class TomlBuiltInTypeInfoResolver
 {

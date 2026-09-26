@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class NewApiCollectionTypeParityTests
 {

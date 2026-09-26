@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization.Internal;
+namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal sealed class TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo<TDictionary>
     where TDictionary : IEnumerable<KeyValuePair<string, TValue>>

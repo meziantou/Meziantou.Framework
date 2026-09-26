@@ -1,8 +1,8 @@
 using System;
 using System.Linq;
-using Tomlyn.Serialization;
+using Meziantou.Framework.Toml.Serialization;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public class NewApiAttributeContractTests
 {
@@ -47,7 +47,7 @@ public class NewApiAttributeContractTests
             .OrderBy(static fullName => fullName, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(new[] { "Tomlyn.Serialization.TomlPropertyNameAttribute" }, exportedTypes);
+        Assert.Equal(new[] { "Meziantou.Framework.Toml.Serialization.TomlPropertyNameAttribute" }, exportedTypes);
     }
 
     [Fact]

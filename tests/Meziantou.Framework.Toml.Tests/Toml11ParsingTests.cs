@@ -1,9 +1,9 @@
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Serialization;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Serialization;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 public sealed class Toml11ParsingTests
 {
@@ -98,7 +98,7 @@ public sealed class Toml11ParsingTests
     {
         var parser = TomlParser.Create(
             "s = \"A\\e\\x41\"\n",
-            new Tomlyn.Parsing.TomlParserOptions { DecodeScalars = true });
+            new Meziantou.Framework.Toml.Parsing.TomlParserOptions { DecodeScalars = true });
 
         while (parser.MoveNext())
         {

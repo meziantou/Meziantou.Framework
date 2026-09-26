@@ -1,4 +1,4 @@
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Represents the current logical token when reading TOML.

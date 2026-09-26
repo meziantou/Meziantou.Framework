@@ -1,12 +1,12 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Tomlyn;
-using Tomlyn.Helpers;
+using Meziantou.Framework.Toml;
+using Meziantou.Framework.Toml.Helpers;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
-/// Instructs the <see cref="Tomlyn.TomlSerializer"/> when to ignore the field or property value.
+/// Instructs the <see cref="Meziantou.Framework.Toml.TomlSerializer"/> when to ignore the field or property value.
 /// </summary>
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
 public sealed class TomlIgnoreAttribute : TomlAttribute

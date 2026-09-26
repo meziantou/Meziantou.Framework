@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MeziantouFrameworkTomlIsReflectionEnabledByDefault)' != ''">
-    <RuntimeHostConfigurationOption Include="Tomlyn.TomlSerializer.IsReflectionEnabledByDefault"
+    <RuntimeHostConfigurationOption Include="Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault"
                                    Value="$(MeziantouFrameworkTomlIsReflectionEnabledByDefault)"
                                    Trim="true" />
   </ItemGroup>

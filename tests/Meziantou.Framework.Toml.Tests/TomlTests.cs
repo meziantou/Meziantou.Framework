@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
 using System.Text;
-using Tomlyn.Helpers;
-using Tomlyn.Model;
-using Tomlyn.Parsing;
-using Tomlyn.Syntax;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Parsing;
+using Meziantou.Framework.Toml.Syntax;
 
-namespace Tomlyn.Tests;
+namespace Meziantou.Framework.Toml.Tests;
 
 /// <summary>
 /// Tests for the syntax parsing frontend.

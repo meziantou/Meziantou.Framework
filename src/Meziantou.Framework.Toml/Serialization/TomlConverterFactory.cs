@@ -1,7 +1,7 @@
 using System;
-using Tomlyn;
+using Meziantou.Framework.Toml;
 
-namespace Tomlyn.Serialization;
+namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>
 /// Produces <see cref="TomlConverter"/> instances for a family of types.

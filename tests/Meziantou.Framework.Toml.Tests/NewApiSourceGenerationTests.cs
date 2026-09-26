@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -1435,6 +1436,33 @@ public sealed class GeneratedAggregationChild
 
 [TomlSerializable(typeof(GeneratedAggregationRoot))]
 internal sealed partial class TestTomlSerializerContextAggregation : TomlSerializerContext
+{
+}
+
+public enum GeneratedManyErrorsKind
+{
+    A,
+    B,
+}
+
+public sealed class GeneratedManyErrorsItem
+{
+    public int X { get; set; }
+
+    public GeneratedManyErrorsKind E { get; set; }
+}
+
+public sealed record GeneratedManyErrorsRecord(int X, GeneratedManyErrorsKind E);
+
+public sealed class GeneratedManyErrorsRoot
+{
+    public IList<GeneratedManyErrorsItem>? L { get; set; }
+
+    public IList<GeneratedManyErrorsRecord>? R { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedManyErrorsRoot))]
+internal sealed partial class TestTomlSerializerContextManyErrors : TomlSerializerContext
 {
 }
 
@@ -2919,6 +2947,37 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Point.X);
             Assert.Equal(5, value.Point.Y);
         }
+    }
+
+    [Theory]
+    [InlineData("L", false)]
+    [InlineData("L", true)]
+    [InlineData("R", false)]
+    public void Deserialize_ManyTablesWithErrors_IsLinear(string key, bool generated)
+    {
+        // Each table with an error signals its parent; the first diagnostics, which embed long input values, must not be
+        // formatted again for each one
+        var big = new string('z', 10_000);
+        var builder = new StringBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            builder.Append("[[").Append(key).Append("]]\nX = 1\nE = '").Append(big).Append("'\n");
+        }
+
+        for (var i = 0; i < 2000; i++)
+        {
+            builder.Append("[[").Append(key).Append("]]\nX = 'a'\nE = 0\n");
+        }
+
+        var toml = builder.ToString();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var exception = generated
+            ? Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, TestTomlSerializerContextManyErrors.Default.GeneratedManyErrorsRoot))
+            : Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedManyErrorsRoot>(toml));
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(2100, exception.Diagnostics.Count);
+        Assert.True(allocated < 1_000_000_000, $"Allocated {allocated} bytes");
     }
 
     [Fact]

@@ -91,6 +91,7 @@ namespace Meziantou.Framework.Toml
 
     public sealed class TomlException : System.Exception
     {
+        public override string Message { get => throw null; }
         public Meziantou.Framework.Toml.Syntax.DiagnosticsBag Diagnostics { get => throw null; }
         public Meziantou.Framework.Toml.Text.TomlSourceSpan? Span { get => throw null; }
         public string? SourceName { get => throw null; }

@@ -19,6 +19,20 @@ public sealed class TomlException : Exception
         Span = GetFirstSpanOrNull(diagnostics);
     }
 
+    // A recorded value error is thrown for every table with an error, and caught by its parent: formatting its message
+    // eagerly would copy the first diagnostics once per table
+    private TomlException(DiagnosticsBag operationDiagnostics, bool isRecordedValueError)
+    {
+        Diagnostics = operationDiagnostics;
+        Span = GetFirstSpanOrNull(operationDiagnostics);
+        IsRecordedValueError = isRecordedValueError;
+    }
+
+    private string? _lazyMessage;
+
+    /// <inheritdoc />
+    public override string Message => IsRecordedValueError ? _lazyMessage ??= FormatDiagnostics(Diagnostics) : base.Message;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TomlException"/> class.
     /// </summary>
@@ -67,9 +81,9 @@ public sealed class TomlException : Exception
 
     // The value that failed was read completely and its errors are in the diagnostics of the operation, so the reading can
     // continue with the next value to report the errors of the rest of the document
-    internal bool IsRecordedValueError { get; private init; }
+    internal bool IsRecordedValueError { get; }
 
-    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics) => new(operationDiagnostics) { IsRecordedValueError = true };
+    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics) => new(operationDiagnostics, isRecordedValueError: true);
 
     // An error of the program rather than of the TOML input, such as a type without metadata: TryDeserialize does not hide it
     internal bool IsConfigurationError { get; private init; }

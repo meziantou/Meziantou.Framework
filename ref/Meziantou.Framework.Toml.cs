@@ -28,7 +28,6 @@ namespace Meziantou.Framework.Toml
         byte System.IConvertible.ToByte(System.IFormatProvider? provider) => throw null;
         [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
         char System.IConvertible.ToChar(System.IFormatProvider? provider) => throw null;
-        [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
         System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) => throw null;
         [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
         decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) => throw null;

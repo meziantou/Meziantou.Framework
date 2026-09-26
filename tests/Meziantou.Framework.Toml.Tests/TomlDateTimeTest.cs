@@ -23,6 +23,34 @@ public class TomlDateTimeTest
         AssertConvertsToIsoDate(CultureInfo.GetCultureInfo(cultureName));
     }
 
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData("fi-FI")]
+    [InlineData("da-DK")]
+    public void TestIConvertibleToString_TimeUsesColons(string cultureName)
+    {
+        var value = new TomlDateTime(new DateTimeOffset(2022, 1, 27, 7, 32, 5, TimeSpan.FromHours(-7)), 0, TomlDateTimeKind.OffsetDateTimeByNumber);
+
+        Assert.Equal("2022-01-27T07:32:05-07:00", Convert.ToString(value, CultureInfo.GetCultureInfo(cultureName)));
+    }
+
+    [Theory]
+    [InlineData("value = 2024-01-02T03:04:05Z\n")]
+    [InlineData("value = 2024-01-02T03:04:05+14:00\n")]
+    [InlineData("value = 2024-01-02T03:04:05\n")]
+    [InlineData("value = 2024-01-02\n")]
+    public void TestIConvertibleToDateTime_MatchesTheDeserializer(string toml)
+    {
+        var tomlDateTime = (TomlDateTime)TomlSerializer.Deserialize<Model.TomlTable>(toml)!["value"];
+        var expected = TomlSerializer.Deserialize<Dictionary<string, DateTime>>(toml)!["value"];
+
+        var converted = Convert.ToDateTime(tomlDateTime, CultureInfo.InvariantCulture);
+
+        Assert.Equal(expected, converted);
+        Assert.Equal(expected.Kind, converted.Kind);
+        Assert.Equal(expected, Convert.ChangeType(tomlDateTime, typeof(DateTime), CultureInfo.InvariantCulture));
+    }
+
     private static void AssertConvertsToIsoDate(CultureInfo? cultureInfo)
     {
         var dateTime = new TomlDateTime(new DateTimeOffset(new DateTime(2022, 1, 27)), 0, TomlDateTimeKind.LocalDate);

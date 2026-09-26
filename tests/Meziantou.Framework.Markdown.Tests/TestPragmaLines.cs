@@ -2,9 +2,9 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestPragmaLines
@@ -12,7 +12,7 @@ public class TestPragmaLines
     [Test]
     public void TestFindClosest()
     {
-        var doc = Markdown.Parse(
+        var doc = MarkdownConverter.Parse(
 "test1\n" +                      // 0
 "\n" +                           // 1
 "test2\n" +                      // 2
@@ -66,7 +66,7 @@ public class TestPragmaLines
 "      - item1311\n";            // 6
 
         var pipeline = new MarkdownPipelineBuilder().UsePragmaLines().Build();
-        var doc = Markdown.Parse(text, pipeline);
+        var doc = MarkdownConverter.Parse(text, pipeline);
 
         for (int exact = 0; exact < 7; exact++)
         {

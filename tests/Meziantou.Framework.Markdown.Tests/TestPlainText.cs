@@ -1,4 +1,4 @@
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestPlainText
@@ -22,7 +22,7 @@ public class TestPlainText
     [TestCase(/* markdownText: */ "## foo `bar::baz >`", /* expected: */ "foo bar::baz >\n")]
     public void TestPlainEnsureNewLine(string markdownText, string expected)
     {
-        var actual = Markdown.ToPlainText(markdownText);
+        var actual = MarkdownConverter.ToPlainText(markdownText);
         Assert.AreEqual(expected, actual);
     }
 
@@ -30,7 +30,7 @@ public class TestPlainText
     [TestCase(/* markdownText: */ "```\nConsole.WriteLine(\"Hello, World!\");\n```", /* expected: */ "Console.WriteLine(\"Hello, World!\");\n")]
     public void TestPlainCodeBlock(string markdownText, string expected)
     {
-        var actual = Markdown.ToPlainText(markdownText);
+        var actual = MarkdownConverter.ToPlainText(markdownText);
         Assert.AreEqual(expected, actual);
     }
 

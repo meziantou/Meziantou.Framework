@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.CommonMarkSpecs
+namespace Meziantou.Framework.Markdown.Tests.Specs.CommonMarkSpecs
 {
     [TestFixture]
     public class TestPreliminariesTabs

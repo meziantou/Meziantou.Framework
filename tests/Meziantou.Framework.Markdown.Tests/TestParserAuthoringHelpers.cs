@@ -1,10 +1,10 @@
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public sealed class TestParserAuthoringHelpers
@@ -15,7 +15,7 @@ public sealed class TestParserAuthoringHelpers
         var pipeline = new MarkdownPipelineBuilder();
         pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new CountingInlineParser());
 
-        var html = Markdown.ToHtml(
+        var html = MarkdownConverter.ToHtml(
             """
             @@
 
@@ -54,7 +54,7 @@ public sealed class TestParserAuthoringHelpers
         var pipeline = new MarkdownPipelineBuilder();
         pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new SpanEmittingInlineParser());
 
-        var document = Markdown.Parse("~", pipeline.Build());
+        var document = MarkdownConverter.Parse("~", pipeline.Build());
         var paragraph = document[0] as ParagraphBlock;
 
         Assert.That(paragraph, Is.Not.Null);

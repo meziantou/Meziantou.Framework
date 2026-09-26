@@ -2,14 +2,14 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Extensions.Emoji;
-using Markdig.Extensions.EmphasisExtras;
-using Markdig.Helpers;
-using Markdig.Parsers.Inlines;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestEmojiEmphasis
@@ -51,7 +51,7 @@ public class TestEmojiEmphasis
         {
             var builder = new MarkdownPipelineBuilder().UseEmojiAndSmiley();
             if (trackTrivia) builder.EnableTrackTrivia();
-            Assert.AreEqual($"<p>{expected}</p>\n", Markdown.ToHtml(markdown, builder.Build()));
+            Assert.AreEqual($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, builder.Build()));
         }
     }
 
@@ -70,7 +70,7 @@ public class TestEmojiEmphasis
         }, new Dictionary<string, string>());
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping)
             .UseEmphasisExtras(EmphasisExtraOptions.Default).Build();
-        Assert.AreEqual($"<p>{expected}</p>\n", Markdown.ToHtml(markdown, pipeline));
+        Assert.AreEqual($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
     [Test]
@@ -80,14 +80,14 @@ public class TestEmojiEmphasis
         builder.InlineParsers.Remove(builder.InlineParsers.Find<EmphasisInlineParser>());
         // Register explicitly: the extension normally inserts before the emphasis parser.
         builder.InlineParsers.Add(new EmojiParser(new EmojiMapping()));
-        Assert.AreEqual("<p>**text)😗*</p>\n", Markdown.ToHtml("**text):**", builder.Build()));
+        Assert.AreEqual("<p>**text)😗*</p>\n", MarkdownConverter.ToHtml("**text):**", builder.Build()));
     }
 
     [Test]
     public void SmileysCanBeDisabled()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(enableSmileys: false).Build();
-        Assert.AreEqual("<p><em>text):</em> :*</p>\n", Markdown.ToHtml("*text):* :*", pipeline));
+        Assert.AreEqual("<p><em>text):</em> :*</p>\n", MarkdownConverter.ToHtml("*text):* :*", pipeline));
     }
 
     [Test]
@@ -103,9 +103,9 @@ public class TestEmojiEmphasis
         foreach (var ending in new[] { "", "tail", " tail*", " :*", "&amp;", "&#32;" })
         {
             var markdown = $"prefix {opening}{middle}{closing}{ending}";
-            var expected = Markdown.Parse(markdown, plain).Descendants<EmphasisInline>()
+            var expected = MarkdownConverter.Parse(markdown, plain).Descendants<EmphasisInline>()
                 .Select(x => (x.DelimiterChar, x.DelimiterCount, x.Span)).ToArray();
-            var actual = Markdown.Parse(markdown, emoji).Descendants<EmphasisInline>()
+            var actual = MarkdownConverter.Parse(markdown, emoji).Descendants<EmphasisInline>()
                 .Select(x => (x.DelimiterChar, x.DelimiterCount, x.Span)).ToArray();
             Assert.AreEqual(expected, actual, markdown);
         }
@@ -118,7 +118,7 @@ public class TestEmojiEmphasis
     public void DeferredEmojiRetainsSourceLocation(string markdown, int start)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UsePreciseSourceLocation().Build();
-        var document = Markdown.Parse(markdown, pipeline);
+        var document = MarkdownConverter.Parse(markdown, pipeline);
         var emoji = document.Descendants<EmojiInline>().Single();
         Assert.AreEqual(new SourceSpan(start, start + 1), emoji.Span);
         Assert.AreEqual(0, emoji.Line);
@@ -134,7 +134,7 @@ public class TestEmojiEmphasis
     public void EmojiAndEmphasisStayWithinTableCells()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UsePipeTables().Build();
-        var html = Markdown.ToHtml("| A | B |\n| - | - |\n| *text):* | :* |\n| *text | :* |", pipeline);
+        var html = MarkdownConverter.ToHtml("| A | B |\n| - | - |\n| *text):* | :* |\n| *text | :* |", pipeline);
         Assert.That(html, Does.Contain("<td><em>text):</em></td>\n<td>😗</td>"));
         Assert.That(html, Does.Contain("<td>*text</td>\n<td>😗</td>"));
     }
@@ -148,7 +148,7 @@ public class TestEmojiEmphasis
         foreach (var mapping in shortcodes.Concat(smileys.Select(x => new KeyValuePair<string, string>(x.Key, shortcodes[x.Value]))))
         {
             var markdown = $"prefix {mapping.Key} suffix";
-            Assert.AreEqual($"<p>prefix {mapping.Value} suffix</p>\n", Markdown.ToHtml(markdown, pipeline), markdown);
+            Assert.AreEqual($"<p>prefix {mapping.Value} suffix</p>\n", MarkdownConverter.ToHtml(markdown, pipeline), markdown);
         }
     }
 
@@ -168,7 +168,7 @@ public class TestEmojiEmphasis
         }
         var mapping = new EmojiMapping(shortcodes, new Dictionary<string, string>());
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping).Build();
-        Assert.AreEqual($"<p>prefix {expected}</p>\n", Markdown.ToHtml($"prefix {markdown}", pipeline));
+        Assert.AreEqual($"<p>prefix {expected}</p>\n", MarkdownConverter.ToHtml($"prefix {markdown}", pipeline));
     }
 
     [Test]
@@ -176,8 +176,8 @@ public class TestEmojiEmphasis
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().Build();
         const string markdown = "*text):* :*";
-        Assert.AreEqual("text): 😗", Markdown.ToPlainText(markdown, pipeline).Trim());
-        Assert.AreEqual("*text):* 😗", Markdown.Normalize(markdown, pipeline: pipeline).Trim());
+        Assert.AreEqual("text): 😗", MarkdownConverter.ToPlainText(markdown, pipeline).Trim());
+        Assert.AreEqual("*text):* 😗", MarkdownConverter.Normalize(markdown, pipeline: pipeline).Trim());
     }
 
     // Attributes bind to the emphasis delimiter, even if it ultimately remains unmatched.
@@ -188,6 +188,6 @@ public class TestEmojiEmphasis
     public void GenericAttributesRespectResolvedSyntax(string markdown, string expected)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UseGenericAttributes().Build();
-        Assert.AreEqual(expected, Markdown.ToHtml(markdown, pipeline));
+        Assert.AreEqual(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 }

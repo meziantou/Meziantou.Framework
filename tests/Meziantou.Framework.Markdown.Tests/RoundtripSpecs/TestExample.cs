@@ -1,11 +1,11 @@
-using Markdig.Helpers;
-using Markdig.Renderers.Roundtrip;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 using NUnit.Framework;
 using System.IO;
 
-namespace Markdig.Tests.RoundtripSpecs
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs
 {
     [TestFixture]
     public class TestExample
@@ -24,7 +24,7 @@ resulting output file.
 >look, ma:
 > my space is not normalized!
 ";
-            MarkdownDocument markdownDocument = Markdown.Parse(markdown, trackTrivia: true);
+            MarkdownDocument markdownDocument = MarkdownConverter.Parse(markdown, trackTrivia: true);
             var listBlock = markdownDocument[2] as ListBlock;
             var listItem = listBlock[0] as ListItemBlock;
             var paragraph = listItem[0] as ParagraphBlock;

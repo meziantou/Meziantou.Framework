@@ -4,12 +4,12 @@
 
 using System.IO;
 
-using Markdig.Extensions.SelfPipeline;
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Extensions.SelfPipeline;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig;
+namespace Meziantou.Framework.Markdown;
 
 /// <summary>
 /// This class is the Markdown pipeline build from a <see cref="MarkdownPipelineBuilder"/>.

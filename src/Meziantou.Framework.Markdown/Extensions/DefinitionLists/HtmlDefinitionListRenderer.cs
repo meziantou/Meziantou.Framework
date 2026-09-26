@@ -2,11 +2,11 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Extensions.DefinitionLists;
+namespace Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 
 /// <summary>
 /// A HTML renderer for <see cref="DefinitionList"/>, <see cref="DefinitionItem"/> and <see cref="DefinitionTerm"/>.

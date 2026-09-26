@@ -4,11 +4,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-using Markdig.Helpers;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Parsers.Inlines;
+namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 
 /// <summary>
 /// An inline parser for HTML entities.

@@ -1,8 +1,8 @@
 using System.Globalization;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestCharHelper
 {

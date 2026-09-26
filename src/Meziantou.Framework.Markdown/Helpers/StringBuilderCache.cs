@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// Represents the StringBuilderCache type.

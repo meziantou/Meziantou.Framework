@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.CJKFriendlyEmphasis
+namespace Meziantou.Framework.Markdown.Tests.Specs.CJKFriendlyEmphasis
 {
     [TestFixture]
     public class TestCJKFriendlyEmphasisExtension

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// Helper to parse several HTML tags.

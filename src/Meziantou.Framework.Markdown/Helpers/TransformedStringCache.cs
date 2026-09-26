@@ -5,7 +5,7 @@
 using System.Linq;
 using System.Threading;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 internal sealed class TransformedStringCache
 {

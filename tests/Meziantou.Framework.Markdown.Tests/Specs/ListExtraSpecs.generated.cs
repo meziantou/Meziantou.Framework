@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.ListExtras
+namespace Meziantou.Framework.Markdown.Tests.Specs.ListExtras
 {
     [TestFixture]
     public class TestExtensionsOrderedListWithAlphaLetter

@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 internal struct LazySubstring
 {

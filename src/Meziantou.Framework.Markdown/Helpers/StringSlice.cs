@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// A lightweight struct that represents a slice of a string.
@@ -133,12 +133,7 @@ public struct StringSlice : ICharIterator
     /// Gets the current <see cref="Rune"/>. Recognizes supplementary code points that cannot be covered by a single <see cref="char"/>.
     /// </summary>
     /// <returns>The current rune or <see langword="default"/> if the current position contains an incomplete surrogate pair or <see cref="IsEmpty"/>.</returns>
-#if NET
-    public
-#else
-    internal
-#endif
-    readonly Rune CurrentRune
+    public readonly Rune CurrentRune
     {
         get
         {
@@ -184,12 +179,7 @@ public struct StringSlice : ICharIterator
     /// <param name="index">The index into <see cref="Text"/>.</param>
     /// <returns>The rune at the specified index or <see langword="default"/> if the location contains an incomplete surrogate pair.</returns>
     /// <exception cref="IndexOutOfRangeException">Thrown when the given <paramref name="index"/> is out of range</exception>
-#if NET
-    public
-#else
-    internal
-#endif
-    readonly Rune RuneAt(int index)
+    public readonly Rune RuneAt(int index)
     {
         string text = Text;
         char first = text[index];
@@ -230,12 +220,7 @@ public struct StringSlice : ICharIterator
     /// </summary>
     /// <returns>The current rune or <see langword="default"/> if the next position contains an incomplete surrogate pair or <see cref="IsEmpty"/>.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET
-    public
-#else
-    internal
-#endif
-    Rune NextRune()
+    public Rune NextRune()
     {
         int start = Start;
         if (start >= End)
@@ -355,12 +340,7 @@ public struct StringSlice : ICharIterator
     /// <param name="offset">The offset.</param>
     /// <returns>The rune at the specified offset, returns default if none.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET
-    public
-#else
-    internal
-#endif
-    readonly Rune PeekRuneExtra(int offset)
+    public readonly Rune PeekRuneExtra(int offset)
     {
         int index = Start + offset;
         string text = Text;
@@ -633,11 +613,7 @@ public struct StringSlice : ICharIterator
             return default;
         }
 
-#if NET
         return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), start), length);
-#else
-        return text.AsSpan(start, length);
-#endif
     }
 
     /// <summary>

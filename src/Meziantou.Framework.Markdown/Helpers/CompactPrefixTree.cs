@@ -18,7 +18,7 @@ using System.Runtime.CompilerServices;
  */
 
 //namespace SharpCollections.Generic
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// A compact insert-only key/value collection for fast prefix lookups

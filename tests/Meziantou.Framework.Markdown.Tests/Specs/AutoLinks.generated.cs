@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.AutoLinks
+namespace Meziantou.Framework.Markdown.Tests.Specs.AutoLinks
 {
     [TestFixture]
     public class TestExtensionsAutoLinks

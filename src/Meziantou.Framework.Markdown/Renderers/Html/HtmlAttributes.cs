@@ -4,10 +4,10 @@
 
 using System.Globalization;
 
-using Markdig.Helpers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Renderers.Html;
+namespace Meziantou.Framework.Markdown.Renderers.Html;
 
 /// <summary>
 /// Attached HTML attributes to a <see cref="MarkdownObject"/>.

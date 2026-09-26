@@ -3,9 +3,9 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Extensions.SmartyPants;
+namespace Meziantou.Framework.Markdown.Extensions.SmartyPants;
 
 /// <summary>
 /// An inline for SmartyPant.

@@ -2,11 +2,11 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Extensions.Footers;
+namespace Meziantou.Framework.Markdown.Extensions.Footers;
 
 /// <summary>
 /// A block parser for a <see cref="FooterBlock"/>.

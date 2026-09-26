@@ -3,10 +3,10 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Helpers;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Extensions.JiraLinks;
+namespace Meziantou.Framework.Markdown.Extensions.JiraLinks;
 
 /// <summary>
 /// Model for a JIRA link item

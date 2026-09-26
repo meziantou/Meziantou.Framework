@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Extensions.Hardlines;
+namespace Meziantou.Framework.Markdown.Extensions.Hardlines;
 
 /// <summary>
 /// Extension to generate hardline break for softline breaks.

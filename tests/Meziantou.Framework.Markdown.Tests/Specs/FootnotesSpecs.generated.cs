@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Footnotes
+namespace Meziantou.Framework.Markdown.Tests.Specs.Footnotes
 {
     [TestFixture]
     public class TestExtensionsFootnotes

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestEmphasisExtended

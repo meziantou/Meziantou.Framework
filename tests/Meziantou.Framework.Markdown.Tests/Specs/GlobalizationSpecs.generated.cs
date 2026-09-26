@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Globalization
+namespace Meziantou.Framework.Markdown.Tests.Specs.Globalization
 {
     [TestFixture]
     public class TestExtensionsGlobalization

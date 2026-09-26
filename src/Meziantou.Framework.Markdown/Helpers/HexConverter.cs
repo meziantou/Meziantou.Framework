@@ -4,7 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 // Based on https://github.com/dotnet/runtime/blob/main/src/libraries/Common/src/System/HexConverter.cs
 internal static class HexConverter

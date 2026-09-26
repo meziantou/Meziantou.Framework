@@ -4,10 +4,10 @@
 
 using System.Linq;
 
-using Markdig.Renderers;
-using Markdig.Renderers.Html.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html.Inlines;
 
-namespace Markdig.Extensions.ReferralLinks;
+namespace Meziantou.Framework.Markdown.Extensions.ReferralLinks;
 
 /// <summary>
 /// Represents the ReferralLinksExtension type.

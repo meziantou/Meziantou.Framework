@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Bootstrap
+namespace Meziantou.Framework.Markdown.Tests.Specs.Bootstrap
 {
     [TestFixture]
     public class TestExtensionsBootstrap

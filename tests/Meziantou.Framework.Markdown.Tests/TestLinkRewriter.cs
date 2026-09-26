@@ -1,7 +1,7 @@
-using Markdig.Parsers;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestLinkRewriter
 {

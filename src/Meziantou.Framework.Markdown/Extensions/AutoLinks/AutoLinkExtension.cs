@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Extensions.AutoLinks;
+namespace Meziantou.Framework.Markdown.Extensions.AutoLinks;
 
 /// <summary>
 /// Extension to automatically create <see cref="LinkInline"/> when a link url http: or mailto: is found.

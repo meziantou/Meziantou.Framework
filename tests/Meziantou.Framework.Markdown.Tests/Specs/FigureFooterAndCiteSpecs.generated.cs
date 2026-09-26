@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.FiguresFootersAndCites
+namespace Meziantou.Framework.Markdown.Tests.Specs.FiguresFootersAndCites
 {
     [TestFixture]
     public class TestExtensionsFigures

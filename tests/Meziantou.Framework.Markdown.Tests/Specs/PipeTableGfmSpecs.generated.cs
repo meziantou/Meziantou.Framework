@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.GFMPipeTables
+namespace Meziantou.Framework.Markdown.Tests.Specs.GFMPipeTables
 {
     [TestFixture]
     public class TestExtensionsGfmPipeTable

@@ -1,6 +1,6 @@
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public sealed class TestMarkdownObjectDataExtensions

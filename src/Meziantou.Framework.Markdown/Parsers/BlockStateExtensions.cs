@@ -4,7 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Extensions used by <see cref="BlockState"/>.

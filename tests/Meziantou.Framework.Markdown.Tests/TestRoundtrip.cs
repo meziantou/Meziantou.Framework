@@ -1,7 +1,7 @@
-using Markdig.Renderers.Roundtrip;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 internal static class TestRoundtrip
 {
@@ -16,7 +16,7 @@ internal static class TestRoundtrip
         pipelineBuilder.EnableTrackTrivia();
         pipelineBuilder.UseYamlFrontMatter();
         MarkdownPipeline pipeline = pipelineBuilder.Build();
-        MarkdownDocument markdownDocument = Markdown.Parse(markdown, pipeline);
+        MarkdownDocument markdownDocument = MarkdownConverter.Parse(markdown, pipeline);
         var sw = new StringWriter();
         var nr = new RoundtripRenderer(sw);
         pipeline.Setup(nr);

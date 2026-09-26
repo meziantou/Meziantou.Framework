@@ -1,6 +1,6 @@
-using Markdig.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestAutoLinks
@@ -17,7 +17,7 @@ public class TestAutoLinks
         var pipeline = new MarkdownPipelineBuilder()
             .UseAutoLinks(new AutoLinkOptions { AllowDomainWithoutPeriod = true })
             .Build();
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Is.EqualTo(expected).IgnoreWhiteSpace);
     }
@@ -41,7 +41,7 @@ public class TestAutoLinks
             .UseAutoLinks()
             .UseAutoIdentifiers()
             .Build();
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Is.EqualTo(expected).IgnoreWhiteSpace);
     }
@@ -63,7 +63,7 @@ public class TestAutoLinks
                 builder.EnableTrackTrivia();
             }
 
-            var html = Markdown.ToHtml("# Header\n\n" + markdown, builder.Build());
+            var html = MarkdownConverter.ToHtml("# Header\n\n" + markdown, builder.Build());
 
             Assert.That(html, Is.EqualTo("<h1 id=\"header\">Header</h1>\n<p>" + expected + "</p>").IgnoreWhiteSpace, $"TrackTrivia: {trackTrivia}");
         }
@@ -73,7 +73,7 @@ public class TestAutoLinks
     public void TestExplicitReferenceStillResolvesInsideOpenLink()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().UseAutoIdentifiers().Build();
-        var html = Markdown.ToHtml("[Header]: /explicit\n\n# Header\n\n[Testing [Header]](/target)", pipeline);
+        var html = MarkdownConverter.ToHtml("[Header]: /explicit\n\n# Header\n\n[Testing [Header]](/target)", pipeline);
 
         Assert.That(html, Is.EqualTo("<h1 id=\"header\">Header</h1>\n<p>[Testing <a href=\"/explicit\">Header</a>](/target)</p>").IgnoreWhiteSpace);
     }

@@ -1,6 +1,6 @@
-using static Markdig.Tests.TestRoundtrip;
+using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
-namespace Markdig.Tests.RoundtripSpecs;
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
 
 [TestFixture]
 public class TestIndentedCodeBlock
@@ -69,7 +69,7 @@ public class TestIndentedCodeBlock
         var pipelineBuilder = new MarkdownPipelineBuilder();
         pipelineBuilder.EnableTrackTrivia();
         MarkdownPipeline pipeline = pipelineBuilder.Build();
-        var markdownDocument = Markdown.Parse(value, pipeline);
+        var markdownDocument = MarkdownConverter.Parse(value, pipeline);
 
         Assert.AreEqual(1, markdownDocument.Count);
     }

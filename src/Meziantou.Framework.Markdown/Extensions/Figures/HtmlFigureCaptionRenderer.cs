@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers;
-using Markdig.Renderers.Html;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
 
-namespace Markdig.Extensions.Figures;
+namespace Meziantou.Framework.Markdown.Extensions.Figures;
 
 /// <summary>
 /// A HTML renderer for a <see cref="FigureCaption"/>.

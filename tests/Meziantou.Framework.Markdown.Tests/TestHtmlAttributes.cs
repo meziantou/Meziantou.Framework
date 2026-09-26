@@ -2,9 +2,9 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers.Html;
+using Meziantou.Framework.Markdown.Renderers.Html;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture()]
 public class TestHtmlAttributes

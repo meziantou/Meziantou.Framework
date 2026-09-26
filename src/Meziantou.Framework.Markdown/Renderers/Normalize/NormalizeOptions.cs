@@ -2,7 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-namespace Markdig.Renderers.Normalize;
+namespace Meziantou.Framework.Markdown.Renderers.Normalize;
 
 /// <summary>
 /// Defines the options used by <see cref="NormalizeRenderer"/>

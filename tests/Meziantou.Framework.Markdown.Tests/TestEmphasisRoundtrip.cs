@@ -2,17 +2,17 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers.Roundtrip;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestEmphasisRoundtrip
 {
     private static string RoundTrip(string markdown, MarkdownPipeline pipeline)
     {
-        MarkdownDocument document = Markdown.Parse(markdown, pipeline);
+        MarkdownDocument document = MarkdownConverter.Parse(markdown, pipeline);
         var writer = new StringWriter();
         var renderer = new RoundtripRenderer(writer);
         pipeline.Setup(renderer);
@@ -69,8 +69,8 @@ public class TestEmphasisRoundtrip
         var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().EnableTrackTrivia().Build();
 
         Assert.That(RoundTrip(markdown, pipeline), Is.EqualTo(markdown));
-        Assert.That(Markdown.ToHtml(markdown, pipeline).Trim(), Is.EqualTo(expectedHtml));
-        Assert.That(Markdown.ToHtml(markdown, new MarkdownPipelineBuilder().UseEmphasisExtras().Build()).Trim(), Is.EqualTo(expectedHtml));
+        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline).Trim(), Is.EqualTo(expectedHtml));
+        Assert.That(MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseEmphasisExtras().Build()).Trim(), Is.EqualTo(expectedHtml));
     }
 
     // The fix must not prevent balanced "marked" emphasis from being detected.
@@ -78,6 +78,6 @@ public class TestEmphasisRoundtrip
     public void BalancedMarkedEmphasisStillParses()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().Build();
-        Assert.That(Markdown.ToHtml("==bold==", pipeline).Trim(), Is.EqualTo("<p><mark>bold</mark></p>"));
+        Assert.That(MarkdownConverter.ToHtml("==bold==", pipeline).Trim(), Is.EqualTo("<p><mark>bold</mark></p>"));
     }
 }

@@ -1,10 +1,10 @@
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public sealed class TestParserAuthoringParityApi
@@ -29,7 +29,7 @@ public sealed class TestParserAuthoringParityApi
         };
         pipeline.BlockParsers.InsertBefore<ParagraphBlockParser>(new LinesBeforeBlockParser());
 
-        var document = Markdown.Parse("\n\n!marker", pipeline.Build());
+        var document = MarkdownConverter.Parse("\n\n!marker", pipeline.Build());
 
         Assert.That(document.Count, Is.EqualTo(1));
         var block = document[0] as LinesBeforeLeafBlock;
@@ -44,7 +44,7 @@ public sealed class TestParserAuthoringParityApi
         var pipeline = new MarkdownPipelineBuilder();
         pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new ParentContainerReplacementInlineParser());
 
-        var document = Markdown.Parse(
+        var document = MarkdownConverter.Parse(
             """
             > [!TEST]
             > body

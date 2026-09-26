@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace Markdig.Syntax.Inlines;
+namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
 /// <summary>
 /// A Raw HTML (Section 6.8 CommonMark specs).

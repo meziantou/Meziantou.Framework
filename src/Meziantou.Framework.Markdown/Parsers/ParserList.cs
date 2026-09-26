@@ -4,9 +4,9 @@
 
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Base class for a list of parsers.

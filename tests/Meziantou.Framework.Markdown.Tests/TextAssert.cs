@@ -3,7 +3,7 @@
 // See the license.txt file in the project root for more information.
 using System.Globalization;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 /// <summary>
 /// Pretty text assert from https://gist.github.com/Haacked/1610603

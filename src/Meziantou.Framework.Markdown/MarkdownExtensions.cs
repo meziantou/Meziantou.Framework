@@ -2,42 +2,42 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Extensions.Abbreviations;
-using Markdig.Extensions.Alerts;
-using Markdig.Extensions.AutoIdentifiers;
-using Markdig.Extensions.AutoLinks;
-using Markdig.Extensions.Bootstrap;
-using Markdig.Extensions.Citations;
-using Markdig.Extensions.CustomContainers;
-using Markdig.Extensions.DefinitionLists;
-using Markdig.Extensions.Diagrams;
-using Markdig.Extensions.Emoji;
-using Markdig.Extensions.EmphasisExtras;
-using Markdig.Extensions.Figures;
-using Markdig.Extensions.Footers;
-using Markdig.Extensions.Footnotes;
-using Markdig.Extensions.GenericAttributes;
-using Markdig.Extensions.Globalization;
-using Markdig.Extensions.Hardlines;
-using Markdig.Extensions.JiraLinks;
-using Markdig.Extensions.ListExtras;
-using Markdig.Extensions.Mathematics;
-using Markdig.Extensions.MediaLinks;
-using Markdig.Extensions.NonAsciiNoEscape;
-using Markdig.Extensions.PragmaLines;
-using Markdig.Extensions.ReferralLinks;
-using Markdig.Extensions.SelfPipeline;
-using Markdig.Extensions.SmartyPants;
-using Markdig.Extensions.Tables;
-using Markdig.Extensions.TaskLists;
-using Markdig.Extensions.TextRenderer;
-using Markdig.Extensions.Yaml;
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Extensions.Abbreviations;
+using Meziantou.Framework.Markdown.Extensions.Alerts;
+using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
+using Meziantou.Framework.Markdown.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Extensions.Bootstrap;
+using Meziantou.Framework.Markdown.Extensions.Citations;
+using Meziantou.Framework.Markdown.Extensions.CustomContainers;
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
+using Meziantou.Framework.Markdown.Extensions.Diagrams;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
+using Meziantou.Framework.Markdown.Extensions.Figures;
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Extensions.Footnotes;
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
+using Meziantou.Framework.Markdown.Extensions.Globalization;
+using Meziantou.Framework.Markdown.Extensions.Hardlines;
+using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.ListExtras;
+using Meziantou.Framework.Markdown.Extensions.Mathematics;
+using Meziantou.Framework.Markdown.Extensions.MediaLinks;
+using Meziantou.Framework.Markdown.Extensions.NonAsciiNoEscape;
+using Meziantou.Framework.Markdown.Extensions.PragmaLines;
+using Meziantou.Framework.Markdown.Extensions.ReferralLinks;
+using Meziantou.Framework.Markdown.Extensions.SelfPipeline;
+using Meziantou.Framework.Markdown.Extensions.SmartyPants;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Extensions.TaskLists;
+using Meziantou.Framework.Markdown.Extensions.TextRenderer;
+using Meziantou.Framework.Markdown.Extensions.Yaml;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig;
+namespace Meziantou.Framework.Markdown;
 
 /// <summary>
 /// Provides extension methods for <see cref="MarkdownPipelineBuilder"/> to enable several Markdown extensions.

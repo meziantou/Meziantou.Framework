@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Extensions.Footers;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Extensions.Figures;
+namespace Meziantou.Framework.Markdown.Extensions.Figures;
 
 /// <summary>
 /// Extension to allow usage of figures and figure captions.

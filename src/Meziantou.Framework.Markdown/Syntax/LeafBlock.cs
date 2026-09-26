@@ -3,11 +3,11 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// Base class for all leaf blocks.

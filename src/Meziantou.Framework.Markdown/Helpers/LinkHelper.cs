@@ -2,7 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -10,7 +10,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// Helpers to parse Markdown links.
@@ -399,13 +399,8 @@ public static class LinkHelper
             if ((uint)end < (uint)slice.Length && slice[end] == '>')
             {
                 // We've found '>' and all characters before it are valid.
-#if NET
                 link = string.Concat(builder.AsSpan(), slice.Slice(0, end));
                 builder.Dispose();
-#else
-                builder.Append(slice.Slice(0, end));
-                link = builder.ToString();
-#endif
                 text.Start += end + 1; // +1 to skip '>'
                 return true;
             }

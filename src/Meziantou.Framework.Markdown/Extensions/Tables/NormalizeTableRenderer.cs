@@ -1,7 +1,7 @@
 using System.Linq;
-using Markdig.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
 
-namespace Markdig.Extensions.Tables;
+namespace Meziantou.Framework.Markdown.Extensions.Tables;
 
 /// <summary>
 /// A Normalize renderer for a <see cref="Table"/> in normalized form.

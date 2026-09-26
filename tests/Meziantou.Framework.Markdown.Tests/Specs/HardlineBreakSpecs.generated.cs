@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.HardlineBreaks
+namespace Meziantou.Framework.Markdown.Tests.Specs.HardlineBreaks
 {
     [TestFixture]
     public class TestExtensionsHardlineBreak

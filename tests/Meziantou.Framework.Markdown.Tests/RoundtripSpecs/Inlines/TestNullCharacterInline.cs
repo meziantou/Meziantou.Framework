@@ -1,9 +1,9 @@
-using Markdig.Renderers.Roundtrip;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 using NUnit.Framework;
 using System.IO;
 
-namespace Markdig.Tests.RoundtripSpecs.Inlines
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines
 {
     [TestFixture]
     public class TestNullCharacterInline
@@ -25,7 +25,7 @@ namespace Markdig.Tests.RoundtripSpecs.Inlines
             var pipelineBuilder = new MarkdownPipelineBuilder();
             pipelineBuilder.EnableTrackTrivia();
             MarkdownPipeline pipeline = pipelineBuilder.Build();
-            MarkdownDocument markdownDocument = Markdown.Parse(markdown, pipeline);
+            MarkdownDocument markdownDocument = MarkdownConverter.Parse(markdown, pipeline);
             var sw = new StringWriter();
             var rr = new RoundtripRenderer(sw);
 

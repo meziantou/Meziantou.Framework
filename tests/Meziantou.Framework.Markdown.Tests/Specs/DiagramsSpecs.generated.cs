@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Diagrams
+namespace Meziantou.Framework.Markdown.Tests.Specs.Diagrams
 {
     [TestFixture]
     public class TestExtensionsMermaidDiagrams

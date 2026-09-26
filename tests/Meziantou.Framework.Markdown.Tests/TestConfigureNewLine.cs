@@ -1,4 +1,4 @@
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestConfigureNewLine
@@ -16,7 +16,7 @@ public class TestConfigureNewLine
             .ConfigureNewLine(newLineForWriting)
             .Build();
 
-        var actual = Markdown.ToHtml(markdownText, pipeline);
+        var actual = MarkdownConverter.ToHtml(markdownText, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -33,7 +33,7 @@ public class TestConfigureNewLine
             .ConfigureNewLine(newLineForWriting)
             .Build();
 
-        var actual = Markdown.ToPlainText(markdownText, pipeline);
+        var actual = MarkdownConverter.ToPlainText(markdownText, pipeline);
         Assert.AreEqual(expected, actual);
     }
 }

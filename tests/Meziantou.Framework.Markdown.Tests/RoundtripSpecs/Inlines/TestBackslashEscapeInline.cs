@@ -1,7 +1,7 @@
 using NUnit.Framework;
-using static Markdig.Tests.TestRoundtrip;
+using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
-namespace Markdig.Tests.RoundtripSpecs.Inlines
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines
 {
     [TestFixture]
     public class TestBackslashEscapeInline

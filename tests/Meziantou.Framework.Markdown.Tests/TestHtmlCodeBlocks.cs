@@ -1,6 +1,6 @@
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestHtmlCodeBlocks
 {
@@ -19,7 +19,7 @@ public class TestHtmlCodeBlocks
     [TestCaseSource(nameof(KnownSimpleHtmlTags))]
     public void TestKnownTags(string tag)
     {
-        MarkdownDocument document = Markdown.Parse(
+        MarkdownDocument document = MarkdownConverter.Parse(
             $"""
             Hello
              <{tag} />

@@ -8,7 +8,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// Helper class for handling characters.
@@ -108,12 +108,7 @@ public static class CharHelper
     /// <summary>
     /// Performs the check open close delimiter operation.
     /// </summary>
-#if NET
-    public
-#else
-    internal
-#endif
-    static void CheckOpenCloseDelimiter(Rune pc, Rune c, bool enableWithinWord, out bool canOpen, out bool canClose)
+    public static void CheckOpenCloseDelimiter(Rune pc, Rune c, bool enableWithinWord, out bool canOpen, out bool canClose)
     {
         pc.CheckUnicodeCategory(out bool prevIsWhiteSpace, out bool prevIsPunctuation);
         c.CheckUnicodeCategory(out bool nextIsWhiteSpace, out bool nextIsPunctuation);
@@ -392,12 +387,7 @@ public static class CharHelper
     /// <param name="r">The character to evaluate. A supplementary character is also accepted.</param>
     /// <returns><see langword="true"/> if the character is a Unicode whitespace character</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET
-    public
-#else
-    internal
-#endif
-    static bool IsWhitespace(this Rune r) => r.IsBmp && IsWhitespace((char)r.Value);
+    public static bool IsWhitespace(this Rune r) => r.IsBmp && IsWhitespace((char)r.Value);
     // Note: there is no supplementary character whose Unicode category is Zs (at least as of Unicode 17).
     // https://www.compart.com/en/unicode/category/Zs
 
@@ -485,12 +475,7 @@ public static class CharHelper
     /// <param name="r">The character to evaluate. A supplementary character is also accepted.</param>
     /// <param name="space"><see langword="true"/> if the character is an <see href="https://spec.commonmark.org/0.31.2/#unicode-whitespace-character">Unicode whitespace character</see></param>
     /// <param name="punctuation"><see langword="true"/> if the character is a <see href="https://spec.commonmark.org/0.31.2/#unicode-punctuation-character">Unicode punctuation character</see></param>
-#if NET
-    public
-#else
-    internal
-#endif
-    static void CheckUnicodeCategory(this Rune r, out bool space, out bool punctuation)
+    public static void CheckUnicodeCategory(this Rune r, out bool space, out bool punctuation)
     {
         if (IsWhitespace(r))
         {

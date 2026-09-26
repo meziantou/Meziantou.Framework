@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Represents the LinkOptions type.

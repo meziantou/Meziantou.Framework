@@ -1,8 +1,8 @@
-using Markdig.Extensions.Yaml;
-using Markdig.Renderers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Extensions.Yaml;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestYamlFrontMatterExtension
 {
@@ -39,31 +39,31 @@ public class TestYamlFrontMatterExtension
 
         yield return new TestCaseData(new IMarkdownObjectRenderer[]
         {
-            new Markdig.Renderers.Html.CodeBlockRenderer()
+            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer()
         }, true, false) {TestName = "Html CodeBlock"};
 
         yield return new TestCaseData(new IMarkdownObjectRenderer[]
         {
-            new Markdig.Renderers.Roundtrip.CodeBlockRenderer()
+            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer()
         }, false, true) {TestName = "Roundtrip CodeBlock"};
 
         yield return new TestCaseData(new IMarkdownObjectRenderer[]
         {
-            new Markdig.Renderers.Html.CodeBlockRenderer(),
-            new Markdig.Renderers.Roundtrip.CodeBlockRenderer()
+            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
+            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer()
         }, true, true) {TestName = "Html/Roundtrip CodeBlock"};
 
         yield return new TestCaseData(new IMarkdownObjectRenderer[]
         {
-            new Markdig.Renderers.Html.CodeBlockRenderer(),
-            new Markdig.Renderers.Roundtrip.CodeBlockRenderer(),
+            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
+            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer(),
             new YamlFrontMatterHtmlRenderer()
         }, true, true) {TestName = "Html/Roundtrip CodeBlock, Yaml Html"};
 
         yield return new TestCaseData(new IMarkdownObjectRenderer[]
         {
-            new Markdig.Renderers.Html.CodeBlockRenderer(),
-            new Markdig.Renderers.Roundtrip.CodeBlockRenderer(),
+            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
+            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer(),
             new YamlFrontMatterRoundtripRenderer()
         }, true, true) { TestName = "Html/Roundtrip CodeBlock, Yaml Roundtrip" };
     }
@@ -93,7 +93,7 @@ public class TestYamlFrontMatterExtension
     {
         var builder = new MarkdownPipelineBuilder();
         builder.Extensions.Add(new YamlFrontMatterExtension());
-        var markdownDocument = Markdown.Parse(value, builder.Build());
+        var markdownDocument = MarkdownConverter.Parse(value, builder.Build());
 
         var yamlBlocks = markdownDocument.Descendants<YamlFrontMatterBlock>();
         Assert.True(yamlBlocks.Any());

@@ -2,13 +2,13 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Extensions.Emoji;
-using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
-using Markdig.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
 
-namespace Markdig.Extensions.Tables;
+namespace Meziantou.Framework.Markdown.Extensions.Tables;
 
 /// <summary>
 /// Extension that allows to use pipe tables.

@@ -5,10 +5,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Delegates called when processing a document
@@ -33,7 +33,7 @@ public static class MarkdownParser
     {
         if (text is null) ThrowHelper.ArgumentNullException_text();
 
-        pipeline ??= Markdown.DefaultPipeline;
+        pipeline ??= MarkdownConverter.DefaultPipeline;
 
         text = FixupZero(text);
 

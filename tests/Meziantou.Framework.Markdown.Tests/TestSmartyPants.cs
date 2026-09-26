@@ -1,6 +1,6 @@
-using Markdig.Extensions.SmartyPants;
+using Meziantou.Framework.Markdown.Extensions.SmartyPants;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestSmartyPants
 {

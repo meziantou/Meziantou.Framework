@@ -33,7 +33,7 @@
 
 using System.Text;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// Helper class to decode an entity.

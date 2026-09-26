@@ -5,9 +5,9 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Markdig.Extensions.Tables;
+using Meziantou.Framework.Markdown.Extensions.Tables;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestGfmPipeTableDifferential
@@ -36,11 +36,11 @@ public class TestGfmPipeTableDifferential
     [TestCaseSource(nameof(NativeCases))]
     public void MatchesNativeOutput(string markdown, string expected, bool tableOnly)
     {
-        var actual = Normalize(Markdown.ToHtml(markdown, Strict));
+        var actual = Normalize(MarkdownConverter.ToHtml(markdown, Strict));
         Assert.That(tableOnly ? Tables(actual) : actual, Is.EqualTo(tableOnly ? Tables(expected) : expected), markdown);
         // Trivia mode deliberately preserves whitespace outside tables, unlike
         // cmark-gfm. Table presence, cell text, alignment and row shape must agree.
-        Assert.That(Tables(Normalize(Markdown.ToHtml(markdown, Tracked))), Is.EqualTo(Tables(expected)), markdown);
+        Assert.That(Tables(Normalize(MarkdownConverter.ToHtml(markdown, Tracked))), Is.EqualTo(Tables(expected)), markdown);
     }
 
     private static string Normalize(string html) => Regex.Replace(html.Replace("\r\n", "\n"),
@@ -64,8 +64,8 @@ public class TestGfmPipeTableDifferential
     [TestCaseSource(nameof(NormalizationCases))]
     public void NormalizationPreservesNativeInlineSemantics(string markdown)
     {
-        var normalized = Markdown.Normalize(markdown, pipeline: Strict);
-        Assert.That(Markdown.ToHtml(normalized, Strict), Is.EqualTo(Markdown.ToHtml(markdown, Strict)));
-        Assert.That(Markdown.Normalize(normalized, pipeline: Strict), Is.EqualTo(normalized));
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: Strict);
+        Assert.That(MarkdownConverter.ToHtml(normalized, Strict), Is.EqualTo(MarkdownConverter.ToHtml(markdown, Strict)));
+        Assert.That(MarkdownConverter.Normalize(normalized, pipeline: Strict), Is.EqualTo(normalized));
     }
 }

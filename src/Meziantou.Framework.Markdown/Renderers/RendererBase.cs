@@ -4,11 +4,11 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Markdig.Helpers;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Renderers;
+namespace Meziantou.Framework.Markdown.Renderers;
 
 /// <summary>
 /// Base class for a <see cref="IMarkdownRenderer"/>.
@@ -204,11 +204,7 @@ public abstract class RendererBase : IMarkdownRenderer
         IMarkdownObjectRenderer? renderer = null;
         IntPtr key = GetKeyForType(obj);
 
-#if NETFRAMEWORK || NETSTANDARD
-        RendererEntry[] renderers = _renderersPerType[SubTableIndex(key)];
-#else
         RendererEntry[] renderers = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_renderersPerType), SubTableIndex(key));
-#endif
 
         foreach (RendererEntry entry in renderers)
         {

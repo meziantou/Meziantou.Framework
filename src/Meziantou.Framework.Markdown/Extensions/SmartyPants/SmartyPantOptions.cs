@@ -2,7 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-namespace Markdig.Extensions.SmartyPants;
+namespace Meziantou.Framework.Markdown.Extensions.SmartyPants;
 
 /// <summary>
 /// The options used for <see cref="SmartyPantsExtension"/>.

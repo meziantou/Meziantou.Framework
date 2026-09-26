@@ -3,12 +3,12 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
-using Markdig.Renderers.Html.Inlines;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html.Inlines;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Extensions.Citations;
+namespace Meziantou.Framework.Markdown.Extensions.Citations;
 
 /// <summary>
 /// Extension for cite ""...""

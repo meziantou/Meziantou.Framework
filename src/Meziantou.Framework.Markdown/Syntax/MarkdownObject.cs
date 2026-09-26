@@ -5,9 +5,9 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// Base implementation for a the Markdown syntax tree.

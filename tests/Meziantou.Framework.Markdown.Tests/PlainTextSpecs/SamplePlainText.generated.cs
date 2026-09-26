@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.PlainText.Sample
+namespace Meziantou.Framework.Markdown.Tests.Specs.PlainText.Sample
 {
     [TestFixture]
     public class TestSamplePlainTextSpec

@@ -1,11 +1,11 @@
 using System.Text.RegularExpressions;
 
-using Markdig.Extensions.AutoLinks;
-using Markdig.Extensions.Tables;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Syntax;
 using NUnit.Framework;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class MiscTests
 {
@@ -13,7 +13,7 @@ public class MiscTests
     public void LinkWithInvalidNonAsciiDomainNameIsIgnored()
     {
         // Url from https://github.com/lunet-io/markdig/issues/438
-        _ = Markdown.ToHtml("[minulém díle](http://V%20minulém%20díle%20jsme%20nainstalovali%20SQL%20Server,%20který%20je%20nutný%20pro%20běh%20Configuration%20Manageru.%20Dnes%20nás%20čeká%20instalace%20WSUS,%20což%20je%20produkt,%20jež%20je%20možné%20používat%20i%20jako%20samostatnou%20funkci%20ve%20Windows%20Serveru,%20který%20se%20stará%20o%20stažení%20a%20instalaci%20aktualizací%20z%20Microsoft%20Update%20na%20klientské%20počítače.%20Stejně%20jako%20v%20předchozích%20dílech,%20tak%20i%20v%20tomto%20si%20ukážeme%20obě%20varianty%20instalace%20–%20a%20to%20jak%20instalaci%20z%20PowerShellu,%20tak%20instalaci%20pomocí%20GUI.) ");
+        _ = MarkdownConverter.ToHtml("[minulém díle](http://V%20minulém%20díle%20jsme%20nainstalovali%20SQL%20Server,%20který%20je%20nutný%20pro%20běh%20Configuration%20Manageru.%20Dnes%20nás%20čeká%20instalace%20WSUS,%20což%20je%20produkt,%20jež%20je%20možné%20používat%20i%20jako%20samostatnou%20funkci%20ve%20Windows%20Serveru,%20který%20se%20stará%20o%20stažení%20a%20instalaci%20aktualizací%20z%20Microsoft%20Update%20na%20klientské%20počítače.%20Stejně%20jako%20v%20předchozích%20dílech,%20tak%20i%20v%20tomto%20si%20ukážeme%20obě%20varianty%20instalace%20–%20a%20to%20jak%20instalaci%20z%20PowerShellu,%20tak%20instalaci%20pomocí%20GUI.) ");
 
         // Valid IDN
         TestParser.TestSpec("[foo](http://ünicode.com)", "<p><a href=\"http://xn--nicode-2ya.com\">foo</a></p>");
@@ -57,7 +57,7 @@ public class MiscTests
             markdown = $"[{brokenLinkText}](/uri)";
             expected = $@"<p><a href=""/uri"">{brokenLinkText}</a></p>";
 
-            string actual = Markdown.ToHtml(markdown);
+            string actual = MarkdownConverter.ToHtml(markdown);
             Assert.AreNotEqual(expected, actual);
         }
     }
@@ -72,7 +72,7 @@ public class MiscTests
     public void GuardsAgainstHighlyNestedNodes(char c, int count, bool parseOnly, bool shouldThrow)
     {
         var markdown = new string(c, count);
-        Action test = parseOnly ? () => Markdown.Parse(markdown) : () => Markdown.ToHtml(markdown);
+        Action test = parseOnly ? () => MarkdownConverter.Parse(markdown) : () => MarkdownConverter.ToHtml(markdown);
 
         if (shouldThrow)
         {
@@ -94,7 +94,7 @@ public class MiscTests
             MaximumNestingDepth = 512,
         }.UseListExtras().Build();
 
-        Assert.DoesNotThrow(() => Markdown.ToHtml(markdown, pipeline));
+        Assert.DoesNotThrow(() => MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
     [Test]
@@ -105,7 +105,7 @@ public class MiscTests
             MaximumNestingDepth = 16,
         }.Build();
 
-        Exception e = Assert.Throws<ArgumentException>(() => Markdown.ToHtml(new string('>', 20), pipeline));
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.ToHtml(new string('>', 20), pipeline));
         Assert.True(e.Message.Contains("depth limit"));
     }
 
@@ -141,7 +141,7 @@ public class MiscTests
     public void TestFixHang()
     {
         var input = File.ReadAllText(Path.Combine(TestParser.TestsDirectory, "hang.md"));
-        _ = Markdown.ToHtml(input);
+        _ = MarkdownConverter.ToHtml(input);
     }
 
     [Test]
@@ -155,14 +155,14 @@ public class MiscTests
     public void TestInvalidCharacterHandling()
     {
         var input = File.ReadAllText(Path.Combine(TestParser.TestsDirectory, "ArgumentOutOfRangeException.md"));
-        _ = Markdown.ToHtml(input);
+        _ = MarkdownConverter.ToHtml(input);
     }
 
     [Test]
     public void TestInvalidCodeEscape()
     {
         var input = "```**Header**	";
-        _ = Markdown.ToHtml(input);
+        _ = MarkdownConverter.ToHtml(input);
     }
 
     [Test]
@@ -216,7 +216,7 @@ $$
 ";
         //Console.WriteLine("Math Expressions:\n");
         var pl = new MarkdownPipelineBuilder().UseMathematics().Build(); // UseEmphasisExtras(EmphasisExtraOptions.Subscript).Build()
-        var html = Markdown.ToHtml(math, pl);
+        var html = MarkdownConverter.ToHtml(math, pl);
         //Console.WriteLine(html);
     }
 
@@ -229,7 +229,7 @@ $\frac{n!}{k!(n-k)!} = \binom{n}{k}$
 ";
         var pl = new MarkdownPipelineBuilder().UseMathematics().Build(); // UseEmphasisExtras(EmphasisExtraOptions.Subscript).Build()
 
-        var html = Markdown.ToHtml(math, pl);
+        var html = MarkdownConverter.ToHtml(math, pl);
 
         var test1 = html.Contains("<p><span class=\"math\">\\(");
         var test2 = html.Contains("\\)</span></p>");
@@ -253,7 +253,7 @@ $$
 ";
         var pl = new MarkdownPipelineBuilder().UseMathematics().Build(); // UseEmphasisExtras(EmphasisExtraOptions.Subscript).Build()
 
-        var html = Markdown.ToHtml(math, pl);
+        var html = MarkdownConverter.ToHtml(math, pl);
         var test1 = html.Contains("<div class=\"math\">\n\\[");
         var test2 = html.Contains("\\]</div>");
         if (!test1 || !test2)
@@ -307,7 +307,7 @@ $$
         var pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
         pipeline.TrackTrivia = true;
 
-        var document = Markdown.Parse("0123456789\n", pipeline);
+        var document = MarkdownConverter.Parse("0123456789\n", pipeline);
 
         var expectedSourceSpan = new SourceSpan(0, 10);
         Assert.That(((LeafBlock)document.LastChild).Inline.Span == expectedSourceSpan);
@@ -319,7 +319,7 @@ $$
         var pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().UseAdvancedExtensions().Build();
         pipeline.TrackTrivia = true;
 
-        var document = Markdown.Parse("| a | b |\n| --- | --- |\n| <span id=\"dest\"></span><span id=\"DEST\"></span>*dest*<br/> | \\[in\\] The address of the result of the operation.<br/> |", pipeline);
+        var document = MarkdownConverter.Parse("| a | b |\n| --- | --- |\n| <span id=\"dest\"></span><span id=\"DEST\"></span>*dest*<br/> | \\[in\\] The address of the result of the operation.<br/> |", pipeline);
 
         var paragraph = (ParagraphBlock)((TableCell)((TableRow)((Table)document.LastChild).LastChild).First()).LastChild;
         Assert.That(paragraph.Inline.Span.Start == paragraph.Inline.FirstChild.Span.Start);

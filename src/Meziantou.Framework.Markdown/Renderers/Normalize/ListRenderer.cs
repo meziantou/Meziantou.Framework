@@ -3,9 +3,9 @@
 // See the license.txt file in the project root for more information.
 
 using System.Globalization;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Renderers.Normalize;
+namespace Meziantou.Framework.Markdown.Renderers.Normalize;
 
 /// <summary>
 /// A Normalize renderer for a <see cref="ListBlock"/>.

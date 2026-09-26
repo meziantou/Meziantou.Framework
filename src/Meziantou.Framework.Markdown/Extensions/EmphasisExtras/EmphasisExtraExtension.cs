@@ -2,13 +2,13 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Parsers.Inlines;
-using Markdig.Renderers;
-using Markdig.Renderers.Html.Inlines;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html.Inlines;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 using System.Diagnostics;
 
-namespace Markdig.Extensions.EmphasisExtras;
+namespace Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
 
 /// <summary>
 /// Extension for strikethrough, subscript, superscript, inserted and marked.

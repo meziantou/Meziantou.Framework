@@ -1,4 +1,4 @@
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestCodeInline
 {

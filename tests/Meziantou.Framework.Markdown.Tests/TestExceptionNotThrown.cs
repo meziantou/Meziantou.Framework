@@ -1,4 +1,4 @@
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestExceptionNotThrown
@@ -9,7 +9,7 @@ public class TestExceptionNotThrown
         Assert.DoesNotThrow(() =>
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            Markdown.ToHtml("+-\n|\n+", pipeline);
+            MarkdownConverter.ToHtml("+-\n|\n+", pipeline);
         });
     }
 
@@ -19,7 +19,7 @@ public class TestExceptionNotThrown
         Assert.DoesNotThrow(() =>
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            Markdown.ToHtml("+--\n|\n+0", pipeline);
+            MarkdownConverter.ToHtml("+--\n|\n+0", pipeline);
         });
     }
 
@@ -29,7 +29,7 @@ public class TestExceptionNotThrown
         Assert.DoesNotThrow(() =>
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            Markdown.ToHtml("+-\n|\n+\n0", pipeline);
+            MarkdownConverter.ToHtml("+-\n|\n+\n0", pipeline);
         });
     }
 
@@ -39,7 +39,7 @@ public class TestExceptionNotThrown
         Assert.DoesNotThrow(() =>
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            Markdown.ToHtml("+-\n|\n+0", pipeline);
+            MarkdownConverter.ToHtml("+-\n|\n+0", pipeline);
         });
     }
 }

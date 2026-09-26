@@ -4,7 +4,7 @@
 
 using System.Collections.Concurrent;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// A simple object recycling system.

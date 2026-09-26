@@ -1,6 +1,6 @@
-using Markdig.Extensions.EmphasisExtras;
+using Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestEmphasisExtraOptions

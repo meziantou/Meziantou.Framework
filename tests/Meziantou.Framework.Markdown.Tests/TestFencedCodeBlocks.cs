@@ -1,6 +1,6 @@
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestFencedCodeBlocks
 {
@@ -28,7 +28,7 @@ public class TestFencedCodeBlocks
             var fence = new string(fencedChar, 3);
             string markdownText = $"{fence}{infoString}\n{Contents}\n{fence}\n";
 
-            MarkdownDocument document = Markdown.Parse(markdownText);
+            MarkdownDocument document = MarkdownConverter.Parse(markdownText);
 
             FencedCodeBlock codeBlock = document.Descendants<FencedCodeBlock>().Single();
 

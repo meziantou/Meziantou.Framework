@@ -5,9 +5,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Extensions.MediaLinks;
+namespace Meziantou.Framework.Markdown.Extensions.MediaLinks;
 
 /// <summary>
 /// Represents the HostProviderBuilder type.

@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Emoji
+namespace Meziantou.Framework.Markdown.Tests.Specs.Emoji
 {
     [TestFixture]
     public class TestExtensionsEmoji

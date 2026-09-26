@@ -7,13 +7,13 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Markdig.Extensions.Tables;
-using Markdig.Helpers;
-using Markdig.Parsers.Inlines;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// A delegate called at inline processing stage.
@@ -151,17 +151,11 @@ public class InlineProcessor
         int position = 0;
         if (PreciseSourceLocation)
         {
-#if NET
             var offsets = CollectionsMarshal.AsSpan(lineOffsets);
 
             for (; (uint)lineIndex < (uint)offsets.Length; lineIndex++)
             {
                 ref var lineOffset = ref offsets[lineIndex];
-#else
-            for (; lineIndex < lineOffsets.Count; lineIndex++)
-            {
-                var lineOffset = lineOffsets[lineIndex];
-#endif
 
                 if (sliceOffset <= lineOffset.End)
                 {
@@ -195,17 +189,11 @@ public class InlineProcessor
         {
             int lineIndex = sliceOffset >= previousSliceOffset ? previousLineIndexForSliceOffset : 0;
 
-#if NET
             var offsets = CollectionsMarshal.AsSpan(lineOffsets);
 
             for (; (uint)lineIndex < (uint)offsets.Length; lineIndex++)
             {
                 ref var lineOffset = ref offsets[lineIndex];
-#else
-            for (; lineIndex < lineOffsets.Count; lineIndex++)
-            {
-                var lineOffset = lineOffsets[lineIndex];
-#endif
 
                 if (sliceOffset <= lineOffset.End)
                 {

@@ -2,12 +2,12 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Extensions.Alerts;
+namespace Meziantou.Framework.Markdown.Extensions.Alerts;
 
 /// <summary>
 /// An inline parser for an alert inline (e.g. `[!NOTE]`).

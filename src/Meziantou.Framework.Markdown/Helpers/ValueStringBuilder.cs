@@ -8,19 +8,15 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 internal ref partial struct ValueStringBuilder
 {
 #if DEBUG
     public const int StackallocThreshold = 7;
 #else
-#if NET5_0_OR_GREATER
     // NET5+ has SkipLocalsInit, so allocating more is "free"
     public const int StackallocThreshold = 256;
-#else
-    public const int StackallocThreshold = 64;
-#endif
 #endif
 
     private char[]? _arrayToReturnToPool;
@@ -116,9 +112,6 @@ internal ref partial struct ValueStringBuilder
         }
 
         s
-#if !NET5_0_OR_GREATER
-            .AsSpan()
-#endif
             .CopyTo(_chars.Slice(pos));
 
         _pos += s.Length;

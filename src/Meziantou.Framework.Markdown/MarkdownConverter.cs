@@ -6,24 +6,24 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Renderers;
-using Markdig.Renderers.Normalize;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig;
+namespace Meziantou.Framework.Markdown;
 
 /// <summary>
 /// Provides methods for parsing a Markdown string to a syntax tree and converting it to other formats.
 /// </summary>
-public static class Markdown
+public static class MarkdownConverter
 {
     /// <summary>
     /// Gets or sets the version.
     /// </summary>
     [field: MaybeNull]
-    public static string Version => field ??= typeof(Markdown).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "Unknown";
+    public static string Version => field ??= typeof(MarkdownConverter).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "Unknown";
 
     internal static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder().Build();
 

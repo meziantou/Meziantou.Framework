@@ -176,7 +176,7 @@ class Program
         Line("using System;");
         Line("using NUnit.Framework;");
         Line();
-        Write("namespace Markdig.Tests.Specs.");
+        Write("namespace Meziantou.Framework.Markdown.Tests.Specs.");
         if      (spec.RendererType == RendererType.Normalize) Write("Normalize.");
         else if (spec.RendererType == RendererType.PlainText) Write("PlainText.");
         else if (spec.RendererType == RendererType.Roundtrip) Write("Roundtrip.");

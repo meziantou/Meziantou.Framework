@@ -3,11 +3,11 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Extensions.Abbreviations;
+namespace Meziantou.Framework.Markdown.Extensions.Abbreviations;
 
 /// <summary>
 /// An abbreviation object stored at the document level. See extension methods in <see cref="AbbreviationHelper"/>.

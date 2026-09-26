@@ -2,7 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Base class for a <see cref="BlockParser"/> or <see cref="InlineParser"/>.
@@ -24,7 +24,7 @@ public abstract class ParserBase<TProcessor> : IMarkdownParser<TProcessor>
     }
 
     /// <summary>
-    /// Gets the index of this parser in <see cref="T:Markdig.Parsers.BlockParserList" /> or <see cref="T:Markdig.Parsers.InlineParserList" />.
+    /// Gets the index of this parser in <see cref="T:Meziantou.Framework.Markdown.Parsers.BlockParserList" /> or <see cref="T:Meziantou.Framework.Markdown.Parsers.InlineParserList" />.
     /// </summary>
     public int Index { get; internal set; }
 }

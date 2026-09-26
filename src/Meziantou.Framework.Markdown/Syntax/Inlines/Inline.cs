@@ -5,9 +5,9 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Syntax.Inlines;
+namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
 /// <summary>
 /// Base class for all syntax tree inlines.

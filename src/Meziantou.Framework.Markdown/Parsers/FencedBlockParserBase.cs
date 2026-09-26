@@ -4,11 +4,11 @@
 
 using System.Diagnostics;
 
-using Markdig.Helpers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Parsers;
+namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
 /// Represents the FencedBlockParserBase type.

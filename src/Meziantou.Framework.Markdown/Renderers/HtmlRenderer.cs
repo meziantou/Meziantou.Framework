@@ -8,12 +8,12 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Markdig.Helpers;
-using Markdig.Renderers.Html;
-using Markdig.Renderers.Html.Inlines;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Renderers.Html.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Renderers;
+namespace Meziantou.Framework.Markdown.Renderers;
 
 /// <summary>
 /// Default HTML renderer for a Markdown <see cref="MarkdownDocument"/> object.

@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.EmphasisExtra
+namespace Meziantou.Framework.Markdown.Tests.Specs.EmphasisExtra
 {
     [TestFixture]
     public class TestExtensionsStrikethrough

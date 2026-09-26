@@ -2,17 +2,15 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-#if !NET || !MARKDIG_NO_RUNE_TESTS
 using System.Text;
-#endif
 using System.Threading.Tasks;
 
-namespace Markdig.Tests
+namespace Meziantou.Framework.Markdown.Tests
 {
     [TestFixture]
     public class TestCjkFriendlyEmphasis
@@ -40,7 +38,7 @@ namespace Markdig.Tests
         public void TestCjkFriendlyEmphasisJapanese(string source, string expected)
         {
             var pipeline = GetPipeline();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
@@ -54,7 +52,7 @@ namespace Markdig.Tests
         public void TestCjkFriendlyEmphasisKorean(string source, string expected)
         {
             var pipeline = GetPipeline();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
@@ -69,7 +67,7 @@ namespace Markdig.Tests
         public void TestCjkFriendlyEmphasisUnderscore(string source, string expected)
         {
             var pipeline = GetPipeline();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
@@ -88,7 +86,7 @@ namespace Markdig.Tests
         public void TestCjkFriendlyEmphasisGfmStrikethrough(string source, string expected)
         {
             var pipeline = GetPipelineWithStrikethrough();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
@@ -102,7 +100,7 @@ namespace Markdig.Tests
         public void TestCjkFriendlyPseudoEmoji(string source, string expected)
         {
             var pipeline = GetPipeline();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
@@ -117,11 +115,10 @@ namespace Markdig.Tests
         public void TestCjkFriendlyEmphasisAfterLineBreaksAndEntities(string source, string expected)
         {
             var pipeline = GetPipeline();
-            var actual = Markdown.ToHtml(source, pipeline);
+            var actual = MarkdownConverter.ToHtml(source, pipeline);
             Assert.AreEqual(expected, actual);
         }
 
-#if !NET || !MARKDIG_NO_RUNE_TESTS
         // delimiter: '*', '_' = each character, '?' = either
         // can open/close = whether the places can be in the range of emphasis
         // 2 before, previous, can close, delimiter, can open, next
@@ -214,6 +211,5 @@ namespace Markdig.Tests
                 Assert.AreEqual(shouldBeClosable, isClose, "isClose (*)");
             }
         }
-#endif
     }
 }

@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Parsers;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Extensions.Yaml;
+namespace Meziantou.Framework.Markdown.Extensions.Yaml;
 
 /// <summary>
 /// Extension to discard a YAML frontmatter at the beginning of a Markdown document.

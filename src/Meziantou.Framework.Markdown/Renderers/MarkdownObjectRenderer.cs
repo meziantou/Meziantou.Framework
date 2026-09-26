@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Renderers;
+namespace Meziantou.Framework.Markdown.Renderers;
 
 /// <summary>
 /// A base class for rendering <see cref="Block" /> and <see cref="Syntax.Inlines.Inline" /> Markdown objects.

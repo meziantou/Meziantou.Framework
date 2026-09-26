@@ -1,6 +1,6 @@
-using static Markdig.Tests.TestRoundtrip;
+using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
-namespace Markdig.Tests.RoundtripSpecs;
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
 
 [TestFixture]
 public class TestHtmlBlock

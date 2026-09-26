@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.GFMTableConformance
+namespace Meziantou.Framework.Markdown.Tests.Specs.GFMTableConformance
 {
     [TestFixture]
     public class TestGFMTableConformanceBasicTable

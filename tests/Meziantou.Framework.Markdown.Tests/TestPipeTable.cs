@@ -1,9 +1,9 @@
-using Markdig;
-using Markdig.Extensions.Tables;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public sealed class TestPipeTable
@@ -18,7 +18,7 @@ public sealed class TestPipeTable
     public void TestTableBug(string markdown, int tableCount = 1)
     {
         MarkdownDocument document =
-            Markdown.Parse(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+            MarkdownConverter.Parse(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
 
         Table[] tables = document.Descendants().OfType<Table>().ToArray();
 
@@ -43,7 +43,7 @@ public sealed class TestPipeTable
         var pipeline = new MarkdownPipelineBuilder()
             .UsePipeTables(new PipeTableOptions() {InferColumnWidthsFromSeparator = true})
             .Build();
-        var document = Markdown.Parse(markdown, pipeline);
+        var document = MarkdownConverter.Parse(markdown, pipeline);
         var table = document.Descendants().OfType<Table>().FirstOrDefault();
         Assert.IsNotNull(table);
         var actualWidths = table.ColumnDefinitions.Select(x => x.Width).ToList();
@@ -70,7 +70,7 @@ public sealed class TestPipeTable
             .UsePipeTables(new PipeTableOptions { InferColumnWidthsFromSeparator = inferColumnWidths })
             .Build();
 
-        Assert.That(Markdown.ToHtml(markdown, pipeline), Is.EqualTo("<p>" + markdown + "</p>\n"));
+        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline), Is.EqualTo("<p>" + markdown + "</p>\n"));
     }
 
     [Test]
@@ -79,7 +79,7 @@ public sealed class TestPipeTable
         var pipeline = new MarkdownPipelineBuilder()
             .UsePipeTables(new PipeTableOptions() {InferColumnWidthsFromSeparator = false})
             .Build();
-        var document = Markdown.Parse("| A | B | C |\r\n|---|---|---|", pipeline);
+        var document = MarkdownConverter.Parse("| A | B | C |\r\n|---|---|---|", pipeline);
         var table = document.Descendants().OfType<Table>().FirstOrDefault();
         Assert.IsNotNull(table);
         foreach (var column in table.ColumnDefinitions)
@@ -121,13 +121,13 @@ public sealed class TestPipeTable
             .Build();
 
         MarkdownDocument document = null!;
-        Assert.DoesNotThrow(() => document = Markdown.Parse(markdown, pipeline));
+        Assert.DoesNotThrow(() => document = MarkdownConverter.Parse(markdown, pipeline));
 
         var tables = document.Descendants().OfType<Table>().ToArray();
         Assert.That(tables, Has.Length.EqualTo(1));
 
         string html = string.Empty;
-        Assert.DoesNotThrow(() => html = Markdown.ToHtml(markdown, pipeline));
+        Assert.DoesNotThrow(() => html = MarkdownConverter.ToHtml(markdown, pipeline));
         Assert.That(html, Does.Contain("<table"));
         Assert.That(html, Does.Contain("<td>`C</td>"));
     }
@@ -141,7 +141,7 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var document = Markdown.Parse(markdown, pipeline);
+        var document = MarkdownConverter.Parse(markdown, pipeline);
 
         var codeInline = document.Descendants().OfType<CodeInline>().SingleOrDefault();
         Assert.IsNotNull(codeInline);
@@ -163,7 +163,7 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Is.EqualTo("<p><code>|| hidden text ||</code></p>\n"));
     }
@@ -184,7 +184,7 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Does.Contain("<td><code>Code block</code></td>"));
     }
@@ -205,14 +205,14 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var document = Markdown.Parse(markdown, pipeline);
+        var document = MarkdownConverter.Parse(markdown, pipeline);
         var table = document.Descendants().OfType<Table>().Single();
         var rows = table.OfType<TableRow>().ToArray();
 
         Assert.That(rows, Has.Length.EqualTo(4));
         Assert.That(rows, Has.All.Count.EqualTo(3));
 
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Does.Contain("<td><strong>~$0.0015</strong></td>"));
         Assert.That(html, Does.Contain("<td><strong>~$1.50</strong></td>"));
@@ -227,11 +227,11 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var document = Markdown.Parse(markdown, pipeline);
+        var document = MarkdownConverter.Parse(markdown, pipeline);
         var codeInline = document.Descendants().OfType<CodeInline>().Single();
 
         Assert.That(codeInline.Content, Is.EqualTo("foo"));
-        Assert.That(Markdown.ToHtml(markdown, pipeline), Is.EqualTo("<p><code>foo</code></p>\n"));
+        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline), Is.EqualTo("<p><code>foo</code></p>\n"));
     }
 
     [Test]
@@ -253,7 +253,7 @@ public sealed class TestPipeTable
             .UseAdvancedExtensions()
             .Build();
 
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Does.Contain("<p><code>|| hidden text ||</code></p>"));
         Assert.That(html, Does.Contain("<table"));

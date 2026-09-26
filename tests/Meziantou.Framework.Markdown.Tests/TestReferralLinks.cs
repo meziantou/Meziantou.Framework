@@ -1,4 +1,4 @@
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestReferralLinks
@@ -14,7 +14,7 @@ public class TestReferralLinks
         var pipeline = new MarkdownPipelineBuilder()
             .UseReferralLinks(rels)
             .Build();
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Contains.Substring($"rel=\"{expected}\""));
     }
@@ -31,7 +31,7 @@ public class TestReferralLinks
             .UseAutoLinks()
             .UseReferralLinks(rels)
             .Build();
-        var html = Markdown.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
         Assert.That(html, Contains.Substring($"rel=\"{expected}\""));
     }

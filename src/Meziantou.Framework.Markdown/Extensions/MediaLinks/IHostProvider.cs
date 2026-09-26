@@ -4,7 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace Markdig.Extensions.MediaLinks;
+namespace Meziantou.Framework.Markdown.Extensions.MediaLinks;
 
 /// <summary>
 /// Provides url for media links.

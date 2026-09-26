@@ -7,10 +7,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Syntax.Inlines;
+namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
 /// <summary>
 /// A base class for container for <see cref="Inline"/>.

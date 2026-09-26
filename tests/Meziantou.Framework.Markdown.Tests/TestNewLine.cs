@@ -1,7 +1,7 @@
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestNewLine
@@ -12,15 +12,15 @@ public class TestNewLine
     [TestCase("# Text A\nText B\n\n## Text C", "<h1>Text A</h1>\n<p>Text B</p>\n<h2>Text C</h2>\n")]
     public void Test(string value, string expectedHtml)
     {
-        Assert.AreEqual(expectedHtml, Markdown.ToHtml(value));
-        Assert.AreEqual(expectedHtml, Markdown.ToHtml(value.Replace("\n", "\r\n")));
+        Assert.AreEqual(expectedHtml, MarkdownConverter.ToHtml(value));
+        Assert.AreEqual(expectedHtml, MarkdownConverter.ToHtml(value.Replace("\n", "\r\n")));
     }
 
     [Test()]
     public void TestEscapeLineBreak()
     {
         var input = "test\\\r\ntest1\r\n";
-        var doc = Markdown.Parse(input);
+        var doc = MarkdownConverter.Parse(input);
         var inlines = doc.Descendants<LineBreakInline>().ToList();
         Assert.AreEqual(1, inlines.Count, "Invalid number of LineBreakInline");
         Assert.True(inlines[0].IsBackslash);

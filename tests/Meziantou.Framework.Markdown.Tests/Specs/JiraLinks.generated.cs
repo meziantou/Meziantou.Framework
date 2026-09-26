@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.JiraLinks
+namespace Meziantou.Framework.Markdown.Tests.Specs.JiraLinks
 {
     [TestFixture]
     public class TestJiraLinks

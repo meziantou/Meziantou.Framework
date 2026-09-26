@@ -2,7 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-namespace Markdig;
+namespace Meziantou.Framework.Markdown;
 
 /// <summary>
 /// Provides a context that can be used as part of parsing Markdown documents.

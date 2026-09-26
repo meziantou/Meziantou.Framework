@@ -4,9 +4,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// Extension methods for accessing <see cref="LinkReferenceDefinition"/> attached at the document level.

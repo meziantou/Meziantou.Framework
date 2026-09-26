@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.SmartyPants
+namespace Meziantou.Framework.Markdown.Tests.Specs.SmartyPants
 {
     [TestFixture]
     public class TestExtensionsSmartyPantsQuotes

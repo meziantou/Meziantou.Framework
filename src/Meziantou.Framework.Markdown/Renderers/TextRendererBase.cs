@@ -6,11 +6,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using Markdig.Helpers;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Renderers;
+namespace Meziantou.Framework.Markdown.Renderers;
 
 /// <summary>
 /// A text based <see cref="IMarkdownRenderer"/>.
@@ -117,9 +117,6 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// Gets or sets the previous was line.
     /// </summary>
     protected bool previousWasLine;
-#if !NETSTANDARD2_1_OR_GREATER && !NETCOREAPP3_1_OR_GREATER
-    private char[] buffer;
-#endif
     private readonly List<Indent> indents;
 
     /// <summary>
@@ -128,9 +125,6 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// <param name="writer">The writer.</param>
     protected TextRendererBase(TextWriter writer) : base(writer)
     {
-#if !NETSTANDARD2_1_OR_GREATER && !NETCOREAPP3_1_OR_GREATER
-        buffer = new char[1024];
-#endif
         // We assume that we are starting as if we had previously a newline
         previousWasLine = true;
         indents = new List<Indent>();
@@ -373,19 +367,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void WriteRaw(ReadOnlySpan<char> content)
     {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_1_OR_GREATER
         Writer.Write(content);
-#else
-        if (content.Length > buffer.Length)
-        {
-            buffer = content.ToArray();
-        }
-        else
-        {
-            content.CopyTo(buffer);
-        }
-        Writer.Write(buffer, 0, content.Length);
-#endif
     }
 
     /// <summary>

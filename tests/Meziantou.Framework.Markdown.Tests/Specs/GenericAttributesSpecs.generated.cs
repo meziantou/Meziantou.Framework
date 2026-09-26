@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.GenericAttributes
+namespace Meziantou.Framework.Markdown.Tests.Specs.GenericAttributes
 {
     [TestFixture]
     public class TestExtensionsGenericAttributes

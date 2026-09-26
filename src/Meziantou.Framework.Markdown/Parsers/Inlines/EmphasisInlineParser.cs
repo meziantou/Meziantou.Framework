@@ -5,12 +5,12 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Markdig.Helpers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Parsers.Inlines;
+namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 
 /// <summary>
 /// An inline parser for <see cref="EmphasisInline"/>.

@@ -2,12 +2,12 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 /// <summary>
 /// A group of <see cref="StringLine"/>.

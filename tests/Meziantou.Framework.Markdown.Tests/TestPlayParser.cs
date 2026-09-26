@@ -1,10 +1,10 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestPlayParser
@@ -26,7 +26,7 @@ public class TestPlayParser
     public void TestLinksWithCarriageReturn()
     {
         var text = "[Link 1][link-1], [link 2][link-2].\r\n\r\n[link-1]: https://example.com\r\n[link-2]: https://example.com";
-        var result = Markdown.ToHtml(text).TrimEnd();
+        var result = MarkdownConverter.ToHtml(text).TrimEnd();
         Assert.AreEqual("<p><a href=\"https://example.com\">Link 1</a>, <a href=\"https://example.com\">link 2</a>.</p>", result);
     }
 
@@ -34,14 +34,14 @@ public class TestPlayParser
     public void TestLinksWithTitleAndCarriageReturn()
     {
         var text = "[Link 1][link-1], [link 2][link-2].\r\n\r\n[link-1]: https://example.com \"title 1\" \r\n[link-2]: https://example.com \"title 2\"";
-        var result = Markdown.ToHtml(text).TrimEnd();
+        var result = MarkdownConverter.ToHtml(text).TrimEnd();
         Assert.AreEqual("<p><a href=\"https://example.com\" title=\"title 1\">Link 1</a>, <a href=\"https://example.com\" title=\"title 2\">link 2</a>.</p>", result);
     }
 
     [Test]
     public void TestLink()
     {
-        var doc = Markdown.Parse("There is a ![link](/yoyo)");
+        var doc = MarkdownConverter.Parse("There is a ![link](/yoyo)");
         var link = doc.Descendants<ParagraphBlock>().SelectMany(x => x.Inline.Descendants<LinkInline>()).FirstOrDefault(l => l.IsImage);
         Assert.AreEqual("/yoyo", link?.Url);
     }
@@ -49,7 +49,7 @@ public class TestPlayParser
     [Test]
     public void TestLinkWithMultipleBackslashesInTitle()
     {
-        var doc = Markdown.Parse(@"[link](/uri '\\\\127.0.0.1')");
+        var doc = MarkdownConverter.Parse(@"[link](/uri '\\\\127.0.0.1')");
         var link = doc.Descendants<LinkInline>().FirstOrDefault();
         Assert.AreEqual(@"\\127.0.0.1", link?.Title);
     }
@@ -77,8 +77,8 @@ Later in a text we are using HTML and it becomes an abbr tag HTML
         //> titi toto
         //");
 
-        //var result = Markdown.ToHtml(text, new MarkdownPipeline().UseFootnotes().UseEmphasisExtras());
-        var result = Markdown.ToHtml(text, new MarkdownPipelineBuilder().UseAbbreviations().Build());
+        //var result = MarkdownConverter.ToHtml(text, new MarkdownPipeline().UseFootnotes().UseEmphasisExtras());
+        var result = MarkdownConverter.ToHtml(text, new MarkdownPipelineBuilder().UseAbbreviations().Build());
         //File.WriteAllText("test.html", result, Encoding.UTF8);
         //Console.WriteLine(result);
     }
@@ -88,7 +88,7 @@ Later in a text we are using HTML and it becomes an abbr tag HTML
     {
         var text = @"> *some text*
 > some other text";
-        var doc = Markdown.Parse(text);
+        var doc = MarkdownConverter.Parse(text);
 
         Assert.True(doc.Descendants<LiteralInline>().All(x => !x.Content.IsEmpty),
             "There should not have any empty literals");
@@ -253,8 +253,8 @@ Paragraph
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
         // Reuse the same pipeline
-        var result1 = Markdown.ToHtml("This is a \"\"citation\"\"", pipeline);
-        var result2 = Markdown.ToHtml("This is a \"\"citation\"\"", pipeline);
+        var result1 = MarkdownConverter.ToHtml("This is a \"\"citation\"\"", pipeline);
+        var result2 = MarkdownConverter.ToHtml("This is a \"\"citation\"\"", pipeline);
 
         Assert.AreEqual("<p>This is a <cite>citation</cite></p>", result1.Trim());
         Assert.AreEqual(result1, result2);

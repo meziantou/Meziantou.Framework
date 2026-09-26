@@ -3,10 +3,10 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using Markdig.Helpers;
-using Markdig.Parsers;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
 
-namespace Markdig.Syntax.Inlines;
+namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
 /// <summary>
 /// Internal delimiter used by some parsers (e.g emphasis, tables).

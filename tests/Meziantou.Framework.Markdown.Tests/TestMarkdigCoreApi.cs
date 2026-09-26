@@ -1,8 +1,8 @@
-using Markdig.Renderers;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestMarkdigCoreApi
 {
@@ -11,10 +11,10 @@ public class TestMarkdigCoreApi
     {
         for (int i = 0; i < 5; i++)
         {
-            string html = Markdown.ToHtml("This is a text with some *emphasis*");
+            string html = MarkdownConverter.ToHtml("This is a text with some *emphasis*");
             Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
 
-            html = Markdown.ToHtml("This is a text with a https://link.tld/");
+            html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/");
             Assert.AreNotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
     }
@@ -27,10 +27,10 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            string html = Markdown.ToHtml("This is a text with some *emphasis*", pipeline);
+            string html = MarkdownConverter.ToHtml("This is a text with some *emphasis*", pipeline);
             Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
 
-            html = Markdown.ToHtml("This is a text with a https://link.tld/", pipeline);
+            html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", pipeline);
             Assert.AreNotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
 
@@ -40,7 +40,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            string html = Markdown.ToHtml("This is a text with a https://link.tld/", pipeline);
+            string html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", pipeline);
             Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
     }
@@ -52,7 +52,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            _ = Markdown.ToHtml("This is a text with some *emphasis*", writer);
+            _ = MarkdownConverter.ToHtml("This is a text with some *emphasis*", writer);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
             writer.GetStringBuilder().Length = 0;
@@ -65,7 +65,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            _ = Markdown.ToHtml("This is a text with a https://link.tld/", writer, pipeline);
+            _ = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", writer, pipeline);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
             writer.GetStringBuilder().Length = 0;
@@ -79,7 +79,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            MarkdownDocument document = Markdown.Parse("This is a text with some *emphasis*");
+            MarkdownDocument document = MarkdownConverter.Parse("This is a text with some *emphasis*");
             document.ToHtml(writer);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
@@ -93,7 +93,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            MarkdownDocument document = Markdown.Parse("This is a text with a https://link.tld/", pipeline);
+            MarkdownDocument document = MarkdownConverter.Parse("This is a text with a https://link.tld/", pipeline);
             document.ToHtml(writer, pipeline);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
@@ -109,7 +109,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            _ = Markdown.Convert("This is a text with some *emphasis*", renderer);
+            _ = MarkdownConverter.Convert("This is a text with some *emphasis*", renderer);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
             writer.GetStringBuilder().Length = 0;
@@ -123,7 +123,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            _ = Markdown.Convert("This is a text with a https://link.tld/", renderer, pipeline);
+            _ = MarkdownConverter.Convert("This is a text with a https://link.tld/", renderer, pipeline);
             string html = writer.ToString();
             Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
             writer.GetStringBuilder().Length = 0;
@@ -141,7 +141,7 @@ public class TestMarkdigCoreApi
 
         for (int i = 0; i < 5; i++)
         {
-            MarkdownDocument document = Markdown.Parse(markdown, pipeline);
+            MarkdownDocument document = MarkdownConverter.Parse(markdown, pipeline);
 
             Assert.AreEqual(1, document.LineCount);
             Assert.AreEqual(markdown.Length, document.Span.Length);
@@ -171,7 +171,7 @@ public class TestMarkdigCoreApi
     {
         for (int i = 0; i < 5; i++)
         {
-            string normalized = Markdown.Normalize("Heading\n=======");
+            string normalized = MarkdownConverter.Normalize("Heading\n=======");
             Assert.AreEqual("# Heading", normalized);
         }
     }
@@ -183,7 +183,7 @@ public class TestMarkdigCoreApi
         {
             var writer = new StringWriter();
 
-            _ = Markdown.Normalize("Heading\n=======", writer);
+            _ = MarkdownConverter.Normalize("Heading\n=======", writer);
             string normalized = writer.ToString();
             Assert.AreEqual("# Heading", normalized);
         }
@@ -194,7 +194,7 @@ public class TestMarkdigCoreApi
     {
         for (int i = 0; i < 5; i++)
         {
-            string plainText = Markdown.ToPlainText("*Hello*, [world](http://example.com)!");
+            string plainText = MarkdownConverter.ToPlainText("*Hello*, [world](http://example.com)!");
             Assert.AreEqual("Hello, world!\n", plainText);
         }
     }
@@ -206,7 +206,7 @@ public class TestMarkdigCoreApi
         {
             var writer = new StringWriter();
 
-            _ = Markdown.ToPlainText("*Hello*, [world](http://example.com)!", writer);
+            _ = MarkdownConverter.ToPlainText("*Hello*, [world](http://example.com)!", writer);
             string plainText = writer.ToString();
             Assert.AreEqual("Hello, world!\n", plainText);
         }

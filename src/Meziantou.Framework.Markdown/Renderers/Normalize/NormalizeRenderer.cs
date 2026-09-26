@@ -3,11 +3,11 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO;
-using Markdig.Syntax;
-using Markdig.Renderers.Normalize.Inlines;
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Renderers.Normalize;
+namespace Meziantou.Framework.Markdown.Renderers.Normalize;
 
 /// <summary>
 /// Default HTML renderer for a Markdown <see cref="MarkdownDocument"/> object.

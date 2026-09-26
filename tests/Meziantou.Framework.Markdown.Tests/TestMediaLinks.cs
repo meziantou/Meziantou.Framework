@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 
-using Markdig.Extensions.MediaLinks;
+using Meziantou.Framework.Markdown.Extensions.MediaLinks;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestMediaLinks
@@ -33,7 +33,7 @@ public class TestMediaLinks
     [TestCase("![ok.ru](//ok.ru/video/26870090463)", "<p><iframe src=\"https://ok.ru/videoembed/26870090463\" class=\"odnoklassniki\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     public void TestBuiltInHosts(string markdown, string expected)
     {
-        string html = Markdown.ToHtml(markdown, GetPipeline());
+        string html = MarkdownConverter.ToHtml(markdown, GetPipeline());
         Assert.AreEqual(expected, html);
     }
 
@@ -43,7 +43,7 @@ public class TestMediaLinks
         "<p><audio width=\"500\" controls=\"\"><source type=\"audio/mpeg\" src=\"./audio.mp3\"></source></audio></p>\n")]
     public void TestBuiltInHostsWithRelativePaths(string markdown, string expected)
     {
-        string html = Markdown.ToHtml(markdown, GetPipeline());
+        string html = MarkdownConverter.ToHtml(markdown, GetPipeline());
         Assert.AreEqual(expected, html);
     }
     
@@ -78,7 +78,7 @@ public class TestMediaLinks
     [TestCase("![p1](https://sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4?token=aaabbb\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^https?://sample.com/(.+)$", @"https://example.com/$1?token=aaabbb")]
     public void TestCustomHostProvider(string markdown, string expected, string provider, string replace)
     {
-        string html = Markdown.ToHtml(markdown, GetPipeline(new MediaOptions
+        string html = MarkdownConverter.ToHtml(markdown, GetPipeline(new MediaOptions
         {
             Hosts =
             {
@@ -95,7 +95,7 @@ public class TestMediaLinks
     [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"k youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", "k")]
     public void TestCustomClass(string markdown, string expected, string klass)
     {
-        string html = Markdown.ToHtml(markdown, GetPipeline(new MediaOptions
+        string html = MarkdownConverter.ToHtml(markdown, GetPipeline(new MediaOptions
         {
             Class = klass,
         }));
@@ -107,7 +107,7 @@ public class TestMediaLinks
     [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"img-fluid youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     public void TestWithBootstrap(string markdown, string expected)
     {
-        string html = Markdown.ToHtml(markdown, GetPipelineWithBootstrap());
+        string html = MarkdownConverter.ToHtml(markdown, GetPipelineWithBootstrap());
         Assert.AreEqual(html, expected);
     }
 }

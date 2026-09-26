@@ -4,11 +4,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// A link reference definition (Section 4.7 CommonMark specs)

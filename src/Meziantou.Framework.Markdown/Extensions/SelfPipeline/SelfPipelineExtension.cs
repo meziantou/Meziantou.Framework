@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Extensions.SelfPipeline;
+namespace Meziantou.Framework.Markdown.Extensions.SelfPipeline;
 
 /// <summary>
 /// Extension to enable SelfPipeline, to configure a Markdown parsing/convertion to HTML automatically 

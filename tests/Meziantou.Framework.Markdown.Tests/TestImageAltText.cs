@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestImageAltText
@@ -16,7 +16,7 @@ public class TestImageAltText
     [TestCase("![bar][1]\n\n[1]: image.jpg 'title'", "bar")]
     public void TestImageHtmlAltText(string markdown, string expectedAltText)
     {
-        string html = Markdown.ToHtml(markdown);
+        string html = MarkdownConverter.ToHtml(markdown);
         string actualAltText = Regex.Match(html, "alt=\"(.*?)\"").Groups[1].Value;
         Assert.AreEqual(expectedAltText, actualAltText);
     }

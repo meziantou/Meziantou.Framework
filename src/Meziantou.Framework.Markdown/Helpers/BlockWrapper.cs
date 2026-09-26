@@ -2,9 +2,9 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 // Used to avoid the overhead of type covariance checks
 internal readonly struct BlockWrapper(Block block) : IEquatable<BlockWrapper>

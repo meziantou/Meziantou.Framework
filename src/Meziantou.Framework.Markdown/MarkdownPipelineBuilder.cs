@@ -4,11 +4,11 @@
 
 using System.IO;
 
-using Markdig.Helpers;
-using Markdig.Parsers;
-using Markdig.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
 
-namespace Markdig;
+namespace Meziantou.Framework.Markdown;
 
 /// <summary>
 /// This class allows to modify the pipeline to parse and render a Markdown document.

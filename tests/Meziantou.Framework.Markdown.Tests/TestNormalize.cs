@@ -2,13 +2,13 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Extensions.Tables;
-using Markdig.Helpers;
-using Markdig.Renderers.Normalize;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestNormalize
@@ -111,7 +111,7 @@ public class TestNormalize
     public void AutoIdentifiersDoNotEmitGeneratedLinkReferenceDefinitions()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
-        var document = Markdown.Parse("# Test\n\n## Test", pipeline);
+        var document = MarkdownConverter.Parse("# Test\n\n## Test", pipeline);
         using var writer = new StringWriter();
         var renderer = new NormalizeRenderer(writer);
 
@@ -281,8 +281,8 @@ line3");
         {
             builder.EnableTrackTrivia();
         }
-        var normalized = Markdown.Normalize("3. first\n9. second\n9. third", pipeline: builder.Build());
-        var list = (ListBlock)Markdown.Parse(normalized)[0];
+        var normalized = MarkdownConverter.Normalize("3. first\n9. second\n9. third", pipeline: builder.Build());
+        var list = (ListBlock)MarkdownConverter.Parse(normalized)[0];
         Assert.AreEqual(new[] { 3, 4, 5 }, list.Select(item => ((ListItemBlock)item).Order).ToArray());
     }
 
@@ -626,9 +626,9 @@ Text following the table.");
     public void PipeTableAlignmentSurvivesNormalization(string markdown)
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
-        var normalized = Markdown.Normalize(markdown, pipeline: pipeline);
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
         Assert.AreEqual(markdown, normalized);
-        Assert.AreEqual(Markdown.ToHtml(markdown, pipeline), Markdown.ToHtml(normalized, pipeline));
+        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
     }
 
     [TestCase("---")]
@@ -638,10 +638,10 @@ Text following the table.");
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
         var markdown = $"| A |\n| {separator} |\n| x | y |";
-        var normalized = Markdown.Normalize(markdown, pipeline: pipeline);
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
         Assert.AreEqual($"| A |  |\n| {separator} | {separator} |\n| x | y |", normalized);
-        Assert.AreEqual(Markdown.ToHtml(markdown, pipeline), Markdown.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, Markdown.Normalize(normalized, pipeline: pipeline));
+        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
     [TestCase("---", "---------")]
@@ -656,10 +656,10 @@ Text following the table.");
             InferColumnWidthsFromSeparator = true
         }).Build();
         var markdown = $"| A | B |\n| {first} | {second} |\n| x | y |";
-        var normalized = Markdown.Normalize(markdown, pipeline: pipeline);
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
         Assert.AreEqual(markdown, normalized);
-        Assert.AreEqual(Markdown.ToHtml(markdown, pipeline), Markdown.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, Markdown.Normalize(normalized, pipeline: pipeline));
+        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
     [Test]
@@ -680,12 +680,12 @@ Text following the table.");
             InferColumnWidthsFromSeparator = true
         }).Build();
         var markdown = "| A | B | C |\n| --- |  | --- |" + (headerOnly ? "" : "\n| x | y | z |");
-        var normalized = Markdown.Normalize(markdown, pipeline: pipeline);
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
         Assert.AreEqual(markdown, normalized);
-        var table = (Table)Markdown.Parse(normalized, pipeline)[0];
+        var table = (Table)MarkdownConverter.Parse(normalized, pipeline)[0];
         Assert.AreEqual(new[] { 50f, 0f, 50f }, table.ColumnDefinitions.Select(column => column.Width).ToArray());
-        Assert.AreEqual(Markdown.ToHtml(markdown, pipeline), Markdown.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, Markdown.Normalize(normalized, pipeline: pipeline));
+        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
     [Test]
@@ -695,7 +695,7 @@ Text following the table.");
         {
             InferColumnWidthsFromSeparator = true
         }).Build();
-        var table = (Table)Markdown.Parse("| A | B |\n| --- | --------- |", pipeline)[0];
+        var table = (Table)MarkdownConverter.Parse("| A | B |\n| --- | --------- |", pipeline)[0];
         var column = table.ColumnDefinitions[1];
         Assert.AreEqual(9, column.SeparatorDashCount);
         column.Width = column.Width;
@@ -748,7 +748,7 @@ Text following the table.");
             .UsePipeTables()
             .Build();
 
-        var result = Markdown.Normalize(input, options, pipeline: pipeline);
+        var result = MarkdownConverter.Normalize(input, options, pipeline: pipeline);
         result = NormText(result, trim);
 
         TestParser.PrintAssertExpected(input, result, expected, context);

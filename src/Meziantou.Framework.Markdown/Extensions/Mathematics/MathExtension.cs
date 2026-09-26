@@ -2,9 +2,9 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Renderers;
+using Meziantou.Framework.Markdown.Renderers;
 
-namespace Markdig.Extensions.Mathematics;
+namespace Meziantou.Framework.Markdown.Extensions.Mathematics;
 
 /// <summary>
 /// Extension for adding inline mathematics $...$

@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.AutoIdentifiers
+namespace Meziantou.Framework.Markdown.Tests.Specs.AutoIdentifiers
 {
     [TestFixture]
     public class TestExtensionsHeadingAutoIdentifiers

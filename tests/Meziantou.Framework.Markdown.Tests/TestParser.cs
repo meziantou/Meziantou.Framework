@@ -4,11 +4,11 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-using Markdig.Extensions.JiraLinks;
-using Markdig.Renderers.Roundtrip;
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestParser
 {
@@ -36,7 +36,7 @@ public class TestParser
         for (int i = 0; i < specsFilePaths.Length; i++)
         {
             string markdown = specsMarkdown[i] = File.ReadAllText(specsFilePaths[i]);
-            specsSyntaxTrees[i] = Markdown.Parse(markdown, pipeline);
+            specsSyntaxTrees[i] = MarkdownConverter.Parse(markdown, pipeline);
         }
 
         foreach (var specFilePath in specsFilePaths)
@@ -67,7 +67,7 @@ public class TestParser
     [Test]
     public void ParseEmptyDocumentWithTrackTriviaEnabled()
     {
-        var document = Markdown.Parse("", trackTrivia: true);
+        var document = MarkdownConverter.Parse("", trackTrivia: true);
         using var sw = new StringWriter();
         new RoundtripRenderer(sw).Render(document);
         Assert.AreEqual("", sw.ToString());
@@ -90,7 +90,7 @@ public class TestParser
     {
         // Uncomment this line to get more debug information for process inlines.
         //pipeline.DebugLog = Console.Out;
-        var result = plainText ? Markdown.ToPlainText(inputText, pipeline) : Markdown.ToHtml(inputText, pipeline);
+        var result = plainText ? MarkdownConverter.ToPlainText(inputText, pipeline) : MarkdownConverter.ToHtml(inputText, pipeline);
 
         result = Compact(result);
         expectedOutputText = Compact(expectedOutputText);
@@ -190,7 +190,7 @@ public class TestParser
         int index = TestsDirectory.IndexOf(RunningInsideVisualStudioPath);
         if (index != -1)
         {
-            TestsDirectory = TestsDirectory.Substring(0, index) + "\\src\\Markdig.Tests";
+            TestsDirectory = TestsDirectory.Substring(0, index) + "\\src\\Meziantou.Framework.Markdown.Tests";
         }
     }
 }

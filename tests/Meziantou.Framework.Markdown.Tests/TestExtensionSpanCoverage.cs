@@ -1,21 +1,21 @@
-using Markdig.Extensions.Abbreviations;
-using Markdig.Extensions.Alerts;
-using Markdig.Extensions.DefinitionLists;
-using Markdig.Extensions.Emoji;
-using Markdig.Extensions.Figures;
-using Markdig.Extensions.Footers;
-using Markdig.Extensions.Footnotes;
-using Markdig.Extensions.JiraLinks;
-using Markdig.Extensions.Mathematics;
-using Markdig.Extensions.SmartyPants;
-using Markdig.Extensions.Tables;
-using Markdig.Extensions.TaskLists;
-using Markdig.Extensions.Yaml;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Abbreviations;
+using Meziantou.Framework.Markdown.Extensions.Alerts;
+using Meziantou.Framework.Markdown.Extensions.DefinitionLists;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.Figures;
+using Meziantou.Framework.Markdown.Extensions.Footers;
+using Meziantou.Framework.Markdown.Extensions.Footnotes;
+using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.Mathematics;
+using Meziantou.Framework.Markdown.Extensions.SmartyPants;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Extensions.TaskLists;
+using Meziantou.Framework.Markdown.Extensions.Yaml;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public sealed class TestExtensionSpanCoverage
@@ -43,7 +43,7 @@ public sealed class TestExtensionSpanCoverage
         };
         testCase.ConfigurePipeline(builder);
 
-        var document = Markdown.Parse(testCase.Markdown.ReplaceLineEndings("\n"), builder.Build());
+        var document = MarkdownConverter.Parse(testCase.Markdown.ReplaceLineEndings("\n"), builder.Build());
 
         if (testCase.ValidateSpanTree)
         {
@@ -61,7 +61,7 @@ public sealed class TestExtensionSpanCoverage
             PreciseSourceLocation = true
         }.UseJiraLinks(new JiraLinkOptions("https://jira.example.com")).Build();
 
-        var document = Markdown.Parse("ABC-123", pipeline);
+        var document = MarkdownConverter.Parse("ABC-123", pipeline);
         var jiraLink = document.Descendants<JiraLink>().FirstOrDefault();
         Assert.That(jiraLink, Is.Not.Null);
         Assert.That(jiraLink!.Span, Is.EqualTo(new SourceSpan(0, 6)));
@@ -79,7 +79,7 @@ public sealed class TestExtensionSpanCoverage
             PreciseSourceLocation = true
         }.UseTaskLists().Build();
 
-        var document = Markdown.Parse("- [x] done", pipeline);
+        var document = MarkdownConverter.Parse("- [x] done", pipeline);
         var task = document.Descendants<TaskList>().FirstOrDefault();
         Assert.That(task, Is.Not.Null);
         Assert.That(task!.Span, Is.EqualTo(new SourceSpan(2, 4)));
@@ -93,7 +93,7 @@ public sealed class TestExtensionSpanCoverage
             PreciseSourceLocation = true
         }.UseAlertBlocks().Build();
 
-        var document = Markdown.Parse("> [!NOTE]\n> body", pipeline);
+        var document = MarkdownConverter.Parse("> [!NOTE]\n> body", pipeline);
         var alert = document.Descendants<AlertBlock>().FirstOrDefault();
         Assert.That(alert, Is.Not.Null);
         Assert.That(alert!.Span.Start, Is.EqualTo(0));
@@ -113,7 +113,7 @@ public sealed class TestExtensionSpanCoverage
             PreciseSourceLocation = true
         }.UseYamlFrontMatter().Build();
 
-        var document = Markdown.Parse("---\na: 1\n---\ntext", pipeline);
+        var document = MarkdownConverter.Parse("---\na: 1\n---\ntext", pipeline);
         var yaml = document.Descendants<YamlFrontMatterBlock>().FirstOrDefault();
         Assert.That(yaml, Is.Not.Null);
         Assert.That(yaml!.Span.Start, Is.EqualTo(0));
@@ -178,7 +178,7 @@ public sealed class TestExtensionSpanCoverage
             "CustomContainers",
             builder => builder.UseCustomContainers(),
             ":::\nvalue\n:::",
-            document => AssertNodesHaveNonEmptySpan<Markdig.Extensions.CustomContainers.CustomContainer>(document));
+            document => AssertNodesHaveNonEmptySpan<Meziantou.Framework.Markdown.Extensions.CustomContainers.CustomContainer>(document));
 
         yield return Case(
             "MediaLinks",

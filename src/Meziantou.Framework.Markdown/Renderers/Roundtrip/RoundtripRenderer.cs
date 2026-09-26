@@ -3,11 +3,11 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO;
-using Markdig.Syntax;
-using Markdig.Renderers.Roundtrip.Inlines;
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip.Inlines;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Renderers.Roundtrip;
+namespace Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 /// <summary>
 /// Markdown renderer honoring trivia for a  <see cref="MarkdownDocument"/> object.

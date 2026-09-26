@@ -1,6 +1,6 @@
-using Markdig.Extensions.Emoji;
+using Meziantou.Framework.Markdown.Extensions.Emoji;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestCustomEmojis
@@ -22,7 +22,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley(customEmojiMapping: customMapping)
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -45,7 +45,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley(customEmojiMapping: customMapping)
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -67,7 +67,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley(customEmojiMapping: customMapping)
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -90,7 +90,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley(customEmojiMapping: customMapping)
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -134,7 +134,7 @@ public class TestCustomEmojis
             .UsePipeTables()
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -157,7 +157,7 @@ public class TestCustomEmojis
         }
 
         var pipeline = pipelineBuilder.Build();
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -172,7 +172,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley()
             .Build();
 
-        var actual = Markdown.ToHtml(input, pipeline);
+        var actual = MarkdownConverter.ToHtml(input, pipeline);
         Assert.AreEqual(expected, actual);
     }
 
@@ -184,7 +184,7 @@ public class TestCustomEmojis
             .UseEmojiAndSmiley()
             .Build();
 
-        var actual = Markdown.ToHtml("text :|", pipeline);
+        var actual = MarkdownConverter.ToHtml("text :|", pipeline);
         Assert.AreEqual("<p>text 😐</p>\n", actual);
     }
 }

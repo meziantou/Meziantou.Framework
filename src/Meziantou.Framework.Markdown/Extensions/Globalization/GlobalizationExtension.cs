@@ -4,15 +4,15 @@
 
 using System.Diagnostics;
 
-using Markdig.Extensions.Tables;
-using Markdig.Extensions.TaskLists;
-using Markdig.Helpers;
-using Markdig.Renderers;
-using Markdig.Renderers.Html;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Extensions.TaskLists;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Extensions.Globalization;
+namespace Meziantou.Framework.Markdown.Extensions.Globalization;
 
 /// <summary>
 /// Extension to add support for RTL content.

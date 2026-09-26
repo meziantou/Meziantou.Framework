@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.CustomContainers
+namespace Meziantou.Framework.Markdown.Tests.Specs.CustomContainers
 {
     [TestFixture]
     public class TestExtensionsCustomContainer

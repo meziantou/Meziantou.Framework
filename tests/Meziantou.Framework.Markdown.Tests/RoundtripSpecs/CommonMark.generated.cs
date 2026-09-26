@@ -6,7 +6,7 @@
 using System;
 using NUnit.Framework;
 
-namespace Markdig.Tests.Specs.Roundtrip.Roundtrip
+namespace Meziantou.Framework.Markdown.Tests.Specs.Roundtrip.Roundtrip
 {
     [TestFixture]
     public class TestPreliminariesTabs

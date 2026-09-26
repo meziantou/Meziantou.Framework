@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Markdig.Helpers;
+namespace Meziantou.Framework.Markdown.Helpers;
 
 internal sealed class FastStringWriter : TextWriter
 {
@@ -158,7 +158,6 @@ internal sealed class FastStringWriter : TextWriter
         return Task.CompletedTask;
     }
 
-#if !(NETFRAMEWORK || NETSTANDARD2_0)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Write(ReadOnlySpan<char> value)
     {
@@ -189,9 +188,7 @@ internal sealed class FastStringWriter : TextWriter
         WriteLine(buffer.Span);
         return Task.CompletedTask;
     }
-#endif
 
-#if !(NETFRAMEWORK || NETSTANDARD2_0 || NETSTANDARD2_1)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Write(StringBuilder? value)
     {
@@ -226,7 +223,6 @@ internal sealed class FastStringWriter : TextWriter
         WriteLine(value);
         return Task.CompletedTask;
     }
-#endif
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void WriteLine()
@@ -268,9 +264,7 @@ internal sealed class FastStringWriter : TextWriter
 
     public override Task FlushAsync() => Task.CompletedTask;
 
-#if !(NETFRAMEWORK || NETSTANDARD2_0)
     public override ValueTask DisposeAsync() => default;
-#endif
 
 
     public void Reset()

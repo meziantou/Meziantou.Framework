@@ -4,9 +4,9 @@
 
 using System.Diagnostics;
 
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// Extensions for visiting <see cref="Block"/> or <see cref="Inline"/>

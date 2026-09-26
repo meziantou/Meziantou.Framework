@@ -2,9 +2,9 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using Markdig.Syntax;
+using Meziantou.Framework.Markdown.Syntax;
 
-namespace Markdig.Renderers.Roundtrip;
+namespace Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 /// <summary>
 /// A Roundtrip renderer for a <see cref="ThematicBreakBlock"/>.

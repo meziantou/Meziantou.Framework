@@ -5,9 +5,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Syntax;
+namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// Contains all the <see cref="LinkReferenceDefinition"/> found in a document.
@@ -15,11 +15,7 @@ namespace Markdig.Syntax;
 /// <seealso cref="ContainerBlock" />
 public class LinkReferenceDefinitionGroup : ContainerBlock
 {
-#if NETFRAMEWORK
-    private static readonly StringComparer _unicodeIgnoreCaseComparer = StringComparer.InvariantCultureIgnoreCase;
-#else
     private static readonly StringComparer _unicodeIgnoreCaseComparer = CultureInfo.InvariantCulture.CompareInfo.GetStringComparer(CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
-#endif
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LinkReferenceDefinitionGroup"/> class.

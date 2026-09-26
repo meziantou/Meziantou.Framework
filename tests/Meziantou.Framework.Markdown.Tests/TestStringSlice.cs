@@ -2,14 +2,13 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Markdig.Helpers;
+using Meziantou.Framework.Markdown.Helpers;
 
-namespace Markdig.Tests;
+namespace Meziantou.Framework.Markdown.Tests;
 
 [TestFixture]
 public class TestStringSlice
 {
-#if !NET || !MARKDIG_NO_RUNE_TESTS
     [Test]
     public void TestRuneBmp()
     {
@@ -161,5 +160,4 @@ public class TestStringSlice
         Assert.AreEqual(9, slice.Start);
         Assert.AreEqual('a', slice.NextRune().Value);
     }
-#endif
 }

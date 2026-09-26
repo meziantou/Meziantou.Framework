@@ -4,12 +4,12 @@
 
 using System.Diagnostics;
 
-using Markdig.Extensions.Tables;
-using Markdig.Helpers;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
-namespace Markdig.Parsers.Inlines;
+namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 
 /// <summary>
 /// An inline parser for a <see cref="CodeInline"/>.

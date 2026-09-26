@@ -261,7 +261,7 @@ namespace Tomlyn.Tests
 
         private static Dictionary<string, System.Text.Json.JsonElement> LoadCorpus()
         {
-            using var stream = typeof(StandardTests).Assembly.GetManifestResourceStream("Tomlyn.Tests.files.toml-test.cases.json")!;
+            using var stream = typeof(StandardTests).Assembly.GetManifestResourceStream("Meziantou.Framework.Toml.Tests.files.toml-test.cases.json")!;
             using var document = System.Text.Json.JsonDocument.Parse(stream);
             var result = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal);
             foreach (var testCase in document.RootElement.EnumerateArray())

@@ -295,7 +295,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var generatedSource = RunGeneratorTest(source).GeneratedSources.Single();
-        var generatedCodeAttribute = "[global::System.CodeDom.Compiler.GeneratedCode(\"Tomlyn.SourceGeneration\", \"" +
+        var generatedCodeAttribute = "[global::System.CodeDom.Compiler.GeneratedCode(\"Meziantou.Framework.Toml.SourceGenerator\", \"" +
             (typeof(TomlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0") +
             "\")]";
         const string ExcludeFromCoverageAttribute = "[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]";

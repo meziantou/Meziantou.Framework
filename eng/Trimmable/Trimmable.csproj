@@ -70,6 +70,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TextDiff\Meziantou.Framework.TextDiff.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Threading\Meziantou.Framework.Threading.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Toml\Meziantou.Framework.Toml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.UndoRedo\Meziantou.Framework.UndoRedo.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
@@ -78,7 +79,6 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.CredentialManager\Meziantou.Framework.Win32.CredentialManager.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
-    <ProjectReference Include="..\..\src\Tomlyn\Tomlyn.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -140,6 +140,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TextDiff" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Threading" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Toml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.UndoRedo" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Unicode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
@@ -148,6 +149,5 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.CredentialManager" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Yaml" />
-    <TrimmerRootAssembly Include="Tomlyn" />
   </ItemGroup>
 </Project>

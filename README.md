@@ -116,6 +116,7 @@
 | Meziantou.Framework.TemporaryDirectory | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TemporaryDirectory.svg)](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/) | [readme](src/Meziantou.Framework.TemporaryDirectory/readme.md) |
 | Meziantou.Framework.TextDiff | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TextDiff.svg)](https://www.nuget.org/packages/Meziantou.Framework.TextDiff/) | [readme](src/Meziantou.Framework.TextDiff/readme.md) |
 | Meziantou.Framework.Threading | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Threading.svg)](https://www.nuget.org/packages/Meziantou.Framework.Threading/) | [readme](src/Meziantou.Framework.Threading/readme.md) |
+| Meziantou.Framework.Toml | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Toml.svg)](https://www.nuget.org/packages/Meziantou.Framework.Toml/) | |
 | Meziantou.Framework.TypeConverter | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TypeConverter.svg)](https://www.nuget.org/packages/Meziantou.Framework.TypeConverter/) | [readme](src/Meziantou.Framework.TypeConverter/readme.md) |
 | Meziantou.Framework.UndoRedo | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.UndoRedo.svg)](https://www.nuget.org/packages/Meziantou.Framework.UndoRedo/) | [readme](src/Meziantou.Framework.UndoRedo/readme.md) |
 | Meziantou.Framework.Unicode | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Unicode.svg)](https://www.nuget.org/packages/Meziantou.Framework.Unicode/) | [readme](src/Meziantou.Framework.Unicode/readme.md) |
@@ -139,7 +140,6 @@
 | Meziantou.Framework.WPF | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.WPF.svg)](https://www.nuget.org/packages/Meziantou.Framework.WPF/) | [readme](src/Meziantou.Framework.WPF/readme.md) |
 | Meziantou.Framework.Yaml | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Yaml.svg)](https://www.nuget.org/packages/Meziantou.Framework.Yaml/) | [readme](src/Meziantou.Framework.Yaml/readme.md) |
 | Meziantou.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Xunit/) | [readme](src/Meziantou.Xunit/readme.md) |
-| Tomlyn | [![NuGet](https://img.shields.io/nuget/v/Tomlyn.svg)](https://www.nuget.org/packages/Tomlyn/) | |
 
 # How to contribute
 

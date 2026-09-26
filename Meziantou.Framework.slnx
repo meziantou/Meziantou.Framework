@@ -142,6 +142,8 @@
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
     <Project Path="src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
+    <Project Path="src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
     <Project Path="src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
     <Project Path="src/Meziantou.Framework.UndoRedo/Meziantou.Framework.UndoRedo.csproj" />
     <Project Path="src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
@@ -167,8 +169,6 @@
     <Project Path="src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
     <Project Path="src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
-    <Project Path="src/Tomlyn.SourceGeneration/Tomlyn.SourceGeneration.csproj" />
-    <Project Path="src/Tomlyn/Tomlyn.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/.editorconfig" />
@@ -286,6 +286,8 @@
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.AotSmoke/Meziantou.Framework.Toml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.Tests/Meziantou.Framework.Toml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" />
@@ -310,8 +312,6 @@
     <Project Path="tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
-    <Project Path="tests/Tomlyn.AotTests/Tomlyn.AotTests.csproj" />
-    <Project Path="tests/Tomlyn.Tests/Tomlyn.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />

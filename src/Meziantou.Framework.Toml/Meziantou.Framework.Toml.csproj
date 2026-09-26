@@ -9,12 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Tomlyn.SourceGeneration/Tomlyn.SourceGeneration.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="../Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(OutputPath)/../../Tomlyn.SourceGeneration/$(Configuration.ToLowerInvariant())_netstandard2.0/Tomlyn.SourceGeneration.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="Tomlyn.targets" Pack="true" PackagePath="buildTransitive/Tomlyn.targets" />
+    <None Include="$(OutputPath)/../../Meziantou.Framework.Toml.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.Toml.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Meziantou.Framework.Toml.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.Toml.targets" />
   </ItemGroup>
 
   <ItemGroup>

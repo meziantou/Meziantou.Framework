@@ -117,7 +117,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private const string TomlOnDeserializingMetadataName = "Tomlyn.Serialization.ITomlOnDeserializing";
     private const string TomlOnDeserializedMetadataName = "Tomlyn.Serialization.ITomlOnDeserialized";
     private const string SetsRequiredMembersAttributeMetadataName = "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute";
-    private const string GeneratedCodeTool = "Tomlyn.SourceGeneration";
+    private const string GeneratedCodeTool = "Meziantou.Framework.Toml.SourceGenerator";
     private static readonly string GeneratedCodeVersion = typeof(TomlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
 
     private static readonly SymbolDisplayFormat FullyQualifiedNullableFormat =

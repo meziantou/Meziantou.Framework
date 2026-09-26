@@ -107,4 +107,36 @@ public class FloatingRoundtripTests
         Assert.Equal(value, TomlSerializer.Deserialize<Dictionary<string, Half>>(toml)!["value"]);
         Assert.DoesNotContain("00000", toml);
     }
+
+    [Theory]
+    [InlineData(float.MaxValue)]
+    [InlineData(float.MinValue)]
+    public void Float_Extremes_RoundtripThroughTypedModels(float number)
+    {
+        var toml = TomlSerializer.Serialize(new Dictionary<string, float> { ["value"] = number });
+
+        Assert.Equal(number, TomlSerializer.Deserialize<Dictionary<string, float>>(toml)!["value"]);
+    }
+
+    [Theory]
+    [InlineData("3.4028235E+38")]
+    [InlineData("3.40282356E+38")]
+    public void Float_ValuesThatRoundToMaxValue_AreAccepted(string text)
+    {
+        Assert.Equal(float.MaxValue, TomlSerializer.Deserialize<Dictionary<string, float>>($"value = {text}")!["value"]);
+    }
+
+    [Fact]
+    public void Half_ValuesThatRoundToMaxValue_AreAccepted()
+    {
+        Assert.Equal(Half.MaxValue, TomlSerializer.Deserialize<Dictionary<string, Half>>("value = 65519.0")!["value"]);
+    }
+
+    [Fact]
+    public void Float_ValuesThatOverflow_AreRejected()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, float>>("value = 3.5E+38"));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, Half>>("value = 65520.0"));
+        Assert.True(float.IsPositiveInfinity(TomlSerializer.Deserialize<Dictionary<string, float>>("value = inf")!["value"]));
+    }
 }

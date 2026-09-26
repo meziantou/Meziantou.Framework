@@ -19,13 +19,16 @@ internal sealed class TomlHalfConverter : TomlConverter<Half>
         }
 
         var raw = reader.GetDouble();
-        if (!double.IsNaN(raw) && !double.IsInfinity(raw) && Math.Abs(raw) > (double)Half.MaxValue)
+
+        // Values slightly above Half.MaxValue round to it; only values that overflow are out of range.
+        var value = (Half)raw;
+        if (Half.IsInfinity(value) && !double.IsInfinity(raw))
         {
             throw reader.CreateException($"TOML numeric value {raw} is out of range.");
         }
 
         reader.Read();
-        return (Half)raw;
+        return value;
     }
 
     public override void Write(TomlWriter writer, Half value) => writer.WriteSingleValue((float)value);

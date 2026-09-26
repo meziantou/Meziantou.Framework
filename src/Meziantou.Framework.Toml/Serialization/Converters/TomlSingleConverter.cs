@@ -19,13 +19,16 @@ internal sealed class TomlSingleConverter : TomlConverter<float>
         }
 
         var raw = reader.GetDouble();
-        if (!double.IsNaN(raw) && !double.IsInfinity(raw) && Math.Abs(raw) > float.MaxValue)
+
+        // Values slightly above float.MaxValue (such as its own round-trip text) round to it; only values that overflow are out of range.
+        var value = (float)raw;
+        if (float.IsInfinity(value) && !double.IsInfinity(raw))
         {
             throw reader.CreateException($"TOML numeric value {raw} is out of range.");
         }
 
         reader.Read();
-        return (float)raw;
+        return value;
     }
 
     public override void Write(TomlWriter writer, float value) => writer.WriteSingleValue(value);

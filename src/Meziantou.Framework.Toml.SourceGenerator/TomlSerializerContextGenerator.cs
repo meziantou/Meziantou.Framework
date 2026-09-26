@@ -48,6 +48,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor UnsupportedSerializableType = new(
+        id: "MFTOML017",
+        title: "Serializable type is not supported",
+        messageFormat: "Type '{0}' cannot be registered with [TomlSerializable] because it is {1}",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly DiagnosticDescriptor InvalidConverterType = new(
         id: "MFTOML002",
         title: "Invalid converter type",
@@ -208,14 +216,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private sealed class RootTypeModel
     {
-        public RootTypeModel(ITypeSymbol type, string? typeInfoPropertyName)
+        public RootTypeModel(ITypeSymbol type, string? typeInfoPropertyName, Location? location)
         {
             Type = type;
             TypeInfoPropertyName = typeInfoPropertyName;
+            Location = location;
         }
 
         public ITypeSymbol Type { get; }
         public string? TypeInfoPropertyName { get; }
+        public Location? Location { get; }
     }
 
     private sealed class DerivedTypeMappingModel
@@ -409,7 +419,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                roots.Add(new RootTypeModel(WithoutNullableTypeArguments(typeSymbol), GetTypeInfoPropertyNameOverride(attribute)));
+                roots.Add(new RootTypeModel(WithoutNullableTypeArguments(typeSymbol), GetTypeInfoPropertyNameOverride(attribute), attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation()));
                 continue;
             }
 
@@ -494,13 +504,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         var derivedTypeMappings = ValidateDerivedTypeMappings(context, model);
+        if (!ValidateRootTypes(context, model, derivedTypeMappings))
+        {
+            return;
+        }
+
         var expanded = ExpandTypeGraph(context, model, derivedTypeMappings);
         var ordered = expanded
             .OrderBy(static t => t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), StringComparer.Ordinal)
             .ToImmutableArray();
 
         // The generated code would not compile, so only the diagnostics are reported
-        if (!ValidateTypeAccessibility(context, model, ordered) || context.Diagnostics.Any(static diagnostic => diagnostic.Descriptor.Equals(UnserializableMemberType)))
+        if (!ValidateTypeAccessibility(context, model, ordered) || context.Diagnostics.Any(static diagnostic => IsMemberTypeError(diagnostic.Descriptor)))
         {
             return;
         }
@@ -3701,6 +3716,43 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         return true;
+    }
+
+    // The generated code would reference metadata that is not generated for these member types
+    private static bool IsMemberTypeError(DiagnosticDescriptor descriptor)
+        => descriptor.Equals(UnserializableMemberType) || descriptor.Equals(UnsupportedMemberType) || descriptor.Equals(UnsupportedDictionaryKeyType);
+
+    // A type the generated code cannot handle would produce code that does not compile
+    private static bool ValidateRootTypes(GeneratorOutput context, ContextModel model, ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings)
+    {
+        var isValid = true;
+        foreach (var root in model.RootTypes)
+        {
+            if (GetUnsupportedRootTypeReason(root.Type, model.Options, derivedTypeMappings) is { } reason)
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(UnsupportedSerializableType, root.Location ?? model.ContextSymbol.Locations.FirstOrDefault(), root.Type.ToDisplayString(), reason));
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    private static string? GetUnsupportedRootTypeReason(ITypeSymbol type, SourceGenOptions options, ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings)
+    {
+        if (GetUnserializableTypeReason(type) is { } reason)
+        {
+            return reason;
+        }
+
+        return type switch
+        {
+            INamedTypeSymbol named when named.IsUnboundGenericType || named.TypeArguments.Any(static argument => argument.TypeKind is TypeKind.TypeParameter or TypeKind.Error) => "an open generic type",
+            IArrayTypeSymbol { IsSZArray: false } => "a multi-dimensional array",
+            _ when IsSupportedMemberType(type, options, derivedTypeMappings) => null,
+            INamedTypeSymbol { TypeKind: TypeKind.Interface } or INamedTypeSymbol { IsAbstract: true } => "abstract, and has no polymorphism configuration ([TomlPolymorphic], [TomlDerivedType], or a derived type mapping)",
+            _ => "not supported by the generated code",
+        };
     }
 
     private static bool HasPolymorphismAttributes(INamedTypeSymbol type)

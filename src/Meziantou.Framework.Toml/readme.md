@@ -519,6 +519,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML014` | Error | The context type is generic. It can be nested in a generic type. |
 | `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. |
 | `MFTOML016` | Error | A member is a `ref struct`, a delegate, or a pointer, which cannot be serialized. |
+| `MFTOML017` | Error | A type registered with `[TomlSerializable]` cannot be serialized: an abstract class or an interface without polymorphism configuration, an open generic type, a multi-dimensional array, a delegate, a ref struct, or a pointer. |
 
 ## NativeAOT and trimming
 

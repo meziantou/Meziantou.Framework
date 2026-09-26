@@ -891,6 +891,14 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("MFTOML015", "public partial class Outer { private sealed class Person { public string Name { get; set; } = \"\"; } [TomlSerializable(typeof(Person[]))] internal partial class Ctx : TomlSerializerContext { } }")]
     [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public System.Action? Callback { get; set; } }")]
     [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public string Name { get; set; } = \"\"; public System.ReadOnlySpan<char> Span => System.MemoryExtensions.AsSpan(Name); }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public abstract class Root { public int X { get; set; } }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(IRoot))] internal partial class Ctx : TomlSerializerContext { } public interface IRoot { int X { get; set; } }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(D))] internal partial class Ctx : TomlSerializerContext { } public delegate void D();")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(int[,]))] internal partial class Ctx : TomlSerializerContext { }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Span<int>))] internal partial class Ctx : TomlSerializerContext { }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Collections.Generic.List<>))] internal partial class Ctx : TomlSerializerContext { }")]
+    [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public object[,] X { get; set; } = new object[0, 0]; }")]
+    [InlineData("MFTOML004", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Dictionary<int, string> X { get; set; } = new(); }")]
     public void Generator_UnsupportedContextOrType_ReportsOnlyADiagnostic(string id, string declarations)
     {
         var source = "#nullable enable\nusing Meziantou.Framework.Toml.Serialization;\n" + declarations;

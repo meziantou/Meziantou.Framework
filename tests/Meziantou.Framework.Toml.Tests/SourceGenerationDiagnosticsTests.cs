@@ -202,6 +202,71 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_WarnsForOptionsConverterFactory()
+    {
+        var source = """
+            #nullable enable
+            using System;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Factory : TomlConverterFactory
+            {
+                public override bool CanConvert(Type typeToConvert) => false;
+                public override TomlConverter CreateConverter(Type typeToConvert, TomlSerializerOptions options) => throw new NotSupportedException();
+            }
+
+            [TomlSourceGenerationOptions(Converters = new [] { typeof(Factory) })]
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person { public string Name { get; set; } = ""; }
+            """;
+
+        var diagnostics = RunGenerator(source);
+        Assert.Single(diagnostics, d => d.Id == "MFTOML012" && d.Severity == DiagnosticSeverity.Warning);
+    }
+
+    [Theory]
+    [InlineData("[TomlConverter(typeof(NotAConverter))]")]
+    [InlineData("[System.Text.Json.Serialization.JsonConverter(typeof(NotAConverter))]")]
+    [InlineData("[TomlConverter(typeof(Holder.PrivateConverter))]")]
+    public void Generator_ReportsInvalidMemberConverter(string attribute)
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class NotAConverter { }
+
+            public sealed class Holder
+            {
+                private sealed class PrivateConverter : TomlConverter<string>
+                {
+                    public override string? Read(TomlReader reader) => reader.GetString();
+                    public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value);
+                }
+
+                public static string Name => nameof(PrivateConverter);
+            }
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person
+            {
+                ATTRIBUTE
+                public string Name { get; set; } = "";
+
+                public int Age { get; set; }
+            }
+            """.Replace("ATTRIBUTE", attribute, StringComparison.Ordinal);
+
+        var diagnostics = RunGenerator(source);
+        Assert.Contains(diagnostics, d => d.Id == "MFTOML002" && d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

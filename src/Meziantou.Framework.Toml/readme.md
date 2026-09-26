@@ -257,7 +257,7 @@ public sealed class FormattedConfig
 | `[TomlRequired]` | `[JsonRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too. |
 | `[TomlConstructor]` | `[JsonConstructor]` | Selects the constructor used when reading. Parameters are matched by name to the members of the type. |
 | `[TomlExtensionData]` | `[JsonExtensionData]` | Collects unmapped keys. See [Extension data](#extension-data). |
-| `[TomlConverter]` | `[JsonConverter]` | Selects a converter for a type or member (reflection only). |
+| `[TomlConverter]` | `[JsonConverter]` | Selects a converter (or a converter factory) for a type or member. |
 | `[TomlPolymorphic]` | `[JsonPolymorphic]` | Enables polymorphism on a base type. |
 | `[TomlDerivedType]` | `[JsonDerivedType]` | Registers a derived type and its discriminator. |
 | `[TomlObjectCreationHandling]` | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
@@ -330,7 +330,7 @@ public sealed class UpperCaseStringConverter : TomlConverter<string>
 }
 ```
 
-Register it in the options, with `[TomlConverter]` (reflection only), or on a source-generated context:
+Register it in the options, with `[TomlConverter]` on a type or member, or on a source-generated context:
 
 ```csharp
 var options = new TomlSerializerOptions { Converters = [new UpperCaseStringConverter()] };
@@ -467,8 +467,10 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) are computed when building, so the naming policy
   is not called at runtime.
 - `init` and `required` members are supported.
-- `[TomlConverter]` and `[JsonConverter]` are not supported by generated metadata. Register converters with
-  `[TomlSourceGenerationOptions(Converters = [...])]` or `TomlSerializerOptions.Converters`.
+- `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The
+  converter type must be public or internal. A member with a converter is always replaced, never populated.
+- Converters of `[TomlSourceGenerationOptions(Converters = [...])]` are resolved at build time, so converter factories
+  listed there are not used (`MFTOML012`). Apply `[TomlConverter]` to the type or member instead.
 
 ### Diagnostics
 
@@ -485,6 +487,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML009` | Error | A `[TomlDerivedTypeMapping]` is invalid. |
 | `MFTOML010` | Warning | The base type of a `[TomlDerivedTypeMapping]` has no polymorphic configuration; serializer defaults are used. |
 | `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
+| `MFTOML012` | Warning | A converter factory in `[TomlSourceGenerationOptions(Converters)]` is not used by generated code. |
 
 ## NativeAOT and trimming
 

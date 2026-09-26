@@ -918,6 +918,7 @@ namespace Meziantou.Framework.Toml.Serialization
         protected static void ApplyPropertyMetadata(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.Model.TomlPropertyMetadata metadata) { }
         protected static Meziantou.Framework.Toml.TomlTypeInfo<TEnum> CreateStringEnumTypeInfo<TEnum>(Meziantou.Framework.Toml.TomlSerializerOptions options) where TEnum : struct, System.Enum => throw null;
         protected static Meziantou.Framework.Toml.TomlTypeInfo<T> CreateConverterTypeInfo<T>(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.Serialization.TomlConverter<T> converter) => throw null;
+        protected static Meziantou.Framework.Toml.TomlTypeInfo<T> CreateAttributeConverterTypeInfo<T>(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.Serialization.TomlConverter converter) => throw null;
         protected static bool CanPopulateSingleOrArrayCollection<T>(object existingValue) => throw null;
         protected static object AddSingleElementToSingleOrArrayCollection<T>(object existingValue, T element) => throw null;
         protected static object AddCollectionToSingleOrArrayCollection<T>(object existingValue, System.Collections.Generic.IEnumerable<T> incomingCollection) => throw null;

@@ -4,8 +4,127 @@ using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 
+#pragma warning disable MA0048 // File name must match type name
+internal sealed class GeneratedUppercaseConverter : TomlConverter<string>
+{
+    public override string? Read(TomlReader reader)
+    {
+        var value = reader.GetString();
+        reader.Read();
+        return value.ToUpperInvariant();
+    }
+
+    public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
+}
+
+[TomlConverter(typeof(GeneratedHexConverter))]
+internal sealed class GeneratedHexValue
+{
+    public int Value { get; init; }
+}
+
+internal sealed class GeneratedHexConverter : TomlConverter<GeneratedHexValue>
+{
+    public override GeneratedHexValue? Read(TomlReader reader)
+    {
+        var value = int.Parse(reader.GetString(), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
+        reader.Read();
+        return new GeneratedHexValue { Value = value };
+    }
+
+    public override void Write(TomlWriter writer, GeneratedHexValue value) => writer.WriteStringValue(value.Value.ToString("x", System.Globalization.CultureInfo.InvariantCulture));
+}
+
+internal enum GeneratedColor
+{
+    Red,
+    Green,
+}
+
+internal sealed class GeneratedColorNameConverter : TomlConverter<GeneratedColor>
+{
+    public override GeneratedColor Read(TomlReader reader)
+    {
+        var value = Enum.Parse<GeneratedColor>(reader.GetString());
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, GeneratedColor value) => writer.WriteStringValue(value.ToString());
+}
+
+internal sealed class GeneratedColorConverterFactory : TomlConverterFactory
+{
+    public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(GeneratedColor);
+
+    public override TomlConverter CreateConverter(Type typeToConvert, TomlSerializerOptions options) => new GeneratedColorNameConverter();
+}
+
+internal sealed class GeneratedConverterModel
+{
+    [TomlConverter(typeof(GeneratedUppercaseConverter))]
+    public string Name { get; set; } = "";
+
+    public GeneratedHexValue Hex { get; set; } = new();
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public GeneratedColor Color { get; set; }
+}
+
+internal sealed record GeneratedConverterRecord([property: TomlConverter(typeof(GeneratedUppercaseConverter))] string Name);
+
+internal sealed class GeneratedFactoryModel
+{
+    [TomlConverter(typeof(GeneratedColorConverterFactory))]
+    public GeneratedColor Color { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedConverterModel))]
+[TomlSerializable(typeof(GeneratedConverterRecord))]
+[TomlSerializable(typeof(GeneratedFactoryModel))]
+internal sealed partial class GeneratedConverterContext : TomlSerializerContext;
+#pragma warning restore MA0048
+
 public sealed class NewApiConverterAttributeTests
 {
+    [Fact]
+    public void SourceGenerated_ConverterAttributes_MatchReflection()
+    {
+        var model = new GeneratedConverterModel { Name = "abc", Hex = new GeneratedHexValue { Value = 0x5c }, Color = GeneratedColor.Green };
+
+        var reflection = TomlSerializer.Serialize(model);
+        var generated = TomlSerializer.Serialize(model, GeneratedConverterContext.Default.GeneratedConverterModel);
+
+        Assert.Equal("Name = \"ABC\"\nHex = \"5c\"\nColor = \"Green\"\n", reflection);
+        Assert.Equal(reflection, generated);
+
+        var roundtrip = TomlSerializer.Deserialize("Name = \"xyz\"\nHex = \"7c\"\nColor = \"Green\"\n", GeneratedConverterContext.Default.GeneratedConverterModel)!;
+        Assert.Equal("XYZ", roundtrip.Name);
+        Assert.Equal(0x7c, roundtrip.Hex.Value);
+        Assert.Equal(GeneratedColor.Green, roundtrip.Color);
+    }
+
+    [Fact]
+    public void SourceGenerated_ConstructorParameter_UsesLinkedMemberConverter()
+    {
+        var value = TomlSerializer.Deserialize("Name = \"abc\"\n", GeneratedConverterContext.Default.GeneratedConverterRecord);
+
+        Assert.Equal("ABC", value?.Name);
+        Assert.Equal(value, TomlSerializer.Deserialize<GeneratedConverterRecord>("Name = \"abc\"\n"));
+    }
+
+    [Fact]
+    public void SourceGenerated_MemberConverterFactory_IsUsed()
+    {
+        var typeInfo = GeneratedConverterContext.Default.GeneratedFactoryModel;
+
+        var toml = TomlSerializer.Serialize(new GeneratedFactoryModel { Color = GeneratedColor.Green }, typeInfo);
+
+        Assert.Equal("Color = \"Green\"\n", toml);
+        Assert.Equal(toml, TomlSerializer.Serialize(new GeneratedFactoryModel { Color = GeneratedColor.Green }));
+        Assert.Equal(GeneratedColor.Green, TomlSerializer.Deserialize(toml, typeInfo)?.Color);
+    }
+
     private sealed class UppercaseStringConverter : TomlConverter<string>
     {
         public override string? Read(TomlReader reader)

@@ -653,9 +653,12 @@ internal sealed partial class TestTomlSerializerContextWithOptions : TomlSeriali
 {
 }
 
+// The generated code resolves converters at build time, so it never calls the factory (MFTOML012)
+#pragma warning disable MFTOML012
 [TomlSourceGenerationOptions(Converters = [typeof(ThrowingGeneratedConverterFactory), typeof(GeneratedConvertedScalarConverter)])]
 [TomlSerializable(typeof(GeneratedConvertedScalarHolder))]
 internal sealed partial class TestTomlSerializerContextWithConverter : TomlSerializerContext
+#pragma warning restore MFTOML012
 {
 }
 

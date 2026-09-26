@@ -245,34 +245,45 @@ internal static class TomlTypeInfoResolverPipeline
             throw new TomlException($"Failed to create converter '{converterType.FullName}'.", ex);
         }
 
+        return ResolveAttributeConverter(converter, typeToConvert, options);
+    }
+
+    // Returns the converter to use for a converter declared with an attribute, creating it when it is a factory
+    internal static TomlConverter ResolveAttributeConverter(TomlConverter converter, Type typeToConvert, TomlSerializerOptions options)
+    {
         if (converter is TomlConverterFactory factory)
         {
-            var created = factory.CreateConverter(typeToConvert, options);
-            if (created is null)
-            {
-                throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned null.");
-            }
-
-            if (created is TomlConverterFactory)
-            {
-                throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
-            }
-
-            if (!created.CanConvert(typeToConvert))
-            {
-                throw new TomlException(
-                    $"The converter factory '{factory.GetType().FullName}' returned a converter that cannot convert '{typeToConvert.FullName}'.");
-            }
-
-            converter = created;
+            return CreateConverterFromFactory(factory, typeToConvert, options);
         }
 
         if (!converter.CanConvert(typeToConvert))
         {
-            throw new TomlException($"Converter '{converterType.FullName}' cannot convert '{typeToConvert.FullName}'.");
+            throw new TomlException($"Converter '{converter.GetType().FullName}' cannot convert '{typeToConvert.FullName}'.");
         }
 
         return converter;
+    }
+
+    private static TomlConverter CreateConverterFromFactory(TomlConverterFactory factory, Type typeToConvert, TomlSerializerOptions options)
+    {
+        var created = factory.CreateConverter(typeToConvert, options);
+        if (created is null)
+        {
+            throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned null.");
+        }
+
+        if (created is TomlConverterFactory)
+        {
+            throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
+        }
+
+        if (!created.CanConvert(typeToConvert))
+        {
+            throw new TomlException(
+                $"The converter factory '{factory.GetType().FullName}' returned a converter that cannot convert '{typeToConvert.FullName}'.");
+        }
+
+        return created;
     }
 
     internal static TomlTypeInfo? TryResolveFromConverters(TomlSerializerOptions options, Type type)
@@ -301,24 +312,7 @@ internal static class TomlTypeInfoResolverPipeline
 
             if (converter is TomlConverterFactory factory)
             {
-                var created = factory.CreateConverter(type, options);
-                if (created is null)
-                {
-                    throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned null.");
-                }
-
-                if (created is TomlConverterFactory)
-                {
-                    throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
-                }
-
-                if (!created.CanConvert(type))
-                {
-                    throw new TomlException(
-                        $"The converter factory '{factory.GetType().FullName}' returned a converter that cannot convert '{type.FullName}'.");
-                }
-
-                converter = created;
+                converter = CreateConverterFromFactory(factory, type, options);
             }
 
             return new ConverterTomlTypeInfo(type, options, converter);

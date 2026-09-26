@@ -275,4 +275,34 @@ public sealed class TestPipeTable
         Assert.Contains("<table", html);
         Assert.Contains("<td>B</td>", html);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShortRowsAreNotCompletedBeyondTheCellBudget(bool useHeaderForColumnCount)
+    {
+        const int Count = 2000;
+        var markdown = string.Concat(Enumerable.Repeat("a|", Count)) + "\n" + string.Concat(Enumerable.Repeat("-|", Count)) + "\n" + string.Concat(Enumerable.Repeat("a|\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseHeaderForColumnCount = useHeaderForColumnCount }).Build();
+
+        var table = Assert.Single(MarkdownConverter.Parse(markdown, pipeline).Descendants<Table>());
+
+        Assert.HasCount(Count + 1, table);
+        Assert.HasCount(Count, (TableRow)table[0]);
+        Assert.HasCount(1, (TableRow)table[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShortRowsAreCompletedWithinTheCellBudget(bool useHeaderForColumnCount)
+    {
+        const int Count = 500;
+        var markdown = string.Concat(Enumerable.Repeat("a|", Count)) + "\n" + string.Concat(Enumerable.Repeat("-|", Count)) + "\n" + string.Concat(Enumerable.Repeat("a|\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseHeaderForColumnCount = useHeaderForColumnCount }).Build();
+
+        var table = Assert.Single(MarkdownConverter.Parse(markdown, pipeline).Descendants<Table>());
+
+        Assert.All(table, row => Assert.HasCount(Count, (TableRow)row));
+    }
 }

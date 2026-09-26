@@ -73,9 +73,16 @@ public class Table : ContainerBlock
         return true;
     }
 
+    // Same bound as cmark-gfm on the number of empty cells added to short rows. Without it, a row with many columns
+    // followed by many short rows makes the table, and the HTML, grow quadratically with the size of the Markdown.
+    internal const int MaximumAutocompletedCells = 0x80000;
+
     /// <summary>
     /// Normalizes the number of columns of this table by taking the maximum columns and appending empty cells.
     /// </summary>
+    /// <remarks>
+    /// Rows are left unchanged when more than 524,288 empty cells would be needed.
+    /// </remarks>
     public void NormalizeUsingMaxWidth()
     {
         var maxColumn = 0;
@@ -85,6 +92,11 @@ public class Table : ContainerBlock
             {
                 maxColumn = row.Count;
             }
+        }
+
+        if (GetMissingCellCount(maxColumn) > MaximumAutocompletedCells)
+        {
+            return;
         }
 
         for (int i = 0; i < this.Count; i++)
@@ -99,10 +111,27 @@ public class Table : ContainerBlock
         }
     }
 
+    private long GetMissingCellCount(int columnCount)
+    {
+        long count = 0;
+        for (int i = 0; i < this.Count; i++)
+        {
+            if (this[i] is TableRow row && row.Count < columnCount)
+            {
+                count += columnCount - row.Count;
+            }
+        }
+
+        return count;
+    }
+
     /// <summary>
     /// Normalizes the number of columns of this table by taking the amount of columns defined in the header
     /// and appending empty cells or removing extra cells as needed.
     /// </summary>
+    /// <remarks>
+    /// Short rows are not completed when more than 524,288 empty cells would be needed.
+    /// </remarks>
     public void NormalizeUsingHeaderRow()
     {
         if (this.Count == 0)
@@ -118,11 +147,12 @@ public class Table : ContainerBlock
             maxColumn = headerRow.Count;
         }
 
+        var completeShortRows = GetMissingCellCount(maxColumn) <= MaximumAutocompletedCells;
         for (int i = 0; i < this.Count; i++)
         {
             if (this[i] is TableRow row)
             {
-                for (int j = row.Count; j < maxColumn; j++)
+                for (int j = row.Count; completeShortRows && j < maxColumn; j++)
                 {
                     row.Add(new TableCell());
                 }

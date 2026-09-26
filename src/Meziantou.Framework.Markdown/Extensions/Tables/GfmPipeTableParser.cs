@@ -283,7 +283,7 @@ internal sealed class GfmPipeTableParser : BlockParser
             // Tables, unlike paragraphs, cannot lazily continue a quote/list.
             if (pending.MatchedLine != processor.LineIndex) return BlockState.None;
             // Match cmark-gfm's bound on amplification from padding short rows.
-            if (pending.AutocompletedCells > 0x80000) return BlockState.None;
+            if (pending.AutocompletedCells > Table.MaximumAutocompletedCells) return BlockState.None;
             var line = new StringLine(processor.Line, processor.LineIndex, processor.Column, processor.Line.Start, processor.Line.NewLine);
             var cells = SplitRow(line.Slice);
             if (cells.Count == 0) return BlockState.None;

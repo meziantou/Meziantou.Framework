@@ -346,6 +346,81 @@ public sealed class MaxDepthTests
     }
 
     // The default stack of a thread differs between platforms, so the tests choose one
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SyntaxNode_Descendants_KeepsTheOrderOfARecursiveWalk(bool includeTokens)
+    {
+        var doc = SyntaxParser.Parse("# c\na = 1 # t\n[t] # h\nb = [1, {c = 2}] \n[[u]]\nd.e = 'x'\n");
+
+        Assert.Equal(RecursiveDescendants(doc, includeTokens), doc.Descendants(includeTokens));
+        Assert.Equal(RecursiveDescendants(doc.Tables.GetChild(0)!, includeTokens), doc.Tables.GetChild(0)!.Descendants(includeTokens));
+        Assert.Equal(RecursiveDescendants(doc.Tables, includeTokens), doc.Tables.Descendants(includeTokens));
+
+        static List<SyntaxNodeBase> RecursiveDescendants(SyntaxNode node, bool include)
+        {
+            var result = new List<SyntaxNodeBase>();
+            Visit(node, isChildList: false);
+            return result;
+
+            void Visit(SyntaxNode current, bool isChildList)
+            {
+                if (!include && current is SyntaxToken)
+                {
+                    return;
+                }
+
+                if (!isChildList && include && current.LeadingTrivia is not null)
+                {
+                    result.AddRange(current.LeadingTrivia);
+                }
+
+                for (var i = 0; i < current.ChildrenCount; i++)
+                {
+                    if (current.GetChild(i) is { } child)
+                    {
+                        Visit(child, child is SyntaxList);
+                    }
+                }
+
+                if (isChildList)
+                {
+                    return;
+                }
+
+                result.Add(current);
+                if (include && current.TrailingTrivia is not null)
+                {
+                    result.AddRange(current.TrailingTrivia);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void SyntaxNode_DescendantsAndTokens_OfADeepTree_DoNotOverflowTheStack()
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var descendants = 0;
+        var tokens = 0;
+        DocumentSyntax? doc = null;
+
+        // The parser needs a large stack for such a tree, the enumeration does not
+        var parser = new Thread(() => doc = SyntaxParser.Parse(CreateNestedArrayToml(30_000), options), maxStackSize: 256 * 1024 * 1024);
+        parser.Start();
+        parser.Join();
+        Assert.False(doc!.HasErrors, doc.Diagnostics.ToString());
+
+        Assert.Null(RunWithSmallStack(() =>
+        {
+            descendants = doc.Descendants().Count();
+            tokens = doc.Tokens().Count();
+        }));
+
+        Assert.True(descendants > 30_000, $"{descendants} descendants");
+        Assert.True(tokens > 60_000, $"{tokens} tokens");
+    }
+
     // A regression would loop forever, so the serialization runs on a thread the test does not wait for indefinitely
     [Theory]
     [InlineData(0, false)]

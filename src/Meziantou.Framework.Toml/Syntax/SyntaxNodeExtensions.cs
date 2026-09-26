@@ -37,53 +37,63 @@ public static class SyntaxNodeExtensions
     /// <returns>All descendants in Depth-First-Search order of the node.</returns>
     public static IEnumerable<SyntaxNodeBase> Descendants(this SyntaxNode node, bool includeTokensCommentsAndWhitespaces = false)
     {
-        if (!includeTokensCommentsAndWhitespaces && node is SyntaxToken) yield break;
+        ArgumentNullException.ThrowIfNull(node);
+        return EnumerateDescendants(node, includeTokensCommentsAndWhitespaces);
+    }
 
-        if (includeTokensCommentsAndWhitespaces && node.LeadingTrivia is not null)
+    // A loop rather than nested iterators: the tree of a deeply nested document can be deeper than the stack allows, and
+    // nested iterators would yield every node through all its ancestors. The syntax lists of the children are not returned,
+    // only their items.
+    private static IEnumerable<SyntaxNodeBase> EnumerateDescendants(SyntaxNode root, bool includeTokensCommentsAndWhitespaces)
+    {
+        var pending = new Stack<(SyntaxNode Node, int NextChild)>();
+        pending.Push((root, -1));
+        while (pending.Count > 0)
         {
-            foreach (var syntaxTrivia in node.LeadingTrivia)
+            var (node, nextChild) = pending.Pop();
+            var isChildList = node is SyntaxList && !ReferenceEquals(node, root);
+            if (nextChild < 0)
             {
-                yield return syntaxTrivia;
-            }
-        }
-
-        var childrenCount = node.ChildrenCount;
-        for (int i = 0; i < childrenCount; i++)
-        {
-            var child = node.GetChild(i);
-
-            // Skip syntax list
-            if (child is SyntaxList list)
-            {
-                var subChildrenCount = list.ChildrenCount;
-                for (int j = 0; j < subChildrenCount; j++)
+                if (!includeTokensCommentsAndWhitespaces && node is SyntaxToken)
                 {
-                    var subChild = list.GetChild(j);
-                    if (subChild is not null)
+                    continue;
+                }
+
+                if (!isChildList && includeTokensCommentsAndWhitespaces && node.LeadingTrivia is not null)
+                {
+                    foreach (var syntaxTrivia in node.LeadingTrivia)
                     {
-                        foreach (var sub in Descendants(subChild, includeTokensCommentsAndWhitespaces))
-                        {
-                            yield return sub;
-                        }
+                        yield return syntaxTrivia;
                     }
                 }
+
+                nextChild = 0;
             }
-            else if (child is not null)
+
+            if (nextChild < node.ChildrenCount)
             {
-                foreach (var sub in Descendants(child, includeTokensCommentsAndWhitespaces))
+                pending.Push((node, nextChild + 1));
+                if (node.GetChild(nextChild) is { } child)
                 {
-                    yield return sub;
+                    pending.Push((child, -1));
                 }
+
+                continue;
             }
-        }
 
-        yield return node;
-
-        if (includeTokensCommentsAndWhitespaces && node.TrailingTrivia is not null)
-        {
-            foreach (var syntaxTrivia in node.TrailingTrivia)
+            if (isChildList)
             {
-                yield return syntaxTrivia;
+                continue;
+            }
+
+            yield return node;
+
+            if (includeTokensCommentsAndWhitespaces && node.TrailingTrivia is not null)
+            {
+                foreach (var syntaxTrivia in node.TrailingTrivia)
+                {
+                    yield return syntaxTrivia;
+                }
             }
         }
     }

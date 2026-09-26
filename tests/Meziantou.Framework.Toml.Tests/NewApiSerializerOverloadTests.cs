@@ -125,6 +125,27 @@ public sealed class NewApiSerializerOverloadTests
         Assert.Equal(37, roundtrip.Age);
     }
 
+    [Theory]
+    [InlineData("name = \"Ada\"\nage = 37\n", true)]
+    [InlineData("name = \"Ada\"\nage = \"not-a-number\"\n", false)]
+    public void TryDeserialize_WithTypeInfo_ReportsSuccess(string toml, bool expected)
+    {
+        var typeInfo = TestTomlSerializerContext.Default.GeneratedPerson;
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(toml));
+        using var genericStream = new MemoryStream(Encoding.UTF8.GetBytes(toml));
+
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(toml, typeInfo, out var fromString));
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(new StringReader(toml), typeInfo, out var fromReader));
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(genericStream, typeInfo, out var fromStream));
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(toml, (TomlTypeInfo)typeInfo, out var untypedFromString));
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(new StringReader(toml), (TomlTypeInfo)typeInfo, out var untypedFromReader));
+        Assert.Equal(expected, TomlSerializer.TryDeserialize(stream, (TomlTypeInfo)typeInfo, out var untypedFromStream));
+        foreach (var value in new object?[] { fromString, fromReader, fromStream, untypedFromString, untypedFromReader, untypedFromStream })
+        {
+            Assert.Equal(expected ? 37 : null, (value as GeneratedPerson)?.Age);
+        }
+    }
+
     [Fact]
     public void TryDeserialize_String_WithContext_ReturnsFalseOnFailure()
     {

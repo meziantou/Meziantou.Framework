@@ -954,6 +954,120 @@ public static class TomlSerializer
     }
 
     /// <summary>
+    /// Attempts to deserialize a TOML payload from text using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize<T>(string toml, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
+    {
+        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(toml, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a TOML payload from text using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize(string toml, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
+    {
+        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(toml, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = null;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a TOML payload from a text reader using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize<T>(TextReader reader, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(reader, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a TOML payload from a text reader using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize(TextReader reader, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(reader, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = null;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a TOML payload from a stream using UTF-8 encoding using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize<T>(Stream stream, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(stream, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to deserialize a TOML payload from a stream using UTF-8 encoding using explicit metadata.
+    /// </summary>
+    public static bool TryDeserialize(Stream stream, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        try
+        {
+            value = Deserialize(stream, typeInfo)!;
+            return true;
+        }
+        catch (TomlException)
+        {
+            value = null;
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Deserializes a TOML payload from text using explicit metadata.
     /// </summary>
     public static object? Deserialize(string toml, TomlTypeInfo typeInfo)

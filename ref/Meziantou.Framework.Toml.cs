@@ -289,6 +289,12 @@ namespace Meziantou.Framework.Toml
         public static bool TryDeserialize(System.IO.Stream stream, System.Type returnType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
         public static bool TryDeserialize(System.IO.Stream stream, System.Type returnType, Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
+        public static bool TryDeserialize<T>(string toml, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize(string toml, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
+        public static bool TryDeserialize<T>(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo<T> typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out T value) => throw null;
+        public static bool TryDeserialize(System.IO.Stream stream, Meziantou.Framework.Toml.TomlTypeInfo typeInfo, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out object? value) => throw null;
         public static object? Deserialize(string toml, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) => throw null;
         public static void Serialize(System.IO.TextWriter writer, object? value, Meziantou.Framework.Toml.TomlTypeInfo typeInfo) { }
     }

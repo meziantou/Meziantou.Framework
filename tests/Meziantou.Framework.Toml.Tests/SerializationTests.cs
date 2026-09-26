@@ -140,6 +140,29 @@ public class SerializationTests
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new CollidingDottedMember(), options));
     }
 
+    private sealed class UnsupportedCollectionHolder<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    [Fact]
+    public void CollectionWithoutCollectionMetadata_IsRejectedInsteadOfBeingWrittenAsAnObject()
+    {
+        AssertRejected(new System.Collections.Generic.Queue<int>([1, 2]));
+        AssertRejected(new System.Collections.Generic.Stack<int>([1, 2]));
+        AssertRejected(new System.Collections.Concurrent.ConcurrentQueue<int>([1, 2]));
+        AssertRejected(System.Collections.Immutable.ImmutableQueue.Create(1, 2));
+
+        static void AssertRejected<T>(T value)
+        {
+            var serialize = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new UnsupportedCollectionHolder<T> { Value = value }));
+            var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<UnsupportedCollectionHolder<T>>("Value = [1, 2]\n"));
+
+            Assert.Contains($"The collection type '{typeof(T).FullName}' is not supported", serialize.Message);
+            Assert.Contains($"The collection type '{typeof(T).FullName}' is not supported", deserialize.Message);
+        }
+    }
+
     [Fact]
     public void Serialize_DottedKeyWithAnEmptySegment_IsWrittenLiterallyWithoutAnEmptyTable()
     {

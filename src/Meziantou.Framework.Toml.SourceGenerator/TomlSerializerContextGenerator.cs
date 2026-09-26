@@ -4110,6 +4110,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return IsSupportedMemberType(dictValueType, options, derivedTypeMappings);
         }
 
+        // A collection without collection metadata, such as Queue<T>, would be written as an object and read back empty
+        if (type.SpecialType != SpecialType.System_String && (type.SpecialType == SpecialType.System_Collections_IEnumerable || type.AllInterfaces.Any(static i => i.SpecialType == SpecialType.System_Collections_IEnumerable)))
+        {
+            return false;
+        }
+
         if (type is INamedTypeSymbol named)
         {
             if (named.TypeKind == TypeKind.Struct)

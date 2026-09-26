@@ -359,6 +359,13 @@ internal static class TomlTypeInfoResolverPipeline
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     private static TomlTypeInfo ResolveFromReflection(TomlSerializerOptions options, Type type)
     {
+        // A collection the built-in metadata does not handle, such as Queue<T>, would be written as an object with its Count
+        // and Capacity properties, and read back empty
+        if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
+        {
+            throw new TomlException($"The collection type '{type.FullName}' is not supported. Use an array, a list, a set, or a dictionary with string keys, or register a converter for it.");
+        }
+
         var typeInfo = TomlReflectionTypeInfoResolver.TryCreateTypeInfo(type, options);
         if (typeInfo is not null)
         {

@@ -931,6 +931,9 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Span<int>))] internal partial class Ctx : TomlSerializerContext { }")]
     [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Collections.Generic.List<>))] internal partial class Ctx : TomlSerializerContext { }")]
     [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public object[,] X { get; set; } = new object[0, 0]; }")]
+    [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Queue<int> X { get; set; } = new(); }")]
+    [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Concurrent.ConcurrentQueue<int> X { get; set; } = new(); }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Collections.Generic.Stack<int>))] internal partial class Ctx : TomlSerializerContext { }")]
     [InlineData("MFTOML004", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Dictionary<int, string> X { get; set; } = new(); }")]
     public void Generator_UnsupportedContextOrType_ReportsOnlyADiagnostic(string id, string declarations)
     {

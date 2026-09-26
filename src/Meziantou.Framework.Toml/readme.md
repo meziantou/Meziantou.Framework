@@ -114,7 +114,7 @@ The metadata used to map objects comes from one of two sources:
 | Text | `char`, `string` |
 | Date/time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TomlDateTime` |
 | Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums |
-| Collections | `T[]`, `List<T>`, `IList<T>`, `IReadOnlyList<T>`, `HashSet<T>`, `SortedSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableHashSet<T>` |
+| Collections | `T[]`, `List<T>`, `IList<T>`, `IReadOnlyList<T>`, `HashSet<T>`, `SortedSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableHashSet<T>`. Other collections, such as `Queue<T>` or `ConcurrentBag<T>`, are rejected (`TomlException`, or `MFTOML003` in generated code): use a converter. |
 | Dictionaries | `Dictionary<string, T>`, `IDictionary<string, T>`, `IReadOnlyDictionary<string, T>`, `SortedDictionary<string, T>`. `ImmutableDictionary<string, T>` can be written but not read. |
 | Document Object Model | `TomlTable`, `TomlArray`, `TomlTableArray`, `TomlObject`, `object` |
 | Objects | Classes, records, and structs, with property setters or constructor parameters |

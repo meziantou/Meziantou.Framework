@@ -1511,6 +1511,8 @@ public sealed class GeneratedManyErrorsRoot
     public IList<GeneratedManyErrorsItem>? L { get; set; }
 
     public IList<GeneratedManyErrorsRecord>? R { get; set; }
+
+    public IList<GeneratedSeveralRequired>? Q { get; set; }
 }
 
 [TomlSerializable(typeof(GeneratedManyErrorsRoot))]
@@ -3439,8 +3441,30 @@ public class NewApiSourceGenerationTests
             : Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedManyErrorsRoot>(toml));
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
-        Assert.Equal(2100, exception.Diagnostics.Count);
-        Assert.True(allocated < 1_000_000_000, $"Allocated {allocated} bytes");
+        Assert.Equal(Meziantou.Framework.Toml.Serialization.Internal.TomlSerializationOperationState.MaxRecordedDiagnostics + 1, exception.Diagnostics.Count);
+        Assert.True(allocated < 500_000_000, $"Allocated {allocated} bytes");
+    }
+
+    // Every element reports each of its missing required keys: the recorded errors must stay bounded
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_ManyMissingRequiredKeys_StopsAfterTheMaximumCount(bool generated)
+    {
+        var toml = "Q = [" + string.Concat(Enumerable.Repeat("{},", 50_000)) + "]\n";
+        var typeInfo = generated ? (TomlTypeInfo)TestTomlSerializerContextManyErrors.Default.GeneratedManyErrorsRoot : TomlSerializerOptions.Default.GetTypeInfo<GeneratedManyErrorsRoot>();
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+        var deserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        before = GC.GetAllocatedBytesForCurrentThread();
+        Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+        var tryDeserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(Meziantou.Framework.Toml.Serialization.Internal.TomlSerializationOperationState.MaxRecordedDiagnostics + 1, exception.Diagnostics.Count);
+        Assert.True(deserializeAllocated < 100_000_000, $"Deserialize allocated {deserializeAllocated} bytes");
+        Assert.True(tryDeserializeAllocated < deserializeAllocated / 2, $"TryDeserialize allocated {tryDeserializeAllocated} bytes");
     }
 
     [Fact]

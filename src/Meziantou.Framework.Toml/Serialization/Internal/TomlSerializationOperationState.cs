@@ -40,6 +40,10 @@ internal sealed class TomlSerializationOperationState
 
     public int DiagnosticCount => Diagnostics?.Count ?? 0;
 
+    // A value error can be as short as a few characters, and a table can report every missing required key: past this
+    // count, the next error stops the reading, so the work and memory stay bounded
+    internal const int MaxRecordedDiagnostics = 1000;
+
     public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
 
     // The error of the value that started at valueStart, which was read completely
@@ -74,6 +78,7 @@ internal sealed class TomlSerializationOperationState
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
         return RecoversValueErrors &&
+            DiagnosticCount < MaxRecordedDiagnostics &&
             !ReferenceEquals(exception.Diagnostics, Diagnostics) &&
             (exception.Diagnostics.Count > 0 || exception.Span.HasValue);
     }

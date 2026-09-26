@@ -723,7 +723,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(toml, nameof(toml));
         try
         {
-            value = Deserialize<T>(toml, options);
+            value = (T?)DeserializeToFirstError(toml, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -744,7 +744,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
         try
         {
-            value = Deserialize(toml, returnType, options);
+            value = DeserializeToFirstError(toml, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -763,7 +763,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize<T>(toml, context);
+            value = (T?)DeserializeToFirstError(toml, ResolveTypeInfo(context, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -783,7 +783,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize(toml, returnType, context);
+            value = DeserializeToFirstError(toml, ResolveTypeInfo(context, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -803,7 +803,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
         try
         {
-            value = Deserialize<T>(reader, options);
+            value = (T?)DeserializeToFirstError(reader, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -824,7 +824,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
         try
         {
-            value = Deserialize(reader, returnType, options);
+            value = DeserializeToFirstError(reader, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -843,7 +843,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize<T>(reader, context);
+            value = (T?)DeserializeToFirstError(reader, ResolveTypeInfo(context, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -863,7 +863,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize(reader, returnType, context);
+            value = DeserializeToFirstError(reader, ResolveTypeInfo(context, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -883,7 +883,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(stream, nameof(stream));
         try
         {
-            value = Deserialize<T>(stream, options);
+            value = (T?)DeserializeToFirstError(stream, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -904,7 +904,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
         try
         {
-            value = Deserialize(stream, returnType, options);
+            value = DeserializeToFirstError(stream, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -923,7 +923,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize<T>(stream, context);
+            value = (T?)DeserializeToFirstError(stream, ResolveTypeInfo(context, typeof(T)));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -943,7 +943,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         try
         {
-            value = Deserialize(stream, returnType, context);
+            value = DeserializeToFirstError(stream, ResolveTypeInfo(context, returnType));
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -962,7 +962,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(toml, typeInfo);
+            value = (T?)DeserializeToFirstError(toml, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -981,7 +981,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(toml, typeInfo);
+            value = DeserializeToFirstError(toml, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -1000,7 +1000,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(reader, typeInfo);
+            value = (T?)DeserializeToFirstError(reader, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -1019,7 +1019,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(reader, typeInfo);
+            value = DeserializeToFirstError(reader, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -1038,7 +1038,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(stream, typeInfo);
+            value = (T?)DeserializeToFirstError(stream, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -1057,7 +1057,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
         try
         {
-            value = Deserialize(stream, typeInfo);
+            value = DeserializeToFirstError(stream, typeInfo);
             return value is not null;
         }
         catch (TomlException ex) when (!ex.IsConfigurationError)
@@ -1081,10 +1081,24 @@ public static class TomlSerializer
         return DeserializeCore(reader, typeInfo);
     }
 
-    private static object? DeserializeCore(TomlReader reader, TomlTypeInfo typeInfo)
+    // TryDeserialize discards the errors, so it stops at the first one instead of recording the errors of the whole document
+    private static object? DeserializeToFirstError(string toml, TomlTypeInfo typeInfo)
+    {
+        ThrowIfInputTooLong(toml.Length, typeInfo.Options, "characters");
+
+        var operationState = new TomlSerializationOperationState(typeInfo.Options);
+        var reader = TomlReader.Create(toml, typeInfo.Options, operationState);
+        return DeserializeCore(reader, typeInfo, recoverValueErrors: false);
+    }
+
+    private static object? DeserializeToFirstError(TextReader reader, TomlTypeInfo typeInfo) => DeserializeToFirstError(ReadText(reader, typeInfo.Options), typeInfo);
+
+    private static object? DeserializeToFirstError(Stream stream, TomlTypeInfo typeInfo) => DeserializeToFirstError(ReadStream(stream, typeInfo.Options), typeInfo);
+
+    private static object? DeserializeCore(TomlReader reader, TomlTypeInfo typeInfo, bool recoverValueErrors = true)
     {
         // The errors of the values are recorded and reported together at the end
-        reader.OperationState.RecoversValueErrors = true;
+        reader.OperationState.RecoversValueErrors = recoverValueErrors;
         object? value;
         try
         {

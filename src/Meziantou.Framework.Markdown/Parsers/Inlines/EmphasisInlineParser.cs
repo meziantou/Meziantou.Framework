@@ -19,8 +19,8 @@ namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 /// <seealso cref="IPostInlineProcessor" />
 public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 {
-    private CharacterMap<EmphasisDescriptor>? emphasisMap;
-    private readonly DelimitersObjectCache inlinesCache = new();
+    private CharacterMap<EmphasisDescriptor>? _emphasisMap;
+    private readonly DelimitersObjectCache _inlinesCache = new();
     /// <summary>
     /// Represents the EmphasisInline type.
     /// </summary>
@@ -47,7 +47,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
     /// Gets or toggles whether the emphasis parser should be CJK-friendly.
     /// </summary>
     /// <seealso href="https://github.com/tats-u/markdown-cjk-friendly"/>
-    public bool CjkFriendlyEmphasis { get; set; } = false;
+    public bool CjkFriendlyEmphasis { get; set; }
 
     /// <summary>
     /// Determines whether this parser is using the specified character as an emphasis delimiter.
@@ -93,7 +93,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
             tempMap.Add(new KeyValuePair<char, EmphasisDescriptor>(emphasis.Character, emphasis));
         }
 
-        emphasisMap = new CharacterMap<EmphasisDescriptor>(tempMap);
+        _emphasisMap = new CharacterMap<EmphasisDescriptor>(tempMap);
     }
 
     /// <summary>
@@ -106,12 +106,12 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
             return true;
         }
 
-        ContainerInline container = Unsafe.As<ContainerInline>(root);
+        ContainerInline container = unsafe(Unsafe.As<ContainerInline>(root));
 
         List<EmphasisDelimiterInline>? delimiters = null;
         if (container is EmphasisDelimiterInline emphasisDelimiter)
         {
-            delimiters = inlinesCache.Get();
+            delimiters = _inlinesCache.Get();
             delimiters.Add(emphasisDelimiter);
         }
 
@@ -130,7 +130,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                 // If we have a delimiter, we search into it as we should have a tree of EmphasisDelimiterInline
                 if (delimiterInline is EmphasisDelimiterInline delimiter)
                 {
-                    delimiters ??= inlinesCache.Get();
+                    delimiters ??= _inlinesCache.Get();
                     delimiters.Add(delimiter);
                 }
 
@@ -148,8 +148,8 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 
         if (delimiters != null)
         {
-            ProcessEmphasis(state, delimiters);
-            inlinesCache.Release(delimiters);
+            ProcessEmphasis(delimiters);
+            _inlinesCache.Release(delimiters);
         }
         return true;
     }
@@ -164,7 +164,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         // The amount of delimiter characters in the delimiter run may exceed emphasisDesc.MaximumCount, as that is handeled in `ProcessEmphasis`
 
         var delimiterChar = slice.CurrentChar;
-        var emphasisDesc = emphasisMap![delimiterChar]!;
+        var emphasisDesc = _emphasisMap![delimiterChar]!;
 
         Rune pc = (Rune)0;
         Rune twoPreviousChar = default;
@@ -212,7 +212,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         Rune c = slice.CurrentRune;
 
         // The following character is actually an entity, we need to decode it
-        if (HtmlEntityParser.TryParse(ref slice, out string? htmlString, out int htmlLength))
+        if (HtmlEntityParser.TryParse(ref slice, out string? htmlString, out _))
         {
             // Note: c is U+FFFD when decode error
             Rune.DecodeFromUtf16(htmlString, out c, out _);
@@ -254,7 +254,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         return false;
     }
 
-    private void ProcessEmphasis(InlineProcessor processor, List<EmphasisDelimiterInline> delimiters)
+    private void ProcessEmphasis(List<EmphasisDelimiterInline> delimiters)
     {
         // The following method is inspired by the "An algorithm for parsing nested emphasis and links"
         // at the end of the CommonMark specs.
@@ -267,13 +267,13 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         {
             var closeDelimiter = delimiters[i];
             // Skip delimiters not supported by this instance
-            EmphasisDescriptor? emphasisDesc = emphasisMap![closeDelimiter.DelimiterChar];
+            EmphasisDescriptor? emphasisDesc = _emphasisMap![closeDelimiter.DelimiterChar];
             if (emphasisDesc is null)
             {
                 continue;
             }
 
-            if ((closeDelimiter.Type & DelimiterType.Close) != 0)
+            if (closeDelimiter.Type.HasFlag(DelimiterType.Close))
             {
                 while (closeDelimiter.DelimiterCount >= emphasisDesc.MinimumCount)
                 {
@@ -285,13 +285,13 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                     {
                         var previousOpenDelimiter = delimiters[j];
 
-                        var isOddMatch = ((closeDelimiter.Type & DelimiterType.Open) != 0 || (previousOpenDelimiter.Type & DelimiterType.Close) != 0) &&
+                        var isOddMatch = (closeDelimiter.Type.HasFlag(DelimiterType.Open) || previousOpenDelimiter.Type.HasFlag(DelimiterType.Close)) &&
                                          previousOpenDelimiter.DelimiterCount != closeDelimiter.DelimiterCount &&
                                          (previousOpenDelimiter.DelimiterCount + closeDelimiter.DelimiterCount) % 3 == 0 &&
                                          (previousOpenDelimiter.DelimiterCount % 3 != 0 || closeDelimiter.DelimiterCount % 3 != 0);
 
                         if (previousOpenDelimiter.DelimiterChar == closeDelimiter.DelimiterChar &&
-                            (previousOpenDelimiter.Type & DelimiterType.Open) != 0 &&
+                            previousOpenDelimiter.Type.HasFlag(DelimiterType.Open) &&
                             previousOpenDelimiter.DelimiterCount >= emphasisDesc.MinimumCount && !isOddMatch)
                         {
                             openDelimiter = previousOpenDelimiter;
@@ -428,7 +428,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                     closeDelimiter.MoveChildrenAfter(outermostEmphasis);
                 }
 
-                if (closeDelimiter.DelimiterCount > 0 && (closeDelimiter.Type & DelimiterType.Open) == 0)
+                if (closeDelimiter.DelimiterCount > 0 && !closeDelimiter.Type.HasFlag(DelimiterType.Open))
                 {
                     closeDelimiter.ReplaceBy(closeDelimiter.AsLiteralInline());
                     delimiters.RemoveAt(i);

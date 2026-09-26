@@ -186,7 +186,7 @@ public class GenericAttributesParser : InlineParser
                 if ((hasSpace && (c == '.' || c == '#' || IsStartAttributeName(c))) || c == '}')
                 {
                     properties ??= new ();
-                    
+
                     // Add a null value for the property
                     properties.Add(new KeyValuePair<string, string?>(name, null));
                     continue;
@@ -202,8 +202,8 @@ public class GenericAttributesParser : InlineParser
                 line.SkipChar();
                 line.TrimStart();
 
-                int startValue = -1;
-                int endValue = -1;
+                int startValue;
+                int endValue;
 
                 c = line.CurrentChar;
                 // Parse a quoted string

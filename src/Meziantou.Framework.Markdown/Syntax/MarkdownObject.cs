@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
@@ -146,14 +146,14 @@ public abstract class MarkdownObject : IMarkdownObject
     private protected T? GetTrivia<T>() where T : class
     {
         object? trivia = _attachedDatas?.Trivia;
-        return Unsafe.As<T>(trivia);
+        return unsafe(Unsafe.As<T>(trivia));
     }
 
     private protected T GetOrSetTrivia<T>() where T : class, new()
     {
         var storage = _attachedDatas ??= new DataEntriesAndTrivia();
         storage.Trivia ??= new T();
-        return Unsafe.As<T>(storage.Trivia);
+        return unsafe(Unsafe.As<T>(storage.Trivia));
     }
 
     private sealed class DataEntriesAndTrivia

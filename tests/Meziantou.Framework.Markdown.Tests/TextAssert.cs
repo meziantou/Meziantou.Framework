@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 using System.Globalization;
 
@@ -17,9 +17,9 @@ public static class TextAssert
         Minimal
     }
 
-    public static void AreEqual(string expectedValue, string actualValue)
+    public static void AreEqual(string expectedValue, string actualValue, string? message = null)
     {
-        AreEqual(expectedValue, actualValue, DiffStyle.Full, Console.Out);
+        AreEqual(expectedValue, actualValue, DiffStyle.Full, Console.Out, message);
     }
 
     public static void AreEqual(string expectedValue, string actualValue, DiffStyle diffStyle)
@@ -27,11 +27,11 @@ public static class TextAssert
         AreEqual(expectedValue, actualValue, diffStyle, Console.Out);
     }
 
-    public static void AreEqual(string expectedValue, string actualValue, DiffStyle diffStyle, TextWriter output)
+    public static void AreEqual(string expectedValue, string actualValue, DiffStyle diffStyle, TextWriter output, string? message = null)
     {
-        if (actualValue == null || expectedValue == null)
+        if (actualValue is null || expectedValue is null)
         {
-            Assert.AreEqual(expectedValue, actualValue);
+            Assert.Equal(expectedValue, actualValue, message: message);
             return;
         }
 
@@ -70,10 +70,10 @@ public static class TextAssert
                         i < minLen && actualValue[i] == expectedValue[i] ? " " : isFirstDiff  ? ">>>": "***",
                         // put a mark beside a differing row
                         i, // the index
-                        i < expectedValue.Length ? ((int) expectedValue[i]).ToString() : "",
+                        i < expectedValue.Length ? ((int) expectedValue[i]).ToString(CultureInfo.InvariantCulture) : "",
                         // character decimal value
                         i < expectedValue.Length ? expectedValue[i].ToSafeString() : "", // character safe string
-                        i < actualValue.Length ? ((int) actualValue[i]).ToString() : "", // character decimal value
+                        i < actualValue.Length ? ((int) actualValue[i]).ToString(CultureInfo.InvariantCulture) : "", // character decimal value
                         i < actualValue.Length ? actualValue[i].ToSafeString() : "" // character safe string
                         );
 
@@ -83,7 +83,7 @@ public static class TextAssert
             //output.WriteLine();
         }
 
-        Assert.AreEqual(expectedValue, actualValue);
+        Assert.Equal(expectedValue, actualValue, message: message);
     }
 
     private static string ToSafeString(this char c)

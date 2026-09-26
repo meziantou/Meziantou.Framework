@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Markdown.Extensions.Alerts;
 /// <seealso cref="InlineParser" />
 public class AlertInlineParser : InlineParser
 {
-    private static readonly TransformedStringCache s_alertTypeClassCache = new(
+    private static readonly TransformedStringCache AlertTypeClassCache = new(
         type => $"markdown-alert-{type.ToLowerInvariant()}");
 
     /// <summary>
@@ -122,7 +122,7 @@ public class AlertInlineParser : InlineParser
 
         HtmlAttributes attributes = alertBlock.GetAttributes();
         attributes.AddClass("markdown-alert");
-        attributes.AddClass(s_alertTypeClassCache.Get(alertType.AsSpan()));
+        attributes.AddClass(AlertTypeClassCache.Get(alertType.AsSpan()));
 
         quoteBlock.ReplaceBy(alertBlock);
         processor.ReplaceParentContainer(quoteBlock, alertBlock);

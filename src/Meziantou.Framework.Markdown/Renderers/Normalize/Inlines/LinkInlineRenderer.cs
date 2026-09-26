@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -44,7 +44,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             else
             {
                 // full link
-                renderer.Write('[').Write(renderer.EscapeTablePipes ? link.Label.Replace("|", "\\|") : link.Label).Write(']');
+                renderer.Write('[').Write(renderer.EscapeTablePipes ? link.Label.Replace("|", "\\|", StringComparison.Ordinal) : link.Label).Write(']');
             }
         }
         else
@@ -52,14 +52,14 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             if (link.Url is { Length: > 0 } url)
             {
                 renderer.Write('(').Write(renderer.EscapeTablePipes
-                    ? url.Replace("\\", "\\\\").Replace("|", "\\|") : url);
+                    ? url.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal) : url);
 
                 if (link.Title is { Length: > 0 })
                 {
                     renderer.Write(" \"");
                     var title = renderer.EscapeTablePipes
-                        ? link.Title.Replace("\\", "\\\\").Replace("|", "\\|") : link.Title;
-                    renderer.Write(title.Replace(@"""", @"\"""));
+                        ? link.Title.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal) : link.Title;
+                    renderer.Write(title.Replace(@"""", @"\""", StringComparison.Ordinal));
                     renderer.Write('"');
                 }
 

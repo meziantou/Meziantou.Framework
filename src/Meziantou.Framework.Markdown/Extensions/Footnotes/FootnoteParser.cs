@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -47,7 +47,7 @@ public class FootnoteParser : BlockParser
 
         var saved = processor.Column;
         int start = processor.Start;
-        if (!LinkHelper.TryParseLabel(ref processor.Line, false, out string? label, out SourceSpan labelSpan) || !label.StartsWith("^") || processor.CurrentChar != ':')
+        if (!LinkHelper.TryParseLabel(ref processor.Line, false, out string? label, out SourceSpan labelSpan) || !label.StartsWith('^', StringComparison.Ordinal) || processor.CurrentChar != ':')
         {
             processor.GoToColumn(saved);
             return BlockState.None;
@@ -196,7 +196,7 @@ public class FootnoteParser : BlockParser
         }
     }
 
-    private static Inline CreateLinkToFootnote(InlineProcessor state, LinkReferenceDefinition linkRef, Inline? child)
+    private static FootnoteLink CreateLinkToFootnote(InlineProcessor state, LinkReferenceDefinition linkRef, Inline? child)
     {
         var footnote = ((FootnoteLinkReferenceDefinition)linkRef).Footnote;
         if (footnote.Order < 0)

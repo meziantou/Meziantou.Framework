@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
@@ -37,9 +37,9 @@ public static class MarkdownConverter
             return DefaultPipeline;
         }
 
-        if (pipeline.SelfPipeline is not null)
+        if (pipeline._selfPipeline is not null)
         {
-            return pipeline.SelfPipeline.CreatePipelineFromInput(markdown);
+            return pipeline._selfPipeline.CreatePipelineFromInput(markdown);
         }
 
         return pipeline;
@@ -56,7 +56,7 @@ public static class MarkdownConverter
     /// <returns>A normalized markdown text.</returns>
     public static string Normalize([StringSyntax("Markdown")] string markdown, NormalizeOptions? options = null, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
-        var writer = new StringWriter();
+        using var writer = new StringWriter();
         Normalize(markdown, writer, options, pipeline, context);
         return writer.ToString();
     }
@@ -134,7 +134,6 @@ public static class MarkdownConverter
     /// <param name="document">A Markdown document.</param>
     /// <param name="writer">The destination <see cref="TextWriter"/> that will receive the result of the conversion.</param>
     /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <returns>The HTML string.</returns>
     /// <exception cref="ArgumentNullException">If <paramref name="document"/> is null.</exception>
     public static void ToHtml(this MarkdownDocument document, TextWriter writer, MarkdownPipeline? pipeline = null)
     {
@@ -271,7 +270,7 @@ public static class MarkdownConverter
     public static string ToPlainText([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
     {
         if (markdown is null) ThrowHelper.ArgumentNullException_markdown();
-        var writer = new StringWriter();
+        using var writer = new StringWriter();
         ToPlainText(markdown, writer, pipeline, context);
         return writer.ToString();
     }

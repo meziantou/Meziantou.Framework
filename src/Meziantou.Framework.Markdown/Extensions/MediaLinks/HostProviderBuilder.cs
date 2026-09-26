@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Markdown.Extensions.MediaLinks;
 /// <summary>
 /// Represents the HostProviderBuilder type.
 /// </summary>
-public class HostProviderBuilder
+public static class HostProviderBuilder
 {
     private sealed class DelegateProvider(
         string hostPrefix,
@@ -73,7 +73,7 @@ public class HostProviderBuilder
     private static readonly string[] SplitAnd = ["&"];
     private static string[] SplitQuery(Uri uri)
     {
-        var query = uri.Query.Substring(uri.Query.IndexOf('?') + 1);
+        var query = uri.Query.Substring(uri.Query.IndexOf('?', StringComparison.Ordinal) + 1);
         return query.Split(SplitAnd, StringSplitOptions.RemoveEmptyEntries);
     }
 

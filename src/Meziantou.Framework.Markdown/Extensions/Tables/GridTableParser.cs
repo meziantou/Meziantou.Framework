@@ -2,10 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Linq;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
-using System.Linq;
 
 namespace Meziantou.Framework.Markdown.Extensions.Tables;
 
@@ -121,8 +121,8 @@ public class GridTableParser : BlockParser
             return HandleContents(processor, tableState, gridTable);
         }
         TerminateCurrentRow(processor, tableState, gridTable, true);
-        // If the table is not valid we need to remove the grid table, 
-        // and create a ParagraphBlock with the slices 
+        // If the table is not valid we need to remove the grid table,
+        // and create a ParagraphBlock with the slices
         if (!gridTable.IsValid())
         {
             Undo(processor, tableState, gridTable);
@@ -280,7 +280,7 @@ public class GridTableParser : BlockParser
             {
                 var columnEnd = columns[columns.Count - 1].End;
                 var columnEndChar = line.PeekCharExtra(columnEnd);
-                // If there is a `|` (or a `+` in the case that we are dealing with a row line 
+                // If there is a `|` (or a `+` in the case that we are dealing with a row line
                 // with spanned contents) exactly at the expected end of the table row, we cut the line
                 // otherwise we allow to have the last cell of a row to be open for longer cell content
                 if (columnEndChar == '|' || (isRowLine && columnEndChar == '+'))

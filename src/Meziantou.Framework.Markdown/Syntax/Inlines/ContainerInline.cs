@@ -390,9 +390,9 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// </summary>
     public struct Enumerator : IEnumerator<Inline>
     {
-        private readonly ContainerInline container;
-        private Inline? currentChild;
-        private Inline? nextChild;
+        private readonly ContainerInline _container;
+        private Inline? _currentChild;
+        private Inline? _nextChild;
 
         /// <summary>
         /// Initializes a new instance of the Enumerator class.
@@ -400,14 +400,14 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         public Enumerator(ContainerInline container) : this()
         {
             if (container is null) ThrowHelper.ArgumentNullException(nameof(container));
-            this.container = container;
-            currentChild = nextChild = container.FirstChild;
+            this._container = container;
+            _currentChild = _nextChild = container.FirstChild;
         }
 
         /// <summary>
         /// Gets or sets the current.
         /// </summary>
-        public Inline Current => currentChild!;
+        public Inline Current => _currentChild!;
 
         object IEnumerator.Current => Current;
 
@@ -423,13 +423,13 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         /// </summary>
         public bool MoveNext()
         {
-            currentChild = nextChild;
-            if (currentChild != null)
+            _currentChild = _nextChild;
+            if (_currentChild != null)
             {
-                nextChild = currentChild.NextSibling;
+                _nextChild = _currentChild.NextSibling;
                 return true;
             }
-            nextChild = null;
+            _nextChild = null;
             return false;
         }
 
@@ -438,7 +438,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         /// </summary>
         public void Reset()
         {
-            currentChild = nextChild = container.FirstChild;
+            _currentChild = _nextChild = _container.FirstChild;
         }
     }
 

@@ -2,21 +2,20 @@ using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestMarkdownObjectDataExtensions
 {
-    [Test]
+    [Fact]
     public void CanSetAndGetTypedDataUsingTypeKey()
     {
         var block = new ParagraphBlock();
 
         block.SetData(42);
 
-        Assert.That(block.GetData<int>(), Is.EqualTo(42));
-        Assert.That(block.GetData<string>(), Is.Null);
+        Assert.Equal(42, block.GetData<int>());
+        Assert.Null(block.GetData<string>());
     }
 
-    [Test]
+    [Fact]
     public void CanUseTypedDataKey()
     {
         var block = new ParagraphBlock();
@@ -24,12 +23,12 @@ public sealed class TestMarkdownObjectDataExtensions
 
         block.SetData<string>(key, "value");
 
-        Assert.That(block.GetData<string>(key), Is.EqualTo("value"));
-        Assert.That(block.TryGetData<string>(key, out var output), Is.True);
-        Assert.That(output, Is.EqualTo("value"));
+        Assert.Equal("value", block.GetData<string>(key));
+        Assert.True(block.TryGetData<string>(key, out var output));
+        Assert.Equal("value", output);
     }
 
-    [Test]
+    [Fact]
     public void TryGetDataReturnsFalseForTypeMismatch()
     {
         var block = new ParagraphBlock();
@@ -37,7 +36,7 @@ public sealed class TestMarkdownObjectDataExtensions
 
         block.SetData(key, 123);
 
-        Assert.That(block.TryGetData<string>(key, out var output), Is.False);
-        Assert.That(output, Is.Null);
+        Assert.False(block.TryGetData<string>(key, out var output));
+        Assert.Null(output);
     }
 }

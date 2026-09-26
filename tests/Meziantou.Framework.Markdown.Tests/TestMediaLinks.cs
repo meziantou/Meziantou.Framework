@@ -1,20 +1,20 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.MediaLinks;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestMediaLinks
 {
-    private MarkdownPipeline GetPipeline(MediaOptions options = null)
+    private static MarkdownPipeline GetPipeline(MediaOptions? options = null)
     {
         return new MarkdownPipelineBuilder()
              .UseMediaLinks(options)
              .Build();
     }
 
-    private MarkdownPipeline GetPipelineWithBootstrap(MediaOptions options = null)
+    private static MarkdownPipeline GetPipelineWithBootstrap(MediaOptions? options = null)
     {
         return new MarkdownPipelineBuilder()
             .UseBootstrap()
@@ -22,60 +22,61 @@ public class TestMediaLinks
             .Build();
     }
 
-    [Test]
-    [TestCase("![static mp4](https://sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"https://sample.com/video.mp4\"></source></video></p>\n")]
-    [TestCase("![static mp4](//sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n")]
-    [TestCase(@"![youtube short](https://www.youtube.com/shorts/6BUptHVuvyI?feature=share)", "<p><iframe src=\"https://www.youtube.com/embed/6BUptHVuvyI\" class=\"youtubeshort\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
-    [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
-    [TestCase("![yandex.ru](https://music.yandex.ru/album/411845/track/4402274)", "<p><iframe src=\"https://music.yandex.ru/iframe/#track/4402274/411845/\" class=\"yandex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n")]
-    [TestCase("![vimeo](https://vimeo.com/8607834)", "<p><iframe src=\"https://player.vimeo.com/video/8607834\" class=\"vimeo\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
-    [TestCase("![ok.ru](https://ok.ru/video/26870090463)", "<p><iframe src=\"https://ok.ru/videoembed/26870090463\" class=\"odnoklassniki\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
-    [TestCase("![ok.ru](//ok.ru/video/26870090463)", "<p><iframe src=\"https://ok.ru/videoembed/26870090463\" class=\"odnoklassniki\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [Theory]
+    [InlineData("![static mp4](https://sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"https://sample.com/video.mp4\"></source></video></p>\n")]
+    [InlineData("![static mp4](//sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n")]
+    [InlineData(@"![youtube short](https://www.youtube.com/shorts/6BUptHVuvyI?feature=share)", "<p><iframe src=\"https://www.youtube.com/embed/6BUptHVuvyI\" class=\"youtubeshort\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [InlineData(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [InlineData("![yandex.ru](https://music.yandex.ru/album/411845/track/4402274)", "<p><iframe src=\"https://music.yandex.ru/iframe/#track/4402274/411845/\" class=\"yandex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n")]
+    [InlineData("![vimeo](https://vimeo.com/8607834)", "<p><iframe src=\"https://player.vimeo.com/video/8607834\" class=\"vimeo\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [InlineData("![ok.ru](https://ok.ru/video/26870090463)", "<p><iframe src=\"https://ok.ru/videoembed/26870090463\" class=\"odnoklassniki\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [InlineData("![ok.ru](//ok.ru/video/26870090463)", "<p><iframe src=\"https://ok.ru/videoembed/26870090463\" class=\"odnoklassniki\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     public void TestBuiltInHosts(string markdown, string expected)
     {
         string html = MarkdownConverter.ToHtml(markdown, GetPipeline());
-        Assert.AreEqual(expected, html);
+        Assert.Equal(expected, html);
     }
 
-    [TestCase("![static video relative path](./video.mp4)",
+    [Theory]
+    [InlineData("![static video relative path](./video.mp4)",
         "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"./video.mp4\"></source></video></p>\n")]
-    [TestCase("![static audio relative path](./audio.mp3)",
+    [InlineData("![static audio relative path](./audio.mp3)",
         "<p><audio width=\"500\" controls=\"\"><source type=\"audio/mpeg\" src=\"./audio.mp3\"></source></audio></p>\n")]
     public void TestBuiltInHostsWithRelativePaths(string markdown, string expected)
     {
         string html = MarkdownConverter.ToHtml(markdown, GetPipeline());
-        Assert.AreEqual(expected, html);
+        Assert.Equal(expected, html);
     }
-    
-    private class TestHostProvider : IHostProvider
+
+    private sealed class TestHostProvider : IHostProvider
     {
         public string Class { get; } = "regex";
         public bool AllowFullScreen { get; }
 
-        public bool TryHandle(Uri mediaUri, bool isSchemaRelative, out string iframeUrl)
+        public bool TryHandle(Uri mediaUri, bool isSchemaRelative, [NotNullWhen(true)] out string? iframeUrl)
         {
             iframeUrl = null;
             var uri = isSchemaRelative ? "//" + mediaUri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Scheme, UriFormat.UriEscaped) : mediaUri.ToString();
-            if (!matcher.IsMatch(uri))
+            if (!_matcher.IsMatch(uri))
                 return false;
-            iframeUrl = matcher.Replace(uri, replacement);
+            iframeUrl = _matcher.Replace(uri, _replacement);
             return true;
         }
 
-        private Regex matcher;
-        private string replacement;
+        private readonly Regex _matcher;
+        private readonly string _replacement;
 
         public TestHostProvider(string provider, string replace)
         {
-            matcher = new Regex(provider);
-            replacement = replace;
+            _matcher = new Regex(provider);
+            _replacement = replace;
         }
     }
 
-    [Test]
-    [TestCase("![p1](https://sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^https?://sample.com/(.+)$", @"https://example.com/$1")]
-    [TestCase("![p1](//sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^//sample.com/(.+)$", @"https://example.com/$1")]
-    [TestCase("![p1](https://sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4?token=aaabbb\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^https?://sample.com/(.+)$", @"https://example.com/$1?token=aaabbb")]
+    [Theory]
+    [InlineData("![p1](https://sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^https?://sample.com/(.+)$", @"https://example.com/$1")]
+    [InlineData("![p1](//sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^//sample.com/(.+)$", @"https://example.com/$1")]
+    [InlineData("![p1](https://sample.com/video.mp4)", "<p><iframe src=\"https://example.com/video.mp4?token=aaabbb\" class=\"regex\" width=\"500\" height=\"281\" frameborder=\"0\"></iframe></p>\n", @"^https?://sample.com/(.+)$", @"https://example.com/$1?token=aaabbb")]
     public void TestCustomHostProvider(string markdown, string expected, string provider, string replace)
     {
         string html = MarkdownConverter.ToHtml(markdown, GetPipeline(new MediaOptions
@@ -85,29 +86,29 @@ public class TestMediaLinks
                 new TestHostProvider(provider, replace),
             }
         }));
-        Assert.AreEqual(html, expected);
+        Assert.Equal(html, expected);
     }
 
-    [Test]
-    [TestCase("![static mp4](//sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n", "")]
-    [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", "")]
-    [TestCase("![static mp4](//sample.com/video.mp4)", "<p><video class=\"k\" width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n", "k")]
-    [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"k youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", "k")]
+    [Theory]
+    [InlineData("![static mp4](//sample.com/video.mp4)", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n", "")]
+    [InlineData(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", "")]
+    [InlineData("![static mp4](//sample.com/video.mp4)", "<p><video class=\"k\" width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n", "k")]
+    [InlineData(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"k youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", "k")]
     public void TestCustomClass(string markdown, string expected, string klass)
     {
         string html = MarkdownConverter.ToHtml(markdown, GetPipeline(new MediaOptions
         {
             Class = klass,
         }));
-        Assert.AreEqual(html, expected);
+        Assert.Equal(html, expected);
     }
 
-    [Test]
-    [TestCase("![static mp4](//sample.com/video.mp4)", "<p><video class=\"img-fluid\" width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n")]
-    [TestCase(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"img-fluid youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
+    [Theory]
+    [InlineData("![static mp4](//sample.com/video.mp4)", "<p><video class=\"img-fluid\" width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"//sample.com/video.mp4\"></source></video></p>\n")]
+    [InlineData(@"![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)", "<p><iframe src=\"https://www.youtube.com/embed/mswPy5bt3TQ\" class=\"img-fluid youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n")]
     public void TestWithBootstrap(string markdown, string expected)
     {
         string html = MarkdownConverter.ToHtml(markdown, GetPipelineWithBootstrap());
-        Assert.AreEqual(html, expected);
+        Assert.Equal(html, expected);
     }
 }

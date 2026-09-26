@@ -14,10 +14,10 @@ namespace Meziantou.Framework.Markdown.Tests;
 /// <summary>
 /// Test the precise source location of all Markdown elements, including extensions
 /// </summary>
-[TestFixture]
+
 public class TestSourcePosition
 {
-    [Test]
+    [Fact]
     public void TestParagraph()
     {
         Check("0123456789", @"
@@ -26,7 +26,7 @@ literal      ( 0, 0)  0-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestParagraphAndNewLine()
     {
         Check("0123456789\n0123456789", @"
@@ -44,7 +44,7 @@ literal      ( 1, 0) 12-21
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestParagraphNewLineAndSpaces()
     {
         //     0123 45678
@@ -56,7 +56,7 @@ literal      ( 1, 2)  6-8
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestParagraph2()
     {
         Check("0123456789\n\n0123456789", @"
@@ -67,7 +67,7 @@ literal      ( 2, 0) 12-21
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestParagraphWithEndNewLine()
     {
         Check("0123456789\n", @"
@@ -90,7 +90,7 @@ linebreak    ( 0,10) 10-11
     }
 
 
-    [Test]
+    [Fact]
     public void TestMultipleParagraphsWithEndNewLine()
     {
         Check("0123456789\n\n0123456789\n\n", @"
@@ -121,7 +121,7 @@ linebreak    ( 2,10) 24-25
 ", trackTrivia: true);
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasis()
     {
         Check("012**3456789**", @"
@@ -132,7 +132,7 @@ literal      ( 0, 5)  5-11
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasis2()
     {
         //     01234567
@@ -146,7 +146,7 @@ literal      ( 0, 6)  6-6
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasis3()
     {
         //     0123456789
@@ -160,7 +160,7 @@ literal      ( 0, 8)  8-8
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasis4()
     {
         Check("**foo*", @"
@@ -171,7 +171,7 @@ literal      ( 0, 2)  2-4
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasisFalse()
     {
         Check("0123456789**0123", @"
@@ -182,7 +182,7 @@ literal      ( 0,12) 12-15
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHeading()
     {
         //     012345
@@ -192,7 +192,7 @@ literal      ( 0, 2)  2-5
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestSetextHeading()
     {
         //     01 2 34 5
@@ -203,7 +203,7 @@ heading      ( 3, 0)  3-5
 literal      ( 3, 0)  3-3");
     }
 
-    [Test]
+    [Fact]
     public void TestHeadingWithEmphasis()
     {
         //     0123456789
@@ -215,19 +215,19 @@ literal      ( 0, 6)  6-7
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestFootnoteLinkReferenceDefinition()
     {
         //                             01 2 345678
         var footnote = MarkdownConverter.Parse("0\n\n [^1]:", new MarkdownPipelineBuilder().UsePreciseSourceLocation().UseFootnotes().Build()).Descendants<FootnoteLinkReferenceDefinition>().FirstOrDefault();
         Assert.NotNull(footnote);
 
-        Assert.AreEqual(2, footnote.Line);
-        Assert.AreEqual(new SourceSpan(4, 7), footnote.Span);
-        Assert.AreEqual(new SourceSpan(5, 6), footnote.LabelSpan);
+        Assert.Equal(2, footnote.Line);
+        Assert.Equal(new SourceSpan(4, 7), footnote.Span);
+        Assert.Equal(new SourceSpan(5, 6), footnote.LabelSpan);
     }
 
-    [Test]
+    [Fact]
     public void TestLinkReferenceDefinition1()
     {
         //                         0         1
@@ -235,14 +235,14 @@ literal      ( 0, 6)  6-7
         var link = MarkdownConverter.Parse("[234]: /56 'yo' ", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<LinkReferenceDefinition>().FirstOrDefault();
         Assert.NotNull(link);
 
-        Assert.AreEqual(0, link.Line);
-        Assert.AreEqual(new SourceSpan(0, 14), link.Span);
-        Assert.AreEqual(new SourceSpan(1, 3), link.LabelSpan);
-        Assert.AreEqual(new SourceSpan(7, 9), link.UrlSpan);
-        Assert.AreEqual(new SourceSpan(11, 14), link.TitleSpan);
+        Assert.Equal(0, link.Line);
+        Assert.Equal(new SourceSpan(0, 14), link.Span);
+        Assert.Equal(new SourceSpan(1, 3), link.LabelSpan);
+        Assert.Equal(new SourceSpan(7, 9), link.UrlSpan);
+        Assert.Equal(new SourceSpan(11, 14), link.TitleSpan);
     }
 
-    [Test]
+    [Fact]
     public void TestLinkReferenceDefinition2()
     {
         //                         0          1
@@ -250,14 +250,14 @@ literal      ( 0, 6)  6-7
         var link = MarkdownConverter.Parse("0\n\n [234]: /56 'yo' ", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<LinkReferenceDefinition>().FirstOrDefault();
         Assert.NotNull(link);
 
-        Assert.AreEqual(2, link.Line);
-        Assert.AreEqual(new SourceSpan(4, 18), link.Span);
-        Assert.AreEqual(new SourceSpan(5, 7), link.LabelSpan);
-        Assert.AreEqual(new SourceSpan(11, 13), link.UrlSpan);
-        Assert.AreEqual(new SourceSpan(15, 18), link.TitleSpan);
+        Assert.Equal(2, link.Line);
+        Assert.Equal(new SourceSpan(4, 18), link.Span);
+        Assert.Equal(new SourceSpan(5, 7), link.LabelSpan);
+        Assert.Equal(new SourceSpan(11, 13), link.UrlSpan);
+        Assert.Equal(new SourceSpan(15, 18), link.TitleSpan);
     }
 
-    [Test]
+    [Fact]
     public void TestCodeSpan()
     {
         //     012345678
@@ -268,7 +268,7 @@ code         ( 0, 4)  4-8
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestLink()
     {
         //     0123456789
@@ -280,7 +280,7 @@ literal      ( 0, 4)  4-5
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestLinkParts1()
     {
         //                         0           1
@@ -288,12 +288,12 @@ literal      ( 0, 4)  4-5
         var link = MarkdownConverter.Parse("0\n\n01 [234](/56)", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<LinkInline>().FirstOrDefault();
         Assert.NotNull(link);
 
-        Assert.AreEqual(new SourceSpan(7, 9), link.LabelSpan);
-        Assert.AreEqual(new SourceSpan(12, 14), link.UrlSpan);
-        Assert.AreEqual(SourceSpan.Empty, link.TitleSpan);
+        Assert.Equal(new SourceSpan(7, 9), link.LabelSpan);
+        Assert.Equal(new SourceSpan(12, 14), link.UrlSpan);
+        Assert.Equal(SourceSpan.Empty, link.TitleSpan);
     }
 
-    [Test]
+    [Fact]
     public void TestLinkParts2()
     {
         //                         0           1
@@ -301,13 +301,13 @@ literal      ( 0, 4)  4-5
         var link = MarkdownConverter.Parse("0\n\n01 [234](/56 'yo')", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<LinkInline>().FirstOrDefault();
         Assert.NotNull(link);
 
-        Assert.AreEqual(new SourceSpan(7, 9), link.LabelSpan);
-        Assert.AreEqual(new SourceSpan(12, 14), link.UrlSpan);
-        Assert.AreEqual(new SourceSpan(16, 19), link.TitleSpan);
+        Assert.Equal(new SourceSpan(7, 9), link.LabelSpan);
+        Assert.Equal(new SourceSpan(12, 14), link.UrlSpan);
+        Assert.Equal(new SourceSpan(16, 19), link.TitleSpan);
     }
 
 
-    [Test]
+    [Fact]
     public void TestLinkParts3()
     {
         //                         0           1
@@ -315,13 +315,13 @@ literal      ( 0, 4)  4-5
         var link = MarkdownConverter.Parse("0\n\n01![234](/56)", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<LinkInline>().FirstOrDefault();
         Assert.NotNull(link);
 
-        Assert.AreEqual(new SourceSpan(5, 15), link.Span);
-        Assert.AreEqual(new SourceSpan(7, 9), link.LabelSpan);
-        Assert.AreEqual(new SourceSpan(12, 14), link.UrlSpan);
-        Assert.AreEqual(SourceSpan.Empty, link.TitleSpan);
+        Assert.Equal(new SourceSpan(5, 15), link.Span);
+        Assert.Equal(new SourceSpan(7, 9), link.LabelSpan);
+        Assert.Equal(new SourceSpan(12, 14), link.UrlSpan);
+        Assert.Equal(SourceSpan.Empty, link.TitleSpan);
     }
 
-    [Test]
+    [Fact]
     public void TestAutolinkInline()
     {
         //     0123456789ABCD
@@ -332,7 +332,7 @@ autolink     ( 0, 2)  2-13
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestFencedCodeBlock()
     {
         //     012 3456 78 9ABC
@@ -343,7 +343,7 @@ fencedcode   ( 1, 0)  3-11
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlBlock()
     {
         //     012345 67 89ABCDE F 0
@@ -354,7 +354,7 @@ literal      ( 4, 0) 16-16
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlBlock1()
     {
         //     0           1
@@ -368,7 +368,7 @@ literal      ( 3, 0) 12-12
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlComment()
     {
         //     0         1          2
@@ -382,7 +382,7 @@ literal      ( 2, 0) 21-23
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlInline()
     {
         //     0123456789
@@ -395,7 +395,7 @@ html         ( 0, 6)  6-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlInline1()
     {
         //     0
@@ -408,7 +408,7 @@ literal      ( 0, 9)  9-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestThematicBreak()
     {
         //     0123 4567
@@ -418,7 +418,7 @@ thematicbreak ( 1, 0)  4-6
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestQuoteBlock()
     {
         //     0123456
@@ -429,7 +429,7 @@ literal      ( 0, 2)  2-5
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestQuoteBlockWithLines()
     {
         //     01234 56789A
@@ -442,7 +442,7 @@ literal      ( 1, 3)  8-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestQuoteBlockWithLazyContinuation()
     {
         //     01234 56
@@ -455,7 +455,7 @@ literal      ( 1, 0)  5-6
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestListBlock()
     {
         //     0123 4567
@@ -470,7 +470,7 @@ literal      ( 1, 2)  6-6
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestListBlock2()
     {
         string test = @"
@@ -479,34 +479,34 @@ literal      ( 1, 2)  6-6
 5. Foo
 6. Bar
 987123. FooBar";
-        test = test.Replace("\r\n", "\n");
+        test = test.Replace("\r\n", "\n", StringComparison.Ordinal);
         var list = MarkdownConverter.Parse(test, new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build()).Descendants<ListBlock>().FirstOrDefault();
         Assert.NotNull(list);
 
-        Assert.AreEqual(1, list.Line);
+        Assert.Equal(1, list.Line);
         Assert.True(list.IsOrdered);
         List<ListItemBlock> items = list.Cast<ListItemBlock>().ToList();
-        Assert.AreEqual(5, items.Count);
+        Assert.HasCount(5, items);
 
         // Test orders
-        Assert.AreEqual(1, items[0].Order);
-        Assert.AreEqual(9, items[1].Order);
-        Assert.AreEqual(5, items[2].Order);
-        Assert.AreEqual(6, items[3].Order);
-        Assert.AreEqual(987123, items[4].Order);
+        Assert.Equal(1, items[0].Order);
+        Assert.Equal(9, items[1].Order);
+        Assert.Equal(5, items[2].Order);
+        Assert.Equal(6, items[3].Order);
+        Assert.Equal(987123, items[4].Order);
 
         // Test positions
         for (int i = 0; i < 4; i++)
         {
-            Assert.AreEqual(i + 1, items[i].Line);
-            Assert.AreEqual(1 + (i * 7), items[i].Span.Start);
-            Assert.AreEqual(6, items[i].Span.Length);
+            Assert.Equal(i + 1, items[i].Line);
+            Assert.Equal(1 + (i * 7), items[i].Span.Start);
+            Assert.Equal(6, items[i].Span.Length);
         }
-        Assert.AreEqual(5, items[4].Line);
-        Assert.AreEqual(new SourceSpan(29, 42), items[4].Span);
+        Assert.Equal(5, items[4].Line);
+        Assert.Equal(new SourceSpan(29, 42), items[4].Span);
     }
 
-    [Test]
+    [Fact]
     public void TestEscapeInline()
     {
         //      0123
@@ -517,7 +517,7 @@ literal      ( 0, 2)  2-3
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlEntityInline()
     {
         //     01 23456789
@@ -530,7 +530,7 @@ literal      ( 1, 6)  8-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestAbbreviations()
     {
         Check("*[HTML]: Hypertext Markup Language\r\n\r\nLater in a text we are using HTML and it becomes an abbr tag HTML\r\n\r\nHTML abbreviation at the beginning of a line", @"
@@ -545,7 +545,7 @@ literal      ( 4, 4) 111-150
 ", "abbreviations");
     }
 
-    [Test]
+    [Fact]
     public void TestCitation()
     {
         //     0123 4 567 8
@@ -557,7 +557,7 @@ literal      ( 0, 5)  5-6
 ", "citations");
     }
 
-    [Test]
+    [Fact]
     public void TestCustomContainer()
     {
         //     01 2345 678 9ABC DEF
@@ -572,7 +572,7 @@ literal      ( 4, 0) 13-14
 ", "customcontainers");
     }
 
-    [Test]
+    [Fact]
     public void TestDefinitionList()
     {
         //     012 3456789A
@@ -586,7 +586,7 @@ literal      ( 1, 4)  7-10
 ", "definitionlists");
     }
 
-    [Test]
+    [Fact]
     public void TestDefinitionList2()
     {
         //     012 3456789AB CDEF01234
@@ -603,7 +603,7 @@ literal      ( 2, 5) 17-20
 ", "definitionlists");
     }
 
-    [Test]
+    [Fact]
     public void TestEmoji()
     {
         //     01 2345
@@ -615,7 +615,7 @@ emoji        ( 1, 1)  3-4
 ", "emojis");
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasisExtra()
     {
         //     0123456
@@ -627,7 +627,7 @@ literal      ( 0, 4)  4-4
 ", "emphasisextras");
     }
 
-    [Test]
+    [Fact]
     public void TestFigures()
     {
         //     01 2345 67 89AB
@@ -640,7 +640,7 @@ literal      ( 2, 0)  6-6
 ", "figures");
     }
 
-    [Test]
+    [Fact]
     public void TestFiguresCaption1()
     {
         //     01 234567 89 ABCD
@@ -655,7 +655,7 @@ literal      ( 2, 0)  8-8
 ", "figures");
     }
 
-    [Test]
+    [Fact]
     public void TestFiguresCaption2()
     {
         //     01 2345 67 89ABCD
@@ -670,7 +670,7 @@ literal      ( 3, 3) 11-12
 ", "figures");
     }
 
-    [Test]
+    [Fact]
     public void TestFooters()
     {
         //     01 234567 89ABCD
@@ -686,7 +686,7 @@ literal      ( 2, 3) 11-12
     }
 
 
-    [Test]
+    [Fact]
     public void TestAttributes()
     {
         //     0123456789
@@ -697,7 +697,7 @@ literal      ( 0, 0)  0-3
 ", "attributes");
     }
 
-    [Test]
+    [Fact]
     public void TestAttributesForHeading()
     {
         //     0123456789ABC
@@ -708,7 +708,7 @@ literal      ( 0, 2)  2-3
 ", "attributes");
     }
 
-    [Test]
+    [Fact]
     public void TestMathematicsInline()
     {
         //     01 23456789ABCDEF
@@ -730,7 +730,7 @@ attributes   ( 0, 0)  0--1
 ", "mathematics");
     }
 
-    [Test]
+    [Fact]
     public void TestSmartyPants()
     {
         //        01234567
@@ -746,7 +746,7 @@ smartypant   ( 1, 6)  8-9
 ", "smartypants");
     }
 
-    [Test]
+    [Fact]
     public void TestSmartyPantsUnbalanced()
     {
         //        012345
@@ -761,7 +761,7 @@ literal      ( 1, 4)  6-7
 ", "smartypants");
     }
 
-    [Test]
+    [Fact]
     public void TestPipeTable()
     {
         //     0123 4567 89AB
@@ -784,7 +784,7 @@ literal      ( 2, 2) 10-10
 ", "pipetables");
     }
 
-    [Test]
+    [Fact]
     public void TestPipeTable2()
     {
         //     01 2 3456 789A BCD
@@ -809,7 +809,7 @@ literal      ( 4, 2) 13-13
 ", "pipetables");
     }
 
-    [Test]
+    [Fact]
     public void TestPipeTable3()
     {
         //     01234 5678 9ABCD
@@ -832,7 +832,7 @@ literal      ( 2, 2) 11-11
 ", "pipetables");
     }
 
-    [Test]
+    [Fact]
     public void TestGridTable()
     {
         Check("0\n\n+-+-+\n|A|B|\n+=+=+\n|C|D|\n+-+-+", @"
@@ -855,7 +855,7 @@ paragraph    ( 5, 3) 24-24
 literal      ( 5, 3) 24-24", "gridtables");
     }
 
-    [Test]
+    [Fact]
     public void TestIndentedCode()
     {
         //     01 2 345678 9ABCDE
@@ -866,7 +866,7 @@ code         ( 2, 0)  3-13
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestIndentedCodeAfterList()
     {
         //     0         1           2         3          4         5
@@ -880,7 +880,7 @@ code         ( 2, 0) 19-53
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestIndentedCodeWithTabs()
     {
         //     01 2 3 45 6 78
@@ -891,7 +891,7 @@ code         ( 2, 0)  3-7
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestIndentedCodeWithMixedTabs()
     {
         //     01 2 34 56 78 9
@@ -902,7 +902,7 @@ code         ( 2, 0)  3-9
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestTabsInList()
     {
         //     012 34 567 89
@@ -917,7 +917,7 @@ literal      ( 1, 4)  8-8
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestDocument()
     {
         //     L0       L0           L1L2         L3         L4         L5L6                    L7L8
@@ -946,11 +946,11 @@ literal      ( 8, 2) 77-92
 ");
     }
 
-    private static void Check(string text, string expectedResult, string extensions = null, bool trackTrivia = false)
+    private static void Check(string text, string expectedResult, string? extensions = null, bool trackTrivia = false)
     {
         var pipelineBuilder = new MarkdownPipelineBuilder().UsePreciseSourceLocation();
         pipelineBuilder.TrackTrivia = trackTrivia;
-        if (extensions != null)
+        if (extensions is not null)
         {
             pipelineBuilder.Configure(extensions);
         }
@@ -962,17 +962,17 @@ literal      ( 8, 2) 77-92
         foreach (var val in document.Descendants())
         {
             var name = GetTypeName(val.GetType());
-            build.Append($"{name,-12} ({val.Line,2},{val.Column,2}) {val.Span.Start,2}-{val.Span.End}\n");
+            build.Append(CultureInfo.InvariantCulture, $"{name,-12} ({val.Line,2},{val.Column,2}) {val.Span.Start,2}-{val.Span.End}\n");
             var attributes = val.TryGetAttributes();
-            if (attributes != null)
+            if (attributes is not null)
             {
-                build.Append($"{"attributes",-12} ({attributes.Line,2},{attributes.Column,2}) {attributes.Span.Start,2}-{attributes.Span.End}\n");
+                build.Append(CultureInfo.InvariantCulture, $"{"attributes",-12} ({attributes.Line,2},{attributes.Column,2}) {attributes.Span.Start,2}-{attributes.Span.End}\n");
             }
         }
         var result = build.ToString().Trim();
 
         expectedResult = expectedResult.Trim();
-        expectedResult = expectedResult.Replace("\r\n", "\n").Replace("\r", "\n");
+        expectedResult = expectedResult.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\r", "\n", StringComparison.Ordinal);
 
         if (expectedResult != result)
         {
@@ -992,7 +992,7 @@ literal      ( 8, 2) 77-92
     private static string GetTypeName(Type type)
     {
         return type.Name.ToLowerInvariant()
-            .Replace("block", string.Empty)
-            .Replace("inline", string.Empty);
+            .Replace("block", string.Empty, StringComparison.Ordinal)
+            .Replace("inline", string.Empty, StringComparison.Ordinal);
     }
 }

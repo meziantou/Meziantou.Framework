@@ -6,55 +6,54 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestPlayParser
 {
 
-    [Test]
+    [Fact]
     public void TestInvalidSetext()
     {
         TestParser.TestSpec("test\n===n", "<p>test\n===n</p>", "advanced");
     }
 
-    [Test]
+    [Fact]
     public void TestBugWithEmphasisAndTable()
     {
         TestParser.TestSpec("**basics | 8:00**", "<p><strong>basics | 8:00</strong></p>", "advanced");
     }
 
-    [Test]
+    [Fact]
     public void TestLinksWithCarriageReturn()
     {
         var text = "[Link 1][link-1], [link 2][link-2].\r\n\r\n[link-1]: https://example.com\r\n[link-2]: https://example.com";
         var result = MarkdownConverter.ToHtml(text).TrimEnd();
-        Assert.AreEqual("<p><a href=\"https://example.com\">Link 1</a>, <a href=\"https://example.com\">link 2</a>.</p>", result);
+        Assert.Equal("<p><a href=\"https://example.com\">Link 1</a>, <a href=\"https://example.com\">link 2</a>.</p>", result);
     }
 
-    [Test]
+    [Fact]
     public void TestLinksWithTitleAndCarriageReturn()
     {
         var text = "[Link 1][link-1], [link 2][link-2].\r\n\r\n[link-1]: https://example.com \"title 1\" \r\n[link-2]: https://example.com \"title 2\"";
         var result = MarkdownConverter.ToHtml(text).TrimEnd();
-        Assert.AreEqual("<p><a href=\"https://example.com\" title=\"title 1\">Link 1</a>, <a href=\"https://example.com\" title=\"title 2\">link 2</a>.</p>", result);
+        Assert.Equal("<p><a href=\"https://example.com\" title=\"title 1\">Link 1</a>, <a href=\"https://example.com\" title=\"title 2\">link 2</a>.</p>", result);
     }
 
-    [Test]
+    [Fact]
     public void TestLink()
     {
         var doc = MarkdownConverter.Parse("There is a ![link](/yoyo)");
-        var link = doc.Descendants<ParagraphBlock>().SelectMany(x => x.Inline.Descendants<LinkInline>()).FirstOrDefault(l => l.IsImage);
-        Assert.AreEqual("/yoyo", link?.Url);
+        var link = doc.Descendants<ParagraphBlock>().SelectMany(x => x.Inline!.Descendants<LinkInline>()).FirstOrDefault(l => l.IsImage);
+        Assert.Equal("/yoyo", link?.Url);
     }
 
-    [Test]
+    [Fact]
     public void TestLinkWithMultipleBackslashesInTitle()
     {
         var doc = MarkdownConverter.Parse(@"[link](/uri '\\\\127.0.0.1')");
         var link = doc.Descendants<LinkInline>().FirstOrDefault();
-        Assert.AreEqual(@"\\127.0.0.1", link?.Title);
+        Assert.Equal(@"\\127.0.0.1", link?.Title);
     }
 
-    [Test]
+    [Fact]
     public void TestListBug2()
     {
         TestParser.TestSpec("10.\t*test* – test\n\n11.\t__test__ test\n\n", @"<ol start=""10"">
@@ -66,7 +65,7 @@ public class TestPlayParser
 ");
     }
 
-    [Test]
+    [Fact]
     public void TestSimple()
     {
         var text = @" *[HTML]: Hypertext Markup Language
@@ -78,23 +77,22 @@ Later in a text we are using HTML and it becomes an abbr tag HTML
         //");
 
         //var result = MarkdownConverter.ToHtml(text, new MarkdownPipeline().UseFootnotes().UseEmphasisExtras());
-        var result = MarkdownConverter.ToHtml(text, new MarkdownPipelineBuilder().UseAbbreviations().Build());
+        _ = MarkdownConverter.ToHtml(text, new MarkdownPipelineBuilder().UseAbbreviations().Build());
         //File.WriteAllText("test.html", result, Encoding.UTF8);
         //Console.WriteLine(result);
     }
 
-    [Test]
+    [Fact]
     public void TestEmptyLiteral()
     {
         var text = @"> *some text*
 > some other text";
         var doc = MarkdownConverter.Parse(text);
 
-        Assert.True(doc.Descendants<LiteralInline>().All(x => !x.Content.IsEmpty),
-            "There should not have any empty literals");
+        Assert.All(doc.Descendants<LiteralInline>(), x => !x.Content.IsEmpty, message: "There should not have any empty literals");
     }
 
-    [Test]
+    [Fact]
     public void TestSelfPipeline1()
     {
         var text = @" <!--markdig:pipetables-->
@@ -121,7 +119,7 @@ a | b
 ", "self");
     }
 
-    [Test]
+    [Fact]
     public void TestListBug()
     {
         // TODO: Add this test back to the CommonMark specs
@@ -145,7 +143,7 @@ a | b
     }
 
 
-    [Test]
+    [Fact]
     public void TestHtmlBug()
     {
         TestParser.TestSpec(@" # header1
@@ -162,20 +160,20 @@ blabla
 <h1>header2</h1>");
     }
 
-    [Test]
+    [Fact]
     public void TestHtmlh4Bug()
     {
         TestParser.TestSpec(@"<h4>foobar</h4>", @"<h4>foobar</h4>");
     }
 
-    [Test]
+    [Fact]
     public void TestStandardUriEscape()
     {
         TestParser.TestSpec(@"![你好](你好.png)", "<p><img src=\"你好.png\" alt=\"你好\" /></p>", "nonascii-noescape");
     }
 
 
-    [Test]
+    [Fact]
     public void TestBugAdvanced()
     {
         TestParser.TestSpec(@"`https://{domain}/callbacks`
@@ -185,14 +183,14 @@ Paragraph
     }
 
 
-    [Test]
+    [Fact]
     public void TestBugEmphAttribute()
     {
         // https://github.com/lunet-io/markdig/issues/108
         TestParser.TestSpec(@"*test*{name=value}", "<p><em name=\"value\">test</em></p>", "advanced");
     }
 
-    [Test]
+    [Fact]
     public void TestBugPipeTables()
     {
         // https://github.com/lunet-io/markdig/issues/73
@@ -215,7 +213,7 @@ Paragraph
 </table>", "advanced");
     }
 
-    [Test]
+    [Fact]
     public void TestGridTableWithCustomAttributes() {
 
         var input = @"
@@ -247,7 +245,7 @@ Paragraph
         TestParser.TestSpec(input, expected, "advanced");
     }
 
-    [Test]
+    [Fact]
     public void TestSamePipelineAllExtensions()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
@@ -256,8 +254,8 @@ Paragraph
         var result1 = MarkdownConverter.ToHtml("This is a \"\"citation\"\"", pipeline);
         var result2 = MarkdownConverter.ToHtml("This is a \"\"citation\"\"", pipeline);
 
-        Assert.AreEqual("<p>This is a <cite>citation</cite></p>", result1.Trim());
-        Assert.AreEqual(result1, result2);
+        Assert.Equal("<p>This is a <cite>citation</cite></p>", result1.Trim());
+        Assert.Equal(result1, result2);
     }
 
     // Test for emoji and smileys
@@ -309,9 +307,9 @@ Paragraph
     //This is a spoiler
     //:::
 
-    ///| we have mult | paragraph    |
-    ///| we have a new colspan with a long line
-    ///| and lots of text
+    //| we have mult | paragraph    |
+    //| we have a new colspan with a long line
+    //| and lots of text
     //";
 
 

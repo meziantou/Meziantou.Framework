@@ -7,7 +7,6 @@ using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestEmphasisRoundtrip
 {
     private static string RoundTrip(string markdown, MarkdownPipeline pipeline)
@@ -23,7 +22,7 @@ public class TestEmphasisRoundtrip
     // Leftover delimiter characters below the minimum count used to stay nested
     // inside the emphasis they closed, moving the following text to the end of
     // the block. https://github.com/xoofx/markdig/issues/743
-    [Test]
+    [Fact]
     public void GridTableSeparatorRoundtripsWithTrackTrivia()
     {
         string markdown =
@@ -41,11 +40,11 @@ public class TestEmphasisRoundtrip
             .EnableTrackTrivia()
             .Build();
 
-        Assert.That(RoundTrip(markdown, pipeline), Is.EqualTo(markdown));
+        Assert.Equal(markdown, RoundTrip(markdown, pipeline));
     }
 
     // Same defect, minimal: leftovers (15 = 7 * 2 + 1) below the "==" minimum.
-    [Test]
+    [Fact]
     public void UnbalancedMarkedRunsRoundtrip()
     {
         string markdown = "+===============+===============+\n";
@@ -55,29 +54,30 @@ public class TestEmphasisRoundtrip
             .EnableTrackTrivia()
             .Build();
 
-        Assert.That(RoundTrip(markdown, pipeline), Is.EqualTo(markdown));
+        Assert.Equal(markdown, RoundTrip(markdown, pipeline));
     }
 
-    [TestCase("===a===== tail\n", "<p>=<mark>a===</mark> tail</p>")]
-    [TestCase("===a==== tail\n", "<p>=<mark>a==</mark> tail</p>")]
-    [TestCase("=====a======= tail\n", "<p>=<mark><mark>a===</mark></mark> tail</p>")]
-    [TestCase("+++a+++++ tail\n", "<p>+<ins>a+++</ins> tail</p>")]
-    [TestCase("*===a===== tail*\n", "<p><em>=<mark>a===</mark> tail</em></p>")]
-    [TestCase("===a===== tail ==next==\n", "<p>=<mark>a===</mark> tail <mark>next</mark></p>")]
+    [Theory]
+    [InlineData("===a===== tail\n", "<p>=<mark>a===</mark> tail</p>")]
+    [InlineData("===a==== tail\n", "<p>=<mark>a==</mark> tail</p>")]
+    [InlineData("=====a======= tail\n", "<p>=<mark><mark>a===</mark></mark> tail</p>")]
+    [InlineData("+++a+++++ tail\n", "<p>+<ins>a+++</ins> tail</p>")]
+    [InlineData("*===a===== tail*\n", "<p><em>=<mark>a===</mark> tail</em></p>")]
+    [InlineData("===a===== tail ==next==\n", "<p>=<mark>a===</mark> tail <mark>next</mark></p>")]
     public void UnmatchedCloserPreservesTrailingContent(string markdown, string expectedHtml)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().EnableTrackTrivia().Build();
 
-        Assert.That(RoundTrip(markdown, pipeline), Is.EqualTo(markdown));
-        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline).Trim(), Is.EqualTo(expectedHtml));
-        Assert.That(MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseEmphasisExtras().Build()).Trim(), Is.EqualTo(expectedHtml));
+        Assert.Equal(markdown, RoundTrip(markdown, pipeline));
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, pipeline).Trim());
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseEmphasisExtras().Build()).Trim());
     }
 
     // The fix must not prevent balanced "marked" emphasis from being detected.
-    [Test]
+    [Fact]
     public void BalancedMarkedEmphasisStillParses()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmphasisExtras().Build();
-        Assert.That(MarkdownConverter.ToHtml("==bold==", pipeline).Trim(), Is.EqualTo("<p><mark>bold</mark></p>"));
+        Assert.Equal("<p><mark>bold</mark></p>", MarkdownConverter.ToHtml("==bold==", pipeline).Trim());
     }
 }

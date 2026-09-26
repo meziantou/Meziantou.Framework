@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Runtime.CompilerServices;
@@ -16,8 +16,8 @@ namespace Meziantou.Framework.Markdown.Parsers;
 /// <seealso cref="OrderedList{T}" />
 public abstract class ParserList<T, TState> : OrderedList<T> where T : notnull, ParserBase<TState>
 {
-    private readonly CharacterMap<T[]> charMap;
-    private readonly T[]? globalParsers;
+    private readonly CharacterMap<T[]> _charMap;
+    private readonly T[]? _globalParsers;
 
     /// <summary>
     /// Performs the parser list operation.
@@ -55,7 +55,7 @@ public abstract class ParserList<T, TState> : OrderedList<T> where T : notnull, 
 
         if (globalCounter > 0)
         {
-            globalParsers = new T[globalCounter];
+            _globalParsers = new T[globalCounter];
         }
 
         var tempCharMap = new Dictionary<char, T[]>();
@@ -78,23 +78,23 @@ public abstract class ParserList<T, TState> : OrderedList<T> where T : notnull, 
             }
             else
             {
-                globalParsers![globalParsers.Length - globalCounter] = parser;
+                _globalParsers![_globalParsers.Length - globalCounter] = parser;
                 globalCounter--;
             }
         }
 
-        charMap = new CharacterMap<T[]>(tempCharMap);
+        _charMap = new CharacterMap<T[]>(tempCharMap);
     }
 
     /// <summary>
     /// Gets the list of global parsers (that don't have any opening characters defined)
     /// </summary>
-    public T[]? GlobalParsers => globalParsers;
+    public T[]? GlobalParsers => _globalParsers;
 
     /// <summary>
     /// Gets all the opening characters defined.
     /// </summary>
-    public char[] OpeningCharacters => charMap.OpeningCharacters;
+    public char[] OpeningCharacters => _charMap.OpeningCharacters;
 
     /// <summary>
     /// Gets the list of parsers valid for the specified opening character.
@@ -104,7 +104,7 @@ public abstract class ParserList<T, TState> : OrderedList<T> where T : notnull, 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T[]? GetParsersForOpeningCharacter(uint openingChar)
     {
-        return charMap[openingChar];
+        return _charMap[openingChar];
     }
 
     /// <summary>
@@ -117,6 +117,6 @@ public abstract class ParserList<T, TState> : OrderedList<T> where T : notnull, 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IndexOfOpeningCharacter(string text, int start, int end)
     {
-        return charMap.IndexOfOpeningCharacter(text, start, end);
+        return _charMap.IndexOfOpeningCharacter(text, start, end);
     }
 }

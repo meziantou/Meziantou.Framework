@@ -3,7 +3,6 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestSpanConsistency
 {
     private sealed class MockContainerBlock : ContainerBlock
@@ -13,7 +12,7 @@ public sealed class TestSpanConsistency
         }
     }
 
-    [Test]
+    [Fact]
     public void BlockUpdateSpanToIncludePropagatesToParents()
     {
         var root = new MockContainerBlock { Span = new SourceSpan(30, 40) };
@@ -22,11 +21,11 @@ public sealed class TestSpanConsistency
 
         child.UpdateSpanToInclude(new SourceSpan(10, 50));
 
-        Assert.That(child.Span, Is.EqualTo(new SourceSpan(10, 50)));
-        Assert.That(root.Span, Is.EqualTo(new SourceSpan(10, 50)));
+        Assert.Equal(new SourceSpan(10, 50), child.Span);
+        Assert.Equal(new SourceSpan(10, 50), root.Span);
     }
 
-    [Test]
+    [Fact]
     public void ContainerBlockCanValidateAndUpdateSpansRecursively()
     {
         var document = new MarkdownDocument();
@@ -38,23 +37,23 @@ public sealed class TestSpanConsistency
         document.Add(container);
         document.Span = new SourceSpan(0, 5);
 
-        Assert.That(document.HasValidSpan(recursive: true), Is.False);
+        Assert.False(document.HasValidSpan(recursive: true));
 
-        Assert.That(document.UpdateSpanFromChildren(recursive: true), Is.True);
-        Assert.That(document.HasValidSpan(recursive: true), Is.True);
-        Assert.That(paragraph.Span, Is.EqualTo(new SourceSpan(22, 24)));
-        Assert.That(container.Span, Is.EqualTo(new SourceSpan(22, 31)));
-        Assert.That(document.Span, Is.EqualTo(new SourceSpan(0, 31)));
+        Assert.True(document.UpdateSpanFromChildren(recursive: true));
+        Assert.True(document.HasValidSpan(recursive: true));
+        Assert.Equal(new SourceSpan(22, 24), paragraph.Span);
+        Assert.Equal(new SourceSpan(22, 31), container.Span);
+        Assert.Equal(new SourceSpan(0, 31), document.Span);
 
         container.Span = new SourceSpan(0, 100);
         document.Span = new SourceSpan(0, 100);
 
-        Assert.That(document.UpdateSpanFromChildren(recursive: true, preserveSelfSpan: false), Is.True);
-        Assert.That(container.Span, Is.EqualTo(new SourceSpan(22, 24)));
-        Assert.That(document.Span, Is.EqualTo(new SourceSpan(22, 24)));
+        Assert.True(document.UpdateSpanFromChildren(recursive: true, preserveSelfSpan: false));
+        Assert.Equal(new SourceSpan(22, 24), container.Span);
+        Assert.Equal(new SourceSpan(22, 24), document.Span);
     }
 
-    [Test]
+    [Fact]
     public void ContainerInlineCanValidateAndUpdateSpansRecursively()
     {
         var root = new ContainerInline { Span = new SourceSpan(35, 36) };
@@ -64,30 +63,30 @@ public sealed class TestSpanConsistency
         nested.AppendChild(literal);
         root.AppendChild(nested);
 
-        Assert.That(root.HasValidSpan(recursive: true), Is.False);
+        Assert.False(root.HasValidSpan(recursive: true));
 
-        Assert.That(root.UpdateSpanFromChildren(recursive: true), Is.True);
-        Assert.That(root.HasValidSpan(recursive: true), Is.True);
-        Assert.That(nested.Span, Is.EqualTo(new SourceSpan(10, 51)));
-        Assert.That(root.Span, Is.EqualTo(new SourceSpan(10, 51)));
+        Assert.True(root.UpdateSpanFromChildren(recursive: true));
+        Assert.True(root.HasValidSpan(recursive: true));
+        Assert.Equal(new SourceSpan(10, 51), nested.Span);
+        Assert.Equal(new SourceSpan(10, 51), root.Span);
 
         nested.Span = new SourceSpan(0, 100);
         root.Span = new SourceSpan(0, 100);
 
-        Assert.That(root.UpdateSpanFromChildren(recursive: true, preserveSelfSpan: false), Is.True);
-        Assert.That(nested.Span, Is.EqualTo(new SourceSpan(10, 12)));
-        Assert.That(root.Span, Is.EqualTo(new SourceSpan(10, 12)));
+        Assert.True(root.UpdateSpanFromChildren(recursive: true, preserveSelfSpan: false));
+        Assert.Equal(new SourceSpan(10, 12), nested.Span);
+        Assert.Equal(new SourceSpan(10, 12), root.Span);
     }
 
-    [Test]
+    [Fact]
     public void ContainerBlockSpanCanBeExpandedAfterInsertions()
     {
         var container = new MockContainerBlock { Span = new SourceSpan(20, 25) };
         container.Insert(0, new ParagraphBlock { Span = new SourceSpan(10, 12) });
         container.Insert(1, new ParagraphBlock { Span = new SourceSpan(30, 35) });
 
-        Assert.That(container.HasValidSpan(), Is.False);
-        Assert.That(container.UpdateSpanFromChildren(), Is.True);
-        Assert.That(container.Span, Is.EqualTo(new SourceSpan(10, 35)));
+        Assert.False(container.HasValidSpan());
+        Assert.True(container.UpdateSpanFromChildren());
+        Assert.Equal(new SourceSpan(10, 35), container.Span);
     }
 }

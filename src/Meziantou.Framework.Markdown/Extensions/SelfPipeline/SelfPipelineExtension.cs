@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -8,7 +8,7 @@ using Meziantou.Framework.Markdown.Renderers;
 namespace Meziantou.Framework.Markdown.Extensions.SelfPipeline;
 
 /// <summary>
-/// Extension to enable SelfPipeline, to configure a Markdown parsing/convertion to HTML automatically 
+/// Extension to enable SelfPipeline, to configure a Markdown parsing/convertion to HTML automatically
 /// from an embedded special tag in the input text <code>&lt;!--markdig:extensions--&gt;</code> where extensions is a string
 /// that specifies the extensions to use for the pipeline as exposed by <see cref="MarkdownExtensions.Configure"/> extension method
 /// on the <see cref="MarkdownPipelineBuilder"/>. This extension will invalidate all other extensions and will override them.

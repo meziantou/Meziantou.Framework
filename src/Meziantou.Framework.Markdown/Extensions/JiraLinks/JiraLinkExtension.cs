@@ -1,16 +1,16 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
-using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Normalize;
+using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 
 namespace Meziantou.Framework.Markdown.Extensions.JiraLinks;
 
 /// <summary>
-/// Simple inline parser extension for Markdig to find, and 
+/// Simple inline parser extension for Markdig to find, and
 /// automatically add links to JIRA issue numbers.
 /// </summary>
 public class JiraLinkExtension : IMarkdownExtension

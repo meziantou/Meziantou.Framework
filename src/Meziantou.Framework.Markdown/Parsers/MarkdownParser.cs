@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
@@ -9,12 +9,6 @@ using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Parsers;
-
-/// <summary>
-/// Delegates called when processing a document
-/// </summary>
-/// <param name="document">The markdown document.</param>
-public delegate void ProcessDocumentDelegate(MarkdownDocument document);
 
 /// <summary>
 /// The Markdown parser.
@@ -81,7 +75,7 @@ public static class MarkdownParser
         }
 
         // Allow to call a hook after processing a document
-        pipeline.DocumentProcessed?.Invoke(document);
+        pipeline._documentProcessed?.Invoke(document);
 
         return document;
     }
@@ -169,7 +163,7 @@ public static class MarkdownParser
                 var block = container[item.Index];
                 if (block.IsLeafBlock)
                 {
-                    LeafBlock leafBlock = Unsafe.As<LeafBlock>(block);
+                    LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
                     leafBlock.OnProcessInlinesBegin(inlineProcessor);
                     if (leafBlock.ProcessInlines)
                     {
@@ -177,11 +171,11 @@ public static class MarkdownParser
 
                         // Experimental code to handle a replacement of a parent container
                         // Not satisfied with this code, so we are keeping it internal for now
-                        if (inlineProcessor.PreviousContainerToReplace != null)
+                        if (inlineProcessor._previousContainerToReplace != null)
                         {
-                            if (container == inlineProcessor.PreviousContainerToReplace)
+                            if (container == inlineProcessor._previousContainerToReplace)
                             {
-                                item = new ContainerItem(inlineProcessor.NewContainerToReplace!) { Index = item.Index };
+                                item = new ContainerItem(inlineProcessor._newContainerToReplace!) { Index = item.Index };
                                 container = item.Container;
                             }
                             else
@@ -190,9 +184,9 @@ public static class MarkdownParser
                                 for (int i = blockCount - 2; i >= 0; i--)
                                 {
                                     ref var parentBlock = ref blocks[i];
-                                    if (parentBlock.Container == inlineProcessor.PreviousContainerToReplace)
+                                    if (parentBlock.Container == inlineProcessor._previousContainerToReplace)
                                     {
-                                        parentBlock = new ContainerItem(inlineProcessor.NewContainerToReplace!) { Index = parentBlock.Index };
+                                        parentBlock = new ContainerItem(inlineProcessor._newContainerToReplace!) { Index = parentBlock.Index };
                                         parentBlockFound = true;
                                         break;
                                     }
@@ -204,8 +198,8 @@ public static class MarkdownParser
                                 }
                             }
 
-                            inlineProcessor.PreviousContainerToReplace = null;
-                            inlineProcessor.NewContainerToReplace = null;
+                            inlineProcessor._previousContainerToReplace = null;
+                            inlineProcessor._newContainerToReplace = null;
                         }
 
                         if (leafBlock.RemoveAfterProcessInlines)
@@ -238,7 +232,7 @@ public static class MarkdownParser
                         ThrowHelper.CheckDepthLimit(blockCount + 1, maximumNestingDepth);
                         Array.Resize(ref blocks, blockCount * 2);
                     }
-                    blocks[blockCount++] = new ContainerItem(Unsafe.As<ContainerBlock>(block));
+                    blocks[blockCount++] = new ContainerItem(unsafe(Unsafe.As<ContainerBlock>(block)));
                     block.OnProcessInlinesBegin(inlineProcessor);
                     goto process_new_block;
                 }

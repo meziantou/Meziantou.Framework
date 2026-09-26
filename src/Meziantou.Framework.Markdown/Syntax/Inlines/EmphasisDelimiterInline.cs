@@ -20,6 +20,7 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// <param name="parser">The parser.</param>
     /// <param name="descriptor">The descriptor.</param>
     /// <exception cref="ArgumentNullException"></exception>
+    [SuppressMessage("Design", "MA0056:Do not call overridable members in constructor", Justification = "Kept for compatibility with Markdig")]
     public EmphasisDelimiterInline(InlineParser parser, EmphasisDescriptor descriptor) : base(parser)
     {
         if (descriptor is null)

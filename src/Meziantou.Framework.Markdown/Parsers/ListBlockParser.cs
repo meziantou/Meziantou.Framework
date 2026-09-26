@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Parsers;
 /// <seealso cref="BlockParser" />
 public class ListBlockParser : BlockParser
 {
-    private CharacterMap<ListItemParser>? mapItemParsers;
+    private CharacterMap<ListItemParser>? _mapItemParsers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ListBlockParser"/> class.
@@ -56,7 +56,7 @@ public class ListBlockParser : BlockParser
                 tempMap.Add(openingCharacter, itemParser);
             }
         }
-        mapItemParsers = new CharacterMap<ListItemParser>(tempMap);
+        _mapItemParsers = new CharacterMap<ListItemParser>(tempMap);
     }
 
     /// <summary>
@@ -129,7 +129,7 @@ public class ListBlockParser : BlockParser
         return result;
     }
 
-    private BlockState TryContinueListItem(BlockProcessor state, ListItemBlock listItem)
+    private static BlockState TryContinueListItem(BlockProcessor state, ListItemBlock listItem)
     {
         var list = (ListBlock)listItem.Parent!;
 
@@ -209,7 +209,7 @@ public class ListBlockParser : BlockParser
         var sourceEndPosition = state.Line.End;
 
         var c = state.CurrentChar;
-        var itemParser = mapItemParsers![c];
+        var itemParser = _mapItemParsers![c];
         if (itemParser is null)
         {
             return BlockState.None;
@@ -289,7 +289,7 @@ public class ListBlockParser : BlockParser
             }
         }
 
-        int.TryParse(listInfo.OrderedStart, out int order);
+        _ = int.TryParse(listInfo.OrderedStart, NumberStyles.Integer, CultureInfo.InvariantCulture, out int order);
         var newListItem = new ListItemBlock(this)
         {
             Column = initColumn,
@@ -352,7 +352,7 @@ public class ListBlockParser : BlockParser
     /// <summary>
     /// Performs the close operation.
     /// </summary>
-    public override bool Close(BlockProcessor processor, Block blockToClose)
+    public override bool Close(BlockProcessor processor, Block block)
     {
         if (processor.TrackTrivia)
         {
@@ -360,7 +360,7 @@ public class ListBlockParser : BlockParser
         }
 
         // Process only if we have blank lines
-        if (blockToClose is ListBlock listBlock && listBlock.CountAllBlankLines > 0)
+        if (block is ListBlock listBlock && listBlock.CountAllBlankLines > 0)
         {
             if (listBlock.Parent is ListItemBlock parentListItemBlock &&
                 listBlock.LastChild is ListItemBlock lastListItem &&

@@ -3,13 +3,12 @@ using System.Text.RegularExpressions;
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Syntax;
-using NUnit.Framework;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
 public class MiscTests
 {
-    [Test]
+    [Fact]
     public void LinkWithInvalidNonAsciiDomainNameIsIgnored()
     {
         // Url from https://github.com/lunet-io/markdig/issues/438
@@ -23,22 +22,23 @@ public class MiscTests
         TestParser.TestSpec("[foo](http://ünicode..com)", "<p><a href=\"http://%C3%BCnicode..com\">foo</a></p>");
     }
 
-    [TestCase("link [foo [bar]]")] // https://spec.commonmark.org/0.29/#example-508
-    [TestCase("link [foo][bar]")]
-    [TestCase("link [][foo][bar][]")]
-    [TestCase("link [][foo][bar][[]]")]
-    [TestCase("link [foo] [bar]")]
-    [TestCase("link [[foo] [] [bar] [[abc]def]]")]
-    [TestCase("[]")]
-    [TestCase("[ ]")]
-    [TestCase("[bar][]")]
-    [TestCase("[bar][ foo]")]
-    [TestCase("[bar][foo ][]")]
-    [TestCase("[bar][fo[ ]o ][][]")]
-    [TestCase("[a]b[c[d[e]f]g]h")]
-    [TestCase("a[b[c[d]e]f[g]h]i foo [j]k[l[m]n]o")]
-    [TestCase("a[b[c[d]e]f[g]h]i[] [][foo][bar][] foo [j]k[l[m]n]o")]
-    [TestCase("a[b[c[d]e]f[g]h]i foo [j]k[l[m]n]o[][]")]
+    [Theory]
+    [InlineData("link [foo [bar]]")] // https://spec.commonmark.org/0.29/#example-508
+    [InlineData("link [foo][bar]")]
+    [InlineData("link [][foo][bar][]")]
+    [InlineData("link [][foo][bar][[]]")]
+    [InlineData("link [foo] [bar]")]
+    [InlineData("link [[foo] [] [bar] [[abc]def]]")]
+    [InlineData("[]")]
+    [InlineData("[ ]")]
+    [InlineData("[bar][]")]
+    [InlineData("[bar][ foo]")]
+    [InlineData("[bar][foo ][]")]
+    [InlineData("[bar][fo[ ]o ][][]")]
+    [InlineData("[a]b[c[d[e]f]g]h")]
+    [InlineData("a[b[c[d]e]f[g]h]i foo [j]k[l[m]n]o")]
+    [InlineData("a[b[c[d]e]f[g]h]i[] [][foo][bar][] foo [j]k[l[m]n]o")]
+    [InlineData("a[b[c[d]e]f[g]h]i foo [j]k[l[m]n]o[][]")]
     public void LinkTextMayContainBalancedBrackets(string linkText)
     {
         string markdown = $"[{linkText}](/uri)";
@@ -48,9 +48,9 @@ public class MiscTests
 
         // Make the link text unbalanced
         foreach (var bracketIndex in linkText
-            .Select((c, i) => new Tuple<char, int>(c, i))
-            .Where(t => t.Item1 == '[' || t.Item1 == ']')
-            .Select(t => t.Item2))
+            .Select((c, i) => (Char: c, Index: i))
+            .Where(t => t.Char == '[' || t.Char == ']')
+            .Select(t => t.Index))
         {
             string brokenLinkText = linkText.Remove(bracketIndex, 1);
 
@@ -58,17 +58,17 @@ public class MiscTests
             expected = $@"<p><a href=""/uri"">{brokenLinkText}</a></p>";
 
             string actual = MarkdownConverter.ToHtml(markdown);
-            Assert.AreNotEqual(expected, actual);
+            Assert.NotEqual(expected, actual);
         }
     }
 
     [Theory]
-    [TestCase('[', 9 * 1024, true, false)]
-    [TestCase('[', 11 * 1024, true, true)]
-    [TestCase('[', 100, false, false)]
-    [TestCase('[', 150, false, true)]
-    [TestCase('>', 100, true, false)]
-    [TestCase('>', 150, true, true)]
+    [InlineData('[', 9 * 1024, true, false)]
+    [InlineData('[', 11 * 1024, true, true)]
+    [InlineData('[', 100, false, false)]
+    [InlineData('[', 150, false, true)]
+    [InlineData('>', 100, true, false)]
+    [InlineData('>', 150, true, true)]
     public void GuardsAgainstHighlyNestedNodes(char c, int count, bool parseOnly, bool shouldThrow)
     {
         var markdown = new string(c, count);
@@ -77,7 +77,7 @@ public class MiscTests
         if (shouldThrow)
         {
             Exception e = Assert.Throws<ArgumentException>(test);
-            Assert.True(e.Message.Contains("depth limit"));
+            Assert.Contains("depth limit", e.Message);
         }
         else
         {
@@ -85,7 +85,7 @@ public class MiscTests
         }
     }
 
-    [Test]
+    [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {
         var markdown = "Krankenhaus\nD. " + string.Join(" ", Enumerable.Repeat("M.", 160));
@@ -97,7 +97,7 @@ public class MiscTests
         Assert.DoesNotThrow(() => MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
-    [Test]
+    [Fact]
     public void MaximumNestingDepthCanBeLowered()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -106,10 +106,10 @@ public class MiscTests
         }.Build();
 
         Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.ToHtml(new string('>', 20), pipeline));
-        Assert.True(e.Message.Contains("depth limit"));
+        Assert.Contains("depth limit", e.Message);
     }
 
-    [Test]
+    [Fact]
     public void IsIssue356Corrected()
     {
         string input = @"https://foo.bar/path/\#m4mv5W0GYKZpGvfA.97";
@@ -119,7 +119,7 @@ public class MiscTests
         TestParser.TestSpec(input, expected, "autolinks|advanced");
     }
 
-    [Test]
+    [Fact]
     public void IsIssue365Corrected()
     {
         // The scheme must be escaped too...
@@ -129,7 +129,7 @@ public class MiscTests
         TestParser.TestSpec(input, expected);
     }
 
-    [Test]
+    [Fact]
     public void TestAltTextIsCorrectlyEscaped()
     {
         TestParser.TestSpec(
@@ -137,42 +137,42 @@ public class MiscTests
             @"<p><img src=""girl.png"" alt=""This is image alt text with quotation ' and double quotation &quot;hello&quot; world"" /></p>");
     }
 
-    [Test]
+    [Fact]
     public void TestFixHang()
     {
         var input = File.ReadAllText(Path.Combine(TestParser.TestsDirectory, "hang.md"));
         _ = MarkdownConverter.ToHtml(input);
     }
 
-    [Test]
+    [Fact]
     public void TestInvalidHtmlEntity()
     {
         var input = "9&ddr;&*&ddr;&de��__";
         TestParser.TestSpec(input, "<p>9&amp;ddr;&amp;*&amp;ddr;&amp;de��__</p>");
     }
 
-    [Test]
+    [Fact]
     public void TestInvalidCharacterHandling()
     {
         var input = File.ReadAllText(Path.Combine(TestParser.TestsDirectory, "ArgumentOutOfRangeException.md"));
         _ = MarkdownConverter.ToHtml(input);
     }
 
-    [Test]
+    [Fact]
     public void TestInvalidCodeEscape()
     {
         var input = "```**Header**	";
         _ = MarkdownConverter.ToHtml(input);
     }
 
-    [Test]
+    [Fact]
     public void TestEmphasisAndHtmlEntity()
     {
         var markdownText = "*Unlimited-Fun&#174;*&#174;";
         TestParser.TestSpec(markdownText, "<p><em>Unlimited-Fun®</em>®</p>");
     }
 
-    [Test]
+    [Fact]
     public void TestThematicInsideCodeBlockInsideList()
     {
         var input = @"1. In the :
@@ -191,7 +191,7 @@ public class MiscTests
 </ol>");
     }
 
-    [Test]
+    [Fact]
     public void VisualizeMathExpressions()
     {
         string math = @"Math expressions
@@ -216,11 +216,11 @@ $$
 ";
         //Console.WriteLine("Math Expressions:\n");
         var pl = new MarkdownPipelineBuilder().UseMathematics().Build(); // UseEmphasisExtras(EmphasisExtraOptions.Subscript).Build()
-        var html = MarkdownConverter.ToHtml(math, pl);
+        _ = MarkdownConverter.ToHtml(math, pl);
         //Console.WriteLine(html);
     }
 
-    [Test]
+    [Fact]
     public void InlineMathExpression()
     {
         string math = @"Math expressions
@@ -231,18 +231,18 @@ $\frac{n!}{k!(n-k)!} = \binom{n}{k}$
 
         var html = MarkdownConverter.ToHtml(math, pl);
 
-        var test1 = html.Contains("<p><span class=\"math\">\\(");
-        var test2 = html.Contains("\\)</span></p>");
+        var test1 = html.Contains("<p><span class=\"math\">\\(", StringComparison.Ordinal);
+        var test2 = html.Contains("\\)</span></p>", StringComparison.Ordinal);
         if (!test1 || !test2)
         {
             Console.WriteLine(html);
         }
 
-        Assert.IsTrue(test1, "Leading bracket missing");
-        Assert.IsTrue(test2, "Trailing bracket missing");
+        Assert.True(test1, message: "Leading bracket missing");
+        Assert.True(test2, message: "Trailing bracket missing");
     }
 
-    [Test]
+    [Fact]
     public void BlockMathExpression()
     {
         string math = @"Math expressions
@@ -254,18 +254,18 @@ $$
         var pl = new MarkdownPipelineBuilder().UseMathematics().Build(); // UseEmphasisExtras(EmphasisExtraOptions.Subscript).Build()
 
         var html = MarkdownConverter.ToHtml(math, pl);
-        var test1 = html.Contains("<div class=\"math\">\n\\[");
-        var test2 = html.Contains("\\]</div>");
+        var test1 = html.Contains("<div class=\"math\">\n\\[", StringComparison.Ordinal);
+        var test2 = html.Contains("\\]</div>", StringComparison.Ordinal);
         if (!test1 || !test2)
         {
             Console.WriteLine(html);
         }
 
-        Assert.IsTrue(test1, "Leading bracket missing");
-        Assert.IsTrue(test2, "Trailing bracket missing");
+        Assert.True(test1, message: "Leading bracket missing");
+        Assert.True(test2, message: "Trailing bracket missing");
     }
 
-    [Test]
+    [Fact]
     public void CanDisableParsingHeadings()
     {
         var noHeadingsPipeline = new MarkdownPipelineBuilder().DisableHeadings().Build();
@@ -281,7 +281,7 @@ $$
         TestParser.TestSpec("[Foo]\n\n[Foo]: bar", "<p><a href=\"bar\">Foo</a></p>", noHeadingsPipeline);
     }
 
-    [Test]
+    [Fact]
     public void CanOpenAutoLinksInNewWindow()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
@@ -291,7 +291,7 @@ $$
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"http://www.foo.bar\" target=\"_blank\">www.foo.bar</a></p>", newWindowPipeline);
     }
 
-    [Test]
+    [Fact]
     public void CanUseHttpsPrefixForWWWAutoLinks()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
@@ -301,7 +301,7 @@ $$
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"https://www.foo.bar\">www.foo.bar</a></p>", httpsPipeline);
     }
 
-    [Test]
+    [Fact]
     public void RootInlineHasCorrectSourceSpan()
     {
         var pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
@@ -310,10 +310,10 @@ $$
         var document = MarkdownConverter.Parse("0123456789\n", pipeline);
 
         var expectedSourceSpan = new SourceSpan(0, 10);
-        Assert.That(((LeafBlock)document.LastChild).Inline.Span == expectedSourceSpan);
+        Assert.Equal(expectedSourceSpan, ((LeafBlock)document.LastChild!).Inline!.Span);
     }
 
-    [Test]
+    [Fact]
     public void RootInlineInTableCellHasCorrectSourceSpan()
     {
         var pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().UseAdvancedExtensions().Build();
@@ -321,12 +321,12 @@ $$
 
         var document = MarkdownConverter.Parse("| a | b |\n| --- | --- |\n| <span id=\"dest\"></span><span id=\"DEST\"></span>*dest*<br/> | \\[in\\] The address of the result of the operation.<br/> |", pipeline);
 
-        var paragraph = (ParagraphBlock)((TableCell)((TableRow)((Table)document.LastChild).LastChild).First()).LastChild;
-        Assert.That(paragraph.Inline.Span.Start == paragraph.Inline.FirstChild.Span.Start);
-        Assert.That(paragraph.Inline.Span.End == paragraph.Inline.LastChild.Span.End);
+        var paragraph = (ParagraphBlock)((TableCell)((TableRow)((Table)document.LastChild!).LastChild!).First()).LastChild!;
+        Assert.Equal(paragraph.Inline!.Span.Start, paragraph.Inline.FirstChild!.Span.Start);
+        Assert.Equal(paragraph.Inline.Span.End, paragraph.Inline.LastChild!.Span.End);
     }
 
-    [Test]
+    [Fact]
     public void TestGridTableShortLine()
     {
         var input = @"
@@ -346,15 +346,10 @@ $$
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseGridTables().Build());
     }
 
-    [Test]
+    [Fact]
     public void TestDefinitionListInListItemWithBlankLine()
     {
-        var input = @"
-- 
-
-  term
-  :   definition
-";
+        var input = "\n- \n\n  term\n  :   definition\n";
 
         var expected = @"<ul>
 <li>
@@ -368,7 +363,7 @@ $$
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseDefinitionLists().Build());
     }
 
-    [Test]
+    [Fact]
     public void TestAlertWithinAlertOrNestedBlock()
     {
         var input = @"
@@ -395,7 +390,7 @@ Also not a note.</p>
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks().Build());
     }
 
-    [Test]
+    [Fact]
     public void TestNestedAlertInsideBlockquote()
     {
         // >>[!NOTE] should become a blockquote wrapping an alert when AllowNestedAlerts is enabled
@@ -413,7 +408,7 @@ Also a note.
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true).Build());
     }
 
-    [Test]
+    [Fact]
     public void TestNestedAlertInsideAlert()
     {
         // An alert inside another alert is never recognized, even with AllowNestedAlerts
@@ -434,7 +429,7 @@ A tip inside a note</p>
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true).Build());
     }
 
-    [Test]
+    [Fact]
     public void TestAlertInsideListItem()
     {
         // Alerts inside list items require AllowNestedAlerts
@@ -454,7 +449,7 @@ A tip inside a note</p>
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true).Build());
     }
 
-    [Test]
+    [Fact]
     public void TestAlertInsideNestedListItem()
     {
         // Alert inside a nested list item (list item indented under another list item) requires AllowNestedAlerts
@@ -481,7 +476,7 @@ A tip inside a note</p>
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true).Build());
     }
 
-    [Test]
+    [Fact]
     public void TestIssue887ListAfterNestedBlockQuote()
     {
         var input = @"> >* _Unordered 1_ QL2 level 1 no space sep
@@ -536,7 +531,7 @@ Continued 3a</p>
         TestParser.TestSpec(input, expected);
     }
 
-    [Test]
+    [Fact]
     public void TestIssue845ListItemBlankLine()
     {
         TestParser.TestSpec("-\n\n  foo",@"

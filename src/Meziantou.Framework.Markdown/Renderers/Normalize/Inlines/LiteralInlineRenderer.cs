@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -25,7 +25,7 @@ public class LiteralInlineRenderer : NormalizeObjectRenderer<LiteralInline>
         }
         if (renderer.EscapeTablePipes && obj.Content.AsSpan().IndexOfAny('\\', '|') >= 0)
         {
-            renderer.Write(obj.Content.ToString().Replace("\\", "\\\\").Replace("|", "\\|"));
+            renderer.Write(obj.Content.ToString().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal));
         }
         else
         {

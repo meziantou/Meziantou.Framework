@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Markdown.Syntax;
 [DebuggerDisplay("{GetType().Name} Line: {Line}, {Lines}")]
 public abstract class LeafBlock : Block
 {
-    private ContainerInline? inline;
+    private ContainerInline? _inline;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LeafBlock"/> class.
@@ -38,7 +38,7 @@ public abstract class LeafBlock : Block
     /// </summary>
     public ContainerInline? Inline
     {
-        get => inline;
+        get => _inline;
         set
         {
             if (value != null)
@@ -52,12 +52,12 @@ public abstract class LeafBlock : Block
                 value.ParentBlock = this;
             }
 
-            if (inline != null)
+            if (_inline != null)
             {
-                inline.ParentBlock = null;
+                _inline.ParentBlock = null;
             }
 
-            inline = value;
+            _inline = value;
         }
     }
 
@@ -88,7 +88,7 @@ public abstract class LeafBlock : Block
         if (slice.CurrentChar == '\t' && CharHelper.IsAcrossTab(column) && !trackTrivia)
         {
             // We need to expand tabs to spaces
-            var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+            var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
             builder.Append(' ', CharHelper.AddTab(column) - column);
             builder.Append(slice.AsSpan().Slice(1));
             stringLine.Slice = new StringSlice(builder.ToString());

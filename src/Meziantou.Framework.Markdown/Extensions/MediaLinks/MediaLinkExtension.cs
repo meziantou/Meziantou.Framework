@@ -80,7 +80,7 @@ public class MediaLinkExtension : IMarkdownExtension
         {
             return false;
         }
-        
+
         // iFrame has to be absolute path
         if (uri.IsAbsoluteUri)
         {
@@ -91,7 +91,7 @@ public class MediaLinkExtension : IMarkdownExtension
         }
 
         // audio/video has can have relative path
-        if (TryGuessAudioVideoFile(uri, isSchemaRelative, renderer, linkInline))
+        if (TryGuessAudioVideoFile(uri, renderer, linkInline))
         {
             return true;
         }
@@ -111,14 +111,14 @@ public class MediaLinkExtension : IMarkdownExtension
         return htmlAttributes;
     }
 
-    private bool TryGuessAudioVideoFile(Uri uri, bool isSchemaRelative, HtmlRenderer renderer, LinkInline linkInline)
+    private bool TryGuessAudioVideoFile(Uri uri, HtmlRenderer renderer, LinkInline linkInline)
     {
         string path = uri.IsAbsoluteUri
             ? uri.GetComponents(UriComponents.Path, UriFormat.Unescaped)
             : uri.ToString();
-        
+
         // Otherwise try to detect if we have an audio/video from the file extension
-        var lastDot = path.LastIndexOf('.');
+        var lastDot = path.LastIndexOf('.', StringComparison.Ordinal);
         if (lastDot >= 0 &&
             Options.ExtensionToMimeType.TryGetValue(path.Substring(lastDot), out string? mimeType))
         {

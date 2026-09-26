@@ -144,7 +144,7 @@ public class CodeInlineParser : InlineParser
 
     private static string ReplaceNewLines(ReadOnlySpan<char> content)
     {
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
 
         while (true)
         {

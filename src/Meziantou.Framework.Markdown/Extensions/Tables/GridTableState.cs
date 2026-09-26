@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -35,7 +35,7 @@ internal sealed class GridTableState(int start, bool expectRow)
     public void AddColumn(int start, int end, TableColumnAlign? align)
     {
         ColumnSlices ??= new List<ColumnSlice>();
-        
+
         ColumnSlices.Add(new ColumnSlice(start, end, align));
     }
 

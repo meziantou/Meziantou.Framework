@@ -6,10 +6,9 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestParserAuthoringParityApi
 {
-    [Test]
+    [Fact]
     public void TrackTriviaCanBeConfiguredFromBuilder()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -17,10 +16,10 @@ public sealed class TestParserAuthoringParityApi
             TrackTrivia = true
         }.Build();
 
-        Assert.That(pipeline.TrackTrivia, Is.True);
+        Assert.True(pipeline.TrackTrivia);
     }
 
-    [Test]
+    [Fact]
     public void CustomBlockParserCanTakeLinesBefore()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -31,14 +30,14 @@ public sealed class TestParserAuthoringParityApi
 
         var document = MarkdownConverter.Parse("\n\n!marker", pipeline.Build());
 
-        Assert.That(document.Count, Is.EqualTo(1));
+        Assert.HasCount(1, document);
         var block = document[0] as LinesBeforeLeafBlock;
-        Assert.That(block, Is.Not.Null);
-        Assert.That(block!.LinesBefore, Is.Not.Null);
-        Assert.That(block.LinesBefore!.Count, Is.EqualTo(2));
+        Assert.NotNull(block);
+        Assert.NotNull(block!.LinesBefore);
+        Assert.HasCount(2, block.LinesBefore);
     }
 
-    [Test]
+    [Fact]
     public void InlineParserCanReplaceParentContainerThroughPublicApi()
     {
         var pipeline = new MarkdownPipelineBuilder();
@@ -51,15 +50,15 @@ public sealed class TestParserAuthoringParityApi
             """.ReplaceLineEndings("\n"),
             pipeline.Build());
 
-        Assert.That(document.Count, Is.EqualTo(1));
+        Assert.HasCount(1, document);
         var replacementBlock = document[0] as ReplacementContainerBlock;
-        Assert.That(replacementBlock, Is.Not.Null);
+        Assert.NotNull(replacementBlock);
 
         var paragraph = replacementBlock!.Count > 0 ? replacementBlock[0] as ParagraphBlock : null;
-        Assert.That(paragraph, Is.Not.Null);
+        Assert.NotNull(paragraph);
         var literal = paragraph!.Inline?.FirstChild as LiteralInline;
-        Assert.That(literal, Is.Not.Null);
-        Assert.That(literal!.Content.ToString(), Is.EqualTo("body"));
+        Assert.NotNull(literal);
+        Assert.Equal("body", literal!.Content.ToString());
     }
 
     private sealed class LinesBeforeBlockParser : BlockParser
@@ -164,7 +163,7 @@ public sealed class TestParserAuthoringParityApi
                 Column = quoteBlock.Column
             };
 
-            var parent = quoteBlock.Parent!;
+            var parent = quoteBlock.Parent;
             var quoteBlockIndex = parent.IndexOf(quoteBlock);
             parent[quoteBlockIndex] = replacementBlock;
 

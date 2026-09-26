@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
@@ -45,7 +46,7 @@ public class SmartyPantsInlineParser : InlineParser, IPostInlineProcessor
         var startingPosition = slice.Start;
 
         // undefined first
-        var type = (SmartyPantType) 0;
+        var type = default(SmartyPantType);
 
         switch (openingChar)
         {
@@ -89,7 +90,7 @@ public class SmartyPantsInlineParser : InlineParser, IPostInlineProcessor
         }
 
         // If it is not matched, early exit
-        if (type == 0)
+        if (type == default)
         {
             return false;
         }
@@ -192,6 +193,7 @@ public class SmartyPantsInlineParser : InlineParser, IPostInlineProcessor
         return quotePants;
     }
 
+    [StructLayout(LayoutKind.Auto)]
     private readonly struct Opener
     {
         public readonly int Type;

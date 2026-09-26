@@ -12,18 +12,14 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestParser
 {
-    [Test]
+    [Fact]
     public void EnsureSpecsAreUpToDate()
     {
-        // In CI, SpecFileGen is guaranteed to run
-        if (IsContinuousIntegration)
-            return;
-
         var specsFilePaths = Directory.GetDirectories(TestsDirectory)
-            .Where(dir => dir.EndsWith("Specs"))
+            .Where(dir => dir.EndsWith("Specs", StringComparison.Ordinal))
             .SelectMany(dir => Directory.GetFiles(dir)
                 .Where(file => file.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-                .Where(file => file.IndexOf("readme", StringComparison.OrdinalIgnoreCase) == -1))
+                .Where(file => !file.Contains("readme", StringComparison.OrdinalIgnoreCase)))
             .ToArray();
 
         var specsMarkdown = new string[specsFilePaths.Length];
@@ -43,8 +39,11 @@ public class TestParser
         {
             string testFilePath = Path.ChangeExtension(specFilePath, ".generated.cs");
 
-            Assert.True(File.Exists(testFilePath),
-                "A new specification file has been added. Add the spec to the list in SpecFileGen and regenerate the tests.");
+            Assert.True(File.Exists(testFilePath), message: "A new specification file has been added. Add the spec to the list in tools/Meziantou.Framework.Markdown.Specs.Generator and regenerate the tests.");
+
+            // Git does not preserve file timestamps, so they cannot be compared on a fresh CI checkout
+            if (IsContinuousIntegration)
+                continue;
 
             DateTime specTime = File.GetLastWriteTimeUtc(specFilePath);
             DateTime testTime = File.GetLastWriteTimeUtc(testFilePath);
@@ -56,24 +55,25 @@ public class TestParser
             // This might not catch a changed spec every time, but should at least sometimes. Otherwise CI will catch it
 
             // This could also trigger, if a user has modified the spec file but reverted the change - can't think of a good workaround
-            Assert.Less(specTime, testTime,
-                $"{Path.GetFileName(specFilePath)} has been modified. Run SpecFileGen to regenerate the tests. " +
+            Assert.True(
+                specTime < testTime,
+                message: $"{Path.GetFileName(specFilePath)} has been modified. Run tools/Meziantou.Framework.Markdown.Specs.Generator to regenerate the tests. " +
                 "If you have modified a specification file, but reverted all changes, ignore this error or revert the 'changed' timestamp metadata on the file.");
         }
 
         TestDescendantsOrder.TestSchemas(specsSyntaxTrees);
     }
 
-    [Test]
+    [Fact]
     public void ParseEmptyDocumentWithTrackTriviaEnabled()
     {
         var document = MarkdownConverter.Parse("", trackTrivia: true);
         using var sw = new StringWriter();
         new RoundtripRenderer(sw).Render(document);
-        Assert.AreEqual("", sw.ToString());
+        Assert.Equal("", sw.ToString());
     }
 
-    public static void TestSpec(string inputText, string expectedOutputText, string extensions = null, bool plainText = false, string context = null)
+    internal static void TestSpec(string inputText, string expectedOutputText, string? extensions = null, bool plainText = false, string? context = null)
     {
         context ??= string.Empty;
         if (!string.IsNullOrEmpty(context))
@@ -86,7 +86,7 @@ public class TestParser
         }
     }
 
-    public static void TestSpec(string inputText, string expectedOutputText, MarkdownPipeline pipeline, bool plainText = false, string context = null)
+    internal static void TestSpec(string inputText, string expectedOutputText, MarkdownPipeline pipeline, bool plainText = false, string? context = null)
     {
         // Uncomment this line to get more debug information for process inlines.
         //pipeline.DebugLog = Console.Out;
@@ -98,27 +98,29 @@ public class TestParser
         PrintAssertExpected(inputText, result, expectedOutputText, context);
     }
 
-    public static void PrintAssertExpected(string source, string result, string expected, string context = null)
+    internal static void PrintAssertExpected(string source, string result, string expected, string? context = null)
     {
         if (expected != result)
         {
-            if (context != null)
+            // xunit does not capture the console output, so the details are also reported in the assertion message
+            var message = new StringBuilder();
+            if (context is not null)
             {
-                Console.WriteLine(context);
+                message.Append(context).Append('\n');
             }
-            Console.WriteLine("```````````````````Source");
-            Console.WriteLine(DisplaySpaceAndTabs(source));
-            Console.WriteLine("```````````````````Result");
-            Console.WriteLine(DisplaySpaceAndTabs(result));
-            Console.WriteLine("```````````````````Expected");
-            Console.WriteLine(DisplaySpaceAndTabs(expected));
-            Console.WriteLine("```````````````````");
-            Console.WriteLine();
-            TextAssert.AreEqual(expected, result);
+            message.Append("```````````````````Source\n");
+            message.Append(DisplaySpaceAndTabs(source)).Append('\n');
+            message.Append("```````````````````Result\n");
+            message.Append(DisplaySpaceAndTabs(result)).Append('\n');
+            message.Append("```````````````````Expected\n");
+            message.Append(DisplaySpaceAndTabs(expected)).Append('\n');
+            message.Append("```````````````````\n");
+            Console.WriteLine(message);
+            TextAssert.AreEqual(expected, result, message.ToString());
         }
     }
 
-    public static IEnumerable<KeyValuePair<string, MarkdownPipeline>> GetPipeline(string extensionsGroupText)
+    public static IEnumerable<KeyValuePair<string, MarkdownPipeline>> GetPipeline(string? extensionsGroupText)
     {
         // For the standard case, we make sure that both the CommmonMark core and Extra/Advanced are CommonMark compliant!
         if (string.IsNullOrEmpty(extensionsGroupText))
@@ -173,24 +175,15 @@ public class TestParser
     private static string Compact(string html)
     {
         // Normalize the output to make it compatible with CommonMark specs
-        html = html.Replace("\r\n", "\n").Replace(@"\r", @"\n").Trim();
+        html = html.Replace("\r\n", "\n", StringComparison.Ordinal).Replace(@"\r", @"\n", StringComparison.Ordinal).Trim();
         html = Regex.Replace(html, @"\s+</li>", "</li>");
         html = Regex.Replace(html, @"<li>\s+", "<li>");
         html = html.Normalize(NormalizationForm.FormKD);
         return html;
     }
 
-    public static readonly bool IsContinuousIntegration = Environment.GetEnvironmentVariable("CI") != null;
+    public static readonly bool IsContinuousIntegration = Environment.GetEnvironmentVariable("CI") is not null;
 
-    public static readonly string TestsDirectory = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(TestParser).Assembly.Location), "../../.."));
-
-    static TestParser()
-    {
-        const string RunningInsideVisualStudioPath = "\\src\\.vs\\markdig\\";
-        int index = TestsDirectory.IndexOf(RunningInsideVisualStudioPath);
-        if (index != -1)
-        {
-            TestsDirectory = TestsDirectory.Substring(0, index) + "\\src\\Meziantou.Framework.Markdown.Tests";
-        }
-    }
+    // CallerFilePath cannot be used: CI builds map the source paths (/_/)
+    public static readonly string TestsDirectory = (FullPath.FromPath(AppContext.BaseDirectory).FindRequiredGitRepositoryRoot() / "tests" / "Meziantou.Framework.Markdown.Tests").Value;
 }

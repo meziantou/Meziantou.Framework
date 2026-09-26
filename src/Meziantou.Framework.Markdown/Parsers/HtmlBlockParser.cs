@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -20,7 +20,7 @@ public class HtmlBlockParser : BlockParser
     {
         OpeningCharacters = ['<'];
     }
-       
+
     /// <summary>
     /// Attempts to open a block at the current parser position.
     /// </summary>
@@ -67,7 +67,7 @@ public class HtmlBlockParser : BlockParser
 
     private BlockState TryParseTagType7(BlockProcessor state, StringSlice line, int startColumn, int startPosition)
     {
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         var c = line.CurrentChar;
         var result = BlockState.None;
         if ((c == '/' && HtmlHelper.TryParseHtmlCloseTag(ref line, ref builder)) || HtmlHelper.TryParseHtmlTagOpenTag(ref line, ref builder))
@@ -133,7 +133,7 @@ public class HtmlBlockParser : BlockParser
             c = line.NextChar();
         }
 
-        Span<char> tag = stackalloc char[10];
+        Span<char> tag = unsafe(stackalloc char[10]);
         var count = 0;
         for (; count < tag.Length; count++)
         {
@@ -179,7 +179,7 @@ public class HtmlBlockParser : BlockParser
     private const string EndOfCDATA = "]]>";
     private const string EndOfProcessingInstruction = "?>";
 
-    private BlockState MatchEnd(BlockProcessor state, HtmlBlock htmlBlock)
+    private static BlockState MatchEnd(BlockProcessor state, HtmlBlock htmlBlock)
     {
         state.GoToColumn(state.ColumnBeforeIndent);
 

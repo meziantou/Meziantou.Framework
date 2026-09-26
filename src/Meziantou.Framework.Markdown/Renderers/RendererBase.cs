@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Runtime.CompilerServices;
@@ -32,7 +32,7 @@ public abstract class RendererBase : IMarkdownRenderer
 
     private readonly RendererEntry[][] _renderersPerType;
 
-    internal int _childrenDepth = 0;
+    internal int _childrenDepth;
     private int _maximumNestingDepth = ThrowHelper.DefaultDepthLimit;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -204,7 +204,7 @@ public abstract class RendererBase : IMarkdownRenderer
         IMarkdownObjectRenderer? renderer = null;
         IntPtr key = GetKeyForType(obj);
 
-        RendererEntry[] renderers = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_renderersPerType), SubTableIndex(key));
+        RendererEntry[] renderers = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_renderersPerType), SubTableIndex(key)));
 
         foreach (RendererEntry entry in renderers)
         {
@@ -224,11 +224,11 @@ public abstract class RendererBase : IMarkdownRenderer
         }
         else if (obj.IsContainerInline)
         {
-            WriteChildren(Unsafe.As<ContainerInline>(obj));
+            WriteChildren(unsafe(Unsafe.As<ContainerInline>(obj)));
         }
         else if (obj.IsContainerBlock)
         {
-            WriteChildren(Unsafe.As<ContainerBlock>(obj));
+            WriteChildren(unsafe(Unsafe.As<ContainerBlock>(obj)));
         }
 
         // Calls after writing an object

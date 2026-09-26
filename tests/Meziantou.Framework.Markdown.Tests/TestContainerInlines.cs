@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestContainerInlines
 {
-    private class MockLeafBlock : LeafBlock
+    private sealed class MockLeafBlock : LeafBlock
     {
         public MockLeafBlock()
             : base(null)
@@ -14,7 +14,7 @@ public class TestContainerInlines
         }
     }
 
-    [Test]
+    [Fact]
     public void CanBeAddedToLeafBlock()
     {
         var leafBlock1 = new MockLeafBlock();
@@ -23,20 +23,20 @@ public class TestContainerInlines
         Assert.Null(one.ParentBlock);
 
         leafBlock1.Inline = one;
-        Assert.AreSame(leafBlock1, one.ParentBlock);
+        Assert.Same(leafBlock1, one.ParentBlock);
 
         var two = new ContainerInline();
         Assert.Null(two.ParentBlock);
 
         leafBlock1.Inline = two;
-        Assert.AreSame(leafBlock1, two.ParentBlock);
+        Assert.Same(leafBlock1, two.ParentBlock);
         Assert.Null(one.ParentBlock);
 
         var leafBlock2 = new MockLeafBlock();
         Assert.Throws<ArgumentException>(() => leafBlock2.Inline = two);
     }
 
-    [Test]
+    [Fact]
     public void CanTransferChildrenToAnotherContainer()
     {
         var source = new ContainerInline();
@@ -51,13 +51,13 @@ public class TestContainerInlines
 
         source.TransferChildrenTo(destination);
 
-        Assert.That(source.FirstChild, Is.Null);
-        Assert.That(source.LastChild, Is.Null);
-        Assert.That(destination.FirstChild, Is.SameAs(existing));
-        Assert.That(existing.NextSibling, Is.SameAs(first));
-        Assert.That(first.NextSibling, Is.SameAs(second));
-        Assert.That(second.NextSibling, Is.Null);
-        Assert.That(first.Parent, Is.SameAs(destination));
-        Assert.That(second.Parent, Is.SameAs(destination));
+        Assert.Null(source.FirstChild);
+        Assert.Null(source.LastChild);
+        Assert.Same(existing, destination.FirstChild);
+        Assert.Same(first, existing.NextSibling);
+        Assert.Same(second, first.NextSibling);
+        Assert.Null(second.NextSibling);
+        Assert.Same(destination, first.Parent);
+        Assert.Same(destination, second.Parent);
     }
 }

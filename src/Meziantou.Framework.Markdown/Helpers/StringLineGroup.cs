@@ -1,11 +1,12 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Meziantou.Framework.Markdown.Syntax;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Helpers;
 
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.Markdown.Helpers;
 public struct StringLineGroup : IEnumerable
 {
     // Feel free to change these numbers if you see a positive change
-    private static readonly CustomArrayPool<StringLine> _pool
+    private static readonly CustomArrayPool<StringLine> Pool
         = new CustomArrayPool<StringLine>(512, 386, 128, 64);
 
     /// <summary>
@@ -26,14 +27,14 @@ public struct StringLineGroup : IEnumerable
     public StringLineGroup(int capacity)
     {
         if (capacity <= 0) ThrowHelper.ArgumentOutOfRangeException(nameof(capacity));
-        Lines = _pool.Rent(capacity);
+        Lines = Pool.Rent(capacity);
         Count = 0;
     }
 
     internal StringLineGroup(int capacity, bool willRelease)
     {
         if (capacity <= 0) ThrowHelper.ArgumentOutOfRangeException(nameof(capacity));
-        Lines = _pool.Rent(willRelease ? Math.Max(8, capacity) : capacity);
+        Lines = Pool.Rent(willRelease ? Math.Max(8, capacity) : capacity);
         Count = 0;
     }
 
@@ -149,7 +150,7 @@ public struct StringLineGroup : IEnumerable
         }
 
         // Else use a builder
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         int previousStartOfLine = 0;
         var newLine = NewLine.None;
         for (int i = 0; i < Count; i++)
@@ -250,7 +251,7 @@ public struct StringLineGroup : IEnumerable
             _index = -1;
         }
     }
-    
+
     /// <summary>
     /// Gets enumerator.
     /// </summary>
@@ -259,27 +260,27 @@ public struct StringLineGroup : IEnumerable
         return new Enumerator(this);
     }
 
-    IEnumerator IEnumerable.GetEnumerator() 
+    IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
     }
 
     private void IncreaseCapacity()
     {
-        var newItems = _pool.Rent(Lines.Length * 2);
+        var newItems = Pool.Rent(Lines.Length * 2);
         if (Count > 0)
         {
             Array.Copy(Lines, 0, newItems, 0, Count);
             Array.Clear(Lines, 0, Count);
         }
-        _pool.Return(Lines);
+        Pool.Return(Lines);
         Lines = newItems;
     }
 
     internal void Release()
     {
         Array.Clear(Lines, 0, Count);
-        _pool.Return(Lines);
+        Pool.Return(Lines);
         Lines = null!;
         Count = -1;
     }
@@ -537,6 +538,7 @@ public struct StringLineGroup : IEnumerable
     /// <summary>
     /// Represents the LineOffset type.
     /// </summary>
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct LineOffset(
         int linePosition,
         int column,

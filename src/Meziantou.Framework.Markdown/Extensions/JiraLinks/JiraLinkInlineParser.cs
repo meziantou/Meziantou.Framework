@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -38,7 +38,7 @@ public class JiraLinkInlineParser : InlineParser
         var pc = slice.PeekCharExtra(-1);
         if (!pc.IsWhiteSpaceOrZero() && pc != '(')
         {
-            return false; 
+            return false;
         }
 
         var current = slice.CurrentChar;
@@ -60,7 +60,7 @@ public class JiraLinkInlineParser : InlineParser
         }
 
         //require a '-' between key and issue number
-        if (!current.Equals('-'))
+        if (current != '-')
         {
             return false;
         }
@@ -76,7 +76,7 @@ public class JiraLinkInlineParser : InlineParser
         var startIssue = slice.Start;
         var endIssue = slice.Start;
 
-        while (current.IsDigit()) 
+        while (current.IsDigit())
         {
             endIssue = slice.Start;
             current = slice.NextChar();
@@ -98,7 +98,7 @@ public class JiraLinkInlineParser : InlineParser
         };
 
         // Builds the Url
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         builder.Append(_baseUrl);
         builder.Append('/');
         builder.Append(jiraLink.ProjectKey.AsSpan());

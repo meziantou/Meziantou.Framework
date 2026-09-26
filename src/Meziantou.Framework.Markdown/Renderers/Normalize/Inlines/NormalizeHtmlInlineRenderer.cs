@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -16,6 +16,6 @@ public class NormalizeHtmlInlineRenderer : NormalizeObjectRenderer<HtmlInline>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, HtmlInline obj)
     {
-        renderer.Write(renderer.EscapeTablePipes ? obj.Tag.Replace("|", "\\|") : obj.Tag);
+        renderer.Write(renderer.EscapeTablePipes ? obj.Tag.Replace("|", "\\|", StringComparison.Ordinal) : obj.Tag);
     }
 }

@@ -1,30 +1,11 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using Meziantou.Framework.Markdown.Helpers;
 using System.Diagnostics;
+using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Syntax.Inlines;
-
-/// <summary>
-/// Defines the LocalLabel enumeration.
-/// </summary>
-public enum LocalLabel : byte
-{
-    /// <summary>
-    /// Gets or sets the local.
-    /// </summary>
-    Local, // [foo][bar]
-    /// <summary>
-    /// Gets or sets the empty.
-    /// </summary>
-    Empty, // [foo][]
-    /// <summary>
-    /// Gets or sets the none.
-    /// </summary>
-    None, // [foo]
-}
 
 /// <summary>
 /// A Link inline (Section 6.5 CommonMark specs)
@@ -33,11 +14,11 @@ public enum LocalLabel : byte
 [DebuggerDisplay("Url: {Url} Title: {Title} Image: {IsImage}")]
 public class LinkInline : ContainerInline
 {
-    private TriviaProperties? _trivia => GetTrivia<TriviaProperties>();
+    private TriviaProperties? TriviaOrNull => GetTrivia<TriviaProperties>();
     private TriviaProperties Trivia => GetOrSetTrivia<TriviaProperties>();
 
     /// <summary>
-    /// A delegate to use if it is setup on this instance to allow late binding 
+    /// A delegate to use if it is setup on this instance to allow late binding
     /// of a Url.
     /// </summary>
     /// <returns></returns>
@@ -81,14 +62,14 @@ public class LinkInline : ContainerInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice LabelWithTrivia { get => _trivia?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
+    public StringSlice LabelWithTrivia { get => TriviaOrNull?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
 
     /// <summary>
     /// Gets or sets the type of label parsed
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="LocalLabel.None"/>.
     /// </summary>
-    public LocalLabel LocalLabel { get => _trivia?.LocalLabel ?? LocalLabel.None; set => Trivia.LocalLabel = value; }
+    public LocalLabel LocalLabel { get => TriviaOrNull?.LocalLabel ?? LocalLabel.None; set => Trivia.LocalLabel = value; }
 
     /// <summary>
     /// Gets or sets the reference this link is attached to. May be null.
@@ -99,20 +80,20 @@ public class LinkInline : ContainerInline
     /// Gets or sets the label as matched against the <see cref="LinkReferenceDefinition"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled.
     /// </summary>
-    public string? LinkRefDefLabel { get => _trivia?.LinkRefDefLabel; set => Trivia.LinkRefDefLabel = value; }
+    public string? LinkRefDefLabel { get => TriviaOrNull?.LinkRefDefLabel; set => Trivia.LinkRefDefLabel = value; }
 
     /// <summary>
     /// Gets or sets the <see cref="LinkRefDefLabel"/> with trivia as matched against
     /// the <see cref="LinkReferenceDefinition"/>
     /// </summary>
-    public StringSlice LinkRefDefLabelWithTrivia { get => _trivia?.LinkRefDefLabelWithTrivia ?? StringSlice.Empty; set => Trivia.LinkRefDefLabelWithTrivia = value; }
+    public StringSlice LinkRefDefLabelWithTrivia { get => TriviaOrNull?.LinkRefDefLabelWithTrivia ?? StringSlice.Empty; set => Trivia.LinkRefDefLabelWithTrivia = value; }
 
     /// <summary>
     /// Gets or sets the trivia before the <see cref="Url"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaBeforeUrl { get => _trivia?.TriviaBeforeUrl ?? StringSlice.Empty; set => Trivia.TriviaBeforeUrl = value; }
+    public StringSlice TriviaBeforeUrl { get => TriviaOrNull?.TriviaBeforeUrl ?? StringSlice.Empty; set => Trivia.TriviaBeforeUrl = value; }
 
     /// <summary>
     /// True if the <see cref="Url"/> in the source document is enclosed
@@ -120,7 +101,7 @@ public class LinkInline : ContainerInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// false.
     /// </summary>
-    public bool UrlHasPointyBrackets { get => _trivia?.UrlHasPointyBrackets ?? false; set => Trivia.UrlHasPointyBrackets = value; }
+    public bool UrlHasPointyBrackets { get => TriviaOrNull?.UrlHasPointyBrackets ?? false; set => Trivia.UrlHasPointyBrackets = value; }
 
     /// <summary>
     /// Gets or sets the URL.
@@ -137,17 +118,17 @@ public class LinkInline : ContainerInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice UnescapedUrl { get => _trivia?.UnescapedUrl ?? StringSlice.Empty; set => Trivia.UnescapedUrl = value; }
+    public StringSlice UnescapedUrl { get => TriviaOrNull?.UnescapedUrl ?? StringSlice.Empty; set => Trivia.UnescapedUrl = value; }
 
     /// <summary>
     /// Any trivia after the <see cref="Url"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaAfterUrl { get => _trivia?.TriviaAfterUrl ?? StringSlice.Empty; set => Trivia.TriviaAfterUrl = value; }
+    public StringSlice TriviaAfterUrl { get => TriviaOrNull?.TriviaAfterUrl ?? StringSlice.Empty; set => Trivia.TriviaAfterUrl = value; }
 
     /// <summary>
-    /// Gets or sets the GetDynamicUrl delegate. If this property is set, 
+    /// Gets or sets the GetDynamicUrl delegate. If this property is set,
     /// it is used instead of <see cref="Url"/> to get the Url from this instance.
     /// </summary>
     public GetUrlDelegate? GetDynamicUrl { get; set; }
@@ -156,7 +137,7 @@ public class LinkInline : ContainerInline
     /// Gets or sets the character used to enclose the <see cref="Title"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled.
     /// </summary>
-    public char TitleEnclosingCharacter { get => _trivia?.TitleEnclosingCharacter ?? default; set => Trivia.TitleEnclosingCharacter = value; }
+    public char TitleEnclosingCharacter { get => TriviaOrNull?.TitleEnclosingCharacter ?? default; set => Trivia.TitleEnclosingCharacter = value; }
 
     /// <summary>
     /// Gets or sets the title.
@@ -174,14 +155,14 @@ public class LinkInline : ContainerInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice UnescapedTitle { get => _trivia?.UnescapedTitle ?? StringSlice.Empty; set => Trivia.UnescapedTitle = value; }
+    public StringSlice UnescapedTitle { get => TriviaOrNull?.UnescapedTitle ?? StringSlice.Empty; set => Trivia.UnescapedTitle = value; }
 
     /// <summary>
     /// Gets or sets the trivia after the <see cref="Title"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaAfterTitle { get => _trivia?.TriviaAfterTitle ?? StringSlice.Empty; set => Trivia.TriviaAfterTitle = value; }
+    public StringSlice TriviaAfterTitle { get => TriviaOrNull?.TriviaAfterTitle ?? StringSlice.Empty; set => Trivia.TriviaAfterTitle = value; }
 
     /// <summary>
     /// Gets or sets a boolean indicating if this link is a shortcut link to a <see cref="LinkReferenceDefinition"/>

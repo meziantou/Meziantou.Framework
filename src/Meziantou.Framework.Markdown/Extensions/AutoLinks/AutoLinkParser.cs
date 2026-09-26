@@ -1,13 +1,13 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Buffers;
+using System.Diagnostics;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers.Html;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
-using System.Buffers;
-using System.Diagnostics;
 
 namespace Meziantou.Framework.Markdown.Extensions.AutoLinks;
 
@@ -79,7 +79,7 @@ public class AutoLinkParser : InlineParser
         var startPosition = slice.Start;
 
         // We don't bother disposing the builder as it'll realistically never grow beyond the initial stack size.
-        var pendingEmphasis = new ValueStringBuilder(stackalloc char[32]);
+        var pendingEmphasis = new ValueStringBuilder(unsafe(stackalloc char[32]));
 
         // Check that an autolink is possible in the current context
         if (!IsAutoLinkValidInCurrentContext(processor, ref pendingEmphasis))
@@ -147,7 +147,7 @@ public class AutoLinkParser : InlineParser
                 break;
 
             case 'm':
-                int atIndex = link.IndexOf('@');
+                int atIndex = link.IndexOf('@', StringComparison.Ordinal);
                 if (atIndex == -1 ||
                     atIndex == 7) // mailto:@ - no email part
                 {

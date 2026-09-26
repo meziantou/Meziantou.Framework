@@ -71,12 +71,12 @@ public static class CharHelper
         1 << (int)UnicodeCategory.OtherSymbol;
 
     // We're not currently using these SearchValues instances for vectorized IndexOfAny-like searches, but for their efficient single Contains(char) checks.
-    private static readonly SearchValues<char> s_emailUsernameSpecialChar = SearchValues.Create(EmailUsernameSpecialChars);
-    private static readonly SearchValues<char> s_emailUsernameSpecialCharOrDigit = SearchValues.Create(EmailUsernameSpecialChars + "0123456789");
-    private static readonly SearchValues<char> s_asciiPunctuationChars = SearchValues.Create(AsciiPunctuationChars);
-    private static readonly SearchValues<char> s_asciiPunctuationCharsOrZero = SearchValues.Create(AsciiPunctuationChars + '\0');
-    private static readonly SearchValues<char> s_asciiPunctuationOrWhitespaceCharsOrZero = SearchValues.Create(AsciiPunctuationChars + AsciiWhitespaceChars + '\0');
-    private static readonly SearchValues<char> s_escapableSymbolChars = SearchValues.Create("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~•");
+    private static readonly SearchValues<char> EmailUsernameSpecialChar = SearchValues.Create(EmailUsernameSpecialChars);
+    private static readonly SearchValues<char> EmailUsernameSpecialCharOrDigit = SearchValues.Create(EmailUsernameSpecialChars + "0123456789");
+    private static readonly SearchValues<char> AsciiPunctuationSearchValues = SearchValues.Create(AsciiPunctuationChars);
+    private static readonly SearchValues<char> AsciiPunctuationCharsOrZero = SearchValues.Create(AsciiPunctuationChars + '\0');
+    private static readonly SearchValues<char> AsciiPunctuationOrWhitespaceCharsOrZero = SearchValues.Create(AsciiPunctuationChars + AsciiWhitespaceChars + '\0');
+    private static readonly SearchValues<char> EscapableSymbolChars = SearchValues.Create("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~•");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsPunctuationException(char c) =>
@@ -441,7 +441,7 @@ public static class CharHelper
     public static bool IsEscapableSymbol(this char c)
     {
         // char.IsSymbol also works with Unicode symbols that cannot be escaped based on the specification.
-        return s_escapableSymbolChars.Contains(c);
+        return EscapableSymbolChars.Contains(c);
     }
 
     /// <summary>
@@ -502,7 +502,7 @@ public static class CharHelper
         // the snowman emoji falling under the OtherSymbol (So) category.
         if (c <= 127)
         {
-            return s_asciiPunctuationOrWhitespaceCharsOrZero.Contains(c);
+            return AsciiPunctuationOrWhitespaceCharsOrZero.Contains(c);
         }
         else
         {
@@ -629,25 +629,25 @@ public static class CharHelper
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsAsciiPunctuationOrZero(this char c) =>
-        s_asciiPunctuationCharsOrZero.Contains(c);
+        AsciiPunctuationCharsOrZero.Contains(c);
 
     /// <summary>
     /// Determines whether ascii punctuation.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsAsciiPunctuation(this char c) =>
-        s_asciiPunctuationChars.Contains(c);
+        AsciiPunctuationSearchValues.Contains(c);
 
     /// <summary>
     /// Determines whether email username special char.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEmailUsernameSpecialChar(char c) =>
-        s_emailUsernameSpecialChar.Contains(c);
+        EmailUsernameSpecialChar.Contains(c);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsEmailUsernameSpecialCharOrDigit(char c) =>
-        s_emailUsernameSpecialCharOrDigit.Contains(c);
+        EmailUsernameSpecialCharOrDigit.Contains(c);
 
     /// <summary>
     /// Determines whether high surrogate.
@@ -1048,7 +1048,7 @@ public static class CharHelper
     }
 
     // Used by ListExtraItemParser to format numbers from 1 - 26
-    private static readonly string[] smallNumberStringCache = [
+    private static readonly string[] SmallNumberStringCache = [
         "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
         "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
         "20", "21", "22", "23", "24", "25", "26",
@@ -1056,7 +1056,7 @@ public static class CharHelper
 
     internal static string SmallNumberToString(int number)
     {
-        string[] cache = smallNumberStringCache;
+        string[] cache = SmallNumberStringCache;
         if ((uint)number < (uint)cache.Length)
         {
             return cache[number];

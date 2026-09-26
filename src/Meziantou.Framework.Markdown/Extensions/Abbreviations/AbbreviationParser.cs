@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -33,7 +33,7 @@ public class AbbreviationParser : BlockParser
             return BlockState.None;
         }
 
-        // A link must be of the form *[Some Text]: An abbreviation 
+        // A link must be of the form *[Some Text]: An abbreviation
         var slice = processor.Line;
         var startPosition = slice.Start;
         var c = slice.NextChar();

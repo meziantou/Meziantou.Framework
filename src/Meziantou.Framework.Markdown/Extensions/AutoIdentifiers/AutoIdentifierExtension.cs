@@ -19,7 +19,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
 {
     private const string AutoIdentifierKey = "AutoIdentifier";
 
-    private static readonly StripRendererCache _rendererCache = new();
+    private static readonly StripRendererCache RendererCache = new();
 
     private readonly AutoIdentifierOptions _options;
     private readonly ProcessInlineDelegate _processInlinesBegin;
@@ -78,7 +78,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
         }
 
         // If the AutoLink options is set, we register a LinkReferenceDefinition at the document level
-        if ((_options & AutoIdentifierOptions.AutoLink) != 0)
+        if (_options.HasFlag(AutoIdentifierOptions.AutoLink))
         {
             var headingLine = headingBlock.Lines.Lines[0];
 
@@ -113,7 +113,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
             // Here we make sure that auto-identifiers will not override an existing link definition
             // defined in the document
             // If it is the case, we skip the auto identifier for the Heading
-            if (!doc.TryGetLinkReferenceDefinition(keyPair.Key, out var linkDef))
+            if (!doc.TryGetLinkReferenceDefinition(keyPair.Key, out _))
             {
                 doc.SetLinkReferenceDefinition(keyPair.Key, keyPair.Value, false);
             }
@@ -126,7 +126,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
     /// Callback when there is a reference to found to a heading.
     /// Note that reference are only working if they are declared after.
     /// </summary>
-    private static Inline CreateLinkInlineForHeading(InlineProcessor inlineState, LinkReferenceDefinition linkRef, Inline? child)
+    private static LinkInline CreateLinkInlineForHeading(InlineProcessor inlineState, LinkReferenceDefinition linkRef, Inline? child)
     {
         var headingRef = (HeadingLinkReferenceDefinition) linkRef;
         return new LinkInline()
@@ -166,17 +166,17 @@ public class AutoIdentifierExtension : IMarkdownExtension
         }
 
         // Use internally a HtmlRenderer to strip links from a heading
-        var stripRenderer = _rendererCache.Get();
+        var stripRenderer = RendererCache.Get();
 
         stripRenderer.Render(headingBlock.Inline);
         ReadOnlySpan<char> rawHeadingText = ((FastStringWriter)stripRenderer.Writer).AsSpan();
 
         // Urilize the link
-        string headingText = (_options & AutoIdentifierOptions.GitHub) != 0
+        string headingText = _options.HasFlag(AutoIdentifierOptions.GitHub)
             ? LinkHelper.UrilizeAsGfm(rawHeadingText)
-            : LinkHelper.Urilize(rawHeadingText, (_options & AutoIdentifierOptions.AllowOnlyAscii) != 0);
+            : LinkHelper.Urilize(rawHeadingText, _options.HasFlag(AutoIdentifierOptions.AllowOnlyAscii));
 
-        _rendererCache.Release(stripRenderer);
+        RendererCache.Release(stripRenderer);
 
         // If the heading is empty, use the word "section" instead
         var baseHeadingId = string.IsNullOrEmpty(headingText) ? "section" : headingText;
@@ -185,7 +185,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
         var headingId = baseHeadingId;
         if (!identifiers.Add(headingId))
         {
-            var headingBuffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+            var headingBuffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
             headingBuffer.Append(baseHeadingId);
             headingBuffer.Append('-');
             uint index = 0;

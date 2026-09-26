@@ -17,8 +17,8 @@ namespace Meziantou.Framework.Markdown.Parsers;
 /// </summary>
 public class BlockProcessor
 {
-    private int currentStackIndex;
-    private int originalLineStart;
+    private int _currentStackIndex;
+    private int _originalLineStart;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BlockProcessor" /> class.
@@ -82,7 +82,7 @@ public class BlockProcessor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            int index = currentStackIndex + 1;
+            int index = _currentStackIndex + 1;
             return index < OpenedBlocks.Count ? OpenedBlocks[index].Block : null;
         }
     }
@@ -334,10 +334,10 @@ public class BlockProcessor
         }
         else
         {
-            Line.Start = originalLineStart;
+            Line.Start = _originalLineStart;
             Column = 0;
             ColumnBeforeIndent = 0;
-            StartBeforeIndent = originalLineStart;
+            StartBeforeIndent = _originalLineStart;
         }
         for (; Line.Start <= Line.End && Column < newColumn; Line.Start++)
         {
@@ -374,7 +374,7 @@ public class BlockProcessor
     {
         // Find the previous first space on the current line
         var previousStart = Line.Start;
-        for (; Line.Start > originalLineStart; Line.Start--)
+        for (; Line.Start > _originalLineStart; Line.Start--)
         {
             var c = Line.PeekCharAbsolute(Line.Start - 1);
 
@@ -402,10 +402,10 @@ public class BlockProcessor
         // TODO: factorize the following code with what is done with GoToColumn
 
         // If we have found the first space, we need to recalculate the correct column
-        Line.Start = originalLineStart;
+        Line.Start = _originalLineStart;
         Column = 0;
         ColumnBeforeIndent = 0;
-        StartBeforeIndent = originalLineStart;
+        StartBeforeIndent = _originalLineStart;
 
         for (; Line.Start < targetStart; Line.Start++)
         {
@@ -581,7 +581,8 @@ public class BlockProcessor
 
                 if (block.IsLeafBlock)
                 {
-                    Unsafe.As<LeafBlock>(block).Lines.Release();
+                    LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
+                    leafBlock.Lines.Release();
                 }
             }
             else
@@ -661,7 +662,7 @@ public class BlockProcessor
     private void UpdateLastBlockAndContainer(int stackIndex = -1)
     {
         List<BlockWrapper> openedBlocks = OpenedBlocks;
-        currentStackIndex = stackIndex < 0 ? openedBlocks.Count - 1 : stackIndex;
+        _currentStackIndex = stackIndex < 0 ? openedBlocks.Count - 1 : stackIndex;
 
         Block? currentBlock = null;
         for (int i = openedBlocks.Count - 1; i >= 0; i--)
@@ -671,7 +672,7 @@ public class BlockProcessor
 
             if (block.IsContainerBlock)
             {
-                var currentContainer = Unsafe.As<ContainerBlock>(block);
+                var currentContainer = unsafe(Unsafe.As<ContainerBlock>(block));
                 CurrentContainer = currentContainer;
                 LastBlock = currentContainer.LastChild;
                 CurrentBlock = currentBlock;
@@ -763,7 +764,8 @@ public class BlockProcessor
                         }
                     }
 
-                    Unsafe.As<LeafBlock>(block).AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
+                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
                 }
             }
 
@@ -910,7 +912,8 @@ public class BlockProcessor
                         UnwindAllIndents();
                     }
 
-                    Unsafe.As<ParagraphBlock>(currentBlock).AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    ParagraphBlock paragraphBlock = unsafe(Unsafe.As<ParagraphBlock>(currentBlock));
+                    paragraphBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
                 }
                 if (TrackTrivia)
                 {
@@ -981,7 +984,8 @@ public class BlockProcessor
                         }
                     }
 
-                    Unsafe.As<LeafBlock>(block).AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
+                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
                 }
 
                 if (newBlocks.Count > 0)
@@ -1026,7 +1030,7 @@ public class BlockProcessor
         Column = column;
         ColumnBeforeIndent = 0;
         StartBeforeIndent = Start;
-        originalLineStart = newLine.Start - column;
+        _originalLineStart = newLine.Start - column;
         TriviaStart = newLine.Start;
     }
 
@@ -1058,8 +1062,8 @@ public class BlockProcessor
         IsLazy = false;
         HasUnmatchedBlocks = false;
 
-        currentStackIndex = 0;
-        originalLineStart = 0;
+        _currentStackIndex = 0;
+        _originalLineStart = 0;
         CurrentLineStartPosition = 0;
         ColumnBeforeIndent = 0;
         StartBeforeIndent = 0;
@@ -1084,18 +1088,18 @@ public class BlockProcessor
     /// </summary>
     public void ReleaseChild() => Release(this);
 
-    private static readonly BlockProcessorCache _cache = new();
+    private static readonly BlockProcessorCache Cache = new();
 
     internal static BlockProcessor Rent(MarkdownDocument document, BlockParserList parsers, MarkdownParserContext? context, bool trackTrivia)
     {
-        var processor = _cache.Get();
+        var processor = Cache.Get();
         processor.Setup(document, parsers, context, trackTrivia);
         return processor;
     }
 
     internal static void Release(BlockProcessor processor)
     {
-        _cache.Release(processor);
+        Cache.Release(processor);
     }
 
     private sealed class BlockProcessorCache : ObjectCache<BlockProcessor>

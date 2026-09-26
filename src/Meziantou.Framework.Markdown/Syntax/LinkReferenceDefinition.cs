@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Markdown.Syntax;
 /// <seealso cref="LeafBlock" />
 public class LinkReferenceDefinition : LeafBlock
 {
-    private TriviaProperties? _trivia => TryGetDerivedTrivia<TriviaProperties>();
+    private TriviaProperties? TriviaOrNull => TryGetDerivedTrivia<TriviaProperties>();
     private TriviaProperties Trivia => GetOrSetDerivedTrivia<TriviaProperties>();
 
     /// <summary>
@@ -66,14 +66,14 @@ public class LinkReferenceDefinition : LeafBlock
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice LabelWithTrivia { get => _trivia?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
+    public StringSlice LabelWithTrivia { get => TriviaOrNull?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
 
     /// <summary>
     /// Whitespace before the <see cref="Url"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaBeforeUrl { get => _trivia?.TriviaBeforeUrl ?? StringSlice.Empty; set => Trivia.TriviaBeforeUrl = value; }
+    public StringSlice TriviaBeforeUrl { get => TriviaOrNull?.TriviaBeforeUrl ?? StringSlice.Empty; set => Trivia.TriviaBeforeUrl = value; }
 
     /// <summary>
     /// Gets or sets the URL.
@@ -90,21 +90,21 @@ public class LinkReferenceDefinition : LeafBlock
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice UnescapedUrl { get => _trivia?.UnescapedUrl ?? StringSlice.Empty; set => Trivia.UnescapedUrl = value; }
+    public StringSlice UnescapedUrl { get => TriviaOrNull?.UnescapedUrl ?? StringSlice.Empty; set => Trivia.UnescapedUrl = value; }
 
     /// <summary>
     /// True when the <see cref="Url"/> is enclosed in point brackets in the source document.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// false.
     /// </summary>
-    public bool UrlHasPointyBrackets { get => _trivia?.UrlHasPointyBrackets ?? false; set => Trivia.UrlHasPointyBrackets = value; }
+    public bool UrlHasPointyBrackets { get => TriviaOrNull?.UrlHasPointyBrackets ?? false; set => Trivia.UrlHasPointyBrackets = value; }
 
     /// <summary>
     /// gets or sets the whitespace before a <see cref="Title"/>.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaBeforeTitle { get => _trivia?.TriviaBeforeTitle ?? StringSlice.Empty; set => Trivia.TriviaBeforeTitle = value; }
+    public StringSlice TriviaBeforeTitle { get => TriviaOrNull?.TriviaBeforeTitle ?? StringSlice.Empty; set => Trivia.TriviaBeforeTitle = value; }
 
     /// <summary>
     /// Gets or sets the title.
@@ -121,13 +121,13 @@ public class LinkReferenceDefinition : LeafBlock
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice UnescapedTitle { get => _trivia?.UnescapedTitle ?? StringSlice.Empty; set => Trivia.UnescapedTitle = value; }
+    public StringSlice UnescapedTitle { get => TriviaOrNull?.UnescapedTitle ?? StringSlice.Empty; set => Trivia.UnescapedTitle = value; }
 
     /// <summary>
     /// Gets or sets the character the <see cref="Title"/> is enclosed in.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise \0.
     /// </summary>
-    public char TitleEnclosingCharacter { get => _trivia?.TitleEnclosingCharacter ?? default; set => Trivia.TitleEnclosingCharacter = value; }
+    public char TitleEnclosingCharacter { get => TriviaOrNull?.TitleEnclosingCharacter ?? default; set => Trivia.TitleEnclosingCharacter = value; }
 
     /// <summary>
     /// Gets or sets the create link inline callback for this instance.

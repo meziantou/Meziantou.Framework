@@ -16,24 +16,17 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 namespace Meziantou.Framework.Markdown.Parsers;
 
 /// <summary>
-/// A delegate called at inline processing stage.
-/// </summary>
-/// <param name="processor">The processor.</param>
-/// <param name="inline">The inline being processed.</param>
-public delegate void ProcessInlineDelegate(InlineProcessor processor, Inline? inline);
-
-/// <summary>
 /// The inline parser state used by all <see cref="InlineParser"/>.
 /// </summary>
 public class InlineProcessor
 {
-    private readonly List<StringLineGroup.LineOffset> lineOffsets = [];
-    private int previousSliceOffset;
-    private int previousLineIndexForSliceOffset;
+    private readonly List<StringLineGroup.LineOffset> _lineOffsets = [];
+    private int _previousSliceOffset;
+    private int _previousLineIndexForSliceOffset;
     private int[]? _unescapedSourceOffsets;
     private int _unescapedSourceStart;
-    internal ContainerBlock? PreviousContainerToReplace;
-    internal ContainerBlock? NewContainerToReplace;
+    internal ContainerBlock? _previousContainerToReplace;
+    internal ContainerBlock? _newContainerToReplace;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InlineProcessor" /> class.
@@ -147,11 +140,11 @@ public class InlineProcessor
             sliceOffset = sliceOffset == 0 ? _unescapedSourceStart : offsetsMap[sliceOffset - 1] + 1;
         }
         column = 0;
-        lineIndex = sliceOffset >= previousSliceOffset ? previousLineIndexForSliceOffset : 0;
+        lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : 0;
         int position = 0;
         if (PreciseSourceLocation)
         {
-            var offsets = CollectionsMarshal.AsSpan(lineOffsets);
+            var offsets = CollectionsMarshal.AsSpan(_lineOffsets);
 
             for (; (uint)lineIndex < (uint)offsets.Length; lineIndex++)
             {
@@ -161,11 +154,11 @@ public class InlineProcessor
                 {
                     // Use the beginning of the line as a previous slice offset
                     // (since it is on the same line)
-                    previousSliceOffset = lineOffset.Start;
-                    var delta = sliceOffset - previousSliceOffset;
+                    _previousSliceOffset = lineOffset.Start;
+                    var delta = sliceOffset - _previousSliceOffset;
                     column = lineOffset.Column + delta;
                     position = lineOffset.LinePosition + delta + lineOffset.Offset;
-                    previousLineIndexForSliceOffset = lineIndex;
+                    _previousLineIndexForSliceOffset = lineIndex;
 
                     // Return an absolute line index
                     lineIndex = lineIndex + LineIndex;
@@ -187,9 +180,9 @@ public class InlineProcessor
             sliceOffset = offsetsMap[sliceOffset];
         if (PreciseSourceLocation)
         {
-            int lineIndex = sliceOffset >= previousSliceOffset ? previousLineIndexForSliceOffset : 0;
+            int lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : 0;
 
-            var offsets = CollectionsMarshal.AsSpan(lineOffsets);
+            var offsets = CollectionsMarshal.AsSpan(_lineOffsets);
 
             for (; (uint)lineIndex < (uint)offsets.Length; lineIndex++)
             {
@@ -197,8 +190,8 @@ public class InlineProcessor
 
                 if (sliceOffset <= lineOffset.End)
                 {
-                    previousLineIndexForSliceOffset = lineIndex;
-                    previousSliceOffset = lineOffset.Start;
+                    _previousLineIndexForSliceOffset = lineIndex;
+                    _previousSliceOffset = lineOffset.Start;
 
                     return sliceOffset - lineOffset.Start + lineOffset.LinePosition + lineOffset.Offset;
                 }
@@ -225,13 +218,13 @@ public class InlineProcessor
         if (newParentContainer is null) ThrowHelper.ArgumentNullException(nameof(newParentContainer));
 
         // Limitation for now, only one parent container can be replaced.
-        if (PreviousContainerToReplace != null)
+        if (_previousContainerToReplace != null)
         {
             throw new InvalidOperationException("A block is already being replaced");
         }
 
-        PreviousContainerToReplace = previousParentContainer;
-        NewContainerToReplace = newParentContainer;
+        _previousContainerToReplace = previousParentContainer;
+        _newContainerToReplace = newParentContainer;
     }
 
     /// <summary>
@@ -242,8 +235,8 @@ public class InlineProcessor
     {
         if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
 
-        PreviousContainerToReplace = null;
-        NewContainerToReplace = null;
+        _previousContainerToReplace = null;
+        _newContainerToReplace = null;
 
         // clear parser states
         Array.Clear(ParserStates, 0, ParserStates.Length);
@@ -255,10 +248,10 @@ public class InlineProcessor
         BlockNew = null;
         LineIndex = leafBlock.Line;
 
-        previousSliceOffset = 0;
-        previousLineIndexForSliceOffset = 0;
-        lineOffsets.Clear();
-        var text = leafBlock.Lines.ToSlice(lineOffsets);
+        _previousSliceOffset = 0;
+        _previousLineIndexForSliceOffset = 0;
+        _lineOffsets.Clear();
+        var text = leafBlock.Lines.ToSlice(_lineOffsets);
         _unescapedSourceStart = text.Start;
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
             ? GfmPipeTableParser.UnescapePipes(ref text) : null;
@@ -498,7 +491,7 @@ public class InlineProcessor
             Inline? lastChild = container.LastChild;
             if (lastChild is not null && lastChild.IsContainerInline && !lastChild.IsClosed)
             {
-                container = Unsafe.As<ContainerInline>(lastChild);
+                container = unsafe(Unsafe.As<ContainerInline>(lastChild));
             }
             else
             {
@@ -543,27 +536,27 @@ public class InlineProcessor
         TrackTrivia = false;
 
         LineIndex = 0;
-        previousSliceOffset = 0;
-        previousLineIndexForSliceOffset = 0;
+        _previousSliceOffset = 0;
+        _previousLineIndexForSliceOffset = 0;
 
         LiteralInlineParser.PostMatch = null;
 
-        lineOffsets.Clear();
+        _lineOffsets.Clear();
         Array.Clear(ParserStates, 0, ParserStates.Length);
     }
 
-    private static readonly InlineProcessorCache _cache = new();
+    private static readonly InlineProcessorCache Cache = new();
 
     internal static InlineProcessor Rent(MarkdownDocument document, InlineParserList parsers, bool preciseSourcelocation, MarkdownParserContext? context, bool trackTrivia)
     {
-        var processor = _cache.Get();
+        var processor = Cache.Get();
         processor.Setup(document, parsers, preciseSourcelocation, context, trackTrivia);
         return processor;
     }
 
     internal static void Release(InlineProcessor processor)
     {
-        _cache.Release(processor);
+        Cache.Release(processor);
     }
 
     private sealed class InlineProcessorCache : ObjectCache<InlineProcessor>

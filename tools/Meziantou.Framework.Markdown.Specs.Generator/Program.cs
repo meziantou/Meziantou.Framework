@@ -3,11 +3,11 @@ using Meziantou.Framework;
 
 namespace SpecFileGen;
 
-class Program
+internal static class Program
 {
-    static readonly string SpecificationsDirectory = GetSpecificationsDirectory();
+    private static readonly string SpecificationsDirectory = GetSpecificationsDirectory();
 
-    static string GetSpecificationsDirectory()
+    private static string GetSpecificationsDirectory()
     {
         if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
             throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
@@ -15,7 +15,7 @@ class Program
         return (root / "tests" / "Meziantou.Framework.Markdown.Tests").Value + "/";
     }
 
-    enum RendererType
+    private enum RendererType
     {
         Html,
         Normalize,
@@ -23,7 +23,7 @@ class Program
         Roundtrip
     }
 
-    class Spec
+    private class Spec
     {
         public readonly string Name;
         public readonly string Path;
@@ -46,24 +46,33 @@ class Program
             RendererType = rendererType;
         }
     }
-    class NormalizeSpec : Spec
+    private sealed class NormalizeSpec : Spec
     {
         public NormalizeSpec(string name, string fileName, string extensions)
             : base(name, fileName, extensions, rendererType: RendererType.Normalize) { }
     }
-    class PlainTextSpec : Spec
+    private sealed class PlainTextSpec : Spec
     {
         public PlainTextSpec(string name, string fileName, string extensions)
             : base(name, fileName, extensions, rendererType: RendererType.PlainText) { }
     }
-    class RoundtripSpec : Spec
+    private sealed class RoundtripSpec : Spec
     {
         public RoundtripSpec(string name, string fileName, string extensions)
             : base(name, fileName, extensions, rendererType: RendererType.Roundtrip) { }
     }
 
+    // HTML examples whose result depends on ICU, so they cannot pass with InvariantGlobalization=true:
+    // - CommonMark 540 matches link labels using Unicode case folding ("ẞ" and "SS").
+    // - Emphasis Extra 6 relies on the compatibility normalization done by TestParser ("™" becomes "TM").
+    private static readonly HashSet<(string SpecName, int Example)> HtmlExamplesRequiringIcu =
+    [
+        ("CommonMarkSpecs", 540),
+        ("Emphasis Extra", 6),
+    ];
+
     // NOTE: Beware of Copy/Pasting spec files - some characters may change (non-breaking space into space)!
-    static readonly Spec[] Specs = new[]
+    private static readonly Spec[] Specs = new[]
     {
         new Spec("CommonMarkSpecs",     "CommonMark.md",                ""),
         new Spec("Alert Blocks",        "AlertBlockSpecs.md",           "advanced"),
@@ -102,7 +111,7 @@ class Program
         new RoundtripSpec("Roundtrip", "CommonMark.md", ""),
     };
 
-    static void Main()
+    private static void Main()
     {
         int totalTests = 0;
         bool hasErrors = false;
@@ -122,7 +131,7 @@ class Program
             if (File.Exists(spec.OutputPath))  // If the source hasn't changed, don't bump the generated tag
             {
                 string previousSource = File.ReadAllText(spec.OutputPath).Replace("\r\n", "\n", StringComparison.Ordinal);
-                if (previousSource == source && File.GetLastWriteTime(spec.OutputPath) > File.GetLastWriteTime(spec.Path))
+                if (previousSource == source && File.GetLastWriteTimeUtc(spec.OutputPath) > File.GetLastWriteTimeUtc(spec.Path))
                 {
                     continue;
                 }
@@ -139,7 +148,7 @@ class Program
 
         Console.WriteLine("There are {0} spec tests in total", totalTests);
     }
-    static void EmitError(string error)
+    private static void EmitError(string error)
     {
         var prevColor = Console.ForegroundColor;
         Console.ForegroundColor = ConsoleColor.Red;
@@ -151,37 +160,38 @@ class Program
         Console.ForegroundColor = prevColor;
     }
 
-    static readonly StringBuilder StringBuilder = new StringBuilder(1 << 20); // 1 MB
-    static void Write(string text)
+    private static readonly StringBuilder StringBuilder = new StringBuilder(1 << 20); // 1 MB
+    private static void Write(string text)
     {
         StringBuilder.Append(text);
     }
-    static void Line(string text = null)
+    private static void Line(string? text = null)
     {
-        if (text != null) StringBuilder.Append(text);
+        if (text is not null) StringBuilder.Append(text);
         StringBuilder.Append('\n');
     }
-    static void Indent(int count = 1)
+    private static void Comment(string text)
     {
-        StringBuilder.Append(new string(' ', 4 * count));
+        // Avoid trailing whitespace in the generated files
+        Line(("// " + text).TrimEnd());
+    }
+    private static void Indent(int count = 1)
+    {
+        StringBuilder.Append(' ', 4 * count);
     }
 
-    static string ParseSpecification(Spec spec, string specSource)
+    private static string ParseSpecification(Spec spec, string specSource)
     {
         Line();
         Write("// "); Line(new string('-', 32));
         Write("// "); Write(new string(' ', 16 - spec.Name.Length / 2)); Line(spec.Name);
         Write("// "); Line(new string('-', 32));
         Line();
-        Line("using System;");
-        Line("using NUnit.Framework;");
-        Line();
         Write("namespace Meziantou.Framework.Markdown.Tests.Specs.");
         if      (spec.RendererType == RendererType.Normalize) Write("Normalize.");
         else if (spec.RendererType == RendererType.PlainText) Write("PlainText.");
         else if (spec.RendererType == RendererType.Roundtrip) Write("Roundtrip.");
-        Line(CompressedName(spec.Name).Replace('.', '_'));
-        Line("{");
+        Line(CompressedName(spec.Name).Replace('.', '_') + ";");
 
         var lines = specSource.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
 
@@ -189,7 +199,7 @@ class Program
         string name = "";
         string compressedName = "";
         int number = 0;
-        int commentOffset = 0, commentEnd = 0, markdownOffset = 0, markdownEnd = 0, htmlOffset = 0, htmlEnd = 0;
+        int commentOffset, commentEnd, markdownOffset, markdownEnd, htmlOffset, htmlEnd;
         bool first = true;
         LinkedList<(string Heading, string Compressed, int Level)> headings = new LinkedList<(string, string, int)>();
         StringBuilder nameBuilder = new StringBuilder(64);
@@ -206,20 +216,20 @@ class Program
                     int level = line.IndexOf(' ', StringComparison.Ordinal);
                     while (headings.Count != 0)
                     {
-                        if (headings.Last.Value.Level < level) break;
+                        if (headings.Last!.Value.Level < level) break;
                         headings.RemoveLast();
                     }
                     string heading = line.Substring(level + 1);
                     headings.AddLast((heading, CompressedName(heading), level));
 
-                    foreach (var (Heading, _, _) in headings)
-                        nameBuilder.Append(Heading + " / ");
+                    foreach (var (headingText, _, _) in headings)
+                        nameBuilder.Append(headingText + " / ");
                     nameBuilder.Length -= 3;
                     name = nameBuilder.ToString();
                     nameBuilder.Length = 0;
 
-                    foreach (var (_, Compressed, _) in headings)
-                        nameBuilder.Append(Compressed);
+                    foreach (var (_, compressed, _) in headings)
+                        nameBuilder.Append(compressed);
                     compressedName = nameBuilder.ToString();
                     nameBuilder.Length = 0;
 
@@ -237,12 +247,12 @@ class Program
                         while (commentOffset < commentEnd && IsEmpty(lines[commentOffset])) commentOffset++;
                         for (i = commentOffset; i < commentEnd; i++)
                         {
-                            Indent(2); Write("// "); Line(lines[i]);
+                            Indent(1); Comment(lines[i]);
                         }
                     }
                     goto End;
                 }
-            };
+            }
 
             markdownOffset = ++i;
             while (!(lines[i].Length == 1 && lines[i][0] == '.')) i++;
@@ -256,30 +266,30 @@ class Program
             {
                 if (!first)
                 {
-                    Indent(); Line("}");
-                    Line();
+                    Line("}");
                 }
-                Indent(); Line("[TestFixture]");
-                Indent(); Line("public class Test" + compressedName);
-                Indent(); Line("{");
+                Line();
+                Line("public class Test" + compressedName);
+                Line("{");
                 first = false;
                 nameChanged = false;
             }
             else Line();
 
-            WriteTest(name, compressedName, ++number, spec.Extensions, lines,
+            number++;
+            var requiresIcu = spec.RendererType == RendererType.Html && HtmlExamplesRequiringIcu.Contains((spec.Name, number));
+            WriteTest(name, compressedName, number, spec.Extensions, lines,
                 commentOffset, commentEnd,
                 markdownOffset, markdownEnd,
                 htmlOffset, htmlEnd,
-                spec.RendererType);
+                spec.RendererType, requiresIcu);
         }
 
     End:
         if (!first)
         {
-            Indent(); Line("}");
+            Line("}");
         }
-        Line("}");
 
         string source = StringBuilder.ToString();
         StringBuilder.Length = 0;
@@ -288,42 +298,47 @@ class Program
         return source;
     }
 
-    static void WriteTest(string name, string compressedName, int number, string extensions, string[] lines, int commentOffset, int commentEnd, int markdownOffset, int markdownEnd, int htmlOffset, int htmlEnd, RendererType rendererType)
+    private static void WriteTest(string name, string compressedName, int number, string extensions, string[] lines, int commentOffset, int commentEnd, int markdownOffset, int markdownEnd, int htmlOffset, int htmlEnd, RendererType rendererType, bool requiresIcu)
     {
         if (commentOffset != commentEnd)
         {
             while (commentOffset < commentEnd && IsEmpty(lines[commentOffset])) commentOffset++;
             for (int i = commentOffset; i < commentEnd; i++)
             {
-                Indent(2); Write("// "); Line(lines[i]);
+                Indent(1); Comment(lines[i]);
             }
         }
 
-        Indent(2); Line("[Test]");
-        Indent(2); Line("public void " + compressedName + "_Example" + number.ToString().PadLeft(3, '0') + "()");
-        Indent(2); Line("{");
-        Indent(3); Line("// Example " + number);
-        Indent(3); Line("// Section: " + name);
-
-        Indent(3); Line("//");
-        Indent(3); Line("// The following Markdown:");
-        for (int i = markdownOffset; i < markdownEnd; i++)
+        Indent(1); Line("[Fact]");
+        if (requiresIcu)
         {
-            Indent(3); Write("// "); Indent(); Line(lines[i]);
+            Indent(1); Line("[Meziantou.Xunit.RunIf(globalizationMode: Meziantou.Xunit.TestGlobalizationMode.NotInvariant)]");
         }
 
-        Indent(3); Line("//");
-        Indent(3); Line("// Should be rendered as:");
+        Indent(1); Line("public void " + compressedName + "_Example" + number.ToString(CultureInfo.InvariantCulture).PadLeft(3, '0') + "()");
+        Indent(1); Line("{");
+        Indent(2); Line("// Example " + number.ToString(CultureInfo.InvariantCulture));
+        Indent(2); Comment("Section: " + name);
+
+        Indent(2); Line("//");
+        Indent(2); Line("// The following Markdown:");
+        for (int i = markdownOffset; i < markdownEnd; i++)
+        {
+            Indent(2); Comment("    " + lines[i]);
+        }
+
+        Indent(2); Line("//");
+        Indent(2); Line("// Should be rendered as:");
         for (int i = htmlOffset; i < htmlEnd; i++)
         {
-            Indent(3); Write("// "); Indent(); Line(lines[i]);
+            Indent(2); Comment("    " + lines[i]);
         }
         if (htmlOffset >= htmlEnd)
         {
-            Indent(3); Write("//");
+            Indent(2); Write("//");
         }
         Line();
-        Indent(3);
+        Indent(2);
         if      (rendererType == RendererType.Html)      Write("TestParser");
         else if (rendererType == RendererType.Normalize) Write("TestNormalize");
         else if (rendererType == RendererType.PlainText) Write("TestPlainText");
@@ -342,38 +357,38 @@ class Program
         }
         Write("\", \"");
         Write(extensions);
-        Line($"\", context: \"Example {number}\\nSection {name}\\n\");");
+        Line(FormattableString.Invariant($"\", context: \"Example {number}\\nSection {Escape(name)}\\n\");"));
 
-        Indent(2); Line("}");
+        Indent(1); Line("}");
     }
-    static string Escape(string input)
+    private static string Escape(string input)
     {
         return input
-            .Replace("→", "\t")
-            .Replace("\\", "\\\\")
-            .Replace("\"", "\\\"")
-            .Replace("\0", "\\0")
-            .Replace("\a", "\\a")
-            .Replace("\b", "\\b")
-            .Replace("\f", "\\f")
-            .Replace("\n", "\\n")
-            .Replace("\r", "\\r")
-            .Replace("\t", "\\t")
-            .Replace("\v", "\\v")
+            .Replace("→", "\t", StringComparison.Ordinal)
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("\0", "\\0", StringComparison.Ordinal)
+            .Replace("\a", "\\a", StringComparison.Ordinal)
+            .Replace("\b", "\\b", StringComparison.Ordinal)
+            .Replace("\f", "\\f", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\t", "\\t", StringComparison.Ordinal)
+            .Replace("\v", "\\v", StringComparison.Ordinal)
             ;
     }
-    static string CompressedName(string name)
+    private static string CompressedName(string name)
     {
         string compressedName = "";
         foreach (var part in name.Replace(',' , ' ').Replace('-', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             compressedName += char.IsLower(part[0])
-                ? char.ToUpper(part[0]) + (part.Length > 1 ? part.Substring(1) : "")
+                ? char.ToUpperInvariant(part[0]) + (part.Length > 1 ? part.Substring(1) : "")
                 : part;
         }
         return compressedName;
     }
-    static bool IsEmpty(string str)
+    private static bool IsEmpty(string str)
     {
         for (int i = 0; i < str.Length; i++)
         {

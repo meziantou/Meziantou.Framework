@@ -73,7 +73,7 @@ public class MathInlineParser : InlineParser
         }
 
         var start = slice.Start;
-        var end = 0;
+        int end;
 
         pc = match;
         var lastWhiteSpace = -1;

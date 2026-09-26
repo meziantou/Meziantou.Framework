@@ -6,10 +6,9 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestParserAuthoringHelpers
 {
-    [Test]
+    [Fact]
     public void GetParserStateResetsBetweenLeafBlocksAndEmitAppendsInline()
     {
         var pipeline = new MarkdownPipelineBuilder();
@@ -23,10 +22,10 @@ public sealed class TestParserAuthoringHelpers
             """.ReplaceLineEndings("\n"),
             pipeline.Build());
 
-        Assert.That(html, Is.EqualTo("<p>12</p>\n<p>1</p>\n"));
+        Assert.Equal("<p>12</p>\n<p>1</p>\n", html);
     }
 
-    [Test]
+    [Fact]
     public void TryDiscardOnlyDiscardsOpenNonRootBlocks()
     {
         var parser = new ParagraphBlockParser();
@@ -34,21 +33,21 @@ public sealed class TestParserAuthoringHelpers
         var processor = new BlockProcessor(document, new BlockParserList([parser]), context: null, trackTrivia: false);
 
         var detached = new ParagraphBlock(parser);
-        Assert.That(processor.TryDiscard(detached), Is.False);
+        Assert.False(processor.TryDiscard(detached));
 
         var paragraph = new ParagraphBlock(parser);
         document.Add(paragraph);
         processor.Open(paragraph);
 
-        Assert.That(document.Count, Is.EqualTo(1));
-        Assert.That(processor.TryDiscard(paragraph), Is.True);
-        Assert.That(document.Count, Is.EqualTo(0));
-        Assert.That(paragraph.Parent, Is.Null);
+        Assert.HasCount(1, document);
+        Assert.True(processor.TryDiscard(paragraph));
+        Assert.Empty(document);
+        Assert.Null(paragraph.Parent);
 
-        Assert.That(processor.TryDiscard(document), Is.False);
+        Assert.False(processor.TryDiscard(document));
     }
 
-    [Test]
+    [Fact]
     public void EmitUpdatesInlineAndLeafSpans()
     {
         var pipeline = new MarkdownPipelineBuilder();
@@ -57,10 +56,10 @@ public sealed class TestParserAuthoringHelpers
         var document = MarkdownConverter.Parse("~", pipeline.Build());
         var paragraph = document[0] as ParagraphBlock;
 
-        Assert.That(paragraph, Is.Not.Null);
-        Assert.That(paragraph!.Inline, Is.Not.Null);
-        Assert.That(paragraph.Inline!.Span, Is.EqualTo(new SourceSpan(0, 0)));
-        Assert.That(paragraph.Span, Is.EqualTo(new SourceSpan(0, 0)));
+        Assert.NotNull(paragraph);
+        Assert.NotNull(paragraph!.Inline);
+        Assert.Equal(new SourceSpan(0, 0), paragraph.Inline!.Span);
+        Assert.Equal(new SourceSpan(0, 0), paragraph.Span);
     }
 
     private sealed class CountingInlineParser : InlineParser

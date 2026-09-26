@@ -3,8 +3,7 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
-public class TestDescendantsOrder
+public static class TestDescendantsOrder
 {
     public static void TestSchemas(MarkdownDocument[] specsSyntaxTrees)
     {
@@ -28,9 +27,9 @@ public class TestDescendantsOrder
 
             foreach (LiteralInline literalInline in syntaxTree.Descendants<LiteralInline>())
             {
-                Assert.AreSame(Array.Empty<ListBlock>(), literalInline.Descendants<ListBlock>());
-                Assert.AreSame(Array.Empty<ParagraphBlock>(), literalInline.Descendants<ParagraphBlock>());
-                Assert.AreSame(Array.Empty<ContainerInline>(), literalInline.Descendants<ContainerInline>());
+                Assert.Same(Array.Empty<ListBlock>(), literalInline.Descendants<ListBlock>());
+                Assert.Same(Array.Empty<ParagraphBlock>(), literalInline.Descendants<ParagraphBlock>());
+                Assert.Same(Array.Empty<ContainerInline>(), literalInline.Descendants<ContainerInline>());
             }
 
             foreach (ContainerInline containerInline in syntaxTree.Descendants<ContainerInline>())
@@ -45,13 +44,13 @@ public class TestDescendantsOrder
 
                 if (containerInline.FirstChild is null)
                 {
-                    Assert.AreSame(Array.Empty<LiteralInline>(), containerInline.Descendants<LiteralInline>());
-                    Assert.AreSame(Array.Empty<LiteralInline>(), containerInline.FindDescendants<LiteralInline>());
-                    Assert.AreSame(Array.Empty<LiteralInline>(), (containerInline as MarkdownObject).Descendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), containerInline.Descendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), containerInline.FindDescendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), (containerInline as MarkdownObject).Descendants<LiteralInline>());
                 }
 
-                Assert.AreSame(Array.Empty<ListBlock>(), containerInline.Descendants<ListBlock>());
-                Assert.AreSame(Array.Empty<ParagraphBlock>(), containerInline.Descendants<ParagraphBlock>());
+                Assert.Same(Array.Empty<ListBlock>(), containerInline.Descendants<ListBlock>());
+                Assert.Same(Array.Empty<ParagraphBlock>(), containerInline.Descendants<ParagraphBlock>());
             }
 
             foreach (ParagraphBlock paragraphBlock in syntaxTree.Descendants<ParagraphBlock>())
@@ -60,7 +59,7 @@ public class TestDescendantsOrder
                     (paragraphBlock as MarkdownObject).Descendants<LiteralInline>(),
                     paragraphBlock.Descendants<LiteralInline>());
 
-                Assert.AreSame(Array.Empty<ParagraphBlock>(), paragraphBlock.Descendants<ParagraphBlock>());
+                Assert.Same(Array.Empty<ParagraphBlock>(), paragraphBlock.Descendants<ParagraphBlock>());
             }
 
             foreach (ContainerBlock containerBlock in syntaxTree.Descendants<ContainerBlock>())
@@ -75,9 +74,9 @@ public class TestDescendantsOrder
 
                 if (containerBlock.Count == 0)
                 {
-                    Assert.AreSame(Array.Empty<LiteralInline>(), containerBlock.Descendants<LiteralInline>());
-                    Assert.AreSame(Array.Empty<LiteralInline>(), (containerBlock as Block).Descendants<LiteralInline>());
-                    Assert.AreSame(Array.Empty<LiteralInline>(), (containerBlock as MarkdownObject).Descendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), containerBlock.Descendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), (containerBlock as Block).Descendants<LiteralInline>());
+                    Assert.Same(Array.Empty<LiteralInline>(), (containerBlock as MarkdownObject).Descendants<LiteralInline>());
                 }
             }
         }
@@ -88,11 +87,11 @@ public class TestDescendantsOrder
         var firstList = new List<T>(first);
         var secondList = new List<T>(second);
 
-        Assert.AreEqual(firstList.Count, secondList.Count);
+        Assert.HasCount(firstList.Count, secondList);
 
         for (int i = 0; i < firstList.Count; i++)
         {
-            Assert.AreSame(firstList[i], secondList[i]);
+            Assert.Same(firstList[i], secondList[i]);
         }
     }
 
@@ -101,7 +100,7 @@ public class TestDescendantsOrder
         // TODO: implement a recursiveless method
 
         var block = markdownObject as ContainerBlock;
-        if (block != null)
+        if (block is not null)
         {
             foreach (var subBlock in block)
             {
@@ -114,7 +113,7 @@ public class TestDescendantsOrder
 
                 // Visit leaf block that have inlines
                 var leafBlock = subBlock as LeafBlock;
-                if (leafBlock?.Inline != null)
+                if (leafBlock?.Inline is not null)
                 {
                     foreach (var subInline in Descendants_Legacy(leafBlock.Inline))
                     {
@@ -126,10 +125,10 @@ public class TestDescendantsOrder
         else
         {
             var inline = markdownObject as ContainerInline;
-            if (inline != null)
+            if (inline is not null)
             {
                 var child = inline.FirstChild;
-                while (child != null)
+                while (child is not null)
                 {
                     var next = child.NextSibling;
                     yield return child;

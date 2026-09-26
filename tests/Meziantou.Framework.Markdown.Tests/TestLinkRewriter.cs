@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestLinkRewriter
 {
-    [Test]
+    [Fact]
     public void ReplacesRelativeLinks()
     {
         TestSpec(s => "abc" + s, "Link: [hello](/relative.jpg)", "abc/relative.jpg");
@@ -14,7 +14,7 @@ public class TestLinkRewriter
         TestSpec(null, "Link: [hello](/relative.jpg)", "/relative.jpg");
     }
 
-    [Test]
+    [Fact]
     public void ReplacesRelativeImageSources()
     {
         TestSpec(s => "abc" + s, "Image: ![alt text](/image.jpg)", "abc/image.jpg");
@@ -22,7 +22,7 @@ public class TestLinkRewriter
         TestSpec(null, "Image: ![alt text](/image.jpg)", "/image.jpg");
     }
 
-    public static void TestSpec(Func<string,string> linkRewriter, string markdown, string expectedLink)
+    private static void TestSpec(Func<string,string>? linkRewriter, string markdown, string expectedLink)
     {
         var pipeline = new MarkdownPipelineBuilder().Build();
 
@@ -35,6 +35,6 @@ public class TestLinkRewriter
         renderer.Render(document);
         writer.Flush();
 
-        Assert.That(writer.ToString(), Contains.Substring("=\"" + expectedLink + "\""));
+        Assert.Contains("=\"" + expectedLink + "\"", writer.ToString());
     }
 }

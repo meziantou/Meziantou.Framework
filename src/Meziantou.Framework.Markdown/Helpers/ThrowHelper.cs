@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
@@ -12,6 +12,7 @@ namespace Meziantou.Framework.Markdown.Helpers;
 /// Inspired by CoreLib, taken from https://github.com/MihaZupan/SharpCollections, cc @MihaZupan
 /// </summary>
 [ExcludeFromCodeCoverage]
+[SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException", Justification = "Throw helpers: the parameter names belong to the callers")]
 internal static class ThrowHelper
 {
     // Very conservative limit used to limit nesting in the final AST.
@@ -109,6 +110,8 @@ internal static class ThrowHelper
     }
 
     [DoesNotReturn]
+    [SuppressMessage("Usage", "CA2201:Do not raise reserved exception types", Justification = "Indexers behave like the string indexer")]
+    [SuppressMessage("Design", "MA0012:Do not raise reserved exception type", Justification = "Indexers behave like the string indexer")]
     public static void ThrowIndexOutOfRangeException()
     {
         throw new IndexOutOfRangeException();
@@ -135,22 +138,4 @@ internal static class ThrowHelper
                 return "";
         }
     }
-}
-
-internal enum ExceptionArgument
-{
-    key,
-    input,
-    value,
-    length,
-    offsetLength,
-    text
-}
-
-internal enum ExceptionReason
-{
-    String_Empty,
-    SmallCapacity,
-    InvalidOffsetLength,
-    DuplicateKey,
 }

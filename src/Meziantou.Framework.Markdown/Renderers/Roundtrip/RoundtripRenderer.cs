@@ -1,11 +1,11 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.IO;
-using Meziantou.Framework.Markdown.Syntax;
-using Meziantou.Framework.Markdown.Renderers.Roundtrip.Inlines;
 using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip.Inlines;
+using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
@@ -41,7 +41,7 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
         ObjectRenderers.Add(new EmphasisInlineRenderer());
         ObjectRenderers.Add(new LineBreakInlineRenderer());
         ObjectRenderers.Add(new RoundtripHtmlInlineRenderer());
-        ObjectRenderers.Add(new RoundtripHtmlEntityInlineRenderer());            
+        ObjectRenderers.Add(new RoundtripHtmlEntityInlineRenderer());
         ObjectRenderers.Add(new LinkInlineRenderer());
         ObjectRenderers.Add(new LiteralInlineRenderer());
     }
@@ -50,7 +50,6 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     /// Writes the lines of a <see cref="LeafBlock"/>
     /// </summary>
     /// <param name="leafBlock">The leaf block.</param>
-    /// <returns>This instance</returns>
     public void WriteLeafRawLines(LeafBlock leafBlock)
     {
         if (leafBlock is null) ThrowHelper.ArgumentNullException_leafBlock();
@@ -88,7 +87,7 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     /// </summary>
     public void RenderLinesAfter(Block block)
     {
-        previousWasLine = true;
+        PreviousWasLine = true;
         if (block.LinesAfter is null)
         {
             return;

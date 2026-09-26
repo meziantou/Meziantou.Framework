@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestSmartyPants
 {
-    [Test]
+    [Fact]
     public void MappingCanBeReconfigured()
     {
         var options = new SmartyPantOptions();
@@ -18,7 +18,7 @@ public class TestSmartyPants
         TestParser.TestSpec("<<test>>", "<p>footestbar</p>", pipeline);
     }
 
-    [Test]
+    [Fact]
     public void MappingCanBeReconfigured_HandlesRemovedMappings()
     {
         var options = new SmartyPantOptions();
@@ -32,7 +32,7 @@ public class TestSmartyPants
         TestParser.TestSpec("<<test>>", "<p>&laquo;test&raquo;</p>", pipeline);
     }
 
-    [Test]
+    [Fact]
     public void RecognizesSupplementaryCharacters()
     {
         var pipeline = new MarkdownPipelineBuilder()

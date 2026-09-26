@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Syntax;
 /// <seealso cref="MarkdownObject" />
 public abstract class Block : MarkdownObject, IBlock
 {
-    private BlockTriviaProperties? _trivia => GetTrivia<BlockTriviaProperties>();
+    private BlockTriviaProperties? TriviaOrNull => GetTrivia<BlockTriviaProperties>();
     private BlockTriviaProperties Trivia => GetOrSetTrivia<BlockTriviaProperties>();
 
     /// <summary>
@@ -68,26 +68,26 @@ public abstract class Block : MarkdownObject, IBlock
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaBefore { get => _trivia?.TriviaBefore ?? StringSlice.Empty; set => Trivia.TriviaBefore = value; }
+    public StringSlice TriviaBefore { get => TriviaOrNull?.TriviaBefore ?? StringSlice.Empty; set => Trivia.TriviaBefore = value; }
 
     /// <summary>
     /// Gets or sets trivia occurring after this block.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice TriviaAfter { get => _trivia?.TriviaAfter ?? StringSlice.Empty; set => Trivia.TriviaAfter = value; }
+    public StringSlice TriviaAfter { get => TriviaOrNull?.TriviaAfter ?? StringSlice.Empty; set => Trivia.TriviaAfter = value; }
 
     /// <summary>
     /// Gets or sets the empty lines occurring before this block.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise null.
     /// </summary>
-    public List<StringSlice>? LinesBefore { get => _trivia?.LinesBefore; set => Trivia.LinesBefore = value; }
+    public List<StringSlice>? LinesBefore { get => TriviaOrNull?.LinesBefore; set => Trivia.LinesBefore = value; }
 
     /// <summary>
     /// Gets or sets the empty lines occurring after this block.
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise null.
     /// </summary>
-    public List<StringSlice>? LinesAfter { get => _trivia?.LinesAfter; set => Trivia.LinesAfter = value; }
+    public List<StringSlice>? LinesAfter { get => TriviaOrNull?.LinesAfter; set => Trivia.LinesAfter = value; }
 
     /// <summary>
     /// Occurs when the process of inlines begin.
@@ -95,7 +95,7 @@ public abstract class Block : MarkdownObject, IBlock
     public event ProcessInlineDelegate? ProcessInlinesBegin
     {
         add => Trivia.ProcessInlinesBegin += value;
-        remove => _trivia?.ProcessInlinesBegin -= value;
+        remove => TriviaOrNull?.ProcessInlinesBegin -= value;
     }
 
     /// <summary>
@@ -104,7 +104,7 @@ public abstract class Block : MarkdownObject, IBlock
     public event ProcessInlineDelegate? ProcessInlinesEnd
     {
         add => Trivia.ProcessInlinesEnd += value;
-        remove => _trivia?.ProcessInlinesEnd -= value;
+        remove => TriviaOrNull?.ProcessInlinesEnd -= value;
     }
 
     /// <summary>
@@ -113,12 +113,12 @@ public abstract class Block : MarkdownObject, IBlock
     /// <param name="state">The inline parser state.</param>
     internal void OnProcessInlinesBegin(InlineProcessor state)
     {
-        if (_trivia is BlockTriviaProperties trivia)
+        if (TriviaOrNull is BlockTriviaProperties trivia)
         {
             trivia.ProcessInlinesBegin?.Invoke(state, null);
 
             // Not exactly standard 'event' behavior, but these aren't expected to be called more than once.
-            _trivia.ProcessInlinesBegin = null;
+            TriviaOrNull.ProcessInlinesBegin = null;
         }
     }
 
@@ -128,12 +128,12 @@ public abstract class Block : MarkdownObject, IBlock
     /// <param name="state">The inline parser state.</param>
     internal void OnProcessInlinesEnd(InlineProcessor state)
     {
-        if (_trivia is BlockTriviaProperties trivia)
+        if (TriviaOrNull is BlockTriviaProperties trivia)
         {
             trivia.ProcessInlinesEnd?.Invoke(state, null);
 
             // Not exactly standard 'event' behavior, but these aren't expected to be called more than once.
-            _trivia.ProcessInlinesEnd = null;
+            TriviaOrNull.ProcessInlinesEnd = null;
         }
     }
 
@@ -260,7 +260,7 @@ public abstract class Block : MarkdownObject, IBlock
         return block;
     }
 
-    private protected T? TryGetDerivedTrivia<T>() where T : class => _trivia?.DerivedTriviaSlot as T;
+    private protected T? TryGetDerivedTrivia<T>() where T : class => TriviaOrNull?.DerivedTriviaSlot as T;
     private protected T GetOrSetDerivedTrivia<T>() where T : new() => (T)(Trivia.DerivedTriviaSlot ??= new T());
 
     private sealed class BlockTriviaProperties

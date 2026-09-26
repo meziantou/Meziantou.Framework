@@ -264,7 +264,6 @@ internal sealed class FastStringWriter : TextWriter
 
     public override Task FlushAsync() => Task.CompletedTask;
 
-    public override ValueTask DisposeAsync() => default;
 
 
     public void Reset()

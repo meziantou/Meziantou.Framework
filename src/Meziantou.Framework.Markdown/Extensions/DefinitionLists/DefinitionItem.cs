@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Parsers;
@@ -8,7 +8,7 @@ using Meziantou.Framework.Markdown.Syntax;
 namespace Meziantou.Framework.Markdown.Extensions.DefinitionLists;
 
 /// <summary>
-/// A definition item contains zero to multiple <see cref="DefinitionTerm"/> 
+/// A definition item contains zero to multiple <see cref="DefinitionTerm"/>
 /// and definitions (any <see cref="Block"/>)
 /// </summary>
 /// <seealso cref="ContainerBlock" />

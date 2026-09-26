@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -17,6 +17,6 @@ public class AutolinkInlineRenderer : NormalizeObjectRenderer<AutolinkInline>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, AutolinkInline obj)
     {
-        renderer.Write('<').Write(renderer.EscapeTablePipes ? obj.Url.Replace("|", "\\|") : obj.Url).Write('>');
+        renderer.Write('<').Write(renderer.EscapeTablePipes ? obj.Url.Replace("|", "\\|", StringComparison.Ordinal) : obj.Url).Write('>');
     }
 }

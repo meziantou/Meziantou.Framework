@@ -7,15 +7,14 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestEmphasisExtended
 {
-    class EmphasisTestExtension : IMarkdownExtension
+    private sealed class EmphasisTestExtension : IMarkdownExtension
     {
         public void Setup(MarkdownPipelineBuilder pipeline)
         {
             var emphasisParser = pipeline.InlineParsers.Find<EmphasisInlineParser>();
-            Debug.Assert(emphasisParser != null);
+            Debug.Assert(emphasisParser is not null);
 
             foreach (var emphasis in EmphasisTestDescriptors)
             {
@@ -35,7 +34,7 @@ public class TestEmphasisExtended
             renderer.ObjectRenderers.Insert(0, new EmphasisRenderer());
         }
 
-        class EmphasisRenderer : HtmlObjectRenderer<CustomEmphasisInline>
+        private sealed class EmphasisRenderer : HtmlObjectRenderer<CustomEmphasisInline>
         {
             protected override void Write(HtmlRenderer renderer, CustomEmphasisInline obj)
             {
@@ -47,7 +46,7 @@ public class TestEmphasisExtended
             }
         }
     }
-    class Tag
+    private sealed class Tag
     {
 #pragma warning disable CS0649
         public int Level;
@@ -66,7 +65,7 @@ public class TestEmphasisExtended
         public static implicit operator Tag(string tag)
             => new Tag(tag);
     }
-    class EmphasisTestDescriptor
+    private sealed class EmphasisTestDescriptor
     {
         public char Character;
         public int Minimum;
@@ -91,8 +90,8 @@ public class TestEmphasisExtended
         public EmphasisTestDescriptor(char character, int min, int max, string tag)
             : this(character, min, max, new Tag(tag)) { }
     }
-    class CustomEmphasisInline : EmphasisInline { }
-    static readonly EmphasisTestDescriptor[] EmphasisTestDescriptors = new[]
+    private sealed class CustomEmphasisInline : EmphasisInline { }
+    private static readonly EmphasisTestDescriptor[] EmphasisTestDescriptors = new[]
     {
         //                            Min Max
         new EmphasisTestDescriptor('"', 1, 1, "quotation"),
@@ -104,63 +103,63 @@ public class TestEmphasisExtended
         new EmphasisTestDescriptor('3', 3, 3, "three-only"),
     };
 
-    static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Use<EmphasisTestExtension>().Build();
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Use<EmphasisTestExtension>().Build();
 
-    [Test]
-    [TestCase("*foo**",         "<em>foo</em>*")]
-    [TestCase("**foo*",         "*<em>foo</em>")]
-    [TestCase("***foo***",      "<em><strong>foo</strong></em>")]
-    [TestCase("**_foo_**",      "<strong><em>foo</em></strong>")]
-    [TestCase("_**foo**_",      "<em><strong>foo</strong></em>")]
-    [TestCase("\"foo\"",        "<quotation>foo</quotation>")]
-    [TestCase("\"\"foo\"\"",    "<quotation><quotation>foo</quotation></quotation>")]
-    [TestCase("\"foo\"\"",      "<quotation>foo</quotation>&quot;")]
-    [TestCase("\"\"foo\"",      "&quot;<quotation>foo</quotation>")]
-    [TestCase(", foo",          ", foo")]
-    [TestCase(", foo,",         ", foo,")]
-    [TestCase(",some, foo,",    "<comma>some</comma> foo,")]
-    [TestCase(",,foo,,",        "<extra-comma>foo</extra-comma>")]
-    [TestCase(",foo,,",         "<comma>foo</comma>,")]
-    [TestCase(",,,foo,,,",      "<comma><extra-comma>foo</extra-comma></comma>")]
-    [TestCase("*foo*&_foo_",     "<em>foo</em>&amp;<em>foo</em>")]
-    [TestCase("!1!",            "!1!")]
-    [TestCase("!!2!!",          "<warning>2</warning>")]
-    [TestCase("!!!3!!!",        "<error>3</error>")]
-    [TestCase("!!!34!!!!",      "<error>34</error>!")]
-    [TestCase("!!!!43!!!",      "!<error>43</error>")]
-    [TestCase("!!!!44!!!!",     "!<error>44!</error>")] // This is a new case - should the second ! be before or after </error>?
-    [TestCase("!!!!!5!!!!!",    "<warning><error>5</error></warning>")]
-    [TestCase("!!!!!!6!!!!!!",  "<error><error>6</error></error>")]
-    [TestCase("!! !mixed!!!",   "!! !mixed!!!")] // can't open the delimiter because of the whitespace
-    [TestCase("=",              "=")]
-    [TestCase("==",             "==")]
-    [TestCase("====",           "====")]
-    [TestCase("=a",             "=a")]
-    [TestCase("=a=",            "<equal>a</equal>")]
-    [TestCase("==a=",           "=<equal>a</equal>")]
-    [TestCase("==a==",          "<really-equal>a</really-equal>")]
-    [TestCase("==a===",         "<really-equal>a</really-equal>=")]
-    [TestCase("===a===",        "<congruent>a</congruent>")]
-    [TestCase("====a====",      "<equal><congruent>a</congruent></equal>")]
-    [TestCase("=====a=====",    "<really-equal><congruent>a</congruent></really-equal>")]
-    [TestCase("1",              "1")]
-    [TestCase("1 1",            "1 1")]
-    [TestCase("1Foo1",          "<one-only>Foo</one-only>")]
-    [TestCase("1121",           "1<one-only>2</one-only>")]
-    [TestCase("22322",          "<two-only>3</two-only>")]
-    [TestCase("2223222",        "2<two-only>32</two-only>")]
-    [TestCase("22223222",       "22<two-only>32</two-only>")]
-    [TestCase("22223223222",    "22223<two-only>3</two-only>2")]
-    [TestCase("2232",           "2232")]
-    [TestCase("333",            "333")]
-    [TestCase("3334333",        "<three-only>4</three-only>")]
-    [TestCase("33334333",       "3<three-only>4</three-only>")]
-    [TestCase("33343333",       "<three-only>4</three-only>3")]
-    [TestCase("122122",         "<one-only>22</one-only>22")]
-    [TestCase("221221",         "<two-only>1</two-only>1")]
-    [TestCase("122foo221",      "<one-only><two-only>foo</two-only></one-only>")]
-    [TestCase("122foo122",      "<one-only>22foo</one-only>22")]
-    [TestCase("!!!!!Attention:!! \"==1+1== 2\",but ===333 and 222===, mod 111!!!",
+    [Theory]
+    [InlineData("*foo**",         "<em>foo</em>*")]
+    [InlineData("**foo*",         "*<em>foo</em>")]
+    [InlineData("***foo***",      "<em><strong>foo</strong></em>")]
+    [InlineData("**_foo_**",      "<strong><em>foo</em></strong>")]
+    [InlineData("_**foo**_",      "<em><strong>foo</strong></em>")]
+    [InlineData("\"foo\"",        "<quotation>foo</quotation>")]
+    [InlineData("\"\"foo\"\"",    "<quotation><quotation>foo</quotation></quotation>")]
+    [InlineData("\"foo\"\"",      "<quotation>foo</quotation>&quot;")]
+    [InlineData("\"\"foo\"",      "&quot;<quotation>foo</quotation>")]
+    [InlineData(", foo",          ", foo")]
+    [InlineData(", foo,",         ", foo,")]
+    [InlineData(",some, foo,",    "<comma>some</comma> foo,")]
+    [InlineData(",,foo,,",        "<extra-comma>foo</extra-comma>")]
+    [InlineData(",foo,,",         "<comma>foo</comma>,")]
+    [InlineData(",,,foo,,,",      "<comma><extra-comma>foo</extra-comma></comma>")]
+    [InlineData("*foo*&_foo_",     "<em>foo</em>&amp;<em>foo</em>")]
+    [InlineData("!1!",            "!1!")]
+    [InlineData("!!2!!",          "<warning>2</warning>")]
+    [InlineData("!!!3!!!",        "<error>3</error>")]
+    [InlineData("!!!34!!!!",      "<error>34</error>!")]
+    [InlineData("!!!!43!!!",      "!<error>43</error>")]
+    [InlineData("!!!!44!!!!",     "!<error>44!</error>")] // This is a new case - should the second ! be before or after </error>?
+    [InlineData("!!!!!5!!!!!",    "<warning><error>5</error></warning>")]
+    [InlineData("!!!!!!6!!!!!!",  "<error><error>6</error></error>")]
+    [InlineData("!! !mixed!!!",   "!! !mixed!!!")] // can't open the delimiter because of the whitespace
+    [InlineData("=",              "=")]
+    [InlineData("==",             "==")]
+    [InlineData("====",           "====")]
+    [InlineData("=a",             "=a")]
+    [InlineData("=a=",            "<equal>a</equal>")]
+    [InlineData("==a=",           "=<equal>a</equal>")]
+    [InlineData("==a==",          "<really-equal>a</really-equal>")]
+    [InlineData("==a===",         "<really-equal>a</really-equal>=")]
+    [InlineData("===a===",        "<congruent>a</congruent>")]
+    [InlineData("====a====",      "<equal><congruent>a</congruent></equal>")]
+    [InlineData("=====a=====",    "<really-equal><congruent>a</congruent></really-equal>")]
+    [InlineData("1",              "1")]
+    [InlineData("1 1",            "1 1")]
+    [InlineData("1Foo1",          "<one-only>Foo</one-only>")]
+    [InlineData("1121",           "1<one-only>2</one-only>")]
+    [InlineData("22322",          "<two-only>3</two-only>")]
+    [InlineData("2223222",        "2<two-only>32</two-only>")]
+    [InlineData("22223222",       "22<two-only>32</two-only>")]
+    [InlineData("22223223222",    "22223<two-only>3</two-only>2")]
+    [InlineData("2232",           "2232")]
+    [InlineData("333",            "333")]
+    [InlineData("3334333",        "<three-only>4</three-only>")]
+    [InlineData("33334333",       "3<three-only>4</three-only>")]
+    [InlineData("33343333",       "<three-only>4</three-only>3")]
+    [InlineData("122122",         "<one-only>22</one-only>22")]
+    [InlineData("221221",         "<two-only>1</two-only>1")]
+    [InlineData("122foo221",      "<one-only><two-only>foo</two-only></one-only>")]
+    [InlineData("122foo122",      "<one-only>22foo</one-only>22")]
+    [InlineData("!!!!!Attention:!! \"==1+1== 2\",but ===333 and 222===, mod 111!!!",
         "<error><warning>Attention:</warning> <quotation><really-equal><one-only>+</one-only></really-equal> 2</quotation><comma>but <congruent>333 and 222</congruent></comma> mod 111</error>")]
     public void TestEmphasis(string markdown, string expectedHtml)
     {

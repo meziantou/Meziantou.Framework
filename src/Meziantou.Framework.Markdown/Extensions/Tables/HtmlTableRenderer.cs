@@ -44,7 +44,7 @@ public class HtmlTableRenderer : HtmlObjectRenderer<Table>
             {
                 foreach (var tableColumnDefinition in table.ColumnDefinitions)
                 {
-                    var width = Math.Round(tableColumnDefinition.Width * 100) / 100;
+                    var width = Math.Round(tableColumnDefinition.Width * 100, MidpointRounding.ToEven) / 100;
                     var widthValue = string.Format(CultureInfo.InvariantCulture, "{0:0.##}", width);
                     renderer.WriteLine($"<col style=\"width:{widthValue}%\" />");
                 }

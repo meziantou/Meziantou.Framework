@@ -4,47 +4,43 @@ using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
-public class TestFastStringWriter
+public sealed class TestFastStringWriter : IDisposable
 {
     private const string NewLineReplacement = "~~NEW_LINE~~";
 
-    private FastStringWriter _writer = new();
-
-    [SetUp]
-    public void Setup()
+    private readonly FastStringWriter _writer = new()
     {
-        _writer = new FastStringWriter
-        {
-            NewLine = NewLineReplacement
-        };
+        NewLine = NewLineReplacement,
+    };
+
+    public void Dispose() => _writer.Dispose();
+
+    private void AssertToString(string value)
+    {
+        value = value.Replace("\n", NewLineReplacement, StringComparison.Ordinal);
+        Assert.Equal(value, _writer.ToString());
+        Assert.Equal(value, _writer.ToString());
     }
 
-    public void AssertToString(string value)
-    {
-        value = value.Replace("\n", NewLineReplacement);
-        Assert.AreEqual(value, _writer.ToString());
-        Assert.AreEqual(value, _writer.ToString());
-    }
-
-    [Test]
+    [Fact]
     public async Task NewLine()
     {
-        Assert.AreEqual("\n", new FastStringWriter().NewLine);
+        using var writer = new FastStringWriter();
+        Assert.Equal("\n", writer.NewLine);
 
         _writer.NewLine = "\r";
-        Assert.AreEqual("\r", _writer.NewLine);
+        Assert.Equal("\r", _writer.NewLine);
 
         _writer.NewLine = "foo";
-        Assert.AreEqual("foo", _writer.NewLine);
+        Assert.Equal("foo", _writer.NewLine);
 
         _writer.WriteLine();
         await _writer.WriteLineAsync();
         _writer.WriteLine("bar");
-        Assert.AreEqual("foofoobarfoo", _writer.ToString());
+        Assert.Equal("foofoobarfoo", _writer.ToString());
     }
 
-    [Test]
+    [Fact]
     public async Task FlushCloseDispose()
     {
         _writer.Write('a');
@@ -60,7 +56,7 @@ public class TestFastStringWriter
         AssertToString("ab");
     }
 
-    [Test]
+    [Fact]
     public async Task Write_Char()
     {
         _writer.Write('a');
@@ -97,7 +93,7 @@ public class TestFastStringWriter
         }
     }
 
-    [Test]
+    [Fact]
     public async Task Write_String()
     {
         _writer.Write("foo");
@@ -114,7 +110,7 @@ public class TestFastStringWriter
         AssertToString("foobar\nbazfoo\n" + new string('a', 1050));
     }
 
-    [Test]
+    [Fact]
     public async Task Write_Span()
     {
         _writer.Write("foo".AsSpan());
@@ -131,7 +127,7 @@ public class TestFastStringWriter
         AssertToString("foobar\nbazfoo\n" + new string('a', 1050));
     }
 
-    [Test]
+    [Fact]
     public async Task Write_CharArray()
     {
         _writer.Write("foo".ToCharArray());
@@ -148,7 +144,7 @@ public class TestFastStringWriter
         AssertToString("foobar\nbazfoo\n" + new string('a', 1050));
     }
 
-    [Test]
+    [Fact]
     public async Task Write_CharArrayWithIndexes()
     {
         _writer.Write("foo".ToCharArray(), 1, 1);
@@ -165,7 +161,7 @@ public class TestFastStringWriter
         AssertToString("oba\nbfoo\n" + new string('a', 1035));
     }
 
-    [Test]
+    [Fact]
     public async Task Write_StringBuilder()
     {
         _writer.Write(new StringBuilder("foo"));

@@ -1,9 +1,8 @@
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestExceptionNotThrown
 {
-    [Test]
+    [Fact]
     public void DoesNotThrowIndexOutOfRangeException1()
     {
         Assert.DoesNotThrow(() =>
@@ -13,7 +12,7 @@ public class TestExceptionNotThrown
         });
     }
 
-    [Test]
+    [Fact]
     public void DoesNotThrowIndexOutOfRangeException2()
     {
         Assert.DoesNotThrow(() =>
@@ -23,7 +22,7 @@ public class TestExceptionNotThrown
         });
     }
 
-    [Test]
+    [Fact]
     public void DoesNotThrowIndexOutOfRangeException3()
     {
         Assert.DoesNotThrow(() =>
@@ -33,7 +32,7 @@ public class TestExceptionNotThrown
         });
     }
 
-    [Test]
+    [Fact]
     public void DoesNotThrowIndexOutOfRangeException4()
     {
         Assert.DoesNotThrow(() =>

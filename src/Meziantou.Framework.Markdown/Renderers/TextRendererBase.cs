@@ -75,7 +75,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
         private readonly string? _constant;
         private readonly string[]? _lineSpecific;
         private readonly string? _marker;
-        private int position;
+        private int _position;
 
         internal Indent(string constant)
         {
@@ -95,9 +95,9 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
 
         internal string Next()
         {
-            if (_marker != null && position == 0)
+            if (_marker != null && _position == 0)
             {
-                position++;
+                _position++;
                 return _marker;
             }
 
@@ -107,17 +107,17 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
             }
 
             //if (_lineSpecific.Count == 0) throw new Exception("Indents empty");
-            if (position == _lineSpecific!.Length) return string.Empty;
+            if (_position == _lineSpecific!.Length) return string.Empty;
 
-            return _lineSpecific![position++];
+            return _lineSpecific![_position++];
         }
     }
 
     /// <summary>
     /// Gets or sets the previous was line.
     /// </summary>
-    protected bool previousWasLine;
-    private readonly List<Indent> indents;
+    protected bool PreviousWasLine;
+    private readonly List<Indent> _indents;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TextRendererBase{T}"/> class.
@@ -126,8 +126,8 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     protected TextRendererBase(TextWriter writer) : base(writer)
     {
         // We assume that we are starting as if we had previously a newline
-        previousWasLine = true;
-        indents = new List<Indent>();
+        PreviousWasLine = true;
+        _indents = new List<Indent>();
     }
 
     /// <summary>
@@ -150,8 +150,8 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     internal void ResetInternal()
     {
         _childrenDepth = 0;
-        previousWasLine = true;
-        indents.Clear();
+        PreviousWasLine = true;
+        _indents.Clear();
     }
 
     /// <summary>
@@ -161,9 +161,9 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T EnsureLine()
     {
-        if (!previousWasLine)
+        if (!PreviousWasLine)
         {
-            previousWasLine = true;
+            PreviousWasLine = true;
             Writer.WriteLine();
         }
         return (T)this;
@@ -175,7 +175,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     public void PushIndent(string indent)
     {
         if (indent is null) ThrowHelper.ArgumentNullException(nameof(indent));
-        indents.Add(new Indent(indent));
+        _indents.Add(new Indent(indent));
     }
 
     /// <summary>
@@ -186,11 +186,11 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     public void PushIndent(string[] lineSpecific)
     {
         if (lineSpecific is null) ThrowHelper.ArgumentNullException(nameof(lineSpecific));
-        indents.Add(new Indent(lineSpecific));
+        _indents.Add(new Indent(lineSpecific));
 
         // ensure that indents are written to the output stream
         // this assumes that calls after PushIndent wil write children content
-        previousWasLine = true;
+        PreviousWasLine = true;
     }
 
     /// <summary>
@@ -208,11 +208,11 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     public void PushHangingIndent(string marker)
     {
         if (marker is null) ThrowHelper.ArgumentNullException(nameof(marker));
-        indents.Add(new Indent(marker, new string(' ', marker.Length)));
+        _indents.Add(new Indent(marker, new string(' ', marker.Length)));
 
         // ensure that indents are written to the output stream
         // this assumes that calls after PushHangingIndent will write children content
-        previousWasLine = true;
+        PreviousWasLine = true;
     }
 
     /// <summary>
@@ -220,8 +220,8 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// </summary>
     public void PopIndent()
     {
-        if (this.indents.Count > 0)
-            indents.RemoveAt(indents.Count - 1);
+        if (this._indents.Count > 0)
+            _indents.RemoveAt(_indents.Count - 1);
         else
             throw new InvalidOperationException("No indent to pop");
     }
@@ -229,12 +229,12 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// <summary>
     /// Performs the clear indent operation.
     /// </summary>
-    public void ClearIndent() => indents.Clear();
+    public void ClearIndent() => _indents.Clear();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void WriteIndent()
     {
-        if (previousWasLine)
+        if (PreviousWasLine)
         {
             WriteIndentCore();
         }
@@ -242,10 +242,10 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
 
     private void WriteIndentCore()
     {
-        previousWasLine = false;
-        for (int i = 0; i < indents.Count; i++)
+        PreviousWasLine = false;
+        for (int i = 0; i < _indents.Count; i++)
         {
-            var indent = indents[i];
+            var indent = _indents[i];
             var indentText = indent.Next();
             Writer.Write(indentText);
         }
@@ -318,7 +318,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
         WriteIndent();
         if (content == '\n')
         {
-            previousWasLine = true;
+            PreviousWasLine = true;
         }
         Writer.Write(content);
         return (T)this;
@@ -353,7 +353,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
             WriteRaw(content);
             if (content[content.Length - 1] == '\n')
             {
-                previousWasLine = true;
+                PreviousWasLine = true;
             }
         }
     }
@@ -379,7 +379,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     {
         WriteIndent();
         Writer.WriteLine();
-        previousWasLine = true;
+        PreviousWasLine = true;
         return (T)this;
     }
 
@@ -392,7 +392,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     {
         WriteIndent();
         Writer.Write(newLine.AsString());
-        previousWasLine = true;
+        PreviousWasLine = true;
         return (T)this;
     }
 
@@ -405,7 +405,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     public T WriteLine(string content)
     {
         WriteIndent();
-        previousWasLine = true;
+        PreviousWasLine = true;
         Writer.WriteLine(content);
         return (T)this;
     }
@@ -419,7 +419,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     public T WriteLine(char content)
     {
         WriteIndent();
-        previousWasLine = true;
+        PreviousWasLine = true;
         Writer.WriteLine(content);
         return (T)this;
     }

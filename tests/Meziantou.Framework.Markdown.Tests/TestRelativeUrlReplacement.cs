@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestRelativeUrlReplacement
 {
-    [Test]
+    [Fact]
     public void ReplacesRelativeLinks()
     {
         TestSpec("https://example.com", "Link: [hello](/relative.jpg)", "https://example.com/relative.jpg");
@@ -17,7 +17,7 @@ public class TestRelativeUrlReplacement
         TestSpec("https://example.com", "Link: [hello](/relative.jpg)", "https://example.com/relative.jpg");
     }
 
-    [Test]
+    [Fact]
     public void ReplacesRelativeImageSources()
     {
         TestSpec("https://example.com", "Image: ![alt text](/image.jpg)", "https://example.com/image.jpg");
@@ -25,13 +25,13 @@ public class TestRelativeUrlReplacement
         TestSpec(null, "Image: ![alt text](/image.jpg)", "/image.jpg");
     }
 
-    public static void TestSpec(string baseUrl, string markdown, string expectedLink)
+    private static void TestSpec(string? baseUrl, string markdown, string expectedLink)
     {
         var pipeline = new MarkdownPipelineBuilder().Build();
 
         var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
-        if (baseUrl != null)
+        if (baseUrl is not null)
             renderer.BaseUrl = new Uri(baseUrl);
         pipeline.Setup(renderer);
 
@@ -39,6 +39,6 @@ public class TestRelativeUrlReplacement
         renderer.Render(document);
         writer.Flush();
 
-        Assert.That(writer.ToString(), Contains.Substring("=\"" + expectedLink + "\""));
+        Assert.Contains("=\"" + expectedLink + "\"", writer.ToString());
     }
 }

@@ -10,13 +10,12 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestNormalize
 {
-    [Test]
+    [Fact]
     public void SyntaxCodeBlock()
     {
-        AssertSyntax("````csharp\npublic void HelloWorld()\n{\n}\n````", new FencedCodeBlock(null)
+        AssertSyntax("````csharp\npublic void HelloWorld()\n{\n}\n````", new FencedCodeBlock(null!)
         {
             FencedChar = '`',
             OpeningFencedCharCount = 4,
@@ -30,7 +29,7 @@ public class TestNormalize
             }
         });
 
-        AssertSyntax("    public void HelloWorld()\n    {\n    }", new CodeBlock(null)
+        AssertSyntax("    public void HelloWorld()\n    {\n    }", new CodeBlock(null!)
         {
             Lines = new StringLineGroup(4)
             {
@@ -41,10 +40,10 @@ public class TestNormalize
         });
     }
 
-    [Test]
+    [Fact]
     public void SyntaxHeadline()
     {
-        AssertSyntax("## Headline", new HeadingBlock(null)
+        AssertSyntax("## Headline", new HeadingBlock(null!)
         {
             HeaderChar = '#',
             Level = 2,
@@ -52,17 +51,17 @@ public class TestNormalize
         });
     }
 
-    [Test]
+    [Fact]
     public void SyntaxHeadlineLevel7()
     {
-        AssertSyntax("####### Headline", new HeadingBlock(null) {
+        AssertSyntax("####### Headline", new HeadingBlock(null!) {
             HeaderChar = '#',
             Level = 7,
             Inline = new ContainerInline().AppendChild(new LiteralInline("Headline")),
         });
     }
 
-    [Test]
+    [Fact]
     public void SyntaxParagraph()
     {
         AssertSyntax("This is a normal paragraph", new ParagraphBlock()
@@ -82,7 +81,7 @@ public class TestNormalize
         });
     }
 
-    [Test]
+    [Fact]
     public void CodeBlock()
     {
         AssertNormalizeNoTrim("    public void HelloWorld();\n    {\n    }");
@@ -92,7 +91,7 @@ public class TestNormalize
         AssertNormalizeNoTrim("````csharp hideNewKeyword=true\npublic void HelloWorld();\n{\n}\n````");
     }
 
-    [Test]
+    [Fact]
     public void Heading()
     {
         AssertNormalizeNoTrim("# Heading");
@@ -107,7 +106,7 @@ public class TestNormalize
         AssertNormalizeNoTrim("Heading\n=======\n\ntext after two newlines", "# Heading\n\ntext after two newlines");
     }
 
-    [Test]
+    [Fact]
     public void AutoIdentifiersDoNotEmitGeneratedLinkReferenceDefinitions()
     {
         var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
@@ -117,17 +116,17 @@ public class TestNormalize
 
         renderer.Render(document);
 
-        Assert.AreEqual("# Test\n\n## Test", writer.ToString());
+        Assert.Equal("# Test\n\n## Test", writer.ToString());
     }
 
-    [Test]
+    [Fact]
     public void Backslash()
     {
         AssertNormalizeNoTrim("This is a hardline  \nAnd this is another hardline\\\nThis is standard newline");
         AssertNormalizeNoTrim("This is a line\nWith another line\nAnd a last line");
     }
 
-    [Test]
+    [Fact]
     public void HtmlBlock()
     {
         /*AssertNormalizeNoTrim(@"<div id=""foo"" class=""bar
@@ -135,7 +134,7 @@ baz"">
 </ div >");*/ // TODO: Bug: Throws Exception during emit
     }
 
-    [Test]
+    [Fact]
     public void Paragraph()
     {
         AssertNormalizeNoTrim("This is a plain paragraph");
@@ -146,7 +145,7 @@ plain
 paragraph");
     }
 
-    [Test]
+    [Fact]
     public void ParagraphMulti()
     {
         AssertNormalizeNoTrim(@"line1
@@ -156,7 +155,7 @@ line2
 line3");
     }
 
-    [Test]
+    [Fact]
     public void ListUnordered()
     {
         AssertNormalizeNoTrim(@"- a
@@ -164,7 +163,7 @@ line3");
 - c");
     }
 
-    [Test]
+    [Fact]
     public void ListUnorderedLoose()
     {
         AssertNormalizeNoTrim(@"- a
@@ -174,38 +173,39 @@ line3");
 - c");
     }
 
-    [Test]
+    [Fact]
     public void ListUnorderedSingleLineNested()
     {
         AssertNormalizeNoTrim("- - a");
     }
 
-    [Test]
+    [Fact]
     public void ListUnorderedWithQuoteBlock()
     {
         AssertNormalizeNoTrim("- > p");
     }
 
-    [TestCase("- >", "- > ")]
-    [TestCase("1. >", "1. > ")]
-    [TestCase("- >\n- a", "- > \n- a")]
-    [TestCase("1. >\n2. a", "1. > \n2. a")]
-    [TestCase("- > >", "- > > ")]
-    [TestCase("- >\n\ntext", "- > \n\ntext")]
-    [TestCase(">", "> ")]
+    [Theory]
+    [InlineData("- >", "- > ")]
+    [InlineData("1. >", "1. > ")]
+    [InlineData("- >\n- a", "- > \n- a")]
+    [InlineData("1. >\n2. a", "1. > \n2. a")]
+    [InlineData("- > >", "- > > ")]
+    [InlineData("- >\n\ntext", "- > \n\ntext")]
+    [InlineData(">", "> ")]
     public void EmptyQuotePreservesMarkers(string markdown, string expected)
     {
         AssertNormalizeNoTrim(markdown, expected);
         AssertNormalizeNoTrim(expected);
     }
 
-    [Test]
+    [Fact]
     public void EmptyQuoteWithoutSpacePreservesMarkers()
     {
         AssertNormalizeNoTrim("- >", options: new NormalizeOptions { SpaceAfterQuoteBlock = false });
     }
 
-    [Test]
+    [Fact]
     public void ListOrderedWithQuoteBlocks()
     {
         AssertNormalizeNoTrim("List of blockquotes\n1. > first\n2. > second\n3. > third",
@@ -213,7 +213,7 @@ line3");
         AssertNormalizeNoTrim("9. > first\n   > continuation\n10. > second\n    > continuation");
     }
 
-    [Test]
+    [Fact]
     public void HangingIndentUsesMarkerOnceAndComposesWithNestedIndents()
     {
         using var writer = new StringWriter();
@@ -227,21 +227,21 @@ line3");
         renderer.PopIndent();
         renderer.Write("last");
 
-        Assert.AreEqual("10. > first\n    > second\n    third\nlast", writer.ToString());
+        Assert.Equal("10. > first\n    > second\n    third\nlast", writer.ToString());
     }
 
-    [Test]
+    [Fact]
     public void HangingIndentRejectsNullWithoutChangingState()
     {
         using var writer = new StringWriter();
         var renderer = new NormalizeRenderer(writer);
-        var exception = Assert.Throws<ArgumentNullException>(() => renderer.PushHangingIndent(null));
-        Assert.AreEqual("marker", exception.ParamName);
+        var exception = Assert.Throws<ArgumentNullException>(() => renderer.PushHangingIndent(null!));
+        Assert.Equal("marker", exception.ParamName);
         renderer.Write("text");
-        Assert.AreEqual("text", writer.ToString());
+        Assert.Equal("text", writer.ToString());
     }
 
-    [Test]
+    [Fact]
     public void LineSpecificIndentRejectsNullWithoutChangingState()
     {
         using var writer = new StringWriter();
@@ -249,16 +249,16 @@ line3");
         renderer.PushIndent("> ");
         renderer.Write("first");
 
-        var exception = Assert.Throws<ArgumentNullException>(() => renderer.PushIndent((string[])null));
-        Assert.AreEqual("lineSpecific", exception.ParamName);
+        var exception = Assert.Throws<ArgumentNullException>(() => renderer.PushIndent((string[])null!));
+        Assert.Equal("lineSpecific", exception.ParamName);
         renderer.WriteLine(" second");
         renderer.Write("third");
         renderer.PopIndent();
 
-        Assert.AreEqual("> first second\n> third", writer.ToString());
+        Assert.Equal("> first second\n> third", writer.ToString());
     }
 
-    [Test]
+    [Fact]
     public void LineSpecificIndentStopsAfterLastEntry()
     {
         using var writer = new StringWriter();
@@ -269,11 +269,12 @@ line3");
         renderer.Write("c");
         renderer.PopIndent();
 
-        Assert.AreEqual("first: a\nnext: b\nc", writer.ToString());
+        Assert.Equal("first: a\nnext: b\nc", writer.ToString());
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OrderedListNormalizationRenumbersWithoutSourceBullets(bool trackTrivia)
     {
         var builder = new MarkdownPipelineBuilder();
@@ -283,52 +284,36 @@ line3");
         }
         var normalized = MarkdownConverter.Normalize("3. first\n9. second\n9. third", pipeline: builder.Build());
         var list = (ListBlock)MarkdownConverter.Parse(normalized)[0];
-        Assert.AreEqual(new[] { 3, 4, 5 }, list.Select(item => ((ListItemBlock)item).Order).ToArray());
+        Assert.Equal(new[] { 3, 4, 5 }, list.Select(item => ((ListItemBlock)item).Order).ToArray());
     }
 
-    [Test]
+    [Fact]
     public void ListUnorderedEmpty()
     {
         AssertNormalizeNoTrim("-", "- ");
         AssertNormalizeNoTrim("- ");
     }
 
-    [Test]
+    [Fact]
     public void ListOrderedLooseAndCodeBlock()
     {
-        AssertNormalizeNoTrim(@"1. ```
-   foo
-   ```
-   
-   bar");
+        AssertNormalizeNoTrim("1. ```\n   foo\n   ```\n   \n   bar");
     }
 
-    [Test, Ignore("Not sure this is the correct normalize for this one. Need to check the specs")]
+    [Fact(Skip = "Not sure this is the correct normalize for this one. Need to check the specs")]
     public void ListUnorderedLooseTop()
     {
-        AssertNormalizeNoTrim(@"* foo
-  * bar
-  
-  baz", options: new NormalizeOptions() { ListItemCharacter = '*' });
+        AssertNormalizeNoTrim("* foo\n  * bar\n  \n  baz", options: new NormalizeOptions() { ListItemCharacter = '*' });
     }
 
-    [Test]
+    [Fact]
     public void ListUnorderedLooseMultiParagraph()
     {
-        AssertNormalizeNoTrim(
-@"- a
-  
-  And another paragraph a
-
-- b
-  
-  And another paragraph b
-
-- c");
+        AssertNormalizeNoTrim("- a\n  \n  And another paragraph a\n\n- b\n  \n  And another paragraph b\n\n- c");
     }
 
 
-    [Test]
+    [Fact]
     public void ListOrdered()
     {
         AssertNormalizeNoTrim(@"1. a
@@ -337,7 +322,7 @@ line3");
     }
 
 
-    [Test]
+    [Fact]
     public void ListOrderedAndIntended()
     {
         AssertNormalizeNoTrim(@"1. a
@@ -360,14 +345,14 @@ line3");
 12. c");
     }
 
-    [Test]
+    [Fact]
     public void ListOrderedEmpty()
     {
         AssertNormalizeNoTrim("1.", "1. ");
         AssertNormalizeNoTrim("1. ");
     }
 
-    [Test]
+    [Fact]
     public void HeaderAndParagraph()
     {
         AssertNormalizeNoTrim(@"# heading
@@ -378,12 +363,10 @@ paragraph2 without newlines");
     }
 
 
-    [Test]
+    [Fact]
     public void QuoteBlock()
     {
-        AssertNormalizeNoTrim(@"> test1
-> 
-> test2");
+        AssertNormalizeNoTrim("> test1\n> \n> test2");
 
         AssertNormalizeNoTrim(@"> test1
 This is a continuation
@@ -402,7 +385,7 @@ asdf
 > -foobar sen.");
     }
 
-    [Test]
+    [Fact]
     public void ThematicBreak()
     {
         AssertNormalizeNoTrim("***\n");
@@ -410,13 +393,13 @@ asdf
         AssertNormalizeNoTrim("* * *\n", "***\n");
     }
 
-    [Test]
+    [Fact]
     public void AutolinkInline()
     {
         AssertNormalizeNoTrim("This has a <auto.link.com>");
     }
 
-    [Test]
+    [Fact]
     public void CodeInline()
     {
         AssertNormalizeNoTrim("This has a ` ` in it");
@@ -429,7 +412,7 @@ asdf
         AssertNormalizeNoTrim(@"This has a ``` ``Hello`World()` ``` in it");
     }
 
-    [Test]
+    [Fact]
     public void EmphasisInline()
     {
         AssertNormalizeNoTrim("This is a plain **paragraph**");
@@ -439,7 +422,7 @@ asdf
         AssertNormalizeNoTrim("This is a pl*ai*n **paragraph**");
     }
 
-    [Test]
+    [Fact]
     public void LineBreakInline()
     {
         AssertNormalizeNoTrim("normal\nline break");
@@ -448,7 +431,7 @@ asdf
         AssertNormalizeNoTrim("This is a line\nWith another line\nAnd a last line");
     }
 
-    [Test]
+    [Fact]
     public void LinkInline()
     {
         AssertNormalizeNoTrim("This is a [link](http://company.com)");
@@ -458,7 +441,7 @@ asdf
         AssertNormalizeNoTrim(@"This is a [link](http://company.com ""Crazy \"" Company"")");
     }
 
-    [Test]
+    [Fact]
     public void LinkReferenceDefinition()
     {
         // Full link
@@ -476,19 +459,19 @@ asdf
         AssertNormalizeNoTrim("This is a [link]\n\n[link]: http://company.com");
     }
 
-    [Test]
+    [Fact]
     public void EscapeInline()
     {
         AssertNormalizeNoTrim("This is an escape \\* with another \\[");
     }
 
-    [Test]
+    [Fact]
     public void HtmlEntityInline()
     {
         AssertNormalizeNoTrim("This is a &auml; blank");
     }
 
-    [Test]
+    [Fact]
     public void HtmlInline()
     {
         AssertNormalizeNoTrim("foo <hr/> bar");
@@ -496,35 +479,35 @@ asdf
     }
 
 
-    [Test]
+    [Fact]
     public void SpaceBetweenNodes()
     {
         AssertNormalizeNoTrim("# Hello World\nFoobar is a better bar.",
                               "# Hello World\n\nFoobar is a better bar.");
     }
 
-    [Test]
+    [Fact]
     public void SpaceBetweenNodesEvenForHeadlines()
     {
         AssertNormalizeNoTrim("# Hello World\n## Chapter 1\nFoobar is a better bar.",
                               "# Hello World\n\n## Chapter 1\n\nFoobar is a better bar.");
     }
 
-    [Test]
+    [Fact]
     public void SpaceRemoveAtStartAndEnd()
     {
         AssertNormalizeNoTrim("\n\n# Hello World\n## Chapter 1\nFoobar is a better bar.\n\n",
                               "# Hello World\n\n## Chapter 1\n\nFoobar is a better bar.");
     }
 
-    [Test]
+    [Fact]
     public void SpaceShortenBetweenNodes()
     {
         AssertNormalizeNoTrim("# Hello World\n\n\n\nFoobar is a better bar.",
                               "# Hello World\n\nFoobar is a better bar.");
     }
 
-    [Test]
+    [Fact]
     public void BiggerSample()
     {
         var input = @"# Heading 1
@@ -550,7 +533,7 @@ This is a last line";
         AssertNormalizeNoTrim(input);
     }
 
-    [Test]
+    [Fact]
     public void TaskLists()
     {
         AssertNormalizeNoTrim("- [X] This is done");
@@ -563,7 +546,7 @@ This is a last line";
         AssertNormalizeNoTrim("[ ] This is not a task list");
     }
 
-    [Test]
+    [Fact]
     public void JiraLinks()
     {
         AssertNormalizeNoTrim("FOO-1234");
@@ -572,7 +555,7 @@ This is a last line";
         AssertNormalizeNoTrim("**Hello World AB-1**");
     }
 
-    [Test]
+    [Fact]
     public void AutoLinks()
     {
         AssertNormalizeNoTrim("Hello from http://example.com/foo", "Hello from [http://example.com/foo](http://example.com/foo)", new NormalizeOptions() { ExpandAutoLinks = true, });
@@ -585,7 +568,7 @@ This is a last line";
         AssertNormalizeNoTrim("Hello from mailto:hello@example.com", "Hello from mailto:hello@example.com", new NormalizeOptions() { ExpandAutoLinks = false, });
     }
 
-    [Test]
+    [Fact]
     public void PipeTables()
     {
         AssertNormalizeNoTrim(@"Foo | Bar
@@ -610,7 +593,7 @@ Hello | *World*",             @"| Foo | Bar |
 | Hello World | *World* |");
     }
 
-    [Test]
+    [Fact]
     public void PipeTablesFollowedByText()
     {
         AssertNormalizeNoTrim(@"| Foo |
@@ -620,35 +603,38 @@ Hello | *World*",             @"| Foo | Bar |
 Text following the table.");
     }
 
-    [TestCase("| A |\n| :--- |\n| x |")]
-    [TestCase("| A | B |\n| :--- | :--- |\n| x | y |")]
-    [TestCase("| A | B |\n| --- | :--- |\n| x | y |")]
+    [Theory]
+    [InlineData("| A |\n| :--- |\n| x |")]
+    [InlineData("| A | B |\n| :--- | :--- |\n| x | y |")]
+    [InlineData("| A | B |\n| --- | :--- |\n| x | y |")]
     public void PipeTableAlignmentSurvivesNormalization(string markdown)
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
         var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
-        Assert.AreEqual(markdown, normalized);
-        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.Equal(markdown, normalized);
+        Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
     }
 
-    [TestCase("---")]
-    [TestCase(":---")]
-    [TestCase("---:")]
+    [Theory]
+    [InlineData("---")]
+    [InlineData(":---")]
+    [InlineData("---:")]
     public void PipeTableSeparatorMatchesExpandedHeader(string separator)
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
         var markdown = $"| A |\n| {separator} |\n| x | y |";
         var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
-        Assert.AreEqual($"| A |  |\n| {separator} | {separator} |\n| x | y |", normalized);
-        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
+        Assert.Equal($"| A |  |\n| {separator} | {separator} |\n| x | y |", normalized);
+        Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
-    [TestCase("---", "---------")]
-    [TestCase(":---", "-------:")]
-    [TestCase(":-----:", ":-------")]
-    [TestCase("", "---")]
-    [TestCase("---", "")]
+    [Theory]
+    [InlineData("---", "---------")]
+    [InlineData(":---", "-------:")]
+    [InlineData(":-----:", ":-------")]
+    [InlineData("", "---")]
+    [InlineData("---", "")]
     public void PipeTableInferredWidthsSurviveNormalization(string first, string second)
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions
@@ -657,12 +643,12 @@ Text following the table.");
         }).Build();
         var markdown = $"| A | B |\n| {first} | {second} |\n| x | y |";
         var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
-        Assert.AreEqual(markdown, normalized);
-        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
+        Assert.Equal(markdown, normalized);
+        Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
-    [Test]
+    [Fact]
     public void PipeTableWithoutWidthInferenceUsesStandardSeparators()
     {
         AssertNormalizeNoTrim("| A | B |\n| --- | --------- |\n| x | y |",
@@ -671,8 +657,9 @@ Text following the table.");
             "| A | B |\n| --- | --- |\n| x | y |");
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void EmptyMiddleSeparatorPreservesInferredWidths(bool headerOnly)
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions
@@ -681,14 +668,14 @@ Text following the table.");
         }).Build();
         var markdown = "| A | B | C |\n| --- |  | --- |" + (headerOnly ? "" : "\n| x | y | z |");
         var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
-        Assert.AreEqual(markdown, normalized);
+        Assert.Equal(markdown, normalized);
         var table = (Table)MarkdownConverter.Parse(normalized, pipeline)[0];
-        Assert.AreEqual(new[] { 50f, 0f, 50f }, table.ColumnDefinitions.Select(column => column.Width).ToArray());
-        Assert.AreEqual(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
-        Assert.AreEqual(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
+        Assert.Equal(new[] { 50f, 0f, 50f }, table.ColumnDefinitions.Select(column => column.Width).ToArray());
+        Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
     }
 
-    [Test]
+    [Fact]
     public void ChangingInferredWidthDiscardsOriginalSeparatorCount()
     {
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions
@@ -697,11 +684,11 @@ Text following the table.");
         }).Build();
         var table = (Table)MarkdownConverter.Parse("| A | B |\n| --- | --------- |", pipeline)[0];
         var column = table.ColumnDefinitions[1];
-        Assert.AreEqual(9, column.SeparatorDashCount);
+        Assert.Equal(9, column.SeparatorDashCount);
         column.Width = column.Width;
-        Assert.AreEqual(9, column.SeparatorDashCount);
+        Assert.Equal(9, column.SeparatorDashCount);
         column.Width = 0;
-        Assert.IsNull(column.SeparatorDashCount);
+        Assert.Null(column.SeparatorDashCount);
     }
 
     private static void AssertSyntax(string expected, MarkdownObject syntax)
@@ -711,7 +698,7 @@ Text following the table.");
         var document = new MarkdownDocument();
         if (syntax is Block)
         {
-            document.Add(syntax as Block);
+            document.Add((Block)syntax);
         }
         else
         {
@@ -721,10 +708,10 @@ Text following the table.");
 
         var actual = writer.ToString();
 
-        Assert.AreEqual(expected, actual);
+        Assert.Equal(expected, actual);
     }
 
-    public static void TestSpec(string inputText, string expectedOutputText, string extensions = null, string context = null)
+    internal static void TestSpec(string inputText, string expectedOutputText, string? extensions = null, string? context = null)
     {
         foreach (var pipeline in TestParser.GetPipeline(extensions))
         {
@@ -732,10 +719,10 @@ Text following the table.");
         }
     }
 
-    public static void AssertNormalizeNoTrim(string input, string expected = null, NormalizeOptions options = null)
+    internal static void AssertNormalizeNoTrim(string input, string? expected = null, NormalizeOptions? options = null)
         => AssertNormalize(input, expected, false, options);
 
-    public static void AssertNormalize(string input, string expected = null, bool trim = true, NormalizeOptions options = null, MarkdownPipeline pipeline = null, string context = null)
+    internal static void AssertNormalize(string input, string? expected = null, bool trim = true, NormalizeOptions? options = null, MarkdownPipeline? pipeline = null, string? context = null)
     {
         expected = expected ?? input;
         input = NormText(input, trim);
@@ -760,6 +747,6 @@ Text following the table.");
         {
             text = text.Trim();
         }
-        return text.Replace("\r\n", "\n").Replace('\r', '\n');
+        return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
     }
 }

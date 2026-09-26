@@ -6,19 +6,20 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestYamlFrontMatterExtension
 {
-    [TestCaseSource(nameof(TestCases))]
-    public void ProperYamlFrontMatterRenderersAdded(IMarkdownObjectRenderer[] objectRenderers, bool hasYamlFrontMatterHtmlRenderer, bool hasYamlFrontMatterRoundtripRenderer)
+    [Theory]
+    [MemberData(nameof(TestCases))]
+    public void ProperYamlFrontMatterRenderersAdded(string name, IMarkdownObjectRenderer[] objectRenderers, bool hasYamlFrontMatterHtmlRenderer, bool hasYamlFrontMatterRoundtripRenderer)
     {
         var builder = new MarkdownPipelineBuilder();
         builder.Extensions.Add(new YamlFrontMatterExtension());
         var markdownRenderer = new DummyRenderer();
         markdownRenderer.ObjectRenderers.AddRange(objectRenderers);
         builder.Build().Setup(markdownRenderer);
-        Assert.That(markdownRenderer.ObjectRenderers.Contains<YamlFrontMatterHtmlRenderer>(), Is.EqualTo(hasYamlFrontMatterHtmlRenderer));
-        Assert.That(markdownRenderer.ObjectRenderers.Contains<YamlFrontMatterRoundtripRenderer>(), Is.EqualTo(hasYamlFrontMatterRoundtripRenderer));
+        Assert.Equal(hasYamlFrontMatterHtmlRenderer, markdownRenderer.ObjectRenderers.Contains<YamlFrontMatterHtmlRenderer>(), message: name);
+        Assert.Equal(hasYamlFrontMatterRoundtripRenderer, markdownRenderer.ObjectRenderers.Contains<YamlFrontMatterRoundtripRenderer>(), message: name);
     }
 
-    [Test]
+    [Fact]
     public void AllowYamlFrontMatterInMiddleOfDocument()
     {
         var pipeline = new MarkdownPipelineBuilder()
@@ -31,44 +32,17 @@ public class TestYamlFrontMatterExtension
             pipeline);
     }
 
-    private static IEnumerable<TestCaseData> TestCases()
+    public static TheoryData<string, IMarkdownObjectRenderer[], bool, bool> TestCases() => new()
     {
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-        }, false, false) {TestName = "No ObjectRenderers"};
+        { "No ObjectRenderers", [], false, false },
+        { "Html CodeBlock", [new Renderers.Html.CodeBlockRenderer()], true, false },
+        { "Roundtrip CodeBlock", [new Renderers.Roundtrip.CodeBlockRenderer()], false, true },
+        { "Html/Roundtrip CodeBlock", [new Renderers.Html.CodeBlockRenderer(), new Renderers.Roundtrip.CodeBlockRenderer()], true, true },
+        { "Html/Roundtrip CodeBlock, Yaml Html", [new Renderers.Html.CodeBlockRenderer(), new Renderers.Roundtrip.CodeBlockRenderer(), new YamlFrontMatterHtmlRenderer()], true, true },
+        { "Html/Roundtrip CodeBlock, Yaml Roundtrip", [new Renderers.Html.CodeBlockRenderer(), new Renderers.Roundtrip.CodeBlockRenderer(), new YamlFrontMatterRoundtripRenderer()], true, true },
+    };
 
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer()
-        }, true, false) {TestName = "Html CodeBlock"};
-
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer()
-        }, false, true) {TestName = "Roundtrip CodeBlock"};
-
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
-            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer()
-        }, true, true) {TestName = "Html/Roundtrip CodeBlock"};
-
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
-            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer(),
-            new YamlFrontMatterHtmlRenderer()
-        }, true, true) {TestName = "Html/Roundtrip CodeBlock, Yaml Html"};
-
-        yield return new TestCaseData(new IMarkdownObjectRenderer[]
-        {
-            new Meziantou.Framework.Markdown.Renderers.Html.CodeBlockRenderer(),
-            new Meziantou.Framework.Markdown.Renderers.Roundtrip.CodeBlockRenderer(),
-            new YamlFrontMatterRoundtripRenderer()
-        }, true, true) { TestName = "Html/Roundtrip CodeBlock, Yaml Roundtrip" };
-    }
-
-    private class DummyRenderer : IMarkdownRenderer
+    private sealed class DummyRenderer : IMarkdownRenderer
     {
         public DummyRenderer()
         {
@@ -76,19 +50,20 @@ public class TestYamlFrontMatterExtension
         }
 
 #pragma warning disable CS0067 // ObjectWriteBefore/ObjectWriteAfter is never used
-        public event Action<IMarkdownRenderer, MarkdownObject> ObjectWriteBefore;
-        public event Action<IMarkdownRenderer, MarkdownObject> ObjectWriteAfter;
+        public event Action<IMarkdownRenderer, MarkdownObject>? ObjectWriteBefore;
+        public event Action<IMarkdownRenderer, MarkdownObject>? ObjectWriteAfter;
 #pragma warning restore CS0067
 
         public ObjectRendererCollection ObjectRenderers { get; }
         public object Render(MarkdownObject markdownObject)
         {
-            return null;
+            return null!;
         }
     }
 
-    [TestCase("---\nkey1: value1\nkey2: value2\n---\n\n# Content\n")]
-    [TestCase("---\nkey1: value1\nkey2: value2\nkey3: value3\nkey4: value4\nkey5: value5\nkey6: value6\nkey7: value7\nkey8: value8\n---\n\n# Content\n")]
+    [Theory]
+    [InlineData("---\nkey1: value1\nkey2: value2\n---\n\n# Content\n")]
+    [InlineData("---\nkey1: value1\nkey2: value2\nkey3: value3\nkey4: value4\nkey5: value5\nkey6: value6\nkey7: value7\nkey8: value8\n---\n\n# Content\n")]
     public void FrontMatterBlockLinesCharIterator(string value)
     {
         var builder = new MarkdownPipelineBuilder();
@@ -96,7 +71,7 @@ public class TestYamlFrontMatterExtension
         var markdownDocument = MarkdownConverter.Parse(value, builder.Build());
 
         var yamlBlocks = markdownDocument.Descendants<YamlFrontMatterBlock>();
-        Assert.True(yamlBlocks.Any());
+        Assert.NotEmpty(yamlBlocks);
 
         foreach (var yamlBlock in yamlBlocks)
         {

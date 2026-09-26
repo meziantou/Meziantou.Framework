@@ -21,7 +21,7 @@ public static class HtmlHelper
     {
         for (int i = 0; i < EscapeUrlsForAscii.Length; i++)
         {
-            if (i <= 32 || @"""'<>[\]^`{|}~".IndexOf((char)i) >= 0 || i == 127)
+            if (i <= 32 || @"""'<>[\]^`{|}~".Contains((char)i, StringComparison.Ordinal) || i == 127)
             {
                 EscapeUrlsForAscii[i] = $"%{i:X2}";
             }
@@ -45,7 +45,7 @@ public static class HtmlHelper
     /// </summary>
     public static bool TryParseHtmlTag(ref StringSlice text, [NotNullWhen(true)] out string? htmlTag)
     {
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         if (TryParseHtmlTag(ref text, ref builder))
         {
             htmlTag = builder.ToString();
@@ -492,9 +492,9 @@ public static class HtmlHelper
         int lastPos = 0;
         char c = '\0';
         char[] search = removeBackSlash ? SearchBackAndAmp : SearchAmp;
-        var sb = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var sb = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
 
-        while ((searchPos = text!.IndexOfAny(search, searchPos)) != -1)
+        while ((searchPos = text.IndexOfAny(search, searchPos)) != -1)
         {
             c = text[searchPos];
             if (removeBackSlash && c == '\\')

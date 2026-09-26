@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax;
@@ -17,7 +17,7 @@ public class LinkReferenceDefinitionRenderer : NormalizeObjectRenderer<LinkRefer
     protected override void Write(NormalizeRenderer renderer, LinkReferenceDefinition linkDef)
     {
         renderer.EnsureLine();
-        renderer.Write('[');            
+        renderer.Write('[');
         renderer.Write(linkDef.Label);
         renderer.Write("]: ");
 
@@ -26,7 +26,7 @@ public class LinkReferenceDefinitionRenderer : NormalizeObjectRenderer<LinkRefer
         if (linkDef.Title != null)
         {
             renderer.Write(" \"");
-            renderer.Write(linkDef.Title.Replace("\"", "\\\""));
+            renderer.Write(linkDef.Title.Replace("\"", "\\\"", StringComparison.Ordinal));
             renderer.Write('"');
         }
         renderer.FinishBlock(false);

@@ -1,12 +1,12 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Html.Inlines;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
-using System.Diagnostics;
 
 namespace Meziantou.Framework.Markdown.Extensions.EmphasisExtras;
 
@@ -43,12 +43,12 @@ public class EmphasisExtraExtension : IMarkdownExtension
             var hasPlus = false;
             var hasEqual = false;
 
-            var requireTilde = ((Options & EmphasisExtraOptions.Strikethrough) != 0 ||
-                                (Options & EmphasisExtraOptions.Subscript) != 0);
+            var requireTilde = (Options.HasFlag(EmphasisExtraOptions.Strikethrough) ||
+                                Options.HasFlag(EmphasisExtraOptions.Subscript));
 
-            var requireSup = (Options & EmphasisExtraOptions.Superscript) != 0;
-            var requirePlus = (Options & EmphasisExtraOptions.Inserted) != 0;
-            var requireEqual = (Options & EmphasisExtraOptions.Marked) != 0;
+            var requireSup = Options.HasFlag(EmphasisExtraOptions.Superscript);
+            var requirePlus = Options.HasFlag(EmphasisExtraOptions.Inserted);
+            var requireEqual = Options.HasFlag(EmphasisExtraOptions.Marked);
 
             foreach (var emphasis in parser.EmphasisDescriptors)
             {
@@ -72,8 +72,8 @@ public class EmphasisExtraExtension : IMarkdownExtension
 
             if (requireTilde && !hasTilde)
             {
-                int minimumCount = (Options & EmphasisExtraOptions.Subscript) != 0 ? 1 : 2;
-                int maximumCount = (Options & EmphasisExtraOptions.Strikethrough) != 0 ? 2 : 1;
+                int minimumCount = Options.HasFlag(EmphasisExtraOptions.Subscript) ? 1 : 2;
+                int maximumCount = Options.HasFlag(EmphasisExtraOptions.Strikethrough) ? 2 : 1;
                 parser.EmphasisDescriptors.Add(new EmphasisDescriptor('~', minimumCount, maximumCount, true));
             }
             if (requireSup && !hasSup)
@@ -108,7 +108,7 @@ public class EmphasisExtraExtension : IMarkdownExtension
         }
     }
 
-    private string? GetTag(EmphasisInline emphasisInline)
+    private static string? GetTag(EmphasisInline emphasisInline)
     {
         var c = emphasisInline.DelimiterChar;
         switch (c)

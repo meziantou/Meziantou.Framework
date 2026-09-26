@@ -1,12 +1,11 @@
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestReferralLinks
 {
-    [Test]
-    [TestCase(new[] { "nofollow" }, "nofollow")]
-    [TestCase(new[] { "noopener" }, "noopener")]
-    [TestCase(new[] { "nofollow", "noopener"}, "nofollow noopener")]
+    [Theory]
+    [InlineData(new[] { "nofollow" }, "nofollow")]
+    [InlineData(new[] { "noopener" }, "noopener")]
+    [InlineData(new[] { "nofollow", "noopener"}, "nofollow noopener")]
     public void TestLinksWithCustomRel(string[] rels, string expected)
     {
         var markdown = "[world](http://example.com)";
@@ -16,13 +15,13 @@ public class TestReferralLinks
             .Build();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Contains.Substring($"rel=\"{expected}\""));
+        Assert.Contains($"rel=\"{expected}\"", html);
     }
 
-    [Test]
-    [TestCase(new[] { "noopener" }, "noopener")]
-    [TestCase(new[] { "nofollow" }, "nofollow")]
-    [TestCase(new[] { "nofollow", "noopener" }, "nofollow noopener")]
+    [Theory]
+    [InlineData(new[] { "noopener" }, "noopener")]
+    [InlineData(new[] { "nofollow" }, "nofollow")]
+    [InlineData(new[] { "nofollow", "noopener" }, "nofollow noopener")]
     public void TestAutoLinksWithCustomRel(string[] rels, string expected)
     {
         var markdown = "http://example.com";
@@ -33,6 +32,6 @@ public class TestReferralLinks
             .Build();
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Contains.Substring($"rel=\"{expected}\""));
+        Assert.Contains($"rel=\"{expected}\"", html);
     }
 }

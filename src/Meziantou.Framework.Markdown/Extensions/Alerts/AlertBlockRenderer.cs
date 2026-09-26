@@ -66,7 +66,7 @@ public class AlertBlockRenderer : HtmlObjectRenderer<AlertBlock>
             return;
         }
 
-        Span<char> upperKind = stackalloc char[kind.Length];
+        Span<char> upperKind = unsafe(stackalloc char[kind.Length]);
         kind.AsSpan().ToUpperInvariant(upperKind);
         string? html = upperKind switch
         {

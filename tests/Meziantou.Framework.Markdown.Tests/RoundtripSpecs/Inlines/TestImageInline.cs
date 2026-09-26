@@ -1,25 +1,24 @@
-using NUnit.Framework;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
-namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines
-{
-    [TestFixture]
-    public class TestImageInline
-    {
-        [TestCase("![](a)")]
-        [TestCase(" ![](a)")]
-        [TestCase("![](a) ")]
-        [TestCase(" ![](a) ")]
-        [TestCase("   ![description](http://example.com)")]
-        public void Test(string value)
-        {
-            RoundTrip(value);
-        }
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines;
 
-        [TestCase("paragraph   ![description](http://example.com)")]
-        public void TestParagraph(string value)
-        {
-            RoundTrip(value);
-        }
+public class TestImageInline
+{
+    [Theory]
+    [InlineData("![](a)")]
+    [InlineData(" ![](a)")]
+    [InlineData("![](a) ")]
+    [InlineData(" ![](a) ")]
+    [InlineData("   ![description](http://example.com)")]
+    public void Test(string value)
+    {
+        RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("paragraph   ![description](http://example.com)")]
+    public void TestParagraph(string value)
+    {
+        RoundTrip(value);
     }
 }

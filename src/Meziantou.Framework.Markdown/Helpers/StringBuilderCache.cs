@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Text;
@@ -15,7 +15,7 @@ public static class StringBuilderCache
     /// A StringBuilder that can be used locally in a method body only.
     /// </summary>
     [ThreadStatic]
-    private static StringBuilder? local;
+    private static StringBuilder? s_local;
 
     /// <summary>
     /// Provides a string builder that can only be used locally in a method. This StringBuilder MUST not be stored.
@@ -23,7 +23,7 @@ public static class StringBuilderCache
     /// <returns></returns>
     public static StringBuilder Local()
     {
-        var sb = local ??= new StringBuilder();
+        var sb = s_local ??= new StringBuilder();
         if (sb.Length != 0)
         {
             sb.Length = 0;

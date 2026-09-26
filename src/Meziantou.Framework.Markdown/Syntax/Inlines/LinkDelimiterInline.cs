@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 /// <seealso cref="DelimiterInline" />
 public class LinkDelimiterInline : DelimiterInline
 {
-    private TriviaProperties? _trivia => GetTrivia<TriviaProperties>();
+    private TriviaProperties? TriviaOrNull => GetTrivia<TriviaProperties>();
     private TriviaProperties Trivia => GetOrSetTrivia<TriviaProperties>();
 
     /// <summary>
@@ -43,7 +43,7 @@ public class LinkDelimiterInline : DelimiterInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice LabelWithTrivia { get => _trivia?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
+    public StringSlice LabelWithTrivia { get => TriviaOrNull?.LabelWithTrivia ?? StringSlice.Empty; set => Trivia.LabelWithTrivia = value; }
 
     /// <summary>
     /// Performs the to literal operation.

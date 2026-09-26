@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.IO;
@@ -52,7 +52,7 @@ public struct LineReader
         }
         else
         {
-            ReadOnlySpan<char> span = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), sourcePosition), end - sourcePosition);
+            ReadOnlySpan<char> span = unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), sourcePosition), end - sourcePosition));
 
             int crlf = span.IndexOfAny('\r', '\n');
             if (crlf >= 0)
@@ -60,7 +60,7 @@ public struct LineReader
                 end = sourcePosition + crlf;
                 newSourcePosition = end + 1;
 
-                if (Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), end) == '\r')
+                if (unsafe(Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), end)) == '\r')
                 {
                     if ((uint)(newSourcePosition) < (uint)text.Length && text[newSourcePosition] == '\n')
                     {

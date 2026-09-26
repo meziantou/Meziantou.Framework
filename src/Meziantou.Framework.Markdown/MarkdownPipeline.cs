@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.IO;
@@ -34,9 +34,9 @@ public sealed class MarkdownPipeline
         BlockParsers = blockParsers;
         InlineParsers = inlineParsers;
         DebugLog = debugLog;
-        DocumentProcessed = documentProcessed;
+        _documentProcessed = documentProcessed;
 
-        SelfPipeline = Extensions.Find<SelfPipelineExtension>();
+        _selfPipeline = Extensions.Find<SelfPipelineExtension>();
     }
 
     internal bool PreciseSourceLocation { get; set; }
@@ -53,9 +53,9 @@ public sealed class MarkdownPipeline
     // TODO: Move the log to a better place
     internal TextWriter? DebugLog { get; }
 
-    internal ProcessDocumentDelegate? DocumentProcessed;
+    internal ProcessDocumentDelegate? _documentProcessed;
 
-    internal SelfPipelineExtension? SelfPipeline;
+    internal SelfPipelineExtension? _selfPipeline;
 
     /// <summary>
     /// True to parse trivia such as whitespace, extra heading characters and unescaped
@@ -110,14 +110,14 @@ public sealed class MarkdownPipeline
         MarkdownPipeline pipeline,
         bool customWriter = false) : ObjectCache<HtmlRenderer>
     {
-        private static readonly FastStringWriter s_dummyWriter = new();
+        private static readonly FastStringWriter DummyWriter = new();
 
         private readonly MarkdownPipeline _pipeline = pipeline;
         private readonly bool _customWriter = customWriter;
 
         protected override HtmlRenderer NewInstance()
         {
-            TextWriter writer = _customWriter ? s_dummyWriter : new FastStringWriter();
+            TextWriter writer = _customWriter ? DummyWriter : new FastStringWriter();
             var renderer = new HtmlRenderer(writer);
             _pipeline.Setup(renderer);
             return renderer;
@@ -129,7 +129,7 @@ public sealed class MarkdownPipeline
 
             if (_customWriter)
             {
-                instance.Writer = s_dummyWriter;
+                instance.Writer = DummyWriter;
             }
             else
             {

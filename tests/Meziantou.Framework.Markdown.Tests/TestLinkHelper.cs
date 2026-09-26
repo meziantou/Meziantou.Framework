@@ -1,346 +1,351 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestLinkHelper
 {
-    [Test]
+    [Fact]
     public void TestUrlSimple()
     {
         var text = new StringSlice("toto tutu");
-        Assert.True(LinkHelper.TryParseUrl(ref text, out string link, out _));
-        Assert.AreEqual("toto", link);
-        Assert.AreEqual(' ', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseUrl(ref text, out string? link, out _));
+        Assert.Equal("toto", link);
+        Assert.Equal(' ', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlUrl()
     {
         var text = new StringSlice("http://google.com)");
-        Assert.True(LinkHelper.TryParseUrl(ref text, out string link, out _));
-        Assert.AreEqual("http://google.com", link);
-        Assert.AreEqual(')', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseUrl(ref text, out string? link, out _));
+        Assert.Equal("http://google.com", link);
+        Assert.Equal(')', text.CurrentChar);
     }
 
-    [Test]
-    [TestCase("http://google.com.")]
-    [TestCase("http://google.com. ")]
+    [Theory]
+    [InlineData("http://google.com.")]
+    [InlineData("http://google.com. ")]
     public void TestUrlTrailingFullStop(string uri)
     {
         var text = new StringSlice(uri);
-        Assert.True(LinkHelper.TryParseUrl(ref text, out string link, out _, true));
-        Assert.AreEqual("http://google.com", link);
-        Assert.AreEqual('.', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseUrl(ref text, out string? link, out _, true));
+        Assert.Equal("http://google.com", link);
+        Assert.Equal('.', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlNestedParenthesis()
     {
         var text = new StringSlice("(toto)tutu(tata) nooo");
-        Assert.True(LinkHelper.TryParseUrl(ref text, out string link, out _));
-        Assert.AreEqual("(toto)tutu(tata)", link);
-        Assert.AreEqual(' ', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseUrl(ref text, out string? link, out _));
+        Assert.Equal("(toto)tutu(tata)", link);
+        Assert.Equal(' ', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlAlternate()
     {
         var text = new StringSlice("<toto_tata_tutu> nooo");
-        Assert.True(LinkHelper.TryParseUrl(ref text, out string link, out _));
-        Assert.AreEqual("toto_tata_tutu", link);
-        Assert.AreEqual(' ', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseUrl(ref text, out string? link, out _));
+        Assert.Equal("toto_tata_tutu", link);
+        Assert.Equal(' ', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlAlternateInvalid()
     {
         var text = new StringSlice("<toto_tata_tutu");
-        Assert.False(LinkHelper.TryParseUrl(ref text, out string link, out _));
+        Assert.False(LinkHelper.TryParseUrl(ref text, out _, out _));
     }
 
-    [Test]
+    [Fact]
     public void TestTitleSimple()
     {
         var text = new StringSlice(@"'tata\tutu\''");
-        Assert.True(LinkHelper.TryParseTitle(ref text, out string title, out _));
-        Assert.AreEqual(@"tata\tutu'", title);
+        Assert.True(LinkHelper.TryParseTitle(ref text, out string? title, out _));
+        Assert.Equal(@"tata\tutu'", title);
     }
 
-    [Test]
+    [Fact]
     public void TestTitleSimpleAlternate()
     {
         var text = new StringSlice(@"""tata\tutu\"""" ");
-        Assert.True(LinkHelper.TryParseTitle(ref text, out string title, out _));
-        Assert.AreEqual(@"tata\tutu""", title);
-        Assert.AreEqual(' ', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseTitle(ref text, out string? title, out _));
+        Assert.Equal(@"tata\tutu""", title);
+        Assert.Equal(' ', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestTitleMultiline()
     {
         var text = new StringSlice("'this\ris\r\na\ntitle'");
-        Assert.True(LinkHelper.TryParseTitle(ref text, out string title, out _));
-        Assert.AreEqual("this\ris\r\na\ntitle", title);
+        Assert.True(LinkHelper.TryParseTitle(ref text, out string? title, out _));
+        Assert.Equal("this\ris\r\na\ntitle", title);
     }
 
-    [Test]
+    [Fact]
     public void TestTitleMultilineWithSpaceAndBackslash()
     {
         var text = new StringSlice("'a\n\\ \\\ntitle'");
-        Assert.True(LinkHelper.TryParseTitle(ref text, out string title, out _));
-        Assert.AreEqual("a\n\\ \\\ntitle", title);
+        Assert.True(LinkHelper.TryParseTitle(ref text, out string? title, out _));
+        Assert.Equal("a\n\\ \\\ntitle", title);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlAndTitle()
     {
         //                           0         1         2         3
         //                           0123456789012345678901234567890123456789
         var text = new StringSlice(@"(http://google.com 'this is a title')ABC");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual("http://google.com", link);
-        Assert.AreEqual("this is a title", title);
-        Assert.AreEqual(new SourceSpan(1, 17), linkSpan);
-        Assert.AreEqual(new SourceSpan(19, 35), titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal("http://google.com", link);
+        Assert.Equal("this is a title", title);
+        Assert.Equal(new SourceSpan(1, 17), linkSpan);
+        Assert.Equal(new SourceSpan(19, 35), titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlEmptyAndTitleNull()
     {
         //                           01234
         var text = new StringSlice(@"(<>)A");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual(string.Empty, link);
-        Assert.AreEqual(null, title);
-        Assert.AreEqual(new SourceSpan(1, 2), linkSpan);
-        Assert.AreEqual(SourceSpan.Empty, titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal(string.Empty, link);
+        Assert.Equal(null, title);
+        Assert.Equal(new SourceSpan(1, 2), linkSpan);
+        Assert.Equal(SourceSpan.Empty, titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlEmptyAndTitleNull2()
     {
         //                           012345
         var text = new StringSlice(@"( <> )A");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual(string.Empty, link);
-        Assert.AreEqual(null, title);
-        Assert.AreEqual(new SourceSpan(2, 3), linkSpan);
-        Assert.AreEqual(SourceSpan.Empty, titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal(string.Empty, link);
+        Assert.Equal(null, title);
+        Assert.Equal(new SourceSpan(2, 3), linkSpan);
+        Assert.Equal(SourceSpan.Empty, titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
 
-    [Test]
+    [Fact]
     public void TestUrlEmptyWithTitleWithMultipleSpaces()
     {
         //                           0         1         2
         //                           0123456789012345678901234567
         var text = new StringSlice(@"(   <>      'toto'       )A");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual(string.Empty, link);
-        Assert.AreEqual("toto", title);
-        Assert.AreEqual(new SourceSpan(4, 5), linkSpan);
-        Assert.AreEqual(new SourceSpan(12, 17), titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal(string.Empty, link);
+        Assert.Equal("toto", title);
+        Assert.Equal(new SourceSpan(4, 5), linkSpan);
+        Assert.Equal(new SourceSpan(12, 17), titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestUrlEmpty()
     {
         var text = new StringSlice(@"()A");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual(string.Empty, link);
-        Assert.AreEqual(null, title);
-        Assert.AreEqual(SourceSpan.Empty, linkSpan);
-        Assert.AreEqual(SourceSpan.Empty, titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal(string.Empty, link);
+        Assert.Equal(null, title);
+        Assert.Equal(SourceSpan.Empty, linkSpan);
+        Assert.Equal(SourceSpan.Empty, titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestMultipleLines()
     {
         //                          0          1         2          3
         //                          01 2345678901234567890 1234567890123456789
         var text = new StringSlice("(\n<http://google.com>\n    'toto' )A");
-        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string link, out string title, out SourceSpan linkSpan, out SourceSpan titleSpan));
-        Assert.AreEqual("http://google.com", link);
-        Assert.AreEqual("toto", title);
-        Assert.AreEqual(new SourceSpan(2, 20), linkSpan);
-        Assert.AreEqual(new SourceSpan(26, 31), titleSpan);
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.True(LinkHelper.TryParseInlineLink(ref text, out string? link, out string? title, out SourceSpan linkSpan, out SourceSpan titleSpan));
+        Assert.Equal("http://google.com", link);
+        Assert.Equal("toto", title);
+        Assert.Equal(new SourceSpan(2, 20), linkSpan);
+        Assert.Equal(new SourceSpan(26, 31), titleSpan);
+        Assert.Equal('A', text.CurrentChar);
     }
 
-    [Test]
+    [Fact]
     public void TestLabelSimple()
     {
         //                          01234
         var text = new StringSlice("[foo]");
-        Assert.True(LinkHelper.TryParseLabel(ref text, out string label, out SourceSpan labelSpan));
-        Assert.AreEqual(new SourceSpan(1, 3), labelSpan);
-        Assert.AreEqual("foo", label);
+        Assert.True(LinkHelper.TryParseLabel(ref text, out string? label, out SourceSpan labelSpan));
+        Assert.Equal(new SourceSpan(1, 3), labelSpan);
+        Assert.Equal("foo", label);
     }
 
-    [Test]
+    [Fact]
     public void TestLabelEscape()
     {
         //                           012345678
         var text = new StringSlice(@"[fo\[\]o]");
-        Assert.True(LinkHelper.TryParseLabel(ref text, out string label, out SourceSpan labelSpan));
-        Assert.AreEqual(new SourceSpan(1, 7), labelSpan);
-        Assert.AreEqual(@"fo[]o", label);
+        Assert.True(LinkHelper.TryParseLabel(ref text, out string? label, out SourceSpan labelSpan));
+        Assert.Equal(new SourceSpan(1, 7), labelSpan);
+        Assert.Equal(@"fo[]o", label);
     }
 
-    [Test]
+    [Fact]
     public void TestLabelEscape2()
     {
         //                           0123
         var text = new StringSlice(@"[\]]");
-        Assert.True(LinkHelper.TryParseLabel(ref text, out string label, out SourceSpan labelSpan));
-        Assert.AreEqual(new SourceSpan(1, 2), labelSpan);
-        Assert.AreEqual(@"]", label);
+        Assert.True(LinkHelper.TryParseLabel(ref text, out string? label, out SourceSpan labelSpan));
+        Assert.Equal(new SourceSpan(1, 2), labelSpan);
+        Assert.Equal(@"]", label);
     }
 
-    [Test]
+    [Fact]
     public void TestLabelInvalids()
     {
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"a"), out string label));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"["), out label));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[\x]"), out label));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[[]"), out label));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[     ]"), out label));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[  \t \n  ]"), out label));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"a"), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"["), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[\x]"), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[[]"), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[     ]"), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[  \t \n  ]"), out _));
     }
 
-    [Test]
+    [Fact]
     public void TestLabelWhitespaceCollapsedAndTrim()
     {
         //                           0         1         2         3
         //                           0123456789012345678901234567890123456789
         var text = new StringSlice(@"[     fo    o    z     ]");
-        Assert.True(LinkHelper.TryParseLabel(ref text, out string label, out SourceSpan labelSpan));
-        Assert.AreEqual(new SourceSpan(6, 17), labelSpan);
-        Assert.AreEqual(@"fo o z", label);
+        Assert.True(LinkHelper.TryParseLabel(ref text, out string? label, out SourceSpan labelSpan));
+        Assert.Equal(new SourceSpan(6, 17), labelSpan);
+        Assert.Equal(@"fo o z", label);
     }
 
-    [Test]
+    [Fact]
     public void TestlLinkReferenceDefinitionSimple()
     {
         //                           0         1         2         3
         //                           0123456789012345678901234567890123456789
         var text = new StringSlice(@"[foo]: /toto 'title'");
-        Assert.True(LinkHelper.TryParseLinkReferenceDefinition(ref text, out string label, out string url, out string title, out SourceSpan labelSpan, out SourceSpan urlSpan, out SourceSpan titleSpan));
-        Assert.AreEqual(@"foo", label);
-        Assert.AreEqual(@"/toto", url);
-        Assert.AreEqual(@"title", title);
-        Assert.AreEqual(new SourceSpan(1, 3), labelSpan);
-        Assert.AreEqual(new SourceSpan(7, 11), urlSpan);
-        Assert.AreEqual(new SourceSpan(13, 19), titleSpan);
+        Assert.True(LinkHelper.TryParseLinkReferenceDefinition(ref text, out string? label, out string? url, out string? title, out SourceSpan labelSpan, out SourceSpan urlSpan, out SourceSpan titleSpan));
+        Assert.Equal(@"foo", label);
+        Assert.Equal(@"/toto", url);
+        Assert.Equal(@"title", title);
+        Assert.Equal(new SourceSpan(1, 3), labelSpan);
+        Assert.Equal(new SourceSpan(7, 11), urlSpan);
+        Assert.Equal(new SourceSpan(13, 19), titleSpan);
 
     }
 
-    [Test]
+    [Fact]
     public void TestlLinkReferenceDefinitionInvalid()
     {
         var text = new StringSlice("[foo]: /url (title) x\n");
         Assert.False(LinkHelper.TryParseLinkReferenceDefinition(ref text, out _, out _, out _, out _, out _, out _));
     }
 
-    [Test]
+    [Fact]
     public void TestAutoLinkUrlSimple()
     {
         var text = new StringSlice(@"<http://google.com>");
-        Assert.True(LinkHelper.TryParseAutolink(ref text, out string url, out bool isEmail));
+        Assert.True(LinkHelper.TryParseAutolink(ref text, out string? url, out bool isEmail));
         Assert.False(isEmail);
-        Assert.AreEqual("http://google.com", url);
+        Assert.Equal("http://google.com", url);
     }
 
-    [Test]
+    [Fact]
     public void TestAutoLinkEmailSimple()
     {
         var text = new StringSlice(@"<user@host.com>");
-        Assert.True(LinkHelper.TryParseAutolink(ref text, out string email, out bool isEmail));
+        Assert.True(LinkHelper.TryParseAutolink(ref text, out string? email, out bool isEmail));
         Assert.True(isEmail);
-        Assert.AreEqual("user@host.com", email);
+        Assert.Equal("user@host.com", email);
     }
 
-    [Test]
+    [Fact]
     public void TestAutolinkInvalid()
     {
-        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@""), out string text, out bool isEmail));
-        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<"), out text, out isEmail));
-        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<ab"), out text, out isEmail));
-        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<user@>"), out text, out isEmail));
+        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@""), out _, out _));
+        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<"), out _, out _));
+        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<ab"), out _, out _));
+        Assert.False(LinkHelper.TryParseAutolink(new StringSlice(@"<user@>"), out _, out _));
     }
 
-    [TestCase("Header identifiers in HTML", "header-identifiers-in-html")]
-    [TestCase("* Dogs*?--in *my* house?", "dogs-in-my-house")] // Not Pandoc equivalent: dogs--in...
-    [TestCase("[HTML], [S5], or [RTF]?", "html-s5-or-rtf")]
-    [TestCase("3. Applications", "applications")]
-    [TestCase("33", "")]
+    [Theory]
+    [InlineData("Header identifiers in HTML", "header-identifiers-in-html")]
+    [InlineData("* Dogs*?--in *my* house?", "dogs-in-my-house")] // Not Pandoc equivalent: dogs--in...
+    [InlineData("[HTML], [S5], or [RTF]?", "html-s5-or-rtf")]
+    [InlineData("3. Applications", "applications")]
+    [InlineData("33", "")]
     public void TestUrilizeNonAscii_Pandoc(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, false));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, false));
     }
 
-    [TestCase("Header identifiers in HTML", "header-identifiers-in-html")]
-    [TestCase("* Dogs*?--in *my* house?", "-dogs--in-my-house")]
-    [TestCase("[HTML], [S5], or [RTF]?", "html-s5-or-rtf")]
-    [TestCase("3. Applications", "3-applications")]
-    [TestCase("33", "33")]
+    [Theory]
+    [InlineData("Header identifiers in HTML", "header-identifiers-in-html")]
+    [InlineData("* Dogs*?--in *my* house?", "-dogs--in-my-house")]
+    [InlineData("[HTML], [S5], or [RTF]?", "html-s5-or-rtf")]
+    [InlineData("3. Applications", "3-applications")]
+    [InlineData("33", "33")]
     public void TestUrilizeGfm(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.UrilizeAsGfm(input));
+        Assert.Equal(expectedResult, LinkHelper.UrilizeAsGfm(input));
     }
 
-    [TestCase("abc", "abc")]
-    [TestCase("a-c", "a-c")]
-    [TestCase("a c", "a-c")]
-    [TestCase("a_c", "a_c")]
-    [TestCase("a.c", "a.c")]
-    [TestCase("a,c", "ac")]
-    [TestCase("a--", "a")] // Not Pandoc-equivalent: a--
-    [TestCase("a__", "a")] // Not Pandoc-equivalent: a__
-    [TestCase("a..", "a")] // Not Pandoc-equivalent: a..
-    [TestCase("a??", "a")]
-    [TestCase("a  ", "a")]
-    [TestCase("a--d", "a-d")]
-    [TestCase("a__d", "a_d")]
-    [TestCase("a??d", "ad")]
-    [TestCase("a  d", "a-d")]
-    [TestCase("a..d", "a.d")]
-    [TestCase("-bc", "bc")]
-    [TestCase("_bc", "bc")]
-    [TestCase(" bc", "bc")]
-    [TestCase("?bc", "bc")]
-    [TestCase(".bc", "bc")]
-    [TestCase("a-.-", "a")] // Not Pandoc equivalent: a-.-
+    [Theory]
+    [InlineData("abc", "abc")]
+    [InlineData("a-c", "a-c")]
+    [InlineData("a c", "a-c")]
+    [InlineData("a_c", "a_c")]
+    [InlineData("a.c", "a.c")]
+    [InlineData("a,c", "ac")]
+    [InlineData("a--", "a")] // Not Pandoc-equivalent: a--
+    [InlineData("a__", "a")] // Not Pandoc-equivalent: a__
+    [InlineData("a..", "a")] // Not Pandoc-equivalent: a..
+    [InlineData("a??", "a")]
+    [InlineData("a  ", "a")]
+    [InlineData("a--d", "a-d")]
+    [InlineData("a__d", "a_d")]
+    [InlineData("a??d", "ad")]
+    [InlineData("a  d", "a-d")]
+    [InlineData("a..d", "a.d")]
+    [InlineData("-bc", "bc")]
+    [InlineData("_bc", "bc")]
+    [InlineData(" bc", "bc")]
+    [InlineData("?bc", "bc")]
+    [InlineData(".bc", "bc")]
+    [InlineData("a-.-", "a")] // Not Pandoc equivalent: a-.-
     public void TestUrilizeOnlyAscii_Simple(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
 
-    [TestCase("bær", "baer")]
-    [TestCase("bør", "boer")]
-    [TestCase("bΘr", "br")]
-    [TestCase("四五", "")]
+    [Theory]
+    [InlineData("bær", "baer")]
+    [InlineData("bør", "boer")]
+    [InlineData("bΘr", "br")]
+    [InlineData("四五", "")]
     public void TestUrilizeOnlyAscii_NonAscii(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
 
-    [TestCase("bár", "bar")]
-    [TestCase("àrrivé", "arrive")]
+    [Theory]
+    [InlineData("bár", "bar")]
+    [InlineData("àrrivé", "arrive")]
     public void TestUrilizeOnlyAscii_Normalization(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
 
     // Tests for NormalizeScandinavianOrGermanChar method mappings when allowOnlyAscii=true.
@@ -349,108 +354,116 @@ public class TestLinkHelper
     //   The combining mark is then stripped, leaving just the base letter (ü -> u)
     // - å decomposes similarly (å -> a + ˚ -> a)
     // - But ø, æ, ß, þ, ð do NOT decompose, so they use NormalizeScandinavianOrGermanChar
-    [TestCase("Straße", "strasse")]    // ß -> ss
-    [TestCase("æble", "aeble")]        // æ -> ae
-    [TestCase("Ærø", "aeroe")]         // Æ -> Ae, ø -> oe (then lowercase)
-    [TestCase("København", "koebenhavn")] // ø -> oe
-    [TestCase("Øresund", "oeresund")]  // Ø -> Oe (then lowercase)
-    [TestCase("þing", "thing")]        // þ (thorn) -> th
-    [TestCase("bað", "bad")]           // ð (eth) -> d
-    [TestCase("øst-æble", "oest-aeble")] // ø->oe, æ->ae
+    [Theory]
+    [InlineData("Straße", "strasse")]    // ß -> ss
+    [InlineData("æble", "aeble")]        // æ -> ae
+    [InlineData("Ærø", "aeroe")]         // Æ -> Ae, ø -> oe (then lowercase)
+    [InlineData("København", "koebenhavn")] // ø -> oe
+    [InlineData("Øresund", "oeresund")]  // Ø -> Oe (then lowercase)
+    [InlineData("þing", "thing")]        // þ (thorn) -> th
+    [InlineData("bað", "bad")]           // ð (eth) -> d
+    [InlineData("øst-æble", "oest-aeble")] // ø->oe, æ->ae
     public void TestUrilizeOnlyAscii_ScandinavianGermanChars(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
-    
+
     // Tests specific to allowOnlyAscii=true behavior
     // German umlauts (ä, ö, ü) and å decompose with NFD, so they become base letter only
-    [TestCase("schön", "schon")]       // ö decomposes to o (NFD strips combining mark)
-    [TestCase("Mädchen", "madchen")]   // ä decomposes to a
-    [TestCase("Übung", "ubung")]       // Ü decomposes to U (then lowercase to u)
-    [TestCase("Düsseldorf", "dusseldorf")] // ü decomposes to u
-    [TestCase("Käse", "kase")]         // ä decomposes to a
-    [TestCase("gå", "ga")]             // å decomposes to a
-    [TestCase("Ålesund", "alesund")]   // Å decomposes to A (then lowercase)
-    [TestCase("grüßen", "grussen")]    // ü decomposes to u, ß -> ss
-    [TestCase("Þór", "thor")]          // Þ -> Th, ó decomposes to o (then lowercase)
-    [TestCase("Íslandsbanki", "islandsbanki")] // Í decomposes to I (then lowercase)
+    [Theory]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    [InlineData("schön", "schon")]       // ö decomposes to o (NFD strips combining mark)
+    [InlineData("Mädchen", "madchen")]   // ä decomposes to a
+    [InlineData("Übung", "ubung")]       // Ü decomposes to U (then lowercase to u)
+    [InlineData("Düsseldorf", "dusseldorf")] // ü decomposes to u
+    [InlineData("Käse", "kase")]         // ä decomposes to a
+    [InlineData("gå", "ga")]             // å decomposes to a
+    [InlineData("Ålesund", "alesund")]   // Å decomposes to A (then lowercase)
+    [InlineData("grüßen", "grussen")]    // ü decomposes to u, ß -> ss
+    [InlineData("Þór", "thor")]          // Þ -> Th, ó decomposes to o (then lowercase)
+    [InlineData("Íslandsbanki", "islandsbanki")] // Í decomposes to I (then lowercase)
     public void TestUrilizeOnlyAscii_GermanUmlautsDecompose(string input, string expectedResult)
     {
         // With allowOnlyAscii=true, these characters decompose via NFD and lose their diacritics
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
-    
+
     // Tests specific to allowOnlyAscii=false behavior: non-ASCII letters are kept, not expanded to ASCII.
-    [TestCase("zeilenumbrüche", "zeilenumbrüche")]
-    [TestCase("schön", "schön")]
-    [TestCase("Mädchen", "mädchen")]
-    [TestCase("Übung", "übung")]
-    [TestCase("Düsseldorf", "düsseldorf")]
-    [TestCase("Käse", "käse")]
-    [TestCase("gå", "gå")]
-    [TestCase("Ålesund", "ålesund")]
-    [TestCase("grüßen", "grüßen")]
-    [TestCase("Þór", "þór")]
-    [TestCase("Straße", "straße")]
-    [TestCase("æble", "æble")]
-    [TestCase("Ærø", "ærø")]
-    [TestCase("København", "københavn")]
-    [TestCase("Øresund", "øresund")]
-    [TestCase("þing", "þing")]
-    [TestCase("bað", "bað")]
-    [TestCase("øst-æble", "øst-æble")]
-    [TestCase("Íslandsbanki", "íslandsbanki")] // í is kept as-is when allowOnlyAscii=false
+    [Theory]
+    [InlineData("zeilenumbrüche", "zeilenumbrüche")]
+    [InlineData("schön", "schön")]
+    [InlineData("Mädchen", "mädchen")]
+    [InlineData("Übung", "übung")]
+    [InlineData("Düsseldorf", "düsseldorf")]
+    [InlineData("Käse", "käse")]
+    [InlineData("gå", "gå")]
+    [InlineData("Ålesund", "ålesund")]
+    [InlineData("grüßen", "grüßen")]
+    [InlineData("Þór", "þór")]
+    [InlineData("Straße", "straße")]
+    [InlineData("æble", "æble")]
+    [InlineData("Ærø", "ærø")]
+    [InlineData("København", "københavn")]
+    [InlineData("Øresund", "øresund")]
+    [InlineData("þing", "þing")]
+    [InlineData("bað", "bað")]
+    [InlineData("øst-æble", "øst-æble")]
+    [InlineData("Íslandsbanki", "íslandsbanki")] // í is kept as-is when allowOnlyAscii=false
     public void TestUrilizeNonAscii_KeepsNonAsciiLetters(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, false));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, false));
     }
-    
-    [TestCase("123", "")]
-    [TestCase("1,-b", "b")]
-    [TestCase("b1,-", "b1")] // Not Pandoc equivalent: b1-
-    [TestCase("ab3", "ab3")]
-    [TestCase("ab3de", "ab3de")]
+
+    [Theory]
+    [InlineData("123", "")]
+    [InlineData("1,-b", "b")]
+    [InlineData("b1,-", "b1")] // Not Pandoc equivalent: b1-
+    [InlineData("ab3", "ab3")]
+    [InlineData("ab3de", "ab3de")]
     public void TestUrilizeOnlyAscii_Numeric(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, true));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
     }
 
-    [TestCase("一二三四五", "一二三四五")]
-    [TestCase("一,-b", "一-b")]
+    [Theory]
+    [InlineData("一二三四五", "一二三四五")]
+    [InlineData("一,-b", "一-b")]
     public void TestUrilizeNonAscii_NonAsciiNumeric(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, false));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, false));
     }
 
-    [TestCase("bær", "bær")]
-    [TestCase("æ5el", "æ5el")]
-    [TestCase("-æ5el", "æ5el")]
-    [TestCase("-frø-", "frø")]
-    [TestCase("-fr-ø", "fr-ø")]
+    [Theory]
+    [InlineData("bær", "bær")]
+    [InlineData("æ5el", "æ5el")]
+    [InlineData("-æ5el", "æ5el")]
+    [InlineData("-frø-", "frø")]
+    [InlineData("-fr-ø", "fr-ø")]
     public void TestUrilizeNonAscii_Simple(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, false));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, false));
     }
 
     // Just to be sure, test for characters expressly forbidden in URI fragments:
-    [TestCase("b#r", "br")]
-    [TestCase("b%r", "br")] // Invalid except as an escape character
-    [TestCase("b^r", "br")]
-    [TestCase("b[r", "br")]
-    [TestCase("b]r", "br")]
-    [TestCase("b{r", "br")]
-    [TestCase("b}r", "br")]
-    [TestCase("b<r", "br")]
-    [TestCase("b>r", "br")]
-    [TestCase(@"b\r", "br")]
-    [TestCase(@"b""r", "br")]
-    [TestCase(@"Requirement 😀", "requirement")]
+    [Theory]
+    [InlineData("b#r", "br")]
+    [InlineData("b%r", "br")] // Invalid except as an escape character
+    [InlineData("b^r", "br")]
+    [InlineData("b[r", "br")]
+    [InlineData("b]r", "br")]
+    [InlineData("b{r", "br")]
+    [InlineData("b}r", "br")]
+    [InlineData("b<r", "br")]
+    [InlineData("b>r", "br")]
+    [InlineData(@"b\r", "br")]
+    [InlineData(@"b""r", "br")]
+    [InlineData(@"Requirement 😀", "requirement")]
     public void TestUrilizeNonAscii_NonValidCharactersForFragments(string input, string expectedResult)
     {
-        Assert.AreEqual(expectedResult, LinkHelper.Urilize(input, false));
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, false));
     }
 
-    [Test]
+    [Fact]
     public void TestUnicodeInDomainNameOfLinkReferenceDefinition()
     {
         TestParser.TestSpec("[Foo]\n\n[Foo]: http://ünicode.com", "<p><a href=\"http://xn--nicode-2ya.com\">Foo</a></p>");

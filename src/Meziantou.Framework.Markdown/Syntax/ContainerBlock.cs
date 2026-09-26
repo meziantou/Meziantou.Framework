@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Collections;
@@ -449,21 +449,21 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     [StructLayout(LayoutKind.Sequential)]
     public struct Enumerator : IEnumerator<Block>
     {
-        private readonly ContainerBlock block;
-        private int index;
-        private Block? current;
+        private readonly ContainerBlock _block;
+        private int _index;
+        private Block? _current;
 
         internal Enumerator(ContainerBlock block)
         {
-            this.block = block;
-            index = 0;
-            current = null;
+            this._block = block;
+            _index = 0;
+            _current = null;
         }
 
         /// <summary>
         /// Gets or sets the current.
         /// </summary>
-        public Block Current => current!;
+        public Block Current => _current!;
 
         object IEnumerator.Current => Current;
 
@@ -479,10 +479,10 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         /// </summary>
         public bool MoveNext()
         {
-            if (index < block.Count)
+            if (_index < _block.Count)
             {
-                current = block[index];
-                index++;
+                _current = _block[_index];
+                _index++;
                 return true;
             }
             return MoveNextRare();
@@ -490,15 +490,15 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
 
         private bool MoveNextRare()
         {
-            index = block.Count + 1;
-            current = null;
+            _index = _block.Count + 1;
+            _current = null;
             return false;
         }
 
         void IEnumerator.Reset()
         {
-            index = 0;
-            current = null;
+            _index = 0;
+            _current = null;
         }
     }
 

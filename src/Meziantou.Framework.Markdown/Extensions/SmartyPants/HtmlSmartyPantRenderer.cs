@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
@@ -15,7 +15,7 @@ public class HtmlSmartyPantRenderer : HtmlObjectRenderer<SmartyPant>
 {
     private static readonly SmartyPantOptions DefaultOptions = new SmartyPantOptions();
 
-    private readonly SmartyPantOptions options;
+    private readonly SmartyPantOptions _options;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HtmlSmartyPantRenderer"/> class.
@@ -24,7 +24,7 @@ public class HtmlSmartyPantRenderer : HtmlObjectRenderer<SmartyPant>
     /// <exception cref="ArgumentNullException"></exception>
     public HtmlSmartyPantRenderer(SmartyPantOptions? options)
     {
-        this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this._options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public class HtmlSmartyPantRenderer : HtmlObjectRenderer<SmartyPant>
     /// </summary>
     protected override void Write(HtmlRenderer renderer, SmartyPant obj)
     {
-        if (!options.Mapping.TryGetValue(obj.Type, out string? text))
+        if (!_options.Mapping.TryGetValue(obj.Type, out string? text))
         {
             DefaultOptions.Mapping.TryGetValue(obj.Type, out text);
         }

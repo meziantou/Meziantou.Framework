@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -76,7 +76,7 @@ public class CodeBlockRenderer : RoundtripObjectRenderer<CodeBlock>
             renderer.PushIndent(indents);
             WriteLeafRawLines(renderer, obj);
             renderer.PopIndent();
-            
+
             // ignore block newline, as last line references it
         }
 
@@ -86,7 +86,7 @@ public class CodeBlockRenderer : RoundtripObjectRenderer<CodeBlock>
     /// <summary>
     /// Performs the write leaf raw lines operation.
     /// </summary>
-    public void WriteLeafRawLines(RoundtripRenderer renderer, LeafBlock leafBlock)
+    public static void WriteLeafRawLines(RoundtripRenderer renderer, LeafBlock leafBlock)
     {
         if (leafBlock.Lines.Lines != null)
         {

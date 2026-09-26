@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -18,10 +18,10 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
     protected override void Write(NormalizeRenderer renderer, CodeInline obj)
     {
         var delimiterCount = 0;
-        string content = renderer.EscapeTablePipes ? obj.Content.Replace("|", "\\|") : obj.Content;
+        string content = renderer.EscapeTablePipes ? obj.Content.Replace("|", "\\|", StringComparison.Ordinal) : obj.Content;
         for (var i = 0; i < content.Length; i++)
         {
-            var index = content.IndexOf(obj.Delimiter, i);
+            var index = content.IndexOf(obj.Delimiter, i, StringComparison.Ordinal);
             if (index == -1) break;
 
             var count = 1;

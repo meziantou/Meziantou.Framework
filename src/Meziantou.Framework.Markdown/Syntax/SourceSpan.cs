@@ -1,12 +1,15 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
+
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Markdown.Syntax;
 
 /// <summary>
 /// A span of text.
 /// </summary>
+[StructLayout(LayoutKind.Auto)]
 public struct SourceSpan : IEquatable<SourceSpan>
 {
     /// <summary>
@@ -26,7 +29,7 @@ public struct SourceSpan : IEquatable<SourceSpan>
     }
 
     /// <summary>
-    /// Gets or sets the starting character position from the original text source. 
+    /// Gets or sets the starting character position from the original text source.
     /// Note that for inline elements, this is only valid if <see cref="MarkdownExtensions.UsePreciseSourceLocation"/> is setup on the pipeline.
     /// </summary>
     public int Start { get; set; }
@@ -66,7 +69,7 @@ public struct SourceSpan : IEquatable<SourceSpan>
     /// <summary>
     /// Performs the equals operation.
     /// </summary>
-    public override readonly bool Equals(object? obj)
+    public override readonly bool Equals([NotNullWhen(true)] object? obj)
     {
         return obj is SourceSpan sourceSpan && Equals(sourceSpan);
     }

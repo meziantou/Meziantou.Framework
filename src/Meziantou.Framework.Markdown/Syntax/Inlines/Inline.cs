@@ -23,6 +23,7 @@ public abstract class Inline : MarkdownObject, IInline
         SetTypeKind(isInline: true, isContainer: false);
     }
 
+    [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The parameter only selects this overload")]
     private protected Inline(bool dummySkipTypeKind) { }
 
     /// <summary>
@@ -167,10 +168,10 @@ public abstract class Inline : MarkdownObject, IInline
 
         if (copyChildren && IsContainerInline)
         {
-            var container = Unsafe.As<ContainerInline>(this);
+            var container = unsafe(Unsafe.As<ContainerInline>(this));
 
             ContainerInline? newContainer = inline.IsContainerInline && !inline.IsClosed
-                ? Unsafe.As<ContainerInline>(inline)
+                ? unsafe(Unsafe.As<ContainerInline>(inline))
                 : null;
 
             // TODO: This part is not efficient as it is using child.Remove()

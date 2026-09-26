@@ -11,56 +11,57 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestEmojiEmphasis
 {
-    [TestCase("**Non-goals (explicitly out of scope for this plan):**", "<strong>Non-goals (explicitly out of scope for this plan):</strong>")]
-    [TestCase("*Non-goals (explicitly out of scope for this plan):*", "<em>Non-goals (explicitly out of scope for this plan):</em>")]
-    [TestCase("***Non-goals (explicitly out of scope for this plan):***", "<em><strong>Non-goals (explicitly out of scope for this plan):</strong></em>")]
-    [TestCase("*:*", "<em>:</em>")]
-    [TestCase("**:**", "<strong>:</strong>")]
-    [TestCase("*outer **inner):***", "<em>outer <strong>inner):</strong></em>")]
-    [TestCase("*a* :*", "<em>a</em> 😗")]
-    [TestCase(":*", "😗")]
-    [TestCase("(:*)", "(😗)")]
-    [TestCase(":**", "😗*")]
-    [TestCase(":***", "😗**")]
-    [TestCase(":*text", "😗text")]
-    [TestCase(":*text*", ":<em>text</em>")]
-    [TestCase("*text :* more*", "<em>text :</em> more*")]
-    [TestCase("*:kissing:*", "<em>😗</em>")]
-    [TestCase("**:)**", "<strong>😃</strong>")]
-    [TestCase("*text :-* more*", "<em>text 😗more</em>")]
-    [TestCase(@"\*text :*", "*text 😗")]
-    [TestCase(@"*text :\*", "*text :*")]
-    [TestCase("`*text :*`", "<code>*text :*</code>")]
-    [TestCase("[*text):*](url)", "<a href=\"url\"><em>text):</em></a>")]
-    [TestCase("*text [link](url):*", "<em>text <a href=\"url\">link</a>:</em>")]
-    [TestCase("*outside [inside :*](url)", "*outside <a href=\"url\">inside 😗</a>")]
-    [TestCase("[*inside](url) :*", "<a href=\"url\">*inside</a> 😗")]
-    [TestCase(":* :* **:** :*", "😗 😗 <strong>:</strong> 😗")]
-    [TestCase("**:***", "<strong>:</strong>*")]
-    [TestCase("*:**", "<em>:</em>*")]
-    [TestCase("*a\ntext):*", "<em>a\ntext):</em>")]
-    [TestCase(":*\n:*", "😗\n😗")]
-    [TestCase("![*text):*](url)", "<img src=\"url\" alt=\"text):\" />")]
-    [TestCase("[text :*][missing]", "[text 😗][missing]")]
+    [Theory]
+    [InlineData("**Non-goals (explicitly out of scope for this plan):**", "<strong>Non-goals (explicitly out of scope for this plan):</strong>")]
+    [InlineData("*Non-goals (explicitly out of scope for this plan):*", "<em>Non-goals (explicitly out of scope for this plan):</em>")]
+    [InlineData("***Non-goals (explicitly out of scope for this plan):***", "<em><strong>Non-goals (explicitly out of scope for this plan):</strong></em>")]
+    [InlineData("*:*", "<em>:</em>")]
+    [InlineData("**:**", "<strong>:</strong>")]
+    [InlineData("*outer **inner):***", "<em>outer <strong>inner):</strong></em>")]
+    [InlineData("*a* :*", "<em>a</em> 😗")]
+    [InlineData(":*", "😗")]
+    [InlineData("(:*)", "(😗)")]
+    [InlineData(":**", "😗*")]
+    [InlineData(":***", "😗**")]
+    [InlineData(":*text", "😗text")]
+    [InlineData(":*text*", ":<em>text</em>")]
+    [InlineData("*text :* more*", "<em>text :</em> more*")]
+    [InlineData("*:kissing:*", "<em>😗</em>")]
+    [InlineData("**:)**", "<strong>😃</strong>")]
+    [InlineData("*text :-* more*", "<em>text 😗more</em>")]
+    [InlineData(@"\*text :*", "*text 😗")]
+    [InlineData(@"*text :\*", "*text :*")]
+    [InlineData("`*text :*`", "<code>*text :*</code>")]
+    [InlineData("[*text):*](url)", "<a href=\"url\"><em>text):</em></a>")]
+    [InlineData("*text [link](url):*", "<em>text <a href=\"url\">link</a>:</em>")]
+    [InlineData("*outside [inside :*](url)", "*outside <a href=\"url\">inside 😗</a>")]
+    [InlineData("[*inside](url) :*", "<a href=\"url\">*inside</a> 😗")]
+    [InlineData(":* :* **:** :*", "😗 😗 <strong>:</strong> 😗")]
+    [InlineData("**:***", "<strong>:</strong>*")]
+    [InlineData("*:**", "<em>:</em>*")]
+    [InlineData("*a\ntext):*", "<em>a\ntext):</em>")]
+    [InlineData(":*\n:*", "😗\n😗")]
+    [InlineData("![*text):*](url)", "<img src=\"url\" alt=\"text):\" />")]
+    [InlineData("[text :*][missing]", "[text 😗][missing]")]
     public void EmphasisTakesPriority(string markdown, string expected)
     {
         foreach (bool trackTrivia in new[] { false, true })
         {
             var builder = new MarkdownPipelineBuilder().UseEmojiAndSmiley();
             if (trackTrivia) builder.EnableTrackTrivia();
-            Assert.AreEqual($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, builder.Build()));
+            Assert.Equal($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, builder.Build()));
         }
     }
 
-    [TestCase("_text):_", "<em>text):</em>")]
-    [TestCase("~~text):~~", "<del>text):</del>")]
-    [TestCase("++text):++", "<ins>text):</ins>")]
-    [TestCase("==text):==", "<mark>text):</mark>")]
-    [TestCase("^text):^", "<sup>text):</sup>")]
-    [TestCase(":_ :~ :+ := :^", "emoji emoji emoji emoji emoji")]
+    [Theory]
+    [InlineData("_text):_", "<em>text):</em>")]
+    [InlineData("~~text):~~", "<del>text):</del>")]
+    [InlineData("++text):++", "<ins>text):</ins>")]
+    [InlineData("==text):==", "<mark>text):</mark>")]
+    [InlineData("^text):^", "<sup>text):</sup>")]
+    [InlineData(":_ :~ :+ := :^", "emoji emoji emoji emoji emoji")]
     public void CustomMappingsRespectConfiguredEmphasis(string markdown, string expected)
     {
         var mapping = new EmojiMapping(new Dictionary<string, string>
@@ -70,27 +71,27 @@ public class TestEmojiEmphasis
         }, new Dictionary<string, string>());
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping)
             .UseEmphasisExtras(EmphasisExtraOptions.Default).Build();
-        Assert.AreEqual($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
+        Assert.Equal($"<p>{expected}</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
-    [Test]
+    [Fact]
     public void EmphasisCanBeDisabled()
     {
         var builder = new MarkdownPipelineBuilder().UseEmojiAndSmiley();
-        builder.InlineParsers.Remove(builder.InlineParsers.Find<EmphasisInlineParser>());
+        builder.InlineParsers.Remove(builder.InlineParsers.Find<EmphasisInlineParser>()!);
         // Register explicitly: the extension normally inserts before the emphasis parser.
         builder.InlineParsers.Add(new EmojiParser(new EmojiMapping()));
-        Assert.AreEqual("<p>**text)😗*</p>\n", MarkdownConverter.ToHtml("**text):**", builder.Build()));
+        Assert.Equal("<p>**text)😗*</p>\n", MarkdownConverter.ToHtml("**text):**", builder.Build()));
     }
 
-    [Test]
+    [Fact]
     public void SmileysCanBeDisabled()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(enableSmileys: false).Build();
-        Assert.AreEqual("<p><em>text):</em> :*</p>\n", MarkdownConverter.ToHtml("*text):* :*", pipeline));
+        Assert.Equal("<p><em>text):</em> :*</p>\n", MarkdownConverter.ToHtml("*text):* :*", pipeline));
     }
 
-    [Test]
+    [Fact]
     public void EmojiDoesNotChangeEmphasisStructure()
     {
         var plain = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
@@ -107,39 +108,40 @@ public class TestEmojiEmphasis
                 .Select(x => (x.DelimiterChar, x.DelimiterCount, x.Span)).ToArray();
             var actual = MarkdownConverter.Parse(markdown, emoji).Descendants<EmphasisInline>()
                 .Select(x => (x.DelimiterChar, x.DelimiterCount, x.Span)).ToArray();
-            Assert.AreEqual(expected, actual, markdown);
+            Assert.Equal(expected, actual, message: markdown);
         }
     }
 
-    [TestCase(":* tail", 0)]
-    [TestCase("text :** tail", 5)]
-    [TestCase("*a* :*", 4)]
-    [TestCase("[link :*](url)", 6)]
+    [Theory]
+    [InlineData(":* tail", 0)]
+    [InlineData("text :** tail", 5)]
+    [InlineData("*a* :*", 4)]
+    [InlineData("[link :*](url)", 6)]
     public void DeferredEmojiRetainsSourceLocation(string markdown, int start)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UsePreciseSourceLocation().Build();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         var emoji = document.Descendants<EmojiInline>().Single();
-        Assert.AreEqual(new SourceSpan(start, start + 1), emoji.Span);
-        Assert.AreEqual(0, emoji.Line);
-        Assert.AreEqual(start, emoji.Column);
-        Assert.AreEqual(":*", emoji.Match);
+        Assert.Equal(new SourceSpan(start, start + 1), emoji.Span);
+        Assert.Equal(0, emoji.Line);
+        Assert.Equal(start, emoji.Column);
+        Assert.Equal(":*", emoji.Match);
         foreach (var literal in document.Descendants<LiteralInline>().Where(x => x is not EmojiInline))
         {
-            Assert.AreEqual(markdown.Substring(literal.Span.Start, literal.Span.Length), literal.Content.ToString());
+            Assert.Equal(markdown.Substring(literal.Span.Start, literal.Span.Length), literal.Content.ToString());
         }
     }
 
-    [Test]
+    [Fact]
     public void EmojiAndEmphasisStayWithinTableCells()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UsePipeTables().Build();
         var html = MarkdownConverter.ToHtml("| A | B |\n| - | - |\n| *text):* | :* |\n| *text | :* |", pipeline);
-        Assert.That(html, Does.Contain("<td><em>text):</em></td>\n<td>😗</td>"));
-        Assert.That(html, Does.Contain("<td>*text</td>\n<td>😗</td>"));
+        Assert.Contains("<td><em>text):</em></td>\n<td>😗</td>", html);
+        Assert.Contains("<td>*text</td>\n<td>😗</td>", html);
     }
 
-    [Test]
+    [Fact]
     public void UnambiguousDefaultMappingsAreUnchanged()
     {
         var shortcodes = EmojiMapping.GetDefaultEmojiShortcodeToUnicode();
@@ -148,13 +150,14 @@ public class TestEmojiEmphasis
         foreach (var mapping in shortcodes.Concat(smileys.Select(x => new KeyValuePair<string, string>(x.Key, shortcodes[x.Value]))))
         {
             var markdown = $"prefix {mapping.Key} suffix";
-            Assert.AreEqual($"<p>prefix {mapping.Value} suffix</p>\n", MarkdownConverter.ToHtml(markdown, pipeline), markdown);
+            Assert.Equal($"<p>prefix {mapping.Value} suffix</p>\n", MarkdownConverter.ToHtml(markdown, pipeline), message: markdown);
         }
     }
 
-    [TestCase(":**", "long")]
-    [TestCase("**:**", "<strong>:</strong>")]
-    [TestCase("*", "star")]
+    [Theory]
+    [InlineData(":**", "long")]
+    [InlineData("**:**", "<strong>:</strong>")]
+    [InlineData("*", "star")]
     public void LongestMatchAndDelimiterOnlyMappingsArePreserved(string markdown, string expected)
     {
         var shortcodes = new Dictionary<string, string>
@@ -168,26 +171,27 @@ public class TestEmojiEmphasis
         }
         var mapping = new EmojiMapping(shortcodes, new Dictionary<string, string>());
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley(customEmojiMapping: mapping).Build();
-        Assert.AreEqual($"<p>prefix {expected}</p>\n", MarkdownConverter.ToHtml($"prefix {markdown}", pipeline));
+        Assert.Equal($"<p>prefix {expected}</p>\n", MarkdownConverter.ToHtml($"prefix {markdown}", pipeline));
     }
 
-    [Test]
+    [Fact]
     public void OtherRenderersSeeResolvedEmojiAndEmphasis()
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().Build();
-        const string markdown = "*text):* :*";
-        Assert.AreEqual("text): 😗", MarkdownConverter.ToPlainText(markdown, pipeline).Trim());
-        Assert.AreEqual("*text):* 😗", MarkdownConverter.Normalize(markdown, pipeline: pipeline).Trim());
+        var markdown = "*text):* :*";
+        Assert.Equal("text): 😗", MarkdownConverter.ToPlainText(markdown, pipeline).Trim());
+        Assert.Equal("*text):* 😗", MarkdownConverter.Normalize(markdown, pipeline: pipeline).Trim());
     }
 
     // Attributes bind to the emphasis delimiter, even if it ultimately remains unmatched.
     // Use a named shortcode to attach attributes to the surrounding paragraph instead.
-    [TestCase(":*{.kiss}", "<p>😗</p>\n")]
-    [TestCase(":kissing:{.kiss}", "<p class=\"kiss\">😗</p>\n")]
-    [TestCase("*text):*{.label}", "<p><em class=\"label\">text):</em></p>\n")]
+    [Theory]
+    [InlineData(":*{.kiss}", "<p>😗</p>\n")]
+    [InlineData(":kissing:{.kiss}", "<p class=\"kiss\">😗</p>\n")]
+    [InlineData("*text):*{.label}", "<p><em class=\"label\">text):</em></p>\n")]
     public void GenericAttributesRespectResolvedSyntax(string markdown, string expected)
     {
         var pipeline = new MarkdownPipelineBuilder().UseEmojiAndSmiley().UseGenericAttributes().Build();
-        Assert.AreEqual(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 }

@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
@@ -13,14 +13,14 @@ namespace Meziantou.Framework.Markdown.Extensions.TextRenderer;
 /// <seealso cref="IMarkdownExtension" />
 public class ConfigureNewLineExtension : IMarkdownExtension
 {
-    private readonly string newLine;
+    private readonly string _newLine;
 
     /// <summary>
     /// Initializes a new instance of the ConfigureNewLineExtension class.
     /// </summary>
     public ConfigureNewLineExtension(string newLine)
     {
-        this.newLine = newLine;
+        this._newLine = newLine;
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class ConfigureNewLineExtension : IMarkdownExtension
     {
         if (renderer is TextRendererBase textRenderer)
         {
-            textRenderer.Writer.NewLine = newLine;
+            textRenderer.Writer.NewLine = _newLine;
         }
     }
 }

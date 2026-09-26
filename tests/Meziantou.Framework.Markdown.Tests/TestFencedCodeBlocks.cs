@@ -4,18 +4,17 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestFencedCodeBlocks
 {
-    [Test]
-    [TestCase("c#", "c#", "")]
-    [TestCase("C#", "C#", "")]
-    [TestCase(" c#", "c#", "")]
-    [TestCase(" c# ", "c#", "")]
-    [TestCase(" \tc# ", "c#", "")]
-    [TestCase("\t c# \t", "c#", "")]
-    [TestCase(" c# ", "c#", "")]
-    [TestCase(" c# foo", "c#", "foo")]
-    [TestCase(" c# \t  fOo \t", "c#", "fOo")]
-    [TestCase("in\\%fo arg\\%ument", "in%fo", "arg%ument")]
-    [TestCase("info&#9; arg&acute;ument", "info\t", "arg\u00B4ument")]
+    [Theory]
+    [InlineData("c#", "c#", "")]
+    [InlineData("C#", "C#", "")]
+    [InlineData(" c#", "c#", "")]
+    [InlineData(" c# ", "c#", "")]
+    [InlineData(" \tc# ", "c#", "")]
+    [InlineData("\t c# \t", "c#", "")]
+    [InlineData(" c# foo", "c#", "foo")]
+    [InlineData(" c# \t  fOo \t", "c#", "fOo")]
+    [InlineData("in\\%fo arg\\%ument", "in%fo", "arg%ument")]
+    [InlineData("info&#9; arg&acute;ument", "info\t", "arg\u00B4ument")]
     public void TestInfoAndArguments(string infoString, string expectedInfo, string expectedArguments)
     {
         Test('`');
@@ -32,12 +31,12 @@ public class TestFencedCodeBlocks
 
             FencedCodeBlock codeBlock = document.Descendants<FencedCodeBlock>().Single();
 
-            Assert.AreEqual(fencedChar, codeBlock.FencedChar);
-            Assert.AreEqual(3, codeBlock.OpeningFencedCharCount);
-            Assert.AreEqual(3, codeBlock.ClosingFencedCharCount);
-            Assert.AreEqual(expectedInfo, codeBlock.Info);
-            Assert.AreEqual(expectedArguments, codeBlock.Arguments);
-            Assert.AreEqual(Contents, codeBlock.Lines.ToString());
+            Assert.Equal(fencedChar, codeBlock.FencedChar);
+            Assert.Equal(3, codeBlock.OpeningFencedCharCount);
+            Assert.Equal(3, codeBlock.ClosingFencedCharCount);
+            Assert.Equal(expectedInfo, codeBlock.Info);
+            Assert.Equal(expectedArguments, codeBlock.Arguments);
+            Assert.Equal(Contents, codeBlock.Lines.ToString());
         }
     }
 }

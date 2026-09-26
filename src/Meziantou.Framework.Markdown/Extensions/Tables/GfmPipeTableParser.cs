@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Extensions.Tables;
 // does not change the deliberately more permissive default syntax.
 internal sealed class GfmPipeTableParser : BlockParser
 {
-    private static readonly object _headerVisitedKey = new();
+    private static readonly object HeaderVisitedKey = new();
     private readonly PipeTableOptions _options;
 
     public GfmPipeTableParser(PipeTableOptions options)
@@ -28,7 +28,7 @@ internal sealed class GfmPipeTableParser : BlockParser
         if (processor.CurrentChar is not ('|' or '-' or ':' or '\v' or '\f')
             || processor.IsCodeIndent || processor.HasUnmatchedBlocks
             || processor.CurrentBlock is not ParagraphBlock paragraph || paragraph.Lines.Count == 0
-            || paragraph.ContainsData(_headerVisitedKey))
+            || paragraph.ContainsData(HeaderVisitedKey))
         {
             return BlockState.None;
         }
@@ -83,7 +83,7 @@ internal sealed class GfmPipeTableParser : BlockParser
         if (headerCells.Count != definitions.Count)
         {
             // cmark-gfm attempts a syntactically valid delimiter only once per paragraph.
-            paragraph.SetData(_headerVisitedKey, true);
+            paragraph.SetData(HeaderVisitedKey, true);
             return BlockState.None;
         }
 
@@ -244,7 +244,7 @@ internal sealed class GfmPipeTableParser : BlockParser
     internal static int[]? UnescapePipes(ref StringSlice text)
     {
         if (text.AsSpan().IndexOf("\\|".AsSpan()) < 0) return null;
-        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         var offsets = new int[text.Length + 1];
         for (int i = text.Start; i <= text.End; i++)
         {

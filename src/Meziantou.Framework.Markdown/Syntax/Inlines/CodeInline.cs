@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 [DebuggerDisplay("`{Content}`")]
 public class CodeInline : LeafInline
 {
-    private TriviaProperties? _trivia => GetTrivia<TriviaProperties>();
+    private TriviaProperties? TriviaOrNull => GetTrivia<TriviaProperties>();
     private TriviaProperties Trivia => GetOrSetTrivia<TriviaProperties>();
 
     private LazySubstring _content;
@@ -59,7 +59,7 @@ public class CodeInline : LeafInline
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice ContentWithTrivia { get => _trivia?.ContentWithTrivia ?? StringSlice.Empty; set => Trivia.ContentWithTrivia = value; }
+    public StringSlice ContentWithTrivia { get => TriviaOrNull?.ContentWithTrivia ?? StringSlice.Empty; set => Trivia.ContentWithTrivia = value; }
 
     private sealed class TriviaProperties
     {

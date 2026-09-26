@@ -43,8 +43,8 @@ public abstract class FencedBlockParserBase : BlockParser, IAttributesParseable
 /// <seealso cref="BlockParser" />
 public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T : Block, IFencedBlock
 {
-    private static readonly TransformedStringCache s_infoStringCache = new(static infoString => HtmlHelper.Unescape(infoString));
-    private static readonly TransformedStringCache s_argumentsStringCache = new(static argumentsString => HtmlHelper.Unescape(argumentsString));
+    private static readonly TransformedStringCache InfoStringCache = new(static infoString => HtmlHelper.Unescape(infoString));
+    private static readonly TransformedStringCache ArgumentsStringCache = new(static argumentsString => HtmlHelper.Unescape(argumentsString));
     private TransformedStringCache? _infoPrefixCache;
 
     /// <summary>
@@ -101,6 +101,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
     /// <param name="fenced">The fenced code block.</param>
     /// <param name="openingCharacter">The opening character for this fenced code block.</param>
     /// <returns><c>true</c> if parsing of the line is successfull; <c>false</c> otherwise</returns>
+    [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The signature must match InfoParserDelegate")]
     public static bool RoundtripInfoParser(BlockProcessor blockProcessor, ref StringSlice line, IFencedBlock fenced, char openingCharacter)
     {
         var start = line.Start;
@@ -186,7 +187,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
 
     end:
         fenced.TriviaAfterFencedChar = afterFence;
-        fenced.Info = s_infoStringCache.Get(info.AsSpan());
+        fenced.Info = InfoStringCache.Get(info.AsSpan());
         fenced.UnescapedInfo = info;
         fenced.TriviaAfterInfo = afterInfo;
         fenced.Arguments = HtmlHelper.Unescape(arg.ToString());
@@ -237,7 +238,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
 
             var argStringSlice = new StringSlice(line.Text, firstSpace, line.End);
             argStringSlice.Trim();
-            fenced.Arguments = s_argumentsStringCache.Get(argStringSlice.AsSpan());
+            fenced.Arguments = ArgumentsStringCache.Get(argStringSlice.AsSpan());
         }
         else
         {
@@ -247,7 +248,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
 
         infoStringSlice.Trim();
 
-        fenced.Info = s_infoStringCache.Get(infoStringSlice.AsSpan());
+        fenced.Info = InfoStringCache.Get(infoStringSlice.AsSpan());
 
         return true;
     }
@@ -287,7 +288,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
             fenced.OpeningFencedCharCount = count;
             fenced.Span.Start = processor.Start;
             fenced.Span.End = line.Start;
-        };
+        }
 
         // Try to parse any attached attributes
         TryParseAttributes?.Invoke(processor, ref line, fenced);
@@ -304,7 +305,7 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
         if (!string.IsNullOrEmpty(info))
         {
             Debug.Assert(_infoPrefixCache is not null || InfoPrefix is null);
-            string infoWithPrefix = _infoPrefixCache?.Get(info!) ?? info!;
+            string infoWithPrefix = _infoPrefixCache?.Get(info) ?? info;
             fenced.GetAttributes().AddClass(infoWithPrefix);
         }
 

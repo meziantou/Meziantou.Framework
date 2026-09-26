@@ -68,7 +68,7 @@ public class EscapeInlineParser : InlineParser
             {
                 inline.NewLine = newLine;
             }
-            
+
             inline.Span.End = inline.Span.Start + 1;
             slice.SkipChar(); // Skip \n or \r alone
             if (newLine == NewLine.CarriageReturnLineFeed)

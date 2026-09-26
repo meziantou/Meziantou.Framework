@@ -17,24 +17,26 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestExtensionSpanCoverage
 {
     public sealed class ExtensionSpanCase(
         string name,
         Action<MarkdownPipelineBuilder> configurePipeline,
         string markdown,
-        Action<MarkdownDocument> validate,
+        Action<MarkdownDocument>? validate,
         bool validateSpanTree = true)
     {
         public string Name { get; } = name;
         public Action<MarkdownPipelineBuilder> ConfigurePipeline { get; } = configurePipeline;
         public string Markdown { get; } = markdown;
-        public Action<MarkdownDocument> Validate { get; } = validate;
+        public Action<MarkdownDocument>? Validate { get; } = validate;
         public bool ValidateSpanTree { get; } = validateSpanTree;
+
+        public override string ToString() => $"Extension_{Name}_MaintainsValidSpans";
     }
 
-    [TestCaseSource(nameof(GetExtensionSpanCases))]
+    [Theory]
+    [MemberData(nameof(GetExtensionSpanCases))]
     public void ExtensionSpanTreeIsValid(ExtensionSpanCase testCase)
     {
         var builder = new MarkdownPipelineBuilder
@@ -47,13 +49,13 @@ public sealed class TestExtensionSpanCoverage
 
         if (testCase.ValidateSpanTree)
         {
-            Assert.That(document.HasValidSpan(recursive: true), Is.True, $"{testCase.Name} has invalid container spans");
+            Assert.True(document.HasValidSpan(recursive: true), message: $"{testCase.Name} has invalid container spans");
         }
 
         testCase.Validate?.Invoke(document);
     }
 
-    [Test]
+    [Fact]
     public void JiraLinkSpanMatchesToken()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -63,15 +65,15 @@ public sealed class TestExtensionSpanCoverage
 
         var document = MarkdownConverter.Parse("ABC-123", pipeline);
         var jiraLink = document.Descendants<JiraLink>().FirstOrDefault();
-        Assert.That(jiraLink, Is.Not.Null);
-        Assert.That(jiraLink!.Span, Is.EqualTo(new SourceSpan(0, 6)));
+        Assert.NotNull(jiraLink);
+        Assert.Equal(new SourceSpan(0, 6), jiraLink!.Span);
 
         var literal = jiraLink.FirstChild as LiteralInline;
-        Assert.That(literal, Is.Not.Null);
-        Assert.That(literal!.Span, Is.EqualTo(new SourceSpan(0, 6)));
+        Assert.NotNull(literal);
+        Assert.Equal(new SourceSpan(0, 6), literal!.Span);
     }
 
-    [Test]
+    [Fact]
     public void TaskListSpanMatchesCheckboxToken()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -81,11 +83,11 @@ public sealed class TestExtensionSpanCoverage
 
         var document = MarkdownConverter.Parse("- [x] done", pipeline);
         var task = document.Descendants<TaskList>().FirstOrDefault();
-        Assert.That(task, Is.Not.Null);
-        Assert.That(task!.Span, Is.EqualTo(new SourceSpan(2, 4)));
+        Assert.NotNull(task);
+        Assert.Equal(new SourceSpan(2, 4), task!.Span);
     }
 
-    [Test]
+    [Fact]
     public void AlertBlockSpanCoversSourceQuote()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -95,17 +97,17 @@ public sealed class TestExtensionSpanCoverage
 
         var document = MarkdownConverter.Parse("> [!NOTE]\n> body", pipeline);
         var alert = document.Descendants<AlertBlock>().FirstOrDefault();
-        Assert.That(alert, Is.Not.Null);
-        Assert.That(alert!.Span.Start, Is.EqualTo(0));
-        Assert.That(alert.Span.End, Is.GreaterThan(0));
+        Assert.NotNull(alert);
+        Assert.Equal(0, alert!.Span.Start);
+        Assert.True(alert.Span.End > 0);
 
         var paragraph = alert.Descendants<ParagraphBlock>().FirstOrDefault();
-        Assert.That(paragraph, Is.Not.Null);
-        Assert.That(paragraph!.Span.Start, Is.GreaterThanOrEqualTo(alert.Span.Start));
-        Assert.That(paragraph.Span.End, Is.LessThanOrEqualTo(alert.Span.End));
+        Assert.NotNull(paragraph);
+        Assert.True(paragraph!.Span.Start >= alert.Span.Start);
+        Assert.True(paragraph.Span.End <= alert.Span.End);
     }
 
-    [Test]
+    [Fact]
     public void YamlFrontMatterSpanCoversFrontMatterContent()
     {
         var pipeline = new MarkdownPipelineBuilder
@@ -115,12 +117,14 @@ public sealed class TestExtensionSpanCoverage
 
         var document = MarkdownConverter.Parse("---\na: 1\n---\ntext", pipeline);
         var yaml = document.Descendants<YamlFrontMatterBlock>().FirstOrDefault();
-        Assert.That(yaml, Is.Not.Null);
-        Assert.That(yaml!.Span.Start, Is.EqualTo(0));
-        Assert.That(yaml.Span.End, Is.GreaterThanOrEqualTo(7));
+        Assert.NotNull(yaml);
+        Assert.Equal(0, yaml!.Span.Start);
+        Assert.True(yaml.Span.End >= 7);
     }
 
-    private static IEnumerable<TestCaseData> GetExtensionSpanCases()
+    public static TheoryData<ExtensionSpanCase> GetExtensionSpanCases() => new(EnumerateExtensionSpanCases());
+
+    private static IEnumerable<ExtensionSpanCase> EnumerateExtensionSpanCases()
     {
         yield return Case(
             "AlertBlocks",
@@ -135,9 +139,9 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var autoLink = document.Descendants<LinkInline>().FirstOrDefault(link => link.IsAutoLink);
-                Assert.That(autoLink, Is.Not.Null);
-                Assert.That(autoLink!.Span.IsEmpty, Is.False);
-                Assert.That(autoLink.UrlSpan, Is.EqualTo(autoLink.Span));
+                Assert.NotNull(autoLink);
+                Assert.False(autoLink.Span.IsEmpty);
+                Assert.Equal(autoLink.Span, autoLink.UrlSpan);
             });
 
         yield return Case(
@@ -193,8 +197,8 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var heading = document.Descendants<HeadingBlock>().FirstOrDefault();
-                Assert.That(heading, Is.Not.Null);
-                Assert.That(heading!.GetAttributes().Id, Is.Not.Null.And.Not.Empty);
+                Assert.NotNull(heading);
+                Assert.NotEmpty(heading.GetAttributes().Id);
             });
 
         yield return Case(
@@ -251,8 +255,8 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var citation = document.Descendants<EmphasisInline>().FirstOrDefault(x => x.DelimiterChar == '"' && x.DelimiterCount == 2);
-                Assert.That(citation, Is.Not.Null);
-                Assert.That(citation!.Span.IsEmpty, Is.False);
+                Assert.NotNull(citation);
+                Assert.False(citation.Span.IsEmpty);
             });
 
         yield return Case(
@@ -270,7 +274,7 @@ public sealed class TestExtensionSpanCoverage
                 AssertNodesHaveNonEmptySpan<FootnoteGroup>(document);
                 AssertNodesHaveNonEmptySpan<Footnote>(document);
                 var links = document.Descendants<FootnoteLink>().ToList();
-                Assert.That(links.Count, Is.GreaterThan(0));
+                Assert.NotEmpty(links);
             });
 
         yield return Case(
@@ -280,8 +284,8 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var lineBreak = document.Descendants<LineBreakInline>().FirstOrDefault();
-                Assert.That(lineBreak, Is.Not.Null);
-                Assert.That(lineBreak!.IsHard, Is.True);
+                Assert.NotNull(lineBreak);
+                Assert.True(lineBreak.IsHard);
             });
 
         yield return Case(
@@ -291,8 +295,8 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var emphasis = document.Descendants<EmphasisInline>().FirstOrDefault(x => x.DelimiterChar == '~' && x.DelimiterCount == 2);
-                Assert.That(emphasis, Is.Not.Null);
-                Assert.That(emphasis!.Span.IsEmpty, Is.False);
+                Assert.NotNull(emphasis);
+                Assert.False(emphasis.Span.IsEmpty);
             });
 
         yield return Case(
@@ -302,9 +306,9 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var list = document.Descendants<ListBlock>().FirstOrDefault();
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list!.Span.IsEmpty, Is.False);
-                Assert.That(list.IsOrdered, Is.True);
+                Assert.NotNull(list);
+                Assert.False(list.Span.IsEmpty);
+                Assert.True(list.IsOrdered);
             });
 
         yield return Case(
@@ -314,10 +318,10 @@ public sealed class TestExtensionSpanCoverage
             document =>
             {
                 var paragraph = document.Descendants<ParagraphBlock>().FirstOrDefault();
-                Assert.That(paragraph, Is.Not.Null);
-                var attributes = paragraph!.TryGetAttributes();
-                Assert.That(attributes, Is.Not.Null);
-                Assert.That(attributes!.Span.IsEmpty, Is.False);
+                Assert.NotNull(paragraph);
+                var attributes = paragraph.TryGetAttributes();
+                Assert.NotNull(attributes);
+                Assert.False(attributes.Span.IsEmpty);
             });
 
         yield return Case(
@@ -350,24 +354,23 @@ public sealed class TestExtensionSpanCoverage
             "## Héllo");
     }
 
-    private static TestCaseData Case(
+    private static ExtensionSpanCase Case(
         string name,
         Action<MarkdownPipelineBuilder> configurePipeline,
         string markdown,
-        Action<MarkdownDocument> validate = null,
+        Action<MarkdownDocument>? validate = null,
         bool validateSpanTree = true)
     {
-        return new TestCaseData(new ExtensionSpanCase(name, configurePipeline, markdown, validate, validateSpanTree))
-            .SetName($"Extension_{name}_MaintainsValidSpans");
+        return new ExtensionSpanCase(name, configurePipeline, markdown, validate, validateSpanTree);
     }
 
     private static void AssertNodesHaveNonEmptySpan<T>(MarkdownDocument document) where T : MarkdownObject
     {
         var nodes = document.Descendants<T>().ToList();
-        Assert.That(nodes.Count, Is.GreaterThan(0), $"Expected at least one node of type `{typeof(T).Name}`");
+        Assert.NotEmpty(nodes, message: $"Expected at least one node of type `{typeof(T).Name}`");
         foreach (var node in nodes)
         {
-            Assert.That(node.Span.IsEmpty, Is.False, $"Node `{typeof(T).Name}` has an empty span");
+            Assert.False(node.Span.IsEmpty, message: $"Node `{typeof(T).Name}` has an empty span");
         }
     }
 }

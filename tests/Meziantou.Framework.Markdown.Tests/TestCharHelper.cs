@@ -11,7 +11,7 @@ public class TestCharHelper
     // :, ;, <, =, >, ?, @ (U+003A–0040),
     // [, \, ], ^, _, ` (U+005B–0060),
     // {, |, }, or ~ (U+007B–007E).
-    private static readonly HashSet<char> s_asciiPunctuation = new()
+    private static readonly HashSet<char> AsciiPunctuation = new()
     {
         '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
         ':', ';', '<', '=', '>', '?', '@',
@@ -20,7 +20,7 @@ public class TestCharHelper
     };
 
     // A Unicode punctuation character is a character in the Unicode P (punctuation) or S (symbol) general categories.
-    private static readonly HashSet<UnicodeCategory> s_punctuationCategories =
+    private static readonly HashSet<UnicodeCategory> PunctuationCategories =
     [
         UnicodeCategory.ConnectorPunctuation,
         UnicodeCategory.DashPunctuation,
@@ -35,7 +35,7 @@ public class TestCharHelper
         UnicodeCategory.OtherSymbol,
     ];
 
-    private static readonly HashSet<UnicodeCategory> s_punctuationWithoutSymbolsCategories =
+    private static readonly HashSet<UnicodeCategory> PunctuationWithoutSymbolsCategories =
     [
         UnicodeCategory.ConnectorPunctuation,
         UnicodeCategory.DashPunctuation,
@@ -49,15 +49,15 @@ public class TestCharHelper
     private static bool ExpectedIsPunctuation(char c)
     {
         return c <= 127
-            ? s_asciiPunctuation.Contains(c)
-            : s_punctuationCategories.Contains(CharUnicodeInfo.GetUnicodeCategory(c));
+            ? AsciiPunctuation.Contains(c)
+            : PunctuationCategories.Contains(CharUnicodeInfo.GetUnicodeCategory(c));
     }
 
     private static bool ExpectedIsPunctuationWithoutSymbols(char c)
     {
         return c <= 127
-            ? s_asciiPunctuation.Contains(c)
-            : s_punctuationWithoutSymbolsCategories.Contains(CharUnicodeInfo.GetUnicodeCategory(c));
+            ? AsciiPunctuation.Contains(c)
+            : PunctuationWithoutSymbolsCategories.Contains(CharUnicodeInfo.GetUnicodeCategory(c));
     }
 
     private static bool ExpectedIsWhitespace(char c)
@@ -68,7 +68,7 @@ public class TestCharHelper
             CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
     }
 
-    [Test]
+    [Fact]
     public void IsAcrossTab()
     {
         Assert.False(CharHelper.IsAcrossTab(0));
@@ -78,18 +78,18 @@ public class TestCharHelper
         Assert.False(CharHelper.IsAcrossTab(4));
     }
 
-    [Test]
+    [Fact]
     public void AddTab()
     {
-        Assert.AreEqual(4, CharHelper.AddTab(0));
-        Assert.AreEqual(4, CharHelper.AddTab(1));
-        Assert.AreEqual(4, CharHelper.AddTab(2));
-        Assert.AreEqual(4, CharHelper.AddTab(3));
-        Assert.AreEqual(8, CharHelper.AddTab(4));
-        Assert.AreEqual(8, CharHelper.AddTab(5));
+        Assert.Equal(4, CharHelper.AddTab(0));
+        Assert.Equal(4, CharHelper.AddTab(1));
+        Assert.Equal(4, CharHelper.AddTab(2));
+        Assert.Equal(4, CharHelper.AddTab(3));
+        Assert.Equal(8, CharHelper.AddTab(4));
+        Assert.Equal(8, CharHelper.AddTab(5));
     }
 
-    [Test]
+    [Fact]
     public void IsWhitespace()
     {
         Test(
@@ -101,7 +101,7 @@ public class TestCharHelper
             CharHelper.WhitespaceChars.Contains);
     }
 
-    [Test]
+    [Fact]
     public void IsWhiteSpaceOrZero()
     {
         Test(
@@ -109,7 +109,7 @@ public class TestCharHelper
             CharHelper.IsWhiteSpaceOrZero);
     }
 
-    [Test]
+    [Fact]
     public void IsAsciiPunctuation()
     {
         Test(
@@ -117,7 +117,7 @@ public class TestCharHelper
             CharHelper.IsAsciiPunctuation);
     }
 
-    [Test]
+    [Fact]
     public void IsAsciiPunctuationOrZero()
     {
         Test(
@@ -125,7 +125,7 @@ public class TestCharHelper
             CharHelper.IsAsciiPunctuationOrZero);
     }
 
-    [Test]
+    [Fact]
     public void IsSpaceOrPunctuationForGFMAutoLink()
     {
         Test(
@@ -133,7 +133,7 @@ public class TestCharHelper
             CharHelper.IsSpaceOrPunctuationForGFMAutoLink);
     }
 
-    [Test]
+    [Fact]
     public void InvalidAutoLinkCharacters()
     {
         // 6.5 Autolinks - https://spec.commonmark.org/0.31.2/#autolinks
@@ -147,7 +147,7 @@ public class TestCharHelper
             CharHelper.InvalidAutoLinkCharacters.Contains);
     }
 
-    [Test]
+    [Fact]
     public void CheckUnicodeCategory()
     {
         for (int i = char.MinValue; i <= char.MaxValue; i++)
@@ -159,12 +159,12 @@ public class TestCharHelper
 
             CharHelper.CheckUnicodeCategory(c, out bool spaceActual, out bool punctuationActual);
 
-            Assert.AreEqual(expectedSpace, spaceActual);
-            Assert.AreEqual(expectedPunctuation, punctuationActual);
+            Assert.Equal(expectedSpace, spaceActual);
+            Assert.Equal(expectedPunctuation, punctuationActual);
         }
     }
 
-    [Test]
+    [Fact]
     public void IsControl()
     {
         Test(
@@ -172,7 +172,7 @@ public class TestCharHelper
             CharHelper.IsControl);
     }
 
-    [Test]
+    [Fact]
     public void IsAlpha()
     {
         Test(
@@ -180,7 +180,7 @@ public class TestCharHelper
             CharHelper.IsAlpha);
     }
 
-    [Test]
+    [Fact]
     public void IsAlphaUpper()
     {
         Test(
@@ -188,7 +188,7 @@ public class TestCharHelper
             CharHelper.IsAlphaUpper);
     }
 
-    [Test]
+    [Fact]
     public void IsAlphaNumeric()
     {
         Test(
@@ -196,7 +196,7 @@ public class TestCharHelper
             CharHelper.IsAlphaNumeric);
     }
 
-    [Test]
+    [Fact]
     public void IsDigit()
     {
         Test(
@@ -204,7 +204,7 @@ public class TestCharHelper
             CharHelper.IsDigit);
     }
 
-    [Test]
+    [Fact]
     public void IsNewLineOrLineFeed()
     {
         Test(
@@ -212,7 +212,7 @@ public class TestCharHelper
             CharHelper.IsNewLineOrLineFeed);
     }
 
-    [Test]
+    [Fact]
     public void IsSpaceOrTab()
     {
         Test(
@@ -220,7 +220,7 @@ public class TestCharHelper
             CharHelper.IsSpaceOrTab);
     }
 
-    [Test]
+    [Fact]
     public void IsEscapableSymbol()
     {
         Test(
@@ -228,7 +228,7 @@ public class TestCharHelper
             CharHelper.IsEscapableSymbol);
     }
 
-    [Test]
+    [Fact]
     public void IsEmailUsernameSpecialChar()
     {
         Test(
@@ -236,11 +236,11 @@ public class TestCharHelper
             CharHelper.IsEmailUsernameSpecialChar);
     }
 
-    [Test]
+    [Fact]
     public void IsEmailUsernameSpecialCharOrDigit()
     {
         Test(
-            c => CharHelper.IsDigit(c) || ".!#$%&'*+/=?^_`{|}~-+.~".Contains(c),
+            c => CharHelper.IsDigit(c) || ".!#$%&'*+/=?^_`{|}~-+.~".Contains(c, StringComparison.Ordinal),
             CharHelper.IsEmailUsernameSpecialCharOrDigit);
     }
 
@@ -255,7 +255,7 @@ public class TestCharHelper
 
             if (expectedResult != actualResult)
             {
-                Assert.AreEqual(expectedResult, actualResult, $"Char: '{c}' ({i})");
+                Assert.Equal(expectedResult, actualResult, message: $"Char: '{c}' ({i})");
             }
         }
     }

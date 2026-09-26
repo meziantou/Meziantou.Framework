@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -38,10 +38,10 @@ public abstract class MarkdownObjectRenderer<TRenderer, TObject> : IMarkdownObje
     /// <summary>
     /// Writes the object to the specified renderer.
     /// </summary>
-    public virtual void Write(RendererBase renderer, MarkdownObject obj)
+    public virtual void Write(RendererBase renderer, MarkdownObject objectToRender)
     {
         var typedRenderer = (TRenderer)renderer;
-        var typedObj = (TObject)obj;
+        var typedObj = (TObject)objectToRender;
 
         if (_tryWriters is not null && TryWrite(typedRenderer, typedObj))
         {

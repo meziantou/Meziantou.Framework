@@ -6,20 +6,20 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestMarkdigCoreApi
 {
-    [Test]
+    [Fact]
     public void TestToHtml()
     {
         for (int i = 0; i < 5; i++)
         {
             string html = MarkdownConverter.ToHtml("This is a text with some *emphasis*");
-            Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
+            Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
 
             html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/");
-            Assert.AreNotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            Assert.NotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestToHtmlWithPipeline()
     {
         var pipeline = new MarkdownPipelineBuilder()
@@ -28,10 +28,10 @@ public class TestMarkdigCoreApi
         for (int i = 0; i < 5; i++)
         {
             string html = MarkdownConverter.ToHtml("This is a text with some *emphasis*", pipeline);
-            Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
+            Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
 
             html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", pipeline);
-            Assert.AreNotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            Assert.NotEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
 
         pipeline = new MarkdownPipelineBuilder()
@@ -41,52 +41,52 @@ public class TestMarkdigCoreApi
         for (int i = 0; i < 5; i++)
         {
             string html = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", pipeline);
-            Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            Assert.Equal("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestToHtmlWithWriter()
     {
-        var writer = new StringWriter();
+        using var writer = new StringWriter();
 
         for (int i = 0; i < 5; i++)
         {
             _ = MarkdownConverter.ToHtml("This is a text with some *emphasis*", writer);
             string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
+            Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
             writer.GetStringBuilder().Length = 0;
         }
 
-        writer = new StringWriter();
+        using var writer2 = new StringWriter();
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
 
         for (int i = 0; i < 5; i++)
         {
-            _ = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", writer, pipeline);
-            string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
-            writer.GetStringBuilder().Length = 0;
+            _ = MarkdownConverter.ToHtml("This is a text with a https://link.tld/", writer2, pipeline);
+            string html = writer2.ToString();
+            Assert.Equal("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            writer2.GetStringBuilder().Length = 0;
         }
     }
 
-    [Test]
+    [Fact]
     public void TestDocumentToHtmlWithWriter()
     {
-        var writer = new StringWriter();
+        using var writer = new StringWriter();
 
         for (int i = 0; i < 5; i++)
         {
             MarkdownDocument document = MarkdownConverter.Parse("This is a text with some *emphasis*");
             document.ToHtml(writer);
             string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
+            Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
             writer.GetStringBuilder().Length = 0;
         }
 
-        writer = new StringWriter();
+        using var writer2 = new StringWriter();
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
@@ -94,29 +94,29 @@ public class TestMarkdigCoreApi
         for (int i = 0; i < 5; i++)
         {
             MarkdownDocument document = MarkdownConverter.Parse("This is a text with a https://link.tld/", pipeline);
-            document.ToHtml(writer, pipeline);
-            string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
-            writer.GetStringBuilder().Length = 0;
+            document.ToHtml(writer2, pipeline);
+            string html = writer2.ToString();
+            Assert.Equal("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            writer2.GetStringBuilder().Length = 0;
         }
     }
 
-    [Test]
+    [Fact]
     public void TestConvert()
     {
-        var writer = new StringWriter();
+        using var writer = new StringWriter();
         var renderer = new HtmlRenderer(writer);
 
         for (int i = 0; i < 5; i++)
         {
             _ = MarkdownConverter.Convert("This is a text with some *emphasis*", renderer);
             string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with some <em>emphasis</em></p>\n", html);
+            Assert.Equal("<p>This is a text with some <em>emphasis</em></p>\n", html);
             writer.GetStringBuilder().Length = 0;
         }
 
-        writer = new StringWriter();
-        renderer = new HtmlRenderer(writer);
+        using var writer2 = new StringWriter();
+        renderer = new HtmlRenderer(writer2);
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
@@ -124,16 +124,16 @@ public class TestMarkdigCoreApi
         for (int i = 0; i < 5; i++)
         {
             _ = MarkdownConverter.Convert("This is a text with a https://link.tld/", renderer, pipeline);
-            string html = writer.ToString();
-            Assert.AreEqual("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
-            writer.GetStringBuilder().Length = 0;
+            string html = writer2.ToString();
+            Assert.Equal("<p>This is a text with a <a href=\"https://link.tld/\">https://link.tld/</a></p>\n", html);
+            writer2.GetStringBuilder().Length = 0;
         }
     }
 
-    [Test]
+    [Fact]
     public void TestParse()
     {
-        const string markdown = "This is a text with some *emphasis*";
+        var markdown = "This is a text with some *emphasis*";
 
         var pipeline = new MarkdownPipelineBuilder()
             .UsePreciseSourceLocation()
@@ -143,72 +143,72 @@ public class TestMarkdigCoreApi
         {
             MarkdownDocument document = MarkdownConverter.Parse(markdown, pipeline);
 
-            Assert.AreEqual(1, document.LineCount);
-            Assert.AreEqual(markdown.Length, document.Span.Length);
-            Assert.AreEqual(1, document.LineStartIndexes.Count);
-            Assert.AreEqual(0, document.LineStartIndexes[0]);
+            Assert.Equal(1, document.LineCount);
+            Assert.Equal(markdown.Length, document.Span.Length);
+            Assert.HasCount(1, document.LineStartIndexes);
+            Assert.Equal(0, document.LineStartIndexes[0]);
 
-            Assert.AreEqual(1, document.Count);
-            ParagraphBlock paragraph = document[0] as ParagraphBlock;
+            Assert.HasCount(1, document);
+            var paragraph = document[0] as ParagraphBlock;
             Assert.NotNull(paragraph);
-            Assert.AreEqual(markdown.Length, paragraph.Span.Length);
-            LiteralInline literal = paragraph.Inline.FirstChild as LiteralInline;
+            Assert.Equal(markdown.Length, paragraph.Span.Length);
+            var literal = paragraph.Inline!.FirstChild as LiteralInline;
             Assert.NotNull(literal);
-            Assert.AreEqual("This is a text with some ", literal.ToString());
-            EmphasisInline emphasis = literal.NextSibling as EmphasisInline;
+            Assert.Equal("This is a text with some ", literal.ToString());
+            var emphasis = literal.NextSibling as EmphasisInline;
             Assert.NotNull(emphasis);
-            Assert.AreEqual("*emphasis*".Length, emphasis.Span.Length);
-            LiteralInline emphasisLiteral = emphasis.FirstChild as LiteralInline;
+            Assert.Equal("*emphasis*".Length, emphasis.Span.Length);
+            var emphasisLiteral = emphasis.FirstChild as LiteralInline;
             Assert.NotNull(emphasisLiteral);
-            Assert.AreEqual("emphasis", emphasisLiteral.ToString());
+            Assert.Equal("emphasis", emphasisLiteral.ToString());
             Assert.Null(emphasisLiteral.NextSibling);
             Assert.Null(emphasis.NextSibling);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestNormalize()
     {
         for (int i = 0; i < 5; i++)
         {
             string normalized = MarkdownConverter.Normalize("Heading\n=======");
-            Assert.AreEqual("# Heading", normalized);
+            Assert.Equal("# Heading", normalized);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestNormalizeWithWriter()
     {
         for (int i = 0; i < 5; i++)
         {
-            var writer = new StringWriter();
+            using var writer = new StringWriter();
 
             _ = MarkdownConverter.Normalize("Heading\n=======", writer);
             string normalized = writer.ToString();
-            Assert.AreEqual("# Heading", normalized);
+            Assert.Equal("# Heading", normalized);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestToPlainText()
     {
         for (int i = 0; i < 5; i++)
         {
             string plainText = MarkdownConverter.ToPlainText("*Hello*, [world](http://example.com)!");
-            Assert.AreEqual("Hello, world!\n", plainText);
+            Assert.Equal("Hello, world!\n", plainText);
         }
     }
 
-    [Test]
+    [Fact]
     public void TestToPlainTextWithWriter()
     {
         for (int i = 0; i < 5; i++)
         {
-            var writer = new StringWriter();
+            using var writer = new StringWriter();
 
             _ = MarkdownConverter.ToPlainText("*Hello*, [world](http://example.com)!", writer);
             string plainText = writer.ToString();
-            Assert.AreEqual("Hello, world!\n", plainText);
+            Assert.Equal("Hello, world!\n", plainText);
         }
     }
 }

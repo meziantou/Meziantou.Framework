@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 namespace Meziantou.Framework.Markdown.Parsers;
@@ -24,7 +24,7 @@ public abstract class ParserBase<TProcessor> : IMarkdownParser<TProcessor>
     }
 
     /// <summary>
-    /// Gets the index of this parser in <see cref="T:Meziantou.Framework.Markdown.Parsers.BlockParserList" /> or <see cref="T:Meziantou.Framework.Markdown.Parsers.InlineParserList" />.
+    /// Gets the index of this parser in <see cref="BlockParserList" /> or <see cref="InlineParserList" />.
     /// </summary>
     public int Index { get; internal set; }
 }

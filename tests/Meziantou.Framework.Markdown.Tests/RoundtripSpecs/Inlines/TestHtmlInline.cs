@@ -1,27 +1,25 @@
-using NUnit.Framework;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
-namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines
+namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs.Inlines;
+
+public class TestHtmlInline
 {
-    [TestFixture]
-    public class TestHtmlInline
+    [Theory]
+    [InlineData("<em>f</em>")]
+    [InlineData("<em> f</em>")]
+    [InlineData("<em>f </em>")]
+    [InlineData("<em> f </em>")]
+    [InlineData("<b>p</b>")]
+    [InlineData("<b></b>")]
+    [InlineData("<b> </b>")]
+    [InlineData("<b>  </b>")]
+    [InlineData("<b>   </b>")]
+    [InlineData("<b>\t</b>")]
+    [InlineData("<b> \t</b>")]
+    [InlineData("<b>\t </b>")]
+    [InlineData("<b> \t </b>")]
+    public void Test(string value)
     {
-        [TestCase("<em>f</em>")]
-        [TestCase("<em> f</em>")]
-        [TestCase("<em>f </em>")]
-        [TestCase("<em> f </em>")]
-        [TestCase("<b>p</b>")]
-        [TestCase("<b></b>")]
-        [TestCase("<b> </b>")]
-        [TestCase("<b>  </b>")]
-        [TestCase("<b>   </b>")]
-        [TestCase("<b>\t</b>")]
-        [TestCase("<b> \t</b>")]
-        [TestCase("<b>\t </b>")]
-        [TestCase("<b> \t </b>")]
-        public void Test(string value)
-        {
-            RoundTrip(value);
-        }
+        RoundTrip(value);
     }
 }

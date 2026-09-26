@@ -1,28 +1,27 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestHtmlHelper
 {
-    [Test]
+    [Fact]
     public void TestParseHtmlTagSimple()
     {
         var inputTag = "<a>";
         var text = new StringSlice(inputTag);
-        Assert.True(HtmlHelper.TryParseHtmlTag(ref text, out string outputTag));
-        Assert.AreEqual(inputTag, outputTag);
+        Assert.True(HtmlHelper.TryParseHtmlTag(ref text, out string? outputTag));
+        Assert.Equal(inputTag, outputTag);
     }
 
-    [Test]
+    [Fact]
     public void TestParseHtmlTagSimpleWithAttribute()
     {
         var inputTag = "<a href='http://google.com'>";
         var text = new StringSlice(inputTag);
-        Assert.True(HtmlHelper.TryParseHtmlTag(ref text, out string outputTag));
-        Assert.AreEqual(inputTag, outputTag);
+        Assert.True(HtmlHelper.TryParseHtmlTag(ref text, out string? outputTag));
+        Assert.Equal(inputTag, outputTag);
     }
 }

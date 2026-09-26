@@ -5,12 +5,11 @@ using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestStringSliceList
 {
     // TODO: Add more tests for StringLineGroup
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupSimple()
     {
         var text = new StringLineGroup(4)
@@ -21,7 +20,7 @@ public class TestStringSliceList
         };
 
         var iterator = text.ToCharIterator();
-        Assert.AreEqual("ABC\nE\nF".Length, iterator.End - iterator.Start + 1);
+        Assert.Equal("ABC\nE\nF".Length, iterator.End - iterator.Start + 1);
 
         var chars = ToString(text.ToCharIterator());
         TextAssert.AreEqual("ABC\nE\nF", chars.ToString());
@@ -29,7 +28,7 @@ public class TestStringSliceList
         TextAssert.AreEqual("ABC\nE\nF", text.ToString());
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupWithSlices()
     {
         var text = new StringLineGroup(4)
@@ -55,7 +54,7 @@ public class TestStringSliceList
         return chars.ToString();
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupSaveAndRestore()
     {
         var text = new StringLineGroup(4)
@@ -64,8 +63,8 @@ public class TestStringSliceList
             new StringSlice("EF"),
         }.ToCharIterator();
 
-        Assert.AreEqual('A', text.CurrentChar);
-        Assert.AreEqual(0, text.SliceIndex);
+        Assert.Equal('A', text.CurrentChar);
+        Assert.Equal(0, text.SliceIndex);
 
         text.NextChar(); // B
 
@@ -73,20 +72,20 @@ public class TestStringSliceList
         text.NextChar(); // D
         text.NextChar(); // \n
         text.NextChar();
-        Assert.AreEqual('E', text.CurrentChar);
-        Assert.AreEqual(1, text.SliceIndex);
+        Assert.Equal('E', text.CurrentChar);
+        Assert.Equal(1, text.SliceIndex);
     }
 
-    [Test]
+    [Fact]
     public void TestSkipWhitespaces()
     {
         var text = new StringLineGroup("             ABC").ToCharIterator();
         Assert.False(text.TrimStart());
-        Assert.AreEqual('A', text.CurrentChar);
+        Assert.Equal('A', text.CurrentChar);
 
         text = new StringLineGroup("        ").ToCharIterator();
         Assert.True(text.TrimStart());
-        Assert.AreEqual('\0', text.CurrentChar);
+        Assert.Equal('\0', text.CurrentChar);
 
         var slice = new StringSlice("             ABC");
         Assert.False(slice.TrimStart());
@@ -95,7 +94,7 @@ public class TestStringSliceList
         Assert.True(slice.TrimStart());
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupWithModifiedStart()
     {
         var line1 = new StringSlice("  ABC", NewLine.LineFeed);
@@ -111,7 +110,7 @@ public class TestStringSliceList
         TextAssert.AreEqual("ABC\nDEF", result);
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupWithTrim()
     {
         var line1 = new StringSlice("  ABC  ", NewLine.LineFeed);
@@ -127,7 +126,7 @@ public class TestStringSliceList
         TextAssert.AreEqual("ABC  \n  DEF ", result);
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupIteratorPeekChar()
     {
         var iterator = new StringLineGroup(4)
@@ -137,23 +136,23 @@ public class TestStringSliceList
             new StringSlice("F")
         }.ToCharIterator();
 
-        Assert.AreEqual('A', iterator.CurrentChar);
-        Assert.AreEqual('A', iterator.PeekChar(0));
-        Assert.AreEqual('B', iterator.PeekChar());
-        Assert.AreEqual('B', iterator.PeekChar(1));
-        Assert.AreEqual('C', iterator.PeekChar(2));
-        Assert.AreEqual('\n', iterator.PeekChar(3));
-        Assert.AreEqual('E', iterator.PeekChar(4));
-        Assert.AreEqual('\n', iterator.PeekChar(5));
-        Assert.AreEqual('F', iterator.PeekChar(6));
-        Assert.AreEqual('\0', iterator.PeekChar(7)); // There is no \n appended to the last line
-        Assert.AreEqual('\0', iterator.PeekChar(8));
-        Assert.AreEqual('\0', iterator.PeekChar(100));
+        Assert.Equal('A', iterator.CurrentChar);
+        Assert.Equal('A', iterator.PeekChar(0));
+        Assert.Equal('B', iterator.PeekChar());
+        Assert.Equal('B', iterator.PeekChar(1));
+        Assert.Equal('C', iterator.PeekChar(2));
+        Assert.Equal('\n', iterator.PeekChar(3));
+        Assert.Equal('E', iterator.PeekChar(4));
+        Assert.Equal('\n', iterator.PeekChar(5));
+        Assert.Equal('F', iterator.PeekChar(6));
+        Assert.Equal('\0', iterator.PeekChar(7)); // There is no \n appended to the last line
+        Assert.Equal('\0', iterator.PeekChar(8));
+        Assert.Equal('\0', iterator.PeekChar(100));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => iterator.PeekChar(-1));
     }
 
-    [Test]
+    [Fact]
     public void TestIteratorSkipChar()
     {
         var lineGroup = new StringLineGroup(4)
@@ -170,18 +169,18 @@ public class TestStringSliceList
 
         static void Test<T>(T iterator) where T : ICharIterator
         {
-            Assert.AreEqual('A', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('B', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('C', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('\n', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('E', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('\n', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('\0', iterator.CurrentChar); iterator.SkipChar();
-            Assert.AreEqual('\0', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('A', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('B', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('C', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('\n', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('E', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('\n', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('\0', iterator.CurrentChar); iterator.SkipChar();
+            Assert.Equal('\0', iterator.CurrentChar); iterator.SkipChar();
         }
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupCharIteratorAtCapacity()
     {
         string str = "ABCDEFGHI";
@@ -197,7 +196,7 @@ public class TestStringSliceList
         TextAssert.AreEqual("ABC", text.ToString());
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroupCharIteratorForcingIncreaseCapacity()
     {
         string str = "ABCDEFGHI";
@@ -216,7 +215,7 @@ public class TestStringSliceList
         TextAssert.AreEqual("ABC\r\nD", text.ToString());
     }
 
-    [Test]
+    [Fact]
     public void TestStringLineGroup_EnumeratorReturnsRealLines()
     {
         string str = "A\r\n";
@@ -230,7 +229,7 @@ public class TestStringSliceList
         StringLine currentLine = (StringLine)enumerator.Current;
         TextAssert.AreEqual("A", currentLine.ToString());
         Assert.False(enumerator.MoveNext());
-        
+
         var nonBoxedEnumerator = text.GetEnumerator();
 
         Assert.True(nonBoxedEnumerator.MoveNext());

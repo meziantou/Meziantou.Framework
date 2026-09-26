@@ -1,0 +1,29 @@
+[*.cs]
+# The public API keeps the shape of Markdig (https://github.com/xoofx/markdig), the library this project is derived from.
+# The following rules would require breaking changes to that API, so they are disabled for this project only.
+
+# CA1000: Do not declare static members on generic types
+dotnet_diagnostic.CA1000.severity = none
+# CA1002: Do not expose generic lists (List<T> is part of the syntax tree API)
+dotnet_diagnostic.CA1002.severity = none
+# CA1003: Use generic event handler instances (pipeline events use dedicated delegates)
+dotnet_diagnostic.CA1003.severity = none
+# CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1010.severity = none
+# CA1051: Do not declare visible instance fields (StringSlice, StringLine and syntax nodes expose fields for performance)
+dotnet_diagnostic.CA1051.severity = none
+# CA1054, CA1055, CA1056: URI parameters, return values and properties should not be strings (URLs come from Markdown text)
+dotnet_diagnostic.CA1054.severity = none
+dotnet_diagnostic.CA1055.severity = none
+dotnet_diagnostic.CA1056.severity = none
+# CA1819: Properties should not return arrays
+dotnet_diagnostic.CA1819.severity = none
+# MA0046: Use EventHandler<T> to declare events
+dotnet_diagnostic.MA0046.severity = none
+
+# MA0026: Fix TODO comment. The TODO comments come from Markdig and document known limitations.
+dotnet_diagnostic.MA0026.severity = none
+
+# CA2000: ValueStringBuilder returns its pooled buffer in ToString(); a using declaration would make it readonly, and it is
+# passed by reference to helper methods.
+dotnet_code_quality.CA2000.excluded_symbol_names = T:Meziantou.Framework.Markdown.Helpers.ValueStringBuilder

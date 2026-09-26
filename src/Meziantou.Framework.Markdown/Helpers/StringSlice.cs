@@ -84,6 +84,7 @@ public struct StringSlice : ICharIterator
     }
 
     // Internal ctor to skip the null check
+    [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The parameter only selects this overload")]
     internal StringSlice(string text, int start, int end, NewLine newLine, bool dummy)
     {
         Text = text;
@@ -504,7 +505,8 @@ public struct StringSlice : ICharIterator
         if (length <= 0)
             return -1;
 
-        return Text.IndexOf(c, start, length);
+        int index = Text.AsSpan(start, length).IndexOf(c);
+        return index < 0 ? -1 : start + index;
     }
 
     /// <summary>
@@ -613,7 +615,7 @@ public struct StringSlice : ICharIterator
             return default;
         }
 
-        return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), start), length);
+        return unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), start), length));
     }
 
     /// <summary>

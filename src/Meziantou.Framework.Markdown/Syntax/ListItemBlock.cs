@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Helpers;
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Markdown.Syntax;
 /// <seealso cref="ContainerBlock" />
 public class ListItemBlock : ContainerBlock
 {
-    private TriviaProperties? _trivia => TryGetDerivedTrivia<TriviaProperties>();
+    private TriviaProperties? TriviaOrNull => TryGetDerivedTrivia<TriviaProperties>();
     private TriviaProperties Trivia => GetOrSetDerivedTrivia<TriviaProperties>();
 
     /// <summary>
@@ -39,7 +39,7 @@ public class ListItemBlock : ContainerBlock
     /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
     /// <see cref="StringSlice.Empty"/>.
     /// </summary>
-    public StringSlice SourceBullet { get => _trivia?.SourceBullet ?? StringSlice.Empty; set => Trivia.SourceBullet = value; }
+    public StringSlice SourceBullet { get => TriviaOrNull?.SourceBullet ?? StringSlice.Empty; set => Trivia.SourceBullet = value; }
 
     private sealed class TriviaProperties
     {

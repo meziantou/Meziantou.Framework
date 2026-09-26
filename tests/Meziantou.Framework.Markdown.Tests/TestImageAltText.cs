@@ -2,22 +2,21 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public class TestImageAltText
 {
-    [Test]
-    [TestCase("![](image.jpg)", "")]
-    [TestCase("![foo](image.jpg)", "foo")]
-    [TestCase("![][1]\n\n[1]: image.jpg", "")]
-    [TestCase("![bar][1]\n\n[1]: image.jpg", "bar")]
-    [TestCase("![](image.jpg 'title')", "")]
-    [TestCase("![foo](image.jpg 'title')", "foo")]
-    [TestCase("![][1]\n\n[1]: image.jpg 'title'", "")]
-    [TestCase("![bar][1]\n\n[1]: image.jpg 'title'", "bar")]
+    [Theory]
+    [InlineData("![](image.jpg)", "")]
+    [InlineData("![foo](image.jpg)", "foo")]
+    [InlineData("![][1]\n\n[1]: image.jpg", "")]
+    [InlineData("![bar][1]\n\n[1]: image.jpg", "bar")]
+    [InlineData("![](image.jpg 'title')", "")]
+    [InlineData("![foo](image.jpg 'title')", "foo")]
+    [InlineData("![][1]\n\n[1]: image.jpg 'title'", "")]
+    [InlineData("![bar][1]\n\n[1]: image.jpg 'title'", "bar")]
     public void TestImageHtmlAltText(string markdown, string expectedAltText)
     {
         string html = MarkdownConverter.ToHtml(markdown);
         string actualAltText = Regex.Match(html, "alt=\"(.*?)\"").Groups[1].Value;
-        Assert.AreEqual(expectedAltText, actualAltText);
+        Assert.Equal(expectedAltText, actualAltText);
     }
 }

@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 /*
  * Ported to Markdig from https://github.com/MihaZupan/SharpCollections
- * 
+ *
  * If you encounter any problems related to this data structure, please cc @MihaZupan
  *
  * This data structure aims to use less memory than reference-based implementations.
@@ -73,14 +73,14 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
     }
 
     private Node[] _tree;
-    private static readonly Node[] _emptyTree = new Node[0];
+    private static readonly Node[] EmptyTree = [];
 
     private KeyValuePair<string, TValue>[] _matches;
-    private static readonly KeyValuePair<string, TValue>[] _emptyMatches = new KeyValuePair<string, TValue>[0];
+    private static readonly KeyValuePair<string, TValue>[] EmptyMatches = [];
 
-    private int _childrenIndex = 0;
-    private int[] _children = _emptyChildren;
-    private static readonly int[] _emptyChildren = new int[0];
+    private int _childrenIndex;
+    private int[] _children = EmptyChildren;
+    private static readonly int[] EmptyChildren = [];
 
     #region Size and Capacity
 
@@ -293,8 +293,8 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
         for (int i = 0; i < _asciiRootMap.Length; i++)
             _asciiRootMap[i] = -1;
 
-        _matches = matchCapacity == 0 ? _emptyMatches : new KeyValuePair<string, TValue>[matchCapacity];
-        _tree = treeCapacity == 0 ? _emptyTree : new Node[treeCapacity];
+        _matches = matchCapacity == 0 ? EmptyMatches : new KeyValuePair<string, TValue>[matchCapacity];
+        _tree = treeCapacity == 0 ? EmptyTree : new Node[treeCapacity];
         EnsureChildrenCapacity(childrenCapacity);
     }
 

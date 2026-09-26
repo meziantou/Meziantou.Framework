@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Buffers;
@@ -21,9 +21,9 @@ namespace Meziantou.Framework.Markdown.Renderers;
 /// <seealso cref="TextRendererBase{HtmlRenderer}" />
 public class HtmlRenderer : TextRendererBase<HtmlRenderer>
 {
-    private static readonly IdnMapping s_idnMapping = new();
+    private static readonly IdnMapping IdnMappingInstance = new();
 
-    private static readonly SearchValues<char> s_asciiNonEscapeChars =
+    private static readonly SearchValues<char> AsciiNonEscapeChars =
         SearchValues.Create("!#$%()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
     /// <summary>
@@ -48,7 +48,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
         ObjectRenderers.Add(new EmphasisInlineRenderer());
         ObjectRenderers.Add(new LineBreakInlineRenderer());
         ObjectRenderers.Add(new HtmlInlineRenderer());
-        ObjectRenderers.Add(new HtmlEntityInlineRenderer());            
+        ObjectRenderers.Add(new HtmlEntityInlineRenderer());
         ObjectRenderers.Add(new LinkInlineRenderer());
         ObjectRenderers.Add(new LiteralInlineRenderer());
 
@@ -150,7 +150,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
         return this;
     }
 
-    private static readonly SearchValues<char> s_escapedChars = SearchValues.Create("<>&\"");
+    private static readonly SearchValues<char> EscapedChars = SearchValues.Create("<>&\"");
 
     /// <summary>
     /// Writes the content escaped for HTML.
@@ -167,7 +167,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
             {
                 int indexOfCharToEscape = softEscape
                     ? content.IndexOfAny('<', '&')
-                    : content.IndexOfAny(s_escapedChars);
+                    : content.IndexOfAny(EscapedChars);
 
                 if ((uint)indexOfCharToEscape >= (uint)content.Length)
                 {
@@ -233,7 +233,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
 
                 try
                 {
-                    domainName = s_idnMapping.GetAscii(content, schemeOffset, domainLength);
+                    domainName = IdnMappingInstance.GetAscii(content, schemeOffset, domainLength);
                 }
                 catch { }
 
@@ -259,7 +259,7 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
 
         while (true)
         {
-            int i = content.IndexOfAnyExcept(s_asciiNonEscapeChars);
+            int i = content.IndexOfAnyExcept(AsciiNonEscapeChars);
 
             if ((uint)i >= (uint)content.Length)
             {
@@ -302,11 +302,11 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
                 chars = stackalloc char[] { c };
             }
 
-            Span<byte> utf8Buffer = stackalloc byte[4];
+            Span<byte> utf8Buffer = unsafe(stackalloc byte[4]);
             int utf8Length = Encoding.UTF8.GetBytes(chars, utf8Buffer);
             utf8Buffer = utf8Buffer.Slice(0, utf8Length);
 
-            Span<char> escapedBuffer = stackalloc char[3];
+            Span<char> escapedBuffer = unsafe(stackalloc char[3]);
             escapedBuffer[0] = '%';
 
             foreach (byte b in utf8Buffer)

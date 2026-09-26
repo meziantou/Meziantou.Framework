@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestContainerBlocks
 {
-    private class MockContainerBlock : ContainerBlock
+    private sealed class MockContainerBlock : ContainerBlock
     {
         public MockContainerBlock()
             : base(null)
@@ -13,11 +13,11 @@ public class TestContainerBlocks
         }
     }
 
-    [Test]
+    [Fact]
     public void CanBeCleared()
     {
         ContainerBlock container = new MockContainerBlock();
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
         Assert.Null(container.LastChild);
 
         var paragraph = new ParagraphBlock();
@@ -25,129 +25,129 @@ public class TestContainerBlocks
 
         container.Add(paragraph);
 
-        Assert.AreEqual(1, container.Count);
-        Assert.AreSame(container, paragraph.Parent);
-        Assert.AreSame(paragraph, container.LastChild);
+        Assert.HasCount(1, container);
+        Assert.Same(container, paragraph.Parent);
+        Assert.Same(paragraph, container.LastChild);
 
         container.Clear();
 
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
         Assert.Null(container.LastChild);
         Assert.Null(paragraph.Parent);
     }
 
-    [Test]
+    [Fact]
     public void CanBeInsertedInto()
     {
         ContainerBlock container = new MockContainerBlock();
 
         var one = new ParagraphBlock();
         container.Insert(0, one);
-        Assert.AreEqual(1, container.Count);
-        Assert.AreSame(container[0], one);
-        Assert.AreSame(container, one.Parent);
+        Assert.HasCount(1, container);
+        Assert.Same(container[0], one);
+        Assert.Same(container, one.Parent);
 
         var two = new ParagraphBlock();
         container.Insert(1, two);
-        Assert.AreEqual(2, container.Count);
-        Assert.AreSame(container[0], one);
-        Assert.AreSame(container[1], two);
-        Assert.AreSame(container, two.Parent);
+        Assert.HasCount(2, container);
+        Assert.Same(container[0], one);
+        Assert.Same(container[1], two);
+        Assert.Same(container, two.Parent);
 
         var three = new ParagraphBlock();
         container.Insert(0, three);
-        Assert.AreEqual(3, container.Count);
-        Assert.AreSame(container[0], three);
-        Assert.AreSame(container[1], one);
-        Assert.AreSame(container[2], two);
-        Assert.AreSame(container, three.Parent);
+        Assert.HasCount(3, container);
+        Assert.Same(container[0], three);
+        Assert.Same(container[1], one);
+        Assert.Same(container[2], two);
+        Assert.Same(container, three.Parent);
 
-        Assert.Throws<ArgumentNullException>(() => container.Insert(0, null));
+        Assert.Throws<ArgumentNullException>(() => container.Insert(0, null!));
         Assert.Throws<ArgumentOutOfRangeException>(() => container.Insert(4, new ParagraphBlock()));
         Assert.Throws<ArgumentOutOfRangeException>(() => container.Insert(-1, new ParagraphBlock()));
         Assert.Throws<ArgumentException>(() => container.Insert(0, one)); // one already has a parent
     }
 
-    [Test]
+    [Fact]
     public void CanBeSet()
     {
         ContainerBlock container = new MockContainerBlock();
 
         var one = new ParagraphBlock();
         container.Insert(0, one);
-        Assert.AreEqual(1, container.Count);
-        Assert.AreSame(container[0], one);
-        Assert.AreSame(container, one.Parent);
+        Assert.HasCount(1, container);
+        Assert.Same(container[0], one);
+        Assert.Same(container, one.Parent);
 
         var two = new ParagraphBlock();
         container[0] = two;
-        Assert.AreSame(container, two.Parent);
+        Assert.Same(container, two.Parent);
         Assert.Null(one.Parent);
 
         Assert.Throws<ArgumentException>(() => container[0] = two); // two already has a parent
     }
 
-    [Test]
+    [Fact]
     public void Contains()
     {
         var container = new MockContainerBlock();
         var block = new ParagraphBlock();
 
-        Assert.False(container.Contains(block));
+        Assert.DoesNotContain(block, container);
 
         container.Add(block);
-        Assert.True(container.Contains(block));
+        Assert.Contains(block, container);
 
         container.Add(new ParagraphBlock());
-        Assert.True(container.Contains(block));
+        Assert.Contains(block, container);
 
         container.Insert(0, new ParagraphBlock());
-        Assert.True(container.Contains(block));
+        Assert.Contains(block, container);
     }
 
-    [Test]
+    [Fact]
     public void Remove()
     {
         var container = new MockContainerBlock();
         var block = new ParagraphBlock();
 
         Assert.False(container.Remove(block));
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
         Assert.Throws<ArgumentOutOfRangeException>(() => container.RemoveAt(0));
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
 
         container.Add(block);
-        Assert.AreEqual(1, container.Count);
+        Assert.HasCount(1, container);
         Assert.True(container.Remove(block));
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
         Assert.False(container.Remove(block));
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
 
         container.Add(block);
-        Assert.AreEqual(1, container.Count);
+        Assert.HasCount(1, container);
         container.RemoveAt(0);
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
         Assert.Throws<ArgumentOutOfRangeException>(() => container.RemoveAt(0));
-        Assert.AreEqual(0, container.Count);
+        Assert.Empty(container);
 
         container.Add(new ParagraphBlock { Column = 1 });
         container.Add(new ParagraphBlock { Column = 2 });
         container.Add(new ParagraphBlock { Column = 3 });
         container.Add(new ParagraphBlock { Column = 4 });
-        Assert.AreEqual(4, container.Count);
+        Assert.HasCount(4, container);
 
         container.RemoveAt(2);
-        Assert.AreEqual(3, container.Count);
-        Assert.AreEqual(4, container[2].Column);
+        Assert.HasCount(3, container);
+        Assert.Equal(4, container[2].Column);
 
         Assert.True(container.Remove(container[1]));
-        Assert.AreEqual(2, container.Count);
-        Assert.AreEqual(1, container[0].Column);
-        Assert.AreEqual(4, container[1].Column);
+        Assert.HasCount(2, container);
+        Assert.Equal(1, container[0].Column);
+        Assert.Equal(4, container[1].Column);
         Assert.Throws<IndexOutOfRangeException>(() => _ = container[2]);
     }
 
-    [Test]
+    [Fact]
     public void CopyTo()
     {
         var container = new MockContainerBlock();
@@ -184,7 +184,7 @@ public class TestContainerBlocks
         Assert.Throws<IndexOutOfRangeException>(() => container.CopyTo(destination, 3));
     }
 
-    [Test]
+    [Fact]
     public void CanTransferChildrenToAnotherContainer()
     {
         var source = new MockContainerBlock();
@@ -199,16 +199,16 @@ public class TestContainerBlocks
 
         source.TransferChildrenTo(destination);
 
-        Assert.That(source.Count, Is.EqualTo(0));
-        Assert.That(destination.Count, Is.EqualTo(3));
-        Assert.That(destination[0], Is.SameAs(existing));
-        Assert.That(destination[1], Is.SameAs(first));
-        Assert.That(destination[2], Is.SameAs(second));
-        Assert.That(first.Parent, Is.SameAs(destination));
-        Assert.That(second.Parent, Is.SameAs(destination));
+        Assert.Empty(source);
+        Assert.HasCount(3, destination);
+        Assert.Same(existing, destination[0]);
+        Assert.Same(first, destination[1]);
+        Assert.Same(second, destination[2]);
+        Assert.Same(destination, first.Parent);
+        Assert.Same(destination, second.Parent);
     }
 
-    [Test]
+    [Fact]
     public void BlockCanBeRemovedAndReplaced()
     {
         var root = new MockContainerBlock();
@@ -216,8 +216,8 @@ public class TestContainerBlocks
         root.Add(toRemove);
 
         toRemove.Remove();
-        Assert.That(root.Count, Is.EqualTo(0));
-        Assert.That(toRemove.Parent, Is.Null);
+        Assert.Empty(root);
+        Assert.Null(toRemove.Parent);
 
         var sourceContainer = new MockContainerBlock();
         sourceContainer.Add(new ParagraphBlock { Column = 3 });
@@ -227,11 +227,11 @@ public class TestContainerBlocks
         var replacement = new MockContainerBlock();
         sourceContainer.ReplaceBy(replacement);
 
-        Assert.That(root[0], Is.SameAs(replacement));
-        Assert.That(sourceContainer.Parent, Is.Null);
-        Assert.That(sourceContainer.Count, Is.EqualTo(0));
-        Assert.That(replacement.Count, Is.EqualTo(2));
-        Assert.That(replacement[0].Column, Is.EqualTo(3));
-        Assert.That(replacement[1].Column, Is.EqualTo(4));
+        Assert.Same(replacement, root[0]);
+        Assert.Null(sourceContainer.Parent);
+        Assert.Empty(sourceContainer);
+        Assert.HasCount(2, replacement);
+        Assert.Equal(3, replacement[0].Column);
+        Assert.Equal(4, replacement[1].Column);
     }
 }

@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 namespace Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
 public enum AutoIdentifierOptions
 {
     /// <summary>
-    /// No options: does not apply any additional formatting and/or transformations.  
+    /// No options: does not apply any additional formatting and/or transformations.
     /// </summary>
     None = 0,
 

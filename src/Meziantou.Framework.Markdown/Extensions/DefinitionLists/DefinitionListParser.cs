@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Parsers;
@@ -31,8 +31,6 @@ public class DefinitionListParser : BlockParser
         {
             return BlockState.None;
         }
-
-        var startPosition = processor.Start;
 
         var column = processor.ColumnBeforeIndent;
         processor.NextChar();

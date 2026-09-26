@@ -7,43 +7,42 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public partial class TestEmphasisPlus
 {
-    [Test]
+    [Fact]
     public void StrongNormal()
     {
         TestParser.TestSpec("***Strong emphasis*** normal", "<p><em><strong>Strong emphasis</strong></em> normal</p>", "");
     }
 
-    [Test]
+    [Fact]
     public void NormalStrongNormal()
     {
         TestParser.TestSpec("normal ***Strong emphasis*** normal", "<p>normal <em><strong>Strong emphasis</strong></em> normal</p>", "");
     }
 
-    [Test]
+    [Fact]
     public void SupplementaryPunctuation()
     {
         TestParser.TestSpec("a*a∇*a\n\na*∇a*a\n\na*a𝜵*a\n\na*𝜵a*a\n\na*𐬼a*a\n\na*a𐬼*a", "<p>a*a∇*a</p>\n<p>a*∇a*a</p>\n<p>a*a𝜵*a</p>\n<p>a*𝜵a*a</p>\n<p>a*𐬼a*a</p>\n<p>a*a𐬼*a</p>", "");
     }
 
-    [Test]
+    [Fact]
     public void RecognizeSupplementaryChars()
     {
         TestParser.TestSpec("🌶️**𰻞**🍜**𰻞**🌶️**麺**🍜", "<p>🌶️<strong>𰻞</strong>🍜<strong>𰻞</strong>🌶️<strong>麺</strong>🍜</p>", "");
     }
 
-    [Test]
+    [Fact]
     public void OpenEmphasisHasConvenientContentStringSlice()
     {
         var pipeline = new MarkdownPipelineBuilder().Build();
 
         var document = MarkdownConverter.Parse("test*test", pipeline);
 
-        var emphasisDelimiterLiteral = (LiteralInline)((ParagraphBlock)document.LastChild).Inline.ElementAt(1);
-        Assert.That(emphasisDelimiterLiteral.Content.Text == "test*test");
-        Assert.That(emphasisDelimiterLiteral.Content.Start == 4);
-        Assert.That(emphasisDelimiterLiteral.Content.End == 4);
+        var emphasisDelimiterLiteral = (LiteralInline)((ParagraphBlock)document.LastChild!).Inline!.ElementAt(1);
+        Assert.Equal("test*test", emphasisDelimiterLiteral.Content.Text);
+        Assert.Equal(4, emphasisDelimiterLiteral.Content.Start);
+        Assert.Equal(4, emphasisDelimiterLiteral.Content.End);
     }
 }

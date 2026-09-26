@@ -5,16 +5,16 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-[TestFixture]
 public sealed class TestPipeTable
 {
-    [TestCase("| S | T |\r\n|---|---| \r\n| G | H |")]
-    [TestCase("| S | T |\r\n|---|---|\t\r\n| G | H |")]
-    [TestCase("| S | T |\r\n|---|---|\f\r\n| G | H |")]
-    [TestCase("| S | \r\n|---|\r\n| G |\r\n\r\n| D | D |\r\n| ---| ---| \r\n| V | V |", 2)]
-    [TestCase("a\r| S | T |\r|---|---|")]
-    [TestCase("a\n| S | T |\r|---|---|")]
-    [TestCase("a\r\n| S | T |\r|---|---|")]
+    [Theory]
+    [InlineData("| S | T |\r\n|---|---| \r\n| G | H |")]
+    [InlineData("| S | T |\r\n|---|---|\t\r\n| G | H |")]
+    [InlineData("| S | T |\r\n|---|---|\f\r\n| G | H |")]
+    [InlineData("| S | \r\n|---|\r\n| G |\r\n\r\n| D | D |\r\n| ---| ---| \r\n| V | V |", 2)]
+    [InlineData("a\r| S | T |\r|---|---|")]
+    [InlineData("a\n| S | T |\r|---|---|")]
+    [InlineData("a\r\n| S | T |\r|---|---|")]
     public void TestTableBug(string markdown, int tableCount = 1)
     {
         MarkdownDocument document =
@@ -22,22 +22,23 @@ public sealed class TestPipeTable
 
         Table[] tables = document.Descendants().OfType<Table>().ToArray();
 
-        Assert.AreEqual(tableCount, tables.Length);
+        Assert.HasCount(tableCount, tables);
     }
 
-    [TestCase("A | B\r\n---|---", new[] {50.0f, 50.0f})]
-    [TestCase("A | B\r\n-|---", new[] {25.0f, 75.0f})]
-    [TestCase("A | B\r\n-|---\r\nA | B\r\n---|---", new[] {25.0f, 75.0f})]
-    [TestCase("A | B\r\n---|---|---", new[] {33.33f, 33.33f, 33.33f})]
-    [TestCase("A | B\r\n---|---|---|", new[] {33.33f, 33.33f, 33.33f})]
-    [TestCase("| A | B | C |\r\n| |---|---|", new[] {0.0f, 50.0f, 50.0f})]
-    [TestCase("| A | B | C |\r\n||---|---|", new[] {0.0f, 50.0f, 50.0f})]
-    [TestCase("| A | B | C |\r\n|---|\t|---|", new[] {50.0f, 0.0f, 50.0f})]
-    [TestCase("| A | B | C |\r\n|---||---|", new[] {50.0f, 0.0f, 50.0f})]
-    [TestCase("| A | B | C |\r\n|---|---| |", new[] {50.0f, 50.0f, 0.0f})]
-    [TestCase("| A | B | C |\r\n|---|---||", new[] {50.0f, 50.0f, 0.0f})]
-    [TestCase("A | B | C\r\n---||------\r\n1 | 2 | 3", new[] {33.33f, 0.0f, 66.67f})]
-    [TestCase("| A | B | C |\r\n||---||\r\n| 1 | 2 | 3 |", new[] {0.0f, 100.0f, 0.0f})]
+    [Theory]
+    [InlineData("A | B\r\n---|---", new[] {50.0f, 50.0f})]
+    [InlineData("A | B\r\n-|---", new[] {25.0f, 75.0f})]
+    [InlineData("A | B\r\n-|---\r\nA | B\r\n---|---", new[] {25.0f, 75.0f})]
+    [InlineData("A | B\r\n---|---|---", new[] {33.33f, 33.33f, 33.33f})]
+    [InlineData("A | B\r\n---|---|---|", new[] {33.33f, 33.33f, 33.33f})]
+    [InlineData("| A | B | C |\r\n| |---|---|", new[] {0.0f, 50.0f, 50.0f})]
+    [InlineData("| A | B | C |\r\n||---|---|", new[] {0.0f, 50.0f, 50.0f})]
+    [InlineData("| A | B | C |\r\n|---|\t|---|", new[] {50.0f, 0.0f, 50.0f})]
+    [InlineData("| A | B | C |\r\n|---||---|", new[] {50.0f, 0.0f, 50.0f})]
+    [InlineData("| A | B | C |\r\n|---|---| |", new[] {50.0f, 50.0f, 0.0f})]
+    [InlineData("| A | B | C |\r\n|---|---||", new[] {50.0f, 50.0f, 0.0f})]
+    [InlineData("A | B | C\r\n---||------\r\n1 | 2 | 3", new[] {33.33f, 0.0f, 66.67f})]
+    [InlineData("| A | B | C |\r\n||---||\r\n| 1 | 2 | 3 |", new[] {0.0f, 100.0f, 0.0f})]
     public void TestColumnWidthByHeaderLines(string markdown, float[] expectedWidth)
     {
         var pipeline = new MarkdownPipelineBuilder()
@@ -45,20 +46,35 @@ public sealed class TestPipeTable
             .Build();
         var document = MarkdownConverter.Parse(markdown, pipeline);
         var table = document.Descendants().OfType<Table>().FirstOrDefault();
-        Assert.IsNotNull(table);
+        Assert.NotNull(table);
         var actualWidths = table.ColumnDefinitions.Select(x => x.Width).ToList();
-        Assert.AreEqual(actualWidths.Count, expectedWidth.Length);
+        Assert.HasCount(expectedWidth.Length, actualWidths);
         for (int i = 0; i < expectedWidth.Length; i++)
         {
-            Assert.AreEqual(actualWidths[i], expectedWidth[i], 0.01);
+            Assert.Equal(expectedWidth[i], actualWidths[i], 0.01f);
         }
     }
 
-    [Test]
-    public void InvalidSeparatorRemainsParagraph(
-        [Values("|||", "| | | |", "|\t|\t|\t|", "| : | : | : |", "|---|text||", "|---|:||")] string separator,
-        [Values(false, true)] bool inferColumnWidths,
-        [Values(false, true)] bool headerOnly)
+    public static TheoryData<string, bool, bool> InvalidSeparatorCases()
+    {
+        var result = new TheoryData<string, bool, bool>();
+        foreach (var separator in new[] { "|||", "| | | |", "|\t|\t|\t|", "| : | : | : |", "|---|text||", "|---|:||" })
+        {
+            foreach (var inferColumnWidths in new[] { false, true })
+            {
+                foreach (var headerOnly in new[] { false, true })
+                {
+                    result.Add(separator, inferColumnWidths, headerOnly);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidSeparatorCases))]
+    public void InvalidSeparatorRemainsParagraph(string separator, bool inferColumnWidths, bool headerOnly)
     {
         var markdown = "| A | B | C |\n" + separator;
         if (!headerOnly)
@@ -70,10 +86,10 @@ public sealed class TestPipeTable
             .UsePipeTables(new PipeTableOptions { InferColumnWidthsFromSeparator = inferColumnWidths })
             .Build();
 
-        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline), Is.EqualTo("<p>" + markdown + "</p>\n"));
+        Assert.Equal("<p>" + markdown + "</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
-    [Test]
+    [Fact]
     public void TestColumnWidthIsNotSetWithoutConfigurationFlag()
     {
         var pipeline = new MarkdownPipelineBuilder()
@@ -81,17 +97,17 @@ public sealed class TestPipeTable
             .Build();
         var document = MarkdownConverter.Parse("| A | B | C |\r\n|---|---|---|", pipeline);
         var table = document.Descendants().OfType<Table>().FirstOrDefault();
-        Assert.IsNotNull(table);
+        Assert.NotNull(table);
         foreach (var column in table.ColumnDefinitions)
         {
-            Assert.AreEqual(0, column.Width);
+            Assert.Equal(0, column.Width);
         }
     }
 
-    [Test]
+    [Fact]
     public void TableWithUnbalancedCodeSpanParsesWithoutDepthLimitError()
     {
-        const string markdown = """
+        var markdown = """
 | Count | A | B | C | D | E |
 |-------|---|---|---|---|---|
 |     0 | B | C | D | E | F |
@@ -124,18 +140,18 @@ public sealed class TestPipeTable
         Assert.DoesNotThrow(() => document = MarkdownConverter.Parse(markdown, pipeline));
 
         var tables = document.Descendants().OfType<Table>().ToArray();
-        Assert.That(tables, Has.Length.EqualTo(1));
+        Assert.HasCount(1, tables);
 
         string html = string.Empty;
         Assert.DoesNotThrow(() => html = MarkdownConverter.ToHtml(markdown, pipeline));
-        Assert.That(html, Does.Contain("<table"));
-        Assert.That(html, Does.Contain("<td>`C</td>"));
+        Assert.Contains("<table", html);
+        Assert.Contains("<td>`C</td>", html);
     }
 
-    [Test]
+    [Fact]
     public void CodeInlineWithPipeDelimitersRemainsCodeInline()
     {
-        const string markdown = "`|| hidden text ||`";
+        var markdown = "`|| hidden text ||`";
 
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
@@ -144,12 +160,12 @@ public sealed class TestPipeTable
         var document = MarkdownConverter.Parse(markdown, pipeline);
 
         var codeInline = document.Descendants().OfType<CodeInline>().SingleOrDefault();
-        Assert.IsNotNull(codeInline);
-        Assert.That(codeInline!.Content, Is.EqualTo("|| hidden text ||"));
-        Assert.That(document.ToHtml(), Is.EqualTo("<p><code>|| hidden text ||</code></p>\n"));
+        Assert.NotNull(codeInline);
+        Assert.Equal("|| hidden text ||", codeInline!.Content);
+        Assert.Equal("<p><code>|| hidden text ||</code></p>\n", document.ToHtml());
     }
 
-    [Test]
+    [Fact]
     public void MultiLineCodeInlineWithPipeDelimitersRendersAsCode()
     {
         string markdown =
@@ -165,13 +181,13 @@ public sealed class TestPipeTable
 
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Is.EqualTo("<p><code>|| hidden text ||</code></p>\n"));
+        Assert.Equal("<p><code>|| hidden text ||</code></p>\n", html);
     }
 
-    [Test]
+    [Fact]
     public void TableCellWithCodeInlineRendersCorrectly()
     {
-        const string markdown =
+        var markdown =
             """
             | Count | A | B | C | D | E |
             |-------|---|---|---|---|---|
@@ -186,13 +202,13 @@ public sealed class TestPipeTable
 
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Does.Contain("<td><code>Code block</code></td>"));
+        Assert.Contains("<td><code>Code block</code></td>", html);
     }
 
-    [Test]
+    [Fact]
     public void BoldTableCellWithUnmatchedSubscriptDelimiterDoesNotAddCells()
     {
-        const string markdown =
+        var markdown =
             """
             | Component | Per query | Per 1,000 queries |
             |-----------|-----------|-------------------|
@@ -209,19 +225,19 @@ public sealed class TestPipeTable
         var table = document.Descendants().OfType<Table>().Single();
         var rows = table.OfType<TableRow>().ToArray();
 
-        Assert.That(rows, Has.Length.EqualTo(4));
-        Assert.That(rows, Has.All.Count.EqualTo(3));
+        Assert.HasCount(4, rows);
+        Assert.All(rows, row => Assert.HasCount(3, row));
 
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Does.Contain("<td><strong>~$0.0015</strong></td>"));
-        Assert.That(html, Does.Contain("<td><strong>~$1.50</strong></td>"));
+        Assert.Contains("<td><strong>~$0.0015</strong></td>", html);
+        Assert.Contains("<td><strong>~$1.50</strong></td>", html);
     }
 
-    [Test]
+    [Fact]
     public void CodeInlineWithIndentedContentPreservesWhitespace()
     {
-        const string markdown = "`\n   foo\n`";
+        var markdown = "`\n   foo\n`";
 
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
@@ -230,11 +246,11 @@ public sealed class TestPipeTable
         var document = MarkdownConverter.Parse(markdown, pipeline);
         var codeInline = document.Descendants().OfType<CodeInline>().Single();
 
-        Assert.That(codeInline.Content, Is.EqualTo("foo"));
-        Assert.That(MarkdownConverter.ToHtml(markdown, pipeline), Is.EqualTo("<p><code>foo</code></p>\n"));
+        Assert.Equal("foo", codeInline.Content);
+        Assert.Equal("<p><code>foo</code></p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
-    [Test]
+    [Fact]
     public void TableWithIndentedPipeAfterCodeInlineParsesCorrectly()
     {
         var markdown =
@@ -255,8 +271,8 @@ public sealed class TestPipeTable
 
         var html = MarkdownConverter.ToHtml(markdown, pipeline);
 
-        Assert.That(html, Does.Contain("<p><code>|| hidden text ||</code></p>"));
-        Assert.That(html, Does.Contain("<table"));
-        Assert.That(html, Does.Contain("<td>B</td>"));
+        Assert.Contains("<p><code>|| hidden text ||</code></p>", html);
+        Assert.Contains("<table", html);
+        Assert.Contains("<td>B</td>", html);
     }
 }

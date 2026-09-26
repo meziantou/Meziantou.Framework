@@ -2,48 +2,49 @@ using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
 
-[TestFixture]
 public class TestThematicBreak
 {
-    [TestCase("---")]
-    [TestCase(" ---")]
-    [TestCase("  ---")]
-    [TestCase("   ---")]
-    [TestCase("--- ")]
-    [TestCase(" --- ")]
-    [TestCase("  --- ")]
-    [TestCase("   --- ")]
-    [TestCase("- - -")]
-    [TestCase(" - - -")]
-    [TestCase(" - - - ")]
-    [TestCase("-- -")]
-    [TestCase("---\n")]
-    [TestCase("---\n\n")]
-    [TestCase("---\np")]
-    [TestCase("---\n\np")]
-    [TestCase("---\n# h")]
-    [TestCase("p\n\n---")]
+    [Theory]
+    [InlineData("---")]
+    [InlineData(" ---")]
+    [InlineData("  ---")]
+    [InlineData("   ---")]
+    [InlineData("--- ")]
+    [InlineData(" --- ")]
+    [InlineData("  --- ")]
+    [InlineData("   --- ")]
+    [InlineData("- - -")]
+    [InlineData(" - - -")]
+    [InlineData(" - - - ")]
+    [InlineData("-- -")]
+    [InlineData("---\n")]
+    [InlineData("---\n\n")]
+    [InlineData("---\np")]
+    [InlineData("---\n\np")]
+    [InlineData("---\n# h")]
+    [InlineData("p\n\n---")]
     // Note: "p\n---" is parsed as setext heading
     public void Test(string value)
     {
         RoundTrip(value);
     }
 
-    [TestCase("\n---")]
-    [TestCase("\r---")]
-    [TestCase("\r\n---")]
+    [Theory]
+    [InlineData("\n---")]
+    [InlineData("\r---")]
+    [InlineData("\r\n---")]
 
-    [TestCase("\n---\n")]
-    [TestCase("\r---\n")]
-    [TestCase("\r\n---\n")]
+    [InlineData("\n---\n")]
+    [InlineData("\r---\n")]
+    [InlineData("\r\n---\n")]
 
-    [TestCase("\n---\r")]
-    [TestCase("\r---\r")]
-    [TestCase("\r\n---\r")]
+    [InlineData("\n---\r")]
+    [InlineData("\r---\r")]
+    [InlineData("\r\n---\r")]
 
-    [TestCase("\n---\r\n")]
-    [TestCase("\r---\r\n")]
-    [TestCase("\r\n---\r\n")]
+    [InlineData("\n---\r\n")]
+    [InlineData("\r---\r\n")]
+    [InlineData("\r\n---\r\n")]
     public void TestNewline(string value)
     {
         RoundTrip(value);

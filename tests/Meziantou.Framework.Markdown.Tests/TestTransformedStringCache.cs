@@ -4,36 +4,36 @@ namespace Meziantou.Framework.Markdown.Tests;
 
 public class TestTransformedStringCache
 {
-    [Test]
+    [Fact]
     public void GetRunsTransformationCallback()
     {
         var cache = new TransformedStringCache(static s => "callback-" + s);
 
-        Assert.AreEqual("callback-foo", cache.Get("foo"));
-        Assert.AreEqual("callback-bar", cache.Get("bar"));
-        Assert.AreEqual("callback-baz", cache.Get("baz"));
+        Assert.Equal("callback-foo", cache.Get("foo"));
+        Assert.Equal("callback-bar", cache.Get("bar"));
+        Assert.Equal("callback-baz", cache.Get("baz"));
     }
 
-    [Test]
+    [Fact]
     public void CachesTransformedInstance()
     {
         var cache = new TransformedStringCache(static s => "callback-" + s);
 
         string transformedBar = cache.Get("bar");
-        Assert.AreSame(transformedBar, cache.Get("bar"));
+        Assert.Same(transformedBar, cache.Get("bar"));
 
         string transformedFoo = cache.Get("foo".AsSpan());
-        Assert.AreSame(transformedFoo, cache.Get("foo"));
+        Assert.Same(transformedFoo, cache.Get("foo"));
 
-        Assert.AreSame(cache.Get("baz"), cache.Get("baz".AsSpan()));
+        Assert.Same(cache.Get("baz"), cache.Get("baz".AsSpan()));
 
-        Assert.AreSame(transformedBar, cache.Get("bar"));
-        Assert.AreSame(transformedFoo, cache.Get("foo"));
-        Assert.AreSame(transformedBar, cache.Get("bar".AsSpan()));
-        Assert.AreSame(transformedFoo, cache.Get("foo".AsSpan()));
+        Assert.Same(transformedBar, cache.Get("bar"));
+        Assert.Same(transformedFoo, cache.Get("foo"));
+        Assert.Same(transformedBar, cache.Get("bar".AsSpan()));
+        Assert.Same(transformedFoo, cache.Get("foo".AsSpan()));
     }
 
-    [Test]
+    [Fact]
     public void DoesNotCacheEmptyInputs()
     {
         var cache = new TransformedStringCache(static s => new string('a', 4));
@@ -42,18 +42,18 @@ public class TestTransformedStringCache
         string cached2 = cache.Get("");
         string cached3 = cache.Get(ReadOnlySpan<char>.Empty);
 
-        Assert.AreEqual("aaaa", cached);
-        Assert.AreEqual(cached, cached2);
-        Assert.AreEqual(cached, cached3);
+        Assert.Equal("aaaa", cached);
+        Assert.Equal(cached, cached2);
+        Assert.Equal(cached, cached3);
 
-        Assert.AreNotSame(cached, cached2);
-        Assert.AreNotSame(cached, cached3);
-        Assert.AreNotSame(cached2, cached3);
+        Assert.NotSame(cached, cached2);
+        Assert.NotSame(cached, cached3);
+        Assert.NotSame(cached2, cached3);
     }
 
-    [Test]
-    [TestCase(TransformedStringCache.InputLengthLimit, true)]
-    [TestCase(TransformedStringCache.InputLengthLimit + 1, false)]
+    [Theory]
+    [InlineData(TransformedStringCache.InputLengthLimit, true)]
+    [InlineData(TransformedStringCache.InputLengthLimit + 1, false)]
     public void DoesNotCacheLongInputs(int length, bool shouldBeCached)
     {
         var cache = new TransformedStringCache(static s => "callback-" + s);
@@ -63,20 +63,20 @@ public class TestTransformedStringCache
         string cached = cache.Get(input);
         string cached2 = cache.Get(input);
 
-        Assert.AreEqual("callback-" + input, cached);
-        Assert.AreEqual(cached, cached2);
+        Assert.Equal("callback-" + input, cached);
+        Assert.Equal(cached, cached2);
 
         if (shouldBeCached)
         {
-            Assert.AreSame(cached, cached2);
+            Assert.Same(cached, cached2);
         }
         else
         {
-            Assert.AreNotSame(cached, cached2);
+            Assert.NotSame(cached, cached2);
         }
     }
 
-    [Test]
+    [Fact]
     public void CachesAtMostNEntriesPerCharacter()
     {
         var cache = new TransformedStringCache(static s => "callback-" + s);
@@ -88,11 +88,11 @@ public class TestTransformedStringCache
 
         for (int i = 0; i < limit; i++)
         {
-            Assert.AreSame(cachedAs[i], cache.Get(a[i]));
+            Assert.Same(cachedAs[i], cache.Get(a[i]));
         }
 
-        Assert.AreNotSame(cachedAs[limit], cache.Get(a[limit]));
+        Assert.NotSame(cachedAs[limit], cache.Get(a[limit]));
 
-        Assert.AreSame(cache.Get("b1"), cache.Get("b1"));
+        Assert.Same(cache.Get("b1"), cache.Get("b1"));
     }
 }

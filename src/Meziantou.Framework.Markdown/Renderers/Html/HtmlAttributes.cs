@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System.Globalization;
@@ -43,9 +43,9 @@ public class HtmlAttributes : MarkdownObject
     public void AddClass(string name)
     {
         if (name is null) ThrowHelper.ArgumentNullException_name();
-       
+
         Classes ??= new (2);// Use half list compare to default capacity (4), as we don't expect lots of classes
-        
+
         if (!Classes.Contains(name))
         {
             Classes.Add(name);
@@ -60,9 +60,9 @@ public class HtmlAttributes : MarkdownObject
     public void AddProperty(string name, string value)
     {
         if (name is null) ThrowHelper.ArgumentNullException_name();
-      
+
         Properties ??= new (2); // Use half list compare to default capacity (4), as we don't expect lots of classes
-        
+
         Properties.Add(new KeyValuePair<string, string?>(name, value));
     }
 
@@ -134,49 +134,5 @@ public class HtmlAttributes : MarkdownObject
                 htmlAttributes.Properties.AddRange(Properties);
             }
         }
-    }
-}
-
-/// <summary>
-/// Extensions for a <see cref="MarkdownObject"/> to allow accessing <see cref="HtmlAttributes"/>
-/// </summary>
-public static class HtmlAttributesExtensions
-{
-    private static readonly object Key = typeof (HtmlAttributes);
-
-    /// <summary>
-    /// Tries the get <see cref="HtmlAttributes"/> stored on a <see cref="MarkdownObject"/>.
-    /// </summary>
-    /// <param name="obj">The markdown object.</param>
-    /// <returns>The attached html attributes or null if not found</returns>
-    public static HtmlAttributes? TryGetAttributes(this IMarkdownObject obj)
-    {
-        return obj.GetData(Key) as HtmlAttributes;
-    }
-
-    /// <summary>
-    /// Gets or creates the <see cref="HtmlAttributes"/> stored on a <see cref="MarkdownObject"/>
-    /// </summary>
-    /// <param name="obj">The markdown object.</param>
-    /// <returns>The attached html attributes</returns>
-    public static HtmlAttributes GetAttributes(this IMarkdownObject obj)
-    {
-        var attributes = obj.GetData(Key) as HtmlAttributes;
-        if (attributes is null)
-        {
-            attributes = new HtmlAttributes();
-            obj.SetAttributes(attributes);
-        }
-        return attributes;
-    }
-
-    /// <summary>
-    /// Sets <see cref="HtmlAttributes" /> to the <see cref="MarkdownObject" />
-    /// </summary>
-    /// <param name="obj">The markdown object.</param>
-    /// <param name="attributes">The attributes to attach.</param>
-    public static void SetAttributes(this IMarkdownObject obj, HtmlAttributes attributes)
-    {
-        obj.SetData(Key, attributes);
     }
 }

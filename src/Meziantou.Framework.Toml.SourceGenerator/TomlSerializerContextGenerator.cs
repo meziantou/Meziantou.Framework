@@ -5260,8 +5260,23 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 foreach (var kvp in attr.NamedArguments)
                 {
-                    if (kvp.Key == "TypeDiscriminatorPropertyName" && kvp.Value.Value is string s && !string.IsNullOrEmpty(s))
+                    if (kvp.Key == "TypeDiscriminatorPropertyName" && kvp.Value.Value is string s)
                     {
+                        // Like the reflection resolver, an explicit name must be a valid key; it does not fall back to the options
+                        if (!IsValidKeyName(s))
+                        {
+                            if (reportDiagnostics)
+                            {
+                                context.ReportDiagnostic(DiagnosticInfo.Create(
+                                    InvalidPolymorphismConfiguration,
+                                    GetDiagnosticLocation(model, attr),
+                                    type.ToDisplayString(),
+                                    "The discriminator property name must be non-empty and contain valid Unicode characters."));
+                            }
+
+                            continue;
+                        }
+
                         tomlDiscriminatorPropertyName = s;
                     }
                     else if (kvp.Key == "UnknownDerivedTypeHandling" && kvp.Value.Value is int intVal)

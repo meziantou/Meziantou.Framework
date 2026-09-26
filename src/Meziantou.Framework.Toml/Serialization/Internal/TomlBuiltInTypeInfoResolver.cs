@@ -164,6 +164,12 @@ internal static class TomlBuiltInTypeInfoResolver
             }
         }
 
+        if (TryGetStringKeyDictionaryValueType(type, out var dictionaryValueType))
+        {
+            var typeInfoType = typeof(TomlDictionaryTypeInfo<,>).MakeGenericType(type, dictionaryValueType);
+            return (TomlTypeInfo?)Activator.CreateInstance(typeInfoType, options);
+        }
+
         if (TryGetMutableCollectionElementType(type, out var collectionElementType))
         {
             var typeInfoType = typeof(TomlMutableCollectionTypeInfo<,>).MakeGenericType(type, collectionElementType);
@@ -171,6 +177,42 @@ internal static class TomlBuiltInTypeInfoResolver
         }
 
         return null;
+    }
+
+    // Any concrete dictionary with string keys, such as SortedDictionary<,>, ConcurrentDictionary<,> or a subclass
+    private static bool TryGetStringKeyDictionaryValueType(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type,
+        [NotNullWhen(true)] out Type? valueType)
+    {
+        valueType = null;
+        if (type.IsInterface || type.IsAbstract)
+        {
+            return false;
+        }
+
+        foreach (var interfaceType in type.GetInterfaces())
+        {
+            if (!interfaceType.IsGenericType)
+            {
+                continue;
+            }
+
+            var definition = interfaceType.GetGenericTypeDefinition();
+            if (definition != typeof(IDictionary<,>) && definition != typeof(IReadOnlyDictionary<,>))
+            {
+                continue;
+            }
+
+            var args = interfaceType.GetGenericArguments();
+            if (args[0] != typeof(string) || (valueType is not null && valueType != args[1]))
+            {
+                return false;
+            }
+
+            valueType = args[1];
+        }
+
+        return valueType is not null;
     }
 
     private static bool TryGetMutableCollectionElementType(

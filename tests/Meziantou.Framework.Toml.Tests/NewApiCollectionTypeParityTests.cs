@@ -1,11 +1,54 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 
+#pragma warning disable MA0048 // File name must match type name
+public sealed class StringIntMap : Dictionary<string, int>
+{
+}
+
+public sealed class ConcreteDictionariesModel
+{
+    public SortedDictionary<string, int> Sorted { get; set; } = new(StringComparer.Ordinal);
+
+    public System.Collections.Concurrent.ConcurrentDictionary<string, string> Concurrent { get; set; } = new(StringComparer.Ordinal);
+
+    public StringIntMap Subclass { get; set; } = [];
+}
+
+[TomlSerializable(typeof(ConcreteDictionariesModel))]
+internal sealed partial class ConcreteDictionariesContext : TomlSerializerContext;
+#pragma warning restore MA0048
+
 public sealed class NewApiCollectionTypeParityTests
 {
+    private const string ConcreteDictionariesToml = "[Sorted]\nb = 2\na = 1\n\n[Concurrent]\nx = \"y\"\n\n[Subclass]\nz = 3\n";
+
+    [Fact]
+    public void Deserialize_ConcreteDictionaries_AreFilled()
+    {
+        AssertConcreteDictionaries(TomlSerializer.Deserialize<ConcreteDictionariesModel>(ConcreteDictionariesToml));
+        AssertConcreteDictionaries(TomlSerializer.Deserialize(ConcreteDictionariesToml, ConcreteDictionariesContext.Default.ConcreteDictionariesModel));
+
+        static void AssertConcreteDictionaries(ConcreteDictionariesModel? value)
+        {
+            Assert.NotNull(value);
+            Assert.Equal(["a", "b"], value.Sorted.Keys);
+            Assert.Equal("y", value.Concurrent["x"]);
+            Assert.Equal(3, value.Subclass["z"]);
+        }
+    }
+
+    [Fact]
+    public void Deserialize_ReadOnlyDictionaryType_ThrowsNotSupported()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ImmutableDictionary<string, int>>("a = 1\n"));
+        Assert.Contains("not supported", ex.Message, StringComparison.Ordinal);
+    }
+
     private static TomlSerializerOptions CreateRootArrayOptions()
         => new TomlSerializerOptions
         {

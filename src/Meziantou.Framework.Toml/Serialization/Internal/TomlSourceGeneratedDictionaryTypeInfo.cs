@@ -9,13 +9,15 @@ internal sealed class TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>
     where TDictionary : IEnumerable<KeyValuePair<string, TValue>>
 {
     private readonly TomlSerializerContext _context;
+    private readonly Func<IDictionary<string, TValue>>? _createDictionary;
     private TomlTypeInfo? _valueTypeInfo;
     private TomlTypeInfo<TValue>? _typedValueTypeInfo;
 
-    public TomlSourceGeneratedDictionaryTypeInfo(TomlSerializerContext context, TomlSerializerOptions? options = null)
+    public TomlSourceGeneratedDictionaryTypeInfo(TomlSerializerContext context, TomlSerializerOptions? options = null, Func<IDictionary<string, TValue>>? createDictionary = null)
         : base(options ?? context.Options)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _createDictionary = createDictionary;
     }
 
     public override bool WritesTable => true;
@@ -54,7 +56,7 @@ internal sealed class TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>
             throw reader.CreateException($"Expected {TomlTokenType.StartTable} token but was {reader.TokenType}.");
         }
 
-        var dict = new Dictionary<string, TValue>(StringComparer.Ordinal);
+        var dict = _createDictionary?.Invoke() ?? new Dictionary<string, TValue>(StringComparer.Ordinal);
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndTable)
         {
@@ -90,7 +92,7 @@ internal sealed class TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>
         }
 
         reader.Read();
-        return (TDictionary)(object)dict;
+        return (TDictionary)dict;
     }
 
     public override object? ReadInto(TomlReader reader, object? existingValue)

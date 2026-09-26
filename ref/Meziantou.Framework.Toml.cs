@@ -967,6 +967,7 @@ namespace Meziantou.Framework.Toml.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         protected static Meziantou.Framework.Toml.TomlTypeInfo<TDictionary> CreateDictionaryTypeInfo<TDictionary, TValue>(Meziantou.Framework.Toml.Serialization.TomlSerializerContext context) where TDictionary : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> => throw null;
         protected static Meziantou.Framework.Toml.TomlTypeInfo<TDictionary> CreateSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>(Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) where TDictionary : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> => throw null;
+        protected static Meziantou.Framework.Toml.TomlTypeInfo<TDictionary> CreateSourceGeneratedConcreteDictionaryTypeInfo<TDictionary, TValue>(Meziantou.Framework.Toml.Serialization.TomlSerializerContext context, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) where TDictionary : System.Collections.Generic.IDictionary<string, TValue>, new() => throw null;
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]

@@ -781,7 +781,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else if (TryGetDictionaryValueType(type, out var dictionaryValueType))
         {
-            builder.Append("        return CreateSourceGeneratedDictionaryTypeInfo<")
+            var isConcreteDictionary = type is INamedTypeSymbol namedDictionary && TryGetConcreteDictionaryKeyValueTypes(namedDictionary, out _, out _) &&
+                !(namedDictionary.IsGenericType && namedDictionary.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Collections.Generic.Dictionary<TKey, TValue>");
+            builder.Append(isConcreteDictionary ? "        return CreateSourceGeneratedConcreteDictionaryTypeInfo<" : "        return CreateSourceGeneratedDictionaryTypeInfo<")
                 .Append(typeName)
                 .Append(", ")
                 .Append(dictionaryValueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
@@ -5024,9 +5026,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         keyType = null!;
         valueType = null!;
 
-        if (type is not INamedTypeSymbol named || !named.IsGenericType)
+        if (type is not INamedTypeSymbol named)
         {
             return false;
+        }
+
+        if (!named.IsGenericType)
+        {
+            return TryGetConcreteDictionaryKeyValueTypes(named, out keyType, out valueType);
         }
 
         var constructedFrom = named.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -5035,12 +5042,36 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             "global::System.Collections.Generic.IDictionary<TKey, TValue>" and not
             "global::System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>")
         {
-            return false;
+            return TryGetConcreteDictionaryKeyValueTypes(named, out keyType, out valueType);
         }
 
         keyType = named.TypeArguments[0];
         valueType = named.TypeArguments[1];
         return true;
+    }
+
+    // A class implementing IDictionary<TKey, TValue> that the generated code can create, such as SortedDictionary<,>
+    private static bool TryGetConcreteDictionaryKeyValueTypes(INamedTypeSymbol type, out ITypeSymbol keyType, out ITypeSymbol valueType)
+    {
+        keyType = null!;
+        valueType = null!;
+        if (type.TypeKind != TypeKind.Class || type.IsAbstract || !HasPublicParameterlessConstructor(type))
+        {
+            return false;
+        }
+
+        foreach (var interfaceType in type.AllInterfaces)
+        {
+            if (interfaceType.IsGenericType &&
+                interfaceType.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Collections.Generic.IDictionary<TKey, TValue>")
+            {
+                keyType = interfaceType.TypeArguments[0];
+                valueType = interfaceType.TypeArguments[1];
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryGetDictionaryValueType(ITypeSymbol type, out ITypeSymbol valueType)

@@ -21,6 +21,22 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
 
     public override bool WritesTable => true;
 
+    // Dictionary<,> for the dictionary interfaces, otherwise the type itself (SortedDictionary<,>, a subclass, ...)
+    private static IDictionary<string, TValue> CreateDictionary()
+    {
+        if (typeof(TDictionary).IsAssignableFrom(typeof(Dictionary<string, TValue>)))
+        {
+            return new Dictionary<string, TValue>(StringComparer.Ordinal);
+        }
+
+        if (!typeof(TDictionary).IsAbstract && typeof(TDictionary).GetConstructor(Type.EmptyTypes) is not null && Activator.CreateInstance<TDictionary>() is IDictionary<string, TValue> dictionary)
+        {
+            return dictionary;
+        }
+
+        throw new TomlException($"Deserializing '{typeof(TDictionary).FullName}' is not supported: the dictionary type must implement IDictionary<string, TValue> and have a public parameterless constructor.");
+    }
+
     public override void Write(TomlWriter writer, TDictionary value)
     {
         ArgumentGuard.ThrowIfNull(writer, nameof(writer));
@@ -55,7 +71,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
             throw reader.CreateException($"Expected {TomlTokenType.StartTable} token but was {reader.TokenType}.");
         }
 
-        var dict = new Dictionary<string, TValue>(StringComparer.Ordinal);
+        var dict = CreateDictionary();
         reader.Read();
         while (reader.TokenType != TomlTokenType.EndTable)
         {
@@ -91,7 +107,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
         }
 
         reader.Read();
-        return (TDictionary)(object)dict;
+        return (TDictionary)dict;
     }
 
     public override object? ReadInto(TomlReader reader, object? existingValue)

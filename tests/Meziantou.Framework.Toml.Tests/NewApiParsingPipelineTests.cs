@@ -68,6 +68,32 @@ public class NewApiParsingPipelineTests
         Assert.Contains(TokenKind.Integer, tokens);
     }
 
+    [Theory]
+    [InlineData(TomlLexerMode.Key)]
+    [InlineData(TomlLexerMode.Value)]
+    public void TomlLexer_InvalidNonBmpCharacter_CoversTheSurrogatePair(TomlLexerMode mode)
+    {
+        var character = char.ConvertFromUtf32(0x1F600);
+        var lexer = TomlLexer.Create(character + " ");
+        lexer.Mode = mode;
+
+        Assert.True(lexer.MoveNext());
+        Assert.Equal(TokenKind.Invalid, lexer.Current.Kind);
+        Assert.Equal(character, lexer.GetText(lexer.Current));
+        Assert.True(lexer.MoveNext());
+        Assert.Equal(2, lexer.Current.Start.Offset);
+    }
+
+    [Fact]
+    public void SyntaxParser_InvalidNonBmpCharacter_IsReportedWhole()
+    {
+        var character = char.ConvertFromUtf32(0x1F600);
+
+        var doc = SyntaxParser.Parse($"a = {character}\n");
+
+        Assert.Contains(doc.Diagnostics, diagnostic => diagnostic.Message.Contains(character, StringComparison.Ordinal));
+    }
+
     [Fact]
     public void TomlLexer_Default_DoesNotDecodeStringValues()
     {

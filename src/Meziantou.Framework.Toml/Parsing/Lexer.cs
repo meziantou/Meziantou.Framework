@@ -210,8 +210,9 @@ internal sealed class Lexer
                         return;
                     }
 
-                    // invalid char
-                    _token = new SyntaxTokenValue(TokenKind.Invalid, start, start);
+                    // invalid char. The token ends at the last UTF-16 code unit of the character, so it covers a whole
+                    // surrogate pair.
+                    _token = new SyntaxTokenValue(TokenKind.Invalid, start, new TextPosition(_current.NextPosition.Offset - 1, start.Line, start.Column));
                     NextChar();
                     return;
             }
@@ -311,8 +312,9 @@ internal sealed class Lexer
                         return;
                     }
 
-                    // invalid char
-                    _token = new SyntaxTokenValue(TokenKind.Invalid, start, start);
+                    // invalid char. The token ends at the last UTF-16 code unit of the character, so it covers a whole
+                    // surrogate pair.
+                    _token = new SyntaxTokenValue(TokenKind.Invalid, start, new TextPosition(_current.NextPosition.Offset - 1, start.Line, start.Column));
                     NextChar();
                     return;
             }

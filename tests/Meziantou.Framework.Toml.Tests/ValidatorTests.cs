@@ -160,4 +160,21 @@ d = true
         Assert.All(doc.Diagnostics, diagnostic => Assert.HasCountLessThan(200, diagnostic.Message));
         Assert.StartsWith("The key `t` is already defined at (1,1)", doc.Diagnostics[0].Message);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Validate_LongKeys_AreLinear(bool isHeader)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var key = string.Join('.', Enumerable.Repeat("a", 2000));
+        var toml = string.Concat(Enumerable.Range(0, 20).Select(i => isHeader ? $"[k{i}.{key}]\n" : $"k{i}.{key} = 1\n"));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var doc = SyntaxParser.Parse(toml, options);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.False(doc.HasErrors, doc.Diagnostics.ToString());
+        Assert.True(allocated < 200_000_000, $"Allocated {allocated} bytes");
+    }
 }

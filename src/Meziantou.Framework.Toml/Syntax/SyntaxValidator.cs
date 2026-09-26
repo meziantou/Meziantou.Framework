@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Text;
@@ -10,21 +9,52 @@ namespace Meziantou.Framework.Toml.Syntax;
 
 internal class SyntaxValidator : SyntaxVisitor
 {
+    private const int RootPath = 0;
+
     private readonly DiagnosticsBag _diagnostics;
-    private ObjectPath _currentPath;
-    private readonly Dictionary<ObjectPath, ObjectPathValue> _maps;
+
+    // A path is a node of a trie, identified by an integer, so that extending, saving and restoring the current path costs
+    // O(1). A path of k segments would otherwise be copied and hashed for each of its k prefixes.
+    private readonly Dictionary<(int Parent, ObjectPathItem Item), int> _pathNodes = [];
+    private readonly List<(int Parent, ObjectPathItem Item)> _pathNodeKeys = [(-1, default)];
+    private int _currentPath = RootPath;
+    private readonly Dictionary<int, ObjectPathValue> _maps = [];
     private int _currentArrayIndex;
 
     public SyntaxValidator(DiagnosticsBag diagnostics)
     {
         _diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
-        _currentPath = new ObjectPath();
-        _maps = new Dictionary<ObjectPath, ObjectPathValue>();
+    }
+
+    private int GetChildPath(int path, ObjectPathItem item)
+    {
+        if (!_pathNodes.TryGetValue((path, item), out var child))
+        {
+            child = _pathNodeKeys.Count;
+            _pathNodeKeys.Add((path, item));
+            _pathNodes.Add((path, item), child);
+        }
+
+        return child;
+    }
+
+    private void AddToCurrentPath(ObjectPathItem item) => _currentPath = GetChildPath(_currentPath, item);
+
+    private string GetPathText(int path)
+    {
+        var items = new List<ObjectPathItem>();
+        for (var current = path; current != RootPath; current = _pathNodeKeys[current].Parent)
+        {
+            items.Add(_pathNodeKeys[current].Item);
+        }
+
+        items.Reverse();
+        return string.Join('.', items);
     }
 
     public override void Visit(KeyValueSyntax keyValue)
     {
-        var savedPath = _currentPath.Clone();
+        var savedPath = _currentPath;
         if (keyValue.Key == null)
         {
             _diagnostics.Error(keyValue.Span, "A KeyValueSyntax must have a non null Key");
@@ -130,7 +160,7 @@ internal class SyntaxValidator : SyntaxVisitor
     public override void Visit(TableSyntax table)
     {
         VerifyTable(table);
-        var savedPath = _currentPath.Clone();
+        var savedPath = _currentPath;
         if (table.Name == null || !KeyNameToObjectPath(table.Name, ObjectKind.Table))
         {
             return;
@@ -146,7 +176,7 @@ internal class SyntaxValidator : SyntaxVisitor
     public override void Visit(TableArraySyntax table)
     {
         VerifyTable(table);
-        var savedPath = _currentPath.Clone();
+        var savedPath = _currentPath;
         if (table.Name == null || !KeyNameToObjectPath(table.Name, ObjectKind.TableArray))
         {
             return;
@@ -220,7 +250,7 @@ internal class SyntaxValidator : SyntaxVisitor
         var name = SyntaxValidator.GetStringFromBasic(key.Key!);
         if (name is null) return false;
 
-        _currentPath.Add(name!);
+        AddToCurrentPath(new ObjectPathItem(name!));
 
         var items = key.DotKeysIfCreated;
         for (int i = 0; i < (items?.ChildrenCount ?? 0); i++)
@@ -228,7 +258,7 @@ internal class SyntaxValidator : SyntaxVisitor
             AddObjectPath(key, kind, true, fromDottedKeys);
             var dotItem = SyntaxValidator.GetStringFromBasic(items!.GetChild(i)!.Key!)!;
             if (dotItem is null) return false;
-            _currentPath.Add(dotItem);
+            AddToCurrentPath(new ObjectPathItem(dotItem));
         }
 
         return true;
@@ -236,7 +266,7 @@ internal class SyntaxValidator : SyntaxVisitor
 
     private ObjectPathValue AddObjectPath(SyntaxNode node, ObjectKind kind, bool isImplicit, bool fromDottedKeys)
     {
-        var currentPath = _currentPath.Clone();
+        var currentPath = _currentPath;
 
         // array-implicit.toml
         if (kind == ObjectKind.TableArray && isImplicit)
@@ -266,7 +296,7 @@ internal class SyntaxValidator : SyntaxVisitor
             {
                 // Like TomlParser, the message does not include the previous definition, which can be a whole table: a document
                 // that redefines a large table many times would build messages quadratic in its size
-                _diagnostics.Error(node.Span, $"The key `{currentPath}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
+                _diagnostics.Error(node.Span, $"The key `{GetPathText(currentPath)}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
             }
             else if (existingValue.Kind == ObjectKind.TableArray)
             {
@@ -276,7 +306,7 @@ internal class SyntaxValidator : SyntaxVisitor
                     existingValue.ArrayIndex++;
                 }
 
-                _currentPath.Add(existingValue.ArrayIndex);
+                AddToCurrentPath(new ObjectPathItem(existingValue.ArrayIndex));
             }
             else if (existingValue.IsImplicit && !isImplicit)
             {
@@ -305,7 +335,7 @@ internal class SyntaxValidator : SyntaxVisitor
             _maps.Add(currentPath, existingValue);
             if (kind == ObjectKind.TableArray)
             {
-                _currentPath.Add(existingValue.ArrayIndex);
+                AddToCurrentPath(new ObjectPathItem(existingValue.ArrayIndex));
             }
         }
         return existingValue;
@@ -377,14 +407,14 @@ internal class SyntaxValidator : SyntaxVisitor
     public override void Visit(ArrayItemSyntax arrayItem)
     {
         // The index is part of the path of this item only, not of the next ones
-        _currentPath.Add(_currentArrayIndex);
+        AddToCurrentPath(new ObjectPathItem(_currentArrayIndex));
 
         if (arrayItem.Value == null)
         {
             _diagnostics.Error(arrayItem.Span, $"The array item [{_currentArrayIndex}] must have a non null value");
         }
         base.Visit(arrayItem);
-        _currentPath.RemoveAt(_currentPath.Count - 1);
+        _currentPath = _pathNodeKeys[_currentPath].Parent;
         _currentArrayIndex++;
     }
 
@@ -401,64 +431,6 @@ internal class SyntaxValidator : SyntaxVisitor
         }
 
         base.Visit(inlineTable);
-    }
-
-    private class ObjectPath : List<ObjectPathItem>
-    {
-        private int _hashCode;
-
-        public void Add(string key)
-        {
-            _hashCode = (_hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(key);
-            base.Add(new ObjectPathItem(key));
-        }
-
-        public void Add(int index)
-        {
-            _hashCode = (_hashCode * 397) ^ index;
-            base.Add(new ObjectPathItem(index));
-        }
-
-        // A deep copy: the paths stored in the map must not share the items of the current path
-        public ObjectPath Clone()
-        {
-            var clone = new ObjectPath();
-            foreach (var item in this)
-            {
-                ((List<ObjectPathItem>)clone).Add(item);
-            }
-
-            clone._hashCode = _hashCode;
-            return clone;
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            var other = obj as ObjectPath;
-            if (other?.Count != Count) return false;
-            if (other._hashCode != _hashCode) return false;
-            for (int i = 0; i < Count; i++)
-            {
-                if (this[i] != other[i]) return false;
-            }
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            return _hashCode;
-        }
-
-        public override string ToString()
-        {
-            var buffer = new StringBuilder();
-            for (int i = 0; i < Count; i++)
-            {
-                if (i > 0) buffer.Append('.');
-                buffer.Append(this[i]);
-            }
-            return buffer.ToString();
-        }
     }
 
     [DebuggerDisplay("{Node} - {Kind}")]

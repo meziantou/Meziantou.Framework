@@ -256,6 +256,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public int? DottedKeyHandling { get; set; }
         public int? RootValueHandling { get; set; }
         public string? RootValueKeyName { get; set; }
+
+        // A naming policy value that is not a TomlKnownNamingPolicy, reported as MFTOML005
+        public int? InvalidPropertyNamingPolicy { get; set; }
+        public int? InvalidDictionaryKeyPolicy { get; set; }
         public int? InlineTablePolicy { get; set; }
         public int? TableArrayStyle { get; set; }
         public ImmutableArray<ITypeSymbol> ConverterTypes { get; set; } = ImmutableArray<ITypeSymbol>.Empty;
@@ -903,7 +907,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        options = options with { RootValueHandling = ").Append(rootValueHandlingExpression).AppendLine(" };");
         }
 
-        if (model.Options.RootValueKeyName is { } rootValueKeyName && !string.IsNullOrWhiteSpace(rootValueKeyName))
+        if (model.Options.RootValueKeyName is { Length: > 0 } rootValueKeyName)
         {
             builder.Append("        options = options with { RootValueKeyName = \"").Append(EscapeStringLiteral(rootValueKeyName)).AppendLine("\" };");
         }
@@ -6924,9 +6928,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     break;
                 case "PropertyNamingPolicy":
                     options.PropertyNamingPolicyExpression = ToNamingPolicyExpression(value);
+                    options.InvalidPropertyNamingPolicy = options.PropertyNamingPolicyExpression is null && value.Value is int propertyNamingPolicy and not 0 ? propertyNamingPolicy : null;
                     break;
                 case "DictionaryKeyPolicy":
                     options.DictionaryKeyPolicyExpression = ToNamingPolicyExpression(value);
+                    options.InvalidDictionaryKeyPolicy = options.DictionaryKeyPolicyExpression is null && value.Value is int dictionaryKeyPolicy and not 0 ? dictionaryKeyPolicy : null;
                     break;
                 case "PreferredObjectCreationHandling":
                     if (value.Value is int preferredObjectCreationHandling) options.PreferredObjectCreationHandling = preferredObjectCreationHandling;
@@ -7066,18 +7072,53 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         ValidateEnumOption(context, model, "InlineTablePolicy", model.Options.InlineTablePolicy, TryGetTomlInlineTablePolicyExpression, v => model.Options.InlineTablePolicy = v);
         ValidateEnumOption(context, model, "TableArrayStyle", model.Options.TableArrayStyle, TryGetTomlTableArrayStyleExpression, v => model.Options.TableArrayStyle = v);
 
-        if (model.Options.RootValueKeyName is not null && string.IsNullOrWhiteSpace(model.Options.RootValueKeyName))
+        foreach (var (optionName, invalidValue) in new[] { ("PropertyNamingPolicy", model.Options.InvalidPropertyNamingPolicy), ("DictionaryKeyPolicy", model.Options.InvalidDictionaryKeyPolicy) })
+        {
+            if (invalidValue is { } value)
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(
+                    InvalidSourceGenerationOption,
+                    model.ContextSymbol.Locations.FirstOrDefault(),
+                    model.ContextSymbol.ToDisplayString(),
+                    $"{optionName} has unsupported value {value.ToString(CultureInfo.InvariantCulture)}."));
+            }
+        }
+
+        // Same rule as TomlSerializerOptions.RootValueKeyName: any non-empty text that can be written as UTF-8
+        if (model.Options.RootValueKeyName is { } rootValueKeyName && !IsValidKeyName(rootValueKeyName))
         {
             context.ReportDiagnostic(DiagnosticInfo.Create(
                 InvalidSourceGenerationOption,
                 model.ContextSymbol.Locations.FirstOrDefault(),
                 model.ContextSymbol.ToDisplayString(),
-                "RootValueKeyName cannot be empty or whitespace."));
+                "RootValueKeyName must be non-empty and contain valid Unicode characters."));
             model.Options.RootValueKeyName = null;
         }
     }
 
     private delegate bool TryGetEnumExpression(int value, out string expression);
+
+    private static bool IsValidKeyName(string key)
+    {
+        if (key.Length == 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < key.Length; i++)
+        {
+            if (char.IsHighSurrogate(key[i]) && i + 1 < key.Length && char.IsLowSurrogate(key[i + 1]))
+            {
+                i++;
+            }
+            else if (char.IsSurrogate(key[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private static void ValidateEnumOption(
         GeneratorOutput context,

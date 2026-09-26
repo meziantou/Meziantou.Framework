@@ -123,6 +123,30 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain("switch (Options.", generatedSource);
     }
 
+    [Theory]
+    [InlineData("PropertyNamingPolicy = (TomlKnownNamingPolicy)99", true)]
+    [InlineData("DictionaryKeyPolicy = (TomlKnownNamingPolicy)99", true)]
+    [InlineData("PropertyNamingPolicy = TomlKnownNamingPolicy.Unspecified", false)]
+    [InlineData("RootValueKeyName = \"\\uD800\"", true)]
+    [InlineData("RootValueKeyName = \"\"", true)]
+    [InlineData("RootValueKeyName = \" \"", false)]
+    public void Generator_ValidatesOptionsLikeTheRuntime(string option, bool isError)
+    {
+        var diagnostics = RunGenerator($$"""
+            #nullable enable
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSourceGenerationOptions({{option}})]
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person { public string Name { get; set; } = ""; }
+            """);
+
+        Assert.Equal(isError, diagnostics.Any(d => d.Id == "MFTOML005"));
+    }
+
     [Fact]
     public void Generator_ReportsInvalidIndentSize()
     {

@@ -1201,7 +1201,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         EmitMemberConverterTypeInfos(builder, poco);
         EmitNonPublicGetterAccessors(builder, poco);
-        EmitNonPublicSetterAccessors(builder, poco);
+        EmitNonPublicSetterAccessors(builder, model, type, poco);
 
         builder.Append("        public override void Write(global::Meziantou.Framework.Toml.Serialization.TomlWriter writer, ").Append(typeName).AppendLine(" value)");
         builder.AppendLine("        {");
@@ -1349,7 +1349,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("            ").Append(typeName).AppendLine(" value;");
             builder.AppendLine("            try");
             builder.AppendLine("            {");
-            builder.Append("                value = new ").Append(typeName).AppendLine("();");
+            builder.Append("                value = ").Append(poco.UsesConstructorAccessor ? "__CreateInstance()" : "new " + typeName + "()").AppendLine(";");
             builder.AppendLine("            }");
             builder.AppendLine("            catch (global::System.Exception ex)");
             builder.AppendLine("            {");
@@ -1528,8 +1528,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
     }
 
-    private static void EmitNonPublicSetterAccessors(StringBuilder builder, PocoShape poco)
+    private static void EmitNonPublicSetterAccessors(StringBuilder builder, ContextModel model, ITypeSymbol type, PocoShape poco)
     {
+        if (poco.UsesConstructorAccessor)
+        {
+            builder.AppendLine("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
+            builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern ").Append(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine(" __CreateInstance();");
+            builder.AppendLine();
+        }
+
         if (poco.ExtensionData is { SetterAccessorName: { } extensionDataAccessorName, Symbol.ContainingType: { } extensionDataDeclaringType } extensionData)
         {
             EmitReflectionSetterAccessor(builder, extensionDataAccessorName, extensionDataDeclaringType, extensionData.MemberName, extensionData.MemberType, isField: false);
@@ -1537,7 +1544,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         foreach (var member in poco.Members)
         {
-            if (member.SetterAccessorName is not null)
+            if (member.SetterAccessorName is not null && member.SetterAccessorIsInitAccessor)
+            {
+                builder.Append("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"set_").Append(EscapeStringLiteral(member.MemberName)).AppendLine("\")]");
+                builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern void ").Append(member.SetterAccessorName).Append('(').Append(member.DeclaringType.IsValueType ? "ref " : "").Append(member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                    .Append(" __instance, ").Append(member.Type.ToDisplayString(FullyQualifiedNullableFormat)).AppendLine(" __value);");
+                builder.AppendLine();
+            }
+            else if (member.SetterAccessorName is not null)
             {
                 EmitReflectionSetterAccessor(builder, member.SetterAccessorName, member.DeclaringType, member.MemberName, member.Type, member.IsField);
             }
@@ -4295,7 +4309,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool IsRequired { get; }
         public bool IsCompilerRequired { get; }
         public bool CanSet { get; }
-        public bool IsInitOnly { get; }
+        public bool IsInitOnly { get; set; }
         public bool IsField { get; }
         public string? GetterAccessorName { get; }
         public int? TableArrayStyle { get; }
@@ -4318,6 +4332,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The generated method setting a member whose setter is not accessible from the context ([TomlInclude])
         public string? SetterAccessorName { get; set; }
+
+        // The setter method is an [UnsafeAccessor] to the init accessor, rather than reflection
+        public bool SetterAccessorIsInitAccessor { get; set; }
 
         // The property or the field, to report a diagnostic on it
         public ISymbol? Symbol { get; set; }
@@ -4425,7 +4442,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public ImmutableArray<PocoMember> Members { get; }
         public PocoExtensionData? ExtensionData { get; }
         public PocoConstructor? Constructor { get; }
-        public bool RequiresGeneratedObjectInitializer { get; }
+        public bool RequiresGeneratedObjectInitializer { get; set; }
         public int? MappingOrder { get; }
         public int? DottedKeyHandling { get; }
         public bool DisallowUnmappedMembers { get; set; }
@@ -4433,6 +4450,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The parameterless constructor has [SetsRequiredMembers], so the object initializer need not set required members
         public bool ParameterlessConstructorSetsRequiredMembers { get; set; }
+
+        // The instance is created with an [UnsafeAccessor] to its parameterless constructor, which does not require the C#
+        // required members to be set, so it is populated like any other instance
+        public bool UsesConstructorAccessor { get; set; }
 
         // The identifiers of the C# required members that are not serialized, such as a member with [TomlIgnore]
         public ImmutableArray<string> UnserializedRequiredMembers { get; set; } = ImmutableArray<string>.Empty;
@@ -5026,6 +5047,33 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             ParameterlessConstructorSetsRequiredMembers = parameterlessConstructorSetsRequiredMembers,
             UnserializedRequiredMembers = unserializedRequiredMembers,
         };
+
+        // An object initializer replaces the values of the members, so they cannot be populated, and it must set every
+        // required member, even one that is not read. When possible, the instance is created without it, like the reflection
+        // resolver does.
+        if (shape.RequiresGeneratedObjectInitializer &&
+            named.TypeKind == TypeKind.Class &&
+            constructorError is null &&
+            selectedConstructor is null or { Parameters.Length: 0 } &&
+            extensionData is not { IsInitOnly: true } &&
+            CanUseInitAccessor(model, named) &&
+            finalMembers.All(member => !member.IsInitOnly || member.SetterAccessorName is not null || CanUseInitAccessor(model, member.DeclaringType)))
+        {
+            for (var i = 0; i < finalMembers.Length; i++)
+            {
+                var member = finalMembers[i];
+                if (member.IsInitOnly && member.SetterAccessorName is null)
+                {
+                    member.SetterAccessorName = "__Set" + i.ToString(CultureInfo.InvariantCulture);
+                    member.SetterAccessorIsInitAccessor = true;
+                    member.IsInitOnly = false;
+                }
+            }
+
+            shape.RequiresGeneratedObjectInitializer = false;
+            shape.UsesConstructorAccessor = !(selectedConstructor is not null ? HasAttribute(selectedConstructor, SetsRequiredMembersAttributeMetadataName) : parameterlessConstructorSetsRequiredMembers);
+        }
+
         return true;
     }
 

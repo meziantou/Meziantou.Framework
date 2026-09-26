@@ -5,8 +5,9 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// </summary>
 /// <remarks>
 /// The members set when the instance is created are set before the callback: the constructor arguments and, with the
-/// source generator, the <see langword="required"/> members, which it sets in an object initializer. Reflection-based
-/// metadata sets the <see langword="required"/> members after the callback.
+/// source generator, the <see langword="required"/> members it sets in an object initializer. It does so for a struct, a
+/// generic type, or a type created with a constructor that has parameters. Reflection-based metadata sets the
+/// <see langword="required"/> members after the callback.
 /// </remarks>
 public interface ITomlOnDeserializing
 {

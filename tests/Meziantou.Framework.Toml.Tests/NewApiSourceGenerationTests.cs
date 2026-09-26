@@ -1524,6 +1524,34 @@ internal sealed partial class TestTomlSerializerContextAggregation : TomlSeriali
 {
 }
 
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedRequiredPopulateModel
+{
+    public required IList<string> Required { get; set; } = ["pre"];
+
+    public IList<string> Other { get; set; } = ["pre"];
+
+    [TomlIgnore(Condition = TomlIgnoreCondition.WhenReading)]
+    public required string Unread { get; set; } = "keep";
+
+    public required string Name { get; init; }
+
+    public GeneratedPopulatePoint Point { get; init; } = new() { X = 1, Y = 2 };
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedPopulatePoint
+{
+    public int X { get; set; }
+
+    public int Y { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedRequiredPopulateModel))]
+internal sealed partial class TestTomlSerializerContextRequiredPopulate : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [TomlDerivedType(typeof(GeneratedIntDiscrimCircle), 1)]
 [TomlDerivedType(typeof(GeneratedIntDiscrimSquare), 2)]
@@ -3006,6 +3034,25 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Fact]
+    public void RequiredMembers_ArePopulatedAndKeepTheirInitializerWhenUnread()
+    {
+        const string Toml = "Required = ['x']\nOther = ['x']\nName = 'n'\nPoint = { Y = 5 }\n";
+
+        var reflection = TomlSerializer.Deserialize<GeneratedRequiredPopulateModel>(Toml)!;
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextRequiredPopulate.Default.GeneratedRequiredPopulateModel)!;
+
+        foreach (var value in new[] { reflection, generated })
+        {
+            Assert.Equal(["pre", "x"], value.Required);
+            Assert.Equal(["pre", "x"], value.Other);
+            Assert.Equal("keep", value.Unread);
+            Assert.Equal("n", value.Name);
+            Assert.Equal(1, value.Point.X);
+            Assert.Equal(5, value.Point.Y);
+        }
     }
 
     [Fact]

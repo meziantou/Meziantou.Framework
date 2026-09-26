@@ -323,7 +323,7 @@ Implement the callback interfaces to run code around serialization:
 | --- | --- |
 | `ITomlOnSerializing` | Before the object is written. |
 | `ITomlOnSerialized` | After the object is written. |
-| `ITomlOnDeserializing` | When the instance is created, before its members are set. The constructor arguments are set before. So are `required` members with the source generator, which sets them in an object initializer; reflection-based metadata sets them after. |
+| `ITomlOnDeserializing` | When the instance is created, before its members are set. The constructor arguments are set before. So are the `required` members the source generator sets in an object initializer: those of a struct, of a generic type, or of a type created with a constructor that has parameters. |
 | `ITomlOnDeserialized` | After the members are read. |
 
 ```csharp
@@ -503,7 +503,10 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   `JsonSerializerDefaults.Web` selects case-insensitive camelCase names, as in `System.Text.Json`. A value TOML cannot
   represent, such as `IndentSize = 0` or `DefaultIgnoreCondition = WhenWriting`, is ignored.
   `[TomlSourceGenerationOptions]` takes precedence.
-- `init` and `required` members are supported.
+- `init` and `required` members are supported. A class is created with an `[UnsafeAccessor]` to its constructor, so its
+  members keep their initial values and can be populated. A struct, a generic type, or a type created with a constructor
+  that has parameters is created with an object initializer instead: its `required` members are replaced, and set to
+  `default` when they are not read.
 - `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The
   converter type must be accessible from the context: public, or internal to the same assembly. A member with a converter is always replaced, never populated.
 - Converters of `[TomlSourceGenerationOptions(Converters = [...])]` are resolved at build time, so converter factories

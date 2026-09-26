@@ -708,7 +708,8 @@ public sealed class SourceGenerationDiagnosticsTests
             using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml.Serialization;
 
-            public sealed class InitOptions
+            // A generic type cannot use accessors, so its init-only members are set in an object initializer from locals
+            public sealed class InitOptions<T>
             {
                 public string? NullableMock { get; init; }
                 public string NonNullableMock { get; init; } = string.Empty;
@@ -727,7 +728,7 @@ public sealed class SourceGenerationDiagnosticsTests
                 public string NonNullableMock { get; }
             }
 
-            [TomlSerializable(typeof(InitOptions))]
+            [TomlSerializable(typeof(InitOptions<int>))]
             [TomlSerializable(typeof(CtorOptions))]
             internal partial class Ctx : TomlSerializerContext { }
             """;

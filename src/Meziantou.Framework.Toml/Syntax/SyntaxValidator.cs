@@ -157,7 +157,6 @@ internal class SyntaxValidator : SyntaxVisitor
 
         base.Visit(table);
 
-        currentArrayTable.ArrayIndex++;
         _currentArrayIndex = savedIndex;
         _currentPath = savedPath;
     }
@@ -268,6 +267,12 @@ internal class SyntaxValidator : SyntaxVisitor
             }
             else if (existingValue.Kind == ObjectKind.TableArray)
             {
+                // [[a]] starts a new element; [a.b] and [[a.b]] extend the last one
+                if (kind == ObjectKind.TableArray)
+                {
+                    existingValue.ArrayIndex++;
+                }
+
                 _currentPath.Add(existingValue.ArrayIndex);
             }
             else if (existingValue.IsImplicit && !isImplicit)
@@ -280,11 +285,25 @@ internal class SyntaxValidator : SyntaxVisitor
                 _maps[currentPath] = upgraded;
                 existingValue = upgraded;
             }
+            else if (existingValue.IsImplicit && fromDottedKeys && !existingValue.FromDottedKeys)
+            {
+                // Dotted keys define the table created by a previous header, so a table header can no longer define it
+                var upgraded = new ObjectPathValue(existingValue.Node, existingValue.Kind, isImplicit: true, fromDottedKeys: true)
+                {
+                    ArrayIndex = existingValue.ArrayIndex,
+                };
+                _maps[currentPath] = upgraded;
+                existingValue = upgraded;
+            }
         }
         else
         {
             existingValue = new ObjectPathValue(node, kind, isImplicit, fromDottedKeys);
             _maps.Add(currentPath, existingValue);
+            if (kind == ObjectKind.TableArray)
+            {
+                _currentPath.Add(existingValue.ArrayIndex);
+            }
         }
         return existingValue;
     }
@@ -373,9 +392,17 @@ internal class SyntaxValidator : SyntaxVisitor
             base.Add(new ObjectPathItem(index));
         }
 
+        // A deep copy: the paths stored in the map must not share the items of the current path
         public ObjectPath Clone()
         {
-            return (ObjectPath) MemberwiseClone();
+            var clone = new ObjectPath();
+            foreach (var item in this)
+            {
+                ((List<ObjectPathItem>)clone).Add(item);
+            }
+
+            clone._hashCode = _hashCode;
+            return clone;
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

@@ -97,4 +97,26 @@ d = true
         Assert.False(doc.HasErrors, message: "The document should not have errors");
     }
 
+    [Theory]
+    [InlineData("[a]\nt = 1\ne = 2\n[a.t]\n")]
+    [InlineData("[a]\nb = {c = 1}\nc = 2\n[a.b]\n")]
+    [InlineData("[[a]]\nb = 1\n[c]\n[a.b]\n")]
+    [InlineData("[[b]]\nb = {}\n[[c]]\n[b.b.d]\n")]
+    [InlineData("[a.b.c]\n[a]\nb.d = 1\n[a.b]\n")]
+    public void Redefinition_IsRejectedByBothParsers(string toml)
+    {
+        Assert.True(SyntaxParser.Parse(toml).HasErrors, message: "SyntaxParser should reject the document");
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+    }
+
+    [Theory]
+    [InlineData("[[a]]\nx = 1\n[[a]]\nx = 2\n[a.b]\ny = 1\n")]
+    [InlineData("[[a]]\nx = 1\n[c]\n[a.b]\n")]
+    [InlineData("[a.b.c]\n[a]\nb.d = 1\n[a.b.e]\n")]
+    [InlineData("[a]\nt = 1\ne = 2\n[a.u]\n")]
+    public void ValidDocument_IsAcceptedByBothParsers(string toml)
+    {
+        Assert.False(SyntaxParser.Parse(toml).HasErrors, message: "SyntaxParser should accept the document");
+        Assert.NotNull(TomlSerializer.Deserialize<Model.TomlTable>(toml));
+    }
 }

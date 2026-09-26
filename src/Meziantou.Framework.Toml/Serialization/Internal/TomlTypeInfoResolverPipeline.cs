@@ -261,6 +261,11 @@ internal static class TomlTypeInfoResolverPipeline
     // Returns the converter to use for a converter declared with an attribute, creating it when it is a factory
     internal static TomlConverter ResolveAttributeConverter(TomlConverter converter, Type typeToConvert, TomlSerializerOptions options)
     {
+        if (!converter.CanConvert(typeToConvert) && Nullable.GetUnderlyingType(typeToConvert) is { } underlyingType && converter.CanConvert(underlyingType))
+        {
+            return new TomlNullableConverter(ResolveAttributeConverter(converter, underlyingType, options), typeToConvert, underlyingType);
+        }
+
         if (converter is TomlConverterFactory factory)
         {
             return CreateConverterFromFactory(factory, typeToConvert, options);

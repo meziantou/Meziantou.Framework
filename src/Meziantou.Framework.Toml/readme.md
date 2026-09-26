@@ -352,7 +352,8 @@ public sealed class UpperCaseStringConverter : TomlConverter<string>
 }
 ```
 
-Register it in the options, with `[TomlConverter]` on a type or member, or on a source-generated context:
+Register it in the options, with `[TomlConverter]` on a type or member, or on a source-generated context. Like
+`System.Text.Json`, a converter for `T` on a member also converts a `T?` member:
 
 ```csharp
 var options = new TomlSerializerOptions { Converters = [new UpperCaseStringConverter()] };

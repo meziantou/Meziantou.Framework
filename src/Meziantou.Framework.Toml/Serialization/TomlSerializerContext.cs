@@ -205,6 +205,19 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
+    /// Creates metadata for a nullable enum type that writes values as strings.
+    /// </summary>
+    /// <typeparam name="TEnum">The enum type.</typeparam>
+    /// <param name="options">The serializer options.</param>
+    /// <returns>The nullable enum metadata.</returns>
+    protected static TomlTypeInfo<TEnum?> CreateNullableStringEnumTypeInfo<TEnum>(TomlSerializerOptions options)
+        where TEnum : struct, Enum
+    {
+        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        return new TomlUntypedConverterTypeInfo<TEnum?>(options, TomlTypeInfoResolverPipeline.ResolveAttributeConverter(TomlStringEnumConverter.Instance, typeof(TEnum?), options));
+    }
+
+    /// <summary>
     /// Creates metadata for a type handled by a source-generation converter option.
     /// </summary>
     /// <typeparam name="T">The type handled by the converter.</typeparam>

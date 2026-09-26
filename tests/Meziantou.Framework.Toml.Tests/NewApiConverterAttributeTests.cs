@@ -79,7 +79,20 @@ internal sealed class GeneratedFactoryModel
     public GeneratedColor Color { get; set; }
 }
 
+internal sealed class GeneratedNullableConverterModel
+{
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public GeneratedColor? StringEnum { get; set; }
+
+    [TomlConverter(typeof(GeneratedColorNameConverter))]
+    public GeneratedColor? Converter { get; set; }
+
+    [TomlConverter(typeof(GeneratedColorConverterFactory))]
+    public GeneratedColor? Factory { get; set; }
+}
+
 [TomlSerializable(typeof(GeneratedConverterModel))]
+[TomlSerializable(typeof(GeneratedNullableConverterModel))]
 [TomlSerializable(typeof(GeneratedConverterRecord))]
 [TomlSerializable(typeof(GeneratedFactoryModel))]
 internal sealed partial class GeneratedConverterContext : TomlSerializerContext;
@@ -102,6 +115,26 @@ public sealed class NewApiConverterAttributeTests
         Assert.Equal("XYZ", roundtrip.Name);
         Assert.Equal(0x7c, roundtrip.Hex.Value);
         Assert.Equal(GeneratedColor.Green, roundtrip.Color);
+    }
+
+    [Fact]
+    public void ConverterForT_IsUsedOnANullableMember()
+    {
+        var model = new GeneratedNullableConverterModel { StringEnum = GeneratedColor.Green, Converter = GeneratedColor.Red, Factory = GeneratedColor.Green };
+        var typeInfo = GeneratedConverterContext.Default.GeneratedNullableConverterModel;
+
+        var reflection = TomlSerializer.Serialize(model);
+        var generated = TomlSerializer.Serialize(model, typeInfo);
+
+        Assert.Equal("StringEnum = \"Green\"\nConverter = \"Red\"\nFactory = \"Green\"\n", reflection);
+        Assert.Equal(reflection, generated);
+        Assert.Equal("", TomlSerializer.Serialize(new GeneratedNullableConverterModel(), typeInfo));
+        foreach (var roundtrip in new[] { TomlSerializer.Deserialize<GeneratedNullableConverterModel>(reflection)!, TomlSerializer.Deserialize(reflection, typeInfo)! })
+        {
+            Assert.Equal(GeneratedColor.Green, roundtrip.StringEnum);
+            Assert.Equal(GeneratedColor.Red, roundtrip.Converter);
+            Assert.Equal(GeneratedColor.Green, roundtrip.Factory);
+        }
     }
 
     [Fact]

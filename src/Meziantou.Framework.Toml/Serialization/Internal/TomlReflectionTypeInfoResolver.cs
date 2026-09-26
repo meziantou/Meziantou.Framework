@@ -357,9 +357,9 @@ internal static class TomlReflectionTypeInfoResolver
         var jsonConverter = member.GetCustomAttribute<JsonConverterAttribute>(inherit: true);
         if (jsonConverter is not null && jsonConverter.ConverterType is not null)
         {
-            if (memberType.IsEnum && IsJsonStringEnumConverter(jsonConverter.ConverterType))
+            if ((Nullable.GetUnderlyingType(memberType) ?? memberType).IsEnum && IsJsonStringEnumConverter(jsonConverter.ConverterType))
             {
-                return TomlStringEnumConverter.Instance;
+                return TomlTypeInfoResolverPipeline.ResolveAttributeConverter(TomlStringEnumConverter.Instance, memberType, options);
             }
 
             return CreateConverterFromAttribute(jsonConverter.ConverterType, memberType, options);
@@ -401,34 +401,7 @@ internal static class TomlReflectionTypeInfoResolver
             throw new TomlException($"Failed to create converter '{converterType.FullName}'.", ex);
         }
 
-        if (converter is TomlConverterFactory factory)
-        {
-            var created = factory.CreateConverter(typeToConvert, options);
-            if (created is null)
-            {
-                throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned null.");
-            }
-
-            if (created is TomlConverterFactory)
-            {
-                throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
-            }
-
-            if (!created.CanConvert(typeToConvert))
-            {
-                throw new TomlException(
-                    $"The converter factory '{factory.GetType().FullName}' returned a converter that cannot convert '{typeToConvert.FullName}'.");
-            }
-
-            converter = created;
-        }
-
-        if (!converter.CanConvert(typeToConvert))
-        {
-            throw new TomlException($"Converter '{converterType.FullName}' cannot convert '{typeToConvert.FullName}'.");
-        }
-
-        return converter;
+        return TomlTypeInfoResolverPipeline.ResolveAttributeConverter(converter, typeToConvert, options);
     }
 
     private static object? ReadWithConverter(TomlReader reader, TomlConverter converter, Type typeToConvert)

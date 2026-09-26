@@ -1402,7 +1402,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var typeName = convertedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if (converter.IsStringEnum)
         {
-            return "CreateStringEnumTypeInfo<" + typeName + ">(" + optionsExpression + ")";
+            return TryGetNullableUnderlyingType(convertedType, out var enumType)
+                ? "CreateNullableStringEnumTypeInfo<" + enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ">(" + optionsExpression + ")"
+                : "CreateStringEnumTypeInfo<" + typeName + ">(" + optionsExpression + ")";
         }
 
         return "CreateAttributeConverterTypeInfo<" + typeName + ">(" + optionsExpression + ", new " + converter.ConverterType!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + "())";
@@ -5527,7 +5529,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         else if (TryGetAttribute(symbol, JsonConverterAttributeMetadataName, out attribute) &&
             attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is ITypeSymbol jsonConverterType)
         {
-            if (convertedType.TypeKind == TypeKind.Enum && IsJsonStringEnumConverter(jsonConverterType))
+            // Like System.Text.Json, a converter for T also converts a T? member
+            var enumType = TryGetNullableUnderlyingType(convertedType, out var underlyingType) ? underlyingType : convertedType;
+            if (enumType.TypeKind == TypeKind.Enum && IsJsonStringEnumConverter(jsonConverterType))
             {
                 return new DeclaredConverter(jsonConverterType, isStringEnum: true, error: null);
             }

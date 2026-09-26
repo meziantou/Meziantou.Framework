@@ -1258,7 +1258,7 @@ internal sealed class Lexer
                 }
                 else if (CharHelper.IsControlCharacter(c) && c != '\t' && (!isMultiLine || !CharHelper.IsWhiteSpaceOrNewLine(c)))
                 {
-                    AddError($"Invalid control character found {((char)c).ToPrintableString()}", start, start);
+                    AddError($"Invalid control character found {((char)c).ToPrintableString()}", CurrentPosition, CurrentPosition);
                 }
 
                 if (decodeScalars)
@@ -1674,7 +1674,7 @@ internal sealed class Lexer
             }
             else if (CharHelper.IsControlCharacter(c) && c != '\t' && (!isMultiLine || !CharHelper.IsNewLine(c)))
             {
-                AddError($"Invalid control character found {((char)c).ToPrintableString()}", start, start);
+                AddError($"Invalid control character found {((char)c).ToPrintableString()}", CurrentPosition, CurrentPosition);
             }
             if (decodeScalars)
             {

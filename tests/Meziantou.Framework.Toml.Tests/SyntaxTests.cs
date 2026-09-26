@@ -123,4 +123,22 @@ val = true
         Assert.Equal(0, simple.DotKeys.ChildrenCount);
         Assert.Equal(toml, doc.ToString());
     }
+
+    [Theory]
+    [InlineData("a = \"x#y\"\n", 0x01, "\\u0001")]
+    [InlineData("a = 'x#y'\n", 0x7F, "\\u007F")]
+    [InlineData("a = \"\"\"\nline\nx#y\"\"\"\n", 0x01, "\\u0001")]
+    [InlineData("a = '''\nline\nx#y'''\n", 0x7F, "\\u007F")]
+    public void Parse_ControlCharacterInString_IsReportedAtTheCharacter(string template, int controlCharacter, string printable)
+    {
+        var toml = template.Replace('#', (char)controlCharacter);
+        var index = toml.IndexOf((char)controlCharacter, StringComparison.Ordinal);
+
+        var doc = SyntaxParser.Parse(toml);
+
+        var diagnostic = Assert.Single(doc.Diagnostics);
+        Assert.Equal($"Invalid control character found {printable}", diagnostic.Message);
+        Assert.Equal(toml.AsSpan(0, index).Count('\n'), diagnostic.Span.Start.Line);
+        Assert.Equal(index - toml.AsSpan(0, index).LastIndexOf('\n') - 1, diagnostic.Span.Start.Column);
+    }
 }

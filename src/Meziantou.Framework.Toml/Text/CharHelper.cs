@@ -200,7 +200,7 @@ internal static partial class CharHelper
 
     public static string? ToPrintableString(this char c)
     {
-        if (c < ' ' || IsWhiteSpace(c))
+        if (c < ' ' || c == '\u007F' || IsWhiteSpace(c))
         {
             switch (c)
             {
@@ -221,7 +221,7 @@ internal static partial class CharHelper
                 case '\f':
                     return @"\f";
                 default:
-                    return $"\\u{(int)c:X};";
+                    return $"\\u{(int)c:X4}";
             }
         }
         return null;

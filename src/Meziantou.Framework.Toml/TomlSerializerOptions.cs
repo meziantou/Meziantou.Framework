@@ -119,7 +119,12 @@ public sealed record TomlSerializerOptions
     /// A type-level <see cref="TomlUnmappedMemberHandlingAttribute"/> overrides this setting. Extension data members still
     /// capture unmapped keys when present.
     /// </remarks>
-    public TomlUnmappedMemberHandling UnmappedMemberHandling { get; init; } = TomlUnmappedMemberHandling.Skip;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlUnmappedMemberHandling"/>.</exception>
+    public TomlUnmappedMemberHandling UnmappedMemberHandling
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlUnmappedMemberHandling.Skip;
 
     /// <summary>Gets or sets the maximum allowed nesting depth for TOML tables and arrays during serialization and deserialization.</summary>
     /// <remarks>
@@ -185,16 +190,31 @@ public sealed record TomlSerializerOptions
     } = TomlIgnoreCondition.WhenWritingNull;
 
     /// <summary>Gets or sets behavior when duplicate keys are encountered while reading.</summary>
-    public TomlDuplicateKeyHandling DuplicateKeyHandling { get; init; } = TomlDuplicateKeyHandling.Error;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlDuplicateKeyHandling"/>.</exception>
+    public TomlDuplicateKeyHandling DuplicateKeyHandling
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlDuplicateKeyHandling.Error;
 
     /// <summary>
     /// Gets or sets member ordering behavior for emitted tables. The default, <see cref="TomlMappingOrderPolicy.OrderThenDeclaration"/>,
     /// honors <see cref="Serialization.TomlPropertyOrderAttribute"/> and <c>JsonPropertyOrderAttribute</c> like <c>System.Text.Json</c>.
     /// </summary>
-    public TomlMappingOrderPolicy MappingOrder { get; init; } = TomlMappingOrderPolicy.OrderThenDeclaration;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlMappingOrderPolicy"/>.</exception>
+    public TomlMappingOrderPolicy MappingOrder
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlMappingOrderPolicy.OrderThenDeclaration;
 
     /// <summary>Gets or sets how member names and dictionary keys containing '.' are written. Reading is not affected.</summary>
-    public TomlDottedKeyHandling DottedKeyHandling { get; init; } = TomlDottedKeyHandling.Literal;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlDottedKeyHandling"/>.</exception>
+    public TomlDottedKeyHandling DottedKeyHandling
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlDottedKeyHandling.Literal;
 
     /// <summary>Gets polymorphism options.</summary>
     /// <remarks>
@@ -234,10 +254,20 @@ public sealed record TomlSerializerOptions
     } = 2;
 
     /// <summary>Gets or sets the newline kind used by the writer.</summary>
-    public TomlNewLineKind NewLine { get; init; } = TomlNewLineKind.Lf;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlNewLineKind"/>.</exception>
+    public TomlNewLineKind NewLine
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlNewLineKind.Lf;
 
     /// <summary>Gets or sets behavior for scalar/array roots that do not naturally map to a TOML document.</summary>
-    public TomlRootValueHandling RootValueHandling { get; init; } = TomlRootValueHandling.Error;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlRootValueHandling"/>.</exception>
+    public TomlRootValueHandling RootValueHandling
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlRootValueHandling.Error;
 
     /// <summary>
     /// Gets the root key name used when <see cref="RootValueHandling"/> is <see cref="TomlRootValueHandling.WrapInRootKey"/>.
@@ -268,10 +298,20 @@ public sealed record TomlSerializerOptions
     } = new();
 
     /// <summary>Gets or sets inline table emission policy.</summary>
-    public TomlInlineTablePolicy InlineTablePolicy { get; init; } = TomlInlineTablePolicy.Never;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlInlineTablePolicy"/>.</exception>
+    public TomlInlineTablePolicy InlineTablePolicy
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlInlineTablePolicy.Never;
 
     /// <summary>Gets or sets array-of-table emission style.</summary>
-    public TomlTableArrayStyle TableArrayStyle { get; init; } = TomlTableArrayStyle.Headers;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlTableArrayStyle"/>.</exception>
+    public TomlTableArrayStyle TableArrayStyle
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlTableArrayStyle.Headers;
 
     /// <summary>Gets or sets an optional metadata store used to capture or apply TOML trivia/comment metadata.</summary>
     public ITomlMetadataStore? MetadataStore { get; init; }

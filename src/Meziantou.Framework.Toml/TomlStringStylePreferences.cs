@@ -14,7 +14,12 @@ namespace Meziantou.Framework.Toml;
 public sealed record TomlStringStylePreferences
 {
     /// <summary>Preferred default string style.</summary>
-    public TomlStringStyle DefaultStyle { get; init; } = TomlStringStyle.Basic;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlStringStyle"/>.</exception>
+    public TomlStringStyle DefaultStyle
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlStringStyle.Basic;
 
     /// <summary>If true, prefer literal strings when no escaping is required.</summary>
     public bool PreferLiteralWhenNoEscapes { get; init; }

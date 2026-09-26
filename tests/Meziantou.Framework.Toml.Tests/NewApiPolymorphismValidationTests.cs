@@ -39,14 +39,9 @@ public sealed class NewApiPolymorphismValidationTests
     }
 
     [Fact]
-    public void PolymorphismOptions_EmptyDiscriminatorPropertyName_ThrowsTomlException()
+    public void PolymorphismOptions_EmptyDiscriminatorPropertyName_Throws()
     {
-        var options = TomlSerializerOptions.Default with
-        {
-            PolymorphismOptions = new TomlPolymorphismOptions { TypeDiscriminatorPropertyName = "" },
-        };
-
-        Assert.Throws<TomlException>(() => TomlSerializer.Serialize<BaseNotAssignable>(new DerivedNotAssignable(), options));
+        Assert.Throws<ArgumentException>(() => new TomlPolymorphismOptions { TypeDiscriminatorPropertyName = "" });
     }
 }
 

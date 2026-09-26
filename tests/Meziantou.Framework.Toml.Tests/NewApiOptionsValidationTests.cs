@@ -54,6 +54,28 @@ public sealed class NewApiOptionsValidationTests
     }
 
     [Fact]
+    public void EnumOptions_UndefinedValue_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { UnmappedMemberHandling = (TomlUnmappedMemberHandling)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { DuplicateKeyHandling = (TomlDuplicateKeyHandling)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { MappingOrder = (TomlMappingOrderPolicy)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { DottedKeyHandling = (TomlDottedKeyHandling)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { NewLine = (TomlNewLineKind)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { RootValueHandling = (TomlRootValueHandling)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { InlineTablePolicy = (TomlInlineTablePolicy)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => TomlSerializerOptions.Default with { TableArrayStyle = (TomlTableArrayStyle)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlStringStylePreferences { DefaultStyle = (TomlStringStyle)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Parsing.TomlParserOptions { Mode = (Parsing.TomlParserMode)99 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlPolymorphismOptions { UnknownDerivedTypeHandling = (TomlUnknownDerivedTypeHandling)99 });
+    }
+
+    [Fact]
+    public void PolymorphismOptions_NullDiscriminatorName_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new TomlPolymorphismOptions { TypeDiscriminatorPropertyName = null! });
+    }
+
+    [Fact]
     public void PreferredObjectCreationHandling_InvalidValue_Throws()
     {
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>

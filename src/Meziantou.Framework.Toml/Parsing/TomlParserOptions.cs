@@ -1,3 +1,6 @@
+using System;
+using Meziantou.Framework.Toml.Helpers;
+
 namespace Meziantou.Framework.Toml.Parsing;
 
 /// <summary>
@@ -8,7 +11,12 @@ public sealed record TomlParserOptions
     /// <summary>
     /// Gets or sets how the parser handles syntax errors.
     /// </summary>
-    public TomlParserMode Mode { get; init; } = TomlParserMode.Strict;
+    /// <exception cref="ArgumentOutOfRangeException">Value is not a defined <see cref="TomlParserMode"/>.</exception>
+    public TomlParserMode Mode
+    {
+        get;
+        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+    } = TomlParserMode.Strict;
 
     /// <summary>
     /// Gets or sets a value indicating whether the parser eagerly decodes scalar string literals.

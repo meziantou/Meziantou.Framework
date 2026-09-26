@@ -22,18 +22,33 @@ public sealed record TomlPolymorphismOptions
     /// <summary>
     /// Gets the property name used for discriminator-based polymorphism.
     /// </summary>
-    public string TypeDiscriminatorPropertyName { get; init; } = "$type";
+    /// <exception cref="ArgumentNullException">Value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Value is not a valid key name.</exception>
+    public string TypeDiscriminatorPropertyName
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (!TomlKeyValidation.IsValidKeyName(value))
+            {
+                throw new ArgumentException("The discriminator property name must be non-empty and contain valid Unicode characters.", nameof(value));
+            }
+
+            field = value;
+        }
+    } = "$type";
 
     /// <summary>
     /// Gets behavior when an unknown discriminator is encountered.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when set to <see cref="TomlUnknownDerivedTypeHandling.Unspecified"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when set to <see cref="TomlUnknownDerivedTypeHandling.Unspecified"/> or an undefined value.</exception>
     public TomlUnknownDerivedTypeHandling UnknownDerivedTypeHandling
     {
         get => _unknownDerivedTypeHandling;
         init
         {
-            if (value == TomlUnknownDerivedTypeHandling.Unspecified)
+            if (value == TomlUnknownDerivedTypeHandling.Unspecified || !Enum.IsDefined(value))
             {
                 throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(TomlUnknownDerivedTypeHandling.Unspecified)} is not a valid value for {nameof(TomlPolymorphismOptions)}.{nameof(UnknownDerivedTypeHandling)}.");
             }

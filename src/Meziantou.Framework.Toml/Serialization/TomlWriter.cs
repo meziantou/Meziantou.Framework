@@ -411,9 +411,10 @@ public sealed class TomlWriter
             return SetValue(table, propertyName, value, propertyName);
         }
 
-        // Expand "a.b.c" into nested tables.
+        // Expand "a.b.c" into nested tables. A key with an empty segment, such as "a..b" or "a.", is written as is, and is
+        // checked before any table is created.
         var segments = propertyName.Split('.');
-        if (segments.Length < 2)
+        if (Array.IndexOf(segments, string.Empty) >= 0)
         {
             return SetValue(table, propertyName, value, propertyName);
         }
@@ -422,11 +423,6 @@ public sealed class TomlWriter
         for (var i = 0; i < segments.Length - 1; i++)
         {
             var segment = segments[i];
-            if (segment.Length == 0)
-            {
-                return SetValue(table, propertyName, value, propertyName);
-            }
-
             if (!current.TryGetValue(segment, out var existing) || existing is null)
             {
                 var next = new TomlTable();
@@ -445,13 +441,7 @@ public sealed class TomlWriter
             throw new TomlException($"Cannot expand dotted key '{propertyName}' because '{segment}' is already set to `{existing.GetType().FullName}`.");
         }
 
-        var leaf = segments[segments.Length - 1];
-        if (leaf.Length == 0)
-        {
-            return SetValue(table, propertyName, value, propertyName);
-        }
-
-        return SetValue(current, leaf, value, propertyName);
+        return SetValue(current, segments[^1], value, propertyName);
     }
 
     // A key written twice (for example two members that map to the same name) would silently lose a value. Only a

@@ -141,6 +141,16 @@ public class SerializationTests
     }
 
     [Fact]
+    public void Serialize_DottedKeyWithAnEmptySegment_IsWrittenLiterallyWithoutAnEmptyTable()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+
+        var toml = TomlSerializer.Serialize(new EmptySegmentDottedMembers(), options);
+
+        Assert.Equal("\"a..b\" = 1\n\"c.\" = 2\n", toml);
+    }
+
+    [Fact]
     public void Serialize_ExpandedDottedKeyExtendingMemberTable_Merges()
     {
         var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
@@ -403,6 +413,15 @@ public class SerializationTests
     private sealed class NestedX
     {
         public int X { get; set; } = 1;
+    }
+
+    private sealed class EmptySegmentDottedMembers
+    {
+        [TomlPropertyName("a..b")]
+        public int First { get; set; } = 1;
+
+        [TomlPropertyName("c.")]
+        public int Second { get; set; } = 2;
     }
 
     private sealed class CollidingDottedMember

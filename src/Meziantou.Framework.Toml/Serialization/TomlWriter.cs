@@ -304,9 +304,12 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
-    // Writes the float with its own round-trip formatting. Widening it to double would add digits, such as 0.10000000149011612
-    // for 0.1f.
-    internal void WriteSingleValue(float value)
+    /// <summary>
+    /// Writes a single-precision floating point value with its own round-trip formatting.
+    /// </summary>
+    /// <remarks>Widening the value to <see cref="double"/> would add digits, such as <c>0.10000000149011612</c> for <c>0.1f</c>.</remarks>
+    /// <param name="value">The value.</param>
+    public void WriteFloatValue(float value)
     {
         WriteValue(value);
     }

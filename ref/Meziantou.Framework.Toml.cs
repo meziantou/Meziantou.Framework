@@ -1077,6 +1077,7 @@ namespace Meziantou.Framework.Toml.Serialization
         public void WriteStringValue(string value) { }
         public void WriteIntegerValue(long value) { }
         public void WriteFloatValue(double value) { }
+        public void WriteFloatValue(float value) { }
         public void WriteBooleanValue(bool value) { }
         public void WriteDateTimeValue(Meziantou.Framework.Toml.TomlDateTime value) { }
     }

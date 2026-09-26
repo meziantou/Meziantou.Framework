@@ -173,7 +173,8 @@ public static class TomlFormatHelper
         {
             return "-inf";
         }
-        return AppendDecimalPoint(value.ToString("g9", CultureInfo.InvariantCulture));
+        // Use the shortest round-trippable format; "g9" gives 0.100000001 for 0.1f.
+        return AppendDecimalPoint(value.ToString("R", CultureInfo.InvariantCulture));
     }
 
     /// <summary>

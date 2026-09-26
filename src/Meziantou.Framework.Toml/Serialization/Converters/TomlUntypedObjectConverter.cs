@@ -115,7 +115,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 writer.WriteFloatValue(d);
                 return;
             case float f:
-                writer.WriteSingleValue(f);
+                writer.WriteFloatValue(f);
                 return;
             case decimal m:
                 TomlDecimalConverter.Instance.Write(writer, m);

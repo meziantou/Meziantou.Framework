@@ -1,4 +1,6 @@
+using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -138,5 +140,29 @@ public class FloatingRoundtripTests
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, float>>("value = 3.5E+38"));
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, Half>>("value = 65520.0"));
         Assert.True(float.IsPositiveInfinity(TomlSerializer.Deserialize<Dictionary<string, float>>("value = inf")!["value"]));
+    }
+
+    [Theory]
+    [InlineData(0.1f, "0.1")]
+    [InlineData(1e30f, "1E+30")]
+    [InlineData(2f, "2.0")]
+    public void Float_IsFormattedWithItsOwnPrecisionByPublicApis(float number, string expected)
+    {
+        var options = new TomlSerializerOptions { Converters = [new ScaledSingleConverter()] };
+
+        Assert.Equal(expected, TomlFormatHelper.ToString(number));
+        Assert.Equal($"value = {expected}\n", TomlSerializer.Serialize(new Dictionary<string, float> { ["value"] = number / 2 }, options).ReplaceLineEndings("\n"));
+    }
+
+    private sealed class ScaledSingleConverter : TomlConverter<float>
+    {
+        public override float Read(TomlReader reader)
+        {
+            var value = (float)reader.GetDouble() / 2;
+            reader.Read();
+            return value;
+        }
+
+        public override void Write(TomlWriter writer, float value) => writer.WriteFloatValue(value * 2);
     }
 }

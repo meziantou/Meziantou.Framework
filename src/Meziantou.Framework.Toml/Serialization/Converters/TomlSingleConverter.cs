@@ -31,5 +31,5 @@ internal sealed class TomlSingleConverter : TomlConverter<float>
         return value;
     }
 
-    public override void Write(TomlWriter writer, float value) => writer.WriteSingleValue(value);
+    public override void Write(TomlWriter writer, float value) => writer.WriteFloatValue(value);
 }

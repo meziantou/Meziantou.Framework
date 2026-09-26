@@ -247,7 +247,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             reader.Read();
             if (propertiesMetadata is not null)
             {
-                capturedAnyMetadata |= CapturePropertyMetadata(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, GetDisplayKind(reader));
+                capturedAnyMetadata |= CapturePropertyMetadata(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
             }
 
             // A table header or a dotted key extends the existing table; any other value replaces it (DuplicateKeyHandling.LastWins)
@@ -314,48 +314,6 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
 
         propertiesMetadata.SetProperty(name, propertyMetadata);
         return true;
-    }
-
-    private static TomlPropertyDisplayKind GetDisplayKind(TomlReader reader)
-    {
-        switch (reader.TokenType)
-        {
-            case TomlTokenType.Integer:
-            {
-                var raw = reader.GetRawText();
-                if (raw.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerHexadecimal;
-                if (raw.StartsWith("0o", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerOctal;
-                if (raw.StartsWith("0b", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerBinary;
-                return TomlPropertyDisplayKind.Default;
-            }
-            case TomlTokenType.String:
-            {
-                return reader.CurrentStringTokenKind switch
-                {
-                    TokenKind.StringMulti => TomlPropertyDisplayKind.StringMulti,
-                    TokenKind.StringLiteral => TomlPropertyDisplayKind.StringLiteral,
-                    TokenKind.StringLiteralMulti => TomlPropertyDisplayKind.StringLiteralMulti,
-                    _ => TomlPropertyDisplayKind.Default,
-                };
-            }
-            case TomlTokenType.DateTime:
-            {
-                var value = reader.GetTomlDateTime();
-                return value.Kind switch
-                {
-                    TomlDateTimeKind.OffsetDateTimeByZ => TomlPropertyDisplayKind.OffsetDateTimeByZ,
-                    TomlDateTimeKind.OffsetDateTimeByNumber => TomlPropertyDisplayKind.OffsetDateTimeByNumber,
-                    TomlDateTimeKind.LocalDateTime => TomlPropertyDisplayKind.LocalDateTime,
-                    TomlDateTimeKind.LocalDate => TomlPropertyDisplayKind.LocalDate,
-                    TomlDateTimeKind.LocalTime => TomlPropertyDisplayKind.LocalTime,
-                    _ => TomlPropertyDisplayKind.Default,
-                };
-            }
-            case TomlTokenType.StartTable:
-                return reader.IsInlineContainer ? TomlPropertyDisplayKind.InlineTable : TomlPropertyDisplayKind.Default;
-            default:
-                return TomlPropertyDisplayKind.Default;
-        }
     }
 
     internal static object ReadArrayValue(TomlReader reader)

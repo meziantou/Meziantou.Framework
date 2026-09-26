@@ -133,7 +133,7 @@ internal static class TomlModelTextWriter
                     continue;
                 }
 
-                if (pair.Value is TomlTable subTable && !ShouldInlineTable(subTable, depth + 1, propertyMetadata?.InlineTablePolicy))
+                if (pair.Value is TomlTable subTable && !ShouldInlineTable(subTable, depth + 1, propertyMetadata))
                 {
                     continue;
                 }
@@ -145,7 +145,7 @@ internal static class TomlModelTextWriter
             foreach (var pair in table)
             {
                 var propertyMetadata = GetPropertyMetadata(table.PropertiesMetadata, pair.Key);
-                if (pair.Value is TomlTable subTable && !ShouldInlineTable(subTable, depth + 1, propertyMetadata?.InlineTablePolicy))
+                if (pair.Value is TomlTable subTable && !ShouldInlineTable(subTable, depth + 1, propertyMetadata))
                 {
                     path.Add(pair.Key);
                     WriteTableBody(subTable, path, HeaderKind.Table, depth + 1, table.PropertiesMetadata);
@@ -221,15 +221,25 @@ internal static class TomlModelTextWriter
             return null;
         }
 
-        private bool ShouldInlineTable(TomlTable table, int depth, TomlInlineTablePolicy? policyOverride = null)
+        private bool ShouldInlineTable(TomlTable table, int depth, TomlPropertyMetadata? propertyMetadata)
         {
             ValidateDepth(depth);
+
+            // The display kind is what a metadata store captured from the document, or what the user set
+            switch (propertyMetadata?.DisplayKind)
+            {
+                case TomlPropertyDisplayKind.NoInline:
+                    return false;
+                case TomlPropertyDisplayKind.InlineTable when IsInlineableTable(table, maxMemberCount: int.MaxValue, depth):
+                    return true;
+            }
+
             if (table.Kind == ObjectKind.InlineTable)
             {
                 return true;
             }
 
-            return (policyOverride ?? _options.InlineTablePolicy) switch
+            return (propertyMetadata?.InlineTablePolicy ?? _options.InlineTablePolicy) switch
             {
                 TomlInlineTablePolicy.Always => IsInlineableTable(table, maxMemberCount: int.MaxValue, depth),
                 TomlInlineTablePolicy.WhenSmall => IsInlineableTable(table, maxMemberCount: 4, depth),
@@ -520,7 +530,7 @@ internal static class TomlModelTextWriter
                 case TomlArray array:
                     WriteArray(array, depth + 1);
                     return;
-                case TomlTable inlineTable when ShouldInlineTable(inlineTable, depth + 1, propertyMetadata?.InlineTablePolicy):
+                case TomlTable inlineTable when ShouldInlineTable(inlineTable, depth + 1, propertyMetadata):
                     WriteInlineTable(inlineTable, depth + 1);
                     return;
                 case TomlTable:

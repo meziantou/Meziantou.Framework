@@ -53,6 +53,33 @@ public sealed class NewApiMetadataStoreTests
         }
     }
 
+    [Fact]
+    public void MetadataStore_InlineTableDisplayKind_IsKeptByTypedModels()
+    {
+        const string Toml = "A = 1\nB = 'x'\nNested = {C = 2}\n";
+
+        Assert.Equal(Toml, Roundtrip(resolver: null));
+        Assert.Equal(Toml, Roundtrip(TestTomlMetadataContext.Default));
+
+        static string Roundtrip(ITomlTypeInfoResolver? resolver)
+        {
+            var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
+            return TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataFormattedModel>(Toml, options), options).ReplaceLineEndings("\n");
+        }
+    }
+
+    [Fact]
+    public void NoInlineDisplayKind_OverridesInlineTablePolicy()
+    {
+        var table = TomlSerializer.Deserialize<TomlTable>("Nested = {C = 2}\n")!;
+        table.PropertiesMetadata ??= new TomlPropertiesMetadata();
+        table.PropertiesMetadata.SetProperty("Nested", new TomlPropertyMetadata { DisplayKind = TomlPropertyDisplayKind.NoInline });
+
+        var toml = TomlSerializer.Serialize(table, new TomlSerializerOptions { InlineTablePolicy = TomlInlineTablePolicy.Always });
+
+        Assert.Equal("[Nested]\nC = 2\n", toml.ReplaceLineEndings("\n"));
+    }
+
     private sealed class Sample
     {
     }

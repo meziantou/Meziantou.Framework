@@ -90,6 +90,8 @@ internal static class TomlPropertyMetadataCapture
                     _ => TomlPropertyDisplayKind.Default,
                 };
             }
+            case TomlTokenType.StartTable:
+                return reader.IsInlineContainer ? TomlPropertyDisplayKind.InlineTable : TomlPropertyDisplayKind.Default;
             default:
                 return TomlPropertyDisplayKind.Default;
         }

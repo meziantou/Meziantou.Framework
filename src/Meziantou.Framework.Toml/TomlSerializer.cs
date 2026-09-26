@@ -145,7 +145,12 @@ public static class TomlSerializer
     /// <summary>
     /// Gets a value indicating whether reflection-based serialization is enabled by default.
     /// </summary>
-    public static bool IsReflectionEnabledByDefault => TomlSerializerFeatureSwitches.IsReflectionEnabledByDefaultCalculated;
+    /// <remarks>
+    /// This property is the trimming feature switch: every reflection-based code path is guarded by it, so the trimmer
+    /// removes them when the switch is disabled.
+    /// </remarks>
+    [FeatureSwitchDefinition(TomlSerializerFeatureSwitches.ReflectionSwitchName)]
+    public static bool IsReflectionEnabledByDefault { get; } = TomlSerializerFeatureSwitches.IsReflectionEnabledByDefault;
 
     /// <summary>
     /// Serializes a value into TOML text.

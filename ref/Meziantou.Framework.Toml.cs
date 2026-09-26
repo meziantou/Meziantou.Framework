@@ -185,6 +185,7 @@ namespace Meziantou.Framework.Toml
 
     public static class TomlSerializer
     {
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinition("Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault")]
         public static bool IsReflectionEnabledByDefault { get => throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]

@@ -93,6 +93,37 @@ public class NewApiPolymorphismTests
         Assert.Contains("9", toml);
     }
 
+    [Theory]
+    [InlineData(TomlDuplicateKeyHandling.LastWins, typeof(Dog))]
+    [InlineData(TomlDuplicateKeyHandling.Error, null)]
+    public void Deserialize_Polymorphic_DuplicateDiscriminatorFollowsDuplicateKeyHandling(TomlDuplicateKeyHandling duplicateKeyHandling, Type? expectedType)
+    {
+        var toml = "kind = \"cat\"\nName = \"Rex\"\nkind = \"dog\"\n";
+        var options = new TomlSerializerOptions { DuplicateKeyHandling = duplicateKeyHandling };
+
+        if (expectedType is null)
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Animal>(toml, options));
+            return;
+        }
+
+        var result = TomlSerializer.Deserialize<Animal>(toml, options);
+        Assert.IsType(expectedType, result);
+        Assert.Equal("dog", ((Model.TomlTable)TomlSerializer.Deserialize<Model.TomlTable>(toml, options)!)["kind"]);
+    }
+
+    [Fact]
+    public void GeneratedContext_DuplicateDiscriminatorWithLastWins_UsesTheLastOne()
+    {
+        var context = TestTomlSerializerContextDefaultDerivedType.Default;
+        var options = context.Options with { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+        var typeInfo = (TomlTypeInfo<GeneratedDefaultShape>)context.GetTypeInfo(typeof(GeneratedDefaultShape), options)!;
+
+        var result = TomlSerializer.Deserialize("type = \"circle\"\ncolor = \"blue\"\ntype = \"square\"\nside = 2.0\n", typeInfo);
+
+        Assert.Equal(2.0, Assert.IsType<GeneratedDefaultSquare>(result).Side);
+    }
+
     [Fact]
     public void Deserialize_Polymorphic_UsesDiscriminatorWhenNotFirst()
     {

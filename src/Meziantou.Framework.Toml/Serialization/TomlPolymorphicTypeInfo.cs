@@ -298,6 +298,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
     {
         discriminator = string.Empty;
         discriminatorSpan = null;
+        var found = false;
 
         var reader = TomlReader.Create(buffer);
         reader.Read(); // StartDocument
@@ -327,13 +328,19 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
                 discriminatorSpan = reader.CurrentSpan;
                 discriminator = reader.GetString();
-                return true;
+                found = true;
+
+                // A later discriminator replaces this one, like any other duplicate key
+                if (Options.DuplicateKeyHandling != TomlDuplicateKeyHandling.LastWins)
+                {
+                    return true;
+                }
             }
 
             reader.Skip();
         }
 
-        return false;
+        return found;
     }
 
     private static TomlSourceSpan? GetTableSpan(TomlReaderBuffer buffer)

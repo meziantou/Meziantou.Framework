@@ -1041,6 +1041,53 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    [Theory]
+    [InlineData("[TomlInclude] protected int P { get; set; }")]
+    [InlineData("[TomlInclude] public int P { get; protected set; }")]
+    [InlineData("[TomlInclude] protected int F;")]
+    [InlineData("[TomlInclude] protected internal int P { get; set; }")]
+    public void Generator_ProtectedMembersWithAContextNestedInADerivedType_UseAccessors(string member)
+    {
+        var source = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            public class Model { public int Q { get; set; } MEMBER }
+
+            public partial class Holder : Model
+            {
+                [TomlSerializable(typeof(Model))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
+            """.Replace("MEMBER", member, StringComparison.Ordinal);
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void Generator_ProtectedConstructorWithAContextNestedInADerivedType_ReportsDiagnostic()
+    {
+        var source = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            public class Model { [TomlConstructor] protected Model(int q) { Q = q; } public int Q { get; } }
+
+            public partial class Holder : Model
+            {
+                public Holder() : base(0) { }
+
+                [TomlSerializable(typeof(Model))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.Single(diagnostics, d => d.Severity == DiagnosticSeverity.Error && d.Id == "MFTOML013");
+        Assert.DoesNotContain(diagnostics, d => d.Id.StartsWith("CS", StringComparison.Ordinal));
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

@@ -1244,17 +1244,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             var extensionValueTypeInfo = GetTypeInfoPropertyName(extensionDataWrite.ValueType);
             var writeValueArgument = CanBeNull(extensionDataWrite.ValueType) ? "__pair.Value!" : "__pair.Value";
-            var dictionaryKeyPolicyExpression = model.Options.DictionaryKeyPolicyExpression;
-
+            // Extension data holds the keys of the document, which are written back as they were read: DictionaryKeyPolicy does
+            // not apply
             builder.AppendLine("            if (__extensionData is not null)");
             builder.AppendLine("            {");
             builder.AppendLine("                foreach (var __pair in __extensionData)");
             builder.AppendLine("                {");
             builder.AppendLine("                    var __key = __pair.Key;");
-            if (!string.IsNullOrEmpty(dictionaryKeyPolicyExpression))
-            {
-                builder.Append("                    __key = ").Append(dictionaryKeyPolicyExpression).AppendLine(".ConvertName(__key);");
-            }
             builder.AppendLine("                    if (__usedKeys is not null && __usedKeys.Contains(__key)) throw new global::Meziantou.Framework.Toml.TomlException($\"Extension data key '{__key}' conflicts with an existing member key.\");");
             builder.AppendLine("                    writer.WritePropertyName(__key);");
             builder.Append("                    ").Append(GetTypeInfoAccess(extensionDataWrite.ValueType)).Append(".Write(writer, ").Append(writeValueArgument).AppendLine(");");

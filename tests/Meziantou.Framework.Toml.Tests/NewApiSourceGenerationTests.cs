@@ -1717,6 +1717,20 @@ internal sealed partial class TestTomlSerializerContextInitPopulate : TomlSerial
 {
 }
 
+public sealed class GeneratedExtensionKeyPolicyModel
+{
+    public string Name { get; set; } = "";
+
+    [TomlExtensionData]
+    public Dictionary<string, object> Extra { get; set; } = [];
+}
+
+[TomlSourceGenerationOptions(DictionaryKeyPolicy = TomlKnownNamingPolicy.CamelCase)]
+[TomlSerializable(typeof(GeneratedExtensionKeyPolicyModel))]
+internal sealed partial class TestTomlSerializerContextExtensionKeyPolicy : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedObsoleteModel))]
 [TomlSerializable(typeof(GeneratedObsoleteConstructor))]
 internal sealed partial class TestTomlSerializerContextObsolete : TomlSerializerContext
@@ -3260,6 +3274,17 @@ public class NewApiSourceGenerationTests
             Assert.Equal((3, "q3", 6), (value.C2.A, value.C2.Q, value.C2.Z));
             Assert.Equal(("v0", 8), (value.G.V, value.G.Z));
         }
+    }
+
+    [Fact]
+    public void ExtensionDataKeys_AreWrittenAsRead_WhateverTheDictionaryKeyPolicy()
+    {
+        const string Toml = "Name = \"n\"\nFooBar = 1\nfooBar = 2\n";
+        var options = new TomlSerializerOptions { DictionaryKeyPolicy = TomlNamingPolicy.CamelCase };
+        var typeInfo = TestTomlSerializerContextExtensionKeyPolicy.Default.GeneratedExtensionKeyPolicyModel;
+
+        Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedExtensionKeyPolicyModel>(Toml, options), options).ReplaceLineEndings("\n"));
+        Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize(Toml, typeInfo)!, typeInfo).ReplaceLineEndings("\n"));
     }
 
     [Fact]

@@ -863,13 +863,9 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     foreach (var entry in EnumerateExtensionData(extensionDictionary))
                     {
+                        // Extension data holds the keys of the document, which are written back as they were read, like
+                        // System.Text.Json: DictionaryKeyPolicy does not apply
                         var key = entry.Key;
-
-                        if (Options.DictionaryKeyPolicy is { } keyPolicy)
-                        {
-                            key = keyPolicy.ConvertName(key);
-                        }
-
                         if (usedKeys is not null && usedKeys.Contains(key))
                         {
                             throw new TomlException($"Extension data key '{key}' conflicts with an existing member key.");

@@ -1236,7 +1236,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else if (poco.RequiresGeneratedObjectInitializer)
         {
-            var bufferedConstructor = constructor ?? new PocoConstructor(null, ImmutableArray<PocoConstructorParameter>.Empty, null, setsRequiredMembers: false);
+            var bufferedConstructor = constructor ?? new PocoConstructor(null, ImmutableArray<PocoConstructorParameter>.Empty, null, setsRequiredMembers: poco.ParameterlessConstructorSetsRequiredMembers);
             EmitPocoReadWithConstructor(builder, model, type, poco, bufferedConstructor, readReturnType, callsOnDeserializing, callsOnDeserialized, useObjectInitializerConstruction: true);
             if (!poco.Members.Any(static member => member.IsInitOnly))
             {
@@ -2147,7 +2147,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 needsTemplate = true;
                 finalInitializerAssignments.Add(member.Identifier + " = __memberValue" + i.ToString(CultureInfo.InvariantCulture));
 
-                if (!member.IsCompilerRequired)
+                // The template reads the defaults of the members; a [SetsRequiredMembers] constructor sets the required ones
+                if (!member.IsCompilerRequired || ctor.SetsRequiredMembers)
                 {
                     continue;
                 }
@@ -2165,7 +2166,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 needsTemplate = true;
                 finalInitializerAssignments.Add(extensionData.Identifier + " = __extensionDataValue");
-                if (extensionData.IsCompilerRequired)
+                if (extensionData.IsCompilerRequired && !ctor.SetsRequiredMembers)
                 {
                     templateInitializerAssignments.Add(extensionData.Identifier + " = " + extensionData.CreateExpression);
                 }
@@ -3968,6 +3969,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public int? DottedKeyHandling { get; }
         public bool DisallowUnmappedMembers { get; set; }
         public string TypeName { get; set; } = "";
+
+        // The parameterless constructor has [SetsRequiredMembers], so the object initializer need not set required members
+        public bool ParameterlessConstructorSetsRequiredMembers { get; set; }
     }
 
     private static bool RequiresGeneratedObjectInitializer(
@@ -4519,6 +4523,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     DisallowUnmappedMembers = disallowUnmappedMembers,
                     TypeName = ownerTypeName,
+                    ParameterlessConstructorSetsRequiredMembers = parameterlessConstructorSetsRequiredMembers,
                 };
                 return true;
             }
@@ -4537,6 +4542,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             DisallowUnmappedMembers = disallowUnmappedMembers,
             TypeName = ownerTypeName,
+            ParameterlessConstructorSetsRequiredMembers = parameterlessConstructorSetsRequiredMembers,
         };
         return true;
     }

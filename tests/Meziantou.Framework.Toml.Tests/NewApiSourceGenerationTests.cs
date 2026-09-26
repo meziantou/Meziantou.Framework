@@ -698,6 +698,42 @@ internal sealed partial class TestTomlSerializerContextDom : TomlSerializerConte
 {
 }
 
+public sealed class GeneratedSetsRequiredMembers
+{
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public GeneratedSetsRequiredMembers()
+    {
+        A = "from constructor";
+        C = "from constructor";
+    }
+
+    public required string A { get; init; }
+
+    public int B { get; set; }
+
+    public required string C { get; set; }
+}
+
+public sealed class GeneratedSetsRequiredMembersWithParameters
+{
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public GeneratedSetsRequiredMembersWithParameters(int b)
+    {
+        A = "from constructor";
+        B = b;
+    }
+
+    public required string A { get; init; }
+
+    public int B { get; }
+}
+
+[TomlSerializable(typeof(GeneratedSetsRequiredMembers))]
+[TomlSerializable(typeof(GeneratedSetsRequiredMembersWithParameters))]
+internal sealed partial class TestTomlSerializerContextSetsRequiredMembers : TomlSerializerContext
+{
+}
+
 [JsonSourceGenerationOptions(System.Text.Json.JsonSerializerDefaults.Web, PropertyNamingPolicy = JsonKnownNamingPolicy.KebabCaseUpper)]
 [TomlSerializable(typeof(GeneratedPerson))]
 internal sealed partial class TestTomlSerializerContextJsonWebDefaultsWithNamingPolicy : TomlSerializerContext
@@ -1496,6 +1532,23 @@ public class NewApiSourceGenerationTests
 
         Assert.Contains("Field = 1", toml);
         Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_SetsRequiredMembersConstructor_KeepsTheValuesItSets()
+    {
+        var context = TestTomlSerializerContextSetsRequiredMembers.Default;
+
+        var value = TomlSerializer.Deserialize("B = 1", context.GeneratedSetsRequiredMembers)!;
+        var withParameters = TomlSerializer.Deserialize("B = 2", context.GeneratedSetsRequiredMembersWithParameters)!;
+
+        Assert.Equal("from constructor", value.A);
+        Assert.Equal("from constructor", value.C);
+        Assert.Equal(1, value.B);
+        Assert.Equal("from constructor", withParameters.A);
+        Assert.Equal(2, withParameters.B);
+        Assert.Equal("from constructor", TomlSerializer.Deserialize<GeneratedSetsRequiredMembers>("B = 1")!.A);
+        Assert.Equal("x", TomlSerializer.Deserialize("A = 'x'", context.GeneratedSetsRequiredMembers)!.A);
     }
 
     [Fact]

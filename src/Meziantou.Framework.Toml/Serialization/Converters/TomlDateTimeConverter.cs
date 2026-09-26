@@ -19,11 +19,12 @@ internal sealed class TomlDateTimeConverter : TomlConverter<DateTime>
             throw reader.CreateException($"Expected {TomlTokenType.DateTime} token but was {reader.TokenType}.");
         }
 
+        // Like System.Text.Json, Z gives a UTC value and a numeric offset a local value, so that every DateTimeKind round-trips
         var value = reader.GetTomlDateTime();
         var result = value.Kind switch
         {
-            TomlDateTimeKind.OffsetDateTimeByNumber => value.DateTime.ToUniversalTime().UtcDateTime,
-            TomlDateTimeKind.OffsetDateTimeByZ => value.DateTime.ToUniversalTime().UtcDateTime,
+            TomlDateTimeKind.OffsetDateTimeByNumber => value.DateTime.LocalDateTime,
+            TomlDateTimeKind.OffsetDateTimeByZ => value.DateTime.UtcDateTime,
             TomlDateTimeKind.LocalDateTime => value.DateTime.DateTime,
             TomlDateTimeKind.LocalDate => value.DateTime.DateTime,
             TomlDateTimeKind.LocalTime => throw reader.CreateException("TOML local-time cannot be converted to DateTime without a date component."),

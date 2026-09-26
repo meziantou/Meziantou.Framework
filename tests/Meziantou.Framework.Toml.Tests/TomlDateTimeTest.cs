@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Meziantou.Xunit;
 
@@ -60,6 +61,34 @@ public class TomlDateTimeTest
         Assert.Equal(model.Offset, roundtrip.Offset);
         Assert.Equal(model.Offset.Offset, roundtrip.Offset.Offset);
         Assert.Equal(model.Time, roundtrip.Time);
+    }
+
+    [Fact]
+    public void DateTime_EveryKind_Roundtrips()
+    {
+        var values = new Dictionary<string, DateTime>
+        {
+            ["utc"] = new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Utc),
+            ["local"] = new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Local),
+            ["unspecified"] = new DateTime(2024, 1, 2, 3, 4, 5, 678, DateTimeKind.Unspecified),
+        };
+
+        var roundtrip = TomlSerializer.Deserialize<Dictionary<string, DateTime>>(TomlSerializer.Serialize(values))!;
+
+        foreach (var (key, value) in values)
+        {
+            Assert.Equal(value, roundtrip[key]);
+            Assert.Equal(value.Kind, roundtrip[key].Kind);
+        }
+    }
+
+    [Fact]
+    public void Deserialize_DateTimeWithNumericOffset_IsLocal()
+    {
+        var value = TomlSerializer.Deserialize<Dictionary<string, DateTime>>("value = 2024-01-02T03:04:05+14:00\n")!["value"];
+
+        Assert.Equal(DateTimeKind.Local, value.Kind);
+        Assert.Equal(new DateTime(2024, 1, 1, 13, 4, 5, DateTimeKind.Utc), value.ToUniversalTime());
     }
 
     [Fact]

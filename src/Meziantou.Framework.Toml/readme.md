@@ -119,6 +119,10 @@ The metadata used to map objects comes from one of two sources:
 | Document Object Model | `TomlTable`, `TomlArray`, `TomlTableArray`, `TomlObject`, `object` |
 | Objects | Classes, records, and structs, with property setters or constructor parameters |
 
+A `DateTime` is written according to its `Kind`, and read back with the same kind, like `System.Text.Json`: a UTC value
+is an offset date-time with `Z`, a local value an offset date-time with the offset of the machine, and an unspecified
+value a local date-time. Reading converts any other numeric offset to local time.
+
 TOML table keys are strings, so dictionaries must use `string` keys. A member typed as `TomlObject` accepts any TOML
 container (`TomlTable`, `TomlArray`, or `TomlTableArray`).
 

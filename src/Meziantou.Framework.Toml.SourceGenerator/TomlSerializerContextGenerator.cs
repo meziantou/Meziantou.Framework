@@ -5849,6 +5849,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return true;
             }
 
+            // 'default' or 'new S()' for a struct such as DateTime or Guid
+            if (type.IsValueType)
+            {
+                expression = "default";
+                return true;
+            }
+
             return false;
         }
 
@@ -5944,6 +5951,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     expression = "float.NegativeInfinity";
                 }
+                else if (ff == 0 && BitConverter.DoubleToInt64Bits(ff) < 0)
+                {
+                    // The literal -0f is the integer 0, so its sign would be lost
+                    expression = "-0.0f";
+                }
                 else
                 {
                     expression = ff.ToString("R", CultureInfo.InvariantCulture) + "f";
@@ -5961,6 +5973,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 else if (double.IsNegativeInfinity(dd))
                 {
                     expression = "double.NegativeInfinity";
+                }
+                else if (dd == 0 && BitConverter.DoubleToInt64Bits(dd) < 0)
+                {
+                    // The literal -0 is the integer 0, so its sign would be lost
+                    expression = "-0.0";
                 }
                 else
                 {

@@ -1620,6 +1620,45 @@ internal sealed partial class TestTomlSerializerContextStructCallbacks : TomlSer
 {
 }
 
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedDefaultPoint
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedStructDefaults
+{
+    public GeneratedStructDefaults(int x, DateTime date = default, Guid id = default, TimeSpan span = new TimeSpan(), GeneratedDefaultPoint point = default, double negativeZero = -0.0, float negativeZeroSingle = -0.0f)
+    {
+        X = x;
+        Date = date;
+        Id = id;
+        Span = span;
+        Point = point;
+        NegativeZero = negativeZero;
+        NegativeZeroSingle = negativeZeroSingle;
+    }
+
+    public int X { get; }
+
+    public DateTime Date { get; }
+
+    public Guid Id { get; }
+
+    public TimeSpan Span { get; }
+
+    public GeneratedDefaultPoint Point { get; }
+
+    public double NegativeZero { get; }
+
+    public float NegativeZeroSingle { get; }
+}
+
+[TomlSerializable(typeof(GeneratedStructDefaults))]
+internal sealed partial class TestTomlSerializerContextStructDefaults : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedPrivateGetterChild
 {
     public int X { get; set; }
@@ -3699,6 +3738,24 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal("A = 55\n", TomlSerializer.Serialize(new GeneratedCallbackStruct { A = 1 }, context.GeneratedCallbackStruct).ReplaceLineEndings("\n"));
         Assert.Equal("A = 55\n", TomlSerializer.Serialize(new GeneratedCallbackStruct { A = 1 }).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void ConstructorParameters_WithAStructOrNegativeZeroDefault_UseTheirDefault()
+    {
+        var generated = TomlSerializer.Deserialize("X = 1", TestTomlSerializerContextStructDefaults.Default.GeneratedStructDefaults)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedStructDefaults>("X = 1")!;
+
+        foreach (var value in new[] { generated, reflection })
+        {
+            Assert.Equal(1, value.X);
+            Assert.Equal(default, value.Date);
+            Assert.Equal(Guid.Empty, value.Id);
+            Assert.Equal(TimeSpan.Zero, value.Span);
+            Assert.Equal(0, value.Point.X);
+            Assert.True(double.IsNegative(value.NegativeZero));
+            Assert.True(float.IsNegative(value.NegativeZeroSingle));
+        }
     }
 
     [Fact]

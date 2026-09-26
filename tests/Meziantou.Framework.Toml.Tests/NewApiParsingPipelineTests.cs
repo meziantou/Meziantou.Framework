@@ -10,6 +10,33 @@ namespace Meziantou.Framework.Toml.Tests;
 
 public class NewApiParsingPipelineTests
 {
+    [Theory]
+    [InlineData("X = 'bad'\nY = 2\n")]
+    [InlineData("Values = [1, 'two', 3]\n")]
+    [InlineData("Map = { a = 1, b = 'x' }\n")]
+    public void TomlReader_TypeInfoRead_ThrowsForAnInvalidValue(string toml)
+    {
+        // Only TomlSerializer reports the errors it skips; a reader created by the caller has no one to report them
+        var options = TomlSerializerOptions.Default;
+        var reader = TomlReader.Create(toml, options);
+        reader.Read();
+        reader.Read();
+
+        Assert.Throws<TomlException>(() => options.GetTypeInfo<ReaderRecoveryModel>().Read(reader));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ReaderRecoveryModel>(toml));
+    }
+
+    private sealed class ReaderRecoveryModel
+    {
+        public int X { get; set; }
+
+        public int Y { get; set; }
+
+        public List<int>? Values { get; set; }
+
+        public Dictionary<string, int>? Map { get; set; }
+    }
+
     [Fact]
     public void TomlParser_MoveNext_EmitsExpectedEvents()
     {

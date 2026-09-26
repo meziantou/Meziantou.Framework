@@ -34,6 +34,10 @@ internal sealed class TomlSerializationOperationState
 
     public bool HasDiagnostics => Diagnostics is { Count: > 0 };
 
+    // Only TomlSerializer reports the recorded diagnostics once the document is read. A reader created by TomlReader.Create
+    // has no one to report them, so its values throw instead of being skipped.
+    public bool RecoversValueErrors { get; set; }
+
     public int DiagnosticCount => Diagnostics?.Count ?? 0;
 
     public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
@@ -69,7 +73,8 @@ internal sealed class TomlSerializationOperationState
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
-        return !ReferenceEquals(exception.Diagnostics, Diagnostics) &&
+        return RecoversValueErrors &&
+            !ReferenceEquals(exception.Diagnostics, Diagnostics) &&
             (exception.Diagnostics.Count > 0 || exception.Span.HasValue);
     }
 

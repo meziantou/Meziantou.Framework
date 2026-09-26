@@ -120,6 +120,11 @@ The metadata used to map objects comes from one of two sources:
 | Document Object Model | `TomlTable`, `TomlArray`, `TomlTableArray`, `TomlObject`, `object` |
 | Objects | Classes, records, and structs, with property setters or constructor parameters |
 
+TOML integers are signed 64-bit values, so a `ulong`, `nuint`, `Int128`, or `UInt128` value must be within the range of
+`long`: a larger value throws a `TomlException` when written. A `TimeSpan` maps to a TOML local time, such as
+`07:30:00`: it is a time of day, not a duration, so a negative value or a value of 24 hours or more throws a
+`TomlException` when written. Store a duration in an integer or string member, or use a converter.
+
 A `DateTime` is written according to its `Kind`, and read back with the same kind, like `System.Text.Json`: a UTC value
 is an offset date-time with `Z`, a local value an offset date-time with the offset of the machine, and an unspecified
 value a local date-time. Reading converts any other numeric offset to local time.

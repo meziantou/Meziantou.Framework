@@ -921,17 +921,62 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    [Fact]
+    public void Generator_InternalMembersOfAnotherAssembly_UseAccessors()
+    {
+        var librarySource = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            public class Person
+            {
+                [TomlInclude]
+                public int Age { get; protected internal set; }
+
+                [TomlInclude]
+                internal string Name { get; set; } = "";
+
+                [TomlInclude]
+                internal int Id;
+            }
+            """;
+        var library = CSharpCompilation.Create(
+            assemblyName: "Meziantou.Framework.Toml.SourceGeneration.Tests.Library",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(librarySource, new CSharpParseOptions(LanguageVersion.Latest))],
+            references: CreateReferences(),
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        using var image = new MemoryStream();
+        var emitResult = library.Emit(image);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+
+        var source = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGeneratorTest(source, MetadataReference.CreateFromImage(image.ToArray())).Diagnostics;
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 
-    private static GeneratorTestResult RunGeneratorTest(string source)
+    private static GeneratorTestResult RunGeneratorTest(string source, MetadataReference? additionalReference = null)
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
         var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
+        var references = CreateReferences();
+        if (additionalReference is not null)
+        {
+            references.Add(additionalReference);
+        }
+
         var compilation = CSharpCompilation.Create(
             assemblyName: "Meziantou.Framework.Toml.SourceGeneration.Tests.Input",
             syntaxTrees: new[] { syntaxTree },
-            references: CreateReferences(),
+            references: references,
             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
 
         IIncrementalGenerator generator = new TomlSerializerContextGenerator();

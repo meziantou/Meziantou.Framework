@@ -4089,7 +4089,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             else if (annotated.Length == 1)
             {
                 selectedConstructor = annotated[0];
-                if (!IsAccessibleFromGeneratedContext(selectedConstructor.DeclaredAccessibility))
+                if (!IsAccessibleFromGeneratedContext(model, selectedConstructor))
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(InaccessibleConstructor, selectedConstructor.Locations.FirstOrDefault(), named.ToDisplayString()));
                     constructorError = "The constructor annotated for deserialization is not accessible from the generated code.";
@@ -4152,10 +4152,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var getterAccessible = IsAccessibleFromGeneratedContext(member.GetMethod.DeclaredAccessibility);
+            var getterAccessible = IsAccessibleFromGeneratedContext(model, member.GetMethod);
             var getterAccessorName = getterAccessible ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
             // Like the reflection resolver, a setter is used when it is public or the member has [TomlInclude]
-            var setterAccessible = member.SetMethod is not null && IsAccessibleFromGeneratedContext(member.SetMethod.DeclaredAccessibility);
+            var setterAccessible = member.SetMethod is not null && IsAccessibleFromGeneratedContext(model, member.SetMethod);
             var canSet = member.SetMethod is not null && (member.SetMethod.DeclaredAccessibility == Accessibility.Public || hasInclude);
             var setterAccessorName = canSet && !setterAccessible ? "__Set" + members.Count.ToString(CultureInfo.InvariantCulture) : null;
             var isInitOnly = member.SetMethod?.IsInitOnly == true;
@@ -4336,8 +4336,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
             var order = GetOrder(member);
             var required = IsRequired(member, honorRequiredModifier) && !ignore.IgnoreOnRead;
-            var getterAccessorName = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility) ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
-            var fieldAccessible = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility);
+            var fieldAccessible = IsAccessibleFromGeneratedContext(model, member);
+            var getterAccessorName = fieldAccessible ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
             var canSet = !member.IsReadOnly && (fieldAccessible || hasInclude);
             var setterAccessorName = canSet && !fieldAccessible ? "__Set" + members.Count.ToString(CultureInfo.InvariantCulture) : null;
             var fieldWriteIgnore = member.IsReadOnly && model.Options.IgnoreReadOnlyFields == true ? WriteIgnoreKind.WhenWriting : ignore.WriteIgnore;
@@ -4521,9 +4521,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
     }
 
-    private static bool IsAccessibleFromGeneratedContext(Accessibility accessibility)
+    // An internal or protected internal member of another assembly is only accessible with InternalsVisibleTo
+    private static bool IsAccessibleFromGeneratedContext(ContextModel model, ISymbol member)
     {
-        return accessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal;
+        return model.Compilation.IsSymbolAccessibleWithin(member, model.ContextSymbol);
     }
 
     private static bool TryGetPolymorphicShape(

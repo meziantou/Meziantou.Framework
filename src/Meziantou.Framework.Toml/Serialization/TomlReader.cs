@@ -1003,17 +1003,26 @@ public sealed class TomlReader
         }
 
         var endExclusive = GetBufferedValueEnd(currentIndex);
-        var currentToken = _buffer[currentIndex];
-        if (currentToken.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
-        {
-
-            // The current StartTable/StartArray token has already increased the live reader depth.
-            // The copied EndTable/EndArray token is not applied through Read(), so restore the parent depth.
-            _bufferDepth--;
-        }
 
         // The captured value shares the tokens: copying them at every nested level would be quadratic
         var buffer = new TomlReaderBuffer(_buffer, currentIndex, endExclusive - currentIndex, _options, _operationState, _bufferContainerEnds);
+
+        if (_buffer[currentIndex].TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
+        {
+            if (endExclusive - 1 > currentIndex && _buffer[endExclusive - 1].TokenType is TomlTokenType.EndTable or TomlTokenType.EndArray)
+            {
+                // The end token is read like any other, so the depths and the metadata captures are updated as if the tokens
+                // of the value were read
+                _bufferIndex = endExclusive - 1;
+                Read(); // the end of the value
+                Read(); // advance past the captured value
+                return buffer;
+            }
+
+            // The value has no end token: restore the depth of its parent, which the start token increased
+            _bufferDepth--;
+            _depth--;
+        }
 
         _bufferIndex = endExclusive;
         Read(); // advance past the captured value

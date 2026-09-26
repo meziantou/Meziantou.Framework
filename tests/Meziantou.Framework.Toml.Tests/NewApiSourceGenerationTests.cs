@@ -1800,6 +1800,28 @@ internal sealed partial class TestTomlSerializerContextCatching : TomlSerializer
 {
 }
 
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(GeneratedMetadataDog), "dog")]
+public abstract class GeneratedMetadataAnimal
+{
+    public string? Name { get; set; }
+}
+
+public sealed class GeneratedMetadataDog : GeneratedMetadataAnimal
+{
+    public GeneratedMetadataAnimal? Friend { get; set; }
+}
+
+public sealed class GeneratedMetadataRoot
+{
+    public GeneratedMetadataAnimal? Pet { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedMetadataRoot))]
+internal sealed partial class TestTomlSerializerContextMetadataPolymorphic : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4076,6 +4098,30 @@ public class NewApiSourceGenerationTests
         var diagnostic = Assert.Single(caught.Diagnostics);
         Assert.Equal(1, diagnostic.Span.Start.Line);
         Assert.DoesNotContain("(3,", caught.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MetadataStore_KeysAfterANestedPolymorphicValue_KeepTheirComments()
+    {
+        const string Toml = """
+            [Pet]
+            kind = "dog"
+            # before friend
+            Friend = { kind = "dog", Name = "f" }
+            # before name
+            Name = "rex" # trailing name
+
+            """;
+
+        foreach (var resolver in new ITomlTypeInfoResolver?[] { null, TestTomlSerializerContextMetadataPolymorphic.Default })
+        {
+            var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
+
+            var toml = TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedMetadataRoot>(Toml, options), options);
+
+            Assert.Contains("# before name", toml, StringComparison.Ordinal);
+            Assert.Contains("# trailing name", toml, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

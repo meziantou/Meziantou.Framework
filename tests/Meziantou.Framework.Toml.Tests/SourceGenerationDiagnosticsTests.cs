@@ -1162,6 +1162,32 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
+    [Fact]
+    public void Generator_GenericRootWithNullableTypeArgument_CompilesWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(G<string?>))]
+            [TomlSerializable(typeof(Dictionary<string, List<string?>>))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public class G<T>
+            {
+                public T Value { get; set; } = default!;
+                public List<T> Items { get; set; } = [];
+                public T? Maybe { get; set; }
+                public Dictionary<string, T> Map { get; set; } = [];
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

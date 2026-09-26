@@ -368,6 +368,20 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return new ContextOutput(classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), output.HintName, output.Source, output.Diagnostics.ToImmutableEquatableArray());
     }
 
+    // typeof(G<string?>) keeps the annotation of the type argument, but the generated code names the type without it, so
+    // the members are read from the unannotated type to have the types the compiler sees. Nullability checks come from
+    // the original definition, so they do not change.
+    private static ITypeSymbol WithoutNullableTypeArguments(ITypeSymbol type)
+    {
+        if (type is not INamedTypeSymbol { IsGenericType: true } named || named.ContainingType is { IsGenericType: true })
+        {
+            return type.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
+        }
+
+        var typeArguments = named.TypeArguments.Select(WithoutNullableTypeArguments).ToImmutableArray();
+        return named.OriginalDefinition.Construct(typeArguments, typeArguments.Select(static _ => NullableAnnotation.NotAnnotated).ToImmutableArray());
+    }
+
     private static ContextModel? TryCreateContextModel(INamedTypeSymbol classSymbol, ClassDeclarationSyntax classDeclaration, Compilation compilation)
     {
         if (!DerivesFromTomlSerializerContext(classSymbol))
@@ -395,7 +409,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                roots.Add(new RootTypeModel(typeSymbol, GetTypeInfoPropertyNameOverride(attribute)));
+                roots.Add(new RootTypeModel(WithoutNullableTypeArguments(typeSymbol), GetTypeInfoPropertyNameOverride(attribute)));
                 continue;
             }
 

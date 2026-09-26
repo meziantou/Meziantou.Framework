@@ -12,8 +12,26 @@ internal sealed class GeneratedBytePairModel
     public byte Second { get; set; }
 }
 
+internal sealed record GeneratedBytePairRecord(byte First, byte Second);
+
+internal sealed class GeneratedByteInitModel
+{
+    public byte First { get; init; }
+
+    public required byte Second { get; set; }
+}
+
 [TomlSerializable(typeof(GeneratedBytePairModel))]
+[TomlSerializable(typeof(GeneratedBytePairRecord))]
+[TomlSerializable(typeof(GeneratedByteInitModel))]
 internal sealed partial class TestBuiltInConvertersContext : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[TomlSerializable(typeof(GeneratedBytePairRecord))]
+[TomlSerializable(typeof(GeneratedByteInitModel))]
+internal sealed partial class TestBuiltInConvertersCaseInsensitiveContext : TomlSerializerContext
 {
 }
 
@@ -103,6 +121,29 @@ public sealed class NewApiBuiltInConvertersTests
         Assert.Equal(1, ex.Diagnostics[1].Span.Start.Line);
         Assert.Equal(9, ex.Diagnostics[1].Span.Start.Column);
         Assert.Contains("TOML integer value 300 is out of range.", ex.Diagnostics[1].Message);
+    }
+
+    [Fact]
+    public void Byte_Overflow_ConstructorAndInitMembersAggregateMultipleLocations()
+    {
+        const string Toml = "First = 256\nSecond = 300\n";
+        var exceptions = new[]
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedBytePairRecord>(Toml)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestBuiltInConvertersContext.Default.GeneratedBytePairRecord)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestBuiltInConvertersCaseInsensitiveContext.Default.GeneratedBytePairRecord)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedByteInitModel>(Toml)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestBuiltInConvertersContext.Default.GeneratedByteInitModel)),
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestBuiltInConvertersCaseInsensitiveContext.Default.GeneratedByteInitModel)),
+        };
+
+        foreach (var ex in exceptions)
+        {
+            Assert.Equal(2, ex.Diagnostics.Count);
+            Assert.Contains("TOML integer value 256 is out of range.", ex.Diagnostics[0].Message);
+            Assert.Contains("TOML integer value 300 is out of range.", ex.Diagnostics[1].Message);
+            Assert.Equal(exceptions[0].Message, ex.Message);
+        }
     }
 
     [Fact]

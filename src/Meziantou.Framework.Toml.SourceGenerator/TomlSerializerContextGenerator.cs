@@ -1692,15 +1692,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.AppendLine("                        }");
             }
             builder.Append("                        __argSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
-            if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length && poco.Members[parameter.LinkedMemberIndex].HasSingleOrArray && parameter.ConverterTypeInfoName is null)
+            EmitRecoverableRead(builder, "                        ", indent =>
             {
-                var linkedMember = poco.Members[parameter.LinkedMemberIndex];
-                EmitSingleOrArrayReadAssignment(builder, parameter.ParameterType, "__arg" + i.ToString(CultureInfo.InvariantCulture), "                        ", "Member '" + EscapeStringLiteral(linkedMember.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
-            }
-            else
-            {
-                builder.Append("                        __arg").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
-            }
+                if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length && poco.Members[parameter.LinkedMemberIndex].HasSingleOrArray && parameter.ConverterTypeInfoName is null)
+                {
+                    var linkedMember = poco.Members[parameter.LinkedMemberIndex];
+                    EmitSingleOrArrayReadAssignment(builder, parameter.ParameterType, "__arg" + i.ToString(CultureInfo.InvariantCulture), indent, "Member '" + EscapeStringLiteral(linkedMember.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
+                }
+                else
+                {
+                    builder.Append(indent).Append("__arg").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
+                }
+            });
 
             if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length)
             {
@@ -1794,14 +1797,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (member.HasSingleOrArray)
+            EmitRecoverableRead(builder, "                        ", indent =>
             {
-                EmitSingleOrArrayReadAssignment(builder, member.Type, "__memberValue" + i.ToString(CultureInfo.InvariantCulture), "                        ", "Member '" + EscapeStringLiteral(member.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
-            }
-            else
-            {
-                builder.Append("                        __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
-            }
+                if (member.HasSingleOrArray)
+                {
+                    EmitSingleOrArrayReadAssignment(builder, member.Type, "__memberValue" + i.ToString(CultureInfo.InvariantCulture), indent, "Member '" + EscapeStringLiteral(member.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
+                }
+                else
+                {
+                    builder.Append(indent).Append("__memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
+                }
+            });
             builder.Append("                        __memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
             builder.AppendLine("                        continue;");
             builder.AppendLine("                    }");
@@ -1914,15 +1920,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                     builder.Append("                                    __argSeen").Append(action.Index.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
                     builder.AppendLine("                                    reader.Read();");
-                    if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length && poco.Members[parameter.LinkedMemberIndex].HasSingleOrArray && parameter.ConverterTypeInfoName is null)
+                    EmitRecoverableRead(builder, "                                    ", indent =>
                     {
-                        var linkedMember = poco.Members[parameter.LinkedMemberIndex];
-                        EmitSingleOrArrayReadAssignment(builder, parameter.ParameterType, "__arg" + action.Index.ToString(CultureInfo.InvariantCulture), "                                    ", "Member '" + EscapeStringLiteral(linkedMember.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
-                    }
-                    else
-                    {
-                        builder.Append("                                    __arg").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
-                    }
+                        if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length && poco.Members[parameter.LinkedMemberIndex].HasSingleOrArray && parameter.ConverterTypeInfoName is null)
+                        {
+                            var linkedMember = poco.Members[parameter.LinkedMemberIndex];
+                            EmitSingleOrArrayReadAssignment(builder, parameter.ParameterType, "__arg" + action.Index.ToString(CultureInfo.InvariantCulture), indent, "Member '" + EscapeStringLiteral(linkedMember.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
+                        }
+                        else
+                        {
+                            builder.Append(indent).Append("__arg").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
+                        }
+                    });
 
                     if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length)
                     {
@@ -2016,14 +2025,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                     else
                     {
-                        if (member.HasSingleOrArray)
+                        EmitRecoverableRead(builder, "                                    ", indent =>
                         {
-                            EmitSingleOrArrayReadAssignment(builder, member.Type, "__memberValue" + action.Index.ToString(CultureInfo.InvariantCulture), "                                    ", "Member '" + EscapeStringLiteral(member.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
-                        }
-                        else
-                        {
-                            builder.Append("                                    __memberValue").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
-                        }
+                            if (member.HasSingleOrArray)
+                            {
+                                EmitSingleOrArrayReadAssignment(builder, member.Type, "__memberValue" + action.Index.ToString(CultureInfo.InvariantCulture), indent, "Member '" + EscapeStringLiteral(member.MemberName) + "' on '" + EscapeStringLiteral(typeName) + "' uses [TomlSingleOrArray]");
+                            }
+                            else
+                            {
+                                builder.Append(indent).Append("__memberValue").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
+                            }
+                        });
                         builder.Append("                                    __memberSeen").Append(action.Index.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
                         builder.AppendLine("                                    continue;");
                     }
@@ -2066,6 +2078,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            var endTableSpan = reader.CurrentSpan;");
         builder.AppendLine("            reader.Read();");
+        builder.AppendLine("            ThrowIfDeserializationDiagnostics(reader);");
 
         // Validate constructor parameters.
         for (var i = 0; i < ctor.Parameters.Length; i++)
@@ -3011,6 +3024,24 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("catch (global::Meziantou.Framework.Toml.TomlException __ex) when (TryAddDeserializationDiagnostic(reader, __readTokenType, __readSpan, __ex))");
         builder.Append(indent).AppendLine("{");
         builder.Append(indent).AppendLine("    continue;");
+        builder.Append(indent).AppendLine("}");
+    }
+
+    // Like the reflection-based metadata, a value that cannot be converted is reported with the other errors of the
+    // document. The block scopes the locals, which can be in a switch section.
+    private static void EmitRecoverableRead(StringBuilder builder, string indent, Action<string> emitRead)
+    {
+        builder.Append(indent).AppendLine("{");
+        builder.Append(indent).AppendLine("    var __readTokenType = reader.TokenType;");
+        builder.Append(indent).AppendLine("    var __readSpan = reader.CurrentSpan;");
+        builder.Append(indent).AppendLine("    try");
+        builder.Append(indent).AppendLine("    {");
+        emitRead(indent + "        ");
+        builder.Append(indent).AppendLine("    }");
+        builder.Append(indent).AppendLine("    catch (global::Meziantou.Framework.Toml.TomlException __ex) when (TryAddDeserializationDiagnostic(reader, __readTokenType, __readSpan, __ex))");
+        builder.Append(indent).AppendLine("    {");
+        builder.Append(indent).AppendLine("        continue;");
+        builder.Append(indent).AppendLine("    }");
         builder.Append(indent).AppendLine("}");
     }
 

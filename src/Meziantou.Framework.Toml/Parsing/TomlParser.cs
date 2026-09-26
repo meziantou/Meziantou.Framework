@@ -1052,13 +1052,10 @@ public sealed partial class TomlParser
             var frameIndex = _containers.Count - 1;
             while (true)
             {
+                // A key/value pair is on a single line: newlines are allowed between the pairs, not after `=`
                 if (frame.InlineTableState != InlineTableState.ExpectValue)
                 {
                     SkipNewLines(LexerState.Key);
-                }
-                else
-                {
-                    SkipNewLines(LexerState.Value);
                 }
 
                 if (_token.Kind == TokenKind.Eof)
@@ -1097,7 +1094,7 @@ public sealed partial class TomlParser
 
                 if (frame.InlineTableState == InlineTableState.ExpectValue)
                 {
-                    if (_token.Kind == TokenKind.Comma || _token.Kind == TokenKind.CloseBrace || _token.Kind == TokenKind.Eof)
+                    if (_token.Kind is TokenKind.Comma or TokenKind.CloseBrace or TokenKind.NewLine)
                     {
                         throw ParserCore.CreateException(CurrentSpan(), "Missing value after `=` in inline table.");
                     }

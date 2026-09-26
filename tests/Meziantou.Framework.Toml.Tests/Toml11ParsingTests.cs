@@ -29,6 +29,24 @@ public sealed class Toml11ParsingTests
         Assert.Equal(2L, inline["c"]);
     }
 
+    [Theory]
+    [InlineData("a = {b =\n1}\n")]
+    [InlineData("a = {b = # comment\n1}\n")]
+    [InlineData("a = {b = 1, c =\r\n2}\n")]
+    [InlineData("a = {b\n= 1}\n")]
+    public void InlineTable_NewlineInsideKeyValuePair_IsRejected(string toml)
+    {
+        Assert.True(SyntaxParser.Parse(toml).HasErrors);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.True(parser.HasErrors);
+    }
+
     [Fact]
     public void LocalTime_MinuteOnly_IsAccepted()
     {

@@ -44,6 +44,15 @@ public sealed class AttributeStringStyleHolder
     public string OverridesPreferLiteral { get; set; } = "safe";
 }
 
+public sealed class MultilineStringStyleHolder
+{
+    [TomlStringStyle(TomlStringStyle.MultilineBasic)]
+    public string Basic { get; set; } = "";
+
+    [TomlStringStyle(TomlStringStyle.MultilineLiteral)]
+    public string Literal { get; set; } = "";
+}
+
 public sealed class InvalidStringStyleAttributeHolder
 {
     [TomlStringStyle(TomlStringStyle.Basic)]
@@ -54,6 +63,7 @@ public sealed class InvalidStringStyleAttributeHolder
 [TomlSerializable(typeof(AttributeOrderedHolder))]
 [TomlSerializable(typeof(AttributeDottedKeyHolder))]
 [TomlSerializable(typeof(AttributeStringStyleHolder))]
+[TomlSerializable(typeof(MultilineStringStyleHolder))]
 internal sealed partial class TestTomlStyleAttributesContext : TomlSerializerContext
 {
 }
@@ -121,5 +131,24 @@ public class NewApiStyleAttributeTests
     public void Reflection_StringStyleAttributeRejectsNonStringMembers()
     {
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new InvalidStringStyleAttributeHolder()));
+    }
+
+    [Theory]
+    [InlineData("\nabc")]
+    [InlineData("\n")]
+    [InlineData("\r\nabc\r\n")]
+    [InlineData("abc")]
+    [InlineData("")]
+    public void MultilineStringStyle_KeepsLeadingNewLine(string value)
+    {
+        var model = new MultilineStringStyleHolder { Basic = value, Literal = value };
+
+        foreach (var toml in new[] { TomlSerializer.Serialize(model), TomlSerializer.Serialize(model, TestTomlStyleAttributesContext.Default.MultilineStringStyleHolder) })
+        {
+            Assert.Contains("Basic = \"\"\"\n", toml, StringComparison.Ordinal);
+            var roundtrip = TomlSerializer.Deserialize<MultilineStringStyleHolder>(toml)!;
+            Assert.Equal(value, roundtrip.Basic);
+            Assert.Equal(value, roundtrip.Literal);
+        }
     }
 }

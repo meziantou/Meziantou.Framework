@@ -27,8 +27,9 @@ public static class TomlFormatHelper
     {
         switch (displayKind)
         {
+            // TOML trims a newline right after the opening delimiter, so always write one to keep a leading newline
             case TomlPropertyDisplayKind.StringMulti:
-                return $"\"\"\"{s.EscapeForToml(true)}\"\"\"";
+                return $"\"\"\"\n{s.EscapeForToml(true)}\"\"\"";
             case TomlPropertyDisplayKind.StringLiteral:
                 if (IsSafeStringLiteral(s))
                 {
@@ -41,7 +42,7 @@ public static class TomlFormatHelper
             case TomlPropertyDisplayKind.StringLiteralMulti:
                 if (IsSafeStringLiteralMulti(s))
                 {
-                    return $"'''{s}'''";
+                    return $"'''\n{s}'''";
                 }
                 else
                 {

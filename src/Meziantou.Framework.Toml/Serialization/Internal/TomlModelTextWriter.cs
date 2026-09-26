@@ -632,9 +632,11 @@ internal static class TomlModelTextWriter
 
             switch (displayKind)
             {
+                // TOML trims a newline right after the opening delimiter, so always write one to keep a leading newline
                 case TomlPropertyDisplayKind.StringMulti:
                 {
                     _writer.Write("\"\"\"");
+                    _writer.Write(_newLine);
                     WriteEscapedBasicStringContent(value, allowNewLinesAndTabs: true, allowHexEscapes);
                     _writer.Write("\"\"\"");
                     return;
@@ -652,6 +654,7 @@ internal static class TomlModelTextWriter
                     if (IsSafeStringLiteralMulti(value))
                     {
                         _writer.Write("'''");
+                        _writer.Write(_newLine);
                         _writer.Write(value);
                         _writer.Write("'''");
                         return;

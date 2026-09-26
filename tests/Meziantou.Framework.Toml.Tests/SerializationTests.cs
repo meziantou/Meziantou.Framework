@@ -23,7 +23,7 @@ public class SerializationTests
         model["property"] = "string\r\nwith\r\nnewlines";
 
         var result = TomlSerializer.Serialize(model, options).Trim();
-        AssertHelper.AreEqualNormalizeNewLine("property = '''string\r\nwith\r\nnewlines'''", result);
+        AssertHelper.AreEqualNormalizeNewLine("property = '''\nstring\r\nwith\r\nnewlines'''", result);
     }
 
     [Fact]

@@ -285,6 +285,15 @@ internal static class TomlReflectionTypeInfoResolver
                 DisallowNullOnDeserialize: DisallowNull(field.FieldType, nullabilityContext?.Create(field).WriteState)));
         }
 
+        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind
+        var hiddenMembers = members
+            .Where(member => members.Exists(other =>
+                string.Equals(other.Member.Name, member.Member.Name, StringComparison.Ordinal) &&
+                other.Member.DeclaringType!.IsSubclassOf(member.Member.DeclaringType!)))
+            .Select(member => member.Member)
+            .ToHashSet();
+        members.RemoveAll(member => hiddenMembers.Contains(member.Member));
+
         return OrderMembers(members, mappingOrder);
     }
 
@@ -686,9 +695,10 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
-                if (!_indexByName.ContainsKey(name))
+                // Reading would fill only one of them, and writing would write the key twice
+                if (!_indexByName.TryAdd(name, i))
                 {
-                    _indexByName.Add(name, i);
+                    throw TomlException.CreateConfigurationError($"The TOML key '{name}' is used by the members '{_members[_indexByName[name]].Member.Name}' and '{_members[i].Member.Name}' of '{type.FullName}'.");
                 }
             }
 

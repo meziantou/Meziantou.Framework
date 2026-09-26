@@ -385,6 +385,30 @@ public class SerializationTests
         Assert.Equal("x", TomlSerializer.Deserialize<HidingDerived>("Field = 'x'", new TomlSerializerOptions { IncludeFields = true })!.Field);
     }
 
+    [Fact]
+    public void Deserialize_PropertyHiddenByAField_UsesTheField()
+    {
+        var options = new TomlSerializerOptions { IncludeFields = true };
+
+        var value = TomlSerializer.Deserialize<FieldHidingDerived>("Value = 5", options)!;
+
+        Assert.Equal(5, value.Value);
+        Assert.Equal(0, ((FieldHidingBase)value).Value);
+        Assert.Equal("Value = 5\n", TomlSerializer.Serialize(value, options).ReplaceLineEndings("\n"));
+    }
+
+    private class FieldHidingBase
+    {
+        public int Value { get; set; }
+    }
+
+    private sealed class FieldHidingDerived : FieldHidingBase
+    {
+#pragma warning disable CA1051 // The test needs public fields
+        public new int Value = -1;
+#pragma warning restore CA1051
+    }
+
     private class HidingBase
     {
         public int Id { get; set; } = 1;

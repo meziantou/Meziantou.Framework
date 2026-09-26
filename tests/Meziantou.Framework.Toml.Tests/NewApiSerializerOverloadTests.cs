@@ -184,6 +184,7 @@ public sealed class NewApiSerializerOverloadTests
     [InlineData(typeof(ConfigDuplicateDiscriminator))]
     [InlineData(typeof(ConfigSingleOrArrayOnInt))]
     [InlineData(typeof(ConfigPopulateOnConstructorType))]
+    [InlineData(typeof(ConfigDuplicateName))]
     public void TryDeserialize_ModelConfigurationError_Throws(Type type)
     {
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\nItems = [{ A = 1 }]\n", type, out _));
@@ -233,6 +234,32 @@ public sealed class NewApiSerializerOverloadTests
 
     private sealed class ConfigDerivedB : ConfigDuplicateDiscriminator
     {
+    }
+
+    private sealed class ConfigDuplicateName
+    {
+        [TomlPropertyName("A")]
+        public int First { get; set; }
+
+        [TomlPropertyName("A")]
+        public int Second { get; set; }
+    }
+
+    [Fact]
+    public void TryDeserialize_NamesThatDifferOnlyByCaseWhenCaseInsensitive_Throws()
+    {
+        var options = new TomlSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<ConfigCaseNames>("Name = 'a'", out _, options));
+        Assert.True(TomlSerializer.TryDeserialize<ConfigCaseNames>("Name = 'a'", out _));
+    }
+
+    private sealed class ConfigCaseNames
+    {
+        public string? Name { get; set; }
+
+        [TomlPropertyName("name")]
+        public string? Other { get; set; }
     }
 
     private sealed class ConfigPopulateOnConstructorType

@@ -4937,6 +4937,31 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         members.Clear();
         members.AddRange(orderedMembers);
 
+        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind
+        for (var i = members.Count - 1; i >= 0; i--)
+        {
+            var member = members[i];
+            if (members.Any(other => !ReferenceEquals(other, member) && other.MemberName == member.MemberName && DerivesFrom(other.DeclaringType, member.DeclaringType)))
+            {
+                members.RemoveAt(i);
+            }
+        }
+
+        // Reading would fill only one of the members, and writing would write the key twice
+        var membersBySerializedName = new Dictionary<string, PocoMember>(GetEffectivePropertyNameCaseInsensitive(model.Options) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        foreach (var member in members)
+        {
+            if (!membersBySerializedName.TryAdd(member.SerializedName, member))
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(
+                    InvalidAttributeUsage,
+                    member.Symbol?.Locations.FirstOrDefault() ?? named.Locations.FirstOrDefault(),
+                    type.ToDisplayString(),
+                    member.MemberName,
+                    $"The TOML key '{member.SerializedName}' is also used by the member '{membersBySerializedName[member.SerializedName].MemberName}'."));
+            }
+        }
+
         var unserializedRequiredMembers = GetUnserializedRequiredMembers(named, members, extensionData);
 
         PocoConstructor? constructorModel = null;
@@ -7104,6 +7129,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         converterType = null!;
+        return false;
+    }
+
+    private static bool DerivesFrom(ITypeSymbol type, ITypeSymbol baseType)
+    {
+        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseType))
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

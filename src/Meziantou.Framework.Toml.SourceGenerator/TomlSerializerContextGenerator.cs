@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Toml.SourceGeneration;
 public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
-        id: "TOMLYN001",
+        id: "MFTOML001",
         title: "Toml serializer context must be partial",
         messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and must be declared partial to support source generation",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -24,7 +24,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidConverterType = new(
-        id: "TOMLYN002",
+        id: "MFTOML002",
         title: "Invalid converter type",
         messageFormat: "Converter type '{0}' is invalid: {1}",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -32,7 +32,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor UnsupportedMemberType = new(
-        id: "TOMLYN003",
+        id: "MFTOML003",
         title: "Unsupported member type",
         messageFormat: "Type '{0}' contains member '{1}' of unsupported type '{2}'. Add [TomlSerializable(typeof({2}))] to the context or change the member type.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -40,7 +40,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor UnsupportedDictionaryKeyType = new(
-        id: "TOMLYN004",
+        id: "MFTOML004",
         title: "Unsupported dictionary key type",
         messageFormat: "Type '{0}' contains member '{1}' of dictionary-like type '{2}' with non-string keys. TOML table keys must be strings.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -48,7 +48,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidSourceGenerationOption = new(
-        id: "TOMLYN005",
+        id: "MFTOML005",
         title: "Invalid source generation option",
         messageFormat: "Invalid source generation option on context '{0}': {1}",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -56,7 +56,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidExtensionDataMember = new(
-        id: "TOMLYN006",
+        id: "MFTOML006",
         title: "Invalid extension data member",
         messageFormat: "Type '{0}' extension data member '{1}' is invalid: {2}",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -64,7 +64,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidPolymorphismConfiguration = new(
-        id: "TOMLYN007",
+        id: "MFTOML007",
         title: "Invalid polymorphism configuration",
         messageFormat: "Type '{0}' polymorphism configuration is invalid: {1}",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -72,7 +72,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor JsonSerializableNotSupported = new(
-        id: "TOMLYN008",
+        id: "MFTOML008",
         title: "JsonSerializable is not supported on TOML contexts",
         messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and uses [JsonSerializable]. Replace [JsonSerializable(...)] with [TomlSerializable(...)] on the context.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -80,7 +80,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidDerivedTypeMapping = new(
-        id: "TOMLYN009",
+        id: "MFTOML009",
         title: "Invalid derived type mapping",
         messageFormat: "Context '{0}' derived type mapping is invalid: {1}",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -88,7 +88,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor MissingPolymorphicConfigurationOnDerivedTypeMappingBase = new(
-        id: "TOMLYN010",
+        id: "MFTOML010",
         title: "Derived type mapping base type has no polymorphic configuration",
         messageFormat: "Context '{0}' registers a derived type mapping for base type '{1}' without [TomlPolymorphic], [TomlDerivedType], [JsonPolymorphic], or [JsonDerivedType]. Serializer options defaults will be used.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
@@ -96,7 +96,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         isEnabledByDefault: true);
 
     private static readonly DiagnosticDescriptor InvalidAttributeUsage = new(
-        id: "TOMLYN011",
+        id: "MFTOML011",
         title: "Invalid TOML attribute usage",
         messageFormat: "Type '{0}' member '{1}' has invalid TOML attribute usage: {2}",
         category: "Meziantou.Framework.Toml.SourceGeneration",

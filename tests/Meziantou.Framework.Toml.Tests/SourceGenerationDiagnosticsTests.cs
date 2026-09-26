@@ -140,7 +140,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN005"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML005"));
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN005"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML005"));
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN005"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML005"));
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN002"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML002"));
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN008"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML008"));
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public sealed class SourceGenerationDiagnosticsTests
             """;
 
         var diagnostics = RunGenerator(source);
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN005" && d.GetMessage().Contains("TypeInfoPropertyName", StringComparison.Ordinal)));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML005" && d.GetMessage().Contains("TypeInfoPropertyName", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -383,7 +383,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
         var diagnostics = RunGenerator(source);
 
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN009"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML009"));
     }
 
     [Fact]
@@ -404,7 +404,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
         var diagnostics = RunGenerator(source);
 
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN009"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML009"));
     }
 
     [Fact]
@@ -424,7 +424,7 @@ public sealed class SourceGenerationDiagnosticsTests
 
         var diagnostics = RunGenerator(source);
 
-        Assert.True(diagnostics.Any(d => d.Id == "TOMLYN010"));
+        Assert.True(diagnostics.Any(d => d.Id == "MFTOML010"));
     }
 
     private static ImmutableArray<Diagnostic> RunGenerator(string source)

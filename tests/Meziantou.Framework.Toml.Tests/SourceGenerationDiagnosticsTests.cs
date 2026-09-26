@@ -998,6 +998,26 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.Equal(3, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
     }
 
+    // The offending declaration is on the line marked with /*here*/
+    [Theory]
+    [InlineData("MFTOML003", "public sealed class Person {\n public int X { get; set; }\n /*here*/ public System.IDisposable? Handle { get; set; }\n}")]
+    [InlineData("MFTOML004", "public sealed class Person {\n public int X { get; set; }\n /*here*/ public System.Collections.Generic.Dictionary<int, string> Values { get; set; } = new();\n}")]
+    [InlineData("MFTOML006", "public sealed class Person {\n public int X { get; set; }\n /*here*/ [TomlExtensionData] public int Extra { get; set; }\n}")]
+    [InlineData("MFTOML007", "[TomlPolymorphic]\n[TomlDerivedType(typeof(Derived), \"a\")]\n/*here*/ [TomlDerivedType(typeof(Other), \"a\")]\npublic class Person { } public sealed class Derived : Person { } public sealed class Other : Person { }")]
+    public void Generator_MemberDiagnostic_IsReportedOnTheMember(string id, string declarations)
+    {
+        var source = "#nullable enable\nusing Meziantou.Framework.Toml.Serialization;\n[TomlSerializable(typeof(Person))]\ninternal partial class Ctx : TomlSerializerContext { }\n" + declarations;
+        var expectedLine = Array.FindIndex(source.Split('\n'), line => line.Contains("/*here*/", StringComparison.Ordinal));
+
+        var diagnostics = RunGenerator(source);
+
+        var diagnostic = Assert.Single(diagnostics, d => d.Id == id);
+
+        // A location in the syntax tree, so '#pragma warning disable' applies to it
+        Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+        Assert.Equal(expectedLine, diagnostic.Location.GetLineSpan().StartLinePosition.Line);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

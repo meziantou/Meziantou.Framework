@@ -502,6 +502,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
     }
 
+    // A diagnostic is reported on the member or the attribute when it is in source, so the IDE shows it there and
+    // '#pragma warning disable' applies to it, and on the context otherwise
+    private static Location? GetDiagnosticLocation(ContextModel model, ISymbol? symbol)
+        => symbol?.Locations.FirstOrDefault(static location => location.IsInSource) ?? model.ContextSymbol.Locations.FirstOrDefault();
+
+    private static Location? GetDiagnosticLocation(ContextModel model, AttributeData attribute)
+        => attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() ?? model.ContextSymbol.Locations.FirstOrDefault();
+
     private static bool ValidateTypeAccessibility(GeneratorOutput context, ContextModel model, ImmutableArray<ITypeSymbol> types)
     {
         var isValid = true;
@@ -3472,7 +3480,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             UnsupportedDictionaryKeyType,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, member.Symbol),
                             current.ToDisplayString(),
                             member.MemberName,
                             member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
@@ -3488,7 +3496,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             UnserializableMemberType,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, member.Symbol),
                             current.ToDisplayString(),
                             member.MemberName,
                             member.Type.ToDisplayString(),
@@ -3500,7 +3508,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             UnsupportedMemberType,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, member.Symbol),
                             current.ToDisplayString(),
                             member.MemberName,
                             member.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
@@ -3523,7 +3531,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             context.ReportDiagnostic(DiagnosticInfo.Create(
                                 UnserializableMemberType,
-                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                GetDiagnosticLocation(model, parameter.Symbol),
                                 current.ToDisplayString(),
                                 parameter.ParameterName,
                                 parameter.ParameterType.ToDisplayString(),
@@ -3535,7 +3543,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             context.ReportDiagnostic(DiagnosticInfo.Create(
                                 UnsupportedMemberType,
-                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                GetDiagnosticLocation(model, parameter.Symbol),
                                 current.ToDisplayString(),
                                 parameter.ParameterName,
                                 parameter.ParameterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
@@ -3552,7 +3560,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             UnsupportedMemberType,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, extensionData.Symbol),
                             current.ToDisplayString(),
                             extensionData.MemberName,
                             extensionData.ValueType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
@@ -3572,7 +3580,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             InvalidPolymorphismConfiguration,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, current),
                             current.ToDisplayString(),
                             $"Derived type '{derived.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' is not supported by the source generator."));
                         continue;
@@ -3835,6 +3843,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The generated method setting a member whose setter is not accessible from the context ([TomlInclude])
         public string? SetterAccessorName { get; set; }
+
+        // The property or the field, to report a diagnostic on it
+        public ISymbol? Symbol { get; set; }
     }
 
     private sealed class PocoExtensionData
@@ -3860,6 +3871,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool CanSet { get; }
         public bool IsInitOnly { get; }
         public bool IsCompilerRequired { get; }
+
+        // The member, to report a diagnostic on it
+        public ISymbol? Symbol { get; set; }
     }
 
     private sealed class PocoConstructor
@@ -3898,6 +3912,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             LinkedMemberIndex = linkedMemberIndex;
             DisallowNull = disallowNull;
         }
+
+        // The parameter, to report a diagnostic on it
+        public IParameterSymbol? Symbol { get; init; }
 
         public string KeyName { get; }
         public string ParameterName { get; }
@@ -4183,7 +4200,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]/[JsonExtensionData]."));
@@ -4194,7 +4211,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Extension data members must be dictionary-like with string keys (for example IDictionary<string, object> or TomlTable)."));
@@ -4205,14 +4222,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Extension data members must be instantiable (public parameterless constructor) or use an interface type such as IDictionary<string, TValue>."));
                     continue;
                 }
 
-                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet, isInitOnly, isCompilerRequired);
+                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet, isInitOnly, isCompilerRequired) { Symbol = member };
                 continue;
             }
 
@@ -4281,6 +4298,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 Converter = declaredConverter,
                 ConverterTypeInfoName = declaredConverter is null ? null : "MemberConverterTypeInfo" + members.Count.ToString(CultureInfo.InvariantCulture),
                 SetterAccessorName = setterAccessorName,
+                Symbol = member,
             });
         }
 
@@ -4297,7 +4315,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Multiple extension data members were found. Only a single member can be annotated with [TomlExtensionData]/[JsonExtensionData]."));
@@ -4308,7 +4326,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Extension data members must be dictionary-like with string keys (for example IDictionary<string, object> or TomlTable)."));
@@ -4319,14 +4337,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidExtensionDataMember,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        GetDiagnosticLocation(model, member),
                         type.ToDisplayString(),
                         member.Name,
                         "Extension data members must be instantiable (public parameterless constructor) or use an interface type such as IDictionary<string, TValue>."));
                     continue;
                 }
 
-                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet: true, isInitOnly: false, isCompilerRequired: member.IsRequired);
+                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet: true, isInitOnly: false, isCompilerRequired: member.IsRequired) { Symbol = member };
                 continue;
             }
 
@@ -4402,6 +4420,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 Converter = declaredConverter,
                 ConverterTypeInfoName = declaredConverter is null ? null : "MemberConverterTypeInfo" + members.Count.ToString(CultureInfo.InvariantCulture),
                 SetterAccessorName = setterAccessorName,
+                Symbol = member,
             });
         }
 
@@ -4464,6 +4483,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     var parameterDisallowNull = respectNullableAnnotations && DisallowsNull(parameter, parameter.OriginalDefinition.Type, AllowNullAttributeMetadataName, DisallowNullAttributeMetadataName);
                     parameters.Add(new PocoConstructorParameter(keyName, parameterName, parameter.Type, hasDefaultValue, defaultValueExpression, linkedMemberIndex, parameterDisallowNull)
                     {
+                        Symbol = parameter,
                         ConverterTypeInfoName = linkedMemberIndex >= 0 ? membersSoFar[linkedMemberIndex].ConverterTypeInfoName : null,
                     });
                 }
@@ -4641,14 +4661,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             context.ReportDiagnostic(DiagnosticInfo.Create(
                                 InvalidPolymorphismConfiguration,
-                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                GetDiagnosticLocation(model, attr),
                                 type.ToDisplayString(),
                                 "Only one default derived type (no discriminator) can be registered."));
                         }
                         continue;
                     }
 
-                    if (!ValidateDerivedType(defaultType, discriminator: null))
+                    if (!ValidateDerivedType(defaultType, discriminator: null, GetDiagnosticLocation(model, attr)))
                     {
                         continue;
                     }
@@ -4659,7 +4679,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             context.ReportDiagnostic(DiagnosticInfo.Create(
                                 InvalidPolymorphismConfiguration,
-                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                GetDiagnosticLocation(model, attr),
                                 type.ToDisplayString(),
                                 $"Derived type '{defaultType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' is registered more than once."));
                         }
@@ -4687,14 +4707,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             context.ReportDiagnostic(DiagnosticInfo.Create(
                                 InvalidPolymorphismConfiguration,
-                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                GetDiagnosticLocation(model, attr),
                                 type.ToDisplayString(),
                             "TomlDerivedTypeAttribute must specify a derived type and a non-empty discriminator."));
                         }
                         continue;
                     }
 
-                    AddStrictDerivedType(derivedType, discriminator);
+                    AddStrictDerivedType(derivedType, discriminator, GetDiagnosticLocation(model, attr));
                 }
                 else
                 {
@@ -4702,7 +4722,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             InvalidPolymorphismConfiguration,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, attr),
                             type.ToDisplayString(),
                             "TomlDerivedTypeAttribute must specify a derived type and an optional discriminator."));
                     }
@@ -4719,7 +4739,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
                             InvalidPolymorphismConfiguration,
-                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            GetDiagnosticLocation(model, attr),
                             type.ToDisplayString(),
                             "JsonDerivedTypeAttribute must specify a derived type."));
                     }
@@ -4728,7 +4748,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
                 if (attr.ConstructorArguments.Length < 2 || attr.ConstructorArguments[1].IsNull)
                 {
-                    TryAddLowerPrecedenceDefaultDerivedType(derivedType);
+                    TryAddLowerPrecedenceDefaultDerivedType(derivedType, GetDiagnosticLocation(model, attr));
                     continue;
                 }
 
@@ -4745,7 +4765,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                TryAddLowerPrecedenceDerivedType(derivedType, discriminator);
+                TryAddLowerPrecedenceDerivedType(derivedType, discriminator, GetDiagnosticLocation(model, attr));
             }
         }
 
@@ -4758,11 +4778,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (mapping.Discriminator is null)
             {
-                TryAddLowerPrecedenceDefaultDerivedType(mapping.DerivedType);
+                TryAddLowerPrecedenceDefaultDerivedType(mapping.DerivedType, model.ContextSymbol.Locations.FirstOrDefault());
             }
             else
             {
-                TryAddLowerPrecedenceDerivedType(mapping.DerivedType, mapping.Discriminator);
+                TryAddLowerPrecedenceDerivedType(mapping.DerivedType, mapping.Discriminator, model.ContextSymbol.Locations.FirstOrDefault());
             }
         }
 
@@ -4777,7 +4797,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         shape = new PolymorphicShape(discriminatorPropertyName, derived.ToImmutable(), defaultDerivedType, resolvedUnknownHandling);
         return true;
 
-        void AddStrictDerivedType(ITypeSymbol derivedType, string discriminator)
+        void AddStrictDerivedType(ITypeSymbol derivedType, string discriminator, Location? location)
         {
             if (!discriminatorSet.Add(discriminator))
             {
@@ -4785,7 +4805,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidPolymorphismConfiguration,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        location,
                         type.ToDisplayString(),
                         $"Discriminator '{discriminator}' is registered more than once."));
                 }
@@ -4798,14 +4818,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidPolymorphismConfiguration,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        location,
                         type.ToDisplayString(),
                         $"Derived type '{derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' is registered more than once."));
                 }
                 return;
             }
 
-            if (!ValidateDerivedType(derivedType, discriminator))
+            if (!ValidateDerivedType(derivedType, discriminator, location))
             {
                 return;
             }
@@ -4813,9 +4833,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             derived.Add(new PolymorphicDerivedType(derivedType, discriminator));
         }
 
-        void TryAddLowerPrecedenceDefaultDerivedType(ITypeSymbol derivedType)
+        void TryAddLowerPrecedenceDefaultDerivedType(ITypeSymbol derivedType, Location? location)
         {
-            if (!ValidateDerivedType(derivedType, discriminator: null))
+            if (!ValidateDerivedType(derivedType, discriminator: null, location))
             {
                 return;
             }
@@ -4829,9 +4849,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             derivedTypeSet.Add(derivedType);
         }
 
-        void TryAddLowerPrecedenceDerivedType(ITypeSymbol derivedType, string discriminator)
+        void TryAddLowerPrecedenceDerivedType(ITypeSymbol derivedType, string discriminator, Location? location)
         {
-            if (!ValidateDerivedType(derivedType, discriminator))
+            if (!ValidateDerivedType(derivedType, discriminator, location))
             {
                 return;
             }
@@ -4846,7 +4866,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             derived.Add(new PolymorphicDerivedType(derivedType, discriminator));
         }
 
-        bool ValidateDerivedType(ITypeSymbol derivedType, string? discriminator)
+        bool ValidateDerivedType(ITypeSymbol derivedType, string? discriminator, Location? location)
         {
             if (discriminator is not null && discriminator.Length == 0)
             {
@@ -4854,7 +4874,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidPolymorphismConfiguration,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        location,
                         type.ToDisplayString(),
                         "Derived type discriminators cannot be empty."));
                 }
@@ -4868,7 +4888,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidPolymorphismConfiguration,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        location,
                         type.ToDisplayString(),
                         $"Derived type '{derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' is not assignable to base type '{type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}'."));
                 }
@@ -4882,7 +4902,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     context.ReportDiagnostic(DiagnosticInfo.Create(
                         InvalidPolymorphismConfiguration,
-                        model.ContextSymbol.Locations.FirstOrDefault(),
+                        location,
                         type.ToDisplayString(),
                         $"Derived type '{derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' must be a non-abstract class."));
                 }

@@ -1125,13 +1125,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("        public __TomlTypeInfo_").Append(propertyName).Append('(').Append(model.TypeName).AppendLine(" context, global::Meziantou.Framework.Toml.TomlSerializerOptions options) : base(options)");
         builder.AppendLine("        {");
         builder.AppendLine("            _context = context;");
+        // The member types are resolved when first used: for options other than the context's, the context creates new metadata
+        // on each call, so resolving them here would never end for a recursive type
         builder.AppendLine("            if (!global::System.Object.ReferenceEquals(options, context.Options))");
         builder.AppendLine("            {");
         builder.AppendLine("                _typeInfoCache = new global::System.Collections.Concurrent.ConcurrentDictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>();");
-        foreach (var memberType in GetPocoRuntimeResolvedTypes(poco))
-        {
-            builder.Append("                InitializeTypeInfo<").Append(memberType.ToDisplayString(FullyQualifiedNullableFormat)).AppendLine(">();");
-        }
         builder.AppendLine("            }");
         builder.AppendLine("        }");
         builder.AppendLine();
@@ -1151,12 +1149,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            var resolved = _context.GetTypeInfo(type, Options) ?? throw new global::System.InvalidOperationException($\"No generated metadata is available for type '{type.FullName}' in the provided context.\");");
         builder.AppendLine("            _typeInfoCache[type] = resolved;");
         builder.AppendLine("            return resolved;");
-        builder.AppendLine("        }");
-        builder.AppendLine();
-        builder.AppendLine("        private void InitializeTypeInfo<__T>()");
-        builder.AppendLine("        {");
-        builder.AppendLine("            var type = typeof(__T);");
-        builder.AppendLine("            _typeInfoCache![type] = _context.GetTypeInfo(type, Options) ?? throw new global::System.InvalidOperationException($\"No generated metadata is available for type '{type.FullName}' in the provided context.\");");
         builder.AppendLine("        }");
         builder.AppendLine();
         builder.AppendLine("        public override bool WritesTable => true;");
@@ -6585,49 +6577,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         return options.UnmappedMemberHandling ?? 0;
-    }
-
-    private static ImmutableArray<ITypeSymbol> GetPocoRuntimeResolvedTypes(PocoShape poco)
-    {
-        var types = ImmutableArray.CreateBuilder<ITypeSymbol>();
-        foreach (var member in poco.Members)
-        {
-            if (member.ConverterTypeInfoName is null)
-            {
-                AddIfMissing(types, member.Type);
-            }
-        }
-
-        if (poco.ExtensionData is { } extensionData)
-        {
-            AddIfMissing(types, extensionData.ValueType);
-        }
-
-        if (poco.Constructor is { } constructor)
-        {
-            foreach (var parameter in constructor.Parameters)
-            {
-                if (parameter.ConverterTypeInfoName is null)
-                {
-                    AddIfMissing(types, parameter.ParameterType);
-                }
-            }
-        }
-
-        return types.ToImmutable();
-
-        static void AddIfMissing(ImmutableArray<ITypeSymbol>.Builder types, ITypeSymbol type)
-        {
-            foreach (var existing in types)
-            {
-                if (SymbolEqualityComparer.Default.Equals(existing, type))
-                {
-                    return;
-                }
-            }
-
-            types.Add(type);
-        }
     }
 
     private static bool TryGetCustomTypeInfoPropertyName(ContextModel model, ITypeSymbol type, out string propertyName)

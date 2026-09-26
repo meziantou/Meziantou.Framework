@@ -1502,6 +1502,31 @@ internal sealed partial class TestTomlSerializerContextAccessorNames : TomlSeria
 {
 }
 
+public sealed class GeneratedRecursiveNode
+{
+    public string? Name { get; set; }
+
+    public GeneratedRecursiveNode? Next { get; set; }
+}
+
+public sealed class GeneratedMutualA
+{
+    public GeneratedMutualB? B { get; set; }
+}
+
+public sealed class GeneratedMutualB
+{
+    public GeneratedMutualA? A { get; set; }
+
+    public int Value { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedRecursiveNode))]
+[TomlSerializable(typeof(GeneratedMutualA))]
+internal sealed partial class TestTomlSerializerContextRecursive : TomlSerializerContext
+{
+}
+
 [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
 public sealed class GeneratedRequiredPopulateModel
 {
@@ -2347,14 +2372,16 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_ResolvesRuntimeConverters_WhenTypeInfoIsInitialized()
+    public void GeneratedContext_ResolvesRuntimeConverters_OnceWhenFirstUsed()
     {
         var id = Guid.Parse("33333333-3333-3333-3333-333333333333");
         var factory = new CountingRuntimeGuidConverterFactory("ref:id", id);
         var context = TestTomlSerializerContext.Default;
         var options = context.Options with { Converters = [factory] };
 
+        // The member types are resolved when first used, which lets a recursive type reference itself
         var typeInfo = (TomlTypeInfo<GeneratedRuntimeConverterHolder>)context.GetTypeInfo(typeof(GeneratedRuntimeConverterHolder), options)!;
+        TomlSerializer.Serialize(new GeneratedRuntimeConverterHolder { Id = id }, typeInfo);
         var canConvertCount = factory.CanConvertCount;
         var createConverterCount = factory.CreateConverterCount;
 
@@ -2983,6 +3010,19 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Point.X);
             Assert.Equal(5, value.Point.Y);
         }
+    }
+
+    [Fact]
+    public void RecursiveTypes_WithOptionsOtherThanTheContextOptions_AreResolvedLazily()
+    {
+        var options = TestTomlSerializerContextRecursive.Default.Options with { MaxDepth = 32 };
+
+        var node = TomlSerializer.Deserialize<GeneratedRecursiveNode>("Name = 'a'\n[Next]\nName = 'b'\n", options)!;
+        var mutual = TomlSerializer.Deserialize<GeneratedMutualA>("[B]\nValue = 1\n[B.A.B]\nValue = 2\n", options)!;
+
+        Assert.Equal("b", node.Next!.Name);
+        Assert.Equal(2, mutual.B!.A!.B!.Value);
+        Assert.Equal("Name = \"a\"\n[Next]\nName = \"b\"\n", TomlSerializer.Serialize(node, options).ReplaceLineEndings("\n"));
     }
 
     [Fact]

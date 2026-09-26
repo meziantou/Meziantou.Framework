@@ -101,6 +101,7 @@ internal static partial class CharHelper
         StringBuilder? builder = null;
         for (int i = 0; i < text.Length; i++)
         {
+            var start = i;
             var c = text[i];
 
             string? str = null;
@@ -130,8 +131,9 @@ internal static partial class CharHelper
             {
                 if (builder == null)
                 {
+                    // A \r\n pair moves i past the \r, which must not be copied twice
                     builder = new StringBuilder(text.Length * 2);
-                    builder.Append(text.AsSpan(0, i));
+                    builder.Append(text.AsSpan(0, start));
                 }
                 builder.Append(str);
             }

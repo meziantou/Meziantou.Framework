@@ -113,4 +113,21 @@ hello = true
         var docStr = builder.ToString();
         AssertHelper.AreEqualNormalizeNewLine(expected, docStr, true);
     }
+
+    [Theory]
+    [InlineData("a\r\nb", TomlPropertyDisplayKind.StringMulti, "\"\"\"\na\r\nb\"\"\"")]
+    [InlineData("\r\n\u0001", TomlPropertyDisplayKind.StringMulti, "\"\"\"\n\r\n\\u0001\"\"\"")]
+    [InlineData("a\r\nb", TomlPropertyDisplayKind.Default, "\"a\\r\\nb\"")]
+    public void TomlFormatHelper_String_WritesEachCharacterOnce(string value, TomlPropertyDisplayKind displayKind, string expected)
+    {
+        Assert.Equal(expected, TomlFormatHelper.ToString(value, displayKind));
+    }
+
+    [Fact]
+    public void TomlFormatHelper_ValuesTomlCannotRepresent_Throw()
+    {
+        Assert.Throws<TomlException>(() => TomlFormatHelper.ToString("a\uD800b", TomlPropertyDisplayKind.Default));
+        Assert.Throws<TomlException>(() => TomlFormatHelper.ToString(ulong.MaxValue, TomlPropertyDisplayKind.Default));
+        Assert.Equal("9223372036854775807", TomlFormatHelper.ToString((ulong)long.MaxValue, TomlPropertyDisplayKind.Default));
+    }
 }

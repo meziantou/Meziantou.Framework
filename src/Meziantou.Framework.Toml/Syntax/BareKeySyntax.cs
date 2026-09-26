@@ -1,6 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
-using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Syntax;
@@ -75,6 +73,6 @@ public sealed class BareKeySyntax : BareKeyOrStringValueSyntax
     /// <inheritdoc />
     protected override string ToDebuggerDisplay()
     {
-        return $"{base.ToDebuggerDisplay()}: {(Key is not null ? TomlFormatHelper.ToString(Key.ToString(), TomlPropertyDisplayKind.Default) : string.Empty)}";
+        return $"{base.ToDebuggerDisplay()}: {(Key is not null ? $"\"{Key.ToString().EscapeForToml()}\"" : string.Empty)}";
     }
 }

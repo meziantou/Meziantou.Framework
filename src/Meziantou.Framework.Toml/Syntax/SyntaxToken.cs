@@ -1,5 +1,4 @@
-using Meziantou.Framework.Toml.Helpers;
-using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Syntax;
 
@@ -54,6 +53,6 @@ public class SyntaxToken : SyntaxNode
     /// <inheritdoc />
     protected override string ToDebuggerDisplay()
     {
-        return $"{base.ToDebuggerDisplay()}: {TokenKind} {(Text is not null ? TomlFormatHelper.ToString(Text, TomlPropertyDisplayKind.Default) : string.Empty)}";
+        return $"{base.ToDebuggerDisplay()}: {TokenKind} {(Text is not null ? $"\"{Text.EscapeForToml()}\"" : string.Empty)}";
     }
 }

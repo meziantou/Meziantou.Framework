@@ -23,8 +23,16 @@ public static class TomlFormatHelper
     /// <param name="s">The string value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
+    /// <exception cref="TomlException">The string contains an unpaired surrogate, which TOML cannot represent.</exception>
     public static string ToString(string s, TomlPropertyDisplayKind displayKind)
     {
+        ArgumentNullException.ThrowIfNull(s);
+        var surrogateIndex = CharHelper.IndexOfUnpairedSurrogate(s);
+        if (surrogateIndex >= 0)
+        {
+            throw new TomlException(CharHelper.GetUnpairedSurrogateMessage(s, surrogateIndex, "string"));
+        }
+
         switch (displayKind)
         {
             // TOML trims a newline right after the opening delimiter, so always write one to keep a leading newline
@@ -92,11 +100,12 @@ public static class TomlFormatHelper
     /// <param name="u64">The integer value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
+    /// <exception cref="TomlException">The value is greater than <see cref="long.MaxValue"/>, the largest TOML integer.</exception>
     public static string ToString(ulong u64, TomlPropertyDisplayKind displayKind)
     {
         if (u64 > long.MaxValue)
         {
-            return u64.ToString(CultureInfo.InvariantCulture);
+            throw new TomlException($"TOML integers are limited to signed 64-bit. Value {u64} cannot be written.");
         }
 
         return FormatInteger((long)u64, displayKind);

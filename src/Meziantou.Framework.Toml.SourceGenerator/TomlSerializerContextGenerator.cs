@@ -3582,7 +3582,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return;
         }
 
-        if (member.DisallowNullOnSerialize)
+        // The check applies before DefaultIgnoreCondition, but a member whose own ignore condition skips null values is skipped
+        if (member.DisallowNullOnSerialize && member.WriteIgnore is not (WriteIgnoreKind.WhenWritingNull or WriteIgnoreKind.WhenWritingDefault))
         {
             builder.Append(openIndent).Append("if (").Append(localName).Append(" is null) throw new global::Meziantou.Framework.Toml.TomlException($\"The member '")
                 .Append(EscapeInterpolatedStringLiteral(member.MemberName))

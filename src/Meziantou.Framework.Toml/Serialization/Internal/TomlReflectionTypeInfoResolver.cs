@@ -916,8 +916,10 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
+                // The check applies before DefaultIgnoreCondition, but a member whose own ignore condition skips null values is
+                // skipped
                 var memberValue = member.Getter(value);
-                if (memberValue is null && member.DisallowNullOnSerialize)
+                if (memberValue is null && member.DisallowNullOnSerialize && member.WriteIgnoreCondition is not (TomlIgnoreCondition.WhenWritingNull or TomlIgnoreCondition.WhenWritingDefault))
                 {
                     throw new TomlException($"The member '{member.Member.Name}' on '{Type.FullName}' cannot be serialized as null because it is declared as non-nullable.");
                 }

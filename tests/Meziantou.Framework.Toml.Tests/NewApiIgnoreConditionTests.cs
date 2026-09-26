@@ -75,6 +75,18 @@ public sealed class NullNeverIgnoredModel
     public int? Count { get; set; } = 1;
 }
 
+public sealed class NonNullableSkippedWhenNullModel
+{
+    [TomlIgnore(Condition = TomlIgnoreCondition.WhenWritingNull)]
+    public string Name { get; set; } = null!;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string Other { get; set; } = null!;
+
+    public string Required { get; set; } = "r";
+}
+
+[TomlSerializable(typeof(NonNullableSkippedWhenNullModel))]
 [TomlSerializable(typeof(NullNeverIgnoredModel))]
 internal sealed partial class TestTomlNullNeverIgnoredContext : TomlSerializerContext
 {
@@ -82,6 +94,19 @@ internal sealed partial class TestTomlNullNeverIgnoredContext : TomlSerializerCo
 
 public class NewApiIgnoreConditionTests
 {
+    [Fact]
+    public void NonNullableMemberWithItsOwnWhenWritingNull_IsSkippedWhenNull()
+    {
+        var value = new NonNullableSkippedWhenNullModel();
+
+        Assert.Equal("Required = \"r\"\n", TomlSerializer.Serialize(value));
+        Assert.Equal("Required = \"r\"\n", TomlSerializer.Serialize(value, TestTomlNullNeverIgnoredContext.Default.NonNullableSkippedWhenNullModel));
+
+        value.Required = null!;
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value));
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value, TestTomlNullNeverIgnoredContext.Default.NonNullableSkippedWhenNullModel));
+    }
+
     [Theory]
     [InlineData(nameof(NullNeverIgnoredModel.Name))]
     [InlineData(nameof(NullNeverIgnoredModel.Items))]

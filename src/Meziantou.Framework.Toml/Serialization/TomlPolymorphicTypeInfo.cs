@@ -322,7 +322,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
     private static TomlSourceSpan? GetTableSpan(TomlReaderBuffer buffer)
     {
-        foreach (var token in buffer.Tokens)
+        foreach (var token in buffer.Span)
         {
             if (token.TokenType == TomlTokenType.StartTable && token.Span is { } span)
             {
@@ -330,7 +330,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             }
         }
 
-        foreach (var token in buffer.Tokens)
+        foreach (var token in buffer.Span)
         {
             if (token.TokenType == TomlTokenType.EndTable && token.Span is { } span)
             {

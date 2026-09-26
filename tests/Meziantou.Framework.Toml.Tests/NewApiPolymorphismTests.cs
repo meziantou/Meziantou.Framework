@@ -607,4 +607,61 @@ public class NewApiPolymorphismTests
         Assert.Equal("red", ((JsonIntDiscrimCircle)result!).Color);
         Assert.Equal(5.0, ((JsonIntDiscrimCircle)result).Radius);
     }
+
+    [Fact]
+    public void Deserialize_DeeplyNestedPolymorphicValues_AllocatesLinearly()
+    {
+        var options = new TomlSerializerOptions { MaxDepth = 256 };
+        var shallow = MeasureAllocations(20);
+        var deep = MeasureAllocations(80);
+
+        // Copying the subtree at every level would make the ratio about 16
+        Assert.True(deep < shallow * 8, $"depth 20: {shallow} bytes, depth 80: {deep} bytes");
+
+        long MeasureAllocations(int depth)
+        {
+            var toml = CreateNestedDocument(depth);
+            Assert.Equal(depth + 1, CountDepth(TomlSerializer.Deserialize<NestedPolymorphicNode>(toml, options)));
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            TomlSerializer.Deserialize<NestedPolymorphicNode>(toml, options);
+            return GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+
+        static string CreateNestedDocument(int depth)
+        {
+            var builder = new System.Text.StringBuilder("kind = \"leaf\"\n");
+            var path = "Child";
+            for (var i = 0; i < depth; i++)
+            {
+                builder.Append('[').Append(path).Append("]\nkind = \"leaf\"\nValue = \"").Append('x', 200).Append("\"\n");
+                path += ".Child";
+            }
+
+            return builder.ToString();
+        }
+
+        static int CountDepth(NestedPolymorphicNode? node)
+        {
+            var count = 0;
+            for (; node is not null; node = node.Child)
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    [TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+    [TomlDerivedType(typeof(NestedPolymorphicLeaf), "leaf")]
+    private class NestedPolymorphicNode
+    {
+        public NestedPolymorphicNode? Child { get; set; }
+
+        public string? Value { get; set; }
+    }
+
+    private sealed class NestedPolymorphicLeaf : NestedPolymorphicNode
+    {
+    }
 }

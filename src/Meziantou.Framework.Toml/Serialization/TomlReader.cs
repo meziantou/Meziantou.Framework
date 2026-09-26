@@ -38,6 +38,13 @@ public sealed class TomlReader
     private int _eventPosition;
     private int _currentEventIndex;
     private readonly TomlReaderToken[]? _buffer;
+
+    // The buffered tokens are _buffer[_bufferStart.._bufferEnd]: a captured value shares the array of the reader it
+    // was captured from. The reader returns a StartDocument token before them and an EndDocument token after them.
+    private readonly int _bufferStart;
+    private readonly int _bufferEnd;
+    private bool _bufferStarted;
+    private bool _bufferEnded;
     private readonly string? _filteredPropertyName;
     private int _bufferIndex;
     private int _bufferDepth;
@@ -67,13 +74,15 @@ public sealed class TomlReader
         _tokenType = TomlTokenType.None;
     }
 
-    private TomlReader(TomlReaderToken[] buffer, TomlSerializerOptions options, string? filteredPropertyName, TomlSerializationOperationState operationState)
+    private TomlReader(TomlReaderToken[] buffer, int bufferStart, int bufferCount, TomlSerializerOptions options, string? filteredPropertyName, TomlSerializationOperationState operationState)
     {
         _parser = null;
         _sourceName = options?.SourceName ?? string.Empty;
         _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+        _bufferStart = bufferStart;
+        _bufferEnd = bufferStart + bufferCount;
         _filteredPropertyName = filteredPropertyName;
-        _bufferIndex = 0;
+        _bufferIndex = bufferStart;
         _bufferDepth = 0;
         _options = options ?? TomlSerializerOptions.Default;
         _operationState = operationState ?? throw new ArgumentNullException(nameof(operationState));
@@ -147,7 +156,7 @@ public sealed class TomlReader
     internal static TomlReader Create(TomlReaderBuffer buffer, string? filteredPropertyName = null)
     {
         ArgumentGuard.ThrowIfNull(buffer, nameof(buffer));
-        return new TomlReader(buffer.Tokens, buffer.Options, filteredPropertyName, buffer.OperationState);
+        return new TomlReader(buffer.Tokens, buffer.Start, buffer.Count, buffer.Options, filteredPropertyName, buffer.OperationState);
     }
 
     /// <summary>
@@ -227,10 +236,24 @@ public sealed class TomlReader
     {
         if (_buffer is not null)
         {
+            if (!_bufferStarted)
+            {
+                _bufferStarted = true;
+                ApplyBufferedToken(DocumentToken(TomlTokenType.StartDocument));
+                return true;
+            }
+
             while (true)
             {
-                if (_bufferIndex >= _buffer.Length)
+                if (_bufferIndex >= _bufferEnd)
                 {
+                    if (!_bufferEnded)
+                    {
+                        _bufferEnded = true;
+                        ApplyBufferedToken(DocumentToken(TomlTokenType.EndDocument));
+                        return true;
+                    }
+
                     _tokenType = TomlTokenType.EndDocument;
                     _currentSpan = null;
                     _currentLeadingTrivia = null;
@@ -506,6 +529,9 @@ public sealed class TomlReader
         _eventCount = 0;
     }
 
+    private static TomlReaderToken DocumentToken(TomlTokenType tokenType)
+        => new(tokenType, span: null, rawText: null, leadingTrivia: null, trailingTrivia: null, propertyName: null, stringValue: null, data: 0, stringTokenKind: default, dateTime: default, hasDateTime: false);
+
     private void ApplyBufferedToken(TomlReaderToken token)
     {
         _tokenType = token.TokenType;
@@ -528,7 +554,7 @@ public sealed class TomlReader
             return;
         }
 
-        if (_bufferIndex >= _buffer.Length)
+        if (_bufferIndex >= _bufferEnd)
         {
             return;
         }
@@ -537,7 +563,7 @@ public sealed class TomlReader
         if (valueToken.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
         {
             var depth = 1;
-            while (_bufferIndex < _buffer.Length && depth > 0)
+            while (_bufferIndex < _bufferEnd && depth > 0)
             {
                 var next = _buffer[_bufferIndex++];
                 if (next.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
@@ -789,8 +815,6 @@ public sealed class TomlReader
         }
 
         var tokens = new List<TomlReaderToken>();
-        tokens.Add(new TomlReaderToken(TomlTokenType.StartDocument, span: null, rawText: null, leadingTrivia: null, trailingTrivia: null, propertyName: null, stringValue: null, data: 0, stringTokenKind: default, dateTime: default, hasDateTime: false));
-
         AddCurrentToken(tokens);
 
         if (_tokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
@@ -822,9 +846,7 @@ public sealed class TomlReader
             Read();
         }
 
-        tokens.Add(new TomlReaderToken(TomlTokenType.EndDocument, span: null, rawText: null, leadingTrivia: null, trailingTrivia: null, propertyName: null, stringValue: null, data: 0, stringTokenKind: default, dateTime: default, hasDateTime: false));
-
-        return new TomlReaderBuffer(tokens.ToArray(), _options, _operationState);
+        return new TomlReaderBuffer(tokens.ToArray(), 0, tokens.Count, _options, _operationState);
     }
 
     private TomlReaderBuffer CaptureCurrentBufferedValueToBuffer()
@@ -835,7 +857,7 @@ public sealed class TomlReader
         }
 
         var currentIndex = _bufferIndex - 1;
-        if (currentIndex < 0 || currentIndex >= _buffer.Length)
+        if (currentIndex < _bufferStart || currentIndex >= _bufferEnd)
         {
             throw new InvalidOperationException("Cannot capture before the buffered reader is positioned on a value.");
         }
@@ -845,7 +867,7 @@ public sealed class TomlReader
         if (currentToken.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
         {
             var depth = 1;
-            while (endExclusive < _buffer.Length && depth > 0)
+            while (endExclusive < _bufferEnd && depth > 0)
             {
                 var next = _buffer[endExclusive++];
                 if (next.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
@@ -863,15 +885,13 @@ public sealed class TomlReader
             _bufferDepth--;
         }
 
-        var tokens = new TomlReaderToken[endExclusive - currentIndex + 2];
-        tokens[0] = new TomlReaderToken(TomlTokenType.StartDocument, span: null, rawText: null, leadingTrivia: null, trailingTrivia: null, propertyName: null, stringValue: null, data: 0, stringTokenKind: default, dateTime: default, hasDateTime: false);
-        Array.Copy(_buffer, currentIndex, tokens, 1, endExclusive - currentIndex);
-        tokens[^1] = new TomlReaderToken(TomlTokenType.EndDocument, span: null, rawText: null, leadingTrivia: null, trailingTrivia: null, propertyName: null, stringValue: null, data: 0, stringTokenKind: default, dateTime: default, hasDateTime: false);
+        // The captured value shares the tokens: copying them at every nested level would be quadratic
+        var buffer = new TomlReaderBuffer(_buffer, currentIndex, endExclusive - currentIndex, _options, _operationState);
 
         _bufferIndex = endExclusive;
         Read(); // advance past the captured value
 
-        return new TomlReaderBuffer(tokens, _options, _operationState);
+        return buffer;
     }
 
     private void AddCurrentToken(List<TomlReaderToken> tokens)

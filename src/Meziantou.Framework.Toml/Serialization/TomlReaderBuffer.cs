@@ -13,14 +13,23 @@ namespace Meziantou.Framework.Toml.Serialization;
 
 internal sealed class TomlReaderBuffer
 {
-    public TomlReaderBuffer(TomlReaderToken[] tokens, TomlSerializerOptions options, TomlSerializationOperationState operationState)
+    // The value is tokens[start..(start + count)]; the tokens can be shared with other buffers
+    public TomlReaderBuffer(TomlReaderToken[] tokens, int start, int count, TomlSerializerOptions options, TomlSerializationOperationState operationState)
     {
         Tokens = tokens ?? throw new ArgumentNullException(nameof(tokens));
+        Start = start;
+        Count = count;
         Options = options ?? TomlSerializerOptions.Default;
         OperationState = operationState ?? throw new ArgumentNullException(nameof(operationState));
     }
 
     public TomlReaderToken[] Tokens { get; }
+
+    public int Start { get; }
+
+    public int Count { get; }
+
+    public ReadOnlySpan<TomlReaderToken> Span => Tokens.AsSpan(Start, Count);
 
     public TomlSerializerOptions Options { get; }
 

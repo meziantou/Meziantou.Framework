@@ -1,0 +1,45 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// Licensed under the BSD-Clause 2 license.
+// See license.txt file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using Tomlyn.Model;
+using Tomlyn.Syntax;
+using Tomlyn.Text;
+
+namespace Tomlyn.Serialization.Converters;
+
+internal sealed class TomlDateTimeOffsetConverter : TomlConverter<DateTimeOffset>
+{
+    public static TomlDateTimeOffsetConverter Instance { get; } = new();
+
+    public override DateTimeOffset Read(TomlReader reader)
+    {
+        if (reader.TokenType != TomlTokenType.DateTime)
+        {
+            throw reader.CreateException($"Expected {TomlTokenType.DateTime} token but was {reader.TokenType}.");
+        }
+
+        var value = reader.GetTomlDateTime();
+        if (value.Kind == TomlDateTimeKind.LocalDateTime)
+        {
+            throw reader.CreateException("TOML local-date-time cannot be converted to DateTimeOffset by default.");
+        }
+
+        if (value.Kind is TomlDateTimeKind.LocalDate or TomlDateTimeKind.LocalTime)
+        {
+            throw reader.CreateException($"TOML {value.Kind} cannot be converted to DateTimeOffset.");
+        }
+
+        reader.Read();
+        return value.DateTime;
+    }
+
+    public override void Write(TomlWriter writer, DateTimeOffset value)
+    {
+        var kind = value.Offset == TimeSpan.Zero ? TomlDateTimeKind.OffsetDateTimeByZ : TomlDateTimeKind.OffsetDateTimeByNumber;
+        writer.WriteDateTimeValue(new TomlDateTime(value, 0, kind));
+    }
+}

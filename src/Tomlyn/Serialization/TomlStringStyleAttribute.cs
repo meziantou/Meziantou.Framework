@@ -1,0 +1,46 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// Licensed under the BSD-Clause 2 license.
+// See license.txt file in the project root for full license information.
+
+using System;
+using System.Diagnostics.CodeAnalysis;
+using Tomlyn;
+using Tomlyn.Helpers;
+
+namespace Tomlyn.Serialization;
+
+/// <summary>
+/// Overrides string formatting for a string member.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+public sealed class TomlStringStyleAttribute : TomlAttribute
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TomlStringStyleAttribute"/> class.
+    /// </summary>
+    /// <param name="style">The preferred string style.</param>
+    public TomlStringStyleAttribute(TomlStringStyle style)
+    {
+        if (style is not TomlStringStyle.Basic and not TomlStringStyle.Literal and not TomlStringStyle.MultilineBasic and not TomlStringStyle.MultilineLiteral)
+        {
+            throw new ArgumentOutOfRangeException(nameof(style), style, "Invalid TOML string style.");
+        }
+
+        Style = style;
+    }
+
+    /// <summary>
+    /// Gets the preferred string style.
+    /// </summary>
+    public TomlStringStyle Style { get; }
+
+    /// <summary>
+    /// Gets or sets whether literal strings should be preferred when no escaping is required.
+    /// </summary>
+    public TomlBooleanPreference PreferLiteralWhenNoEscapes { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether hexadecimal escapes may be emitted for control characters.
+    /// </summary>
+    public TomlBooleanPreference AllowHexEscapes { get; set; }
+}

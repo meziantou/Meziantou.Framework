@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Feature switches for trimming / NativeAOT.
+
+      Tomlyn follows the "feature switches" guidance from dotnet/runtime:
+      - values are provided to the runtime via runtimeconfig.json using RuntimeHostConfigurationOption
+      - values are also provided to the trimmer when Trim="true"
+    -->
+
+    <!--
+      By default, disable reflection-based serialization when publishing with NativeAOT.
+      Consumers can override by setting TomlynIsReflectionEnabledByDefault explicitly.
+    -->
+    <TomlynIsReflectionEnabledByDefault Condition="'$(TomlynIsReflectionEnabledByDefault)' == '' and ( '$(PublishAot)' == 'true' or '$(NativeAot)' == 'true' )">false</TomlynIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TomlynIsReflectionEnabledByDefault)' != ''">
+    <RuntimeHostConfigurationOption Include="Tomlyn.TomlSerializer.IsReflectionEnabledByDefault"
+                                   Value="$(TomlynIsReflectionEnabledByDefault)"
+                                   Trim="true" />
+  </ItemGroup>
+</Project>
+

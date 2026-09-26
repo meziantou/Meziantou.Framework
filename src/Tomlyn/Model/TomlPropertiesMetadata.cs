@@ -1,0 +1,64 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// Licensed under the BSD-Clause 2 license.
+// See license.txt file in the project root for full license information.
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using Tomlyn;
+using Tomlyn.Syntax;
+
+namespace Tomlyn.Model;
+
+/// <summary>
+/// Stores metadata for TOML properties, including trivia and display hints.
+/// </summary>
+[DebuggerDisplay("{_properties}")]
+public class TomlPropertiesMetadata
+{
+    private readonly Dictionary<string, TomlPropertyMetadata> _properties;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TomlPropertiesMetadata"/> class.
+    /// </summary>
+    public TomlPropertiesMetadata()
+    {
+        _properties = new Dictionary<string, TomlPropertyMetadata>();
+    }
+
+    /// <summary>
+    /// Clears all property metadata.
+    /// </summary>
+    public void Clear()
+    {
+        _properties.Clear();
+    }
+
+    /// <summary>
+    /// Checks whether metadata exists for the specified property key.
+    /// </summary>
+    /// <param name="propertyKey">The property key.</param>
+    /// <returns><c>true</c> if metadata exists; otherwise <c>false</c>.</returns>
+    public bool ContainsProperty(string propertyKey) => _properties.ContainsKey(propertyKey);
+
+    /// <summary>
+    /// Tries to get metadata for the specified property key.
+    /// </summary>
+    /// <param name="propertyKey">The property key.</param>
+    /// <param name="propertyMetadata">The metadata when found.</param>
+    /// <returns><c>true</c> if metadata exists; otherwise <c>false</c>.</returns>
+    public bool TryGetProperty(string propertyKey, [NotNullWhen(true)] out TomlPropertyMetadata? propertyMetadata)
+    {
+        return _properties.TryGetValue(propertyKey, out propertyMetadata);
+    }
+
+    /// <summary>
+    /// Sets metadata for the specified property key.
+    /// </summary>
+    /// <param name="propertyKey">The property key.</param>
+    /// <param name="propertyMetadata">The metadata to set.</param>
+    public void SetProperty(string propertyKey, TomlPropertyMetadata propertyMetadata)
+    {
+        _properties[propertyKey] = propertyMetadata;
+    }
+}

@@ -167,6 +167,8 @@
     <Project Path="src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
     <Project Path="src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <Project Path="src/Meziantou.Xunit/Meziantou.Xunit.csproj" />
+    <Project Path="src/Tomlyn.SourceGeneration/Tomlyn.SourceGeneration.csproj" />
+    <Project Path="src/Tomlyn/Tomlyn.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/.editorconfig" />
@@ -308,6 +310,8 @@
     <Project Path="tests/Meziantou.Framework.Yaml.AotSmoke/Meziantou.Framework.Yaml.AotSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
+    <Project Path="tests/Tomlyn.AotTests/Tomlyn.AotTests.csproj" />
+    <Project Path="tests/Tomlyn.Tests/Tomlyn.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />

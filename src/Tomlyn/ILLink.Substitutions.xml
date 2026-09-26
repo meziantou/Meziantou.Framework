@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Tomlyn" feature="Tomlyn.TomlSerializer.IsReflectionEnabledByDefault" featurevalue="false">
+    <type fullname="Tomlyn.Serialization.TomlSerializerFeatureSwitches">
+      <method signature="System.Boolean get_IsReflectionEnabledByDefault()" body="stub" value="false">
+      </method>
+    </type>
+  </assembly>
+</linker>
+

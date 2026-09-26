@@ -9,6 +9,38 @@ namespace Meziantou.Framework.Toml.Tests;
 
 public class TomlDateTimeTest
 {
+    [Theory]
+    [InlineData("0001-01-01T00:00:00+00:00", -12, false)]
+    [InlineData("0001-01-01T00:00:00+00:00", 14, true)]
+    [InlineData("9999-12-31T23:59:59+00:00", 14, false)]
+    [InlineData("9999-12-31T23:59:59+00:00", -12, true)]
+    [InlineData("0001-01-01T03:00:00+01:00", -5, false)]
+    [InlineData("0001-01-01T08:00:00+01:00", -5, true)]
+    public void OffsetDateTime_LocalTimeOutOfRange_IsDetected(string value, int offsetHours, bool expected)
+    {
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("test", TimeSpan.FromHours(offsetHours), "test", "test");
+
+        Assert.Equal(expected, TomlFormatHelper.IsLocalDateTimeInRange(DateTimeOffset.Parse(value, CultureInfo.InvariantCulture), timeZone));
+    }
+
+    [Theory]
+    [InlineData("0001-01-01T00:00:00+00:00")]
+    [InlineData("9999-12-31T23:59:59+00:00")]
+    public void OffsetDateTime_ReadAsLocalDateTime_IsNotClamped(string value)
+    {
+        // A numeric offset is read as a local DateTime, which cannot hold every instant in every time zone
+        var instant = DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+        var toml = "v = " + value;
+        if (TomlFormatHelper.IsLocalDateTimeInRange(instant, TimeZoneInfo.Local))
+        {
+            Assert.Equal(instant.UtcDateTime, TomlSerializer.Deserialize<Dictionary<string, DateTime>>(toml)!["v"].ToUniversalTime());
+        }
+        else
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, DateTime>>(toml));
+        }
+    }
+
     [Fact]
     public void LocalDateTime_OutOfRangeInUtc_ThrowsTomlException()
     {

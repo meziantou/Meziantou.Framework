@@ -85,7 +85,9 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     private readonly DateTime ToDateTime() => Kind switch
     {
         TomlDateTimeKind.OffsetDateTimeByZ => DateTime.UtcDateTime,
-        TomlDateTimeKind.OffsetDateTimeByNumber => DateTime.LocalDateTime,
+        TomlDateTimeKind.OffsetDateTimeByNumber => TomlFormatHelper.TryGetLocalDateTime(DateTime, out var localDateTime)
+            ? localDateTime
+            : throw new OverflowException($"The date-time {this} cannot be represented as a local DateTime in the time zone of the machine."),
         _ => DateTime.DateTime,
     };
 

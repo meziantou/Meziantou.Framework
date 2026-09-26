@@ -23,7 +23,9 @@ internal sealed class TomlDateTimeConverter : TomlConverter<DateTime>
         var value = reader.GetTomlDateTime();
         var result = value.Kind switch
         {
-            TomlDateTimeKind.OffsetDateTimeByNumber => value.DateTime.LocalDateTime,
+            TomlDateTimeKind.OffsetDateTimeByNumber => TomlFormatHelper.TryGetLocalDateTime(value.DateTime, out var localDateTime)
+                ? localDateTime
+                : throw reader.CreateException($"The date-time {value} cannot be represented as a local DateTime in the time zone of the machine."),
             TomlDateTimeKind.OffsetDateTimeByZ => value.DateTime.UtcDateTime,
             TomlDateTimeKind.LocalDateTime => value.DateTime.DateTime,
             TomlDateTimeKind.LocalDate => value.DateTime.DateTime,

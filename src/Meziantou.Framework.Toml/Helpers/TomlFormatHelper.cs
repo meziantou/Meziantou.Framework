@@ -271,6 +271,26 @@ public static class TomlFormatHelper
         return new TomlDateTime(dateTimeOffset, GetSecondPrecision(value.Ticks), kind);
     }
 
+    // DateTimeOffset.LocalDateTime clamps a value whose local time is out of range, which changes the instant
+    internal static bool TryGetLocalDateTime(DateTimeOffset value, out DateTime localDateTime)
+    {
+        if (!IsLocalDateTimeInRange(value, TimeZoneInfo.Local))
+        {
+            localDateTime = default;
+            return false;
+        }
+
+        localDateTime = value.LocalDateTime;
+        return true;
+    }
+
+    internal static bool IsLocalDateTimeInRange(DateTimeOffset value, TimeZoneInfo timeZone)
+    {
+        var utc = value.UtcDateTime;
+        var localTicks = utc.Ticks + timeZone.GetUtcOffset(utc).Ticks;
+        return localTicks >= DateTime.MinValue.Ticks && localTicks <= DateTime.MaxValue.Ticks;
+    }
+
     internal static TomlDateTime ToTomlDateTime(DateTimeOffset value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
     {
         var kind = displayKind == TomlPropertyDisplayKind.Default

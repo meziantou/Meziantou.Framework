@@ -185,4 +185,20 @@ val = true
         Assert.HasCount(101, exception.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries));
         Assert.EndsWith("... and 900 more diagnostics.", exception.Message.TrimEnd());
     }
+
+    [Theory]
+    [InlineData("\\u00", "Invalid escape `\\u`. Expected 4 hexadecimal digits.")]
+    [InlineData("\\U0001F6", "Invalid escape `\\U`. Expected 8 hexadecimal digits.")]
+    [InlineData("\\x4", "Invalid escape `\\x`. Expected 2 hexadecimal digits.")]
+    public void Parse_ShortEscape_DoesNotSwallowTheRestOfTheDocument(string escape, string message)
+    {
+        var toml = "a = \"" + escape + "\"\nb = 1\nc = 2\n";
+
+        var doc = SyntaxParser.Parse(toml);
+
+        var diagnostic = Assert.Single(doc.Diagnostics);
+        Assert.Equal(message, diagnostic.Message);
+        Assert.Equal(3, doc.KeyValues.ChildrenCount);
+        Assert.Equal(toml, doc.ToString());
+    }
 }

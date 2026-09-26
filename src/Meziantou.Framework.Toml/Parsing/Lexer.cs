@@ -1499,11 +1499,12 @@ internal sealed class Lexer
                 end = CurrentPosition;
                 NextChar();
 
+                // The escape is reported, and the character that ends it, such as the closing quote, is read normally
                 c = CurrentCharacter;
                 if (!CharHelper.IsHexFunc(c))
                 {
                     AddError("Invalid escape `\\x`. Expected 2 hexadecimal digits.", start, start);
-                    return false;
+                    return true;
                 }
 
                 var value = CharHelper.HexToDecimal(c);
@@ -1514,7 +1515,7 @@ internal sealed class Lexer
                 if (!CharHelper.IsHexFunc(c))
                 {
                     AddError("Invalid escape `\\x`. Expected 2 hexadecimal digits.", start, start);
-                    return false;
+                    return true;
                 }
 
                 value = (value << 4) + CharHelper.HexToDecimal(c);
@@ -1610,6 +1611,13 @@ internal sealed class Lexer
                         AddError($"Invalid Unicode scalar value [{value:X}]",start, start);
                     }
                     if (decodeScalars) _textBuilder.AppendUtf32((Char32)value);
+                    return true;
+                }
+
+                // The escape is reported, and the character that ends it, such as the closing quote, is read normally
+                if (CurrentCharacter != Eof)
+                {
+                    AddError($"Invalid escape `\\{(maxCount == 4 ? 'u' : 'U')}`. Expected {maxCount} hexadecimal digits.", start, start);
                     return true;
                 }
             }

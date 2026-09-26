@@ -39,6 +39,10 @@ dotnet add package Meziantou.Framework.Toml
 The package targets **TOML 1.1**. There is no TOML 1.0 mode: documents are always read and validated with the TOML 1.1
 rules.
 
+Values are read into .NET types, which rejects a few documents that TOML accepts. Every parser reports them as errors:
+
+- A float that overflows a 64-bit `double`, such as `1e400`, is an error rather than infinity.
+
 | Namespace | Content |
 | --- | --- |
 | `Meziantou.Framework.Toml` | `TomlSerializer`, `TomlSerializerOptions`, `TomlTypeInfo<T>`, `TomlDateTime`, `TomlException` |

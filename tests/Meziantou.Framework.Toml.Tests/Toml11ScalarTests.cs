@@ -82,6 +82,31 @@ public sealed class Toml11ScalarTests
     }
 
     [Theory]
+    [InlineData("1e400")]
+    [InlineData("-1e400")]
+    [InlineData("1.8e308")]
+    [InlineData("179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792.0")]
+    public void Deserialize_FloatOutOfRange_Throws(string literal)
+    {
+        var toml = "a = " + literal + "\n";
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        Assert.Contains("outside the range of a 64-bit floating-point number", ex.Message, StringComparison.Ordinal);
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+    }
+
+    [Theory]
+    [InlineData("1.7976931348623157e308", double.MaxValue)]
+    [InlineData("-1.7976931348623157e308", double.MinValue)]
+    [InlineData("1e-400", 0.0)]
+    public void Deserialize_FloatAtTheLimits_IsAccepted(string literal, double expected)
+    {
+        var table = TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n")!;
+
+        Assert.Equal(expected, table["a"]);
+    }
+
+    [Theory]
     [InlineData("1979-05-27T00:32:00.123456789Z", TomlDateTimeKind.OffsetDateTimeByZ, "00:32:00.1234567+00:00")]
     [InlineData("1979-05-27T00:32:00.999999999-07:00", TomlDateTimeKind.OffsetDateTimeByNumber, "00:32:00.9999999-07:00")]
     [InlineData("1979-05-27 00:32:00.12345678", TomlDateTimeKind.LocalDateTime, "00:32:00.1234567+00:00")]

@@ -967,6 +967,13 @@ internal sealed class Lexer
                 AddError($"Unable to parse floating point `{numberAsText}`", start, end);
                 doubleValue = 0.0;
             }
+            else if (double.IsInfinity(doubleValue))
+            {
+                // A literal can only be infinite by overflowing, as `inf` is a keyword
+                var numberAsText = _textBuilder.ToString();
+                AddError($"The float `{numberAsText}` is outside the range of a 64-bit floating-point number", start, end);
+                doubleValue = 0.0;
+            }
 
             if (hasLeadingZero && HasMultipleDigitsInIntegerPart())
             {

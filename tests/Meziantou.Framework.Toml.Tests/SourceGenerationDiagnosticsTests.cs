@@ -948,6 +948,31 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.All(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != id), d => Assert.Equal("CS0534", d.Id));
     }
 
+    // Options other than the context's own share the metadata between threads, and the metadata of some types is only
+    // resolved when a value is read
+    [Fact]
+    public void Generator_TypeInfoCacheOfOtherOptions_IsThreadSafe()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Holder))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public class Holder
+            {
+                [TomlSingleOrArray]
+                public System.Collections.Generic.List<string>? Tags { get; set; }
+            }
+            """;
+
+        var generatedSource = RunGeneratorTest(source).GeneratedSources.Single();
+
+        Assert.Contains("global::System.Collections.Concurrent.ConcurrentDictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>? _typeInfoCache", generatedSource);
+        Assert.DoesNotContain("global::System.Collections.Generic.Dictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>", generatedSource);
+    }
+
     [Theory]
     [InlineData("public class M { public int A { get; set; } [TomlExtensionData] public System.Collections.Generic.Dictionary<string, object?>? Ext { get; private set; } }")]
     [InlineData("public class M { public int A { get; set; } [TomlExtensionData, TomlInclude] public System.Collections.Generic.Dictionary<string, object?>? Ext { get; private set; } }")]

@@ -1147,14 +1147,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("    private sealed class __TomlTypeInfo_").Append(propertyName).Append(" : global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).AppendLine(">");
         builder.AppendLine("    {");
         builder.Append("        private readonly ").Append(model.TypeName).AppendLine(" _context;");
-        builder.AppendLine("        private readonly global::System.Collections.Generic.Dictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>? _typeInfoCache;");
+        // The metadata is shared by the threads that use the same options, and some types are only resolved when read
+        builder.AppendLine("        private readonly global::System.Collections.Concurrent.ConcurrentDictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>? _typeInfoCache;");
         builder.AppendLine();
         builder.Append("        public __TomlTypeInfo_").Append(propertyName).Append('(').Append(model.TypeName).AppendLine(" context, global::Meziantou.Framework.Toml.TomlSerializerOptions options) : base(options)");
         builder.AppendLine("        {");
         builder.AppendLine("            _context = context;");
         builder.AppendLine("            if (!global::System.Object.ReferenceEquals(options, context.Options))");
         builder.AppendLine("            {");
-        builder.AppendLine("                _typeInfoCache = new global::System.Collections.Generic.Dictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>();");
+        builder.AppendLine("                _typeInfoCache = new global::System.Collections.Concurrent.ConcurrentDictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>();");
         foreach (var memberType in GetPocoRuntimeResolvedTypes(poco))
         {
             builder.Append("                InitializeTypeInfo<").Append(memberType.ToDisplayString(FullyQualifiedNullableFormat)).AppendLine(">();");

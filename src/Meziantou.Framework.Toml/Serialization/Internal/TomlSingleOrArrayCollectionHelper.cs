@@ -165,7 +165,7 @@ internal sealed class TomlSingleOrArrayCollectionHelper
                 return (CollectionHandler?)Activator.CreateInstance(typeof(ListHandler<>).MakeGenericType(elementType));
             }
 
-            if (genericDefinition == typeof(HashSet<>) || genericDefinition == typeof(ISet<>))
+            if (genericDefinition == typeof(HashSet<>) || genericDefinition == typeof(ISet<>) || genericDefinition == typeof(IReadOnlySet<>))
             {
                 return (CollectionHandler?)Activator.CreateInstance(typeof(HashSetHandler<>).MakeGenericType(elementType));
             }

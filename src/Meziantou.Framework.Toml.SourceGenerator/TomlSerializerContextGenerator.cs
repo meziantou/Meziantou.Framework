@@ -5308,7 +5308,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return true;
             }
 
-            if (constructedFrom == "global::System.Collections.Generic.ISet<T>")
+            // A HashSet<T> implements both interfaces
+            if (constructedFrom is "global::System.Collections.Generic.ISet<T>" or "global::System.Collections.Generic.IReadOnlySet<T>")
             {
                 elementType = named.TypeArguments[0];
                 kind = SequenceKind.HashSetBackedEnumerable;

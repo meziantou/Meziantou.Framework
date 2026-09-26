@@ -749,6 +749,16 @@ internal sealed partial class TestTomlSerializerContextConcretePolymorphicBase :
 {
 }
 
+public sealed class GeneratedReadOnlySetHolder
+{
+    public IReadOnlySet<int> Values { get; set; } = new HashSet<int>();
+}
+
+[TomlSerializable(typeof(GeneratedReadOnlySetHolder))]
+internal sealed partial class TestTomlSerializerContextReadOnlySet : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedSetsRequiredMembers))]
 [TomlSerializable(typeof(GeneratedSetsRequiredMembersWithParameters))]
 internal sealed partial class TestTomlSerializerContextSetsRequiredMembers : TomlSerializerContext
@@ -1566,6 +1576,22 @@ public class NewApiSourceGenerationTests
         var generatedError = Assert.Throws<TomlException>(() => TomlSerializer.Serialize<GeneratedConcreteShape>(new GeneratedConcreteSquare(), typeInfo));
         var reflectionError = Assert.Throws<TomlException>(() => TomlSerializer.Serialize<GeneratedConcreteShape>(new GeneratedConcreteSquare()));
         Assert.Equal(reflectionError.Message, generatedError.Message);
+    }
+
+    [Fact]
+    public void ReadOnlySet_RoundTripsWithReflectionAndGeneratedCode()
+    {
+        var typeInfo = TestTomlSerializerContextReadOnlySet.Default.GeneratedReadOnlySetHolder;
+        var value = new GeneratedReadOnlySetHolder { Values = new HashSet<int> { 1, 2 } };
+
+        var generated = TomlSerializer.Serialize(value, typeInfo);
+        var reflection = TomlSerializer.Serialize(value);
+
+        Assert.Equal("Values = [1, 2]\n", generated);
+        Assert.Equal(generated, reflection);
+        Assert.True(TomlSerializer.Deserialize(generated, typeInfo)!.Values.SetEquals([1, 2]));
+        Assert.True(TomlSerializer.Deserialize<GeneratedReadOnlySetHolder>(reflection)!.Values.SetEquals([1, 2]));
+        Assert.True(TomlSerializer.Deserialize<IReadOnlySet<string>>("value = ['a']", new TomlSerializerOptions { RootValueHandling = TomlRootValueHandling.WrapInRootKey })!.Contains("a"));
     }
 
     [Fact]

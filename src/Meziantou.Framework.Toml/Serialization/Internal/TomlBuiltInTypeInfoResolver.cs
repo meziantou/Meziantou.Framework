@@ -106,7 +106,8 @@ internal static class TomlBuiltInTypeInfoResolver
                 return (TomlTypeInfo?)Activator.CreateInstance(typeInfoType, options);
             }
 
-            if (genericDefinition == typeof(ISet<>))
+            // A HashSet<T> implements both interfaces
+            if (genericDefinition == typeof(ISet<>) || genericDefinition == typeof(IReadOnlySet<>))
             {
                 var typeInfoType = typeof(TomlHashSetBackedEnumerableTypeInfo<,>).MakeGenericType(type, args[0]);
                 return (TomlTypeInfo?)Activator.CreateInstance(typeInfoType, options);

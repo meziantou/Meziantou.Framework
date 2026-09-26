@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Text;
 
@@ -322,8 +323,25 @@ internal class SyntaxValidator : SyntaxVisitor
         return result;
     }
 
+    // The parser has smaller frames than the validator, so a tree it could build may still be too deep to validate
+    private bool HasSufficientExecutionStack(SyntaxNode node)
+    {
+        if (TomlDepthHelper.HasSufficientExecutionStack())
+        {
+            return true;
+        }
+
+        _diagnostics.Error(node.Span, TomlDepthHelper.InsufficientExecutionStackMessage);
+        return false;
+    }
+
     public override void Visit(ArraySyntax array)
     {
+        if (!HasSufficientExecutionStack(array))
+        {
+            return;
+        }
+
         var savedIndex = _currentArrayIndex;
 
         if (array.OpenBracket == null)
@@ -375,6 +393,11 @@ internal class SyntaxValidator : SyntaxVisitor
 
     public override void Visit(InlineTableSyntax inlineTable)
     {
+        if (!HasSufficientExecutionStack(inlineTable))
+        {
+            return;
+        }
+
         base.Visit(inlineTable);
     }
 

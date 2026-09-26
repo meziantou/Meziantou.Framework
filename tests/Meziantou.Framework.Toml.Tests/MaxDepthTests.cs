@@ -192,6 +192,26 @@ public sealed class MaxDepthTests
         Assert.Equal(toml, doc.ToString());
     }
 
+    [Theory]
+    [InlineData(1_000, false)]
+    [InlineData(3_000, false)]
+    [InlineData(10_000, false)]
+    [InlineData(30_000, false)]
+    [InlineData(1_000, true)]
+    [InlineData(10_000, true)]
+    public void SyntaxParser_UnlimitedMaxDepth_ValidatesAndWritesDeepTreesWithoutOverflowing(int depth, bool inlineTables)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = int.MaxValue };
+        var toml = inlineTables
+            ? "a = " + string.Concat(Enumerable.Repeat("{b = ", depth)) + "1" + new string('}', depth)
+            : CreateNestedArrayToml(depth);
+        string? text = null;
+
+        Assert.Null(RunWithSmallStack(() => text = SyntaxParser.Parse(toml, options).ToString()));
+
+        Assert.Equal(toml, text);
+    }
+
     [Fact]
     public void Serialize_UnlimitedMaxDepth_ThrowsBeforeTheStackOverflows()
     {

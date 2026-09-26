@@ -82,34 +82,53 @@ public abstract class SyntaxNode : SyntaxNodeBase
         WriteToInternal(writer);
     }
 
+    // A loop rather than a recursion: the tree of a deeply nested document can be deeper than the stack allows
     private void WriteToInternal(TextWriter writer)
     {
-        if (this is DocumentSyntax { HasByteOrderMark: true })
+        var pending = new Stack<(SyntaxNode Node, int NextChild)>();
+        pending.Push((this, -1));
+        while (pending.Count > 0)
         {
-            writer.Write('\uFEFF');
-        }
-
-        WriteTriviaTo(LeadingTrivia, writer);
-        if (this is InvalidSyntaxToken invalidToken)
-        {
-            // The text that was found instead of the expected token
-            writer.Write(invalidToken.Text);
-        }
-        else if (this is SyntaxToken token)
-        {
-            writer.Write(token.TokenKind.ToText() ?? token.Text);
-        }
-        else
-        {
-            int count = ChildrenCount;
-            for (int i = 0; i < count; i++)
+            var (node, nextChild) = pending.Pop();
+            if (nextChild < 0)
             {
-                var child = GetChild(i);
-                if (child == null) continue;
-                child.WriteToInternal(writer);
+                if (node is DocumentSyntax { HasByteOrderMark: true })
+                {
+                    writer.Write('\uFEFF');
+                }
+
+                WriteTriviaTo(node.LeadingTrivia, writer);
+                if (node is InvalidSyntaxToken invalidToken)
+                {
+                    // The text that was found instead of the expected token
+                    writer.Write(invalidToken.Text);
+                    WriteTriviaTo(node.TrailingTrivia, writer);
+                    continue;
+                }
+
+                if (node is SyntaxToken token)
+                {
+                    writer.Write(token.TokenKind.ToText() ?? token.Text);
+                    WriteTriviaTo(node.TrailingTrivia, writer);
+                    continue;
+                }
+
+                nextChild = 0;
             }
+
+            if (nextChild < node.ChildrenCount)
+            {
+                pending.Push((node, nextChild + 1));
+                if (node.GetChild(nextChild) is { } child)
+                {
+                    pending.Push((child, -1));
+                }
+
+                continue;
+            }
+
+            WriteTriviaTo(node.TrailingTrivia, writer);
         }
-        WriteTriviaTo(TrailingTrivia, writer);
     }
 
     private static void WriteTriviaTo(List<SyntaxTrivia>? trivias, TextWriter writer)

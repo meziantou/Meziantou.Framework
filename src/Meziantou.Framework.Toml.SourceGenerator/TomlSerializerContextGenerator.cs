@@ -1298,7 +1298,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        public override ").Append(readReturnType).AppendLine(" Read(global::Meziantou.Framework.Toml.Serialization.TomlReader reader)");
             builder.AppendLine("        {");
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
-            builder.Append("            throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage)).AppendLine("\");");
+            builder.Append("            throw reader.CreateException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage)).Append('"');
+            if (ctorError.ErrorMessageSuffix is not null)
+            {
+                builder.Append(" + typeof(").Append(typeName).Append(").FullName + \"").Append(EscapeStringLiteral(ctorError.ErrorMessageSuffix)).Append('"');
+            }
+
+            builder.AppendLine(");");
             builder.AppendLine("        }");
         }
         else if (poco.RequiresGeneratedObjectInitializer)
@@ -4279,17 +4285,21 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private sealed class PocoConstructor
     {
-        public PocoConstructor(IMethodSymbol? constructor, ImmutableArray<PocoConstructorParameter> parameters, string? errorMessage, bool setsRequiredMembers)
+        public PocoConstructor(IMethodSymbol? constructor, ImmutableArray<PocoConstructorParameter> parameters, string? errorMessage, bool setsRequiredMembers, string? errorMessageSuffix = null)
         {
             Constructor = constructor;
             Parameters = parameters;
             ErrorMessage = errorMessage;
+            ErrorMessageSuffix = errorMessageSuffix;
             SetsRequiredMembers = setsRequiredMembers;
         }
 
         public IMethodSymbol? Constructor { get; }
         public ImmutableArray<PocoConstructorParameter> Parameters { get; }
         public string? ErrorMessage { get; }
+
+        // When set, the message is ErrorMessage, the full name of the type, then this suffix, like the reflection resolver
+        public string? ErrorMessageSuffix { get; }
         public bool SetsRequiredMembers { get; }
         public bool IsValid => ErrorMessage is null && Constructor is not null;
     }
@@ -4496,6 +4506,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         IMethodSymbol? selectedConstructor = null;
         string? constructorError = null;
+        string? constructorErrorSuffix = null;
         var parameterlessConstructorSetsRequiredMembers = false;
         if (named.TypeKind == TypeKind.Class)
         {
@@ -4513,7 +4524,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (annotated.Length > 1)
             {
-                constructorError = "Multiple constructors were annotated for deserialization.";
+                constructorError = "Multiple constructors on type '";
+                constructorErrorSuffix = "' are annotated with [TomlConstructor] or [JsonConstructor].";
                 selectedConstructor = annotated[0];
             }
             else if (annotated.Length == 1)
@@ -4527,7 +4539,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else if (publicConstructors.Length == 0)
             {
-                constructorError = "No suitable constructor was found for deserialization.";
+                constructorError = "No suitable constructor could be selected for type '";
+                constructorErrorSuffix = "'.";
             }
             else
             {
@@ -4542,7 +4555,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    constructorError = "No suitable constructor was found for deserialization.";
+                    constructorError = "No suitable constructor could be selected for type '";
+                constructorErrorSuffix = "'.";
                     selectedConstructor = publicConstructors[0];
                 }
             }
@@ -4844,7 +4858,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         PocoConstructor? constructorModel = null;
         if (constructorError is not null && selectedConstructor is null)
         {
-            constructorModel = new PocoConstructor(null, ImmutableArray<PocoConstructorParameter>.Empty, constructorError, setsRequiredMembers: false);
+            constructorModel = new PocoConstructor(null, ImmutableArray<PocoConstructorParameter>.Empty, constructorError, setsRequiredMembers: false, constructorErrorSuffix);
         }
         else if (selectedConstructor is not null)
         {
@@ -4893,7 +4907,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     });
                 }
 
-                constructorModel = new PocoConstructor(selectedConstructor, parameters.ToImmutable(), constructorError, setsRequiredMembers);
+                constructorModel = new PocoConstructor(selectedConstructor, parameters.ToImmutable(), constructorError, setsRequiredMembers, constructorErrorSuffix);
                 shape = new PocoShape(
                     membersSoFar,
                     extensionData,
@@ -4909,7 +4923,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return true;
             }
 
-            constructorModel = new PocoConstructor(selectedConstructor, ImmutableArray<PocoConstructorParameter>.Empty, constructorError, setsRequiredMembers);
+            constructorModel = new PocoConstructor(selectedConstructor, ImmutableArray<PocoConstructorParameter>.Empty, constructorError, setsRequiredMembers, constructorErrorSuffix);
         }
 
         var finalMembers = members.ToImmutable();

@@ -31,17 +31,20 @@ internal static class TomlReflectionTypeInfoResolver
 
         var mappingOrder = type.GetCustomAttribute<TomlMappingOrderAttribute>(inherit: true)?.Policy ?? options.MappingOrder;
         var dottedKeyHandling = type.GetCustomAttribute<TomlDottedKeyHandlingAttribute>(inherit: true)?.Handling;
-        var constructor = SelectConstructor(type);
+        var constructor = SelectConstructor(type, out var constructorError);
 
         // Like System.Text.Json, a constructor with [SetsRequiredMembers] makes the C# required modifier optional
         var honorRequiredModifier = constructor?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: false) != true;
         var members = CollectMembers(type, options, mappingOrder, honorRequiredModifier);
 
-        return new ReflectionObjectTomlTypeInfo(type, options, members, constructor, dottedKeyHandling);
+        return new ReflectionObjectTomlTypeInfo(type, options, members, constructor, constructorError, dottedKeyHandling);
     }
 
-    private static ConstructorInfo? SelectConstructor(Type type)
+    // A type without a constructor to use can still be serialized, like in generated code, so the error is only reported
+    // when a value is read
+    private static ConstructorInfo? SelectConstructor(Type type, out string? error)
     {
+        error = null;
         if (type.IsValueType)
         {
             return null;
@@ -67,7 +70,8 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (annotated is not null)
             {
-                throw new TomlException($"Multiple constructors on type '{type.FullName}' are annotated with [TomlConstructor] or [JsonConstructor].");
+                error = $"Multiple constructors on type '{type.FullName}' are annotated with [TomlConstructor] or [JsonConstructor].";
+                return null;
             }
 
             annotated = ctor;
@@ -90,7 +94,8 @@ internal static class TomlReflectionTypeInfoResolver
             return publicCtors[0];
         }
 
-        throw new TomlException($"No suitable constructor could be selected for type '{type.FullName}'.");
+        error = $"No suitable constructor could be selected for type '{type.FullName}'.";
+        return null;
     }
 
     private static bool IsSupportedPocoType(Type type)
@@ -698,6 +703,7 @@ internal static class TomlReflectionTypeInfoResolver
         private readonly List<MemberModel> _members;
         private readonly Dictionary<string, int> _indexByName;
         private readonly ConstructorInfo? _constructor;
+        private readonly string? _constructorError;
         private readonly ParameterBinding[] _parameters;
         private readonly Dictionary<string, int>? _parameterIndexByName;
         private readonly bool _hasRequiredMembers;
@@ -711,11 +717,12 @@ internal static class TomlReflectionTypeInfoResolver
         private readonly TomlDottedKeyHandling? _dottedKeyHandling;
         private readonly TomlUnmappedMemberHandling _unmappedMemberHandling;
 
-        public ReflectionObjectTomlTypeInfo(Type type, TomlSerializerOptions options, List<MemberModel> members, ConstructorInfo? constructor, TomlDottedKeyHandling? dottedKeyHandling)
+        public ReflectionObjectTomlTypeInfo(Type type, TomlSerializerOptions options, List<MemberModel> members, ConstructorInfo? constructor, string? constructorError, TomlDottedKeyHandling? dottedKeyHandling)
             : base(type, options)
         {
             _members = members ?? throw new ArgumentNullException(nameof(members));
             _constructor = constructor;
+            _constructorError = constructorError;
             _dottedKeyHandling = dottedKeyHandling;
             _unmappedMemberHandling = GetUnmappedMemberHandling(type, options);
             _nameComparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
@@ -971,6 +978,11 @@ internal static class TomlReflectionTypeInfoResolver
             if (reader.TokenType != TomlTokenType.StartTable)
             {
                 throw reader.CreateException($"Expected {TomlTokenType.StartTable} token but was {reader.TokenType}.");
+            }
+
+            if (_constructorError is not null)
+            {
+                throw reader.CreateException(_constructorError);
             }
 
             var tableStartSpan = reader.CurrentSpan;

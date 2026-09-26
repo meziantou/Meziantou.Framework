@@ -1080,6 +1080,28 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+public sealed class GeneratedAmbiguousConstructors
+{
+    public GeneratedAmbiguousConstructors(int value) => Value = value;
+
+    public GeneratedAmbiguousConstructors(string value) => Value = value.Length;
+
+    public int Value { get; }
+}
+
+public sealed class GeneratedMultipleAnnotatedConstructors
+{
+    [TomlConstructor]
+    public GeneratedMultipleAnnotatedConstructors(int value) => Value = value;
+
+    [TomlConstructor]
+    public GeneratedMultipleAnnotatedConstructors(string value) => Value = value.Length;
+
+    public int Value { get; }
+}
+
+[TomlSerializable(typeof(GeneratedAmbiguousConstructors))]
+[TomlSerializable(typeof(GeneratedMultipleAnnotatedConstructors))]
 [TomlSerializable(typeof(GeneratedConstructionCounter))]
 [TomlSerializable(typeof(GeneratedInitStruct))]
 [TomlSerializable(typeof(GeneratedGenericInit<int>))]
@@ -2414,6 +2436,25 @@ public class NewApiSourceGenerationTests
         Assert.DoesNotContain("type", toml);
         Assert.Contains("color = \"red\"", toml);
         Assert.Contains("radius = 5", toml);
+    }
+
+    [Fact]
+    public void TypeWithoutASelectableConstructor_IsSerializedAndReportsTheSameReadErrorOnBothPaths()
+    {
+        var context = TestTomlSerializerContextSingleConstruction.Default;
+
+        Assert.Equal("Value = 1\n", TomlSerializer.Serialize(new GeneratedAmbiguousConstructors(1)));
+        Assert.Equal("Value = 1\n", TomlSerializer.Serialize(new GeneratedAmbiguousConstructors(1), context.GeneratedAmbiguousConstructors));
+        Assert.Equal("Value = 1\n", TomlSerializer.Serialize(new GeneratedMultipleAnnotatedConstructors(1)));
+        Assert.Equal("Value = 1\n", TomlSerializer.Serialize(new GeneratedMultipleAnnotatedConstructors(1), context.GeneratedMultipleAnnotatedConstructors));
+
+        var ambiguous = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedAmbiguousConstructors>("Value = 1\n"));
+        var multiple = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedMultipleAnnotatedConstructors>("Value = 1\n"));
+
+        Assert.Contains($"No suitable constructor could be selected for type '{typeof(GeneratedAmbiguousConstructors).FullName}'.", ambiguous.Message);
+        Assert.Contains($"Multiple constructors on type '{typeof(GeneratedMultipleAnnotatedConstructors).FullName}' are annotated", multiple.Message);
+        Assert.Equal(ambiguous.Message, Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Value = 1\n", context.GeneratedAmbiguousConstructors)).Message);
+        Assert.Equal(multiple.Message, Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Value = 1\n", context.GeneratedMultipleAnnotatedConstructors)).Message);
     }
 
     [Theory]

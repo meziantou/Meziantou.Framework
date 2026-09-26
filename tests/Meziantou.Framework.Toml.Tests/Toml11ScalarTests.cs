@@ -99,4 +99,28 @@ public sealed class Toml11ScalarTests
 
         Assert.Equal(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero).AddTicks(1234567), value);
     }
+
+    [Theory]
+    [InlineData("a = \"\"\"x\\ \ny\"\"\"\n", "xy")]
+    [InlineData("a = \"\"\"x\\\t\r\n  \n y\"\"\"\n", "xy")]
+    [InlineData("a = \"\"\"x\\\n\"\"\"\n", "x")]
+    [InlineData("a = \"\"\"\\\n  x \\\n\n  y\"\"\"\n", "x y")]
+    public void Deserialize_LineEndingBackslash_TrimsWhitespace(string toml, string expected)
+    {
+        Assert.False(Parsing.SyntaxParser.Parse(toml).HasErrors);
+        Assert.Equal(expected, TomlSerializer.Deserialize<Model.TomlTable>(toml)!["a"]);
+    }
+
+    [Theory]
+    [InlineData("a = \"abc\\\ndef\"\n")]
+    [InlineData("a = \"x\\\ty\"\n")]
+    [InlineData("a = \"x\\ y\"\n")]
+    [InlineData("a = \"\"\"x\\ y\"\"\"\n")]
+    [InlineData("a = \"\"\"abc\\\rdef\"\"\"\n")]
+    [InlineData("a = \"\"\"abc\\\n\rdef\"\"\"\n")]
+    public void Deserialize_InvalidLineEndingBackslash_Throws(string toml)
+    {
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+    }
 }

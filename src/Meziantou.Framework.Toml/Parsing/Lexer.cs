@@ -1228,7 +1228,7 @@ internal sealed class Lexer
                 AddError($"Invalid \\r not followed by \\n", CurrentPosition, CurrentPosition);
             }
 
-            if (c != '\\' || !TryReadEscapeChar(ref end))
+            if (c != '\\' || !TryReadEscapeChar(ref end, isMultiLine))
             {
                 c = CurrentCharacter;
                 if (!isMultiLine && CharHelper.IsNewLine(c))
@@ -1419,7 +1419,7 @@ internal sealed class Lexer
         }
     }
 
-    private bool TryReadEscapeChar(ref TextPosition end)
+    private bool TryReadEscapeChar(ref TextPosition end, bool isMultiLine)
     {
         var decodeScalars = DecodeScalars;
         end = CurrentPosition;
@@ -1500,15 +1500,39 @@ internal sealed class Lexer
                 return true;
             }
 
-            // toml-specs:  When the last non-whitespace character on a line is a \,
-            // it will be trimmed along with all whitespace (including newlines)
-            // up to the next non-whitespace character or closing delimiter.
+            // toml-specs: mlb-escaped-nl = escape ws newline *( wschar / newline )
+            // When the last non-whitespace character on a line is a \, it will be trimmed along with all whitespace
+            // (including newlines) up to the next non-whitespace character or closing delimiter. This is only allowed
+            // in multi-line basic strings.
             case ' ':
             case '\t':
             case '\r':
             case '\n':
-                var startWithSpace = c == ' ';
-                var startPosition = CurrentPosition;
+            {
+                var escapePosition = end;
+                while (c == ' ' || c == '\t')
+                {
+                    end = CurrentPosition;
+                    NextChar();
+                    c = CurrentCharacter;
+                }
+
+                if (c == '\r' && PeekChar() == '\n')
+                {
+                    end = CurrentPosition;
+                    NextChar();
+                    c = CurrentCharacter;
+                }
+
+                if (!isMultiLine)
+                {
+                    AddError("Invalid escape `\\`. A line ending backslash is only allowed in multi-line strings.", escapePosition, escapePosition);
+                }
+                else if (c != '\n')
+                {
+                    AddError("Invalid escape `\\`. It must be followed by a newline.", escapePosition, escapePosition);
+                }
+
                 while (true)
                 {
                     c = CurrentCharacter;
@@ -1517,16 +1541,17 @@ internal sealed class Lexer
                         break;
                     }
 
+                    if (c == '\r' && PeekChar() != '\n')
+                    {
+                        AddError("Invalid \\r not followed by \\n", CurrentPosition, CurrentPosition);
+                    }
+
                     end = CurrentPosition;
                     NextChar();
                 }
 
-                if (startWithSpace && end.Line == startPosition.Line)
-                {
-                    AddError("Invalid escape `\\`. It must skip at least one line.", startPosition, startPosition);
-                }
-
                 return true;
+            }
 
             case 'u':
             case 'U':

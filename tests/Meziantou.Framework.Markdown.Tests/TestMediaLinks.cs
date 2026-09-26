@@ -48,6 +48,22 @@ public class TestMediaLinks
         Assert.Equal(expected, html);
     }
 
+    [Theory]
+    [InlineData("![v](http://x/a.mp4?\"></video><img/src/onerror=alert(1)>)",
+        "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"http://x/a.mp4?%22%3E%3C/video%3E%3Cimg/src/onerror=alert(1)%3E\"></source></video></p>\n")]
+    [InlineData("![v](x\"><svg/onload=alert(1)>.mp4)",
+        "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"x%22%3E%3Csvg/onload=alert(1)%3E.mp4\"></source></video></p>\n")]
+    public void TestAudioVideoUrlIsEscaped(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseMediaLinks()
+            .DisableHtml()
+            .Build();
+
+        string html = MarkdownConverter.ToHtml(markdown, pipeline);
+        Assert.Equal(expected, html);
+    }
+
     private sealed class TestHostProvider : IHostProvider
     {
         public string Class { get; } = "regex";

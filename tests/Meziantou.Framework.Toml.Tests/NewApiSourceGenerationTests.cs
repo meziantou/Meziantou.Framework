@@ -1874,8 +1874,70 @@ internal sealed partial class TestTomlSerializerContextExtensionKeyPolicy : Toml
 {
 }
 
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedObsoleteStructConstructor
+{
+    [Obsolete("x", error: true)]
+    public GeneratedObsoleteStructConstructor()
+    {
+        B = 10;
+    }
+
+    public int B { get; set; }
+
+    public int C { get; set; }
+}
+
+public sealed class GeneratedObsoleteGenericConstructor<T>
+{
+    [Obsolete("x", error: true)]
+    public GeneratedObsoleteGenericConstructor()
+    {
+    }
+
+    public T? B { get; set; }
+}
+
+public sealed class GeneratedObsoleteParameterizedConstructor
+{
+    [Obsolete("x", error: true)]
+    public GeneratedObsoleteParameterizedConstructor(int b)
+    {
+        B = b;
+    }
+
+    public int B { get; }
+}
+
+public sealed record GeneratedObsoleteAnnotatedConstructor
+{
+    [Obsolete("x", error: true)]
+    [TomlConstructor]
+    public GeneratedObsoleteAnnotatedConstructor(int b)
+    {
+        B = b;
+    }
+
+    public int B { get; }
+}
+
+public struct GeneratedObsoleteRequiredStruct
+{
+    [Obsolete("x", error: true)]
+    public GeneratedObsoleteRequiredStruct()
+    {
+    }
+
+    public required int B { get; set; }
+}
+
 [TomlSerializable(typeof(GeneratedObsoleteModel))]
 [TomlSerializable(typeof(GeneratedObsoleteConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteStructConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteGenericConstructor<int>))]
+[TomlSerializable(typeof(GeneratedObsoleteParameterizedConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteAnnotatedConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteRequiredStruct))]
 internal sealed partial class TestTomlSerializerContextObsolete : TomlSerializerContext
 {
 }
@@ -3570,6 +3632,25 @@ public class NewApiSourceGenerationTests
         }
 
         Assert.Equal(TomlSerializer.Serialize(reflection), TomlSerializer.Serialize(generated, TestTomlSerializerContextPrivateGetter.Default.GeneratedPrivateGetterModel));
+    }
+
+    [Fact]
+    public void ObsoleteConstructors_OfEveryShape_AreCalledThroughAnAccessor()
+    {
+        var context = TestTomlSerializerContextObsolete.Default;
+
+        var structValue = TomlSerializer.Deserialize("C = 4", context.GeneratedObsoleteStructConstructor);
+        var generic = TomlSerializer.Deserialize("B = 4", context.GeneratedObsoleteGenericConstructorInt32)!;
+        var parameterized = TomlSerializer.Deserialize("B = 4", context.GeneratedObsoleteParameterizedConstructor)!;
+        var annotated = TomlSerializer.Deserialize("B = 4", context.GeneratedObsoleteAnnotatedConstructor)!;
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("B = 4", context.GeneratedObsoleteRequiredStruct, out _));
+
+        Assert.Equal(10, structValue.B);
+        Assert.Equal(4, structValue.C);
+        Assert.Equal(4, generic.B);
+        Assert.Equal(4, parameterized.B);
+        Assert.Equal(4, annotated.B);
+        Assert.Contains("is obsolete with an error", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

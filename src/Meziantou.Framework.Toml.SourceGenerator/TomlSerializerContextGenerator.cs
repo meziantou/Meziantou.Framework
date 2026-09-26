@@ -1514,9 +1514,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         if (poco.UsesConstructorAccessor)
         {
-            builder.AppendLine("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
-            builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern ").Append(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).AppendLine(" __CreateInstance();");
-            builder.AppendLine();
+            EmitConstructorAccessor(builder, model, type, poco.Constructor?.Parameters ?? ImmutableArray<PocoConstructorParameter>.Empty);
         }
 
         if (poco.ExtensionData is { SetterAccessorName: { } extensionDataAccessorName, Symbol.ContainingType: { } extensionDataDeclaringType } extensionData)
@@ -1553,6 +1551,29 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
             }
         }
+    }
+
+    // UnsafeAccessor cannot target a constructed generic type, so a generic type is created with reflection
+    private static void EmitConstructorAccessor(StringBuilder builder, ContextModel model, ITypeSymbol type, ImmutableArray<PocoConstructorParameter> parameters)
+    {
+        var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var parameterList = string.Join(", ", parameters.Select((parameter, index) => parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + " __p" + index.ToString(CultureInfo.InvariantCulture)));
+        if (CanUseInitAccessor(model, type))
+        {
+            builder.AppendLine("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
+            builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern ").Append(typeName).Append(" __CreateInstance(").Append(parameterList).AppendLine(");");
+            builder.AppendLine();
+            return;
+        }
+
+        var parameterTypes = string.Join(", ", parameters.Select(parameter => "typeof(" + parameter.ParameterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ")"));
+        var arguments = string.Join(", ", parameters.Select((_, index) => "__p" + index.ToString(CultureInfo.InvariantCulture)));
+        builder.Append("        private static ").Append(typeName).Append(" __CreateInstance(").Append(parameterList).AppendLine(")");
+        builder.AppendLine("        {");
+        builder.Append("            var __constructor = typeof(").Append(typeName).Append(").GetConstructor(global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic, null, new global::System.Type[] { ").Append(parameterTypes).AppendLine(" }, null)!;");
+        builder.Append("            return (").Append(typeName).Append(")__constructor.Invoke(new object?[] { ").Append(arguments).AppendLine(" })!;");
+        builder.AppendLine("        }");
+        builder.AppendLine();
     }
 
     private static void EmitReflectionSetterAccessor(StringBuilder builder, string accessorName, ITypeSymbol declaringType, string memberName, ITypeSymbol memberType, bool isField)
@@ -2327,7 +2348,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             if (needsTemplate)
             {
                 builder.Append("            ").Append(readNonNullableTypeName).AppendLine(" __template;");
-                EmitPocoConstructionAssignment(builder, "__template", typeName, ctor.Parameters, templateInitializerAssignments.ToImmutable(), wrapConstructionErrors);
+                EmitPocoConstructionAssignment(builder, "__template", typeName, ctor.Parameters, templateInitializerAssignments.ToImmutable(), wrapConstructionErrors, poco.UsesConstructorAccessor);
 
                 for (var i = 0; i < poco.Members.Length; i++)
                 {
@@ -2361,7 +2382,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
 
             builder.Append("            ").Append(readNonNullableTypeName).AppendLine(" value;");
-            EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, finalInitializerAssignments.ToImmutable(), wrapConstructionErrors);
+            EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, finalInitializerAssignments.ToImmutable(), wrapConstructionErrors, poco.UsesConstructorAccessor);
 
             for (var i = 0; i < poco.Members.Length; i++)
             {
@@ -2399,7 +2420,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         else
         {
             builder.Append("            ").Append(readNonNullableTypeName).AppendLine(" value;");
-            EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, ImmutableArray<string>.Empty, wrapConstructionErrors);
+            EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, ImmutableArray<string>.Empty, wrapConstructionErrors, poco.UsesConstructorAccessor);
 
             if (callsOnDeserializing)
             {
@@ -2573,7 +2594,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         builder.Append("            ").Append(readNonNullableTypeName).AppendLine(" value;");
-        EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, initializerAssignments.ToImmutable(), wrapConstructionErrors);
+        EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, initializerAssignments.ToImmutable(), wrapConstructionErrors, poco.UsesConstructorAccessor);
 
         if (callsOnDeserializing)
         {
@@ -2816,11 +2837,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         string typeName,
         ImmutableArray<PocoConstructorParameter> parameters,
         ImmutableArray<string> initializerAssignments,
-        bool wrapConstructionErrors)
+        bool wrapConstructionErrors,
+        bool useConstructorAccessor)
     {
         void EmitAssignmentBody(string indent)
         {
-            builder.Append(indent).Append(targetName).Append(" = new ").Append(typeName).Append('(');
+            builder.Append(indent).Append(targetName).Append(useConstructorAccessor ? " = __CreateInstance(" : " = new " + typeName + "(");
             for (var i = 0; i < parameters.Length; i++)
             {
                 if (i != 0)
@@ -2841,6 +2863,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             if (initializerAssignments.IsDefaultOrEmpty)
             {
                 builder.AppendLine(";");
+                return;
+            }
+
+            // An accessor cannot be followed by an object initializer, and it is used only when the assignments do not need one
+            if (useConstructorAccessor)
+            {
+                builder.AppendLine(";");
+                foreach (var assignment in initializerAssignments)
+                {
+                    builder.Append(indent).Append(targetName).Append('.').Append(assignment).AppendLine(";");
+                }
+
                 return;
             }
 
@@ -4468,7 +4502,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         public ImmutableArray<PocoMember> Members { get; }
         public PocoExtensionData? ExtensionData { get; }
-        public PocoConstructor? Constructor { get; }
+        public PocoConstructor? Constructor { get; set; }
         public bool RequiresGeneratedObjectInitializer { get; set; }
         public int? MappingOrder { get; }
         public int? DottedKeyHandling { get; }
@@ -4665,6 +4699,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             else if (named.TypeKind == TypeKind.Struct)
             {
                 // Like System.Text.Json, a struct without an annotated constructor is created with its parameterless constructor
+                parameterlessConstructorIsObsoleteError = named.InstanceConstructors.FirstOrDefault(static ctor => !ctor.IsStatic && !ctor.IsImplicitlyDeclared && ctor.Parameters.Length == 0) is { } structConstructor &&
+                    IsObsoleteError(structConstructor);
             }
             else if (publicConstructors.Length == 0)
             {
@@ -5119,6 +5155,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     UnserializedRequiredMembers = unserializedRequiredMembers,
                 };
                 AssignInitSetterAccessorNames(membersSoFar);
+                UseAccessorForObsoleteConstructor(shape, IsObsoleteError(selectedConstructor));
                 return true;
             }
 
@@ -5168,14 +5205,30 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         AssignInitSetterAccessorNames(finalMembers);
+        UseAccessorForObsoleteConstructor(shape, selectedConstructor is not null ? IsObsoleteError(selectedConstructor) : parameterlessConstructorIsObsoleteError);
+        return true;
+    }
 
-        // A constructor that is an error to use can still be called through an accessor
-        if (parameterlessConstructorIsObsoleteError && !shape.RequiresGeneratedObjectInitializer && named.TypeKind == TypeKind.Class && CanUseInitAccessor(model, named))
+    // A constructor that is an error to use can still be called through an accessor, but an object initializer cannot follow it
+    private static void UseAccessorForObsoleteConstructor(PocoShape shape, bool isObsoleteError)
+    {
+        if (!isObsoleteError || shape.UsesConstructorAccessor || shape.Constructor is { ErrorMessage: not null })
         {
-            shape.UsesConstructorAccessor = true;
+            return;
         }
 
-        return true;
+        if (shape.RequiresGeneratedObjectInitializer)
+        {
+            shape.Constructor = new PocoConstructor(
+                shape.Constructor?.Constructor,
+                shape.Constructor?.Parameters ?? ImmutableArray<PocoConstructorParameter>.Empty,
+                "The constructor of type '",
+                shape.Constructor?.SetsRequiredMembers ?? shape.ParameterlessConstructorSetsRequiredMembers,
+                "' is obsolete with an error: it is called through an accessor, which cannot set its init-only or required members.");
+            return;
+        }
+
+        shape.UsesConstructorAccessor = true;
     }
 
     // An init member that the construction sets (an object initializer or an accessor) is set with an accessor when an existing

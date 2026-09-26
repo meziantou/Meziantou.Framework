@@ -29,9 +29,27 @@ public sealed class MetadataContainerCommentsModel
 
 public sealed record MetadataRecordModel(long A, string B);
 
+[TomlPolymorphic(TypeDiscriminatorPropertyName = "kind")]
+[TomlDerivedType(typeof(MetadataCircle), "circle")]
+public abstract class MetadataShape
+{
+    public string? Name { get; set; }
+}
+
+public sealed class MetadataCircle : MetadataShape
+{
+    public long Radius { get; set; }
+}
+
+public sealed class MetadataShapes
+{
+    public IList<MetadataShape> Items { get; set; } = [];
+}
+
 [TomlSerializable(typeof(MetadataFormattedModel))]
 [TomlSerializable(typeof(MetadataRecordModel))]
 [TomlSerializable(typeof(MetadataContainerCommentsModel))]
+[TomlSerializable(typeof(MetadataShapes))]
 internal sealed partial class TestTomlMetadataContext : TomlSerializerContext;
 
 [TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
@@ -96,6 +114,21 @@ public sealed class NewApiMetadataStoreTests
         {
             var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
             return TomlSerializer.Serialize(TomlSerializer.Deserialize<T>(Toml, options), options).ReplaceLineEndings("\n");
+        }
+    }
+
+    [Fact]
+    public void MetadataStore_DiscriminatorComments_Roundtrip()
+    {
+        const string Toml = "[[Items]]\n# first\nkind = 'circle' # kind\nName = \"a\"\nRadius = 1\n";
+
+        Assert.Equal(Toml, Roundtrip(resolver: null));
+        Assert.Equal(Toml, Roundtrip(TestTomlMetadataContext.Default));
+
+        static string Roundtrip(ITomlTypeInfoResolver? resolver)
+        {
+            var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
+            return TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataShapes>(Toml, options), options).ReplaceLineEndings("\n");
         }
     }
 

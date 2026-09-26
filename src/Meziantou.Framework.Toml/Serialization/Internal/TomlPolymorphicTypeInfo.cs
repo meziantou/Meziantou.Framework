@@ -351,7 +351,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         }
 
         var buffer = reader.CaptureCurrentValueToBuffer();
-        if (!TryReadDiscriminator(buffer, out var discriminator, out var discriminatorSpan))
+        if (!TryReadDiscriminator(buffer, out var discriminator, out var discriminatorSpan, out var discriminatorMetadata))
         {
             // No discriminator found - try default derived type first
             if (_defaultDerivedType is not null)
@@ -414,13 +414,16 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         var payloadReader = TomlReader.Create(buffer, propertyNameToFilter);
         payloadReader.Read(); // StartDocument
         payloadReader.Read(); // value start
-        return targetTypeInfo.ReadAsObject(payloadReader);
+        var result = targetTypeInfo.ReadAsObject(payloadReader);
+        TomlPropertyMetadataCapture.AttachDiscriminatorMetadata(Options, result, _discriminatorPropertyName, discriminatorMetadata);
+        return result;
     }
 
-    private bool TryReadDiscriminator(TomlReaderBuffer buffer, out string discriminator, out TomlSourceSpan? discriminatorSpan)
+    private bool TryReadDiscriminator(TomlReaderBuffer buffer, out string discriminator, out TomlSourceSpan? discriminatorSpan, out TomlPropertyMetadata? discriminatorMetadata)
     {
         discriminator = string.Empty;
         discriminatorSpan = null;
+        discriminatorMetadata = null;
         var found = false;
 
         var reader = TomlReader.Create(buffer);
@@ -441,6 +444,8 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
             }
 
             var name = reader.PropertyName ?? string.Empty;
+            var nameSpan = reader.CurrentSpan;
+            var leadingTrivia = reader.CurrentLeadingTrivia;
             reader.Read(); // value
             if (string.Equals(name, _discriminatorPropertyName, StringComparison.Ordinal))
             {
@@ -452,6 +457,10 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
                 discriminatorSpan = reader.CurrentSpan;
                 discriminator = reader.GetString();
                 found = true;
+                if (Options.MetadataStore is not null)
+                {
+                    discriminatorMetadata = TomlPropertyMetadataCapture.Create(nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
+                }
 
                 // A later discriminator replaces this one, like any other duplicate key
                 if (Options.DuplicateKeyHandling != TomlDuplicateKeyHandling.LastWins)

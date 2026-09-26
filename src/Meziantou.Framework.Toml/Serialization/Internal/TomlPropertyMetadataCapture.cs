@@ -17,16 +17,23 @@ internal static class TomlPropertyMetadataCapture
         TomlSyntaxTriviaMetadata[]? trailingTrivia,
         TomlPropertyDisplayKind displayKind)
     {
-        if (propertiesMetadata is null)
+        if (propertiesMetadata is not null && Create(span, leadingTrivia, trailingTrivia, displayKind) is { } propertyMetadata)
         {
-            return;
+            propertiesMetadata.SetProperty(name, propertyMetadata);
         }
+    }
 
+    public static TomlPropertyMetadata? Create(
+        TomlSourceSpan? span,
+        TomlSyntaxTriviaMetadata[]? leadingTrivia,
+        TomlSyntaxTriviaMetadata[]? trailingTrivia,
+        TomlPropertyDisplayKind displayKind)
+    {
         var hasLeading = leadingTrivia is { Length: > 0 };
         var hasTrailing = trailingTrivia is { Length: > 0 };
         if (span is null && !hasLeading && !hasTrailing && displayKind == TomlPropertyDisplayKind.Default)
         {
-            return;
+            return null;
         }
 
         var propertyMetadata = new TomlPropertyMetadata
@@ -52,7 +59,25 @@ internal static class TomlPropertyMetadataCapture
             propertyMetadata.TrailingTrivia = new List<TomlSyntaxTriviaMetadata>(trailingTrivia!);
         }
 
-        propertiesMetadata.SetProperty(name, propertyMetadata);
+        return propertyMetadata;
+    }
+
+    // A polymorphic payload is read without its discriminator key, so the key's comments are added to the instance afterward.
+    // The writer puts the discriminator first, where they were.
+    public static void AttachDiscriminatorMetadata(TomlSerializerOptions options, object? instance, string name, TomlPropertyMetadata? discriminatorMetadata)
+    {
+        if (discriminatorMetadata is null || instance is null || instance.GetType().IsValueType || options.MetadataStore is not { } store)
+        {
+            return;
+        }
+
+        if (!store.TryGetProperties(instance, out var metadata) || metadata is null)
+        {
+            metadata = new TomlPropertiesMetadata();
+            store.SetProperties(instance, metadata);
+        }
+
+        metadata.SetProperty(name, discriminatorMetadata);
     }
 
     // The trailing comment of an inline array or table is only known once its closing token is read

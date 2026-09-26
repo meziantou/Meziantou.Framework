@@ -254,7 +254,7 @@ public sealed class FormattedConfig
 | `[TomlIgnore]` | `[JsonIgnore]` | Ignores the member, always or conditionally (`WhenWritingNull`, `WhenWritingDefault`). |
 | `[TomlInclude]` | `[JsonInclude]` | Includes a non-public member. |
 | `[TomlPropertyOrder]` | `[JsonPropertyOrder]` | Sets the order of the member in the table. |
-| `[TomlRequired]` | `[JsonRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too. |
+| `[TomlRequired]` | `[JsonRequired]` | The key must be present; a missing key throws `TomlException`. The C# `required` modifier is honored too, unless the constructor used has `[SetsRequiredMembers]`. |
 | `[TomlConstructor]` | `[JsonConstructor]` | Selects the constructor used when reading. Parameters are matched by name to the members of the type. |
 | `[TomlExtensionData]` | `[JsonExtensionData]` | Collects unmapped keys. See [Extension data](#extension-data). |
 | `[TomlConverter]` | `[JsonConverter]` | Selects a converter (or a converter factory) for a type or member. |

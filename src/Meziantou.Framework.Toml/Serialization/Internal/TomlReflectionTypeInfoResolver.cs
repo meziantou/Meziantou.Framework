@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
@@ -30,9 +31,11 @@ internal static class TomlReflectionTypeInfoResolver
 
         var mappingOrder = type.GetCustomAttribute<TomlMappingOrderAttribute>(inherit: true)?.Policy ?? options.MappingOrder;
         var dottedKeyHandling = type.GetCustomAttribute<TomlDottedKeyHandlingAttribute>(inherit: true)?.Handling;
-        var members = CollectMembers(type, options, mappingOrder);
-
         var constructor = SelectConstructor(type);
+
+        // Like System.Text.Json, a constructor with [SetsRequiredMembers] makes the C# required modifier optional
+        var honorRequiredModifier = constructor?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: false) != true;
+        var members = CollectMembers(type, options, mappingOrder, honorRequiredModifier);
 
         return new ReflectionObjectTomlTypeInfo(type, options, members, constructor, dottedKeyHandling);
     }
@@ -121,7 +124,7 @@ internal static class TomlReflectionTypeInfoResolver
         return type.IsClass || (type.IsValueType && !type.IsByRefLike);
     }
 
-    private static List<MemberModel> CollectMembers(Type type, TomlSerializerOptions options, TomlMappingOrderPolicy mappingOrder)
+    private static List<MemberModel> CollectMembers(Type type, TomlSerializerOptions options, TomlMappingOrderPolicy mappingOrder, bool honorRequiredModifier)
     {
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         var members = new List<MemberModel>(properties.Length);
@@ -179,7 +182,7 @@ internal static class TomlReflectionTypeInfoResolver
                 GetObjectCreationHandling(property, typeObjectCreationHandling),
                 HasExplicitObjectCreationHandling(property),
                 HasSingleOrArrayAttribute(property),
-                IsRequired(property),
+                IsRequired(property, honorRequiredModifier),
                 IsExtensionData(property),
                 CreateFormattingMetadata(property, property.PropertyType),
                 TryCreateMemberConverter(property, property.PropertyType, options),
@@ -228,7 +231,7 @@ internal static class TomlReflectionTypeInfoResolver
                 GetObjectCreationHandling(field, typeObjectCreationHandling),
                 HasExplicitObjectCreationHandling(field),
                 HasSingleOrArrayAttribute(field),
-                IsRequired(field),
+                IsRequired(field, honorRequiredModifier),
                 IsExtensionData(field),
                 CreateFormattingMetadata(field, field.FieldType),
                 TryCreateMemberConverter(field, field.FieldType, options),
@@ -254,8 +257,13 @@ internal static class TomlReflectionTypeInfoResolver
         return false;
     }
 
-    private static bool IsRequired(MemberInfo member)
+    private static bool IsRequired(MemberInfo member, bool honorRequiredModifier)
     {
+        if (honorRequiredModifier && member.IsDefined(typeof(RequiredMemberAttribute), inherit: false))
+        {
+            return true;
+        }
+
         if (member.IsDefined(typeof(TomlRequiredAttribute), inherit: true))
         {
             return true;

@@ -3821,6 +3821,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
+        // Like System.Text.Json, a constructor with [SetsRequiredMembers] makes the C# required modifier optional
+        var honorRequiredModifier = selectedConstructor is not null
+            ? !HasAttribute(selectedConstructor, SetsRequiredMembersAttributeMetadataName)
+            : !parameterlessConstructorSetsRequiredMembers;
+
         var namingPolicy = model.Options.PropertyNamingPolicyExpression;
         var ownerTypeName = named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var respectNullableAnnotations = model.Options.RespectNullableAnnotations ?? true;
@@ -3919,7 +3924,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
             var order = GetOrder(member);
-            var required = IsRequired(member) && !ignore.IgnoreOnRead;
+            var required = IsRequired(member, honorRequiredModifier) && !ignore.IgnoreOnRead;
             var formatting = GetFormattingMetadata(member);
             if (formatting.StringStyle is not null && member.Type.SpecialType != SpecialType.System_String)
             {
@@ -4024,7 +4029,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
             var order = GetOrder(member);
-            var required = IsRequired(member) && !ignore.IgnoreOnRead;
+            var required = IsRequired(member, honorRequiredModifier) && !ignore.IgnoreOnRead;
             var getterAccessorName = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility) ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
             var fieldAccessible = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility);
             var canSet = !member.IsReadOnly && (fieldAccessible || hasInclude);
@@ -4580,14 +4585,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static bool IsRequired(ISymbol member)
+    private static bool IsRequired(ISymbol member, bool honorRequiredModifier)
     {
-        return member switch
+        return (honorRequiredModifier && member switch
                {
                    IPropertySymbol property when property.IsRequired => true,
                    IFieldSymbol field when field.IsRequired => true,
                    _ => false,
-               } ||
+               }) ||
                HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlRequiredAttribute") ||
                HasAttribute(member, "System.Text.Json.Serialization.JsonRequiredAttribute");
     }

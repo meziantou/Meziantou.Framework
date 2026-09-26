@@ -361,6 +361,26 @@ public sealed class GeneratedIncludedConstructorPayload
     public int Count { get; private set; }
 }
 
+public sealed class GeneratedRequiredModifierModel
+{
+    public required string Name { get; set; }
+
+    public int Age { get; set; }
+}
+
+public sealed class GeneratedSetsRequiredMembersModel
+{
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public GeneratedSetsRequiredMembersModel()
+    {
+        Name = "default";
+    }
+
+    public required string Name { get; set; }
+
+    public int Age { get; set; }
+}
+
 public enum GeneratedEnumKind
 {
     A = 0,
@@ -510,6 +530,8 @@ internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : 
 {
 }
 
+[TomlSerializable(typeof(GeneratedRequiredModifierModel))]
+[TomlSerializable(typeof(GeneratedSetsRequiredMembersModel))]
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterPayload))]
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterStruct))]
 [TomlSerializable(typeof(GeneratedIncludedConstructorPayload))]
@@ -1767,6 +1789,20 @@ public class NewApiSourceGenerationTests
         Assert.Contains("myProperty = true", toml);
         Assert.NotNull(roundtrip);
         Assert.False(roundtrip!.MyProperty);
+    }
+
+    [Fact]
+    public void RequiredModifier_MissingKey_ThrowsInBothPaths()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedRequiredModifierModel>("Age = 1\n"));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Age = 1\n", TestTomlSerializerContextNonPublicSetters.Default.GeneratedRequiredModifierModel));
+    }
+
+    [Fact]
+    public void RequiredModifier_WithSetsRequiredMembers_IsOptionalInBothPaths()
+    {
+        Assert.Equal("default", TomlSerializer.Deserialize<GeneratedSetsRequiredMembersModel>("Age = 1\n")!.Name);
+        Assert.Equal("default", TomlSerializer.Deserialize("Age = 1\n", TestTomlSerializerContextNonPublicSetters.Default.GeneratedSetsRequiredMembersModel)!.Name);
     }
 
     [Fact]

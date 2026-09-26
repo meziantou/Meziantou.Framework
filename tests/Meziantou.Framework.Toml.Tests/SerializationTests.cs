@@ -340,6 +340,38 @@ public class SerializationTests
         Assert.Empty((TomlArray)((TomlTable)roundtrip["t"])["nested"]);
     }
 
+    [Fact]
+    public void Serialize_PropertyHiddenWithNew_UsesTheDerivedProperty()
+    {
+        var toml = TomlSerializer.Serialize(new HidingDerived());
+
+        // Base type members come first, and each hidden member is replaced by the one of the derived type
+        Assert.Equal("Other = 2\nId = \"d\"\n", toml);
+        Assert.Equal("Other = 2\nField = \"f\"\nId = \"d\"\n", TomlSerializer.Serialize(new HidingDerived(), new TomlSerializerOptions { IncludeFields = true }));
+        Assert.Equal("abc", TomlSerializer.Deserialize<HidingDerived>("Id = 'abc'")!.Id);
+        Assert.Equal("x", TomlSerializer.Deserialize<HidingDerived>("Field = 'x'", new TomlSerializerOptions { IncludeFields = true })!.Field);
+    }
+
+    private class HidingBase
+    {
+        public int Id { get; set; } = 1;
+
+        public int Other { get; set; } = 2;
+
+#pragma warning disable CA1051 // The test needs public fields
+        public int Field = 3;
+#pragma warning restore CA1051
+    }
+
+    private sealed class HidingDerived : HidingBase
+    {
+        public new string Id { get; set; } = "d";
+
+#pragma warning disable CA1051 // The test needs public fields
+        public new string? Field = "f";
+#pragma warning restore CA1051
+    }
+
     private sealed class WithTable
     {
         public TomlTable Table { get; set; } = [];

@@ -124,9 +124,20 @@ internal static class TomlReflectionTypeInfoResolver
         return type.IsClass || (type.IsValueType && !type.IsByRefLike);
     }
 
+    // A member hidden with 'new' by a member of the same name in a derived type is not serialized, like in System.Text.Json
+    // and the source generator
+    private static T[] RemoveHiddenMembers<T>(T[] members)
+        where T : MemberInfo
+    {
+        return Array.FindAll(members, member => !Array.Exists(members, other =>
+            !ReferenceEquals(other, member) &&
+            string.Equals(other.Name, member.Name, StringComparison.Ordinal) &&
+            other.DeclaringType!.IsSubclassOf(member.DeclaringType!)));
+    }
+
     private static List<MemberModel> CollectMembers(Type type, TomlSerializerOptions options, TomlMappingOrderPolicy mappingOrder, bool honorRequiredModifier)
     {
-        var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var properties = RemoveHiddenMembers(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
         var members = new List<MemberModel>(properties.Length);
         var typeObjectCreationHandling = GetObjectCreationHandling(type, options);
         var nullabilityContext = CreateNullabilityContext(options);
@@ -190,7 +201,7 @@ internal static class TomlReflectionTypeInfoResolver
                 DisallowNullOnDeserialize: DisallowNull(property.PropertyType, nullabilityContext?.Create(property).WriteState)));
         }
 
-        var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        var fields = RemoveHiddenMembers(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
         foreach (var field in fields)
         {
             if (!HasIncludeAttribute(field) && !(options.IncludeFields && field.IsPublic))

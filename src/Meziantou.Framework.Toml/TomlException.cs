@@ -150,22 +150,25 @@ public sealed class TomlException : Exception
     // The message lists the first diagnostics only: a document with an error on every line would build a message as long as
     // the document, which callers typically log. Diagnostics holds all of them.
     private const int MaxDiagnosticsInMessage = 100;
+    private const int MaxMessageLength = 100_000;
 
     private static string FormatDiagnostics(DiagnosticsBag diagnostics)
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
-        if (diagnostics.Count <= MaxDiagnosticsInMessage)
-        {
-            return diagnostics.ToString();
-        }
 
         var builder = new System.Text.StringBuilder();
-        for (var i = 0; i < MaxDiagnosticsInMessage; i++)
+        for (var i = 0; i < diagnostics.Count; i++)
         {
+            // Some messages contain input text, so their number does not bound the length
+            if (i == MaxDiagnosticsInMessage || builder.Length >= MaxMessageLength)
+            {
+                builder.Append("... and ").Append(diagnostics.Count - i).AppendLine(" more diagnostics.");
+                break;
+            }
+
             builder.AppendLine(diagnostics[i].ToString());
         }
 
-        builder.Append("... and ").Append(diagnostics.Count - MaxDiagnosticsInMessage).AppendLine(" more diagnostics.");
         return builder.ToString();
     }
 }

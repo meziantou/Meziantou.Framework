@@ -23,6 +23,7 @@ internal partial class Parser
     private int _currentContainerDepth;
     private TableArrayPathNode _tableArrayPaths;
     private bool _skippedToEndOfFile;
+    private int _lastUnexpectedTokenOffset = -1;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Parser"/> class.
@@ -230,7 +231,7 @@ internal partial class Parser
                 break;
 
             default:
-                LogError($"Unexpected token `{ToPrintable(_token)}` for a value");
+                LogUnexpectedToken($"Unexpected token `{ToPrintable(_token)}` for a value");
                 // Skip the token as we don't want to loop forever
                 SkipToken();
                 break;
@@ -385,7 +386,7 @@ internal partial class Parser
                 {
                     if (!_skippedToEndOfFile)
                     {
-                        LogError($"Unexpected token `{ToPrintable(_token)}` (token: `{_token.Kind}`). Expecting a closing `]` for an array");
+                        LogUnexpectedToken($"Unexpected token `{ToPrintable(_token)}` (token: `{_token.Kind}`). Expecting a closing `]` for an array");
                     }
 
                     break;
@@ -480,7 +481,7 @@ internal partial class Parser
                 {
                     if (!_skippedToEndOfFile)
                     {
-                        LogError($"Unexpected token `{_token.Kind}` while parsing inline table. Expecting a bare key or string instead of `{ToPrintable(_token)}`");
+                        LogUnexpectedToken($"Unexpected token `{_token.Kind}` while parsing inline table. Expecting a bare key or string instead of `{ToPrintable(_token)}`");
                     }
 
                     break;
@@ -723,11 +724,11 @@ internal partial class Parser
             var expectingTokenText = tokenText != null ? $"while expecting `{tokenText}` (token: `{tokenKind.ToString().ToLowerInvariant()}`)" : $"while expecting token `{tokenKind.ToString().ToLowerInvariant()}`";
             if (_token.Kind == TokenKind.Invalid)
             {
-                LogError($"Unexpected token found `{ToPrintable(_token)}` {expectingTokenText}");
+                LogUnexpectedToken($"Unexpected token found `{ToPrintable(_token)}` {expectingTokenText}");
             }
             else
             {
-                LogError($"Unexpected token found `{ToPrintable(_token)}` (token: `{_token.Kind.ToString().ToLowerInvariant()}`) {expectingTokenText}");
+                LogUnexpectedToken($"Unexpected token found `{ToPrintable(_token)}` (token: `{_token.Kind.ToString().ToLowerInvariant()}`) {expectingTokenText}");
             }
         }
         syntax.TokenKind = tokenKind;
@@ -823,9 +824,19 @@ internal partial class Parser
         return syntax;
     }
 
+    // A token can be as long as the document, and every diagnostic would keep a copy of it
+    private const int MaxTokenTextLengthInMessage = 64;
+
     private string? ToPrintable(SyntaxTokenValue localToken)
     {
-        return ToText(localToken).ToPrintableString();
+        var text = ToText(localToken);
+        if (text is { Length: > MaxTokenTextLengthInMessage })
+        {
+            var length = char.IsHighSurrogate(text[MaxTokenTextLengthInMessage - 1]) ? MaxTokenTextLengthInMessage - 1 : MaxTokenTextLengthInMessage;
+            text = string.Concat(text.AsSpan(0, length), "...");
+        }
+
+        return text.ToPrintableString();
     }
 
     private string? ToText(SyntaxTokenValue localToken)
@@ -906,6 +917,18 @@ internal partial class Parser
     private void LogError(string text)
     {
         LogError(_token, text);
+    }
+
+    // Every container that encloses an unexpected token stops at it: only the first one reports it
+    private void LogUnexpectedToken(string text)
+    {
+        if (_lastUnexpectedTokenOffset == _token.Start.Offset)
+        {
+            return;
+        }
+
+        _lastUnexpectedTokenOffset = _token.Start.Offset;
+        LogError(text);
     }
 
     private void LogError(SyntaxTokenValue tokenArg, string text)

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Parsing;
 using Meziantou.Framework.Toml.Syntax;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml.Tests;
 
@@ -199,6 +201,34 @@ val = true
         Assert.Equal(2, commentDiagnostic.Span.Start.Column);
         Assert.Equal(100_001, commentDiagnostic.Span.End.Column);
         Assert.Single(stringDoc.Diagnostics);
+    }
+
+    [Fact]
+    public void UnexpectedToken_InNestedContainers_IsReportedOnceWithABoundedText()
+    {
+        var token = new string('x', 100_000);
+        var toml = "a = " + string.Concat(Enumerable.Repeat("{a=", 40)) + " 1 " + token + "\n";
+
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.True(doc.HasErrors);
+        Assert.HasCountLessThan(5, doc.Diagnostics);
+        Assert.True(doc.Diagnostics.Sum(diagnostic => diagnostic.Message.Length) < 2_000, doc.Diagnostics.ToString());
+    }
+
+    [Fact]
+    public void TomlException_MessageLength_IsBounded()
+    {
+        var diagnostics = new DiagnosticsBag();
+        for (var i = 0; i < 50; i++)
+        {
+            diagnostics.Error(new SourceSpan("", new TextPosition(0, 0, 0), new TextPosition(0, 0, 0)), new string('m', 10_000));
+        }
+
+        var exception = new TomlException(diagnostics);
+
+        Assert.HasCountLessThan(150_000, exception.Message);
+        Assert.EndsWith("more diagnostics.", exception.Message.TrimEnd());
     }
 
     [Fact]

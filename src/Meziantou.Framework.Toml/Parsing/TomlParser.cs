@@ -1232,7 +1232,7 @@ public sealed class TomlParser
             var common = 0;
             var currentCount = _implicitFrames.Count - implicitBaseIndex;
             while (common < currentCount && common < prefixLength &&
-                   _implicitFrames[implicitBaseIndex + common].Hash == _pathSegments[common].Hash)
+                   KeySegmentsEqual(_implicitFrames[implicitBaseIndex + common], _pathSegments[common]))
             {
                 common++;
             }
@@ -1247,7 +1247,7 @@ public sealed class TomlParser
             _pendingOperation = PendingOperationKind.KeyValueEntry;
         }
 
-        private static void BuildExplicitTargetFrames(List<KeySegment> path, bool isTableArray, List<ExplicitFrame> currentFrames, List<ExplicitFrame> frames)
+        private void BuildExplicitTargetFrames(List<KeySegment> path, bool isTableArray, List<ExplicitFrame> currentFrames, List<ExplicitFrame> frames)
         {
             var explicitIndex = 0;
             var reuse = true;
@@ -1275,7 +1275,7 @@ public sealed class TomlParser
             frames.Add(new ExplicitFrame(ExplicitFrameKind.Table, last));
         }
 
-        private static bool TryConsumeCurrentFrame(List<ExplicitFrame> currentFrames, ref int explicitIndex, KeySegment segment, List<ExplicitFrame> targetFrames)
+        private bool TryConsumeCurrentFrame(List<ExplicitFrame> currentFrames, ref int explicitIndex, KeySegment segment, List<ExplicitFrame> targetFrames)
         {
             if (explicitIndex >= currentFrames.Count)
             {
@@ -1283,14 +1283,14 @@ public sealed class TomlParser
             }
 
             var current = currentFrames[explicitIndex];
-            if (current.Kind == ExplicitFrameKind.Table && current.Name is { } tableName && tableName.Hash == segment.Hash)
+            if (current.Kind == ExplicitFrameKind.Table && current.Name is { } tableName && KeySegmentsEqual(tableName, segment))
             {
                 targetFrames.Add(current);
                 explicitIndex++;
                 return true;
             }
 
-            if (current.Kind == ExplicitFrameKind.Array && current.Name is { } arrayName && arrayName.Hash == segment.Hash)
+            if (current.Kind == ExplicitFrameKind.Array && current.Name is { } arrayName && KeySegmentsEqual(arrayName, segment))
             {
                 var elementIndex = explicitIndex + 1;
                 if (elementIndex < currentFrames.Count && currentFrames[elementIndex].Kind == ExplicitFrameKind.TableArrayElement)
@@ -1329,7 +1329,7 @@ public sealed class TomlParser
             return common;
         }
 
-        private static bool FramesEqual(ExplicitFrame left, ExplicitFrame right)
+        private bool FramesEqual(ExplicitFrame left, ExplicitFrame right)
         {
             if (left.Kind != right.Kind)
             {
@@ -1346,10 +1346,51 @@ public sealed class TomlParser
                 return false;
             }
 
-            return leftName.Hash == rightName.Hash;
+            return KeySegmentsEqual(leftName, rightName);
         }
 
-        private static bool FramesEqualSequence(List<ExplicitFrame> current, List<ExplicitFrame> target, int length)
+        // The hash is only a fast filter: two different keys can have the same hash
+        private bool KeySegmentsEqual(in KeySegment left, in KeySegment right)
+        {
+            if (left.Hash != right.Hash)
+            {
+                return false;
+            }
+
+            if (left.Value is not null && right.Value is not null)
+            {
+                return string.Equals(left.Value, right.Value, StringComparison.Ordinal);
+            }
+
+            return GetDecodedKey(left).SequenceEqual(GetDecodedKey(right));
+        }
+
+        private ReadOnlySpan<char> GetDecodedKey(in KeySegment segment)
+        {
+            if (segment.Value is not null)
+            {
+                return segment.Value;
+            }
+
+            var raw = _lexer.GetSpanUnchecked(segment.Span.Offset, segment.Span.Length);
+            switch (segment.TokenKind)
+            {
+                case TokenKind.BasicKey:
+                    return raw;
+                case TokenKind.StringLiteral:
+                    return raw.Slice(1, raw.Length - 2);
+                default:
+                    var content = raw.Slice(1, raw.Length - 2);
+                    if (!content.Contains('\\'))
+                    {
+                        return content;
+                    }
+
+                    return TomlStringDecoder.Decode(raw, segment.TokenKind);
+            }
+        }
+
+        private bool FramesEqualSequence(List<ExplicitFrame> current, List<ExplicitFrame> target, int length)
         {
             if (current.Count < length || target.Count < length)
             {

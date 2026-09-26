@@ -162,4 +162,71 @@ public class NewApiParsingPipelineTests
         var child = (TomlTable)root["child"];
         Assert.Equal(true, child["enabled"]);
     }
+
+    // BcWugYjVchJ and uAmGjGvd_lN have the same 64-bit FNV-1a hash
+    [Theory]
+    [InlineData("[BcWugYjVchJ]\nx = 1\n[uAmGjGvd_lN]\ny = 2\n")]
+    [InlineData("BcWugYjVchJ.x = 1\nuAmGjGvd_lN.y = 2\n")]
+    [InlineData("[BcWugYjVchJ.a]\nx = 1\n[uAmGjGvd_lN.a]\ny = 2\n")]
+    [InlineData("[[BcWugYjVchJ]]\nx = 1\n[[uAmGjGvd_lN]]\ny = 2\n")]
+    [InlineData("t = { BcWugYjVchJ.x = 1, uAmGjGvd_lN.y = 2 }\n")]
+    public void Deserialize_KeysWithCollidingHashes_AreDistinct(string toml)
+    {
+        var root = TomlSerializer.Deserialize<TomlTable>(toml)!;
+        if (root.TryGetValue("t", out var inline))
+        {
+            root = (TomlTable)inline;
+        }
+
+        Assert.HasCount(2, root);
+        Assert.Equal(["x"], GetLeafKeys(root["BcWugYjVchJ"]));
+        Assert.Equal(["y"], GetLeafKeys(root["uAmGjGvd_lN"]));
+
+        static List<string> GetLeafKeys(object value)
+        {
+            var keys = new List<string>();
+            switch (value)
+            {
+                case TomlTable table:
+                    foreach (var item in table)
+                    {
+                        if (item.Value is TomlTable or TomlTableArray)
+                        {
+                            keys.AddRange(GetLeafKeys(item.Value));
+                        }
+                        else
+                        {
+                            keys.Add(item.Key);
+                        }
+                    }
+
+                    break;
+
+                case TomlTableArray array:
+                    foreach (var item in array)
+                    {
+                        keys.AddRange(GetLeafKeys(item));
+                    }
+
+                    break;
+            }
+
+            return keys;
+        }
+    }
+
+    [Theory]
+    [InlineData("[a]\nx = 1\n[\"a\".b]\ny = 2\n")]
+    [InlineData("[a]\nx = 1\n['a'.b]\ny = 2\n")]
+    [InlineData("[a]\nx = 1\n[\"\\u0061\".b]\ny = 2\n")]
+    [InlineData("\"\\u0061\".x = 1\na.b.y = 2\n")]
+    public void Deserialize_QuotedKeysMatchBareKeys(string toml)
+    {
+        var root = TomlSerializer.Deserialize<TomlTable>(toml)!;
+
+        Assert.Single(root);
+        var a = (TomlTable)root["a"];
+        Assert.Equal(1L, a["x"]);
+        Assert.Equal(2L, ((TomlTable)a["b"])["y"]);
+    }
 }

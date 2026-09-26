@@ -5022,7 +5022,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 var member = finalMembers[i];
                 if (member.IsInitOnly && member.SetterAccessorName is null)
                 {
-                    member.SetterAccessorName = "__Set" + i.ToString(CultureInfo.InvariantCulture);
+                    // The other setter accessors are named after the index of the member when it was found, before the
+                    // members were ordered, so this one needs its own prefix
+                    member.SetterAccessorName = "__InitSet" + i.ToString(CultureInfo.InvariantCulture);
                     member.SetterAccessorIsInitAccessor = true;
                     member.IsInitOnly = false;
                 }

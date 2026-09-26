@@ -1466,6 +1466,42 @@ internal sealed partial class TestTomlSerializerContextManyErrors : TomlSerializ
 {
 }
 
+public class GeneratedAccessorBase
+{
+    public string X { get; init; } = "x-init";
+}
+
+public class GeneratedAccessorDerived : GeneratedAccessorBase
+{
+    [TomlInclude]
+    public string Y { get; private set; } = "y-init";
+
+    public required string R { get; init; }
+
+    public string GetY() => Y;
+}
+
+public class GeneratedAccessorSameType
+{
+    public string P { get; init; } = "p";
+
+    public required string Q { get; init; }
+
+    // The generated code sets the field through an accessor
+#pragma warning disable IDE0044 // Make field readonly
+    [TomlInclude]
+    private string _f = "f";
+#pragma warning restore IDE0044
+
+    public string GetF() => _f;
+}
+
+[TomlSerializable(typeof(GeneratedAccessorDerived))]
+[TomlSerializable(typeof(GeneratedAccessorSameType))]
+internal sealed partial class TestTomlSerializerContextAccessorNames : TomlSerializerContext
+{
+}
+
 [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
 public sealed class GeneratedRequiredPopulateModel
 {
@@ -2947,6 +2983,18 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Point.X);
             Assert.Equal(5, value.Point.Y);
         }
+    }
+
+    [Fact]
+    public void InitAccessors_DoNotCollideWithTheOtherSetterAccessors()
+    {
+        var derived = TomlSerializer.Deserialize("X = 'x-toml'\nY = 'y-toml'\nR = 'r'\n", TestTomlSerializerContextAccessorNames.Default.GeneratedAccessorDerived)!;
+        var sameType = TomlSerializer.Deserialize("P = 'p-toml'\nQ = 'q'\n_f = 'f-toml'\n", TestTomlSerializerContextAccessorNames.Default.GeneratedAccessorSameType)!;
+
+        Assert.Equal("x-toml", derived.X);
+        Assert.Equal("y-toml", derived.GetY());
+        Assert.Equal("p-toml", sameType.P);
+        Assert.Equal("f-toml", sameType.GetF());
     }
 
     [Theory]

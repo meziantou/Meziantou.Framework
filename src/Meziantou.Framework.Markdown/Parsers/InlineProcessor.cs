@@ -20,6 +20,11 @@ namespace Meziantou.Framework.Markdown.Parsers;
 /// </summary>
 public class InlineProcessor
 {
+    /// <summary>
+    /// The number of open containers or inlines that are walked; beyond it, the chain of open containers is tracked instead.
+    /// </summary>
+    internal const int OpenContainersTrackingThreshold = 256;
+
     private readonly List<StringLineGroup.LineOffset> _lineOffsets = [];
     private int _previousSliceOffset;
     private int _previousLineIndexForSliceOffset;
@@ -28,6 +33,9 @@ public class InlineProcessor
     internal ContainerBlock? _previousContainerToReplace;
     internal ContainerBlock? _newContainerToReplace;
     private InlineLinkScanCache? _linkScanCache;
+    private readonly InlineContainerChain _openContainers = new();
+    private bool _isParsingInlines;
+    private bool _isOpenContainersEngaged;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InlineProcessor" /> class.
@@ -270,6 +278,7 @@ public class InlineProcessor
 
         Root = new ContainerInline() { IsClosed = false };
         leafBlock.Inline = Root;
+        _openContainers.MaximumDepth = 0;
         Inline = null;
         Block = leafBlock;
         BlockNew = null;
@@ -285,6 +294,10 @@ public class InlineProcessor
         var textEnd = text.End;
         leafBlock.Lines.Release();
         int previousStart = -1;
+
+        // The chain of open containers is only tracked while the parsers run, even when one of them throws
+        _isParsingInlines = true;
+        using var parsingScope = new InlineParsingScope(this);
 
         while (!text.IsEmpty)
         {
@@ -390,8 +403,20 @@ public class InlineProcessor
         //    leafBlock.Inline.DumpTo(DebugLog);
         //}
 
+        // The parsers are done, so the containers do not need to report their changes anymore
+        EndInlineParsing();
+        var maximumContainerDepth = _openContainers.MaximumDepth;
+
         // PostProcess all inlines
         PostProcessInlines(0, Root, null, true);
+
+        // Unresolved delimiters nest the inlines that follow them, so the depth reached while parsing grows
+        // with the number of delimiters even when post-processing resolves them into a flat tree
+        // (e.g. `*a* *b* ...`). Only reject the input when the resolved inlines are really nested that deeply.
+        if (maximumContainerDepth > ThrowHelper.LargeDepthLimit)
+        {
+            ThrowHelper.CheckDepthLimit(GetInlineNestingDepth(BlockNew ?? leafBlock), useLargeLimit: true);
+        }
 
         //TransformDelimitersToLiterals();
 
@@ -512,12 +537,31 @@ public class InlineProcessor
 
     private ContainerInline FindLastContainer()
     {
-        var container = Block!.Inline!;
+        var root = Block!.Inline!;
+        if (_isOpenContainersEngaged)
+        {
+            if (ReferenceEquals(_openContainers.Root, root))
+            {
+                return _openContainers.GetDeepestContainer();
+            }
+
+            DisengageOpenContainers();
+        }
+
+        var container = root;
         for (int depth = 0; ; depth++)
         {
             Inline? lastChild = container.LastChild;
             if (lastChild is not null && lastChild.IsContainerInline && !lastChild.IsClosed)
             {
+                // Each unresolved delimiter is an open container, so walking the chain for each inline is quadratic when it is
+                // deep. Track it instead.
+                if (depth >= OpenContainersTrackingThreshold && _isParsingInlines)
+                {
+                    EngageOpenContainers(root);
+                    return _openContainers.GetDeepestContainer();
+                }
+
                 container = unsafe(Unsafe.As<ContainerInline>(lastChild));
             }
             else
@@ -526,6 +570,228 @@ public class InlineProcessor
                 return container;
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the chain of open containers when it is tracked and still describes the parents of the inlines of the current leaf.
+    /// </summary>
+    private bool TryGetOpenContainers([NotNullWhen(true)] out InlineContainerChain? openContainers, bool engage = false)
+    {
+        if (engage && _isParsingInlines && !_isOpenContainersEngaged && Block?.Inline is { } root)
+        {
+            EngageOpenContainers(root);
+        }
+
+        // The chain does not know the parents of its root, so it cannot be used when the root was replaced or moved
+        if (_isOpenContainersEngaged && _openContainers.Root is { Parent: null } chainRoot && ReferenceEquals(chainRoot, Block?.Inline))
+        {
+            openContainers = _openContainers;
+            return true;
+        }
+
+        openContainers = null;
+        return false;
+    }
+
+    private void EngageOpenContainers(ContainerInline root)
+    {
+        _isOpenContainersEngaged = true;
+        _openContainers.Engage(root);
+    }
+
+    private void DisengageOpenContainers()
+    {
+        if (_isOpenContainersEngaged)
+        {
+            _isOpenContainersEngaged = false;
+            _openContainers.Disengage();
+        }
+    }
+
+    private void EndInlineParsing()
+    {
+        _isParsingInlines = false;
+        DisengageOpenContainers();
+    }
+
+    /// <summary>
+    /// Finds the nearest <see cref="LinkDelimiterInline"/> among an inline and its parents.
+    /// </summary>
+    internal LinkDelimiterInline? FindLinkDelimiter(Inline inline)
+    {
+        return _isOpenContainersEngaged && TryGetOpenContainers(out var openContainers) && openContainers.TryFindLinkDelimiter(inline, out var linkDelimiter)
+            ? linkDelimiter
+            : inline.FirstParentOfType<LinkDelimiterInline>();
+    }
+
+    /// <summary>
+    /// Determines whether an inline or one of its parents is an active <see cref="LinkDelimiterInline"/>.
+    /// </summary>
+    internal bool HasActiveLinkDelimiter(Inline? inline)
+    {
+        if (inline is null)
+        {
+            return false;
+        }
+
+        if (_isOpenContainersEngaged && TryGetOpenContainers(out var openContainers) && openContainers.TryHasActiveLinkDelimiter(inline, out var hasActiveLinkDelimiter))
+        {
+            return hasActiveLinkDelimiter;
+        }
+
+        for (; inline is not null; inline = inline.Parent)
+        {
+            if (inline is LinkDelimiterInline { IsActive: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Deactivates an inline and its parents that are link delimiters, up to the nearest image delimiter.
+    /// </summary>
+    internal void DeactivateLinkDelimiters(Inline? inline)
+    {
+        if (inline is null || (_isOpenContainersEngaged && TryGetOpenContainers(out var openContainers) && openContainers.TryDeactivateLinkDelimiters(inline)))
+        {
+            return;
+        }
+
+        for (; inline is not null; inline = inline.Parent)
+        {
+            if (inline is LinkDelimiterInline linkDelimiter)
+            {
+                if (linkDelimiter.IsImage)
+                {
+                    break;
+                }
+
+                linkDelimiter.IsActive = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets what the autolink parser looks for before an inline. See <see cref="InlineContainerChain.TryGetAutoLinkContext"/>.
+    /// </summary>
+    /// <param name="inline">The inline.</param>
+    /// <param name="engage"><c>true</c> to track the chain of open containers when it is not tracked yet.</param>
+    /// <param name="anchor">The anchor HTML tag.</param>
+    /// <param name="linkDelimiterBalance">The balance of the active link delimiters.</param>
+    /// <param name="emphasisCharacters">The characters of the emphasis delimiters.</param>
+    internal bool TryGetAutoLinkContext(Inline inline, bool engage, out HtmlInline? anchor, out int linkDelimiterBalance, out string emphasisCharacters)
+    {
+        if (TryGetOpenContainers(out var openContainers, engage))
+        {
+            return openContainers.TryGetAutoLinkContext(inline, out anchor, out linkDelimiterBalance, out emphasisCharacters);
+        }
+
+        anchor = null;
+        linkDelimiterBalance = 0;
+        emphasisCharacters = "";
+        return false;
+    }
+
+    /// <summary>
+    /// Finds the nearest parent of an inline that is not a <see cref="DelimiterInline"/>.
+    /// </summary>
+    internal ContainerInline? FindNonDelimiterParent(Inline inline)
+    {
+        if (_isOpenContainersEngaged && TryGetOpenContainers(out var openContainers) && openContainers.TryFindNonDelimiterParent(inline, out var parent))
+        {
+            return parent;
+        }
+
+        parent = inline.Parent;
+        while (parent is DelimiterInline)
+        {
+            parent = parent.Parent;
+        }
+
+        return parent;
+    }
+
+    /// <summary>
+    /// Determines whether an inline or one of its parents is a <see cref="PipeTableDelimiterInline"/>, or whether its top
+    /// parent has one as a child, like <see cref="Inline.ContainsParentOrSiblingOfType{T}"/>.
+    /// </summary>
+    internal bool ContainsPipeTableDelimiter(Inline inline)
+    {
+        if (_isOpenContainersEngaged && TryGetOpenContainers(out var openContainers) && openContainers.TryContainsPipeTableDelimiter(inline, out var containsPipeTableDelimiter))
+        {
+            return containsPipeTableDelimiter;
+        }
+
+        if (inline.ContainsParentOfType<PipeTableDelimiterInline>())
+        {
+            return true;
+        }
+
+        var root = inline.Parent;
+        while (root?.Parent is not null)
+        {
+            root = root.Parent;
+        }
+
+        // The children of the root are all the inlines of a flat table, so track the chain instead of walking them each time
+        var count = 0;
+        for (var sibling = root?.FirstChild; sibling is not null; sibling = sibling.NextSibling)
+        {
+            if (sibling is PipeTableDelimiterInline)
+            {
+                return true;
+            }
+
+            if (++count == OpenContainersTrackingThreshold &&
+                TryGetOpenContainers(out openContainers, engage: true) &&
+                openContainers.TryContainsPipeTableDelimiter(inline, out containsPipeTableDelimiter))
+            {
+                return containsPipeTableDelimiter;
+            }
+        }
+
+        return false;
+    }
+
+    private static int GetInlineNestingDepth(Block block)
+    {
+        var maximumDepth = 0;
+        var stack = new Stack<(MarkdownObject Node, int Depth)>();
+        stack.Push((block, 0));
+        while (stack.TryPop(out var item))
+        {
+            switch (item.Node)
+            {
+                case ContainerBlock containerBlock:
+                    foreach (var child in containerBlock)
+                    {
+                        stack.Push((child, 0));
+                    }
+
+                    break;
+
+                case LeafBlock { Inline: { } inline }:
+                    stack.Push((inline, 0));
+                    break;
+
+                case ContainerInline containerInline:
+                    maximumDepth = Math.Max(maximumDepth, item.Depth);
+                    for (var child = containerInline.FirstChild; child is not null; child = child.NextSibling)
+                    {
+                        if (child is ContainerInline)
+                        {
+                            stack.Push((child, item.Depth + 1));
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        return maximumDepth;
     }
 
 
@@ -550,6 +816,7 @@ public class InlineProcessor
     private void Reset()
     {
         _unescapedSourceOffsets = null;
+        EndInlineParsing();
         Block = null;
         BlockNew = null;
         Inline = null;
@@ -594,5 +861,10 @@ public class InlineProcessor
         protected override InlineProcessor NewInstance() => new InlineProcessor();
 
         protected override void Reset(InlineProcessor instance) => instance.Reset();
+    }
+
+    private readonly ref struct InlineParsingScope(InlineProcessor processor)
+    {
+        public void Dispose() => processor.EndInlineParsing();
     }
 }

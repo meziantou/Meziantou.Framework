@@ -33,12 +33,40 @@ public abstract class DelimiterInline : ContainerInline
     /// <summary>
     /// Gets or sets the type of this delimiter.
     /// </summary>
-    public DelimiterType Type { get; set; }
+    public DelimiterType Type
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                if (IsInOpenChain && this is LinkDelimiterInline linkDelimiter)
+                {
+                    InlineContainerChain.OnLinkDelimiterChanged(linkDelimiter, resetDeactivation: false);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets a value indicating whether this instance is active.
     /// </summary>
-    public bool IsActive { get; set; }
+    public bool IsActive
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                if (IsInOpenChain && this is LinkDelimiterInline linkDelimiter)
+                {
+                    InlineContainerChain.OnLinkDelimiterChanged(linkDelimiter, resetDeactivation: value);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Converts this delimiter to a literal.

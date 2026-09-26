@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
 
 namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -47,7 +48,16 @@ public abstract class Inline : MarkdownObject, IInline
     public bool IsClosed
     {
         get => IsClosedInternal;
-        set => IsClosedInternal = value;
+        set
+        {
+            // The spare bit of a container tells whether it is in an engaged chain of open containers
+            if (InternalSpareBit && IsContainerInline && IsClosedInternal != value)
+            {
+                InlineContainerChain.OnClosedChanged((ContainerInline)this);
+            }
+
+            IsClosedInternal = value;
+        }
     }
 
     /// <summary>
@@ -170,6 +180,12 @@ public abstract class Inline : MarkdownObject, IInline
         {
             var container = unsafe(Unsafe.As<ContainerInline>(this));
 
+            // The container left its parent, so a chain of open containers does not need to know about its children anymore
+            if (parent is not null && container.IsInOpenChain)
+            {
+                InlineContainerChain.OnContainerDetached(container);
+            }
+
             ContainerInline? newContainer = inline.IsContainerInline && !inline.IsClosed
                 ? unsafe(Unsafe.As<ContainerInline>(inline))
                 : null;
@@ -178,6 +194,12 @@ public abstract class Inline : MarkdownObject, IInline
             // We need a method to quickly move all children without having to mess Next/Prev sibling
             var child = container.FirstChild;
             var lastChild = inline;
+
+            // A chain of open containers is notified once for all the children moved to the parent, instead of once for each
+            var chainParent = newContainer is null && child is not null && inline.Parent is { IsInOpenChain: true } flaggedParent ? flaggedParent : null;
+            var chainParentLastChild = chainParent?.LastChild;
+            chainParent?.IsInOpenChain = false;
+
             while (child != null)
             {
                 var nextChild = child.NextSibling;
@@ -192,6 +214,12 @@ public abstract class Inline : MarkdownObject, IInline
                 }
                 lastChild = child;
                 child = nextChild;
+            }
+
+            if (chainParent is not null)
+            {
+                chainParent.IsInOpenChain = true;
+                InlineContainerChain.OnChildrenMoved(chainParent, chainParentLastChild, inline.NextSibling!, lastChild);
             }
 
             return lastChild;

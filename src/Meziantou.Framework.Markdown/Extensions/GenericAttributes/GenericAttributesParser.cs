@@ -48,14 +48,7 @@ public class GenericAttributesParser : InlineParser
             // try to find a suitable parent, otherwise attach the html attributes to the block
             if (inline is LiteralInline)
             {
-                while (true)
-                {
-                    inline = inline.Parent;
-                    if (!(inline is DelimiterInline))
-                    {
-                        break;
-                    }
-                }
+                inline = processor.FindNonDelimiterParent(inline);
             }
             var objectToAttach = inline is null || inline == processor.Root ? (MarkdownObject)processor.Block! : inline;
 

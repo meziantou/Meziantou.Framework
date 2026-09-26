@@ -205,10 +205,23 @@ public class AutoLinkParser : InlineParser
 
     private static bool IsAutoLinkValidInCurrentContext(InlineProcessor processor, ref ValueStringBuilder pendingEmphasis)
     {
+        // The walks below visit all the previous inlines and all the unresolved delimiters. When there are many of them, the
+        // inline processor tracks what they look for.
+        if (processor.Inline is { } inline && processor.TryGetAutoLinkContext(inline, engage: false, out var anchor, out var linkDelimiterBalance, out var emphasisCharacters))
+        {
+            return IsValidContext(anchor, linkDelimiterBalance, emphasisCharacters, ref pendingEmphasis);
+        }
+
         // Case where there is a pending HtmlInline <a>
         var currentInline = processor.Inline;
+        var visitedCount = 0;
         while (currentInline != null)
         {
+            if (++visitedCount == InlineProcessor.OpenContainersTrackingThreshold && processor.TryGetAutoLinkContext(processor.Inline!, engage: true, out anchor, out linkDelimiterBalance, out emphasisCharacters))
+            {
+                return IsValidContext(anchor, linkDelimiterBalance, emphasisCharacters, ref pendingEmphasis);
+            }
+
             if (currentInline is HtmlInline htmlInline)
             {
                 // If we have a </a> we don't expect nested <a>
@@ -260,5 +273,16 @@ public class AutoLinkParser : InlineParser
         }
 
         return countBrackets <= 0;
+
+        static bool IsValidContext(HtmlInline? anchor, int linkDelimiterBalance, string emphasisCharacters, ref ValueStringBuilder pendingEmphasis)
+        {
+            if (anchor is not null && !anchor.Tag.StartsWith("</a", StringComparison.OrdinalIgnoreCase) && anchor.Tag.StartsWith("<a", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            pendingEmphasis.Append(emphasisCharacters);
+            return linkDelimiterBalance <= 0;
+        }
     }
 }

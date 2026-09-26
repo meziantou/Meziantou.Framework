@@ -26,7 +26,21 @@ public class LinkDelimiterInline : DelimiterInline
     /// <summary>
     /// Gets or sets a value indicating whether this delimiter is an image link.
     /// </summary>
-    public bool IsImage { get; set; }
+    public bool IsImage
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                if (IsInOpenChain)
+                {
+                    InlineContainerChain.OnLinkDelimiterChanged(this, resetDeactivation: true);
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the label of this link.

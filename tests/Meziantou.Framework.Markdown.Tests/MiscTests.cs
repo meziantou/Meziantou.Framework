@@ -334,6 +334,131 @@ public class MiscTests
         return count;
     }
 
+    [Theory]
+    [InlineData("*x* ", "<em>x</em>", "")]
+    [InlineData("_x_ ", "<em>x</em>", "")]
+    [InlineData("**x** ", "<strong>x</strong>", "")]
+    [InlineData("a* ", "a*", "")]
+    [InlineData("~~x~~ ", "<del>x</del>", "emphasisextras")]
+    [InlineData("*x* ", "<em>x</em>", "advanced")]
+    public void ManyEmphasisDelimitersInAParagraphDoNotExceedTheDepthLimit(string item, string expectedItem, string extensions)
+    {
+        const int Count = 8000;
+        var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
+
+        var html = MarkdownConverter.ToHtml(string.Concat(Enumerable.Repeat(item, Count)), pipeline);
+
+        Assert.Equal("<p>" + string.Join(' ', Enumerable.Repeat(expectedItem, Count)) + "</p>\n", html);
+    }
+
+    [Fact]
+    public void ManyEmphasisDelimitersInAParagraphAreParsedInLinearTime()
+    {
+        // Each inline used to walk the chain of all the unresolved delimiters before it
+        const int Count = 100_000;
+        var markdown = string.Concat(Enumerable.Repeat("*x* ", Count));
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown);
+        stopwatch.Stop();
+
+        Assert.Equal("<p>" + string.Join(' ', Enumerable.Repeat("<em>x</em>", Count)) + "</p>\n", html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void GuardsAgainstHighlyNestedEmphasis()
+    {
+        const int Count = 11 * 1024;
+        var markdown = string.Concat(Enumerable.Repeat("**a ", Count)) + string.Concat(Enumerable.Repeat("b** ", Count));
+
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
+        Assert.Contains("depth limit", e.Message);
+    }
+
+    [Theory]
+    [InlineData("*x* ] ", 32_000, "", 0, "", "<em>x</em> ] ", "")]
+    [InlineData("*x* ", 5_000, "] ", 100_000, "", "<em>x</em> ", "] ")]
+    [InlineData("*a ", 50_000, "b_ ", 50_000, "", "*a ", "b_ ")]
+    [InlineData("*x* [l](u) ", 16_000, "", 0, "", "<em>x</em> <a href=\"u\">l</a> ", "")]
+    [InlineData("*x* [a] ", 16_000, "", 0, "", "<em>x</em> [a] ", "")]
+    [InlineData("*x* www.a.com ", 16_000, "", 0, "autolinks", "<em>x</em> <a href=\"http://www.a.com\">www.a.com</a> ", "")]
+    [InlineData("www.a.com ", 16_000, "", 0, "autolinks", "<a href=\"http://www.a.com\">www.a.com</a> ", "")]
+    [InlineData("*x* ab cd{.cls} ", 16_000, "", 0, "attributes", null, null)]
+    [InlineData("*x* ab cd{.cls} ] www.a.com ", 16_000, "", 0, "advanced", null, null)]
+    public void ManyDelimitersInAParagraphAreParsedInLinearTime(string item, int count, string suffixItem, int suffixCount, string extensions, string? expectedItem, string? expectedSuffixItem)
+    {
+        // Each of these inputs used to walk up all the unresolved delimiters for each item
+        var markdown = string.Concat(Enumerable.Repeat(item, count)) + string.Concat(Enumerable.Repeat(suffixItem, suffixCount));
+        var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        if (expectedItem is not null && expectedSuffixItem is not null)
+        {
+            var expected = string.Concat(Enumerable.Repeat(expectedItem, count)) + string.Concat(Enumerable.Repeat(expectedSuffixItem, suffixCount));
+            Assert.Equal("<p>" + expected.TrimEnd() + "</p>\n", html);
+        }
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("[a[")]
+    [InlineData("[a][")]
+    [InlineData("[a *x* ")]
+    [InlineData("[*x* ")]
+    public void DeeplyNestedLinkDelimitersAreRejectedQuickly(string item)
+    {
+        var markdown = string.Concat(Enumerable.Repeat(item, 100_000));
+
+        var stopwatch = Stopwatch.StartNew();
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
+        stopwatch.Stop();
+
+        Assert.Contains("depth limit", e.Message);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void NestedLinkDelimitersBelowManyEmphasisDelimitersAreRejectedQuickly()
+    {
+        // The emphasis delimiters make the chain of open containers as deep as it was rejected before. Nested link delimiters
+        // below them are still rejected: removing them one at a time costs quadratic time.
+        var markdown = string.Concat(Enumerable.Repeat("*x* ", 8000)) + new string('[', 10_000) + new string(']', 10_000);
+
+        var stopwatch = Stopwatch.StartNew();
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
+        stopwatch.Stop();
+
+        Assert.Contains("depth limit", e.Message);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("autolinks", "<a href=\"x\">www.a.com</a> www.b.com", "<p><a href=\"x\">www.a.com</a> <a href=\"http://www.b.com\">www.b.com</a></p>\n")]
+    [InlineData("autolinks", "*<a href=\"x\">* www.a.com", "<p><em><a href=\"x\"></em> www.a.com</p>\n")]
+    [InlineData("autolinks", "<abbr>www.a.com</abbr> www.b.com", "<p><abbr>www.a.com</abbr> <a href=\"http://www.b.com\">www.b.com</a></p>\n")]
+    [InlineData("autolinks", "**www.a.com** _www.b.com_", "<p><strong><a href=\"http://www.a.com\">www.a.com</a></strong> <em><a href=\"http://www.b.com\">www.b.com</a></em></p>\n")]
+    [InlineData("autolinks", "[www.a.com](u) [x www.b.com", "<p><a href=\"u\">www.a.com</a> [x www.b.com</p>\n")]
+    [InlineData("autolinks", "*[x* www.a.com", "<p><em>[x</em> www.a.com</p>\n")]
+    [InlineData("autolinks", "<a>*y* [z](u) www.a.com", "<p><a><em>y</em> <a href=\"u\">z</a> www.a.com</p>\n")]
+    [InlineData("attributes", "*x* *ab cd{.cls}* e", "<p class=\"cls\"><em>x</em> <em>ab cd</em> e</p>\n")]
+    [InlineData("", "[a [b](u) c](v)", "<p>[a <a href=\"u\">b</a> c](v)</p>\n")]
+    [InlineData("", "![a [b](u) c](v)", "<p><img src=\"v\" alt=\"a b c\" /></p>\n")]
+    [InlineData("", "[a *[b](u)* c](v) [d](w)", "<p>[a <em><a href=\"u\">b</a></em> c](v) <a href=\"w\">d</a></p>\n")]
+    [InlineData("", "[x [a][r] y](v)\n\n[r]: /r", "<p>[x <a href=\"/r\">a</a> y](v)</p>\n")]
+    [InlineData("", "[a [b [c](u) d] e](v)", "<p>[a [b <a href=\"u\">c</a> d] e](v)</p>\n")]
+    [InlineData("", "[[*x* *y* ]] [*z*](u)", "<p>[[<em>x</em> <em>y</em> ]] <a href=\"u\"><em>z</em></a></p>\n")]
+    public void ParsersSeeTheUnresolvedDelimitersAroundTheCurrentInline(string extensions, string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
     [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {

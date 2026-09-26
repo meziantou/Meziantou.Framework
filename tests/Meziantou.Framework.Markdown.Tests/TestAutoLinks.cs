@@ -78,6 +78,23 @@ public class TestAutoLinks
         AssertEqualIgnoringWhiteSpace("<h1 id=\"header\">Header</h1>\n<p>[Testing <a href=\"/explicit\">Header</a>](/target)</p>", html);
     }
 
+    [Theory]
+    [InlineData("[<a href='x'> b ] www.a.com", "[<a href='x'> b ] www.a.com")]
+    [InlineData("[<a href='x'> b </a> ] www.a.com", "[<a href='x'> b </a> ] <a href=\"http://www.a.com\">www.a.com</a>")]
+    [InlineData("[b <a href='x'>] www.a.com", "[b <a href='x'>] www.a.com")]
+    [InlineData("[<a href='x'>[c] www.a.com", "[<a href='x'>[c] www.a.com")]
+    public void AutoLinkIsNotCreatedAfterAPendingAnchorMovedByABracket(string markdown, string expected)
+    {
+        // Many unresolved emphasis delimiters make the inline processor track what the autolink parser looks for
+        var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
+        foreach (var prefix in new[] { "", string.Concat(Enumerable.Repeat("*x ", 300)) })
+        {
+            var html = MarkdownConverter.ToHtml(prefix + markdown, pipeline);
+
+            Assert.Equal("<p>" + prefix + expected + "</p>\n", html);
+        }
+    }
+
     private static void AssertEqualIgnoringWhiteSpace(string expected, string actual, string? message = null)
     {
         Assert.Equal(RemoveWhiteSpace(expected), RemoveWhiteSpace(actual), message: message);

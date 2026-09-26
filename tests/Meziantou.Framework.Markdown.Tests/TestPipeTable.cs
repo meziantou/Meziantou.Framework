@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Meziantou.Framework.Markdown;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Syntax;
@@ -304,5 +306,58 @@ public sealed class TestPipeTable
         var table = Assert.Single(MarkdownConverter.Parse(markdown, pipeline).Descendants<Table>());
 
         Assert.All(table, row => Assert.HasCount(Count, (TableRow)row));
+    }
+
+    [Fact]
+    public void LargeTableWithEmphasisDoesNotExceedTheDepthLimit()
+    {
+        // The whole table is a single paragraph: its emphasis delimiters nest across all the rows until they are resolved
+        const int RowCount = 3000;
+        var markdown = "| a | b |\n|---|---|\n" + string.Concat(Enumerable.Repeat("| *x* | **y** |\n", RowCount));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        var expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n"
+            + string.Concat(Enumerable.Repeat("<tr>\n<td><em>x</em></td>\n<td><strong>y</strong></td>\n</tr>\n", RowCount))
+            + "</tbody>\n</table>\n";
+        Assert.Equal(expected, html);
+    }
+
+    [Fact]
+    public void LargeTableWithEmphasisAndLinksIsParsedInLinearTime()
+    {
+        const int RowCount = 8000;
+        var markdown = "| a | b |\n|---|---|\n" + string.Concat(Enumerable.Repeat("| *x* | [l](u) |\n", RowCount));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        var expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n"
+            + string.Concat(Enumerable.Repeat("<tr>\n<td><em>x</em></td>\n<td><a href=\"u\">l</a></td>\n</tr>\n", RowCount))
+            + "</tbody>\n</table>\n";
+        Assert.Equal(expected, html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void LargeTableWithUnclosedCodeSpansIsParsedInLinearTime()
+    {
+        // An unclosed code span followed by a line starting with a pipe looks for a pipe delimiter among its parents
+        const int RowCount = 8000;
+        var markdown = "| a |\n|---|\n" + string.Concat(Enumerable.Repeat("| *x* `c |\n", RowCount));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        var expected = "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n"
+            + string.Concat(Enumerable.Repeat("<tr>\n<td><em>x</em> `c</td>\n</tr>\n", RowCount))
+            + "</tbody>\n</table>\n";
+        Assert.Equal(expected, html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 }

@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -42,6 +43,16 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     public Inline? LastChild { get; private set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether this container is in an engaged <see cref="InlineContainerChain"/>, which must
+    /// be notified when its children change or when it is closed.
+    /// </summary>
+    internal bool IsInOpenChain
+    {
+        get => InternalSpareBit;
+        set => InternalSpareBit = value;
+    }
+
+    /// <summary>
     /// Clears this instance by removing all its children.
     /// </summary>
     public void Clear()
@@ -54,6 +65,10 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         }
         FirstChild = null;
         LastChild = null;
+        if (IsInOpenChain)
+        {
+            InlineContainerChain.OnChildrenCleared(this);
+        }
     }
 
     /// <summary>
@@ -76,6 +91,10 @@ public class ContainerInline : Inline, IEnumerable<Inline>
             FirstChild = child;
             LastChild = child;
             child.Parent = this;
+            if (IsInOpenChain)
+            {
+                InlineContainerChain.OnChildInserted(this, child);
+            }
         }
         else
         {
@@ -241,6 +260,11 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         {
             FirstChild = LastChild;
         }
+
+        if (IsInOpenChain)
+        {
+            InlineContainerChain.OnChildInserted(this, child);
+        }
     }
 
     /// <summary>
@@ -263,6 +287,11 @@ public class ContainerInline : Inline, IEnumerable<Inline>
         else if (child == LastChild)
         {
             LastChild = child.PreviousSibling ?? FirstChild;
+        }
+
+        if (IsInOpenChain)
+        {
+            InlineContainerChain.OnChildRemoved(this, child);
         }
     }
 

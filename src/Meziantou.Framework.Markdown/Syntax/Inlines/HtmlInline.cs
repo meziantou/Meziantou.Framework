@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
+using Meziantou.Framework.Markdown.Parsers;
 
 namespace Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -24,5 +25,16 @@ public class HtmlInline : LeafInline
     /// <summary>
     /// Gets or sets the full declaration of this tag.
     /// </summary>
-    public string Tag { get; set; }
+    public string Tag
+    {
+        get;
+        set
+        {
+            field = value;
+            if (Parent is { IsInOpenChain: true } parent)
+            {
+                InlineContainerChain.OnChildChanged(parent, this);
+            }
+        }
+    }
 }

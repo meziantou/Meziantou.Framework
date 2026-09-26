@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Html;
@@ -19,6 +20,9 @@ namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 /// <seealso cref="IPostInlineProcessor" />
 public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 {
+    // Paragraphs with more emphasis delimiters than this keep track of the openers already rejected by a closer
+    private const int OpenersBottomThreshold = 32;
+
     private CharacterMap<EmphasisDescriptor>? _emphasisMap;
     private readonly DelimitersObjectCache _inlinesCache = new();
     /// <summary>
@@ -259,12 +263,25 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         // The following method is inspired by the "An algorithm for parsing nested emphasis and links"
         // at the end of the CommonMark specs.
 
-        // TODO: Benchmark difference between using List and LinkedList here since there could be a few Remove calls
+        // Delimiters are only removed at or before the current closer. The delimiter stack is the start of the list, and
+        // delimiters are moved to it when they are reached, so removing them never shifts the ones not processed yet.
+        var stackCount = 0;
+
+        // For each emphasis character, closer that can also open or not, and closer count modulo 3, the delimiters below
+        // openersBottom were all rejected as openers by a previous closer. Whether a delimiter can open for a closer only depends
+        // on these and on the count of the delimiter, so they stay rejected until one of them is matched, which is the only
+        // way the count of a delimiter changes: a match lowers the bottoms to the opener. Scanning a few delimiters is cheaper.
+        var bottomCount = delimiters.Count > OpenersBottomThreshold ? OpeningCharacters!.Length * 6 : 0;
+        Span<int> openersBottom = bottomCount <= 64 ? unsafe(stackalloc int[bottomCount]) : new int[bottomCount];
+        openersBottom.Clear();
+        var maximumBottom = 0;
 
         // Move current_position forward in the delimiter stack (if needed) until
         // we find the first potential closer with delimiter * or _. (This will be the potential closer closest to the beginning of the input – the first one in parse order.)
-        for (int i = 0; i < delimiters.Count; i++)
+        for (var next = 0; next < delimiters.Count; next++)
         {
+            var i = stackCount++;
+            delimiters[i] = delimiters[next];
             var closeDelimiter = delimiters[i];
             // Skip delimiters not supported by this instance
             EmphasisDescriptor? emphasisDesc = _emphasisMap![closeDelimiter.DelimiterChar];
@@ -275,13 +292,21 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 
             if (closeDelimiter.Type.HasFlag(DelimiterType.Close))
             {
+                var characterIndex = -2;
                 while (closeDelimiter.DelimiterCount >= emphasisDesc.MinimumCount)
                 {
+                    // The bottoms are all 0 until a closer finds no opener
+                    var bottomIndex = -1;
+                    if (maximumBottom > 0)
+                    {
+                        bottomIndex = GetBottomIndex(closeDelimiter, ref characterIndex);
+                    }
+
                     // Now, look back in the stack (staying above stack_bottom and the openers_bottom for this delimiter type)
                     // for the first matching potential opener (“matching” means same delimiter).
                     EmphasisDelimiterInline? openDelimiter = null;
                     int openDelimiterIndex = -1;
-                    for (int j = i - 1; j >= 0; j--)
+                    for (int j = i - 1; j >= (bottomIndex < 0 ? 0 : openersBottom[bottomIndex]); j--)
                     {
                         var previousOpenDelimiter = delimiters[j];
 
@@ -302,6 +327,16 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 
                     if (openDelimiter != null)
                     {
+                        if (maximumBottom > openDelimiterIndex)
+                        {
+                            foreach (ref var bottom in openersBottom)
+                            {
+                                bottom = Math.Min(bottom, openDelimiterIndex);
+                            }
+
+                            maximumBottom = openDelimiterIndex;
+                        }
+
                     process_delims:
                         Debug.Assert(openDelimiter.DelimiterCount >= emphasisDesc.MinimumCount, "Extra emphasis should have been discarded by now");
                         Debug.Assert(closeDelimiter.DelimiterCount >= emphasisDesc.MinimumCount, "Extra emphasis should have been discarded by now");
@@ -358,7 +393,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                         {
                             var literalDelimiter = delimiters[k];
                             literalDelimiter.ReplaceBy(literalDelimiter.AsLiteralInline());
-                            delimiters.RemoveAt(k);
+                            RemoveFromStack(delimiters, ref stackCount, k);
                             i--;
                         }
 
@@ -367,7 +402,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                             var newParent = openDelimiter.DelimiterCount > 0 ? emphasis : emphasis.Parent!;
                             closeDelimiter.MoveChildrenAfter(newParent);
                             closeDelimiter.Remove();
-                            delimiters.RemoveAt(i);
+                            RemoveFromStack(delimiters, ref stackCount, i);
                             i--;
 
                             // Remove the open delimiter if it is also empty
@@ -375,7 +410,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                             {
                                 openDelimiter.MoveChildrenAfter(openDelimiter);
                                 openDelimiter.Remove();
-                                delimiters.RemoveAt(openDelimiterIndex);
+                                RemoveFromStack(delimiters, ref stackCount, openDelimiterIndex);
                                 i--;
                             }
                             break;
@@ -391,7 +426,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                         {
                             // There are still delimiter characters left, there's just not enough of them
                             openDelimiter.ReplaceBy(openDelimiter.AsLiteralInline());
-                            delimiters.RemoveAt(openDelimiterIndex);
+                            RemoveFromStack(delimiters, ref stackCount, openDelimiterIndex);
                             i--;
                         }
                         else
@@ -403,12 +438,22 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                             firstChild.IsClosed = true;
                             closeDelimiter.Remove();
                             firstChild.InsertAfter(closeDelimiter);
-                            delimiters.RemoveAt(openDelimiterIndex);
+                            RemoveFromStack(delimiters, ref stackCount, openDelimiterIndex);
                             i--;
                         }
                     }
                     else
                     {
+                        if (!openersBottom.IsEmpty)
+                        {
+                            bottomIndex = GetBottomIndex(closeDelimiter, ref characterIndex);
+                            if (bottomIndex >= 0)
+                            {
+                                openersBottom[bottomIndex] = i;
+                                maximumBottom = Math.Max(maximumBottom, i);
+                            }
+                        }
+
                         // Keep unmatched closers attached until their trailing content
                         // has been moved out below.
                         break;
@@ -431,19 +476,36 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                 if (closeDelimiter.DelimiterCount > 0 && !closeDelimiter.Type.HasFlag(DelimiterType.Open))
                 {
                     closeDelimiter.ReplaceBy(closeDelimiter.AsLiteralInline());
-                    delimiters.RemoveAt(i);
-                    i--;
+                    RemoveFromStack(delimiters, ref stackCount, i);
                 }
             }
         }
 
         // Any delimiters left must be literal
-        for (int i = 0; i < delimiters.Count; i++)
+        for (var i = 0; i < stackCount; i++)
         {
             var delimiter = delimiters[i];
             delimiter.ReplaceBy(delimiter.AsLiteralInline());
         }
+
         delimiters.Clear();
+
+        int GetBottomIndex(EmphasisDelimiterInline closeDelimiter, ref int characterIndex)
+        {
+            if (characterIndex == -2)
+            {
+                characterIndex = Array.IndexOf(OpeningCharacters!, closeDelimiter.DelimiterChar);
+            }
+
+            return characterIndex < 0 ? -1 : (characterIndex * 6) + (closeDelimiter.Type.HasFlag(DelimiterType.Open) ? 3 : 0) + (closeDelimiter.DelimiterCount % 3);
+        }
+
+        static void RemoveFromStack(List<EmphasisDelimiterInline> delimiters, ref int stackCount, int index)
+        {
+            var stack = CollectionsMarshal.AsSpan(delimiters)[..stackCount];
+            stack[(index + 1)..].CopyTo(stack[index..]);
+            stackCount--;
+        }
     }
 
     /// <summary>

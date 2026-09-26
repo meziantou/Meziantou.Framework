@@ -89,7 +89,7 @@ public class CodeInlineParser : InlineParser
                     // If the next line starts with a pipe character, this is likely an incomplete CodeInline within a table.
                     // Treat it as regular text to avoid breaking the overall table shape.
                     // Use ContainsParentOrSiblingOfType to handle both nested and flat pipe table structures.
-                    if (processor.Inline != null && processor.Inline.ContainsParentOrSiblingOfType<PipeTableDelimiterInline>())
+                    if (processor.Inline != null && processor.ContainsPipeTableDelimiter(processor.Inline))
                     {
                         slice.Start = openingStart;
                         return false;

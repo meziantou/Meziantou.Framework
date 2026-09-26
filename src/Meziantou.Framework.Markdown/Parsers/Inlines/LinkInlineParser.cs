@@ -154,7 +154,7 @@ public class LinkInlineParser : InlineParser
 
         // An implicit definition must not hijack a bracket nested inside a
         // still-open link, which would break the outer one.
-        if (!linkRef.AllowResolutionInsideOpenLink && HasActiveAncestorLink(parent))
+        if (!linkRef.AllowResolutionInsideOpenLink && state.HasActiveLinkDelimiter(parent.Parent))
         {
             return false;
         }
@@ -252,7 +252,7 @@ public class LinkInlineParser : InlineParser
 
     private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
     {
-        LinkDelimiterInline? openParent = inlineState.Inline!.FirstParentOfType<LinkDelimiterInline>();
+        LinkDelimiterInline? openParent = inlineState.FindLinkDelimiter(inlineState.Inline!);
 
         if (openParent is null)
         {
@@ -329,7 +329,7 @@ public class LinkInlineParser : InlineParser
                 // (This will prevent us from getting links within links.)
                 if (!openParent.IsImage)
                 {
-                    MarkParentAsInactive(parentDelimiter);
+                    inlineState.DeactivateLinkDelimiters(parentDelimiter);
                 }
 
                 link.IsClosed = true;
@@ -383,7 +383,7 @@ public class LinkInlineParser : InlineParser
                 openParent.Remove();
                 if (!openParent.IsImage)
                 {
-                    MarkParentAsInactive(parentDelimiter);
+                    inlineState.DeactivateLinkDelimiters(parentDelimiter);
                 }
                 return true;
             }
@@ -455,42 +455,6 @@ public class LinkInlineParser : InlineParser
             }
 
             return null;
-        }
-    }
-
-    /// <summary>
-    /// Determines whether the delimiter is nested inside another link/image
-    /// delimiter that may still resolve.
-    /// </summary>
-    private static bool HasActiveAncestorLink(LinkDelimiterInline delimiter)
-    {
-        var inline = delimiter.Parent;
-        while (inline != null)
-        {
-            if (inline is LinkDelimiterInline { IsActive: true })
-            {
-                return true;
-            }
-            inline = inline.Parent;
-        }
-        return false;
-    }
-
-    private static void MarkParentAsInactive(Inline? inline)
-    {
-        while (inline != null)
-        {
-            if (inline is LinkDelimiterInline linkInline)
-            {
-                if (linkInline.IsImage)
-                {
-                    break;
-                }
-
-                linkInline.IsActive = false;
-            }
-
-            inline = inline.Parent;
         }
     }
 }

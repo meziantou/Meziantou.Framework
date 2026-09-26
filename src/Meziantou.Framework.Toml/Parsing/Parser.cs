@@ -546,32 +546,54 @@ internal partial class Parser
         // Count the depth the way TomlParser does. Each segment of a table header, and each segment but the last of a
         // dotted key, is a table. A table header starts from the root, and goes through the last element of each array
         // of tables it names.
+        // An error is reported on the segment that is too deep, like TomlParser does.
         depth = _currentContainerDepth;
         TableArrayPathNode? tableArrayPath = null;
         if (isTableHeader)
         {
-            depth = IncrementDepth(1, 1);
+            depth = IncrementDepth(1, 1, key.Key);
             tableArrayPath = _tableArrayPaths.GetChild(key.Key);
         }
 
+        var previousSegment = key.Key;
         while (_token.Kind == TokenKind.Dot)
         {
-            depth = IncrementDepth(depth, tableArrayPath is { IsTableArray: true } ? 2 : 1);
+            // In a header, the next segment is the next table. In a dotted key, the previous segment is.
+            var levels = tableArrayPath is { IsTableArray: true } ? 2 : 1;
+            if (!isTableHeader)
+            {
+                depth = IncrementDepth(depth, levels, previousSegment);
+            }
+
             var dotKey = ParseDotKey();
             AddToListAndUpdateSpan(key.DotKeys, dotKey);
+            if (isTableHeader)
+            {
+                depth = IncrementDepth(depth, levels, dotKey.Key);
+            }
+
             tableArrayPath = tableArrayPath?.GetChild(dotKey.Key);
+            previousSegment = dotKey.Key;
         }
         return Close(key);
     }
 
     // Reports an error when the depth goes past the maximum. The segments of a key are read in a loop, so the key can
     // still be read.
-    private int IncrementDepth(int depth, int levels)
+    private int IncrementDepth(int depth, int levels, SyntaxNode? segment = null)
     {
         var newDepth = depth + levels;
         if (depth <= _effectiveMaxDepth && newDepth > _effectiveMaxDepth)
         {
-            LogError(TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth));
+            var message = TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth);
+            if (segment is not null)
+            {
+                LogError(segment.Span, message);
+            }
+            else
+            {
+                LogError(message);
+            }
         }
 
         return newDepth;

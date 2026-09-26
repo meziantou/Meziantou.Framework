@@ -211,6 +211,22 @@ public sealed class MaxDepthTests
     }
 
     [Theory]
+    [InlineData("a.b.c = 1\n", 2)]
+    [InlineData("[a.b.c]\n", 2)]
+    [InlineData("[[a]]\n[[a.b]]\n", 3)]
+    [InlineData("x = {a.b.c = 1}\n", 3)]
+    public void SyntaxParser_ReportsDepthErrorsWhereTheDeserializerDoes(string toml, int maxDepth)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = maxDepth };
+
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml, options));
+        var diagnostic = Assert.Single(SyntaxParser.Parse(toml, options).Diagnostics);
+
+        Assert.Equal(exception.Span!.Value.Start.Line, diagnostic.Span.Start.Line);
+        Assert.Equal(exception.Span!.Value.Start.Column, diagnostic.Span.Start.Column);
+    }
+
+    [Theory]
     [InlineData(63, true)]
     [InlineData(62, false)]
     public void SyntaxParser_TableArrayHeaderCountsTheElement(int segments, bool isError)

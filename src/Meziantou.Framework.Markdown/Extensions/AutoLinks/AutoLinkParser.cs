@@ -87,40 +87,37 @@ public class AutoLinkParser : InlineParser
             return false;
         }
 
-        // Parse URL
-        if (!LinkHelper.TryParseUrl(ref slice, out string? link, out _, true))
+        // Parse URL. The scans are remembered, as a run of text without whitespace can contain many candidates.
+        var scanCache = processor.AutoLinkScanCache;
+        var urlEnd = scanCache.ScanUrl(slice);
+        if (urlEnd < 0)
         {
             return false;
         }
 
+        slice.Start = urlEnd;
+        var linkEnd = urlEnd;
+
         // If we have any pending emphasis, remove any pending emphasis characters from the end of the link
         if (pendingEmphasis.Length > 0)
         {
-            for (int i = link.Length - 1; i >= 0; i--)
+            // When all the characters are pending emphasis characters, the link is kept but the slice goes back to its start
+            slice.Start = scanCache.GetTrailingCharactersStart(startPosition, urlEnd, pendingEmphasis.AsSpan());
+            if (slice.Start > startPosition)
             {
-                if (pendingEmphasis.AsSpan().Contains(link[i]))
-                {
-                    slice.Start--;
-                }
-                else
-                {
-                    if (i < link.Length - 1)
-                    {
-                        link = link.Substring(0, i + 1);
-                    }
-                    break;
-                }
+                linkEnd = slice.Start;
             }
         }
 
+        // The link is only copied once it is known to be valid
+        var link = slice.Text.AsSpan(startPosition, linkEnd - startPosition);
         int domainOffset = 0;
 
         // Post-check URL
         switch (c)
         {
             case 'h':
-                if (string.Equals(link, "http://", StringComparison.Ordinal) ||
-                    string.Equals(link, "https://", StringComparison.Ordinal))
+                if (link.SequenceEqual("http://") || link.SequenceEqual("https://"))
                 {
                     return false;
                 }
@@ -132,7 +129,7 @@ public class AutoLinkParser : InlineParser
                 break;
 
             case 'f':
-                if (string.Equals(link, "ftp://", StringComparison.Ordinal))
+                if (link.SequenceEqual("ftp://"))
                 {
                     return false;
                 }
@@ -140,14 +137,14 @@ public class AutoLinkParser : InlineParser
                 break;
 
             case 't':
-                if (string.Equals(link, "tel", StringComparison.Ordinal))
+                if (link.SequenceEqual("tel"))
                 {
                     return false;
                 }
                 break;
 
             case 'm':
-                int atIndex = link.IndexOf('@', StringComparison.Ordinal);
+                int atIndex = scanCache.IndexOfAt(startPosition, linkEnd);
                 if (atIndex == -1 ||
                     atIndex == 7) // mailto:@ - no email part
                 {
@@ -158,11 +155,12 @@ public class AutoLinkParser : InlineParser
         }
 
         // Do not need to check if a telephone number is a valid domain
-        if (c != 't' && !LinkHelper.IsValidDomain(link, domainOffset, Options.AllowDomainWithoutPeriod))
+        if (c != 't' && !scanCache.IsValidDomain(startPosition, startPosition + domainOffset, linkEnd, Options.AllowDomainWithoutPeriod))
         {
             return false;
         }
 
+        var url = link.ToString();
         var inline = new LinkInline()
         {
             Span =
@@ -171,7 +169,7 @@ public class AutoLinkParser : InlineParser
             },
             Line = line,
             Column = column,
-            Url = c == 'w' ? ((Options.UseHttpsForWWWLinks ? "https://" : "http://") + link) : link,
+            Url = c == 'w' ? ((Options.UseHttpsForWWWLinks ? "https://" : "http://") + url) : url,
             IsClosed = true,
             IsAutoLink = true,
         };
@@ -183,14 +181,14 @@ public class AutoLinkParser : InlineParser
             _ => 0
         };
 
-        inline.Span.End = inline.Span.Start + link.Length - 1;
+        inline.Span.End = inline.Span.Start + url.Length - 1;
         inline.UrlSpan = inline.Span;
         inline.AppendChild(new LiteralInline()
         {
             Span = inline.Span,
             Line = line,
             Column = column,
-            Content = new StringSlice(slice.Text, startPosition + skipFromBeginning, startPosition + link.Length - 1),
+            Content = new StringSlice(slice.Text, startPosition + skipFromBeginning, startPosition + url.Length - 1),
             IsClosed = true
         });
         processor.Inline = inline;

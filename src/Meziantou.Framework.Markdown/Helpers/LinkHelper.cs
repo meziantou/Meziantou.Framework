@@ -1190,14 +1190,14 @@ public static class LinkHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsTrailingUrlStopCharacter(char c)
+    internal static bool IsTrailingUrlStopCharacter(char c)
     {
         // Trailing punctuation (specifically, ?, !, ., ,, :, *, _, and ~) will not be considered part of the autolink, though they may be included in the interior of the link:
         return c == '?' || c == '!' || c == '.' || c == ',' || c == ':' || c == '*' || c == '*' || c == '_' || c == '~';
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsEndOfUri(char c, bool isAutoLink)
+    internal static bool IsEndOfUri(char c, bool isAutoLink)
     {
         return c == '\0' || c.IsSpaceOrTab() || c.IsControl() || (isAutoLink && c == '<'); // TODO: specs unclear. space is strict or relaxed? (includes tabs?)
     }
@@ -1206,6 +1206,14 @@ public static class LinkHelper
     /// Determines whether valid domain.
     /// </summary>
     public static bool IsValidDomain(string link, int prefixLength, bool allowDomainWithoutPeriod = false)
+    {
+        return IsValidDomain(link.AsSpan(), prefixLength, allowDomainWithoutPeriod);
+    }
+
+    /// <summary>
+    /// Determines whether the domain starting at <paramref name="prefixLength"/> in <paramref name="link"/> is valid.
+    /// </summary>
+    internal static bool IsValidDomain(ReadOnlySpan<char> link, int prefixLength, bool allowDomainWithoutPeriod)
     {
         // https://github.github.com/gfm/#extended-www-autolink
         // A valid domain consists of alphanumeric characters, underscores (_), hyphens (-) and periods (.).

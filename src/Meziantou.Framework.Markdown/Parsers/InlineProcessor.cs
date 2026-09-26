@@ -36,6 +36,7 @@ public class InlineProcessor
     private InlineLinkScanCache? _linkScanCache;
     private InlineHtmlScanCache? _htmlScanCache;
     private GenericAttributesScanCache? _genericAttributesScanCache;
+    private AutoLinkScanCache? _autoLinkScanCache;
     private readonly InlineContainerChain _openContainers = new();
     private bool _isParsingInlines;
     private bool _isOpenContainersEngaged;
@@ -121,6 +122,11 @@ public class InlineProcessor
     /// Gets the cache used by <see cref="GenericAttributesParser"/> to avoid scanning the same characters again for each '{'.
     /// </summary>
     internal GenericAttributesScanCache GenericAttributesScanCache => _genericAttributesScanCache ??= new();
+
+    /// <summary>
+    /// Gets the cache used by the autolink parser to avoid scanning the same characters again for each URL candidate.
+    /// </summary>
+    internal AutoLinkScanCache AutoLinkScanCache => _autoLinkScanCache ??= new();
 
     private long _referenceExpansionLength;
 
@@ -627,6 +633,9 @@ public class InlineProcessor
     {
         _isParsingInlines = false;
         DisengageOpenContainers();
+
+        // The scans of the autolink parser only apply to the inline text of this leaf
+        _autoLinkScanCache?.Clear();
     }
 
     /// <summary>

@@ -76,6 +76,14 @@ public sealed class StyledChild
     public string Text { get; set; } = "a\nb";
 }
 
+[TomlDottedKeyHandling(TomlDottedKeyHandling.Expand)]
+public sealed class ExpandedStyledHolder
+{
+    [TomlPropertyName("a.s")]
+    [TomlStringStyle(TomlStringStyle.Literal)]
+    public string S { get; set; } = "x";
+}
+
 public sealed class InvalidStringStyleAttributeHolder
 {
     [TomlStringStyle(TomlStringStyle.Basic)]
@@ -89,6 +97,7 @@ public sealed class InvalidStringStyleAttributeHolder
 [TomlSerializable(typeof(MultilineStringStyleHolder))]
 [TomlSerializable(typeof(HexEscapeStringStyleHolder))]
 [TomlSerializable(typeof(InlineStyledChildHolder))]
+[TomlSerializable(typeof(ExpandedStyledHolder))]
 internal sealed partial class TestTomlStyleAttributesContext : TomlSerializerContext
 {
 }
@@ -150,6 +159,15 @@ public class NewApiStyleAttributeTests
         Assert.Equal(expected, reflectionToml.ReplaceLineEndings("\n"));
         Assert.Equal(expected, generatedToml.ReplaceLineEndings("\n"));
         Assert.Equal("a\nb", TomlSerializer.Deserialize<InlineStyledChildHolder>(reflectionToml)!.Child.Text);
+    }
+
+    [Fact]
+    public void MemberStyles_ApplyToMembersWithAnExpandedDottedName()
+    {
+        const string Expected = "[a]\ns = 'x'\n";
+
+        Assert.Equal(Expected, TomlSerializer.Serialize(new ExpandedStyledHolder()).ReplaceLineEndings("\n"));
+        Assert.Equal(Expected, TomlSerializer.Serialize(new ExpandedStyledHolder(), TestTomlStyleAttributesContext.Default.ExpandedStyledHolder).ReplaceLineEndings("\n"));
     }
 
     [Fact]

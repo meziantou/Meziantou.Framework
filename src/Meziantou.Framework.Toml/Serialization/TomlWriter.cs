@@ -454,6 +454,14 @@ public sealed class TomlWriter
             throw new TomlException($"Cannot expand dotted key '{propertyName}' because '{segment}' is already set to `{existing.GetType().FullName}`.");
         }
 
+        // The formatting of the member applies to the key it is written as, in the table it is written to
+        if (table.PropertiesMetadata is { } metadata && metadata.TryGetProperty(propertyName, out var propertyMetadata))
+        {
+            metadata.RemoveProperty(propertyName);
+            current.PropertiesMetadata ??= new TomlPropertiesMetadata();
+            current.PropertiesMetadata.SetProperty(segments[^1], propertyMetadata);
+        }
+
         return SetValue(current, segments[^1], value, propertyName);
     }
 

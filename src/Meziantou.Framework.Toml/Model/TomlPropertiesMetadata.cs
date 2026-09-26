@@ -63,6 +63,8 @@ public class TomlPropertiesMetadata
         _properties[propertyKey] = propertyMetadata;
     }
 
+    internal bool RemoveProperty(string propertyKey) => _properties.Remove(propertyKey);
+
     // A copy that shares the property metadata objects, so they must be replaced rather than modified
     internal TomlPropertiesMetadata Clone() => new(_properties);
 }

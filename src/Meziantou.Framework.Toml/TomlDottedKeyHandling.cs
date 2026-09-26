@@ -9,8 +9,12 @@ using Meziantou.Framework.Toml.Serialization;
 namespace Meziantou.Framework.Toml;
 
 /// <summary>
-/// Specifies behavior for dictionary keys containing '.'.
+/// Specifies how member names and dictionary keys containing '.' are written.
 /// </summary>
+/// <remarks>
+/// Only writing is affected. A key read from TOML is a single key, so a document written with <see cref="Expand"/> is read
+/// back as nested tables, and a model whose member names or dictionary keys contain '.' does not round-trip with it.
+/// </remarks>
 public enum TomlDottedKeyHandling
 {
     /// <summary>
@@ -19,7 +23,8 @@ public enum TomlDottedKeyHandling
     Literal = 0,
 
     /// <summary>
-    /// Treat keys containing '.' as a dotted path and expand into subtables.
+    /// Treat keys containing '.' as a dotted path and expand into subtables. This is a write-only layout: the subtables are
+    /// read back as nested tables.
     /// </summary>
     Expand = 1,
 }

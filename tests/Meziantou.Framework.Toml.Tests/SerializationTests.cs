@@ -377,6 +377,19 @@ public class SerializationTests
         public TomlTable Table { get; set; } = [];
     }
 
+    [Fact]
+    public void DottedKeyHandlingExpand_OnlyAffectsWriting()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+        var value = new Dictionary<string, string>(StringComparer.Ordinal) { ["a.b"] = "x" };
+
+        var toml = TomlSerializer.Serialize(value, options);
+
+        Assert.Equal("[a]\nb = \"x\"\n", toml);
+        Assert.Equal("x", ((TomlTable)TomlSerializer.Deserialize<TomlTable>(toml, options)!["a"])["b"]);
+        Assert.Equal("x", TomlSerializer.Deserialize<Dictionary<string, string>>("\"a.b\" = \"x\"", options)!["a.b"]);
+    }
+
     private sealed class CollidingMembers
     {
         public int A { get; set; } = 1;

@@ -174,7 +174,7 @@ public sealed record TomlSerializerOptions
     /// <summary>Gets or sets member ordering behavior for emitted tables.</summary>
     public TomlMappingOrderPolicy MappingOrder { get; init; } = TomlMappingOrderPolicy.Declaration;
 
-    /// <summary>Gets or sets behavior for keys containing '.'.</summary>
+    /// <summary>Gets or sets how member names and dictionary keys containing '.' are written. Reading is not affected.</summary>
     public TomlDottedKeyHandling DottedKeyHandling { get; init; } = TomlDottedKeyHandling.Literal;
 
     /// <summary>Gets polymorphism options.</summary>

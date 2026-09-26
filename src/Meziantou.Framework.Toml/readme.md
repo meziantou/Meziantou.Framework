@@ -490,7 +490,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   selects case-insensitive camelCase names, as in `System.Text.Json`. `[TomlSourceGenerationOptions]` takes precedence.
 - `init` and `required` members are supported.
 - `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The
-  converter type must be public or internal. A member with a converter is always replaced, never populated.
+  converter type must be accessible from the context: public, or internal to the same assembly. A member with a converter is always replaced, never populated.
 - Converters of `[TomlSourceGenerationOptions(Converters = [...])]` are resolved at build time, so converter factories
   listed there are not used (`MFTOML012`). Apply `[TomlConverter]` to the type or member instead.
 

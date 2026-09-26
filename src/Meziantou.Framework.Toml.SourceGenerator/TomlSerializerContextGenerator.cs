@@ -891,7 +891,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("    {");
 
         // Same precedence as the reflection resolver: the converter declared on the type wins
-        var declaredConverter = GetDeclaredConverter(type, type);
+        var declaredConverter = GetDeclaredConverter(type, type, model);
         if (declaredConverter is { Error: null, IsStringEnum: false })
         {
             builder.Append("        return ").Append(GetDeclaredConverterTypeInfoExpression(declaredConverter, type, "options")).AppendLine(";");
@@ -3423,7 +3423,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (GetDeclaredConverter(current, current) is { } typeConverter)
+            if (GetDeclaredConverter(current, current, model) is { } typeConverter)
             {
                 if (typeConverter.Error is { } typeConverterError)
                 {
@@ -4276,7 +4276,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var declaredConverter = GetDeclaredConverter(member, member.Type);
+            var declaredConverter = GetDeclaredConverter(member, member.Type, model);
             if (declaredConverter?.Error is { } converterError)
             {
                 context.ReportDiagnostic(DiagnosticInfo.Create(
@@ -4407,7 +4407,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var declaredConverter = GetDeclaredConverter(member, member.Type);
+            var declaredConverter = GetDeclaredConverter(member, member.Type, model);
             if (declaredConverter?.Error is { } converterError)
             {
                 context.ReportDiagnostic(DiagnosticInfo.Create(
@@ -5485,7 +5485,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     }
 
     // The converter declared with [TomlConverter] or [JsonConverter], resolved like the reflection resolver does
-    private static DeclaredConverter? GetDeclaredConverter(ISymbol symbol, ITypeSymbol convertedType)
+    // Without a model, only the shape of the converter is checked, which is enough to know whether there is one
+    private static DeclaredConverter? GetDeclaredConverter(ISymbol symbol, ITypeSymbol convertedType, ContextModel? model = null)
     {
         ITypeSymbol? converterType;
         if (TryGetAttribute(symbol, TomlConverterAttributeMetadataName, out var attribute))
@@ -5520,9 +5521,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             error = "Converters must have a public parameterless constructor.";
         }
-        else if (!IsTypeAccessibleFromGeneratedContext(named))
+        else if (model is null ? !IsTypeAccessibleFromGeneratedContext(named) : FindInaccessibleType(model, named) is not null)
         {
-            error = "Converters must be accessible from the generated context (public or internal).";
+            error = "Converters must be accessible from the generated context (public, or internal to the same assembly).";
         }
 
         return new DeclaredConverter(converterType, isStringEnum: false, error);

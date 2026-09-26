@@ -1088,6 +1088,80 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Id.StartsWith("CS", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Generator_InternalConverterOfAnotherAssembly_ReportsDiagnostic()
+    {
+        var librarySource = """
+            using System;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            internal sealed class InternalConverter : TomlConverter<string>
+            {
+                public override string? Read(TomlReader reader) => reader.GetString();
+                public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value);
+            }
+
+            public class Model
+            {
+                [TomlConverter(typeof(InternalConverter))]
+                public string? S { get; set; }
+            }
+            """;
+        var library = CSharpCompilation.Create(
+            assemblyName: "Meziantou.Framework.Toml.SourceGeneration.Tests.ConverterLibrary",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(librarySource, new CSharpParseOptions(LanguageVersion.Latest))],
+            references: CreateReferences(),
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        using var image = new MemoryStream();
+        var emitResult = library.Emit(image);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+
+        var source = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Model))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGeneratorTest(source, MetadataReference.CreateFromImage(image.ToArray())).Diagnostics;
+
+        var error = Assert.Single(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal("MFTOML002", error.Id);
+    }
+
+    [Fact]
+    public void Generator_PrivateConverterNextToANestedContext_Compiles()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public partial class Outer
+            {
+                private sealed class UpperConverter : TomlConverter<string>
+                {
+                    public override string? Read(TomlReader reader) => reader.GetString();
+                    public override void Write(TomlWriter writer, string value) => writer.WriteStringValue(value.ToUpperInvariant());
+                }
+
+                private sealed class Model
+                {
+                    [TomlConverter(typeof(UpperConverter))]
+                    public string? S { get; set; }
+                }
+
+                [TomlSerializable(typeof(Model))]
+                private partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

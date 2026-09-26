@@ -43,7 +43,12 @@ public class TaskListInlineParser : InlineParser
         // [ ]
         // or [x] or [X]
 
-        if (!(processor.Block!.Parent is ListItemBlock listItemBlock))
+        // As in GFM, the marker must be the first thing in the first paragraph of the list item. Otherwise, text such
+        // as "m[x]" or links such as "[x](url)" would become checkboxes.
+        if (processor.Block!.Parent is not ListItemBlock listItemBlock
+            || listItemBlock.Count == 0
+            || listItemBlock[0] != processor.Block
+            || processor.Root?.FirstChild is not null)
         {
             return false;
         }
@@ -60,6 +65,12 @@ public class TaskListInlineParser : InlineParser
         }
         // Skip last ]
         slice.SkipChar();
+
+        // The marker must be followed by whitespace
+        if (!slice.CurrentChar.IsWhiteSpaceOrZero())
+        {
+            return false;
+        }
 
         // Create the TaskList
         var taskItem = new TaskList()

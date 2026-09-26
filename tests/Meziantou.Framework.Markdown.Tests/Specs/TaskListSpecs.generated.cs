@@ -13,7 +13,7 @@ public class TestExtensionsTaskLists
     //
     // ## TaskLists
     //
-    // A task list item consist of `[ ]` or `[x]` or `[X]` inside a list item (ordered or unordered)
+    // A task list item consist of `[ ]` or `[x]` or `[X]` at the start of the first paragraph of a list item (ordered or unordered), followed by whitespace
     [Fact]
     public void ExtensionsTaskLists_Example001()
     {
@@ -51,5 +51,36 @@ public class TestExtensionsTaskLists
         //     <p>[ ] This is not a task list</p>
 
         TestParser.TestSpec("[ ] This is not a task list", "<p>[ ] This is not a task list</p>", "tasklists|advanced", context: "Example 2\nSection Extensions / TaskLists\n");
+    }
+
+    // A task is only recognized at the start of the first paragraph of a list item, and must be followed by whitespace:
+    [Fact]
+    public void ExtensionsTaskLists_Example003()
+    {
+        // Example 3
+        // Section: Extensions / TaskLists
+        //
+        // The following Markdown:
+        //     - Press [x] to close
+        //     - see [x](http://example.com)
+        //     - [x]abc
+        //     - item
+        //
+        //       [ ] second paragraph
+        //
+        // Should be rendered as:
+        //     <ul>
+        //     <li><p>Press [x] to close</p>
+        //     </li>
+        //     <li><p>see <a href="http://example.com">x</a></p>
+        //     </li>
+        //     <li><p>[x]abc</p>
+        //     </li>
+        //     <li><p>item</p>
+        //     <p>[ ] second paragraph</p>
+        //     </li>
+        //     </ul>
+
+        TestParser.TestSpec("- Press [x] to close\n- see [x](http://example.com)\n- [x]abc\n- item\n\n  [ ] second paragraph", "<ul>\n<li><p>Press [x] to close</p>\n</li>\n<li><p>see <a href=\"http://example.com\">x</a></p>\n</li>\n<li><p>[x]abc</p>\n</li>\n<li><p>item</p>\n<p>[ ] second paragraph</p>\n</li>\n</ul>", "tasklists|advanced", context: "Example 3\nSection Extensions / TaskLists\n");
     }
 }

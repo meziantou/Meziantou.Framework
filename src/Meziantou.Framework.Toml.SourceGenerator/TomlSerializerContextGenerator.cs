@@ -16,7 +16,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
         id: "MFTOML001",
         title: "Toml serializer context must be partial",
-        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and must be declared partial to support source generation",
+        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and must be declared partial, as must its containing types, to support source generation",
         category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -343,7 +343,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return null;
         }
 
-        var isPartial = classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
+        // A nested context requires its containing types to be partial too
+        var isPartial = classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)) &&
+            classDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().All(static declaration => declaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
         var containingNamespace = classSymbol.ContainingNamespace;
         var namespaceName = containingNamespace is { IsGlobalNamespace: false } ? containingNamespace.ToDisplayString() : string.Empty;
         var typeName = classSymbol.Name;
@@ -416,6 +418,24 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             builder.Append("namespace ").Append(model.NamespaceName).AppendLine(";");
             builder.AppendLine();
+        }
+
+        var containingTypes = new List<INamedTypeSymbol>();
+        for (var containingType = model.ContextSymbol.ContainingType; containingType is not null; containingType = containingType.ContainingType)
+        {
+            containingTypes.Insert(0, containingType);
+        }
+
+        foreach (var containingType in containingTypes)
+        {
+            builder.Append("partial ").Append(GetTypeDeclarationKeyword(containingType)).Append(' ').Append(containingType.Name);
+            if (containingType.TypeParameters.Length > 0)
+            {
+                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(static parameter => parameter.Name))).Append('>');
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("{");
         }
 
         AppendGeneratedTypeAttributes(builder, string.Empty);
@@ -498,8 +518,24 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         builder.AppendLine("}");
+        for (var i = 0; i < containingTypes.Count; i++)
+        {
+            builder.AppendLine("}");
+        }
 
         context.AddSource(GetHintName(model.ContextSymbol), builder.ToString());
+    }
+
+    private static string GetTypeDeclarationKeyword(INamedTypeSymbol type)
+    {
+        return (type.IsRecord, type.TypeKind) switch
+        {
+            (true, TypeKind.Struct) => "record struct",
+            (true, _) => "record",
+            (_, TypeKind.Struct) => "struct",
+            (_, TypeKind.Interface) => "interface",
+            _ => "class",
+        };
     }
 
     // Two contexts can have the same name in different namespaces or containing types
@@ -880,9 +916,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            }");
         builder.AppendLine("        }");
         builder.AppendLine();
-        builder.AppendLine("        private TomlTypeInfo GetTypeInfo<T>(TomlTypeInfo generatedTypeInfo)");
+        builder.AppendLine("        private TomlTypeInfo GetTypeInfo<__T>(TomlTypeInfo generatedTypeInfo)");
         builder.AppendLine("        {");
-        builder.AppendLine("            var type = typeof(T);");
+        builder.AppendLine("            var type = typeof(__T);");
         builder.AppendLine("            if (_typeInfoCache is null)");
         builder.AppendLine("            {");
         builder.AppendLine("                return generatedTypeInfo;");
@@ -898,9 +934,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            return resolved;");
         builder.AppendLine("        }");
         builder.AppendLine();
-        builder.AppendLine("        private void InitializeTypeInfo<T>()");
+        builder.AppendLine("        private void InitializeTypeInfo<__T>()");
         builder.AppendLine("        {");
-        builder.AppendLine("            var type = typeof(T);");
+        builder.AppendLine("            var type = typeof(__T);");
         builder.AppendLine("            _typeInfoCache![type] = _context.GetTypeInfo(type, Options) ?? throw new global::System.InvalidOperationException($\"No generated metadata is available for type '{type.FullName}' in the provided context.\");");
         builder.AppendLine("        }");
         builder.AppendLine();

@@ -358,6 +358,51 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_NestedContext_Compiles()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Person { public string? Name { get; set; } }
+
+            public static partial class Outer<T>
+            {
+                internal partial record struct Middle
+                {
+                    [TomlSerializable(typeof(Person))]
+                    internal partial class Ctx : TomlSerializerContext { }
+                }
+            }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
+    public void Generator_ContextInNonPartialType_ReportsDiagnostic()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Person { public string? Name { get; set; } }
+
+            public static class Outer
+            {
+                [TomlSerializable(typeof(Person))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.Contains(diagnostics, d => d.Id == "MFTOML001");
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

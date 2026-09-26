@@ -478,7 +478,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 
 | Id | Severity | Description |
 | --- | --- | --- |
-| `MFTOML001` | Error | The context type must be declared `partial`. |
+| `MFTOML001` | Error | The context type, and the types that contain it, must be declared `partial`. |
 | `MFTOML002` | Error | A converter type is invalid. |
 | `MFTOML003` | Error | A member uses a type the generator cannot serialize. |
 | `MFTOML004` | Error | A dictionary member uses non-string keys. |

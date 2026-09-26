@@ -319,6 +319,48 @@ public sealed class GeneratedIncludedPrivatePropertyPayload
 #pragma warning restore IDE0051
 }
 
+public sealed class GeneratedIncludedNonPublicSetterPayload
+{
+    [TomlInclude]
+    public int PrivateSet { get; private set; }
+
+    [TomlInclude]
+#pragma warning disable IDE0044, CS0649 // Set by the serializer
+    private int _privateField;
+#pragma warning restore IDE0044, CS0649
+
+    [TomlInclude]
+    private int PrivateProperty { get; set; }
+
+    public int GetPrivateField() => _privateField;
+
+    public int GetPrivateProperty() => PrivateProperty;
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedIncludedNonPublicSetterStruct
+{
+    [TomlInclude]
+    public int PrivateSet { get; private set; }
+
+    [TomlInclude]
+#pragma warning disable IDE0044, CS0649 // Set by the serializer
+    private int _privateField;
+#pragma warning restore IDE0044, CS0649
+
+    public readonly int GetPrivateField() => _privateField;
+}
+
+public sealed class GeneratedIncludedConstructorPayload
+{
+    public GeneratedIncludedConstructorPayload(string name) => Name = name;
+
+    public string Name { get; }
+
+    [TomlInclude]
+    public int Count { get; private set; }
+}
+
 public enum GeneratedEnumKind
 {
     A = 0,
@@ -465,6 +507,13 @@ internal sealed class GeneratedIncludedReadOnlyFieldModel
 [TomlSerializable(typeof(GeneratedMemberSelectionModel))]
 [TomlSerializable(typeof(GeneratedIncludedReadOnlyFieldModel))]
 internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedIncludedNonPublicSetterPayload))]
+[TomlSerializable(typeof(GeneratedIncludedNonPublicSetterStruct))]
+[TomlSerializable(typeof(GeneratedIncludedConstructorPayload))]
+internal sealed partial class TestTomlSerializerContextNonPublicSetters : TomlSerializerContext
 {
 }
 
@@ -1718,6 +1767,45 @@ public class NewApiSourceGenerationTests
         Assert.Contains("myProperty = true", toml);
         Assert.NotNull(roundtrip);
         Assert.False(roundtrip!.MyProperty);
+    }
+
+    [Fact]
+    public void GeneratedContext_SetsIncludedMembersWithNonPublicSetters()
+    {
+        const string Toml = "PrivateSet = 1\n_privateField = 2\nPrivateProperty = 3\n";
+        var context = TestTomlSerializerContextNonPublicSetters.Default;
+
+        var generated = TomlSerializer.Deserialize(Toml, context.GeneratedIncludedNonPublicSetterPayload)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedIncludedNonPublicSetterPayload>(Toml)!;
+
+        foreach (var value in new[] { generated, reflection })
+        {
+            Assert.Equal(1, value.PrivateSet);
+            Assert.Equal(2, value.GetPrivateField());
+            Assert.Equal(3, value.GetPrivateProperty());
+        }
+
+        var reflectionLines = TomlSerializer.Serialize(reflection).Split('\n').Order(StringComparer.Ordinal);
+        var generatedLines = TomlSerializer.Serialize(generated, context.GeneratedIncludedNonPublicSetterPayload).Split('\n').Order(StringComparer.Ordinal);
+        Assert.Equal(reflectionLines, generatedLines);
+    }
+
+    [Fact]
+    public void GeneratedContext_SetsIncludedStructMembersWithNonPublicSetters()
+    {
+        var value = TomlSerializer.Deserialize("PrivateSet = 1\n_privateField = 2\n", TestTomlSerializerContextNonPublicSetters.Default.GeneratedIncludedNonPublicSetterStruct);
+
+        Assert.Equal(1, value.PrivateSet);
+        Assert.Equal(2, value.GetPrivateField());
+    }
+
+    [Fact]
+    public void GeneratedContext_SetsIncludedMembersWithNonPublicSetters_AfterConstructor()
+    {
+        var value = TomlSerializer.Deserialize("Name = \"a\"\nCount = 2\n", TestTomlSerializerContextNonPublicSetters.Default.GeneratedIncludedConstructorPayload)!;
+
+        Assert.Equal("a", value.Name);
+        Assert.Equal(2, value.Count);
     }
 
     [Fact]

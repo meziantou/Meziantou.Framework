@@ -965,7 +965,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 ? "global::System.StringComparer.OrdinalIgnoreCase"
                 : "global::System.StringComparer.Ordinal";
             usedKeysVariable = "__usedKeys";
-            builder.Append("            var __extensionData = value.").Append(extensionData.MemberName).AppendLine(";");
+            builder.Append("            var __extensionData = value.").Append(extensionData.Identifier).AppendLine(";");
             builder.AppendLine("            global::System.Collections.Generic.HashSet<string>? __usedKeys = null;");
             builder.AppendLine("            if (__extensionData is not null)");
             builder.AppendLine("            {");
@@ -1296,7 +1296,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static string GetMemberReadExpression(PocoMember member, string instanceExpression)
     {
         return member.GetterAccessorName is null
-            ? instanceExpression + "." + member.MemberName
+            ? instanceExpression + "." + member.Identifier
             : member.GetterAccessorName + "(" + instanceExpression + ")";
     }
 
@@ -1927,7 +1927,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         var addCollectionExpression = GetSingleOrArrayAddCollectionExpression(member.Type, "__existing", "__memberValue" + i.ToString(CultureInfo.InvariantCulture) + "!");
                         builder.Append("            if (__memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
                         builder.AppendLine("            {");
-                        builder.Append("                var __existing = value.").Append(member.MemberName).AppendLine(";");
+                        builder.Append("                var __existing = value.").Append(member.Identifier).AppendLine(";");
                         builder.AppendLine("                if (__existing is null)");
                         builder.AppendLine("                {");
                         builder.Append("                    throw new TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
@@ -1958,7 +1958,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
 
                 needsTemplate = true;
-                finalInitializerAssignments.Add(member.MemberName + " = __memberValue" + i.ToString(CultureInfo.InvariantCulture));
+                finalInitializerAssignments.Add(member.Identifier + " = __memberValue" + i.ToString(CultureInfo.InvariantCulture));
 
                 if (!member.IsCompilerRequired)
                 {
@@ -1971,16 +1971,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     templateValueExpression = "__memberSeen" + i.ToString(CultureInfo.InvariantCulture) + " ? __memberValue" + i.ToString(CultureInfo.InvariantCulture) + " : " + linkedParameterExpression;
                 }
 
-                templateInitializerAssignments.Add(member.MemberName + " = " + templateValueExpression);
+                templateInitializerAssignments.Add(member.Identifier + " = " + templateValueExpression);
             }
 
             if (extensionData is { CanSet: true })
             {
                 needsTemplate = true;
-                finalInitializerAssignments.Add(extensionData.MemberName + " = __extensionDataValue");
+                finalInitializerAssignments.Add(extensionData.Identifier + " = __extensionDataValue");
                 if (extensionData.IsCompilerRequired)
                 {
-                    templateInitializerAssignments.Add(extensionData.MemberName + " = " + extensionData.CreateExpression);
+                    templateInitializerAssignments.Add(extensionData.Identifier + " = " + extensionData.CreateExpression);
                 }
             }
 
@@ -1999,13 +1999,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
                     builder.Append("            if (!__memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
                     builder.AppendLine("            {");
-                    builder.Append("                __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = __template.").Append(member.MemberName).AppendLine(";");
+                    builder.Append("                __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = __template.").Append(member.Identifier).AppendLine(";");
                     builder.AppendLine("            }");
                 }
 
                 if (extensionData is { CanSet: true })
                 {
-                    builder.Append("            var __extensionDataValue = __template.").Append(extensionData.MemberName).AppendLine(";");
+                    builder.Append("            var __extensionDataValue = __template.").Append(extensionData.Identifier).AppendLine(";");
                     builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                     builder.AppendLine("            {");
                     builder.AppendLine("                if (__extensionDataValue is null)");
@@ -2043,7 +2043,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 var nullInitializationMessage = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
                 builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                 builder.AppendLine("            {");
-                builder.Append("                var __target = value.").Append(extensionData.MemberName).AppendLine(";");
+                builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
                 builder.AppendLine("                if (__target is null)");
                 builder.AppendLine("                {");
                 builder.Append("                    throw new TomlException(\"").Append(nullInitializationMessage).AppendLine("\");");
@@ -2081,7 +2081,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    builder.Append("                value.").Append(member.MemberName).Append(" = __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
+                    builder.Append("                value.").Append(member.Identifier).Append(" = __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
                 }
 
                 builder.AppendLine("            }");
@@ -2091,11 +2091,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                 builder.AppendLine("            {");
-                builder.Append("                var __target = value.").Append(extensionData.MemberName).AppendLine(";");
+                builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
                 builder.AppendLine("                if (__target is null)");
                 builder.AppendLine("                {");
                 builder.Append("                    __target = ").Append(extensionData.CreateExpression).AppendLine(";");
-                builder.Append("                    value.").Append(extensionData.MemberName).AppendLine(" = __target;");
+                builder.Append("                    value.").Append(extensionData.Identifier).AppendLine(" = __target;");
                 builder.AppendLine("                }");
                 builder.AppendLine("                foreach (var __pair in __extensionData)");
                 builder.AppendLine("                {");
@@ -2458,7 +2458,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static void EmitRepeatedTableExtensionIntoReadOnlyMember(StringBuilder builder, PocoMember member, string indent)
     {
-        var memberAccess = "value." + member.MemberName;
+        var memberAccess = "value." + member.Identifier;
         var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
         builder.Append(indent).Append("if (reader.TokenType == TomlTokenType.StartTable && reader.CurrentSpan is null && ").Append(memberAccess).AppendLine(" is not null)");
         builder.Append(indent).AppendLine("{");
@@ -2603,7 +2603,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         if (member.SetterAccessorName is null)
         {
-            EmitMemberRead(builder, member, index, indent, options, "value." + member.MemberName);
+            EmitMemberRead(builder, member, index, indent, options, "value." + member.Identifier);
             return;
         }
 
@@ -2790,7 +2790,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.MemberName, "value." + member.MemberName, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                            ");
                             }
                         }
                         else
@@ -2820,7 +2820,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.MemberName, "value." + member.MemberName, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                            ");
                             }
                         }
                         else
@@ -2849,11 +2849,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (poco.ExtensionData is { } extensionData)
             {
-                builder.Append("                    var __extensionData = value.").Append(extensionData.MemberName).AppendLine(";");
+                builder.Append("                    var __extensionData = value.").Append(extensionData.Identifier).AppendLine(";");
                 builder.AppendLine("                    if (__extensionData is null)");
                 builder.AppendLine("                    {");
                 builder.Append("                        __extensionData = ").Append(extensionData.CreateExpression).AppendLine(";");
-                builder.Append("                        value.").Append(extensionData.MemberName).AppendLine(" = __extensionData;");
+                builder.Append("                        value.").Append(extensionData.Identifier).AppendLine(" = __extensionData;");
                 builder.AppendLine("                    }");
                 builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
                 builder.AppendLine("                    continue;");
@@ -2922,7 +2922,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.MemberName, "value." + member.MemberName, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                                        ");
                             }
                         }
                         else
@@ -2961,7 +2961,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         {
                             if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.MemberName, "value." + member.MemberName, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, "value." + member.Identifier, "value." + member.Identifier, "                                        ");
                             }
                         }
                         else
@@ -3000,11 +3000,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    {");
             builder.AppendLine("                        var name = reader.PropertyName!;");
             builder.AppendLine("                        reader.Read();");
-            builder.Append("                        var __extensionData = value.").Append(extensionDataRead.MemberName).AppendLine(";");
+            builder.Append("                        var __extensionData = value.").Append(extensionDataRead.Identifier).AppendLine(";");
             builder.AppendLine("                        if (__extensionData is null)");
             builder.AppendLine("                        {");
             builder.Append("                            __extensionData = ").Append(extensionDataRead.CreateExpression).AppendLine(";");
-            builder.Append("                            value.").Append(extensionDataRead.MemberName).AppendLine(" = __extensionData;");
+            builder.Append("                            value.").Append(extensionDataRead.Identifier).AppendLine(" = __extensionData;");
             builder.AppendLine("                        }");
             builder.Append("                        __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionDataRead.ValueType)).AppendLine(";");
             builder.AppendLine("                        continue;");
@@ -3554,6 +3554,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         public string MemberName { get; }
+
+        // The member name to use in generated code, escaped when it is a keyword
+        public string Identifier => EscapeIdentifier(MemberName);
         public string SerializedName { get; }
         public ITypeSymbol Type { get; }
         public ITypeSymbol DeclaringType { get; }
@@ -3605,6 +3608,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         public string MemberName { get; }
+
+        // The member name to use in generated code, escaped when it is a keyword
+        public string Identifier => EscapeIdentifier(MemberName);
         public ITypeSymbol MemberType { get; }
         public ITypeSymbol ValueType { get; }
         public string CreateExpression { get; }
@@ -5853,6 +5859,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return false;
     }
 
+    private static string EscapeIdentifier(string name)
+        => SyntaxFacts.GetKeywordKind(name) != SyntaxKind.None ? "@" + name : name;
+
     private static string SanitizeIdentifier(string name)
     {
         var builder = new StringBuilder(name.Length);
@@ -5870,7 +5879,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return "Type";
         }
 
-        if (!char.IsLetter(builder[0]) && builder[0] != '_')
+        // A keyword cannot be used as an identifier, and the name is also used as a prefix and a suffix of other names
+        if ((!char.IsLetter(builder[0]) && builder[0] != '_') || SyntaxFacts.GetKeywordKind(builder.ToString()) != SyntaxKind.None)
         {
             builder.Insert(0, '_');
         }

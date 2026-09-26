@@ -403,6 +403,39 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_KeywordNames_Compile()
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class @event
+            {
+                public string? @class { get; set; }
+
+                public int @int { get; set; }
+
+                [TomlInclude]
+                public int @namespace;
+
+                [TomlExtensionData]
+                public Dictionary<string, object>? @object { get; set; }
+            }
+
+            public sealed record @record(string @class, int @base);
+
+            [TomlSerializable(typeof(@event))]
+            [TomlSerializable(typeof(@record))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

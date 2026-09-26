@@ -381,6 +381,13 @@ public sealed class GeneratedSetsRequiredMembersModel
     public int Age { get; set; }
 }
 
+#pragma warning disable IDE1006 // The test needs members named like keywords
+public sealed record GeneratedKeywordRecord(string @class, int @base)
+{
+    public string? @event { get; set; }
+}
+#pragma warning restore IDE1006
+
 public enum GeneratedEnumKind
 {
     A = 0,
@@ -530,6 +537,7 @@ internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : 
 {
 }
 
+[TomlSerializable(typeof(GeneratedKeywordRecord))]
 [TomlSerializable(typeof(GeneratedRequiredModifierModel))]
 [TomlSerializable(typeof(GeneratedSetsRequiredMembersModel))]
 [TomlSerializable(typeof(GeneratedIncludedNonPublicSetterPayload))]
@@ -1789,6 +1797,18 @@ public class NewApiSourceGenerationTests
         Assert.Contains("myProperty = true", toml);
         Assert.NotNull(roundtrip);
         Assert.False(roundtrip!.MyProperty);
+    }
+
+    [Fact]
+    public void GeneratedContext_KeywordMemberNames_Roundtrip()
+    {
+        var typeInfo = TestTomlSerializerContextNonPublicSetters.Default.GeneratedKeywordRecord;
+        var value = new GeneratedKeywordRecord("a", 1) { @event = "e" };
+
+        var toml = TomlSerializer.Serialize(value, typeInfo);
+
+        Assert.Equal(value, TomlSerializer.Deserialize(toml, typeInfo));
+        Assert.Contains("class = \"a\"", toml, StringComparison.Ordinal);
     }
 
     [Fact]

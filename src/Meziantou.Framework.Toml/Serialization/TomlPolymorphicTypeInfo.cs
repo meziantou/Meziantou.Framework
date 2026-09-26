@@ -225,6 +225,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         }
 
         var tableStartSpan = reader.CurrentSpan;
+        var diagnosticCount = reader.OperationState.DiagnosticCount;
         var buffer = reader.CaptureCurrentValueToBuffer();
         try
         {
@@ -233,7 +234,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         catch (TomlException ex) when (reader.OperationState.TryRecordErrorOfReadValue(ex))
         {
             // The value was read completely from the reader, so the table that contains it continues with its next value
-            throw TomlException.CreateRecordedValueError(reader.OperationState.Diagnostics!, tableStartSpan);
+            throw TomlException.CreateRecordedValueError(reader.OperationState.Diagnostics!, diagnosticCount, tableStartSpan);
         }
     }
 

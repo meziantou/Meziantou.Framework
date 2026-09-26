@@ -15,20 +15,26 @@ public sealed class TomlException : Exception
     /// <param name="diagnostics">The diagnostics that caused the exception.</param>
     public TomlException(DiagnosticsBag diagnostics) : base(FormatDiagnostics(diagnostics))
     {
-        Diagnostics = diagnostics;
+        _diagnostics = diagnostics;
         Span = GetFirstSpanOrNull(diagnostics);
     }
 
     // A recorded value error is thrown for every table with an error, and caught by its parent: formatting its message
-    // eagerly would copy the first diagnostics once per table
-    private TomlException(DiagnosticsBag operationDiagnostics, TomlSourceSpan? recordedValueStart)
+    // eagerly would copy the first diagnostics once per table. It describes the errors of its value only, which do not change
+    // when the operation records more errors.
+    private TomlException(DiagnosticsBag operationDiagnostics, int firstDiagnostic, TomlSourceSpan? recordedValueStart)
     {
-        Diagnostics = operationDiagnostics;
-        Span = GetFirstSpanOrNull(operationDiagnostics);
+        OperationDiagnostics = operationDiagnostics;
+        _firstRecordedDiagnostic = firstDiagnostic;
+        _recordedDiagnosticsEnd = operationDiagnostics.Count;
+        Span = firstDiagnostic < operationDiagnostics.Count ? ToSpan(operationDiagnostics[firstDiagnostic].Span) : null;
         IsRecordedValueError = true;
         RecordedValueStart = recordedValueStart;
     }
 
+    private readonly int _firstRecordedDiagnostic;
+    private readonly int _recordedDiagnosticsEnd;
+    private DiagnosticsBag? _diagnostics;
     private string? _lazyMessage;
 
     /// <inheritdoc />
@@ -39,7 +45,7 @@ public sealed class TomlException : Exception
     /// </summary>
     public TomlException()
     {
-        Diagnostics = new DiagnosticsBag();
+        _diagnostics = new DiagnosticsBag();
     }
 
     /// <summary>
@@ -47,7 +53,7 @@ public sealed class TomlException : Exception
     /// </summary>
     public TomlException(string message) : base(message)
     {
-        Diagnostics = new DiagnosticsBag();
+        _diagnostics = new DiagnosticsBag();
     }
 
     /// <summary>
@@ -55,7 +61,7 @@ public sealed class TomlException : Exception
     /// </summary>
     public TomlException(string message, Exception innerException) : base(message, innerException)
     {
-        Diagnostics = new DiagnosticsBag();
+        _diagnostics = new DiagnosticsBag();
     }
 
     /// <summary>
@@ -71,14 +77,17 @@ public sealed class TomlException : Exception
     public TomlException(TomlSourceSpan span, string message, Exception? innerException) : base(Format(span, message), innerException)
     {
         Span = span;
-        Diagnostics = new DiagnosticsBag();
-        Diagnostics.Error(ToLegacySpan(span), message);
+        _diagnostics = new DiagnosticsBag();
+        _diagnostics.Error(ToLegacySpan(span), message);
     }
 
     /// <summary>
     /// Gets the diagnostics associated with the exception.
     /// </summary>
-    public DiagnosticsBag Diagnostics { get; }
+    public DiagnosticsBag Diagnostics => _diagnostics ??= CreateRecordedDiagnostics();
+
+    // The diagnostics of the operation of a recorded value error, which tell whether it belongs to an operation
+    internal DiagnosticsBag? OperationDiagnostics { get; }
 
     // The value that failed was read completely and its errors are in the diagnostics of the operation, so the reading can
     // continue with the next value to report the errors of the rest of the document
@@ -88,7 +97,18 @@ public sealed class TomlException : Exception
     // through frames that have not finished their own value, such as a converter reading a nested value.
     internal TomlSourceSpan? RecordedValueStart { get; }
 
-    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics, TomlSourceSpan? valueStart) => new(operationDiagnostics, valueStart);
+    internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics, int firstDiagnostic, TomlSourceSpan? valueStart) => new(operationDiagnostics, firstDiagnostic, valueStart);
+
+    private DiagnosticsBag CreateRecordedDiagnostics()
+    {
+        var diagnostics = new DiagnosticsBag();
+        for (var i = _firstRecordedDiagnostic; i < _recordedDiagnosticsEnd; i++)
+        {
+            diagnostics.Add(OperationDiagnostics![i]);
+        }
+
+        return diagnostics;
+    }
 
     // An error of the program rather than of the TOML input, such as a type without metadata: TryDeserialize does not hide it
     internal bool IsConfigurationError { get; private init; }
@@ -140,9 +160,11 @@ public sealed class TomlException : Exception
             return null;
         }
 
-        var span = diagnostics[0].Span;
-        return new TomlSourceSpan(span.FileName, new TomlTextPosition(span.Start.Offset, span.Start.Line, span.Start.Column), new TomlTextPosition(span.End.Offset, span.End.Line, span.End.Column));
+        return ToSpan(diagnostics[0].Span);
     }
+
+    private static TomlSourceSpan ToSpan(SourceSpan span)
+        => new(span.FileName, new TomlTextPosition(span.Start.Offset, span.Start.Line, span.Start.Column), new TomlTextPosition(span.End.Offset, span.End.Line, span.End.Column));
 
     private static SourceSpan ToLegacySpan(TomlSourceSpan span)
         => new SourceSpan(span.SourceName, new TextPosition(span.Start.Offset, span.Start.Line, span.Start.Column), new TextPosition(span.End.Offset, span.End.Line, span.End.Column));

@@ -1731,6 +1731,60 @@ internal sealed partial class TestTomlSerializerContextAggregationPolymorphic : 
 {
 }
 
+public sealed class GeneratedCatchingInner
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedCatchingHolder
+{
+    public GeneratedCatchingInner? Inner { get; set; }
+}
+
+// Catches the error of the nested table it reads, and keeps it for the test
+public sealed class GeneratedCatchingConverter : TomlConverter<GeneratedCatchingHolder>
+{
+    [ThreadStatic]
+    private static TomlException? s_caught;
+
+    public static TomlException? Caught
+    {
+        get => s_caught;
+        set => s_caught = value;
+    }
+
+    public override GeneratedCatchingHolder Read(TomlReader reader)
+    {
+        try
+        {
+            return new GeneratedCatchingHolder { Inner = reader.Options.GetTypeInfo<GeneratedCatchingInner>().Read(reader) };
+        }
+        catch (TomlException ex)
+        {
+            Caught = ex;
+            return new GeneratedCatchingHolder();
+        }
+    }
+
+    public override void Write(TomlWriter writer, GeneratedCatchingHolder value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedCatchingRoot
+{
+    public int A { get; set; }
+
+    [TomlConverter(typeof(GeneratedCatchingConverter))]
+    public GeneratedCatchingHolder? W { get; set; }
+
+    public int Z { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedCatchingRoot))]
+[TomlSerializable(typeof(GeneratedCatchingInner))]
+internal sealed partial class TestTomlSerializerContextCatching : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3959,6 +4013,23 @@ public class NewApiSourceGenerationTests
         {
             Assert.Equal([1, 4, 5, 8, 10], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RecordedError_CaughtByAConverter_DescribesItsValueOnly(bool generated)
+    {
+        const string Toml = "A = 'bad'\nW = { X = 'notint' }\nZ = 'bad'\n";
+
+        GeneratedCatchingConverter.Caught = null;
+        Assert.Throws<TomlException>(() => generated ? TomlSerializer.Deserialize(Toml, TestTomlSerializerContextCatching.Default.GeneratedCatchingRoot) : TomlSerializer.Deserialize<GeneratedCatchingRoot>(Toml));
+
+        var caught = GeneratedCatchingConverter.Caught!;
+        Assert.Equal(2, caught.Line);
+        var diagnostic = Assert.Single(caught.Diagnostics);
+        Assert.Equal(1, diagnostic.Span.Start.Line);
+        Assert.DoesNotContain("(3,", caught.Message, StringComparison.Ordinal);
     }
 
     [Fact]

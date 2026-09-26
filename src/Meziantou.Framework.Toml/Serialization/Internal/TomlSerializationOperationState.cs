@@ -44,7 +44,7 @@ internal sealed class TomlSerializationOperationState
     // count, the next error stops the reading, so the work and memory stay bounded
     internal const int MaxRecordedDiagnostics = 1000;
 
-    public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.Diagnostics, Diagnostics);
+    public bool IsRecordedValueError(TomlException exception) => exception.IsRecordedValueError && ReferenceEquals(exception.OperationDiagnostics, Diagnostics);
 
     // The error of the value that started at valueStart, which was read completely. Only a table records its errors, and an
     // array of tables starts at the same place as its first table, so the token type tells them apart.
@@ -56,7 +56,7 @@ internal sealed class TomlSerializationOperationState
     {
         if (DiagnosticCount > diagnosticCount)
         {
-            throw TomlException.CreateRecordedValueError(Diagnostics!, tableStart);
+            throw TomlException.CreateRecordedValueError(Diagnostics!, diagnosticCount, tableStart);
         }
     }
 
@@ -98,7 +98,7 @@ internal sealed class TomlSerializationOperationState
 
         return RecoversValueErrors &&
             DiagnosticCount < MaxRecordedDiagnostics &&
-            !ReferenceEquals(exception.Diagnostics, Diagnostics) &&
+            !IsRecordedValueError(exception) &&
             (exception.Diagnostics.Count > 0 || exception.Span.HasValue);
     }
 
@@ -106,7 +106,7 @@ internal sealed class TomlSerializationOperationState
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
-        if (ReferenceEquals(exception.Diagnostics, Diagnostics))
+        if (IsRecordedValueError(exception) || ReferenceEquals(exception.Diagnostics, Diagnostics))
         {
             return;
         }

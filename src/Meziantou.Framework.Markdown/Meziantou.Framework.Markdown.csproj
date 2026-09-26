@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>A fast, CommonMark compliant, extensible Markdown processor for .NET, derived from Markdig.</Description>
+    <PackageTags>markdown, commonmark, md, html, md2html, parser</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Markdown.Tests" />
+  </ItemGroup>
+</Project>

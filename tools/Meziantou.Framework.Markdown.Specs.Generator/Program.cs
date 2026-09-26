@@ -1,14 +1,19 @@
 using System.Text;
+using Meziantou.Framework;
 
 namespace SpecFileGen;
 
 class Program
 {
-    static readonly string SpecificationsDirectory =
-        Path.GetFullPath(
-            Path.Combine(
-                Path.GetDirectoryName(typeof(Spec).Assembly.Location),
-                "../../../../Markdig.Tests/"));
+    static readonly string SpecificationsDirectory = GetSpecificationsDirectory();
+
+    static string GetSpecificationsDirectory()
+    {
+        if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
+            throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
+
+        return (root / "tests" / "Meziantou.Framework.Markdown.Tests").Value + "/";
+    }
 
     enum RendererType
     {

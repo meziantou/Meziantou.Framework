@@ -22,7 +22,7 @@ public class TestGfmPipeTableDifferential
     public static IEnumerable<TestCaseData> NativeCases()
     {
         using var stream = typeof(TestGfmPipeTableDifferential).Assembly.GetManifestResourceStream(
-            "Markdig.Tests.Specs.GfmPipeTableDifferential.json")!;
+            "Meziantou.Framework.Markdown.Tests.Specs.GfmPipeTableDifferential.json")!;
         using var document = JsonDocument.Parse(stream);
         int index = 0;
         foreach (var item in document.RootElement.EnumerateArray())

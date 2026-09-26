@@ -1,0 +1,281 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license. 
+// See the license.txt file in the project root for more information.
+
+using Markdig.Helpers;
+using Markdig.Parsers;
+
+namespace Markdig.Syntax;
+
+/// <summary>
+/// Base class for a block structure. Either a <see cref="LeafBlock"/> or a <see cref="ContainerBlock"/>.
+/// </summary>
+/// <seealso cref="MarkdownObject" />
+public abstract class Block : MarkdownObject, IBlock
+{
+    private BlockTriviaProperties? _trivia => GetTrivia<BlockTriviaProperties>();
+    private BlockTriviaProperties Trivia => GetOrSetTrivia<BlockTriviaProperties>();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Block"/> class.
+    /// </summary>
+    /// <param name="parser">The parser used to create this block.</param>
+    protected Block(BlockParser? parser)
+    {
+        Parser = parser;
+        IsOpen = true;
+        IsBreakable = true;
+        SetTypeKind(isInline: false, isContainer: false);
+    }
+
+    /// <summary>
+    /// Gets the parent of this container. May be null.
+    /// </summary>
+    public ContainerBlock? Parent { get; internal set; }
+
+    /// <summary>
+    /// Gets the parser associated to this instance.
+    /// </summary>
+    public BlockParser? Parser { get; }
+
+    internal bool IsLeafBlock { get; private protected set; }
+
+    internal bool IsParagraphBlock { get; private protected set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is still open.
+    /// </summary>
+    public bool IsOpen { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this block is breakable. Default is true.
+    /// </summary>
+    public bool IsBreakable { get; set; }
+
+    /// <summary>
+    /// The last newline of this block.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled
+    /// </summary>
+    public NewLine NewLine { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this block must be removed from its container after inlines have been processed.
+    /// </summary>
+    public bool RemoveAfterProcessInlines { get; set; }
+
+    /// <summary>
+    /// Gets or sets the trivia right before this block.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
+    /// <see cref="StringSlice.Empty"/>.
+    /// </summary>
+    public StringSlice TriviaBefore { get => _trivia?.TriviaBefore ?? StringSlice.Empty; set => Trivia.TriviaBefore = value; }
+
+    /// <summary>
+    /// Gets or sets trivia occurring after this block.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise
+    /// <see cref="StringSlice.Empty"/>.
+    /// </summary>
+    public StringSlice TriviaAfter { get => _trivia?.TriviaAfter ?? StringSlice.Empty; set => Trivia.TriviaAfter = value; }
+
+    /// <summary>
+    /// Gets or sets the empty lines occurring before this block.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise null.
+    /// </summary>
+    public List<StringSlice>? LinesBefore { get => _trivia?.LinesBefore; set => Trivia.LinesBefore = value; }
+
+    /// <summary>
+    /// Gets or sets the empty lines occurring after this block.
+    /// Trivia: only parsed when <see cref="MarkdownPipeline.TrackTrivia"/> is enabled, otherwise null.
+    /// </summary>
+    public List<StringSlice>? LinesAfter { get => _trivia?.LinesAfter; set => Trivia.LinesAfter = value; }
+
+    /// <summary>
+    /// Occurs when the process of inlines begin.
+    /// </summary>
+    public event ProcessInlineDelegate? ProcessInlinesBegin
+    {
+        add => Trivia.ProcessInlinesBegin += value;
+        remove => _trivia?.ProcessInlinesBegin -= value;
+    }
+
+    /// <summary>
+    /// Occurs when the process of inlines ends for this instance.
+    /// </summary>
+    public event ProcessInlineDelegate? ProcessInlinesEnd
+    {
+        add => Trivia.ProcessInlinesEnd += value;
+        remove => _trivia?.ProcessInlinesEnd -= value;
+    }
+
+    /// <summary>
+    /// Called when the process of inlines begin.
+    /// </summary>
+    /// <param name="state">The inline parser state.</param>
+    internal void OnProcessInlinesBegin(InlineProcessor state)
+    {
+        if (_trivia is BlockTriviaProperties trivia)
+        {
+            trivia.ProcessInlinesBegin?.Invoke(state, null);
+
+            // Not exactly standard 'event' behavior, but these aren't expected to be called more than once.
+            _trivia.ProcessInlinesBegin = null;
+        }
+    }
+
+    /// <summary>
+    /// Called when the process of inlines ends.
+    /// </summary>
+    /// <param name="state">The inline parser state.</param>
+    internal void OnProcessInlinesEnd(InlineProcessor state)
+    {
+        if (_trivia is BlockTriviaProperties trivia)
+        {
+            trivia.ProcessInlinesEnd?.Invoke(state, null);
+
+            // Not exactly standard 'event' behavior, but these aren't expected to be called more than once.
+            _trivia.ProcessInlinesEnd = null;
+        }
+    }
+
+    /// <summary>
+    /// Updates this block span and all parent container spans to include the specified <paramref name="span"/>.
+    /// </summary>
+    /// <param name="span">The span to include.</param>
+    public void UpdateSpanToInclude(SourceSpan span)
+    {
+        if (span.IsEmpty)
+        {
+            return;
+        }
+
+        int depth = 0;
+        Block? current = this;
+        while (current is not null)
+        {
+            if (current.Span.IsEmpty)
+            {
+                current.Span = span;
+            }
+            else
+            {
+                if (span.Start < current.Span.Start)
+                {
+                    current.Span.Start = span.Start;
+                }
+
+                if (span.End > current.Span.End)
+                {
+                    current.Span.End = span.End;
+                }
+            }
+
+            current = current.Parent;
+            depth++;
+        }
+
+        ThrowHelper.CheckDepthLimit(depth, useLargeLimit: true);
+    }
+
+    /// <summary>
+    /// Performs the update span end operation.
+    /// </summary>
+    public void UpdateSpanEnd(int spanEnd)
+    {
+        // Update parent spans
+        int depth = 0;
+        var parent = this;
+        while (parent != null)
+        {
+            if (spanEnd > parent.Span.End)
+            {
+                parent.Span.End = spanEnd;
+            }
+            parent = parent.Parent;
+            depth++;
+        }
+        ThrowHelper.CheckDepthLimit(depth, useLargeLimit: true);
+    }
+
+    /// <summary>
+    /// Removes this block from its parent container.
+    /// </summary>
+    public void Remove()
+    {
+        Parent?.Remove(this);
+    }
+
+    /// <summary>
+    /// Replaces this block with <paramref name="replacement"/> in its parent container.
+    /// </summary>
+    /// <param name="replacement">The replacement block.</param>
+    /// <param name="moveChildren">
+    /// <c>true</c> to transfer children when both this block and <paramref name="replacement"/> are containers.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="replacement"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="replacement"/> is already attached to a parent container.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if this block has no parent container.</exception>
+    /// <remarks>
+    /// This method does not recompute spans or trivia. Callers are responsible for updating those values
+    /// if a transform requires exact source information after replacement.
+    /// </remarks>
+    public void ReplaceBy(Block replacement, bool moveChildren = true)
+    {
+        if (replacement is null) ThrowHelper.ArgumentNullException(nameof(replacement));
+        if (replacement.Parent is not null)
+        {
+            ThrowHelper.ArgumentException("Cannot replace with a block that is already attached to another container (replacement.Parent != null)", nameof(replacement));
+        }
+
+        var parent = Parent;
+        if (parent is null)
+        {
+            ThrowHelper.InvalidOperationException("Cannot replace a block that has no parent");
+        }
+
+        int index = parent.IndexOf(this);
+        if (index < 0)
+        {
+            ThrowHelper.InvalidOperationException("Cannot replace a block that is not attached to its parent container");
+        }
+
+        parent[index] = replacement;
+
+        if (moveChildren && this is ContainerBlock sourceContainer && replacement is ContainerBlock destinationContainer)
+        {
+            sourceContainer.TransferChildrenTo(destinationContainer);
+        }
+    }
+
+    internal static Block FindRootMostContainerParent(Block block)
+    {
+        while (true)
+        {
+            Block? parent = block.Parent;
+            if (parent is null || !parent.IsContainerBlock || parent is MarkdownDocument)
+            {
+                break;
+            }
+            block = parent;
+        }
+        return block;
+    }
+
+    private protected T? TryGetDerivedTrivia<T>() where T : class => _trivia?.DerivedTriviaSlot as T;
+    private protected T GetOrSetDerivedTrivia<T>() where T : new() => (T)(Trivia.DerivedTriviaSlot ??= new T());
+
+    private sealed class BlockTriviaProperties
+    {
+        // Used by derived types to store their own TriviaProperties
+        public object? DerivedTriviaSlot;
+
+        // These callbacks are set on a tiny subset of blocks (usually only the main MarkdownDocument),
+        // so we store them in a lazily-allocated container to save memory for the majority of blocks.
+        public ProcessInlineDelegate? ProcessInlinesBegin;
+        public ProcessInlineDelegate? ProcessInlinesEnd;
+
+        public StringSlice TriviaBefore;
+        public StringSlice TriviaAfter;
+        public List<StringSlice>? LinesBefore;
+        public List<StringSlice>? LinesAfter;
+    }
+}

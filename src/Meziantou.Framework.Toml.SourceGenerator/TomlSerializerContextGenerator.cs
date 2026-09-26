@@ -530,7 +530,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var reported = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
         foreach (var type in types)
         {
-            if (FindInaccessibleType(model, type) is { } inaccessibleType && reported.Add(inaccessibleType))
+            if ((FindInaccessibleType(model, type) ?? FindLessAccessibleType(model, type)) is { } inaccessibleType && reported.Add(inaccessibleType))
             {
                 context.ReportDiagnostic(DiagnosticInfo.Create(InaccessibleType, model.ContextSymbol.Locations.FirstOrDefault(), inaccessibleType.ToDisplayString(), model.ContextSymbol.ToDisplayString()));
                 isValid = false;
@@ -575,6 +575,54 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             default:
                 return null;
         }
+    }
+
+    // The context exposes a public TomlTypeInfo<T> property for each type, so a type less accessible than the context, such
+    // as a private nested type next to an internal nested context, would fail with CS0053
+    private static ITypeSymbol? FindLessAccessibleType(ContextModel model, ITypeSymbol type)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                return FindLessAccessibleType(model, array.ElementType);
+
+            case INamedTypeSymbol named:
+                if (GetEffectiveAccessibilityRank(named) < GetEffectiveAccessibilityRank(model.ContextSymbol))
+                {
+                    return named;
+                }
+
+                foreach (var typeArgument in named.TypeArguments)
+                {
+                    if (FindLessAccessibleType(model, typeArgument) is { } lessAccessibleTypeArgument)
+                    {
+                        return lessAccessibleTypeArgument;
+                    }
+                }
+
+                return null;
+
+            default:
+                return null;
+        }
+    }
+
+    private static int GetEffectiveAccessibilityRank(INamedTypeSymbol type)
+    {
+        var rank = int.MaxValue;
+        for (var current = type; current is not null; current = current.ContainingType)
+        {
+            rank = Math.Min(rank, current.DeclaredAccessibility switch
+            {
+                Accessibility.Public => 4,
+                Accessibility.ProtectedOrInternal => 3,
+                Accessibility.Internal or Accessibility.Protected => 2,
+                Accessibility.ProtectedAndInternal => 1,
+                _ => 0,
+            });
+        }
+
+        return rank;
     }
 
     private static string? GetUnserializableTypeReason(ITypeSymbol type) => type switch

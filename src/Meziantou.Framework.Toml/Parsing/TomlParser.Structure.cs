@@ -94,10 +94,10 @@ public sealed partial class TomlParser
         private int DefineStructureHeaderPrefix(int parent, List<KeySegment> path, int index)
         {
             var key = path[index];
-            var entryIndex = FindStructureEntry(parent, key);
+            var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             if (entryIndex < 0)
             {
-                return AddStructureEntry(parent, key, AddStructureNode(StructureNodeKind.Table, isImplicit: true, fromDottedKeys: false, key.Span));
+                return AddStructureEntry(parent, key, keyHash, AddStructureNode(StructureNodeKind.Table, isImplicit: true, fromDottedKeys: false, key.Span));
             }
 
             var nodeIndex = _structureEntries[entryIndex].Node;
@@ -113,10 +113,10 @@ public sealed partial class TomlParser
         private int DefineStructureTableHeaderLeaf(int parent, List<KeySegment> path, int index)
         {
             var key = path[index];
-            var entryIndex = FindStructureEntry(parent, key);
+            var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             if (entryIndex < 0)
             {
-                return AddStructureEntry(parent, key, AddStructureNode(StructureNodeKind.Table, isImplicit: false, fromDottedKeys: false, key.Span));
+                return AddStructureEntry(parent, key, keyHash, AddStructureNode(StructureNodeKind.Table, isImplicit: false, fromDottedKeys: false, key.Span));
             }
 
             // A header can define a table that a previous header created implicitly, but not one created by dotted keys
@@ -136,11 +136,11 @@ public sealed partial class TomlParser
         private int DefineStructureTableArrayHeader(int parent, List<KeySegment> path, int index)
         {
             var key = path[index];
-            var entryIndex = FindStructureEntry(parent, key);
+            var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             int arrayIndex;
             if (entryIndex < 0)
             {
-                arrayIndex = AddStructureEntry(parent, key, AddStructureNode(StructureNodeKind.TableArray, isImplicit: false, fromDottedKeys: false, key.Span));
+                arrayIndex = AddStructureEntry(parent, key, keyHash, AddStructureNode(StructureNodeKind.TableArray, isImplicit: false, fromDottedKeys: false, key.Span));
             }
             else
             {
@@ -159,10 +159,10 @@ public sealed partial class TomlParser
         private int DefineStructureKeyPrefix(int parent, List<KeySegment> path, int index)
         {
             var key = path[index];
-            var entryIndex = FindStructureEntry(parent, key);
+            var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             if (entryIndex < 0)
             {
-                return AddStructureEntry(parent, key, AddStructureNode(StructureNodeKind.Table, isImplicit: true, fromDottedKeys: true, key.Span));
+                return AddStructureEntry(parent, key, keyHash, AddStructureNode(StructureNodeKind.Table, isImplicit: true, fromDottedKeys: true, key.Span));
             }
 
             // Dotted keys can only extend tables that no header defined. Once extended, a header cannot define the table.
@@ -179,10 +179,10 @@ public sealed partial class TomlParser
 
         private int DefineStructureKeyLeaf(int parent, in KeySegment key, List<KeySegment>? path, int index)
         {
-            var entryIndex = FindStructureEntry(parent, key);
+            var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             if (entryIndex < 0)
             {
-                return AddStructureEntry(parent, key, AddStructureNode(StructureNodeKind.Value, isImplicit: false, fromDottedKeys: true, key.Span));
+                return AddStructureEntry(parent, key, keyHash, AddStructureNode(StructureNodeKind.Value, isImplicit: false, fromDottedKeys: true, key.Span));
             }
 
             ref var entry = ref _structureEntries[entryIndex];
@@ -198,13 +198,18 @@ public sealed partial class TomlParser
             throw CreateKeyAlreadyDefinedException(key, path, index, entry.Node);
         }
 
-        private int FindStructureEntry(int parent, in KeySegment key)
+        // The hash of the lexer (FNV-1a) is fixed, so keys that collide can be computed once and sent to any process. The index
+        // uses the randomized string hash instead, so the collisions differ in every process.
+        private int GetStructureKeyHash(int parent, in KeySegment key) => HashCode.Combine(parent, string.GetHashCode(GetDecodedKey(key), StringComparison.Ordinal));
+
+        private int FindStructureEntry(int parent, in KeySegment key, out int keyHash)
         {
-            var entryIndex = _structureBuckets[GetStructureBucket(parent, key.Hash, _structureBuckets.Length)] - 1;
+            keyHash = GetStructureKeyHash(parent, key);
+            var entryIndex = _structureBuckets[keyHash & (_structureBuckets.Length - 1)] - 1;
             while (entryIndex >= 0)
             {
                 ref var entry = ref _structureEntries[entryIndex];
-                if (entry.Parent == parent && StructureKeyEquals(entry, key))
+                if (entry.KeyHash == keyHash && entry.Parent == parent && StructureKeyEquals(entry, key))
                 {
                     return entryIndex;
                 }
@@ -216,7 +221,7 @@ public sealed partial class TomlParser
         }
 
         // Returns the node, so callers can chain it
-        private int AddStructureEntry(int parent, in KeySegment key, int node)
+        private int AddStructureEntry(int parent, in KeySegment key, int keyHash, int node)
         {
             if (_structureEntryCount == _structureEntries.Length)
             {
@@ -229,7 +234,7 @@ public sealed partial class TomlParser
                 for (var i = 0; i < _structureEntryCount; i++)
                 {
                     ref var existing = ref _structureEntries[i];
-                    var existingBucket = GetStructureBucket(existing.Parent, existing.KeyHash, buckets.Length);
+                    var existingBucket = existing.KeyHash & (buckets.Length - 1);
                     existing.Next = buckets[existingBucket];
                     buckets[existingBucket] = i + 1;
                 }
@@ -238,8 +243,8 @@ public sealed partial class TomlParser
                 _structureBuckets = buckets;
             }
 
-            var bucket = GetStructureBucket(parent, key.Hash, _structureBuckets.Length);
-            _structureEntries[_structureEntryCount] = new StructureEntry(parent, node, _structureBuckets[bucket], key);
+            var bucket = keyHash & (_structureBuckets.Length - 1);
+            _structureEntries[_structureEntryCount] = new StructureEntry(parent, node, _structureBuckets[bucket], keyHash, key);
             _structureBuckets[bucket] = ++_structureEntryCount;
             return node;
         }
@@ -305,13 +310,6 @@ public sealed partial class TomlParser
             _structureBuckets = [];
         }
 
-        private static int GetStructureBucket(int parent, ulong hash, int bucketCount)
-        {
-            var value = hash ^ ((ulong)(uint)parent * 0x9E3779B97F4A7C15UL);
-            value ^= value >> 32;
-            return (int)value & (bucketCount - 1);
-        }
-
         private TomlException CreateKeyAlreadyDefinedException(in KeySegment key, List<KeySegment>? path, int index, int existingNode)
         {
             var name = new StringBuilder();
@@ -350,11 +348,6 @@ public sealed partial class TomlParser
 
         private bool StructureKeyEquals(in StructureEntry entry, in KeySegment key)
         {
-            if (entry.KeyHash != key.Hash)
-            {
-                return false;
-            }
-
             if (entry.KeyValue is not null && key.Value is not null)
             {
                 return string.Equals(entry.KeyValue, key.Value, StringComparison.Ordinal);
@@ -377,25 +370,25 @@ public sealed partial class TomlParser
 
         private struct StructureEntry
         {
-            public StructureEntry(int parent, int node, int next, in KeySegment key)
+            public StructureEntry(int parent, int node, int next, int keyHash, in KeySegment key)
             {
                 Parent = parent;
                 Node = node;
                 Next = next;
+                KeyHash = keyHash;
                 KeyTokenKind = key.TokenKind;
                 KeyOffset = key.Span.Offset;
                 KeyLength = key.Span.Length;
-                KeyHash = key.Hash;
                 KeyValue = key.Value;
             }
 
             public int Parent;
             public int Node;
             public int Next;
+            public int KeyHash;
             public TokenKind KeyTokenKind;
             public int KeyOffset;
             public int KeyLength;
-            public ulong KeyHash;
             public string? KeyValue;
         }
     }

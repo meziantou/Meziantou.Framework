@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Parsing;
 using Meziantou.Framework.Toml.Serialization;
@@ -358,5 +360,89 @@ public class NewApiParsingPipelineTests
         Assert.Equal(
             ["StartTable:False:", "StartTable:True:0", "StartArray:True:0", "StartTable:False:1", "StartTable:False:2", "StartArray:False:3", "StartTable:False:3"],
             containers);
+    }
+
+    // The lexer hashes keys with FNV-1a, which has no secret, so keys that collide in a table indexed by that hash can be
+    // computed once and sent to any process. These keys all share the low 14 bits of the folded FNV-1a hash.
+    [Fact]
+    public void Deserialize_KeysWithCollidingLexerHashes_StaysLinear()
+    {
+        const string Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+        const int Count = 16384;
+        const ulong Mask = (1UL << 14) - 1;
+        var colliding = new List<string>(Count);
+        var buffer = new char[5];
+        for (var a = 0; a < 64 && colliding.Count < Count; a++)
+        {
+            var ha = Hash(14695981039346656037UL, Alphabet[a]);
+            for (var b = 0; b < 64 && colliding.Count < Count; b++)
+            {
+                var hb = Hash(ha, Alphabet[b]);
+                for (var c = 0; c < 64 && colliding.Count < Count; c++)
+                {
+                    var hc = Hash(hb, Alphabet[c]);
+                    for (var d = 0; d < 64 && colliding.Count < Count; d++)
+                    {
+                        var hd = Hash(hc, Alphabet[d]);
+                        for (var e = 0; e < 64 && colliding.Count < Count; e++)
+                        {
+                            var he = Hash(hd, Alphabet[e]);
+                            if (((he ^ (he >> 32)) & Mask) == 0)
+                            {
+                                buffer[0] = Alphabet[a];
+                                buffer[1] = Alphabet[b];
+                                buffer[2] = Alphabet[c];
+                                buffer[3] = Alphabet[d];
+                                buffer[4] = Alphabet[e];
+                                colliding.Add(new string(buffer));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Keys of the same shape spread over the whole key space
+        var control = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0L; control.Count < colliding.Count; i++)
+        {
+            var value = i * 2654435761L % (64L * 64 * 64 * 64 * 64);
+            control.Add(string.Create(5, value, static (span, v) =>
+            {
+                for (var j = 0; j < span.Length; j++)
+                {
+                    span[j] = Alphabet[(int)(v % 64)];
+                    v /= 64;
+                }
+            }));
+        }
+
+        var collidingToml = string.Concat(colliding.Select(key => key + " = 1\n"));
+        var controlToml = string.Concat(control.Select(key => key + " = 1\n"));
+
+        var collidingTime = Measure(collidingToml);
+        var controlTime = Measure(controlToml);
+
+        Assert.True(collidingTime < controlTime * 10 + TimeSpan.FromMilliseconds(100), $"Colliding keys: {collidingTime}, random keys: {controlTime}");
+
+        static ulong Hash(ulong hash, char c) => (hash ^ c) * 1099511628211UL;
+
+        static TimeSpan Measure(string toml)
+        {
+            var best = TimeSpan.MaxValue;
+            for (var i = 0; i < 3; i++)
+            {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var table = TomlSerializer.Deserialize<TomlTable>(toml)!;
+                stopwatch.Stop();
+                Assert.HasCount(Count, table);
+                if (stopwatch.Elapsed < best)
+                {
+                    best = stopwatch.Elapsed;
+                }
+            }
+
+            return best;
+        }
     }
 }

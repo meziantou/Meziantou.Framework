@@ -267,6 +267,69 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_TypesWithTheSameName_Compile()
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            namespace A
+            {
+                public sealed class Item { public int X { get; set; } }
+            }
+
+            namespace B
+            {
+                public sealed class Item { public string? Y { get; set; } }
+            }
+
+            namespace C
+            {
+                public sealed class Item { public int Z { get; set; } }
+                public sealed class Holder { public Item? Value { get; set; } }
+            }
+
+            namespace D
+            {
+                public sealed class Item { public int W { get; set; } }
+                public sealed class Holder2 { public Item? Value { get; set; } }
+            }
+
+            public sealed class Options { public int Value { get; set; } }
+            public sealed class Default { public int Value { get; set; } }
+            public sealed class Ctx { public int Value { get; set; } }
+
+            [TomlSerializable(typeof(A.Item))]
+            [TomlSerializable(typeof(B.Item))]
+            [TomlSerializable(typeof(C.Holder))]
+            [TomlSerializable(typeof(D.Holder2))]
+            [TomlSerializable(typeof(List<int>[]))]
+            [TomlSerializable(typeof(List<int[]>))]
+            [TomlSerializable(typeof(Options))]
+            [TomlSerializable(typeof(Default))]
+            internal partial class Ctx { }
+
+            [TomlSerializable(typeof(A.Item), TypeInfoPropertyName = "FirstItem")]
+            [TomlSerializable(typeof(B.Item))]
+            internal partial class RenamedCtx : TomlSerializerContext { }
+
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source.Replace("public sealed class Ctx { public int Value { get; set; } }", "", StringComparison.Ordinal));
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        var generated = string.Join("\n", result.GeneratedSources);
+        Assert.Contains("public TomlTypeInfo<global::A.Item> Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public TomlTypeInfo<global::B.Item> B_Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public TomlTypeInfo<global::A.Item> FirstItem", generated, StringComparison.Ordinal);
+        Assert.Contains("public TomlTypeInfo<global::B.Item> Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public TomlTypeInfo<global::Options> Options2", generated, StringComparison.Ordinal);
+        Assert.Contains("public TomlTypeInfo<global::Default> Default2", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

@@ -461,7 +461,9 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 ```
 
 - The generator creates a `Default` instance and one `TomlTypeInfo<T>` property per root.
-  `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property.
+  `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property. When two types have the same
+  name, or a type is named like a member of the context, the property uses the namespace-qualified name of the type
+  (for example `B_Item`).
 - `[TomlSourceGenerationOptions]` sets the options at build time. Member names, the members to serialize
   (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`), and the validation (`UnmappedMemberHandling`,
   `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) are computed when building, so the naming policy

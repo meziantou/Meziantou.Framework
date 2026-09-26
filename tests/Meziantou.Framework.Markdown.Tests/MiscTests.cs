@@ -438,6 +438,46 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("a<?", "<p>a&lt;?a&lt;?a&lt;?</p>\n", "<p>a<?a<?a<?b?></p>\n", "b?>")]
+    [InlineData("a<![CDATA[", "<p>a&lt;![CDATA[a&lt;![CDATA[a&lt;![CDATA[</p>\n", "<p>a<![CDATA[a<![CDATA[a<![CDATA[b]]></p>\n", "b]]>")]
+    [InlineData("a<!--", "<p>a&lt;!--a&lt;!--a&lt;!--</p>\n", "<p>a<!--a<!--a<!--b--></p>\n", "b-->")]
+    [InlineData("a<!A ", "<p>a&lt;!A a&lt;!A a&lt;!A</p>\n", "<p>a<!A a<!A a<!A b></p>\n", "b>")]
+    public void UnclosedInlineHtmlConstructsAreParsedInLinearTime(string item, string expectedUnclosed, string expectedClosed, string end)
+    {
+        Assert.Equal(expectedUnclosed, MarkdownConverter.ToHtml(item + item + item));
+        Assert.Equal(expectedClosed, MarkdownConverter.ToHtml(item + item + item + end));
+
+        // Each unclosed construct used to search for its end up to the end of the paragraph again
+        var markdown = string.Concat(Enumerable.Repeat(item, 100_000 / item.Length));
+
+        var stopwatch = Stopwatch.StartNew();
+        if (item.Contains('[', StringComparison.Ordinal))
+        {
+            // The '[' are also link delimiters, nested deeper than the limit
+            Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
+            Assert.Contains("depth limit", e.Message);
+        }
+        else
+        {
+            _ = MarkdownConverter.ToHtml(markdown);
+        }
+
+        stopwatch.Stop();
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("x <?a <!--b--> <?c <![CDATA[d]]> <!--e <!A f", "<p>x &lt;?a <!--b--> &lt;?c <![CDATA[d]]> &lt;!--e &lt;!A f</p>\n")]
+    [InlineData("x <?a\n\nx <?b?>", "<p>x &lt;?a</p>\n<p>x <?b?></p>\n")]
+    [InlineData("x <!--a <?b\n\nx <!--c--> <?d?>", "<p>x &lt;!--a &lt;?b</p>\n<p>x <!--c--> <?d?></p>\n")]
+    [InlineData("x <!A a <!B b>", "<p>x <!A a <!B b></p>\n")]
+    public void UnclosedInlineHtmlConstructDoesNotAffectOtherConstructs(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown));
+    }
+
+    [Theory]
     [InlineData("autolinks", "<a href=\"x\">www.a.com</a> www.b.com", "<p><a href=\"x\">www.a.com</a> <a href=\"http://www.b.com\">www.b.com</a></p>\n")]
     [InlineData("autolinks", "*<a href=\"x\">* www.a.com", "<p><em><a href=\"x\"></em> www.a.com</p>\n")]
     [InlineData("autolinks", "<abbr>www.a.com</abbr> www.b.com", "<p><abbr>www.a.com</abbr> <a href=\"http://www.b.com\">www.b.com</a></p>\n")]

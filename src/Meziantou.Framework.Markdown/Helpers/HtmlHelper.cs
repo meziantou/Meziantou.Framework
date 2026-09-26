@@ -45,8 +45,17 @@ public static class HtmlHelper
     /// </summary>
     public static bool TryParseHtmlTag(ref StringSlice text, [NotNullWhen(true)] out string? htmlTag)
     {
+        return TryParseHtmlTag(ref text, out htmlTag, scanCache: null);
+    }
+
+    /// <summary>
+    /// Attempts to parse html tag, reusing the searches of the previous calls on the same text.
+    /// </summary>
+    internal static bool TryParseHtmlTag(ref StringSlice text, [NotNullWhen(true)] out string? htmlTag, InlineHtmlScanCache? scanCache)
+    {
+        scanCache?.SetText(text);
         var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
-        if (TryParseHtmlTag(ref text, ref builder))
+        if (TryParseHtmlTag(ref text, ref builder, scanCache))
         {
             htmlTag = builder.ToString();
             return true;
@@ -59,7 +68,7 @@ public static class HtmlHelper
         }
     }
 
-    private static bool TryParseHtmlTag(ref StringSlice text, ref ValueStringBuilder builder)
+    private static bool TryParseHtmlTag(ref StringSlice text, ref ValueStringBuilder builder, InlineHtmlScanCache? scanCache)
     {
         var c = text.CurrentChar;
         if (c != '<')
@@ -75,21 +84,21 @@ public static class HtmlHelper
             case '/':
                 return TryParseHtmlCloseTag(ref text, ref builder);
             case '?':
-                return TryParseHtmlTagProcessingInstruction(ref text, ref builder);
+                return TryParseHtmlTagProcessingInstruction(ref text, ref builder, scanCache);
             case '!':
                 builder.Append(c);
                 c = text.NextChar();
                 if (c == '-')
                 {
-                    return TryParseHtmlTagHtmlComment(ref text, ref builder);
+                    return TryParseHtmlTagHtmlComment(ref text, ref builder, scanCache);
                 }
 
                 if (c == '[')
                 {
-                    return TryParseHtmlTagCData(ref text, ref builder);
+                    return TryParseHtmlTagCData(ref text, ref builder, scanCache);
                 }
 
-                return TryParseHtmlTagDeclaration(ref text, ref builder);
+                return TryParseHtmlTagDeclaration(ref text, ref builder, scanCache);
         }
 
         return TryParseHtmlTagOpenTag(ref text, ref builder);
@@ -287,7 +296,7 @@ public static class HtmlHelper
         }
     }
 
-    private static bool TryParseHtmlTagDeclaration(ref StringSlice text, ref ValueStringBuilder builder)
+    private static bool TryParseHtmlTagDeclaration(ref StringSlice text, ref ValueStringBuilder builder, InlineHtmlScanCache? scanCache)
     {
         var c = text.CurrentChar;
         bool hasAlpha = false;
@@ -304,53 +313,30 @@ public static class HtmlHelper
         }
 
         // Regexp: "\\![A-Z]+\\s+[^>\\x00]*>"
-        while (true)
+        if (!TryFindEnd(ref text, text.Start + 1, HtmlScanTarget.DeclarationEnd, scanCache, out var end))
         {
-            builder.Append(c);
-            c = text.NextChar();
-            if (c == '\0')
-            {
-                return false;
-            }
-
-            if (c == '>')
-            {
-                text.SkipChar();
-                builder.Append('>');
-                return true;
-            }
+            return false;
         }
+
+        AppendAndSkip(ref text, ref builder, end + 1);
+        return true;
     }
 
-    private static bool TryParseHtmlTagCData(ref StringSlice text, ref ValueStringBuilder builder)
+    private static bool TryParseHtmlTagCData(ref StringSlice text, ref ValueStringBuilder builder, InlineHtmlScanCache? scanCache)
     {
-        if (text.Match("[CDATA["))
+        if (!text.Match("[CDATA["))
         {
-            builder.Append("[CDATA[");
-            text.Start += 6;
-
-            char c = '\0';
-            while (true)
-            {
-                var pc = c;
-                c = text.NextChar();
-                if (c == '\0')
-                {
-                    return false;
-                }
-
-                builder.Append(c);
-
-                if (c == ']' && pc == ']' && text.PeekChar() == '>')
-                {
-                    text.SkipChar();
-                    text.SkipChar();
-                    builder.Append('>');
-                    return true;
-                }
-            }
+            return false;
         }
-        return false;
+
+        // The "]]>" that ends the section starts after "[CDATA["
+        if (!TryFindEnd(ref text, text.Start + "[CDATA[".Length, HtmlScanTarget.CDataEnd, scanCache, out var end))
+        {
+            return false;
+        }
+
+        AppendAndSkip(ref text, ref builder, end + "]]>".Length);
+        return true;
     }
 
     internal static bool TryParseHtmlCloseTag(ref StringSlice text, ref ValueStringBuilder builder)
@@ -398,7 +384,7 @@ public static class HtmlHelper
     }
 
 
-    private static bool TryParseHtmlTagHtmlComment(ref StringSlice text, ref ValueStringBuilder builder)
+    private static bool TryParseHtmlTagHtmlComment(ref StringSlice text, ref ValueStringBuilder builder, InlineHtmlScanCache? scanCache)
     {
         // https://spec.commonmark.org/0.31.2/#raw-html
         // An HTML comment consists of <!-->, <!--->, or
@@ -432,43 +418,76 @@ public static class HtmlHelper
             return true;
         }
 
-        ReadOnlySpan<char> slice = text.AsSpan();
-
-        const string EndOfComment = "-->";
-
-        int endOfComment = slice.IndexOf(EndOfComment.AsSpan(), StringComparison.Ordinal);
-        if (endOfComment < 0)
+        // Unlike the other constructs, the search does not stop at a null character
+        var end = InlineHtmlScanCache.IndexOf(text, text.Start, HtmlScanTarget.CommentEnd, scanCache);
+        if (end < 0)
         {
             return false;
         }
 
         builder.Append("--");
-        builder.Append(slice.Slice(0, endOfComment + EndOfComment.Length));
-        text.Start += endOfComment + EndOfComment.Length;
+        AppendAndSkip(ref text, ref builder, end + "-->".Length);
         return true;
     }
 
-    private static bool TryParseHtmlTagProcessingInstruction(ref StringSlice text, ref ValueStringBuilder builder)
+    private static bool TryParseHtmlTagProcessingInstruction(ref StringSlice text, ref ValueStringBuilder builder, InlineHtmlScanCache? scanCache)
     {
-        builder.Append('?');
-        var prevChar = '\0';
-        while (true)
+        // The '?' that opens the instruction cannot start the "?>" that ends it
+        if (!TryFindEnd(ref text, text.Start + 1, HtmlScanTarget.ProcessingInstructionEnd, scanCache, out var end))
         {
-            var c = text.NextChar();
-            if (c == '\0')
-            {
-                return false;
-            }
-
-            if (c == '>' && prevChar == '?')
-            {
-                builder.Append('>');
-                text.SkipChar();
-                return true;
-            }
-            prevChar = c;
-            builder.Append(c);
+            return false;
         }
+
+        AppendAndSkip(ref text, ref builder, end + "?>".Length);
+        return true;
+    }
+
+    /// <summary>
+    /// Finds the first occurrence of <paramref name="target"/> at or after <paramref name="start"/>, as a scan reading one
+    /// character at a time and stopping at the first null character or at the end of <paramref name="text"/> would.
+    /// </summary>
+    private static bool TryFindEnd(ref StringSlice text, int start, HtmlScanTarget target, InlineHtmlScanCache? scanCache, out int end)
+    {
+        end = InlineHtmlScanCache.IndexOf(text, start, target, scanCache);
+
+        int nullCharacter;
+        if (scanCache is null && end >= 0)
+        {
+            // Without a cache, only search up to the end of the construct so that parsing it stays proportional to its length
+            nullCharacter = text.Text.AsSpan(start, end - start).IndexOf('\0');
+            if (nullCharacter >= 0)
+            {
+                nullCharacter += start;
+            }
+        }
+        else
+        {
+            nullCharacter = InlineHtmlScanCache.IndexOf(text, start, HtmlScanTarget.NullCharacter, scanCache);
+        }
+
+        // On failure, leave the slice where the character-by-character scan stopped
+        if (nullCharacter >= 0 && (end < 0 || nullCharacter < end))
+        {
+            text.Start = nullCharacter;
+            return false;
+        }
+
+        if (end < 0)
+        {
+            text.Start = text.End + 1;
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Appends the characters from the current position of <paramref name="text"/> up to <paramref name="end"/> (excluded), and moves the slice after them.
+    /// </summary>
+    private static void AppendAndSkip(ref StringSlice text, ref ValueStringBuilder builder, int end)
+    {
+        builder.Append(text.Text.AsSpan(text.Start, end - text.Start));
+        text.Start = end;
     }
 
     /// <summary>

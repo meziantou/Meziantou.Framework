@@ -33,6 +33,7 @@ public class InlineProcessor
     internal ContainerBlock? _previousContainerToReplace;
     internal ContainerBlock? _newContainerToReplace;
     private InlineLinkScanCache? _linkScanCache;
+    private InlineHtmlScanCache? _htmlScanCache;
     private readonly InlineContainerChain _openContainers = new();
     private bool _isParsingInlines;
     private bool _isOpenContainersEngaged;
@@ -108,6 +109,11 @@ public class InlineProcessor
     /// Gets the cache used by <see cref="LinkInlineParser"/> to avoid scanning the same characters again for each link opener.
     /// </summary>
     internal InlineLinkScanCache LinkScanCache => _linkScanCache ??= new();
+
+    /// <summary>
+    /// Gets the cache used by <see cref="AutolinkInlineParser"/> to avoid searching the same characters again for the end of each inline raw HTML construct.
+    /// </summary>
+    internal InlineHtmlScanCache HtmlScanCache => _htmlScanCache ??= new();
 
     private long _referenceExpansionLength;
 
@@ -287,6 +293,7 @@ public class InlineProcessor
         _previousSliceOffset = 0;
         _previousLineIndexForSliceOffset = 0;
         _lineOffsets.Clear();
+        _htmlScanCache?.Clear();
         var text = leafBlock.Lines.ToSlice(_lineOffsets);
         _unescapedSourceStart = text.Start;
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
@@ -838,6 +845,7 @@ public class InlineProcessor
         _lineOffsets.Clear();
         Array.Clear(ParserStates, 0, ParserStates.Length);
         _linkScanCache?.Clear();
+        _htmlScanCache?.Clear();
         _referenceExpansionLength = 0;
         MaximumReferenceExpansionLength = long.MaxValue;
     }

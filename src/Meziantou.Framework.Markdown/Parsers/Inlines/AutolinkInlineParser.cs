@@ -62,7 +62,7 @@ public class AutolinkInlineParser : InlineParser
         else if (Options.EnableHtmlParsing)
         {
             slice = saved;
-            if (!HtmlHelper.TryParseHtmlTag(ref slice, out string? htmlTag))
+            if (!HtmlHelper.TryParseHtmlTag(ref slice, out string? htmlTag, processor.HtmlScanCache))
             {
                 return false;
             }

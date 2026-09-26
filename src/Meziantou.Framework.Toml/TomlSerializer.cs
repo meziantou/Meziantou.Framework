@@ -6,6 +6,7 @@ using System.Text;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Internal;
+using Meziantou.Framework.Toml.Text;
 
 namespace Meziantou.Framework.Toml;
 
@@ -24,6 +25,42 @@ public static class TomlSerializer
         "Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.";
 
     private static readonly Encoding DefaultStreamEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    // Invalid UTF-8 is reported as a TomlException with its location, so TryDeserialize returns false
+    private static string ReadStream(Stream stream, TomlSerializerOptions options)
+    {
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        var bytes = buffer.GetBuffer();
+        var length = (int)buffer.Length;
+        try
+        {
+            return DefaultStreamEncoding.GetString(bytes, 0, length);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            var index = Math.Clamp(ex.Index, 0, length);
+            var lineStart = index == 0 ? 0 : bytes.AsSpan(0, index).LastIndexOf((byte)'\n') + 1;
+            var line = bytes.AsSpan(0, index).Count((byte)'\n');
+            var column = DefaultStreamEncoding.GetCharCount(bytes, lineStart, index - lineStart);
+            var position = new TomlTextPosition(DefaultStreamEncoding.GetCharCount(bytes, 0, index), line, column);
+            throw new TomlException(new TomlSourceSpan(options.SourceName ?? string.Empty, position, position), $"Invalid UTF-8 byte sequence at byte offset {index}.", ex);
+        }
+    }
+
+    private static void WriteToStream(Stream stream, Action<TextWriter> write)
+    {
+        try
+        {
+            using var writer = new StreamWriter(stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
+            write(writer);
+            writer.Flush();
+        }
+        catch (EncoderFallbackException ex)
+        {
+            throw new TomlException("The TOML output contains an unpaired surrogate, which cannot be encoded as UTF-8.", ex);
+        }
+    }
 
     /// <summary>
     /// Gets a value indicating whether reflection-based serialization is enabled by default.
@@ -198,9 +235,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(stream, nameof(stream));
         ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
 
-        using var writer = new StreamWriter(stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
-        Serialize(writer, value, inputType, options);
-        writer.Flush();
+        WriteToStream(stream, writer => Serialize(writer, value, inputType, options));
     }
 
     /// <summary>
@@ -222,9 +257,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
         ArgumentGuard.ThrowIfNull(context, nameof(context));
 
-        using var writer = new StreamWriter(stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
-        Serialize(writer, value, inputType, context);
-        writer.Flush();
+        WriteToStream(stream, writer => Serialize(writer, value, inputType, context));
     }
 
     /// <summary>
@@ -235,9 +268,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(stream, nameof(stream));
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
 
-        using var writer = new StreamWriter(stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
-        Serialize(writer, value, typeInfo);
-        writer.Flush();
+        WriteToStream(stream, writer => Serialize(writer, value, typeInfo));
     }
 
     /// <summary>
@@ -247,9 +278,7 @@ public static class TomlSerializer
     {
         ArgumentGuard.ThrowIfNull(stream, nameof(stream));
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
-        using var writer = new StreamWriter(stream, DefaultStreamEncoding, bufferSize: 1024, leaveOpen: true);
-        Serialize(writer, value, typeInfo);
-        writer.Flush();
+        WriteToStream(stream, writer => Serialize(writer, value, typeInfo));
     }
 
     /// <summary>
@@ -462,8 +491,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(stream, nameof(stream));
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
 
-        using var reader = new StreamReader(stream, DefaultStreamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-        return Deserialize(reader, typeInfo);
+        return Deserialize(ReadStream(stream, typeInfo.Options), typeInfo);
     }
 
     /// <summary>

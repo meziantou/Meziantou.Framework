@@ -187,7 +187,7 @@ Paragraph
     public void TestBugEmphAttribute()
     {
         // https://github.com/lunet-io/markdig/issues/108
-        TestParser.TestSpec(@"*test*{name=value}", "<p><em name=\"value\">test</em></p>", "advanced");
+        TestParser.TestSpec(@"*test*{title=value}", "<p><em title=\"value\">test</em></p>", "advanced");
     }
 
     [Fact]

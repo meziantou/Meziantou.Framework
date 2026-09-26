@@ -18,24 +18,18 @@ namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 /// <seealso cref="IMarkdownExtension" />
 public class GenericAttributesExtension : IMarkdownExtension
 {
-    private static readonly HashSet<string> UrlOrDocumentAttributeNames = new(StringComparer.OrdinalIgnoreCase)
+    // Attributes that only describe the content. A deny-list is not enough: besides event handlers and URL attributes,
+    // client-side frameworks run the value of their own attributes (x-init, hx-get, v-html, data-bind...), and style
+    // can cover the page with an invisible link.
+    private static readonly HashSet<string> SafeAttributeNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "action",
-        "background",
-        "codebase",
-        "data",
-        "dynsrc",
-        "formaction",
-        "href",
-        "lowsrc",
-        "manifest",
-        "ping",
-        "poster",
-        "src",
-        "srcdoc",
-        "srcset",
-        "xlink:href",
-        "xmlns",
+        "align",
+        "dir",
+        "height",
+        "lang",
+        "role",
+        "title",
+        "width",
     };
 
     /// <summary>
@@ -45,9 +39,11 @@ public class GenericAttributesExtension : IMarkdownExtension
     public Func<string, bool> AttributeFilter { get; set; } = IsSafeAttributeName;
 
     /// <summary>
-    /// Returns <see langword="false"/> for the attributes that can run script or load a resource: event handlers
-    /// (<c>on*</c>), and attributes that hold a URL or a document such as <c>href</c>, <c>src</c> or <c>srcdoc</c>.
-    /// Other attributes, such as <c>style</c>, <c>title</c> or <c>data-*</c>, are allowed.
+    /// Returns <see langword="true"/> for the attributes that only describe the content: <c>align</c>, <c>dir</c>,
+    /// <c>height</c>, <c>lang</c>, <c>role</c>, <c>title</c>, <c>width</c> and <c>aria-*</c>.
+    /// Other attributes are rejected, including event handlers, attributes that hold a URL, <c>style</c>, and the
+    /// <c>data-*</c> and directive attributes that client-side frameworks execute. Use <see cref="AttributeFilter"/> to
+    /// allow more attributes when the Markdown is trusted.
     /// </summary>
     /// <param name="name">The name of the attribute.</param>
     /// <returns><see langword="true"/> if the attribute can be written to the HTML output.</returns>
@@ -55,13 +51,7 @@ public class GenericAttributesExtension : IMarkdownExtension
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        if (name.StartsWith("on", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        if (name.StartsWith("xmlns:", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        return !UrlOrDocumentAttributeNames.Contains(name);
+        return SafeAttributeNames.Contains(name) || name.StartsWith("aria-", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

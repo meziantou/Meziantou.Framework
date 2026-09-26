@@ -65,11 +65,11 @@ Like for fenced code block, a custom container can span over multiple empty line
 Attributes extension is also supported for Custom Container, as long as the Attributes extension is activated after the CustomContainer extension (`.UseCustomContainer().UseAttributes()`)
 
 ```````````````````````````````` example
-:::spoiler {#myspoiler myprop=yes}
+:::spoiler {#myspoiler title=yes}
 This is a spoiler
 :::
 .
-<div id="myspoiler" class="spoiler" myprop="yes"><p>This is a spoiler</p>
+<div id="myspoiler" class="spoiler" title="yes"><p>This is a spoiler</p>
 </div>
 ````````````````````````````````
 

@@ -110,15 +110,15 @@ public class TestExtensionsCustomContainer
         // Section: Extensions / Custom Container
         //
         // The following Markdown:
-        //     :::spoiler {#myspoiler myprop=yes}
+        //     :::spoiler {#myspoiler title=yes}
         //     This is a spoiler
         //     :::
         //
         // Should be rendered as:
-        //     <div id="myspoiler" class="spoiler" myprop="yes"><p>This is a spoiler</p>
+        //     <div id="myspoiler" class="spoiler" title="yes"><p>This is a spoiler</p>
         //     </div>
 
-        TestParser.TestSpec(":::spoiler {#myspoiler myprop=yes}\nThis is a spoiler\n:::", "<div id=\"myspoiler\" class=\"spoiler\" myprop=\"yes\"><p>This is a spoiler</p>\n</div>", "customcontainers+attributes|advanced", context: "Example 5\nSection Extensions / Custom Container\n");
+        TestParser.TestSpec(":::spoiler {#myspoiler title=yes}\nThis is a spoiler\n:::", "<div id=\"myspoiler\" class=\"spoiler\" title=\"yes\"><p>This is a spoiler</p>\n</div>", "customcontainers+attributes|advanced", context: "Example 5\nSection Extensions / Custom Container\n");
     }
 
     // The content of a custom container can contain any blocks:

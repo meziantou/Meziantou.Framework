@@ -93,11 +93,12 @@ public class TestHtmlAttributes
 
     [Theory]
     [InlineData("![x](y.png){onerror=alert(1)}", "<p><img src=\"y.png\" alt=\"x\" /></p>\n")]
-    [InlineData("[click](http://ok){ONCLICK=\"alert(1)\" style=\"color:red\" data-x=1}", "<p><a href=\"http://ok\" style=\"color:red\" data-x=\"1\">click</a></p>\n")]
+    [InlineData("[click](http://ok){ONCLICK=\"alert(1)\" style=\"color:red\" data-x=1 title=t}", "<p><a href=\"http://ok\" title=\"t\">click</a></p>\n")]
+    [InlineData("hello {x-data x-init=\"alert(document.domain)\" hx-get=/delete hx-on:click=alert(1) data-bind=x v-html=x ng-click=x is=x lang=en}", "<p lang=\"en\">hello </p>\n")]
     [InlineData("[click](http://ok){href=javascript:alert(1) title=t}", "<p><a href=\"http://ok\" title=\"t\">click</a></p>\n")]
     [InlineData("{#id .cls srcdoc=x formaction=javascript:alert(1) xmlns:x=y}\nparagraph", "<p id=\"id\" class=\"cls\">paragraph</p>\n")]
     [InlineData("# Title {onmouseover=alert(1) lang=en}", "<h1 id=\"title\" lang=\"en\">Title</h1>\n")]
-    [InlineData("```js {onclick=alert(1) data-lang=js}\ncode\n```", "<pre><code class=\"language-js\" data-lang=\"js\">code\n</code></pre>\n")]
+    [InlineData("```js {onclick=alert(1) data-lang=js title=t}\ncode\n```", "<pre><code class=\"language-js\" title=\"t\">code\n</code></pre>\n")]
     public void GenericAttributesRemoveUnsafeAttributes(string markdown, string expected)
     {
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().DisableHtml().Build();
@@ -116,6 +117,17 @@ public class TestHtmlAttributes
         Assert.Equal("<p><img src=\"y.png\" onload=\"f()\" alt=\"x\" /></p>\n", MarkdownConverter.ToHtml("![x](y.png){onload=f() style=a}", pipeline));
     }
 
+    [Fact]
+    public void GenericAttributesFilterCanExtendTheDefaultFilter()
+    {
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseGenericAttributes(name => GenericAttributesExtension.IsSafeAttributeName(name) || name.StartsWith("data-", StringComparison.OrdinalIgnoreCase))
+            .Build();
+
+        Assert.Equal("<p><a href=\"u\" title=\"t\" data-x=\"1\">x</a></p>\n", MarkdownConverter.ToHtml("[x](u){title=t data-x=1 style=a}", pipeline));
+    }
+
     [Theory]
     [InlineData("onclick", false)]
     [InlineData("OnLoad", false)]
@@ -123,9 +135,13 @@ public class TestHtmlAttributes
     [InlineData("SRC", false)]
     [InlineData("xlink:href", false)]
     [InlineData("xmlns:svg", false)]
-    [InlineData("style", true)]
+    [InlineData("style", false)]
+    [InlineData("data-src", false)]
+    [InlineData("x-init", false)]
+    [InlineData("hx-on:click", false)]
     [InlineData("title", true)]
-    [InlineData("data-src", true)]
+    [InlineData("LANG", true)]
+    [InlineData("aria-label", true)]
     public void GenericAttributesIsSafeAttributeName(string name, bool expected)
     {
         Assert.Equal(expected, GenericAttributesExtension.IsSafeAttributeName(name));

@@ -24,6 +24,8 @@ public class TestExtensionsGenericAttributes
     // - A class element, starting by `.` that will be appended to the CSS class property of the HTML element
     // - a `name=value` or `name="value"` that will be appended as an attribute of the HTML element
     //
+    // By default, only the attributes that describe the content are written: `align`, `dir`, `height`, `lang`, `role`, `title`, `width` and `aria-*`. Other attributes, such as event handlers, URL attributes, `style` or `data-*`, are removed, because they can run script or change the page when the Markdown is not trusted. `GenericAttributesExtension.AttributeFilter` (or the filter passed to `UseGenericAttributes`) changes this policy.
+    //
     // The following shows that attributes is attached to the current block or the previous inline:
     [Fact]
     public void ExtensionsGenericAttributes_Example001()
@@ -36,21 +38,21 @@ public class TestExtensionsGenericAttributes
         //
         //     # This is a heading # {#heading-link2}
         //
-        //     [This is a link](http://google.com){#a-link .myclass data-lang=fr data-value="This is a value"}
+        //     [This is a link](http://google.com){#a-link .myclass lang=fr title="This is a value"}
         //
         //     This is a heading{#heading-link2}
         //     -----------------
         //
-        //     This is a paragraph with an attached attributes {#myparagraph attached-bool-property attached-bool-property2}
+        //     This is a paragraph with an attached attributes {#myparagraph aria-busy aria-disabled}
         //
         // Should be rendered as:
         //     <h1 id="heading-link">This is a heading with an an attribute</h1>
         //     <h1 id="heading-link2">This is a heading</h1>
-        //     <p><a href="http://google.com" id="a-link" class="myclass" data-lang="fr" data-value="This is a value">This is a link</a></p>
+        //     <p><a href="http://google.com" id="a-link" class="myclass" lang="fr" title="This is a value">This is a link</a></p>
         //     <h2 id="heading-link2">This is a heading</h2>
-        //     <p id="myparagraph" attached-bool-property="" attached-bool-property2="">This is a paragraph with an attached attributes </p>
+        //     <p id="myparagraph" aria-busy="" aria-disabled="">This is a paragraph with an attached attributes </p>
 
-        TestParser.TestSpec("# This is a heading with an an attribute{#heading-link}\n\n# This is a heading # {#heading-link2}\n\n[This is a link](http://google.com){#a-link .myclass data-lang=fr data-value=\"This is a value\"}\n\nThis is a heading{#heading-link2}\n-----------------\n\nThis is a paragraph with an attached attributes {#myparagraph attached-bool-property attached-bool-property2}", "<h1 id=\"heading-link\">This is a heading with an an attribute</h1>\n<h1 id=\"heading-link2\">This is a heading</h1>\n<p><a href=\"http://google.com\" id=\"a-link\" class=\"myclass\" data-lang=\"fr\" data-value=\"This is a value\">This is a link</a></p>\n<h2 id=\"heading-link2\">This is a heading</h2>\n<p id=\"myparagraph\" attached-bool-property=\"\" attached-bool-property2=\"\">This is a paragraph with an attached attributes </p>", "attributes|advanced", context: "Example 1\nSection Extensions / Generic Attributes\n");
+        TestParser.TestSpec("# This is a heading with an an attribute{#heading-link}\n\n# This is a heading # {#heading-link2}\n\n[This is a link](http://google.com){#a-link .myclass lang=fr title=\"This is a value\"}\n\nThis is a heading{#heading-link2}\n-----------------\n\nThis is a paragraph with an attached attributes {#myparagraph aria-busy aria-disabled}", "<h1 id=\"heading-link\">This is a heading with an an attribute</h1>\n<h1 id=\"heading-link2\">This is a heading</h1>\n<p><a href=\"http://google.com\" id=\"a-link\" class=\"myclass\" lang=\"fr\" title=\"This is a value\">This is a link</a></p>\n<h2 id=\"heading-link2\">This is a heading</h2>\n<p id=\"myparagraph\" aria-busy=\"\" aria-disabled=\"\">This is a paragraph with an attached attributes </p>", "attributes|advanced", context: "Example 1\nSection Extensions / Generic Attributes\n");
     }
 
     // The following shows that attributes can be attached to the next block if they are used inside a single line just preceding the block (and preceded by a blank line or beginning of a block container):
@@ -81,25 +83,41 @@ public class TestExtensionsGenericAttributes
         // Section: Extensions / Generic Attributes
         //
         // The following Markdown:
-        //     [Foo](url){data-x=1}
+        //     [Foo](url){title=1}
         //
-        //     [Foo](url){data-x='1'}
+        //     [Foo](url){title='1'}
         //
-        //     [Foo](url){data-x=11}
+        //     [Foo](url){title=11}
         //
         // Should be rendered as:
-        //     <p><a href="url" data-x="1">Foo</a></p>
-        //     <p><a href="url" data-x="1">Foo</a></p>
-        //     <p><a href="url" data-x="11">Foo</a></p>
+        //     <p><a href="url" title="1">Foo</a></p>
+        //     <p><a href="url" title="1">Foo</a></p>
+        //     <p><a href="url" title="11">Foo</a></p>
 
-        TestParser.TestSpec("[Foo](url){data-x=1}\n\n[Foo](url){data-x='1'}\n\n[Foo](url){data-x=11}", "<p><a href=\"url\" data-x=\"1\">Foo</a></p>\n<p><a href=\"url\" data-x=\"1\">Foo</a></p>\n<p><a href=\"url\" data-x=\"11\">Foo</a></p>", "attributes|advanced", context: "Example 3\nSection Extensions / Generic Attributes\n");
+        TestParser.TestSpec("[Foo](url){title=1}\n\n[Foo](url){title='1'}\n\n[Foo](url){title=11}", "<p><a href=\"url\" title=\"1\">Foo</a></p>\n<p><a href=\"url\" title=\"1\">Foo</a></p>\n<p><a href=\"url\" title=\"11\">Foo</a></p>", "attributes|advanced", context: "Example 3\nSection Extensions / Generic Attributes\n");
     }
 
-    // Attributes that occur immediately before a block element, on a line by themselves, affect that element
+    // Attributes that are not allowed by the filter are removed:
     [Fact]
     public void ExtensionsGenericAttributes_Example004()
     {
         // Example 4
+        // Section: Extensions / Generic Attributes
+        //
+        // The following Markdown:
+        //     [Foo](url){title=t data-x=1 onclick="alert(1)" style="position:fixed" x-init="alert(1)" href=javascript:alert(1)}
+        //
+        // Should be rendered as:
+        //     <p><a href="url" title="t">Foo</a></p>
+
+        TestParser.TestSpec("[Foo](url){title=t data-x=1 onclick=\"alert(1)\" style=\"position:fixed\" x-init=\"alert(1)\" href=javascript:alert(1)}", "<p><a href=\"url\" title=\"t\">Foo</a></p>", "attributes|advanced", context: "Example 4\nSection Extensions / Generic Attributes\n");
+    }
+
+    // Attributes that occur immediately before a block element, on a line by themselves, affect that element
+    [Fact]
+    public void ExtensionsGenericAttributes_Example005()
+    {
+        // Example 5
         // Section: Extensions / Generic Attributes
         //
         // The following Markdown:
@@ -109,6 +127,6 @@ public class TestExtensionsGenericAttributes
         // Should be rendered as:
         //     <p class="center">A paragraph</p>
 
-        TestParser.TestSpec("{.center}\nA paragraph", "<p class=\"center\">A paragraph</p>", "attributes|advanced", context: "Example 4\nSection Extensions / Generic Attributes\n");
+        TestParser.TestSpec("{.center}\nA paragraph", "<p class=\"center\">A paragraph</p>", "attributes|advanced", context: "Example 5\nSection Extensions / Generic Attributes\n");
     }
 }

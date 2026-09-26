@@ -158,7 +158,28 @@ d = true
 
         Assert.HasCount(200, doc.Diagnostics);
         Assert.All(doc.Diagnostics, diagnostic => Assert.HasCountLessThan(200, diagnostic.Message));
-        Assert.StartsWith("The key `t` is already defined at (1,1)", doc.Diagnostics[0].Message);
+        Assert.StartsWith(isTable ? "The key `t` is already defined at (1,2)" : "The key `t` is already defined at (1,1)", doc.Diagnostics[0].Message);
+    }
+
+    [Theory]
+    [InlineData("p.q = 1\np.q.r = 2\n")]
+    [InlineData("a = 1\nb = 2\na = 3\n")]
+    [InlineData("[t]\n[t]\n")]
+    [InlineData("[a.b]\nx = 1\n[a.b]\n")]
+    [InlineData("a.b = 1\n[a]\n")]
+    [InlineData("[[a]]\n[a]\n")]
+    [InlineData("a = [1]\n[[a]]\n")]
+    [InlineData("[a]\nb.c = 1\n[a.b]\n")]
+    [InlineData("x = { a.b = 1, a.b.c = 2 }\n")]
+    public void Validate_Redefinitions_AreReportedWhereTheDeserializerReportsThem(string toml)
+    {
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        var diagnostic = Assert.Single(SyntaxParser.Parse(toml).Diagnostics);
+
+        Assert.Equal(exception.Span!.Value.Start.ToString(), diagnostic.Span.Start.ToString());
+        Assert.Equal(GetPreviousDefinition(exception.Message), GetPreviousDefinition(diagnostic.Message));
+
+        static string GetPreviousDefinition(string message) => System.Text.RegularExpressions.Regex.Match(message, @"defined at \(\d+,\d+\)", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1)).Value;
     }
 
     [Theory]

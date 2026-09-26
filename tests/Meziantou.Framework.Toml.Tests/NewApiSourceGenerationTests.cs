@@ -1049,6 +1049,44 @@ internal sealed partial class TestTomlSerializerContextRequired : TomlSerializer
 {
 }
 
+public sealed class GeneratedConstructionCounter
+{
+    [ThreadStatic]
+    private static int s_constructions;
+
+    public GeneratedConstructionCounter() => s_constructions++;
+
+    public static int Constructions { get => s_constructions; set => s_constructions = value; }
+
+    public required int Id { get; set; }
+
+    public string Name { get; init; } = "default";
+
+    public int Plain { get; set; } = 5;
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public readonly struct GeneratedInitStruct
+{
+    public int A { get; init; }
+
+    public int B { get; init; }
+}
+
+public sealed class GeneratedGenericInit<T>
+{
+    public T? Value { get; init; }
+
+    public string Name { get; init; } = "default";
+}
+
+[TomlSerializable(typeof(GeneratedConstructionCounter))]
+[TomlSerializable(typeof(GeneratedInitStruct))]
+[TomlSerializable(typeof(GeneratedGenericInit<int>))]
+internal sealed partial class TestTomlSerializerContextSingleConstruction : TomlSerializerContext
+{
+}
+
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedInitOnlyPerson))]
 internal sealed partial class TestTomlSerializerContextInitOnly : TomlSerializerContext
@@ -2376,6 +2414,35 @@ public class NewApiSourceGenerationTests
         Assert.DoesNotContain("type", toml);
         Assert.Contains("color = \"red\"", toml);
         Assert.Contains("radius = 5", toml);
+    }
+
+    [Theory]
+    [InlineData("Id = 1\n", "default", 5)]
+    [InlineData("Id = 1\nName = \"x\"\nPlain = 7\n", "x", 7)]
+    public void InitOnlyAndRequiredMembers_RunTheConstructorOnce(string toml, string expectedName, int expectedPlain)
+    {
+        GeneratedConstructionCounter.Constructions = 0;
+
+        var value = TomlSerializer.Deserialize(toml, TestTomlSerializerContextSingleConstruction.Default.GeneratedConstructionCounter)!;
+
+        Assert.Equal(1, GeneratedConstructionCounter.Constructions);
+        Assert.Equal(1, value.Id);
+        Assert.Equal(expectedName, value.Name);
+        Assert.Equal(expectedPlain, value.Plain);
+    }
+
+    [Fact]
+    public void InitOnlyMembers_OfAStructAndOfAGenericType_AreSet()
+    {
+        var context = TestTomlSerializerContextSingleConstruction.Default;
+
+        var structValue = TomlSerializer.Deserialize("B = 2\n", context.GeneratedInitStruct);
+        var genericValue = TomlSerializer.Deserialize("Value = 3\n", context.GeneratedGenericInitInt32)!;
+
+        Assert.Equal(0, structValue.A);
+        Assert.Equal(2, structValue.B);
+        Assert.Equal(3, genericValue.Value);
+        Assert.Equal("default", genericValue.Name);
     }
 
     [Fact]

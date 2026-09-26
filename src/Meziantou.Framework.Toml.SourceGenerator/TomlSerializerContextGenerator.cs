@@ -212,6 +212,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public SourceGenOptions Options { get; }
         public bool IsValid { get; }
         public bool UsesJsonSerializable { get; }
+
+        // Under the updated memory safety rules, an extern member must be marked safe or unsafe, and older language
+        // versions reject both
+        public bool UsesUpdatedMemorySafetyRules => ContextSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules") == true;
     }
 
     private sealed class RootTypeModel
@@ -2176,7 +2180,22 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         // Construct instance.
-        if (useObjectInitializerConstruction)
+        var initAccessors = new List<(string Name, string SetterName, ITypeSymbol DeclaringType, ITypeSymbol ValueType)>();
+        if (useObjectInitializerConstruction && TryGetInitAccessors(model, poco, ctor, out var initAccessorNames, out var extensionDataInitAccessorName))
+        {
+            EmitSingleObjectInitializerConstruction(builder, poco, ctor, typeName, readNonNullableTypeName, extensionData, initAccessorNames, extensionDataInitAccessorName, GetLinkedParameterExpression, callsOnDeserializing, wrapConstructionErrors);
+            foreach (var (index, name) in initAccessorNames)
+            {
+                var member = poco.Members[index];
+                initAccessors.Add((name, "set_" + member.MemberName, member.DeclaringType, member.Type));
+            }
+
+            if (extensionDataInitAccessorName is not null && extensionData?.Symbol is { ContainingType: { } extensionDataDeclaringType })
+            {
+                initAccessors.Add((extensionDataInitAccessorName, "set_" + extensionData.MemberName, extensionDataDeclaringType, extensionData.MemberType));
+            }
+        }
+        else if (useObjectInitializerConstruction)
         {
             var templateInitializerAssignments = ImmutableArray.CreateBuilder<string>();
             var finalInitializerAssignments = ImmutableArray.CreateBuilder<string>();
@@ -2378,6 +2397,210 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            return value;");
         builder.AppendLine("        }");
+
+        foreach (var (name, setterName, declaringType, valueType) in initAccessors)
+        {
+            builder.AppendLine();
+            builder.Append("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"").Append(EscapeStringLiteral(setterName)).AppendLine("\")]");
+            builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern void ").Append(name).Append('(').Append(declaringType.IsValueType ? "ref " : "").Append(declaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                .Append(" __instance, ").Append(valueType.ToDisplayString(FullyQualifiedNullableFormat)).AppendLine(" __value);");
+        }
+    }
+
+    // The init-only members that are not set by the object initializer are set with an [UnsafeAccessor] to their init
+    // accessor, so the constructor runs once. An accessor cannot be declared for a member of a generic type, which uses the
+    // template instead.
+    private static bool TryGetInitAccessors(ContextModel model, PocoShape poco, PocoConstructor ctor, out List<(int Index, string Name)> initAccessorNames, out string? extensionDataInitAccessorName)
+    {
+        initAccessorNames = [];
+        extensionDataInitAccessorName = null;
+        for (var i = 0; i < poco.Members.Length; i++)
+        {
+            var member = poco.Members[i];
+            if (!member.CanSet || member.SetterAccessorName is not null || !member.IsInitOnly || IsSetByObjectInitializer(member.IsCompilerRequired, ctor))
+            {
+                continue;
+            }
+
+            if (!CanUseInitAccessor(model, member.DeclaringType))
+            {
+                return false;
+            }
+
+            initAccessorNames.Add((i, "__Init" + i.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        if (poco.ExtensionData is { CanSet: true, IsInitOnly: true } extensionData && !IsSetByObjectInitializer(extensionData.IsCompilerRequired, ctor))
+        {
+            if (extensionData.Symbol?.ContainingType is not { } declaringType || !CanUseInitAccessor(model, declaringType))
+            {
+                return false;
+            }
+
+            extensionDataInitAccessorName = "__InitExtensionData";
+        }
+
+        return true;
+    }
+
+    private static bool IsSetByObjectInitializer(bool isCompilerRequired, PocoConstructor ctor) => isCompilerRequired && !ctor.SetsRequiredMembers;
+
+    private static bool CanUseInitAccessor(ContextModel model, ITypeSymbol declaringType)
+    {
+        for (var current = declaringType as INamedTypeSymbol; current is not null; current = current.ContainingType)
+        {
+            if (current.IsGenericType)
+            {
+                return false;
+            }
+        }
+
+        return FindInaccessibleType(model, declaringType) is null && FindLessAccessibleType(model, declaringType) is null;
+    }
+
+    // Only the members that must be set by an object initializer, the required members, are in it. The other members are
+    // set after the construction when the document has them, so they keep the values set by the constructor otherwise.
+    private static void EmitSingleObjectInitializerConstruction(
+        StringBuilder builder,
+        PocoShape poco,
+        PocoConstructor ctor,
+        string typeName,
+        string readNonNullableTypeName,
+        PocoExtensionData? extensionData,
+        List<(int Index, string Name)> initAccessorNames,
+        string? extensionDataInitAccessorName,
+        Func<int, string?> getLinkedParameterExpression,
+        bool callsOnDeserializing,
+        bool wrapConstructionErrors)
+    {
+        var initializerAssignments = ImmutableArray.CreateBuilder<string>();
+        for (var i = 0; i < poco.Members.Length; i++)
+        {
+            var member = poco.Members[i];
+            if (!member.CanSet || member.SetterAccessorName is not null || !IsSetByObjectInitializer(member.IsCompilerRequired, ctor))
+            {
+                continue;
+            }
+
+            // A required member is missing only when the required modifier is not enforced, and then gets its default value
+            var valueExpression = "__memberSeen" + i.ToString(CultureInfo.InvariantCulture) + " ? __memberValue" + i.ToString(CultureInfo.InvariantCulture) + " : " + (getLinkedParameterExpression(i) ?? GetDefaultLiteral(member.Type));
+            initializerAssignments.Add(member.Identifier + " = " + valueExpression);
+        }
+
+        var extensionDataInInitializer = extensionData is { CanSet: true } && IsSetByObjectInitializer(extensionData.IsCompilerRequired, ctor);
+        if (extensionDataInInitializer)
+        {
+            builder.Append("            var __extensionDataValue = ").Append(extensionData!.CreateExpression).AppendLine(";");
+            builder.AppendLine("            if (__extensionData is not null)");
+            builder.AppendLine("            {");
+            builder.AppendLine("                foreach (var __pair in __extensionData)");
+            builder.AppendLine("                {");
+            builder.AppendLine("                    __extensionDataValue[__pair.Key] = __pair.Value;");
+            builder.AppendLine("                }");
+            builder.AppendLine("            }");
+            initializerAssignments.Add(extensionData.Identifier + " = __extensionDataValue");
+        }
+
+        builder.Append("            ").Append(readNonNullableTypeName).AppendLine(" value;");
+        EmitPocoConstructionAssignment(builder, "value", typeName, ctor.Parameters, initializerAssignments.ToImmutable(), wrapConstructionErrors);
+
+        if (callsOnDeserializing)
+        {
+            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+        }
+
+        for (var i = 0; i < poco.Members.Length; i++)
+        {
+            var member = poco.Members[i];
+            var memberValue = "__memberValue" + i.ToString(CultureInfo.InvariantCulture);
+            var memberSeen = "__memberSeen" + i.ToString(CultureInfo.InvariantCulture);
+            if (member.SetterAccessorName is not null)
+            {
+                builder.Append("            if (").Append(memberSeen).Append(") ").Append(GetSetterAccessorCall(member, "value", memberValue)).AppendLine(";");
+            }
+            else if (!member.CanSet)
+            {
+                if (member.HasSingleOrArray)
+                {
+                    EmitSingleOrArrayPopulateExisting(builder, member, i);
+                }
+            }
+            else if (!IsSetByObjectInitializer(member.IsCompilerRequired, ctor))
+            {
+                var accessorName = initAccessorNames.FirstOrDefault(accessor => accessor.Index == i).Name;
+                builder.Append("            if (").Append(memberSeen).Append(") ");
+                if (accessorName is not null)
+                {
+                    builder.Append(accessorName).Append('(').Append(member.DeclaringType.IsValueType ? "ref value" : "value").Append(", ").Append(memberValue).AppendLine(");");
+                }
+                else
+                {
+                    builder.Append("value.").Append(member.Identifier).Append(" = ").Append(memberValue).AppendLine(";");
+                }
+            }
+        }
+
+        if (extensionData is null || extensionDataInInitializer)
+        {
+            return;
+        }
+
+        builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
+        builder.AppendLine("            {");
+        builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
+        builder.AppendLine("                if (__target is null)");
+        builder.AppendLine("                {");
+        if (extensionData.CanSet)
+        {
+            builder.Append("                    __target = ").Append(extensionData.CreateExpression).AppendLine(";");
+            if (extensionDataInitAccessorName is not null)
+            {
+                builder.Append("                    ").Append(extensionDataInitAccessorName).Append('(').Append(extensionData.Symbol?.ContainingType is { IsValueType: true } ? "ref value" : "value").AppendLine(", __target);");
+            }
+            else
+            {
+                builder.Append("                    value.").Append(extensionData.Identifier).AppendLine(" = __target;");
+            }
+        }
+        else
+        {
+            var nullInitializationMessage = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
+            builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(nullInitializationMessage).AppendLine("\");");
+        }
+
+        builder.AppendLine("                }");
+        builder.AppendLine("                foreach (var __pair in __extensionData)");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    __target[__pair.Key] = __pair.Value;");
+        builder.AppendLine("                }");
+        builder.AppendLine("            }");
+    }
+
+    private static void EmitSingleOrArrayPopulateExisting(StringBuilder builder, PocoMember member, int index)
+    {
+        var addCollectionExpression = GetSingleOrArrayAddCollectionExpression(member.Type, "__existing", "__memberValue" + index.ToString(CultureInfo.InvariantCulture) + "!");
+        builder.Append("            if (__memberSeen").Append(index.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
+        builder.AppendLine("            {");
+        builder.Append("                var __existing = value.").Append(member.Identifier).AppendLine(";");
+        builder.AppendLine("                if (__existing is null)");
+        builder.AppendLine("                {");
+        builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+            .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.\");")
+            .AppendLine();
+        builder.AppendLine("                }");
+        if (addCollectionExpression is null)
+        {
+            builder.Append("                throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+                .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but '")
+                .Append(EscapeStringLiteral(member.Type.ToDisplayString(FullyQualifiedNullableFormat)))
+                .AppendLine("' doesn't support populating the existing collection.\");");
+        }
+        else
+        {
+            builder.Append("                _ = ").Append(addCollectionExpression).AppendLine(";");
+        }
+
+        builder.AppendLine("            }");
     }
 
     private static void EmitPocoReadIntoExisting(

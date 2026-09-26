@@ -1491,6 +1491,41 @@ internal sealed partial class TestTomlSerializerContextAggregation : TomlSeriali
 {
 }
 
+public sealed class GeneratedValidatedServer : ITomlOnDeserialized
+{
+    public int Port { get; set; } = 80;
+
+    public void OnTomlDeserialized()
+    {
+        if (Port <= 0)
+        {
+            throw new InvalidOperationException("Port must be positive.");
+        }
+    }
+}
+
+public sealed class GeneratedValidatedHolder : ITomlOnDeserialized
+{
+    public int Port { get; set; } = 80;
+
+    public GeneratedValidatedServer? Server { get; set; }
+
+    public List<GeneratedValidatedServer>? Servers { get; set; }
+
+    public void OnTomlDeserialized()
+    {
+        if (Port <= 0)
+        {
+            throw new InvalidOperationException("Port must be positive.");
+        }
+    }
+}
+
+[TomlSerializable(typeof(GeneratedValidatedHolder))]
+internal sealed partial class TestTomlSerializerContextValidated : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedPrivateGetterChild
 {
     public int X { get; set; }
@@ -3412,6 +3447,22 @@ public class NewApiSourceGenerationTests
         Assert.Equal(Toml, TomlSerializer.Serialize(value, TestTomlSerializerContextObsolete.Default.GeneratedObsoleteModel).ReplaceLineEndings("\n"));
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedObsoleteModel>(Toml)!).ReplaceLineEndings("\n"));
         Assert.Equal(4, created.B);
+    }
+
+    [Theory]
+    [InlineData("Port = 'http'\n")]
+    [InlineData("[Server]\nPort = 'http'\n")]
+    [InlineData("[[Servers]]\nPort = 'http'\n")]
+    public void DeserializedCallback_DoesNotRunOnATableWithErrors(string toml)
+    {
+        var lastWins = new TomlSerializerOptions { DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+        var context = TestTomlSerializerContextValidated.Default;
+
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedValidatedHolder>(toml, out _));
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedValidatedHolder>(toml, out _, lastWins));
+        Assert.False(TomlSerializer.TryDeserialize(toml, context.GeneratedValidatedHolder, out _));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedValidatedHolder>(toml));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, context.GeneratedValidatedHolder));
     }
 
     [Fact]

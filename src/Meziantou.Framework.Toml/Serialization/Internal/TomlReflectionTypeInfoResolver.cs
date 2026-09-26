@@ -937,6 +937,8 @@ internal static class TomlReflectionTypeInfoResolver
 
         private object ReadIntoExistingInstance(TomlReader reader, object instance, TomlSourceSpan? tableStartSpan, bool invokeDeserializingCallback)
         {
+            // Like generated code, a table whose values have errors is not used: its callback does not run
+            var diagnosticCount = reader.OperationState.DiagnosticCount;
             if (invokeDeserializingCallback && _invokeOnDeserializing)
             {
                 ((ITomlOnDeserializing)instance).OnTomlDeserializing();
@@ -1053,10 +1055,10 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (seen is not null)
             {
-                var diagnosticCount = reader.OperationState.DiagnosticCount;
                 ValidateRequiredMembers(reader, seen, tableStartSpan ?? endTableSpan);
-                reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
             }
+
+            reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
 
             if (propertiesMetadata is not null)
             {

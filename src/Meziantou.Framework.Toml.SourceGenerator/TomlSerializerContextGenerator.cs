@@ -24,6 +24,30 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor ContextMustNotBeGeneric = new(
+        id: "MFTOML014",
+        title: "Toml serializer context must not be generic",
+        messageFormat: "Type '{0}' derives from Meziantou.Framework.Toml.Serialization.TomlSerializerContext and must not be generic to support source generation",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor InaccessibleType = new(
+        id: "MFTOML015",
+        title: "Type is not accessible from the generated code",
+        messageFormat: "Type '{0}' is not accessible from the code generated for context '{1}'. Make it public or internal, and not file-local.",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor UnserializableMemberType = new(
+        id: "MFTOML016",
+        title: "Member type cannot be serialized",
+        messageFormat: "Type '{0}' contains member '{1}' of type '{2}', which cannot be serialized because it is {3}. Ignore the member with [TomlIgnore].",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly DiagnosticDescriptor InvalidConverterType = new(
         id: "MFTOML002",
         title: "Invalid converter type",
@@ -157,8 +181,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings,
             SourceGenOptions options,
             bool isValid,
-            bool usesJsonSerializable)
+            bool usesJsonSerializable,
+            Compilation compilation)
         {
+            Compilation = compilation;
             ContextSymbol = contextSymbol;
             NamespaceName = namespaceName;
             TypeName = typeName;
@@ -169,6 +195,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             UsesJsonSerializable = usesJsonSerializable;
         }
 
+        public Compilation Compilation { get; }
         public INamedTypeSymbol ContextSymbol { get; }
         public string NamespaceName { get; }
         public string TypeName { get; }
@@ -330,7 +357,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return null;
         }
 
-        var model = TryCreateContextModel(classSymbol, classDeclaration);
+        var model = TryCreateContextModel(classSymbol, classDeclaration, syntaxContext.SemanticModel.Compilation);
         if (model is null)
         {
             return null;
@@ -341,7 +368,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return new ContextOutput(classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), output.HintName, output.Source, output.Diagnostics.ToImmutableEquatableArray());
     }
 
-    private static ContextModel? TryCreateContextModel(INamedTypeSymbol classSymbol, ClassDeclarationSyntax classDeclaration)
+    private static ContextModel? TryCreateContextModel(INamedTypeSymbol classSymbol, ClassDeclarationSyntax classDeclaration, Compilation compilation)
     {
         if (!DerivesFromTomlSerializerContext(classSymbol))
         {
@@ -416,7 +443,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             derivedTypeMappings.ToImmutable(),
             options,
             isValid: isPartial,
-            usesJsonSerializable: usesJsonSerializable);
+            usesJsonSerializable: usesJsonSerializable,
+            compilation: compilation);
     }
 
     private static void EmitContext(GeneratorOutput context, ContextModel model)
@@ -437,6 +465,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return;
         }
 
+        // A context nested in a generic type is supported, as its declaration repeats the type parameters of the containing types
+        if (model.ContextSymbol.TypeParameters.Length > 0)
+        {
+            context.ReportDiagnostic(DiagnosticInfo.Create(ContextMustNotBeGeneric, model.ContextSymbol.Locations.FirstOrDefault(), model.ContextSymbol.ToDisplayString()));
+            return;
+        }
+
         ValidateConverters(context, model);
         ValidateSourceGenerationOptions(context, model);
         if (!ValidateRootAttributes(context, model))
@@ -450,6 +485,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             .OrderBy(static t => t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), StringComparer.Ordinal)
             .ToImmutableArray();
 
+        // The generated code would not compile, so only the diagnostics are reported
+        if (!ValidateTypeAccessibility(context, model, ordered) || context.Diagnostics.Any(static diagnostic => diagnostic.Descriptor.Equals(UnserializableMemberType)))
+        {
+            return;
+        }
+
         s_typeInfoNames = CreateTypeInfoNames(model, ordered);
         try
         {
@@ -460,6 +501,67 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             s_typeInfoNames = null;
         }
     }
+
+    private static bool ValidateTypeAccessibility(GeneratorOutput context, ContextModel model, ImmutableArray<ITypeSymbol> types)
+    {
+        var isValid = true;
+        var reported = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+        foreach (var type in types)
+        {
+            if (FindInaccessibleType(model, type) is { } inaccessibleType && reported.Add(inaccessibleType))
+            {
+                context.ReportDiagnostic(DiagnosticInfo.Create(InaccessibleType, model.ContextSymbol.Locations.FirstOrDefault(), inaccessibleType.ToDisplayString(), model.ContextSymbol.ToDisplayString()));
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    // The generated code is in another file than the types, so a file-local type is never accessible from it
+    private static ITypeSymbol? FindInaccessibleType(ContextModel model, ITypeSymbol type)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                return FindInaccessibleType(model, array.ElementType);
+
+            case INamedTypeSymbol named:
+                for (var current = named; current is not null; current = current.ContainingType)
+                {
+                    if (current.IsFileLocal)
+                    {
+                        return current;
+                    }
+                }
+
+                if (!model.Compilation.IsSymbolAccessibleWithin(named.OriginalDefinition, model.ContextSymbol))
+                {
+                    return named;
+                }
+
+                foreach (var typeArgument in named.TypeArguments)
+                {
+                    if (FindInaccessibleType(model, typeArgument) is { } inaccessibleTypeArgument)
+                    {
+                        return inaccessibleTypeArgument;
+                    }
+                }
+
+                return null;
+
+            default:
+                return null;
+        }
+    }
+
+    private static string? GetUnserializableTypeReason(ITypeSymbol type) => type switch
+    {
+        { IsRefLikeType: true } => "a ref struct",
+        { TypeKind: TypeKind.Delegate } => "a delegate",
+        { TypeKind: TypeKind.Pointer or TypeKind.FunctionPointer } => "a pointer",
+        _ => null,
+    };
 
     private static void EmitContext(GeneratorOutput context, ContextModel model, ImmutableArray<DerivedTypeMappingModel> derivedTypeMappings, ImmutableArray<ITypeSymbol> ordered)
     {
@@ -3382,6 +3484,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         continue;
                     }
 
+                    if (GetUnserializableTypeReason(member.Type) is { } reason)
+                    {
+                        context.ReportDiagnostic(DiagnosticInfo.Create(
+                            UnserializableMemberType,
+                            model.ContextSymbol.Locations.FirstOrDefault(),
+                            current.ToDisplayString(),
+                            member.MemberName,
+                            member.Type.ToDisplayString(),
+                            reason));
+                        continue;
+                    }
+
                     if (!IsSupportedMemberType(member.Type, model.Options, derivedTypeMappings))
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(
@@ -3402,6 +3516,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         if (parameter.ConverterTypeInfoName is not null)
                         {
+                            continue;
+                        }
+
+                        if (GetUnserializableTypeReason(parameter.ParameterType) is { } parameterReason)
+                        {
+                            context.ReportDiagnostic(DiagnosticInfo.Create(
+                                UnserializableMemberType,
+                                model.ContextSymbol.Locations.FirstOrDefault(),
+                                current.ToDisplayString(),
+                                parameter.ParameterName,
+                                parameter.ParameterType.ToDisplayString(),
+                                parameterReason));
                             continue;
                         }
 

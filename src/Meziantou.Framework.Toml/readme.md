@@ -509,6 +509,9 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
 | `MFTOML012` | Warning | A converter factory in `[TomlSourceGenerationOptions(Converters)]` is not used by generated code. |
 | `MFTOML013` | Error | A constructor annotated with `[TomlConstructor]` or `[JsonConstructor]` is private or protected. |
+| `MFTOML014` | Error | The context type is generic. It can be nested in a generic type. |
+| `MFTOML015` | Error | A type the generated code uses is not accessible from the context, or is file-local. |
+| `MFTOML016` | Error | A member is a `ref struct`, a delegate, or a pointer, which cannot be serialized. |
 
 ## NativeAOT and trimming
 

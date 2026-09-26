@@ -858,6 +858,69 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.All(outputs, output => Assert.True(output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged, output.Reason.ToString()));
     }
 
+    [Theory]
+    [InlineData("MFTOML014", "[TomlSerializable(typeof(Person))] internal partial class Ctx<T> : TomlSerializerContext { } public sealed class Person { public string Name { get; set; } = \"\"; }")]
+    [InlineData("MFTOML015", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } file sealed class Person { public string Name { get; set; } = \"\"; }")]
+    [InlineData("MFTOML015", "[TomlSerializable(typeof(Outer))] internal partial class Ctx : TomlSerializerContext { } public class Outer { private sealed class Inner { public int X { get; set; } } [TomlInclude] private Inner? Value { get; set; } }")]
+    [InlineData("MFTOML015", "[TomlSerializable(typeof(Outer))] internal partial class Ctx : TomlSerializerContext { } public class Outer { private sealed class Inner { public int X { get; set; } } [TomlInclude] private System.Collections.Generic.List<Inner>? Values { get; set; } }")]
+    [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public System.Action? Callback { get; set; } }")]
+    [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public string Name { get; set; } = \"\"; public System.ReadOnlySpan<char> Span => System.MemoryExtensions.AsSpan(Name); }")]
+    public void Generator_UnsupportedContextOrType_ReportsOnlyADiagnostic(string id, string declarations)
+    {
+        var source = "#nullable enable\nusing Meziantou.Framework.Toml.Serialization;\n" + declarations;
+
+        var diagnostics = RunGenerator(source);
+
+        // The context is not generated, so the compiler also reports its missing members (CS0534), like for MFTOML001
+        Assert.Single(diagnostics, d => d.Id == id);
+        Assert.All(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != id), d => Assert.Equal("CS0534", d.Id));
+    }
+
+    [Fact]
+    public void Generator_PrivateTypeNextToANestedContext_Compiles()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public partial class Outer
+            {
+                private sealed class Person { public string Name { get; set; } = ""; }
+
+                [TomlSerializable(typeof(Person))]
+                private partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void Generator_IgnoredDelegateMember_Compiles()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person
+            {
+                public string Name { get; set; } = "";
+
+                [TomlIgnore]
+                public System.Action? Callback { get; set; }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

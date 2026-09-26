@@ -51,11 +51,18 @@ public sealed class Toml11ScalarTests
     [InlineData("0o777777777777777777777", long.MaxValue)]
     [InlineData("0b111111111111111111111111111111111111111111111111111111111111111", long.MaxValue)]
     [InlineData("0xDEAD_BEEF", 0xDEADBEEF)]
+    [InlineData("0x00000000000000001", 1L)]
+    [InlineData("0x0000_0000_7FFF_FFFF_FFFF_FFFF", long.MaxValue)]
+    [InlineData("0o0000000000000000000000017", 15L)]
+    [InlineData("0b00000000000000000000000000000000000000000000000000000000000000000000000001", 1L)]
     public void Deserialize_NonDecimalInteger_MaxValue(string literal, long expected)
     {
-        var table = TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n")!;
+        var toml = "a = " + literal + "\n";
+
+        var table = TomlSerializer.Deserialize<Model.TomlTable>(toml)!;
 
         Assert.Equal(expected, table["a"]);
+        Assert.False(Parsing.SyntaxParser.Parse(toml).HasErrors);
     }
 
     [Theory]

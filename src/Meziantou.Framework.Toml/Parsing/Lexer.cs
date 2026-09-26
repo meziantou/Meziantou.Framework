@@ -712,8 +712,6 @@ internal sealed class Lexer
                 end = CurrentPosition;
                 NextChar(); // skip x,X,o,O,b,B
 
-                int originalMaxShift = 64 / shift;
-                int maxShift = originalMaxShift;
                 bool hasCharInRange = false;
                 bool lastWasDigit = false;
                 bool isOutOfRange = false;
@@ -742,13 +740,8 @@ internal sealed class Lexer
                                 isOutOfRange = true;
                             }
 
+                            // Leading zeros are allowed, so only the value is limited, not the number of digits
                             value = (value << shift) + (ulong)convert(CurrentCharacter);
-                            maxShift--;
-                            // Log only once the error that the value is beyond
-                            if (maxShift == -1)
-                            {
-                                AddError($"Invalid size of {name} integer. Expecting less than or equal {originalMaxShift} {name} digits", start, start);
-                            }
                         }
 
                         lastWasDigit = nextIsDigit;

@@ -1027,8 +1027,10 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
-    [Fact]
-    public void Generator_MemberDiagnostic_IsReportedOnce()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Generator_MemberDiagnostic_IsReportedOnce(bool twoContexts)
     {
         var source = """
             using Meziantou.Framework.Toml;
@@ -1043,6 +1045,11 @@ public sealed class SourceGenerationDiagnosticsTests
                 public int Value { get; set; }
             }
             """;
+
+        if (twoContexts)
+        {
+            source += "\n[TomlSerializable(typeof(Person))] internal partial class OtherCtx : TomlSerializerContext { }\n";
+        }
 
         var diagnostics = RunGenerator(source);
 

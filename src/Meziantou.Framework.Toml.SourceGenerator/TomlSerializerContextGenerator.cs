@@ -324,8 +324,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         });
 
-        // Diagnostics are reported at a location in the compilation's syntax trees, so '#pragma warning disable' applies to them
-        var diagnostics = outputs.Select(static (outputs, _) => outputs.SelectMany(static output => output.Diagnostics).ToImmutableEquatableArray());
+        // Diagnostics are reported at a location in the compilation's syntax trees, so '#pragma warning disable' applies to them.
+        // A member diagnostic is the same for every context that includes its type, so it is reported once.
+        var diagnostics = outputs.Select(static (outputs, _) => outputs.SelectMany(static output => output.Diagnostics).Distinct().ToImmutableEquatableArray());
         context.RegisterSourceOutput(diagnostics.Combine(context.CompilationProvider), static (spc, input) =>
         {
             if (input.Left.Length == 0)

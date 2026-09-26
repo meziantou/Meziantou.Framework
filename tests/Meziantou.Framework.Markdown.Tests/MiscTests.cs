@@ -85,6 +85,16 @@ public class MiscTests
         }
     }
 
+    [Theory]
+    [InlineData("*[<svg/onload=alert(1)>]: x\n\nhello <svg/onload=alert(1)>", "<p>hello <abbr title=\"x\">&lt;svg/onload=alert(1)&gt;</abbr></p>\n")]
+    [InlineData("*[R&D]: Research and Development\n\nR&D team", "<p><abbr title=\"Research and Development\">R&amp;D</abbr> team</p>\n")]
+    public void AbbreviationLabelIsEscaped(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAbbreviations().DisableHtml().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
     [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {

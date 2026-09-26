@@ -24,7 +24,7 @@ public class HtmlAbbreviationRenderer : HtmlObjectRenderer<AbbreviationInline>
         {
             renderer.Write("<abbr").WriteAttributes(obj).Write(" title=\"").WriteEscape(ref abbr.Text).Write("\">");
         }
-        renderer.Write(abbr.Label);
+        renderer.WriteEscape(abbr.Label);
         if (renderer.EnableHtmlForInline)
         {
             renderer.Write("</abbr>");

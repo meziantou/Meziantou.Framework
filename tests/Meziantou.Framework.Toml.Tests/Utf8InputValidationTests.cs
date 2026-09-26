@@ -17,4 +17,28 @@ public sealed class BomInputTests
         Assert.True(reader.Read());
         Assert.Equal(1L, reader.GetInt64());
     }
+
+    [Theory]
+    [InlineData("a = \"x\uFFFDy\"\n")]
+    [InlineData("a = 'x\uFFFDy'\n")]
+    [InlineData("a = \"\"\"x\\u0041\uFFFDy\"\"\"\n")]
+    [InlineData("# comment \uFFFD\na = \"x\uFFFDy\"\n")]
+    public void ReplacementCharacter_IsValid(string toml)
+    {
+        Assert.False(Parsing.SyntaxParser.Parse(toml).HasErrors);
+        var value = (string)TomlSerializer.Deserialize<Model.TomlTable>(toml)!["a"];
+        Assert.Contains('\uFFFD', value);
+    }
+
+    // xunit serializes the data of the test cases as UTF-8, which replaces a lone surrogate, so the text is built here
+    [Theory]
+    [InlineData(0xD800, "y\"\n")]
+    [InlineData(0xDC00, "y\"\n")]
+    [InlineData(0xD800, "")]
+    public void UnpairedSurrogate_IsInvalid(int surrogate, string suffix)
+    {
+        var toml = "a = \"x" + (char)surrogate + suffix;
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+    }
 }

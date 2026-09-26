@@ -1321,7 +1321,6 @@ internal sealed class Lexer
         // - newlines
         // - control characters (except '\t', to preserve existing behavior)
         // - surrogate code units (to preserve column tracking based on scalar values)
-        // - U+FFFD (used internally as a signal for invalid UTF-8 sequences)
         var contentStart = CurrentPosition;
         var startOffset = contentStart.Offset;
         if ((uint)startOffset >= (uint)_textLength)
@@ -1348,11 +1347,6 @@ internal sealed class Lexer
             }
 
             if (ch == '\\' || ch == '\n' || ch == '\r')
-            {
-                return false;
-            }
-
-            if (ch == '\uFFFD')
             {
                 return false;
             }
@@ -1776,12 +1770,14 @@ internal sealed class Lexer
             return Eof;
         }
 
-        return ReadChar32(ref position);
+        return ReadChar32(ref position, out _);
     }
 
+    // Returns U+FFFD for an unpaired surrogate, and reports it with isInvalidSurrogate: a literal U+FFFD is valid
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Char32 ReadChar32(ref int position)
+    private Char32 ReadChar32(ref int position, out bool isInvalidSurrogate)
     {
+        isInvalidSurrogate = false;
         var span = _text.Span;
         ref var start = ref unsafe(MemoryMarshal.GetReference(span));
         var c1 = unsafe(Unsafe.Add(ref start, position));
@@ -1798,15 +1794,18 @@ internal sealed class Lexer
                     return char.ConvertToUtf32(c1, c2);
                 }
 
+                isInvalidSurrogate = true;
                 return 0xFFFD;
             }
 
             position = _textLength;
+            isInvalidSurrogate = true;
             return 0xFFFD;
         }
 
         if (((uint)c1 & 0xFC00u) == 0xDC00u)
         {
+            isInvalidSurrogate = true;
             return 0xFFFD;
         }
 
@@ -1826,7 +1825,7 @@ internal sealed class Lexer
             return Eof;
         }
 
-        var nextChar = ReadChar32(ref position);
+        var nextChar = ReadChar32(ref position, out var isInvalidSurrogate);
         nextPosition.Offset = position;
 
         var nextc = nextChar;
@@ -1842,7 +1841,7 @@ internal sealed class Lexer
             nextPosition.Column++;
         }
 
-        if (nextc == 0xFFFD)
+        if (isInvalidSurrogate)
         {
             AddError("Invalid UTF-16 surrogate sequence in TOML input.", _current.Position, _current.Position);
         }

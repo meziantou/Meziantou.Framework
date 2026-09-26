@@ -1104,6 +1104,24 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+public sealed class GeneratedPrivateSetterExtensionData
+{
+    public int A { get; set; }
+
+    [TomlExtensionData]
+    [TomlInclude]
+    public Dictionary<string, object?>? Ext { get; private set; }
+}
+
+public sealed class GeneratedPrivateInitExtensionData
+{
+    public int A { get; set; }
+
+    [TomlExtensionData]
+    [TomlInclude]
+    public Dictionary<string, object?>? Ext { get; private init; }
+}
+
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
 public readonly struct GeneratedStructWithConstructor
 {
@@ -1179,6 +1197,8 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedPrivateSetterExtensionData))]
+[TomlSerializable(typeof(GeneratedPrivateInitExtensionData))]
 [TomlSerializable(typeof(GeneratedStructWithConstructor))]
 [TomlSerializable(typeof(GeneratedNormalizingConstructor))]
 [TomlSerializable(typeof(GeneratedConvertingConstructor))]
@@ -1378,6 +1398,18 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void ExtensionDataWithANonPublicSetter_IsInitializedByBothPaths()
+    {
+        var context = TestTomlSerializerContextSingleConstruction.Default;
+        const string Toml = "A = 1\nz = 2\n";
+
+        Assert.Equal(2L, TomlSerializer.Deserialize<GeneratedPrivateSetterExtensionData>(Toml)!.Ext!["z"]);
+        Assert.Equal(2L, TomlSerializer.Deserialize(Toml, context.GeneratedPrivateSetterExtensionData)!.Ext!["z"]);
+        Assert.Equal(2L, TomlSerializer.Deserialize<GeneratedPrivateInitExtensionData>(Toml)!.Ext!["z"]);
+        Assert.Equal(2L, TomlSerializer.Deserialize(Toml, context.GeneratedPrivateInitExtensionData)!.Ext!["z"]);
+    }
+
     [Fact]
     public void StructWithAnnotatedConstructor_IsCreatedWithIt()
     {

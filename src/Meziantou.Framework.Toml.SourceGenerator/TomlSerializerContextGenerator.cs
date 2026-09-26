@@ -1516,34 +1516,60 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static void EmitNonPublicSetterAccessors(StringBuilder builder, PocoShape poco)
     {
+        if (poco.ExtensionData is { SetterAccessorName: { } extensionDataAccessorName, Symbol.ContainingType: { } extensionDataDeclaringType } extensionData)
+        {
+            EmitReflectionSetterAccessor(builder, extensionDataAccessorName, extensionDataDeclaringType, extensionData.MemberName, extensionData.MemberType, isField: false);
+        }
+
         foreach (var member in poco.Members)
         {
-            if (member.SetterAccessorName is null)
+            if (member.SetterAccessorName is not null)
             {
-                continue;
+                EmitReflectionSetterAccessor(builder, member.SetterAccessorName, member.DeclaringType, member.MemberName, member.Type, member.IsField);
             }
+        }
+    }
 
-            var declaringTypeName = member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
-            var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic";
-            var memberLookup = "typeof(" + declaringTypeName + ")." + (member.IsField ? "GetField" : "GetProperty") + "(\"" + EscapeStringLiteral(member.MemberName) + "\", " + bindingFlags + ")!";
-            var isValueType = member.DeclaringType.IsValueType;
-            builder.Append("        private static void ").Append(member.SetterAccessorName).Append('(').Append(isValueType ? "ref " : "").Append(declaringTypeName).Append(" __instance, ").Append(memberTypeName).AppendLine(" __value)");
-            builder.AppendLine("        {");
-            if (isValueType)
-            {
-                // Set the member on a boxed copy, then copy it back
-                builder.AppendLine("            object __boxed = __instance;");
-                builder.Append("            ").Append(memberLookup).AppendLine(".SetValue(__boxed, __value);");
-                builder.Append("            __instance = (").Append(declaringTypeName).AppendLine(")__boxed;");
-            }
-            else
-            {
-                builder.Append("            ").Append(memberLookup).AppendLine(".SetValue(__instance, __value);");
-            }
+    private static void EmitReflectionSetterAccessor(StringBuilder builder, string accessorName, ITypeSymbol declaringType, string memberName, ITypeSymbol memberType, bool isField)
+    {
+        var declaringTypeName = declaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var memberTypeName = memberType.ToDisplayString(FullyQualifiedNullableFormat);
+        var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic";
+        var memberLookup = "typeof(" + declaringTypeName + ")." + (isField ? "GetField" : "GetProperty") + "(\"" + EscapeStringLiteral(memberName) + "\", " + bindingFlags + ")!";
+        var isValueType = declaringType.IsValueType;
+        builder.Append("        private static void ").Append(accessorName).Append('(').Append(isValueType ? "ref " : "").Append(declaringTypeName).Append(" __instance, ").Append(memberTypeName).AppendLine(" __value)");
+        builder.AppendLine("        {");
+        if (isValueType)
+        {
+            // Set the member on a boxed copy, then copy it back
+            builder.AppendLine("            object __boxed = __instance;");
+            builder.Append("            ").Append(memberLookup).AppendLine(".SetValue(__boxed, __value);");
+            builder.Append("            __instance = (").Append(declaringTypeName).AppendLine(")__boxed;");
+        }
+        else
+        {
+            builder.Append("            ").Append(memberLookup).AppendLine(".SetValue(__instance, __value);");
+        }
 
-            builder.AppendLine("        }");
-            builder.AppendLine();
+        builder.AppendLine("        }");
+        builder.AppendLine();
+    }
+
+    // Like the reflection resolver, an extension data member without a setter cannot be initialized when it is null
+    private static void EmitExtensionDataAssignment(StringBuilder builder, string indent, PocoExtensionData extensionData, string valueExpression)
+    {
+        if (!extensionData.CanSet)
+        {
+            var message = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
+            builder.Append(indent).Append("throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(message).AppendLine("\");");
+        }
+        else if (extensionData.SetterAccessorName is { } accessorName)
+        {
+            builder.Append(indent).Append(accessorName).Append('(').Append(extensionData.Symbol?.ContainingType is { IsValueType: true } ? "ref value" : "value").Append(", ").Append(valueExpression).AppendLine(");");
+        }
+        else
+        {
+            builder.Append(indent).Append("value.").Append(extensionData.Identifier).Append(" = ").Append(valueExpression).AppendLine(";");
         }
     }
 
@@ -1605,11 +1631,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("            bool __argSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = false;");
         }
 
-        // Deferred member assignment locals.
+        // Deferred member assignment locals. A get-only [TomlSingleOrArray] member populates its collection after construction.
         for (var i = 0; i < poco.Members.Length; i++)
         {
             var member = poco.Members[i];
-            if (!member.CanSet)
+            if (!member.CanSet && !member.HasSingleOrArray)
             {
                 continue;
             }
@@ -2261,6 +2287,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 templateInitializerAssignments.Add(member.Identifier + " = " + templateValueExpression);
             }
 
+            // A required member that is not serialized must still be set by the object initializer
+            if (!ctor.SetsRequiredMembers)
+            {
+                foreach (var unserializedRequiredMember in poco.UnserializedRequiredMembers)
+                {
+                    templateInitializerAssignments.Add(unserializedRequiredMember + " = default!");
+                    finalInitializerAssignments.Add(unserializedRequiredMember + " = default!");
+                }
+            }
+
             if (extensionData is { CanSet: true })
             {
                 needsTemplate = true;
@@ -2357,6 +2393,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 var member = poco.Members[i];
                 if (!member.CanSet)
                 {
+                    if (member.HasSingleOrArray)
+                    {
+                        EmitSingleOrArrayPopulateExisting(builder, member, i);
+                    }
+
                     continue;
                 }
 
@@ -2382,7 +2423,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.AppendLine("                if (__target is null)");
                 builder.AppendLine("                {");
                 builder.Append("                    __target = ").Append(extensionData.CreateExpression).AppendLine(";");
-                builder.Append("                    value.").Append(extensionData.Identifier).AppendLine(" = __target;");
+                EmitExtensionDataAssignment(builder, "                    ", extensionData, "__target");
                 builder.AppendLine("                }");
                 builder.AppendLine("                foreach (var __pair in __extensionData)");
                 builder.AppendLine("                {");
@@ -2490,6 +2531,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             initializerAssignments.Add(member.Identifier + " = " + valueExpression);
         }
 
+        // A required member that is not serialized must still be set by the object initializer
+        if (!ctor.SetsRequiredMembers)
+        {
+            foreach (var unserializedRequiredMember in poco.UnserializedRequiredMembers)
+            {
+                initializerAssignments.Add(unserializedRequiredMember + " = default!");
+            }
+        }
+
         var extensionDataInInitializer = extensionData is { CanSet: true } && IsSetByObjectInitializer(extensionData.IsCompilerRequired, ctor);
         if (extensionDataInInitializer)
         {
@@ -2562,7 +2612,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else
             {
-                builder.Append("                    value.").Append(extensionData.Identifier).AppendLine(" = __target;");
+                EmitExtensionDataAssignment(builder, "                    ", extensionData, "__target");
             }
         }
         else
@@ -3372,7 +3422,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.AppendLine("                    if (__extensionData is null)");
                 builder.AppendLine("                    {");
                 builder.Append("                        __extensionData = ").Append(extensionData.CreateExpression).AppendLine(";");
-                builder.Append("                        value.").Append(extensionData.Identifier).AppendLine(" = __extensionData;");
+                EmitExtensionDataAssignment(builder, "                        ", extensionData, "__extensionData");
                 builder.AppendLine("                    }");
                 builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
                 builder.AppendLine("                    continue;");
@@ -3530,7 +3580,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                        if (__extensionData is null)");
             builder.AppendLine("                        {");
             builder.Append("                            __extensionData = ").Append(extensionDataRead.CreateExpression).AppendLine(";");
-            builder.Append("                            value.").Append(extensionDataRead.Identifier).AppendLine(" = __extensionData;");
+            EmitExtensionDataAssignment(builder, "                            ", extensionDataRead, "__extensionData");
             builder.AppendLine("                        }");
             builder.Append("                        __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionDataRead.ValueType)).AppendLine(";");
             builder.AppendLine("                        continue;");
@@ -4102,6 +4152,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return IsSupportedMemberType(dictValueType, options, derivedTypeMappings);
         }
 
+        // A value tuple has no properties to serialize, and the generated code cannot create it with its tuple syntax
+        if (type.IsTupleType)
+        {
+            return false;
+        }
+
         // A collection without collection metadata, such as Queue<T>, would be written as an object and read back empty
         if (type.SpecialType != SpecialType.System_String && (type.SpecialType == SpecialType.System_Collections_IEnumerable || type.AllInterfaces.Any(static i => i.SpecialType == SpecialType.System_Collections_IEnumerable)))
         {
@@ -4287,6 +4343,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The member, to report a diagnostic on it
         public ISymbol? Symbol { get; set; }
+
+        // The accessor that sets the member when its setter is not accessible from the generated code or is init-only
+        public string? SetterAccessorName { get; set; }
     }
 
     private sealed class PocoConstructor
@@ -4368,13 +4427,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The parameterless constructor has [SetsRequiredMembers], so the object initializer need not set required members
         public bool ParameterlessConstructorSetsRequiredMembers { get; set; }
+
+        // The identifiers of the C# required members that are not serialized, such as a member with [TomlIgnore]
+        public ImmutableArray<string> UnserializedRequiredMembers { get; set; } = ImmutableArray<string>.Empty;
     }
 
     private static bool RequiresGeneratedObjectInitializer(
         ImmutableArray<PocoMember> members,
         PocoExtensionData? extensionData,
         PocoConstructor? constructor,
-        bool parameterlessConstructorSetsRequiredMembers)
+        bool parameterlessConstructorSetsRequiredMembers,
+        ImmutableArray<string> unserializedRequiredMembers)
     {
         var hasInitOnlyMembers = members.Any(static member => member.IsInitOnly) || extensionData?.IsInitOnly == true;
         if (hasInitOnlyMembers)
@@ -4382,7 +4445,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return true;
         }
 
-        var hasCompilerRequiredMembers = members.Any(static member => member.IsCompilerRequired) || extensionData?.IsCompilerRequired == true;
+        var hasCompilerRequiredMembers = members.Any(static member => member.IsCompilerRequired) || extensionData?.IsCompilerRequired == true || !unserializedRequiredMembers.IsEmpty;
         if (!hasCompilerRequiredMembers)
         {
             return false;
@@ -4658,7 +4721,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet, isInitOnly, isCompilerRequired) { Symbol = member };
+                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet, isInitOnly, isCompilerRequired)
+                {
+                    Symbol = member,
+                    SetterAccessorName = canSet && (!setterAccessible || isInitOnly) ? "__SetExtensionData" : null,
+                };
                 continue;
             }
 
@@ -4865,6 +4932,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         members.Clear();
         members.AddRange(orderedMembers);
 
+        var unserializedRequiredMembers = GetUnserializedRequiredMembers(named, members, extensionData);
+
         PocoConstructor? constructorModel = null;
         if (constructorError is not null && selectedConstructor is null)
         {
@@ -4922,13 +4991,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     membersSoFar,
                     extensionData,
                     constructorModel,
-                    RequiresGeneratedObjectInitializer(membersSoFar, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers),
+                    RequiresGeneratedObjectInitializer(membersSoFar, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers, unserializedRequiredMembers),
                     typeMappingOrder,
                     typeDottedKeyHandling)
                 {
                     DisallowUnmappedMembers = disallowUnmappedMembers,
                     TypeName = ownerTypeName,
                     ParameterlessConstructorSetsRequiredMembers = parameterlessConstructorSetsRequiredMembers,
+                    UnserializedRequiredMembers = unserializedRequiredMembers,
                 };
                 return true;
             }
@@ -4941,15 +5011,48 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             finalMembers,
             extensionData,
             constructorModel,
-            RequiresGeneratedObjectInitializer(finalMembers, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers),
+            RequiresGeneratedObjectInitializer(finalMembers, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers, unserializedRequiredMembers),
             typeMappingOrder,
             typeDottedKeyHandling)
         {
             DisallowUnmappedMembers = disallowUnmappedMembers,
             TypeName = ownerTypeName,
             ParameterlessConstructorSetsRequiredMembers = parameterlessConstructorSetsRequiredMembers,
+            UnserializedRequiredMembers = unserializedRequiredMembers,
         };
         return true;
+    }
+
+    // The C# required members that are not serialized ([TomlIgnore], a non-public getter, a field without IncludeFields)
+    private static ImmutableArray<string> GetUnserializedRequiredMembers(INamedTypeSymbol type, ImmutableArray<PocoMember>.Builder members, PocoExtensionData? extensionData)
+    {
+        var serializedNames = new HashSet<string>(members.Select(static member => member.MemberName), StringComparer.Ordinal);
+        if (extensionData is not null)
+        {
+            serializedNames.Add(extensionData.MemberName);
+        }
+
+        var seenNames = new HashSet<string>(StringComparer.Ordinal);
+        var result = ImmutableArray.CreateBuilder<string>();
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers())
+            {
+                var isRequired = member switch
+                {
+                    IPropertySymbol { IsStatic: false } property => property.IsRequired,
+                    IFieldSymbol { IsStatic: false } field => field.IsRequired,
+                    _ => false,
+                };
+
+                if (isRequired && seenNames.Add(member.Name) && !serializedNames.Contains(member.Name))
+                {
+                    result.Add(EscapeIdentifier(member.Name));
+                }
+            }
+        }
+
+        return result.ToImmutable();
     }
 
     private static IEnumerable<IPropertySymbol> EnumerateSerializableInstanceProperties(INamedTypeSymbol type)

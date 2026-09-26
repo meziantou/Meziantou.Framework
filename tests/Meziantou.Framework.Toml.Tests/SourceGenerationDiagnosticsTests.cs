@@ -934,6 +934,8 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Queue<int> X { get; set; } = new(); }")]
     [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Concurrent.ConcurrentQueue<int> X { get; set; } = new(); }")]
     [InlineData("MFTOML017", "[TomlSerializable(typeof(System.Collections.Generic.Stack<int>))] internal partial class Ctx : TomlSerializerContext { }")]
+    [InlineData("MFTOML003", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public (int A, string B) Pair { get; set; } }")]
+    [InlineData("MFTOML017", "[TomlSerializable(typeof((int, string)))] internal partial class Ctx : TomlSerializerContext { }")]
     [InlineData("MFTOML004", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public sealed class Root { public System.Collections.Generic.Dictionary<int, string> X { get; set; } = new(); }")]
     public void Generator_UnsupportedContextOrType_ReportsOnlyADiagnostic(string id, string declarations)
     {
@@ -944,6 +946,24 @@ public sealed class SourceGenerationDiagnosticsTests
         // The context is not generated, so the compiler also reports its missing members (CS0534), like for MFTOML001
         Assert.Single(diagnostics, d => d.Id == id);
         Assert.All(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != id), d => Assert.Equal("CS0534", d.Id));
+    }
+
+    [Theory]
+    [InlineData("public class M { public int A { get; set; } [TomlExtensionData] public System.Collections.Generic.Dictionary<string, object?>? Ext { get; private set; } }")]
+    [InlineData("public class M { public int A { get; set; } [TomlExtensionData, TomlInclude] public System.Collections.Generic.Dictionary<string, object?>? Ext { get; private set; } }")]
+    [InlineData("public class M { public int A { get; set; } [TomlExtensionData, TomlInclude] public System.Collections.Generic.Dictionary<string, object?>? Ext { get; private init; } }")]
+    [InlineData("public class M { [TomlIgnore] public required int F { get; set; } public int A { get; set; } }")]
+    [InlineData("public class M { public required int F; public int A { get; set; } }")]
+    [InlineData("public class M { public required int F { private get; set; } public int A { get; set; } }")]
+    [InlineData("public class M { [TomlIgnore] public required int F { get; set; } public int A { get; init; } }")]
+    [InlineData("public class M { public M(System.Collections.Generic.List<int> l, int n) { L = l; N = n; } [TomlSingleOrArray] public System.Collections.Generic.List<int> L { get; } public int N { get; } }")]
+    public void Generator_ValidModel_Compiles(string declarations)
+    {
+        var source = "#nullable enable\nusing Meziantou.Framework.Toml.Serialization;\n[TomlSerializable(typeof(M))] internal partial class Ctx : TomlSerializerContext { }\n" + declarations;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]

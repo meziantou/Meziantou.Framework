@@ -53,7 +53,17 @@ internal static class TomlTypeInfoResolverPipeline
         ArgumentGuard.ThrowIfNull(type, nameof(type));
 
         var state = new TomlSerializationOperationState(options);
-        var resolved = ResolveUncached(state, type, out _);
+        TomlTypeInfo? resolved;
+        try
+        {
+            resolved = ResolveUncached(state, type, out _);
+        }
+        catch (TomlException)
+        {
+            // Reflection throws when it cannot create metadata for the type, for example for a delegate
+            return null;
+        }
+
         if (resolved is not null)
         {
             state.CacheTypeInfo(type, resolved);

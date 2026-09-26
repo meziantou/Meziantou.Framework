@@ -162,6 +162,15 @@ public sealed class NewApiOptionsValidationTests
         Assert.Null(typeInfo);
     }
 
+    [Fact]
+    public void TryGetTypeInfo_TypeReflectionCannotHandle_ReturnsFalse()
+    {
+        Assert.False(TomlSerializerOptions.Default.TryGetTypeInfo<Action>(out var delegateTypeInfo));
+        Assert.Null(delegateTypeInfo);
+        Assert.False(TomlSerializerOptions.Default.TryGetTypeInfo<Func<int>>(out _));
+        Assert.True(TomlSerializerOptions.Default.TryGetTypeInfo<GetTypeInfoModel>(out _));
+    }
+
     private sealed class GetTypeInfoModel
     {
         public string? Name { get; set; }

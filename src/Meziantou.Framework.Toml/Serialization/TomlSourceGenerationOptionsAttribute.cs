@@ -38,6 +38,17 @@ public sealed class TomlSourceGenerationOptionsAttribute : TomlAttribute
     /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
     public bool IgnoreReadOnlyProperties { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
+    /// <remarks>The default is <see langword="true"/> when the property is not set.</remarks>
+    public bool RespectRequiredConstructorParameters { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether nullable annotations are enforced during serialization and deserialization.</summary>
+    /// <remarks>The default is <see langword="true"/> when the property is not set.</remarks>
+    public bool RespectNullableAnnotations { get; set; }
+
+    /// <summary>Gets or sets how unmapped TOML keys are handled during object deserialization.</summary>
+    public TomlUnmappedMemberHandling UnmappedMemberHandling { get; set; }
+
     /// <summary>Gets or sets the default ignore condition for null/default values.</summary>
     public TomlIgnoreCondition DefaultIgnoreCondition { get; set; }
 

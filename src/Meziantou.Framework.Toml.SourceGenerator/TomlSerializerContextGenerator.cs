@@ -195,6 +195,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool? IncludeFields { get; set; }
         public bool? IgnoreReadOnlyFields { get; set; }
         public bool? IgnoreReadOnlyProperties { get; set; }
+        public bool? RespectRequiredConstructorParameters { get; set; }
+        public bool? RespectNullableAnnotations { get; set; }
+        public int? UnmappedMemberHandling { get; set; }
         public int? DefaultIgnoreCondition { get; set; }
         public int? DuplicateKeyHandling { get; set; }
         public int? MaxDepth { get; set; }
@@ -537,6 +540,21 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         if (model.Options.IgnoreReadOnlyProperties is not null)
         {
             builder.Append("        options = options with { IgnoreReadOnlyProperties = ").Append(model.Options.IgnoreReadOnlyProperties.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.RespectRequiredConstructorParameters is not null)
+        {
+            builder.Append("        options = options with { RespectRequiredConstructorParameters = ").Append(model.Options.RespectRequiredConstructorParameters.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.RespectNullableAnnotations is not null)
+        {
+            builder.Append("        options = options with { RespectNullableAnnotations = ").Append(model.Options.RespectNullableAnnotations.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.UnmappedMemberHandling is not null && TryGetTomlUnmappedMemberHandlingExpression(model.Options.UnmappedMemberHandling.Value, out var unmappedMemberHandlingExpression))
+        {
+            builder.Append("        options = options with { UnmappedMemberHandling = ").Append(unmappedMemberHandlingExpression).AppendLine(" };");
         }
 
         if (model.Options.DefaultIgnoreCondition is not null && TryGetTomlIgnoreConditionExpression(model.Options.DefaultIgnoreCondition.Value, out var ignoreConditionExpression))
@@ -1286,7 +1304,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else
             {
-                builder.Append("                        __arg").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetTypeInfoReadExpression(parameter.ParameterType)).AppendLine(";");
+                builder.Append("                        __arg").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
             }
 
             if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length)
@@ -1387,7 +1405,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else
             {
-                builder.Append("                        __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetTypeInfoReadExpression(member.Type)).AppendLine(";");
+                builder.Append("                        __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
             }
             builder.Append("                        __memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
             builder.AppendLine("                        continue;");
@@ -1399,9 +1417,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    if (__extensionData is null) __extensionData = new();");
             builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
             builder.AppendLine("                    continue;");
+            builder.AppendLine("                    reader.Skip();");
         }
-
-        builder.AppendLine("                    reader.Skip();");
+        else
+        {
+            EmitUnmappedMember(builder, "                    ", poco.DisallowUnmappedMembers, typeName);
+        }
             builder.AppendLine("                }");
         }
         else
@@ -1499,7 +1520,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     }
                     else
                     {
-                        builder.Append("                                    __arg").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetTypeInfoReadExpression(parameter.ParameterType)).AppendLine(";");
+                        builder.Append("                                    __arg").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetConstructorParameterReadExpression(parameter, typeName)).AppendLine(";");
                     }
 
                     if (parameter.LinkedMemberIndex >= 0 && parameter.LinkedMemberIndex < poco.Members.Length)
@@ -1600,7 +1621,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            builder.Append("                                    __memberValue").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetTypeInfoReadExpression(member.Type)).AppendLine(";");
+                            builder.Append("                                    __memberValue").Append(action.Index.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
                         }
                         builder.Append("                                    __memberSeen").Append(action.Index.ToString(CultureInfo.InvariantCulture)).AppendLine(" = true;");
                         builder.AppendLine("                                    continue;");
@@ -1628,8 +1649,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    }");
         }
 
+        if (extensionData is null && poco.DisallowUnmappedMembers)
+        {
+            builder.AppendLine("                    var name = reader.PropertyName!;");
+        }
+
         builder.AppendLine("                    reader.Read();");
-        builder.AppendLine("                    reader.Skip();");
+        EmitUnmappedMember(builder, "                    ", extensionData is null && poco.DisallowUnmappedMembers, typeName);
             builder.AppendLine("                }");
         }
         builder.AppendLine("            }");
@@ -1646,6 +1672,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             if (parameter.HasDefaultValue && parameter.DefaultValueExpression is not null)
             {
                 builder.Append("                __arg").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(parameter.DefaultValueExpression).AppendLine(";");
+                builder.AppendLine("            }");
+            }
+            else if (model.Options.RespectRequiredConstructorParameters == false)
+            {
+                builder.Append("                __arg").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = default!;");
                 builder.AppendLine("            }");
             }
             else
@@ -2416,7 +2447,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
             else
             {
-                builder.Append(indent).Append(memberAccess).Append(" = ").Append(GetTypeInfoReadExpression(member.Type)).AppendLine(";");
+                builder.Append(indent).Append(memberAccess).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
             }
 
             return;
@@ -2458,7 +2489,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    builder.Append(branchIndent).Append("    ").Append(memberAccess).Append(" = ").Append(GetTypeInfoReadExpression(member.Type)).AppendLine(";");
+                    builder.Append(branchIndent).Append("    ").Append(memberAccess).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
                 }
                 builder.Append(branchIndent).AppendLine("}");
                 builder.Append(branchIndent).AppendLine("else");
@@ -2510,7 +2541,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else
         {
-            builder.Append(indent).Append("    ").Append(memberAccess).Append(" = ").Append(GetTypeInfoReadExpression(member.Type)).AppendLine(";");
+            builder.Append(indent).Append("    ").Append(memberAccess).Append(" = ").Append(GetMemberReadExpression(member)).AppendLine(";");
         }
         builder.Append(indent).AppendLine("}");
     }
@@ -2635,7 +2666,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return;
             }
 
-            builder.AppendLine("                    reader.Skip();");
+            EmitUnmappedMember(builder, "                    ", poco.DisallowUnmappedMembers, poco.TypeName);
             return;
         }
 
@@ -2786,8 +2817,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    }");
             return;
         }
+
+        if (poco.DisallowUnmappedMembers)
+        {
+            builder.AppendLine("                    var name = reader.PropertyName!;");
+        }
+
         builder.AppendLine("                    reader.Read();");
-        builder.AppendLine("                    reader.Skip();");
+        EmitUnmappedMember(builder, "                    ", poco.DisallowUnmappedMembers, poco.TypeName);
     }
 
     private static void EmitWriteMember(StringBuilder builder, PocoMember member, int index, string memberTypeName, bool canBeNull, string? usedKeysVariable, SourceGenOptions options, int? dottedKeyHandling)
@@ -2823,6 +2860,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         if (writeIgnore == WriteIgnoreKind.WhenWriting)
         {
             return;
+        }
+
+        if (member.DisallowNullOnSerialize)
+        {
+            builder.Append(openIndent).Append("if (").Append(localName).Append(" is null) throw new TomlException($\"The member '")
+                .Append(EscapeInterpolatedStringLiteral(member.MemberName))
+                .Append("' on '{typeof(")
+                .Append(member.OwnerTypeName)
+                .AppendLine(").FullName}' cannot be serialized as null because it is declared as non-nullable.\");");
         }
 
         if (writeIgnore == WriteIgnoreKind.WhenWritingNull)
@@ -3297,6 +3343,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool? PreferLiteralWhenNoEscapes { get; }
         public bool? AllowHexEscapes { get; }
         public bool HasFormattingMetadata => TableArrayStyle is not null || InlineTablePolicy is not null || StringStyle is not null || PreferLiteralWhenNoEscapes is not null || AllowHexEscapes is not null;
+
+        /// <summary>Gets or sets the fully qualified name of the serialized type, used in error messages.</summary>
+        public string OwnerTypeName { get; set; } = "";
+        public bool DisallowNullOnSerialize { get; set; }
+        public bool DisallowNullOnDeserialize { get; set; }
     }
 
     private sealed class PocoExtensionData
@@ -3346,7 +3397,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             ITypeSymbol parameterType,
             bool hasDefaultValue,
             string? defaultValueExpression,
-            int linkedMemberIndex)
+            int linkedMemberIndex,
+            bool disallowNull)
         {
             KeyName = keyName;
             ParameterName = parameterName;
@@ -3354,6 +3406,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             HasDefaultValue = hasDefaultValue;
             DefaultValueExpression = defaultValueExpression;
             LinkedMemberIndex = linkedMemberIndex;
+            DisallowNull = disallowNull;
         }
 
         public string KeyName { get; }
@@ -3362,6 +3415,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool HasDefaultValue { get; }
         public string? DefaultValueExpression { get; }
         public int LinkedMemberIndex { get; }
+        public bool DisallowNull { get; }
     }
 
     private sealed class PocoShape
@@ -3382,6 +3436,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public bool RequiresGeneratedObjectInitializer { get; }
         public int? MappingOrder { get; }
         public int? DottedKeyHandling { get; }
+        public bool DisallowUnmappedMembers { get; set; }
+        public string TypeName { get; set; } = "";
     }
 
     private static bool RequiresGeneratedObjectInitializer(
@@ -3571,6 +3627,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         var namingPolicy = model.Options.PropertyNamingPolicyExpression;
+        var ownerTypeName = named.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var respectNullableAnnotations = model.Options.RespectNullableAnnotations ?? true;
+        var disallowUnmappedMembers = GetUnmappedMemberHandling(named, model.Options) == 1;
         var typeObjectCreationHandling = GetObjectCreationHandling(named);
         var typeMappingOrder = GetTypeLevelMappingOrder(named);
         var typeDottedKeyHandling = GetTypeLevelDottedKeyHandling(named);
@@ -3676,7 +3735,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, writeIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
+            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, writeIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes)
+            {
+                OwnerTypeName = ownerTypeName,
+                DisallowNullOnSerialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, MaybeNullAttributeMetadataName),
+                DisallowNullOnDeserialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, AllowNullAttributeMetadataName),
+            });
         }
 
         foreach (var member in EnumerateSerializableInstanceFields(named))
@@ -3765,7 +3829,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, fieldWriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, member.IsRequired, canSet, isInitOnly: false, isField: true, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
+            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, fieldWriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, member.IsRequired, canSet, isInitOnly: false, isField: true, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes)
+            {
+                OwnerTypeName = ownerTypeName,
+                DisallowNullOnSerialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, MaybeNullAttributeMetadataName),
+                DisallowNullOnDeserialize = respectNullableAnnotations && IsNonNullableReferenceType(member.Type) && !HasAttribute(member, AllowNullAttributeMetadataName),
+            });
         }
 
         PocoConstructor? constructorModel = null;
@@ -3812,7 +3881,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         hasDefaultValue = false;
                     }
 
-                    parameters.Add(new PocoConstructorParameter(keyName, parameterName, parameter.Type, hasDefaultValue, defaultValueExpression, linkedMemberIndex));
+                    var parameterDisallowNull = respectNullableAnnotations && IsNonNullableReferenceType(parameter.Type) && !HasAttribute(parameter, AllowNullAttributeMetadataName);
+                    parameters.Add(new PocoConstructorParameter(keyName, parameterName, parameter.Type, hasDefaultValue, defaultValueExpression, linkedMemberIndex, parameterDisallowNull));
                 }
 
                 constructorModel = new PocoConstructor(selectedConstructor, parameters.ToImmutable(), constructorError, setsRequiredMembers);
@@ -3822,7 +3892,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     constructorModel,
                     RequiresGeneratedObjectInitializer(membersSoFar, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers),
                     typeMappingOrder,
-                    typeDottedKeyHandling);
+                    typeDottedKeyHandling)
+                {
+                    DisallowUnmappedMembers = disallowUnmappedMembers,
+                    TypeName = ownerTypeName,
+                };
                 return true;
             }
 
@@ -3836,7 +3910,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             constructorModel,
             RequiresGeneratedObjectInitializer(finalMembers, extensionData, constructorModel, parameterlessConstructorSetsRequiredMembers),
             typeMappingOrder,
-            typeDottedKeyHandling);
+            typeDottedKeyHandling)
+        {
+            DisallowUnmappedMembers = disallowUnmappedMembers,
+            TypeName = ownerTypeName,
+        };
         return true;
     }
 
@@ -5180,6 +5258,70 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static string GetTypeInfoReadExpression(ITypeSymbol type)
         => "(" + type.ToDisplayString(FullyQualifiedNullableFormat) + ")" + GetTypeInfoAccess(type) + ".ReadAsObject(reader)!";
 
+    private const string AllowNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.AllowNullAttribute";
+    private const string MaybeNullAttributeMetadataName = "System.Diagnostics.CodeAnalysis.MaybeNullAttribute";
+
+    // Only reference types annotated as non-nullable are enforced, like the reflection resolver
+    private static bool IsNonNullableReferenceType(ITypeSymbol type)
+        => type.IsReferenceType && type.NullableAnnotation == NullableAnnotation.NotAnnotated;
+
+    private static string EscapeInterpolatedStringLiteral(string value)
+        => EscapeStringLiteral(value).Replace("{", "{{", StringComparison.Ordinal).Replace("}", "}}", StringComparison.Ordinal);
+
+    // Reads a member value, rejecting null when the member is declared as non-nullable
+    private static string GetMemberReadExpression(PocoMember member)
+    {
+        if (!member.DisallowNullOnDeserialize)
+        {
+            return GetTypeInfoReadExpression(member.Type);
+        }
+
+        return "((" + member.Type.ToDisplayString(FullyQualifiedNullableFormat) + "?)" + GetTypeInfoAccess(member.Type) + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The TOML key '" +
+            EscapeInterpolatedStringLiteral(member.SerializedName) + "' cannot be null because '{typeof(" + member.OwnerTypeName + ").FullName}' declares it as non-nullable.\"))";
+    }
+
+    private static string GetConstructorParameterReadExpression(PocoConstructorParameter parameter, string typeName)
+    {
+        if (!parameter.DisallowNull)
+        {
+            return GetTypeInfoReadExpression(parameter.ParameterType);
+        }
+
+        return "((" + parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + "?)" + GetTypeInfoAccess(parameter.ParameterType) + ".ReadAsObject(reader) ?? throw reader.CreateException($\"The constructor parameter '" +
+            EscapeInterpolatedStringLiteral(parameter.ParameterName) + "' on '{typeof(" + typeName + ").FullName}' cannot be null because it is declared as non-nullable.\"))";
+    }
+
+    // Emits the statement handling a key that matches no member. The key must be in the "name" local.
+    private static void EmitUnmappedMember(StringBuilder builder, string indent, bool disallow, string typeName)
+    {
+        if (disallow)
+        {
+            builder.Append(indent).Append("throw reader.CreateException($\"The TOML key '{name}' could not be mapped to '{typeof(").Append(typeName).AppendLine(").FullName}'.\");");
+            return;
+        }
+
+        builder.Append(indent).AppendLine("reader.Skip();");
+    }
+
+    // [TomlUnmappedMemberHandling] takes precedence over [JsonUnmappedMemberHandling]; both apply to the declaring type only
+    private static int GetUnmappedMemberHandling(INamedTypeSymbol type, SourceGenOptions options)
+    {
+        foreach (var metadataName in new[] { "Meziantou.Framework.Toml.Serialization.TomlUnmappedMemberHandlingAttribute", "System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute" })
+        {
+            foreach (var attribute in type.GetAttributes())
+            {
+                if (attribute.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + metadataName &&
+                    attribute.ConstructorArguments.Length == 1 &&
+                    attribute.ConstructorArguments[0].Value is int value)
+                {
+                    return value;
+                }
+            }
+        }
+
+        return options.UnmappedMemberHandling ?? 0;
+    }
+
     private static ImmutableArray<ITypeSymbol> GetPocoRuntimeResolvedTypes(PocoShape poco)
     {
         var types = ImmutableArray.CreateBuilder<ITypeSymbol>();
@@ -5414,6 +5556,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 case "IgnoreReadOnlyProperties":
                     if (options.IgnoreReadOnlyProperties is null && value.Value is bool ignoreReadOnlyProperties) options.IgnoreReadOnlyProperties = ignoreReadOnlyProperties;
                     break;
+                case "RespectRequiredConstructorParameters":
+                    if (options.RespectRequiredConstructorParameters is null && value.Value is bool respectRequiredConstructorParameters) options.RespectRequiredConstructorParameters = respectRequiredConstructorParameters;
+                    break;
+                case "RespectNullableAnnotations":
+                    if (options.RespectNullableAnnotations is null && value.Value is bool respectNullableAnnotations) options.RespectNullableAnnotations = respectNullableAnnotations;
+                    break;
+                case "UnmappedMemberHandling":
+                    // JsonUnmappedMemberHandling uses the same values as TomlUnmappedMemberHandling
+                    if (options.UnmappedMemberHandling is null && value.Value is int unmappedMemberHandling) options.UnmappedMemberHandling = unmappedMemberHandling;
+                    break;
             }
         }
     }
@@ -5446,6 +5598,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     break;
                 case "IgnoreReadOnlyProperties":
                     if (value.Value is bool ignoreReadOnlyProperties) options.IgnoreReadOnlyProperties = ignoreReadOnlyProperties;
+                    break;
+                case "RespectRequiredConstructorParameters":
+                    if (value.Value is bool respectRequiredConstructorParameters) options.RespectRequiredConstructorParameters = respectRequiredConstructorParameters;
+                    break;
+                case "RespectNullableAnnotations":
+                    if (value.Value is bool respectNullableAnnotations) options.RespectNullableAnnotations = respectNullableAnnotations;
+                    break;
+                case "UnmappedMemberHandling":
+                    if (value.Value is int unmappedMemberHandling) options.UnmappedMemberHandling = unmappedMemberHandling;
                     break;
                 case "PropertyNamingPolicy":
                     options.PropertyNamingPolicyExpression = ToNamingPolicyExpression(value);
@@ -5557,6 +5718,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         ValidateEnumOption(context, model, "NewLine", model.Options.NewLine, TryGetTomlNewLineKindExpression, v => model.Options.NewLine = v);
         ValidateEnumOption(context, model, "DefaultIgnoreCondition", model.Options.DefaultIgnoreCondition, TryGetTomlIgnoreConditionExpression, v => model.Options.DefaultIgnoreCondition = v);
         ValidateEnumOption(context, model, "DuplicateKeyHandling", model.Options.DuplicateKeyHandling, TryGetTomlDuplicateKeyHandlingExpression, v => model.Options.DuplicateKeyHandling = v);
+        ValidateEnumOption(context, model, "UnmappedMemberHandling", model.Options.UnmappedMemberHandling, TryGetTomlUnmappedMemberHandlingExpression, v => model.Options.UnmappedMemberHandling = v);
         if (model.Options.MaxDepth is not null && model.Options.MaxDepth.Value < 0)
         {
             context.ReportDiagnostic(Diagnostic.Create(
@@ -5689,6 +5851,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             3 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.Always",
             4 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenWriting",
             5 => "global::Meziantou.Framework.Toml.TomlIgnoreCondition.WhenReading",
+            _ => null!,
+        };
+
+        return expression is not null;
+    }
+
+    private static bool TryGetTomlUnmappedMemberHandlingExpression(int value, out string expression)
+    {
+        expression = value switch
+        {
+            0 => "global::Meziantou.Framework.Toml.TomlUnmappedMemberHandling.Skip",
+            1 => "global::Meziantou.Framework.Toml.TomlUnmappedMemberHandling.Disallow",
             _ => null!,
         };
 

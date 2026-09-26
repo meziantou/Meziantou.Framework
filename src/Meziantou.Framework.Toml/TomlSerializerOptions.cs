@@ -101,6 +101,26 @@ public sealed record TomlSerializerOptions
     /// <remarks>A property with an <c>init</c> accessor is not read-only.</remarks>
     public bool IgnoreReadOnlyProperties { get; init; }
 
+    /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
+    /// <remarks>
+    /// When <see langword="false"/>, a missing constructor parameter without a default value receives the default value of its type.
+    /// </remarks>
+    public bool RespectRequiredConstructorParameters { get; init; } = true;
+
+    /// <summary>Gets or sets a value indicating whether nullable annotations are enforced during serialization and deserialization.</summary>
+    /// <remarks>
+    /// When <see langword="true"/>, a <see langword="null"/> value in a member or constructor parameter declared as a non-nullable
+    /// reference type throws a <see cref="TomlException"/>. The check applies before <see cref="DefaultIgnoreCondition"/>.
+    /// </remarks>
+    public bool RespectNullableAnnotations { get; init; } = true;
+
+    /// <summary>Gets or sets how unmapped TOML keys are handled during object deserialization.</summary>
+    /// <remarks>
+    /// A type-level <see cref="TomlUnmappedMemberHandlingAttribute"/> overrides this setting. Extension data members still
+    /// capture unmapped keys when present.
+    /// </remarks>
+    public TomlUnmappedMemberHandling UnmappedMemberHandling { get; init; } = TomlUnmappedMemberHandling.Skip;
+
     /// <summary>Gets or sets the maximum allowed nesting depth for TOML tables and arrays during serialization and deserialization.</summary>
     /// <remarks>
     /// A value of <c>0</c> uses the default limit of 64.

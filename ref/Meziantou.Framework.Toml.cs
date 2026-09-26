@@ -285,6 +285,9 @@ namespace Meziantou.Framework.Toml
         public bool IncludeFields { get => throw null; init { } }
         public bool IgnoreReadOnlyFields { get => throw null; init { } }
         public bool IgnoreReadOnlyProperties { get => throw null; init { } }
+        public bool RespectRequiredConstructorParameters { get => throw null; init { } }
+        public bool RespectNullableAnnotations { get => throw null; init { } }
+        public Meziantou.Framework.Toml.TomlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; init { } }
         public int MaxDepth { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; init { } }
@@ -366,6 +369,12 @@ namespace Meziantou.Framework.Toml
         Unspecified = -1,
         Fail = 0,
         FallBackToBaseType = 1,
+    }
+
+    public enum TomlUnmappedMemberHandling
+    {
+        Skip = 0,
+        Disallow = 1,
     }
 }
 namespace Meziantou.Framework.Toml.Helpers
@@ -977,6 +986,9 @@ namespace Meziantou.Framework.Toml.Serialization
         public bool IncludeFields { get => throw null; set { } }
         public bool IgnoreReadOnlyFields { get => throw null; set { } }
         public bool IgnoreReadOnlyProperties { get => throw null; set { } }
+        public bool RespectRequiredConstructorParameters { get => throw null; set { } }
+        public bool RespectNullableAnnotations { get => throw null; set { } }
+        public Meziantou.Framework.Toml.TomlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }
@@ -1020,6 +1032,13 @@ namespace Meziantou.Framework.Toml.Serialization
         Float = 12,
         Boolean = 13,
         DateTime = 14,
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
+    public sealed class TomlUnmappedMemberHandlingAttribute : Meziantou.Framework.Toml.Serialization.TomlAttribute
+    {
+        public Meziantou.Framework.Toml.TomlUnmappedMemberHandling Handling { get => throw null; }
+        public TomlUnmappedMemberHandlingAttribute(Meziantou.Framework.Toml.TomlUnmappedMemberHandling handling) { }
     }
 
     public sealed class TomlWriter

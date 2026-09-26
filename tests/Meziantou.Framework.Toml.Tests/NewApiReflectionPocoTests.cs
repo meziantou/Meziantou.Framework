@@ -523,4 +523,109 @@ public class NewApiReflectionPocoTests
 
         Assert.Equal(40, model.InitOnly);
     }
+
+    [Fact]
+    public void UnmappedMembers_AreSkippedByDefault()
+    {
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"\nUnknown = 1")!.Name);
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1\nUnknown = 1")!.Name);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnmappedMembers_CanBeDisallowedViaOptions(bool caseInsensitive)
+    {
+        var options = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow, PropertyNameCaseInsensitive = caseInsensitive };
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"\nUnknown = 1", options));
+        Assert.Contains($"The TOML key 'Unknown' could not be mapped to '{typeof(ValidationModel).FullName}'.", ex.Message);
+
+        ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1\nUnknown = 1", options));
+        Assert.Contains($"The TOML key 'Unknown' could not be mapped to '{typeof(ValidationCtorModel).FullName}'.", ex.Message);
+
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options)!.Name);
+    }
+
+    [Fact]
+    public void UnmappedMemberHandlingAttribute_OverridesOptions()
+    {
+        var disallow = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlDisallowUnmappedModel>("Unknown = 1"));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<JsonDisallowUnmappedModel>("Unknown = 1"));
+        Assert.Equal("a", TomlSerializer.Deserialize<TomlSkipUnmappedModel>("Name = \"a\"\nUnknown = 1", disallow)!.Name);
+    }
+
+    [Fact]
+    public void UnmappedMemberHandling_DoesNotConflictWithExtensionData()
+    {
+        var options = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow };
+
+        var model = TomlSerializer.Deserialize<ValidationExtensionDataModel>("Name = \"a\"\nUnknown = 1", options)!;
+
+        Assert.Equal(1L, model.Extra!["Unknown"]);
+    }
+
+    [Fact]
+    public void RespectRequiredConstructorParameters_RequiresNonOptionalParametersByDefault()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\""));
+
+        Assert.Contains($"Missing required constructor parameter 'Count' when deserializing '{typeof(ValidationCtorModel).FullName}'.", ex.Message);
+    }
+
+    [Fact]
+    public void RespectRequiredConstructorParameters_CanBeDisabled()
+    {
+        var options = new TomlSerializerOptions { RespectRequiredConstructorParameters = false };
+
+        var model = TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"", options)!;
+
+        Assert.Equal("a", model.Name);
+        Assert.Equal(0, model.Count);
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_RejectsNullDuringSerializationByDefault()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new ValidationModel { Name = null! }));
+
+        Assert.Equal($"The member 'Name' on '{typeof(ValidationModel).FullName}' cannot be serialized as null because it is declared as non-nullable.", ex.Message);
+        Assert.Equal("Name = \"a\"", TomlSerializer.Serialize(new ValidationModel { Name = "a" }).Trim());
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_CanBeDisabledForSerialization()
+    {
+        var options = new TomlSerializerOptions { RespectNullableAnnotations = false };
+
+        var toml = TomlSerializer.Serialize(new ValidationModel { Name = null! }, options);
+
+        Assert.Equal("", toml.Trim());
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_RejectsNullDuringDeserialization()
+    {
+        var options = new TomlSerializerOptions { Converters = [new NullStringConverter()] };
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options));
+        Assert.Contains($"The TOML key 'Name' cannot be null because '{typeof(ValidationModel).FullName}' declares it as non-nullable.", ex.Message);
+
+        ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1", options));
+        Assert.Contains($"The constructor parameter 'name' on '{typeof(ValidationCtorModel).FullName}' cannot be null because it is declared as non-nullable.", ex.Message);
+
+        Assert.Null(TomlSerializer.Deserialize<ValidationModel>("Optional = \"a\"", options)!.Optional);
+        Assert.Null(TomlSerializer.Deserialize<ValidationAllowNullModel>("Name = \"a\"", options)!.Name);
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_CanBeDisabledForDeserialization()
+    {
+        var options = new TomlSerializerOptions { Converters = [new NullStringConverter()], RespectNullableAnnotations = false };
+
+        Assert.Null(TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options)!.Name);
+        Assert.Null(TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1", options)!.Name);
+    }
 }

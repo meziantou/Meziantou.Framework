@@ -160,6 +160,9 @@ var toml = TomlSerializer.Serialize(config, options);
 | `PreferredObjectCreationHandling` | `Replace` | Replaces or populates object and collection members when reading. |
 | `DefaultIgnoreCondition` | `WhenWritingNull` | Skips `null` (or default) values when writing. |
 | `DuplicateKeyHandling` | `Error` | Behavior when a key is defined twice. |
+| `UnmappedMemberHandling` | `Skip` | Skips (`Skip`) or rejects (`Disallow`) keys that match no member. Extension data still collects them. `[TomlUnmappedMemberHandling]` overrides it for a type. |
+| `RespectRequiredConstructorParameters` | `true` | A constructor parameter without a default value must be present. When `false`, it receives the default value of its type. |
+| `RespectNullableAnnotations` | `true` | Rejects `null` in members and constructor parameters declared as non-nullable reference types, when reading and writing. The check applies before `DefaultIgnoreCondition`, so such a member throws instead of being skipped. |
 | `MaxDepth` | `0` (64) | Maximum nesting depth of tables and arrays. |
 | `WriteIndented` | `true` | Indents nested tables. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |
@@ -258,6 +261,7 @@ public sealed class FormattedConfig
 | `[TomlPolymorphic]` | `[JsonPolymorphic]` | Enables polymorphism on a base type. |
 | `[TomlDerivedType]` | `[JsonDerivedType]` | Registers a derived type and its discriminator. |
 | `[TomlObjectCreationHandling]` | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
+| `[TomlUnmappedMemberHandling]` | `[JsonUnmappedMemberHandling]` | Skips or rejects unknown keys for a type. |
 | `[TomlSingleOrArray]` | | Accepts a single value for a collection member. |
 
 ```csharp
@@ -453,8 +457,9 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 
 - The generator creates a `Default` instance and one `TomlTypeInfo<T>` property per root.
   `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property.
-- `[TomlSourceGenerationOptions]` sets the options at build time. Member names and the members to serialize
-  (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`) are computed when building, so the naming policy
+- `[TomlSourceGenerationOptions]` sets the options at build time. Member names, the members to serialize
+  (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`), and the validation (`UnmappedMemberHandling`,
+  `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) are computed when building, so the naming policy
   is not called at runtime.
 - `init` and `required` members are supported.
 - `[TomlConverter]` and `[JsonConverter]` are not supported by generated metadata. Register converters with

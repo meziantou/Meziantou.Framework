@@ -126,6 +126,7 @@ internal static class TomlReflectionTypeInfoResolver
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         var members = new List<MemberModel>(properties.Length);
         var typeObjectCreationHandling = GetObjectCreationHandling(type, options);
+        var nullabilityContext = CreateNullabilityContext(options);
 
         foreach (var property in properties)
         {
@@ -181,7 +182,9 @@ internal static class TomlReflectionTypeInfoResolver
                 IsRequired(property),
                 IsExtensionData(property),
                 CreateFormattingMetadata(property, property.PropertyType),
-                TryCreateMemberConverter(property, property.PropertyType, options)));
+                TryCreateMemberConverter(property, property.PropertyType, options),
+                DisallowNullOnSerialize: DisallowNull(property.PropertyType, nullabilityContext?.Create(property).ReadState),
+                DisallowNullOnDeserialize: DisallowNull(property.PropertyType, nullabilityContext?.Create(property).WriteState)));
         }
 
         var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -228,7 +231,9 @@ internal static class TomlReflectionTypeInfoResolver
                 IsRequired(field),
                 IsExtensionData(field),
                 CreateFormattingMetadata(field, field.FieldType),
-                TryCreateMemberConverter(field, field.FieldType, options)));
+                TryCreateMemberConverter(field, field.FieldType, options),
+                DisallowNullOnSerialize: DisallowNull(field.FieldType, nullabilityContext?.Create(field).ReadState),
+                DisallowNullOnDeserialize: DisallowNull(field.FieldType, nullabilityContext?.Create(field).WriteState)));
         }
 
         return OrderMembers(members, mappingOrder);
@@ -622,7 +627,31 @@ internal static class TomlReflectionTypeInfoResolver
         bool IsRequired,
         bool IsExtensionData,
         TomlPropertyMetadata? FormattingMetadata,
-        TomlConverter? Converter);
+        TomlConverter? Converter,
+        bool DisallowNullOnSerialize = false,
+        bool DisallowNullOnDeserialize = false);
+
+    // NullabilityInfoContext is disabled in trimmed applications unless the application opts in
+    private static NullabilityInfoContext? CreateNullabilityContext(TomlSerializerOptions options)
+    {
+        if (!options.RespectNullableAnnotations)
+        {
+            return null;
+        }
+
+        if (AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out var isSupported) && !isSupported)
+        {
+            return null;
+        }
+
+        return new NullabilityInfoContext();
+    }
+
+    // Value types are handled by their converters; only reference types annotated as non-nullable are enforced
+    private static bool DisallowNull(Type type, NullabilityState? state)
+    {
+        return !type.IsValueType && state == NullabilityState.NotNull;
+    }
 
     private static bool ShouldIgnoreValue(object? memberValue, TomlIgnoreCondition ignoreCondition, object? defaultValue)
     {
@@ -653,6 +682,7 @@ internal static class TomlReflectionTypeInfoResolver
         private readonly bool _invokeOnDeserializing;
         private readonly bool _invokeOnDeserialized;
         private readonly TomlDottedKeyHandling? _dottedKeyHandling;
+        private readonly TomlUnmappedMemberHandling _unmappedMemberHandling;
 
         public ReflectionObjectTomlTypeInfo(Type type, TomlSerializerOptions options, List<MemberModel> members, ConstructorInfo? constructor, TomlDottedKeyHandling? dottedKeyHandling)
             : base(type, options)
@@ -660,6 +690,7 @@ internal static class TomlReflectionTypeInfoResolver
             _members = members ?? throw new ArgumentNullException(nameof(members));
             _constructor = constructor;
             _dottedKeyHandling = dottedKeyHandling;
+            _unmappedMemberHandling = GetUnmappedMemberHandling(type, options);
             _nameComparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
             _invokeOnSerializing = typeof(ITomlOnSerializing).IsAssignableFrom(type);
             _invokeOnSerialized = typeof(ITomlOnSerialized).IsAssignableFrom(type);
@@ -732,6 +763,7 @@ internal static class TomlReflectionTypeInfoResolver
             }
 
             _parameters = new ParameterBinding[ctorParameters.Length];
+            var nullabilityContext = CreateNullabilityContext(options);
             _parameterIndexByName = new Dictionary<string, int>(
                 ctorParameters.Length,
                 options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -744,7 +776,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     var fallback = $"arg{i}";
                     _parameterIndexByName.Add(fallback, i);
-                    _parameters[i] = new ParameterBinding(fallback, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, MemberIndex: null);
+                    _parameters[i] = new ParameterBinding(fallback, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, MemberIndex: null, fallback, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
                     continue;
                 }
 
@@ -759,11 +791,44 @@ internal static class TomlReflectionTypeInfoResolver
                 }
 
                 _parameterIndexByName.Add(keyName, i);
-                _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, memberIndex >= 0 ? memberIndex : null);
+                _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, parameter.DefaultValue, memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
             }
         }
 
         public override bool WritesTable => true;
+
+        // [TomlUnmappedMemberHandling] takes precedence over [JsonUnmappedMemberHandling], then over the options
+        private static TomlUnmappedMemberHandling GetUnmappedMemberHandling(Type type, TomlSerializerOptions options)
+        {
+            var tomlAttribute = type.GetCustomAttribute<TomlUnmappedMemberHandlingAttribute>(inherit: false);
+            if (tomlAttribute is not null)
+            {
+                return tomlAttribute.Handling;
+            }
+
+            var jsonAttribute = type.GetCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
+            if (jsonAttribute is not null)
+            {
+                return jsonAttribute.UnmappedMemberHandling == JsonUnmappedMemberHandling.Disallow ? TomlUnmappedMemberHandling.Disallow : TomlUnmappedMemberHandling.Skip;
+            }
+
+            return options.UnmappedMemberHandling;
+        }
+
+        private void SkipUnmappedMember(TomlReader reader, string name)
+        {
+            if (_unmappedMemberHandling == TomlUnmappedMemberHandling.Disallow)
+            {
+                throw reader.CreateException($"The TOML key '{name}' could not be mapped to '{Type.FullName}'.");
+            }
+
+            reader.Skip();
+        }
+
+        private TomlException CreateNullForNonNullableMemberException(TomlReader reader, string name)
+        {
+            return reader.CreateException($"The TOML key '{name}' cannot be null because '{Type.FullName}' declares it as non-nullable.");
+        }
 
         public override void Write(TomlWriter writer, object? value)
         {
@@ -796,6 +861,10 @@ internal static class TomlReflectionTypeInfoResolver
                 }
 
                 var memberValue = member.Getter(value);
+                if (memberValue is null && member.DisallowNullOnSerialize)
+                {
+                    throw new TomlException($"The member '{member.Member.Name}' on '{Type.FullName}' cannot be serialized as null because it is declared as non-nullable.");
+                }
 
                 var ignoreCondition = member.WriteIgnoreCondition ?? Options.DefaultIgnoreCondition;
                 if (ShouldIgnoreValue(memberValue, ignoreCondition, member.DefaultValue))
@@ -976,6 +1045,11 @@ internal static class TomlReflectionTypeInfoResolver
                         continue;
                     }
 
+                    if (memberValue is null && member.DisallowNullOnDeserialize)
+                    {
+                        throw CreateNullForNonNullableMemberException(reader, name);
+                    }
+
                     if (member.Setter is not null)
                     {
                         member.Setter(instance, memberValue);
@@ -992,7 +1066,7 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
-                reader.Skip();
+                SkipUnmappedMember(reader, name);
             }
 
             var endTableSpan = reader.CurrentSpan;
@@ -1331,6 +1405,11 @@ internal static class TomlReflectionTypeInfoResolver
                         continue;
                     }
 
+                    if (value is null && binding.DisallowNull)
+                    {
+                        throw reader.CreateException($"The constructor parameter '{binding.ParameterName ?? binding.KeyName}' on '{Type.FullName}' cannot be null because it is declared as non-nullable.");
+                    }
+
                     ctorArgs[parameterIndex] = value;
 
                     if (binding.MemberIndex is { } linkedMemberIndex && linkedMemberIndex >= 0 && linkedMemberIndex < _members.Count)
@@ -1389,11 +1468,24 @@ internal static class TomlReflectionTypeInfoResolver
                         continue;
                     }
 
+                    if (value is null && member.DisallowNullOnDeserialize)
+                    {
+                        throw CreateNullForNonNullableMemberException(reader, name);
+                    }
+
                     memberValues[memberIndex] = value;
                     continue;
                 }
 
-                reader.Skip();
+                // Extension data is not captured for types deserialized through a parameterized constructor
+                if (_extensionDataIndex == -1)
+                {
+                    SkipUnmappedMember(reader, name);
+                }
+                else
+                {
+                    reader.Skip();
+                }
             }
 
             var endTableSpan = reader.CurrentSpan;
@@ -1415,6 +1507,12 @@ internal static class TomlReflectionTypeInfoResolver
                 if (binding.HasDefaultValue)
                 {
                     ctorArgs[i] = binding.DefaultValue;
+                    continue;
+                }
+
+                if (!Options.RespectRequiredConstructorParameters)
+                {
+                    ctorArgs[i] = binding.ParameterType.IsValueType ? Activator.CreateInstance(binding.ParameterType) : null;
                     continue;
                 }
 
@@ -1685,6 +1783,6 @@ internal static class TomlReflectionTypeInfoResolver
             return -1;
         }
 
-        private readonly record struct ParameterBinding(string KeyName, Type ParameterType, bool HasDefaultValue, object? DefaultValue, int? MemberIndex);
+        private readonly record struct ParameterBinding(string KeyName, Type ParameterType, bool HasDefaultValue, object? DefaultValue, int? MemberIndex, string? ParameterName = null, bool DisallowNull = false);
     }
 }

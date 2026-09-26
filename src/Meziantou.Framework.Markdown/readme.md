@@ -85,7 +85,7 @@ var pipeline = new MarkdownPipelineBuilder()
 | `UseFigures` | `^^^` blocks rendered as `<figure>` |
 | `UseFooters` | `^^` blocks rendered as `<footer>` |
 | `UseFootnotes` | `[^1]` footnotes |
-| `UseGenericAttributes` | `{#id .class key=value}` attributes on blocks and inlines. Enable it last. |
+| `UseGenericAttributes` | `{#id .class key=value}` attributes on blocks and inlines. Event handlers (`on*`) and attributes that hold a URL (`href`, `src`, `srcdoc`...) are removed unless you pass another filter. Enable it last. |
 | `UseGlobalization` | Adds `dir="rtl"` to right-to-left content |
 | `UseGridTables` | Pandoc grid tables |
 | `UseJiraLinks` | `PROJECT-123` references rendered as links to a Jira instance |
@@ -115,6 +115,7 @@ CommonMark allows raw HTML, and it is copied to the output unchanged. Links are 
 `[link](javascript:alert(1))` produces a `javascript:` URL. Before you render Markdown from an untrusted source:
 
 - call `DisableHtml()` on the pipeline builder, so that raw HTML is written as escaped text,
+- keep the default attribute filter of `UseGenericAttributes`, which removes event handlers and URL attributes,
 - sanitize the generated HTML (for example with `Meziantou.Framework.HtmlSanitizer`) to remove unsafe URLs and attributes.
 
 Nesting depth is limited so that hostile input cannot overflow the stack: a document nested too deeply throws an

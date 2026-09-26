@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseSoftlineBreakAsHardlineBreak(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmphasisExtras(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions options = 31) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseListExtras(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
-        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseGenericAttributes(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) => throw null;
+        public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseGenericAttributes(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, System.Func<string, bool>? attributeFilter = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmojiAndSmiley(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, bool enableSmileys = true) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseEmojiAndSmiley(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, Meziantou.Framework.Markdown.Extensions.Emoji.EmojiMapping customEmojiMapping) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder UseReferralLinks(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, params string[] rels) => throw null;
@@ -495,12 +495,15 @@ namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes
 {
     public class GenericAttributesExtension : Meziantou.Framework.Markdown.IMarkdownExtension
     {
+        public System.Func<string, bool> AttributeFilter { get => throw null; set { } }
+        public static bool IsSafeAttributeName(string name) => throw null;
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline) { }
         public void Setup(Meziantou.Framework.Markdown.MarkdownPipeline pipeline, Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer renderer) { }
     }
 
     public class GenericAttributesParser : Meziantou.Framework.Markdown.Parsers.InlineParser
     {
+        public System.Func<string, bool> AttributeFilter { get => throw null; set { } }
         public override bool Match(Meziantou.Framework.Markdown.Parsers.InlineProcessor processor, ref Meziantou.Framework.Markdown.Helpers.StringSlice slice) => throw null;
         public static bool TryParse(ref Meziantou.Framework.Markdown.Helpers.StringSlice slice, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes? attributes) => throw null;
     }

@@ -430,10 +430,27 @@ public static class MarkdownExtensions
     /// Uses the generic attributes extension.
     /// </summary>
     /// <param name="pipeline">The pipeline.</param>
+    /// <param name="attributeFilter">
+    /// Decides whether an attribute parsed from the Markdown (other than the id and the classes) is written to the HTML.
+    /// When <see langword="null"/>, the filter is left unchanged: by default,
+    /// <see cref="GenericAttributesExtension.IsSafeAttributeName"/> removes the event handlers and the attributes that
+    /// hold a URL.
+    /// </param>
     /// <returns>The modified pipeline</returns>
-    public static MarkdownPipelineBuilder UseGenericAttributes(this MarkdownPipelineBuilder pipeline)
+    public static MarkdownPipelineBuilder UseGenericAttributes(this MarkdownPipelineBuilder pipeline, Func<string, bool>? attributeFilter = null)
     {
-        pipeline.Extensions.AddIfNotAlready<GenericAttributesExtension>();
+        var extension = pipeline.Extensions.Find<GenericAttributesExtension>();
+        if (extension is null)
+        {
+            extension = new GenericAttributesExtension();
+            pipeline.Extensions.Add(extension);
+        }
+
+        if (attributeFilter is not null)
+        {
+            extension.AttributeFilter = attributeFilter;
+        }
+
         return pipeline;
     }
 

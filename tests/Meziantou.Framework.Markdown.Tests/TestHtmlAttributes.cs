@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Renderers.Html;
 
 namespace Meziantou.Framework.Markdown.Tests;
@@ -88,5 +89,45 @@ public class TestHtmlAttributes
         from.CopyTo(to, false, false);
         Assert.Equal(new List<string>() { "test", "test1" }, to.Classes);
         Assert.Equal(new List<KeyValuePair<string, string?>>() { new KeyValuePair<string, string?>("key1", "1"), new KeyValuePair<string, string?>("key2", "2") }, to.Properties);
+    }
+
+    [Theory]
+    [InlineData("![x](y.png){onerror=alert(1)}", "<p><img src=\"y.png\" alt=\"x\" /></p>\n")]
+    [InlineData("[click](http://ok){ONCLICK=\"alert(1)\" style=\"color:red\" data-x=1}", "<p><a href=\"http://ok\" style=\"color:red\" data-x=\"1\">click</a></p>\n")]
+    [InlineData("[click](http://ok){href=javascript:alert(1) title=t}", "<p><a href=\"http://ok\" title=\"t\">click</a></p>\n")]
+    [InlineData("{#id .cls srcdoc=x formaction=javascript:alert(1) xmlns:x=y}\nparagraph", "<p id=\"id\" class=\"cls\">paragraph</p>\n")]
+    [InlineData("# Title {onmouseover=alert(1) lang=en}", "<h1 id=\"title\" lang=\"en\">Title</h1>\n")]
+    [InlineData("```js {onclick=alert(1) data-lang=js}\ncode\n```", "<pre><code class=\"language-js\" data-lang=\"js\">code\n</code></pre>\n")]
+    public void GenericAttributesRemoveUnsafeAttributes(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().DisableHtml().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void GenericAttributesFilterCanBeReplaced()
+    {
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseGenericAttributes(name => name is not "style")
+            .Build();
+
+        Assert.Equal("<p><img src=\"y.png\" onload=\"f()\" alt=\"x\" /></p>\n", MarkdownConverter.ToHtml("![x](y.png){onload=f() style=a}", pipeline));
+    }
+
+    [Theory]
+    [InlineData("onclick", false)]
+    [InlineData("OnLoad", false)]
+    [InlineData("href", false)]
+    [InlineData("SRC", false)]
+    [InlineData("xlink:href", false)]
+    [InlineData("xmlns:svg", false)]
+    [InlineData("style", true)]
+    [InlineData("title", true)]
+    [InlineData("data-src", true)]
+    public void GenericAttributesIsSafeAttributeName(string name, bool expected)
+    {
+        Assert.Equal(expected, GenericAttributesExtension.IsSafeAttributeName(name));
     }
 }

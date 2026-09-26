@@ -27,6 +27,12 @@ public class GenericAttributesParser : InlineParser
     }
 
     /// <summary>
+    /// Gets or sets the predicate that decides whether an attribute parsed from the Markdown (other than the id and the
+    /// classes) is kept. The default value is <see cref="GenericAttributesExtension.IsSafeAttributeName"/>.
+    /// </summary>
+    public Func<string, bool> AttributeFilter { get; set; } = GenericAttributesExtension.IsSafeAttributeName;
+
+    /// <summary>
     /// Attempts to match the parser at the current position.
     /// </summary>
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
@@ -34,6 +40,8 @@ public class GenericAttributesParser : InlineParser
         var startPosition = slice.Start;
         if (TryParse(ref slice, out HtmlAttributes? attributes))
         {
+            RemoveFilteredProperties(attributes, AttributeFilter);
+
             var inline = processor.Inline;
 
             // If the current object to attach is either a literal or delimiter
@@ -279,5 +287,10 @@ public class GenericAttributesParser : InlineParser
     private static bool IsStartAttributeName(char c)
     {
         return c.IsAlpha() || c == '_' || c == ':';
+    }
+
+    internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)
+    {
+        attributes.Properties?.RemoveAll(property => !filter(property.Key));
     }
 }

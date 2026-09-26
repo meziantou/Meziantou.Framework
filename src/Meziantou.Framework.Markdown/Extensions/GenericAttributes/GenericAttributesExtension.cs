@@ -18,15 +18,65 @@ namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 /// <seealso cref="IMarkdownExtension" />
 public class GenericAttributesExtension : IMarkdownExtension
 {
+    private static readonly HashSet<string> UrlOrDocumentAttributeNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "action",
+        "background",
+        "codebase",
+        "data",
+        "dynsrc",
+        "formaction",
+        "href",
+        "lowsrc",
+        "manifest",
+        "ping",
+        "poster",
+        "src",
+        "srcdoc",
+        "srcset",
+        "xlink:href",
+        "xmlns",
+    };
+
+    /// <summary>
+    /// Gets or sets the predicate that decides whether an attribute parsed from the Markdown (other than the id and the
+    /// classes) is written to the HTML. The default value is <see cref="IsSafeAttributeName"/>.
+    /// </summary>
+    public Func<string, bool> AttributeFilter { get; set; } = IsSafeAttributeName;
+
+    /// <summary>
+    /// Returns <see langword="false"/> for the attributes that can run script or load a resource: event handlers
+    /// (<c>on*</c>), and attributes that hold a URL or a document such as <c>href</c>, <c>src</c> or <c>srcdoc</c>.
+    /// Other attributes, such as <c>style</c>, <c>title</c> or <c>data-*</c>, are allowed.
+    /// </summary>
+    /// <param name="name">The name of the attribute.</param>
+    /// <returns><see langword="true"/> if the attribute can be written to the HTML output.</returns>
+    public static bool IsSafeAttributeName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        if (name.StartsWith("on", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (name.StartsWith("xmlns:", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return !UrlOrDocumentAttributeNames.Contains(name);
+    }
+
     /// <summary>
     /// Configures this extension for the specified pipeline stage.
     /// </summary>
     public void Setup(MarkdownPipelineBuilder pipeline)
     {
-        if (!pipeline.InlineParsers.Contains<GenericAttributesParser>())
+        var inlineParser = pipeline.InlineParsers.Find<GenericAttributesParser>();
+        if (inlineParser is null)
         {
-            pipeline.InlineParsers.Insert(0, new GenericAttributesParser());
+            inlineParser = new GenericAttributesParser();
+            pipeline.InlineParsers.Insert(0, inlineParser);
         }
+
+        inlineParser.AttributeFilter = AttributeFilter;
 
         // Plug into all IAttributesParseable
         foreach (var parser in pipeline.BlockParsers)
@@ -59,6 +109,8 @@ public class GenericAttributesExtension : IMarkdownExtension
                 var startOfAttributes = copy.Start;
                 if (GenericAttributesParser.TryParse(ref copy, out HtmlAttributes? attributes))
                 {
+                    GenericAttributesParser.RemoveFilteredProperties(attributes, AttributeFilter);
+
                     var htmlAttributes = block.GetAttributes();
                     attributes.CopyTo(htmlAttributes);
 

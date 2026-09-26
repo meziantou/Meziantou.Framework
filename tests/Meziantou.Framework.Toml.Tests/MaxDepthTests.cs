@@ -65,6 +65,23 @@ public sealed class MaxDepthTests
         Assert.Contains("maximum depth of 2", ex!.Message);
     }
 
+    [Theory]
+    [InlineData("value = [[[1]]]")]
+    [InlineData("a.b.c = 1")]
+    [InlineData("[a.b.c]")]
+    public void TomlParser_TolerantMode_ReportsMaxDepthWithoutThrowing(string toml)
+    {
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant }, TomlSerializerOptions.Default with { MaxDepth = 2 });
+
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.True(parser.HasErrors);
+        Assert.Contains(parser.Diagnostics, diagnostic => diagnostic.Message.Contains("maximum depth of 2", StringComparison.Ordinal));
+        Assert.False(parser.MoveNext());
+    }
+
     [Fact]
     public void SyntaxParser_ParseStrict_RespectsMaxDepth()
     {

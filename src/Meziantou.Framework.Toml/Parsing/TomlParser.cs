@@ -23,6 +23,7 @@ public sealed partial class TomlParser
     private DiagnosticsBag? _diagnostics;
     private TomlParseEvent _current;
     private int _depth;
+    private bool _stoppedAtMaxDepth;
 
     private TomlParser(IParserCore core, TomlSerializerOptions options, TomlParserOptions parserOptions, DiagnosticsBag? diagnostics)
     {
@@ -252,7 +253,7 @@ public sealed partial class TomlParser
     /// <returns><c>true</c> when a parse event is available; otherwise <c>false</c>.</returns>
     public bool MoveNext()
     {
-        if (!_core.MoveNext(out _current))
+        if (_stoppedAtMaxDepth || !_core.MoveNext(out _current))
         {
             return false;
         }
@@ -264,6 +265,23 @@ public sealed partial class TomlParser
                 _depth++;
                 if (_depth > _effectiveMaxDepth)
                 {
+                    // Tolerant mode records the error and ends the event stream instead of throwing
+                    if (_parserOptions.Mode == TomlParserMode.Tolerant && _diagnostics is not null)
+                    {
+                        var message = TomlDepthHelper.GetMaxDepthExceededMessage(_effectiveMaxDepth);
+                        if (_current.Span is { } span)
+                        {
+                            _diagnostics.Error(new SourceSpan(span.SourceName, new TextPosition(span.Start.Offset, span.Start.Line, span.Start.Column), new TextPosition(span.End.Offset, span.End.Line, span.End.Column)), message);
+                        }
+                        else
+                        {
+                            _diagnostics.Error(new SourceSpan(SourceName ?? string.Empty, default, default), message);
+                        }
+
+                        _stoppedAtMaxDepth = true;
+                        return false;
+                    }
+
                     TomlDepthHelper.ThrowDepthExceeded(_effectiveMaxDepth, _current.Span);
                 }
                 break;

@@ -96,5 +96,16 @@ val = true
         TestContext.Current.TestOutputHelper?.WriteLine($"key = {key}, val = {value}");
     }
 
+    [Fact]
+    public void Parse_LexerWithoutDecodedScalars_DecodesStrings()
+    {
+        var toml = "\"a\" = \"x\\ty\"\n'b' = '''c'''\n\"c\" = \"\"\"d\\u0041\"\"\"\n";
 
+        var doc = SyntaxParser.Parse(TomlLexer.Create(toml));
+
+        Assert.False(doc.HasErrors, message: string.Join(Environment.NewLine, doc.Diagnostics));
+        var values = doc.KeyValues.Select(kv => (((StringValueSyntax)kv.Key!.Key!).Value, ((StringValueSyntax)kv.Value!).Value)).ToArray();
+        Assert.Equal([("a", "x\ty"), ("b", "c"), ("c", "dA")], values);
+        Assert.Equal(toml, doc.ToString());
+    }
 }

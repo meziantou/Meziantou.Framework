@@ -556,10 +556,30 @@ internal partial class Parser
         _currentContainerDepth = Math.Max(1, _currentContainerDepth - 1);
     }
 
+    // A lexer created without DecodeScalars (TomlLexer.Create) does not decode strings
+    private string DecodeCurrentString()
+    {
+        var raw = _token.GetText(_lexer.Text.Span);
+        if (string.IsNullOrEmpty(raw))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return TomlStringDecoder.Decode(raw, _token.Kind);
+        }
+        catch (FormatException)
+        {
+            // The lexer already reported the invalid escape sequence
+            return string.Empty;
+        }
+    }
+
     private StringValueSyntax ParseString()
     {
         var str = Open<StringValueSyntax>();
-        str.Value = _token.StringValue ?? string.Empty;
+        str.Value = _token.StringValue ?? DecodeCurrentString();
         str.Token = EatToken();
         return Close(str);
     }

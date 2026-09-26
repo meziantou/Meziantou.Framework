@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Toml.Parsing;
 /// <summary>
 /// A lightweight token struct to avoid GC allocations.
 /// </summary>
-public readonly struct SyntaxTokenValue : IEquatable<SyntaxTokenValue>
+internal readonly struct SyntaxTokenValue : IEquatable<SyntaxTokenValue>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SyntaxTokenValue"/> struct.

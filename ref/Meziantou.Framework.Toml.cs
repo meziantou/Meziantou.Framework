@@ -586,23 +586,6 @@ namespace Meziantou.Framework.Toml.Parsing
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(Meziantou.Framework.Toml.Parsing.TomlLexer lexer, Meziantou.Framework.Toml.TomlSerializerOptions options, bool validate = true) => throw null;
     }
 
-    public readonly struct SyntaxTokenValue : System.IEquatable<Meziantou.Framework.Toml.Parsing.SyntaxTokenValue>
-    {
-        public readonly Meziantou.Framework.Toml.Syntax.TokenKind Kind;
-        public readonly Meziantou.Framework.Toml.Syntax.TextPosition Start;
-        public readonly Meziantou.Framework.Toml.Syntax.TextPosition End;
-        public readonly string? StringValue;
-        public readonly ulong Data;
-        public SyntaxTokenValue(Meziantou.Framework.Toml.Syntax.TokenKind kind, Meziantou.Framework.Toml.Syntax.TextPosition start, Meziantou.Framework.Toml.Syntax.TextPosition end, string? stringValue = null, ulong data = 0UL) { }
-        public override string ToString() => throw null;
-        public string? GetText(string text) => throw null;
-        public bool Equals(Meziantou.Framework.Toml.Parsing.SyntaxTokenValue other) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public static bool operator ==(Meziantou.Framework.Toml.Parsing.SyntaxTokenValue left, Meziantou.Framework.Toml.Parsing.SyntaxTokenValue right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Toml.Parsing.SyntaxTokenValue left, Meziantou.Framework.Toml.Parsing.SyntaxTokenValue right) => throw null;
-    }
-
     public sealed class TomlLexer
     {
         public Meziantou.Framework.Toml.Parsing.TomlToken Current { get => throw null; }

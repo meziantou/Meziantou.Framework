@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
@@ -35,20 +36,6 @@ internal sealed class TomlDateTimeConverter : TomlConverter<DateTime>
 
     public override void Write(TomlWriter writer, DateTime value)
     {
-        TomlDateTime toml;
-        switch (value.Kind)
-        {
-            case DateTimeKind.Utc:
-                toml = new TomlDateTime(new DateTimeOffset(value, TimeSpan.Zero), 0, TomlDateTimeKind.OffsetDateTimeByZ);
-                break;
-            case DateTimeKind.Local:
-                toml = new TomlDateTime(new DateTimeOffset(value), 0, TomlDateTimeKind.OffsetDateTimeByNumber);
-                break;
-            default:
-                toml = new TomlDateTime(value);
-                break;
-        }
-
-        writer.WriteDateTimeValue(toml);
+        writer.WriteDateTimeValue(TomlFormatHelper.ToTomlDateTime(value));
     }
 }

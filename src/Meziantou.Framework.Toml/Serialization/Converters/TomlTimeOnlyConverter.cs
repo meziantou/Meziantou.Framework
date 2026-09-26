@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
@@ -31,13 +32,6 @@ internal sealed class TomlTimeOnlyConverter : TomlConverter<TimeOnly>
 
     public override void Write(TomlWriter writer, TimeOnly value)
     {
-        var dt = new DateTime(1, 1, 1, value.Hour, value.Minute, value.Second, DateTimeKind.Unspecified).AddTicks(value.Ticks % TimeSpan.TicksPerSecond);
-        var precision = 0;
-        if (value.Ticks % TimeSpan.TicksPerSecond != 0)
-        {
-            precision = 7;
-        }
-
-        writer.WriteDateTimeValue(new TomlDateTime(new DateTimeOffset(DateTime.SpecifyKind(dt, DateTimeKind.Unspecified), TimeSpan.Zero), precision, TomlDateTimeKind.LocalTime));
+        writer.WriteDateTimeValue(TomlFormatHelper.ToTomlDateTime(value));
     }
 }

@@ -113,32 +113,34 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
 
     string IConvertible.ToString(IFormatProvider? provider)
     {
+        // DateTimeOffset stores 7 fractional digits
+        var precision = Math.Clamp(SecondPrecision, 0, 7);
         switch (Kind)
         {
             case TomlDateTimeKind.LocalDateTime:
-                if (SecondPrecision == 0)
+                if (precision == 0)
                     return DateTime.ToString("yyyy-MM-dd'T'HH:mm:ss", provider);
-                return DateTime.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(SecondPrecision)}", provider);
+                return DateTime.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(precision)}", provider);
             case TomlDateTimeKind.LocalDate:
                 return DateTime.ToString("yyyy-MM-dd", provider);
             case TomlDateTimeKind.LocalTime:
-                if (SecondPrecision == 0)
+                if (precision == 0)
                     return DateTime.ToString("HH:mm:ss", provider);
-                return DateTime.ToString($"HH:mm:ss.{GetFormatPrecision(SecondPrecision)}", provider);
+                return DateTime.ToString($"HH:mm:ss.{GetFormatPrecision(precision)}", provider);
             case TomlDateTimeKind.OffsetDateTimeByNumber:
             {
                 var time = DateTime;
-                if (SecondPrecision == 0)
+                if (precision == 0)
                     return time.ToString("yyyy-MM-dd'T'HH:mm:sszzz", provider);
-                return time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(SecondPrecision)}zzz", provider);
+                return time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(precision)}zzz", provider);
             }
             case TomlDateTimeKind.OffsetDateTimeByZ:
             default:
             {
                 var time = DateTime.ToUniversalTime();
-                if (SecondPrecision == 0)
+                if (precision == 0)
                     return time.ToString("yyyy-MM-dd'T'HH:mm:ssZ", provider);
-                return time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(SecondPrecision)}Z", provider);
+                return time.ToString($"yyyy-MM-dd'T'HH:mm:ss.{GetFormatPrecision(precision)}Z", provider);
             }
         }
     }

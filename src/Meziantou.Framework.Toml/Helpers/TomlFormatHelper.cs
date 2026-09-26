@@ -241,13 +241,7 @@ public static class TomlFormatHelper
     /// <param name="dateTime">The date/time value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
-    public static string ToString(DateTime dateTime, TomlPropertyDisplayKind displayKind)
-    {
-        return new TomlDateTime(new DateTimeOffset(dateTime), 0,
-            GetDateTimeDisplayKind(displayKind == TomlPropertyDisplayKind.Default
-                ? TomlPropertyDisplayKind.LocalDateTime
-                : displayKind)).ToString();
-    }
+    public static string ToString(DateTime dateTime, TomlPropertyDisplayKind displayKind) => ToTomlDateTime(dateTime, displayKind).ToString();
 
     /// <summary>
     /// Converts a <see cref="DateTimeOffset"/> to its TOML representation.
@@ -255,13 +249,7 @@ public static class TomlFormatHelper
     /// <param name="dateTimeOffset">The date/time value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
-    public static string ToString(DateTimeOffset dateTimeOffset, TomlPropertyDisplayKind displayKind)
-    {
-        return new TomlDateTime(dateTimeOffset, 0,
-            GetDateTimeDisplayKind(displayKind == TomlPropertyDisplayKind.Default
-                ? TomlPropertyDisplayKind.OffsetDateTimeByZ
-                : displayKind)).ToString();
-    }
+    public static string ToString(DateTimeOffset dateTimeOffset, TomlPropertyDisplayKind displayKind) => ToTomlDateTime(dateTimeOffset, displayKind).ToString();
 
     /// <summary>
     /// Converts a <see cref="DateOnly"/> to its TOML representation.
@@ -269,13 +257,7 @@ public static class TomlFormatHelper
     /// <param name="dateOnly">The date value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
-    public static string ToString(DateOnly dateOnly, TomlPropertyDisplayKind displayKind)
-    {
-        return new TomlDateTime(new DateTimeOffset(dateOnly.ToDateTime(TimeOnly.MinValue)), 0,
-            GetDateTimeDisplayKind(displayKind == TomlPropertyDisplayKind.Default
-                ? TomlPropertyDisplayKind.LocalDate
-                : displayKind)).ToString();
-    }
+    public static string ToString(DateOnly dateOnly, TomlPropertyDisplayKind displayKind) => ToTomlDateTime(dateOnly, displayKind).ToString();
 
     /// <summary>
     /// Converts a <see cref="TimeOnly"/> to its TOML representation.
@@ -283,12 +265,68 @@ public static class TomlFormatHelper
     /// <param name="timeOnly">The time value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
-    public static string ToString(TimeOnly timeOnly, TomlPropertyDisplayKind displayKind)
+    public static string ToString(TimeOnly timeOnly, TomlPropertyDisplayKind displayKind) => ToTomlDateTime(timeOnly, displayKind).ToString();
+
+    // A UTC DateTime is an offset date-time with Z, a local DateTime keeps the offset of the machine, and an unspecified
+    // DateTime is a local date-time. Local kinds keep the wall-clock value and never depend on the machine time zone.
+    internal static TomlDateTime ToTomlDateTime(DateTime value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
     {
-        return new TomlDateTime(new DateTimeOffset(DateOnly.MinValue.ToDateTime(timeOnly)), 0,
-            GetDateTimeDisplayKind(displayKind == TomlPropertyDisplayKind.Default
-                ? TomlPropertyDisplayKind.LocalTime
-                : displayKind)).ToString();
+        var kind = displayKind == TomlPropertyDisplayKind.Default
+            ? value.Kind switch
+            {
+                DateTimeKind.Utc => TomlDateTimeKind.OffsetDateTimeByZ,
+                DateTimeKind.Local => TomlDateTimeKind.OffsetDateTimeByNumber,
+                _ => TomlDateTimeKind.LocalDateTime,
+            }
+            : GetDateTimeDisplayKind(displayKind);
+
+        var dateTimeOffset = value.Kind == DateTimeKind.Local && kind is TomlDateTimeKind.OffsetDateTimeByZ or TomlDateTimeKind.OffsetDateTimeByNumber
+            ? new DateTimeOffset(value)
+            : new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), TimeSpan.Zero);
+        return new TomlDateTime(dateTimeOffset, GetSecondPrecision(value.Ticks), kind);
+    }
+
+    internal static TomlDateTime ToTomlDateTime(DateTimeOffset value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
+    {
+        var kind = displayKind == TomlPropertyDisplayKind.Default
+            ? value.Offset == TimeSpan.Zero ? TomlDateTimeKind.OffsetDateTimeByZ : TomlDateTimeKind.OffsetDateTimeByNumber
+            : GetDateTimeDisplayKind(displayKind);
+
+        var dateTimeOffset = kind is TomlDateTimeKind.OffsetDateTimeByZ or TomlDateTimeKind.OffsetDateTimeByNumber
+            ? value
+            : new DateTimeOffset(value.DateTime, TimeSpan.Zero);
+        return new TomlDateTime(dateTimeOffset, GetSecondPrecision(value.Ticks), kind);
+    }
+
+    internal static TomlDateTime ToTomlDateTime(DateOnly value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
+    {
+        var kind = displayKind == TomlPropertyDisplayKind.Default ? TomlDateTimeKind.LocalDate : GetDateTimeDisplayKind(displayKind);
+        return new TomlDateTime(new DateTimeOffset(value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero), 0, kind);
+    }
+
+    internal static TomlDateTime ToTomlDateTime(TimeOnly value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
+    {
+        var kind = displayKind == TomlPropertyDisplayKind.Default ? TomlDateTimeKind.LocalTime : GetDateTimeDisplayKind(displayKind);
+        return new TomlDateTime(new DateTimeOffset(DateOnly.MinValue.ToDateTime(value), TimeSpan.Zero), GetSecondPrecision(value.Ticks), kind);
+    }
+
+    // The number of significant fractional-second digits, up to 7 (ticks)
+    internal static int GetSecondPrecision(long ticks)
+    {
+        var fraction = ticks % TimeSpan.TicksPerSecond;
+        if (fraction == 0)
+        {
+            return 0;
+        }
+
+        var precision = 7;
+        while (fraction % 10 == 0)
+        {
+            fraction /= 10;
+            precision--;
+        }
+
+        return precision;
     }
 
     private static string AppendDecimalPoint(string text)

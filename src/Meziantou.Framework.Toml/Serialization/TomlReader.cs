@@ -23,6 +23,8 @@ namespace Meziantou.Framework.Toml.Serialization;
 public sealed class TomlReader
 {
     private readonly TomlSerializerOptions _options;
+    private List<(int Depth, TomlPropertiesMetadata Metadata)>? _metadataCaptures;
+    private int _depth;
     private readonly TomlSerializationOperationState _operationState;
     private readonly TomlParser? _parser;
     private readonly string _sourceName;
@@ -243,6 +245,82 @@ public sealed class TomlReader
     /// </summary>
     /// <exception cref="TomlException">The TOML document is invalid. The first call reports errors anywhere in the document.</exception>
     public bool Read()
+    {
+        if (_metadataCaptures is not { Count: > 0 } captures)
+        {
+            var hasToken = ReadCore();
+            UpdateDepth();
+            return hasToken;
+        }
+
+        // The property of a table whose metadata is captured: its name is known before the read, and its value after it
+        var capture = captures[^1];
+        var isCapturedProperty = _tokenType == TomlTokenType.PropertyName && capture.Depth == _depth;
+        var name = isCapturedProperty ? PropertyName : null;
+        var nameSpan = _currentSpan;
+        var leadingTrivia = _currentLeadingTrivia;
+        var result = ReadCore();
+        UpdateDepth();
+        if (isCapturedProperty)
+        {
+            TomlPropertyMetadataCapture.Capture(capture.Metadata, name!, nameSpan, leadingTrivia, _currentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(this));
+        }
+
+        // A table left without EndPropertiesMetadataCapture, because an error was recovered from, stops capturing
+        while (captures.Count > 0 && captures[^1].Depth > _depth)
+        {
+            captures.RemoveAt(captures.Count - 1);
+        }
+
+        return result;
+    }
+
+    // The depth of the current token: a table and its properties have the same depth
+    private void UpdateDepth()
+    {
+        switch (_tokenType)
+        {
+            case TomlTokenType.StartTable or TomlTokenType.StartArray:
+                _depth++;
+                break;
+            case TomlTokenType.EndTable or TomlTokenType.EndArray:
+                _depth--;
+                break;
+        }
+    }
+
+    // Generated metadata captures how the properties of a table are written, like the reflection-based metadata does. The
+    // reader records them, as the generated code reads property names in many places.
+    internal TomlPropertiesMetadata? BeginPropertiesMetadataCapture()
+    {
+        if (_options.MetadataStore is null || _tokenType != TomlTokenType.StartTable)
+        {
+            return null;
+        }
+
+        var metadata = new TomlPropertiesMetadata();
+        (_metadataCaptures ??= []).Add((_depth, metadata));
+        return metadata;
+    }
+
+    internal void EndPropertiesMetadataCapture(TomlPropertiesMetadata metadata, object instance)
+    {
+        if (_metadataCaptures is { } captures)
+        {
+            for (var i = captures.Count - 1; i >= 0; i--)
+            {
+                if (ReferenceEquals(captures[i].Metadata, metadata))
+                {
+                    captures.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
+        _options.MetadataStore!.SetProperties(instance, metadata);
+    }
+
+    private bool ReadCore()
     {
         if (_buffer is not null)
         {

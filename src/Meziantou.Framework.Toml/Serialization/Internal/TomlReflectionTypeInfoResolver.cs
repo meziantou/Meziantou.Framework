@@ -1041,7 +1041,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var nameSpan = reader.CurrentSpan;
                 var name = reader.PropertyName!;
                 reader.Read(); // value
-                CapturePropertyMetadata(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, GetDisplayKind(reader));
+                TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
 
                 if (_indexByName.TryGetValue(name, out var memberIndex))
                 {
@@ -1433,7 +1433,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var nameSpan = reader.CurrentSpan;
                 var name = reader.PropertyName!;
                 reader.Read(); // value
-                CapturePropertyMetadata(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, GetDisplayKind(reader));
+                TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
 
                 if (_indexByName.TryGetValue(name, out var ignoredMemberIndex) && _members[ignoredMemberIndex].IgnoreOnRead)
                 {
@@ -1746,92 +1746,6 @@ internal static class TomlReflectionTypeInfoResolver
 
             values[index] = populatedValue;
             return true;
-        }
-
-        private static void CapturePropertyMetadata(
-            TomlPropertiesMetadata? propertiesMetadata,
-            string name,
-            TomlSourceSpan? span,
-            TomlSyntaxTriviaMetadata[]? leadingTrivia,
-            TomlSyntaxTriviaMetadata[]? trailingTrivia,
-            TomlPropertyDisplayKind displayKind)
-        {
-            if (propertiesMetadata is null)
-            {
-                return;
-            }
-
-            var hasLeading = leadingTrivia is { Length: > 0 };
-            var hasTrailing = trailingTrivia is { Length: > 0 };
-            if (span is null && !hasLeading && !hasTrailing && displayKind == TomlPropertyDisplayKind.Default)
-            {
-                return;
-            }
-
-            var propertyMetadata = new TomlPropertyMetadata
-            {
-                DisplayKind = displayKind,
-            };
-
-            if (span is { } locatedSpan)
-            {
-                propertyMetadata.Span = new SourceSpan(
-                    locatedSpan.SourceName,
-                    new TextPosition(locatedSpan.Start.Offset, locatedSpan.Start.Line, locatedSpan.Start.Column),
-                    new TextPosition(locatedSpan.End.Offset, locatedSpan.End.Line, locatedSpan.End.Column));
-            }
-
-            if (hasLeading)
-            {
-                propertyMetadata.LeadingTrivia = new List<TomlSyntaxTriviaMetadata>(leadingTrivia!);
-            }
-
-            if (hasTrailing)
-            {
-                propertyMetadata.TrailingTrivia = new List<TomlSyntaxTriviaMetadata>(trailingTrivia!);
-            }
-
-            propertiesMetadata.SetProperty(name, propertyMetadata);
-        }
-
-        private static TomlPropertyDisplayKind GetDisplayKind(TomlReader reader)
-        {
-            switch (reader.TokenType)
-            {
-                case TomlTokenType.Integer:
-                {
-                    var raw = reader.GetRawText();
-                    if (raw.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerHexadecimal;
-                    if (raw.StartsWith("0o", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerOctal;
-                    if (raw.StartsWith("0b", StringComparison.OrdinalIgnoreCase)) return TomlPropertyDisplayKind.IntegerBinary;
-                    return TomlPropertyDisplayKind.Default;
-                }
-                case TomlTokenType.String:
-                {
-                    return reader.CurrentStringTokenKind switch
-                    {
-                        TokenKind.StringMulti => TomlPropertyDisplayKind.StringMulti,
-                        TokenKind.StringLiteral => TomlPropertyDisplayKind.StringLiteral,
-                        TokenKind.StringLiteralMulti => TomlPropertyDisplayKind.StringLiteralMulti,
-                        _ => TomlPropertyDisplayKind.Default,
-                    };
-                }
-                case TomlTokenType.DateTime:
-                {
-                    var value = reader.GetTomlDateTime();
-                    return value.Kind switch
-                    {
-                        TomlDateTimeKind.OffsetDateTimeByZ => TomlPropertyDisplayKind.OffsetDateTimeByZ,
-                        TomlDateTimeKind.OffsetDateTimeByNumber => TomlPropertyDisplayKind.OffsetDateTimeByNumber,
-                        TomlDateTimeKind.LocalDateTime => TomlPropertyDisplayKind.LocalDateTime,
-                        TomlDateTimeKind.LocalDate => TomlPropertyDisplayKind.LocalDate,
-                        TomlDateTimeKind.LocalTime => TomlPropertyDisplayKind.LocalTime,
-                        _ => TomlPropertyDisplayKind.Default,
-                    };
-                }
-                default:
-                    return TomlPropertyDisplayKind.Default;
-            }
         }
 
         private void ValidateRequiredMembers(bool[] seen, TomlSourceSpan? span)

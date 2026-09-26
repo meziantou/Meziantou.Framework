@@ -1204,6 +1204,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnSerializing)value).OnTomlSerializing();");
         }
         builder.AppendLine("            writer.WriteStartTable();");
+        builder.AppendLine("            AttachPropertiesMetadata(writer, value);");
         string? usedKeysVariable = null;
         if (poco.ExtensionData is { } extensionData)
         {
@@ -1331,6 +1332,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("        {");
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
             builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+            builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
             builder.Append("            var value = new ").Append(typeName).AppendLine("();");
             if (callsOnDeserializing)
             {
@@ -1442,6 +1444,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     builder.AppendLine("            }");
                 }
             }
+            builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
             if (callsOnDeserialized)
             {
                 builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
@@ -1589,6 +1592,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("        {");
         builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
         builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+        builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
 
         // Constructor argument locals.
         for (var i = 0; i < ctor.Parameters.Length; i++)
@@ -2397,6 +2401,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
+        builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {
             builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
@@ -2627,6 +2632,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            }");
         builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
         builder.AppendLine("            var tableStartSpan = reader.CurrentSpan;");
+        builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
         if (callsOnDeserializing)
         {
             builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
@@ -2741,6 +2747,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
+        builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {
             builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");

@@ -929,6 +929,9 @@ namespace Meziantou.Framework.Toml.Serialization
         protected static void WritePropertyName(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.TomlDottedKeyHandling? dottedKeyHandling) { }
         protected static void ApplyPropertyMetadata(Meziantou.Framework.Toml.Serialization.TomlWriter writer, string name, Meziantou.Framework.Toml.Model.TomlPropertyMetadata metadata) { }
         protected static Meziantou.Framework.Toml.TomlTypeInfo<TEnum> CreateStringEnumTypeInfo<TEnum>(Meziantou.Framework.Toml.TomlSerializerOptions options) where TEnum : struct, System.Enum => throw null;
+        protected static Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? BeginPropertiesMetadata<T>(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
+        protected static void EndPropertiesMetadata<T>(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata, T value) { }
+        protected static void AttachPropertiesMetadata<T>(Meziantou.Framework.Toml.Serialization.TomlWriter writer, T value) { }
         protected static Meziantou.Framework.Toml.TomlTypeInfo<TEnum?> CreateNullableStringEnumTypeInfo<TEnum>(Meziantou.Framework.Toml.TomlSerializerOptions options) where TEnum : struct, System.Enum => throw null;
         protected static Meziantou.Framework.Toml.TomlTypeInfo<T> CreateConverterTypeInfo<T>(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.Serialization.TomlConverter<T> converter) => throw null;
         protected static Meziantou.Framework.Toml.TomlTypeInfo<T> CreateAttributeConverterTypeInfo<T>(Meziantou.Framework.Toml.TomlSerializerOptions options, Meziantou.Framework.Toml.Serialization.TomlConverter converter) => throw null;

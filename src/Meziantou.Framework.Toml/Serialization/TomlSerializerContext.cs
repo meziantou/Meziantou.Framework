@@ -205,6 +205,52 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
+    /// Starts recording how the properties of the table at the current position are written, when
+    /// <see cref="TomlSerializerOptions.MetadataStore"/> is set.
+    /// </summary>
+    /// <typeparam name="T">The type read from the table.</typeparam>
+    /// <param name="reader">The reader, positioned on <see cref="TomlTokenType.StartTable"/>.</param>
+    /// <returns>The metadata to pass to <see cref="EndPropertiesMetadata{T}(TomlReader, TomlPropertiesMetadata?, T)"/>, or <see langword="null"/>.</returns>
+    protected static TomlPropertiesMetadata? BeginPropertiesMetadata<T>(TomlReader reader)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        // The store associates metadata with an instance, which a value type does not have
+        return typeof(T).IsValueType ? null : reader.BeginPropertiesMetadataCapture();
+    }
+
+    /// <summary>
+    /// Stores the metadata recorded since <see cref="BeginPropertiesMetadata{T}(TomlReader)"/> for an instance.
+    /// </summary>
+    /// <typeparam name="T">The type read from the table.</typeparam>
+    /// <param name="reader">The reader.</param>
+    /// <param name="metadata">The metadata returned by <see cref="BeginPropertiesMetadata{T}(TomlReader)"/>.</param>
+    /// <param name="value">The instance read from the table.</param>
+    protected static void EndPropertiesMetadata<T>(TomlReader reader, TomlPropertiesMetadata? metadata, T value)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        if (metadata is not null && value is not null)
+        {
+            reader.EndPropertiesMetadataCapture(metadata, value);
+        }
+    }
+
+    /// <summary>
+    /// Writes the metadata stored for an instance, such as its comments, when <see cref="TomlSerializerOptions.MetadataStore"/> is set.
+    /// </summary>
+    /// <typeparam name="T">The type written as a table.</typeparam>
+    /// <param name="writer">The writer, after the start of the table.</param>
+    /// <param name="value">The instance.</param>
+    protected static void AttachPropertiesMetadata<T>(TomlWriter writer, T value)
+    {
+        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        if (!typeof(T).IsValueType && value is not null)
+        {
+            writer.TryAttachMetadata(value);
+        }
+    }
+
+    /// <summary>
     /// Creates metadata for a nullable enum type that writes values as strings.
     /// </summary>
     /// <typeparam name="TEnum">The enum type.</typeparam>

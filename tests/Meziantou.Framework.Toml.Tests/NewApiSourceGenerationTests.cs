@@ -548,6 +548,36 @@ public sealed class GeneratedCustomNameEnumPayload
     public GeneratedCustomNameEnum Both { get; set; } = GeneratedCustomNameEnum.First | GeneratedCustomNameEnum.Second;
 }
 
+[TomlConverter(typeof(TomlStringEnumConverter))]
+[Flags]
+public enum GeneratedTomlStringEnum
+{
+    None = 0,
+    [TomlStringEnumMemberName("first-value")]
+    First = 1,
+    Second = 2,
+}
+
+public sealed class GeneratedTomlStringEnumPayload
+{
+    public GeneratedTomlStringEnum One { get; set; } = GeneratedTomlStringEnum.First;
+
+    public GeneratedTomlStringEnum Both { get; set; } = GeneratedTomlStringEnum.First | GeneratedTomlStringEnum.Second;
+
+    [TomlConverter(typeof(TomlStringEnumConverter))]
+    public GeneratedEnumKind Member { get; set; } = GeneratedEnumKind.B;
+
+    [TomlConverter(typeof(TomlStringEnumConverter))]
+    public GeneratedEnumKind? NullableMember { get; set; } = GeneratedEnumKind.B;
+
+    public GeneratedEnumKind Plain { get; set; } = GeneratedEnumKind.B;
+}
+
+public sealed class GeneratedEnumOptionsPayload
+{
+    public GeneratedEnumKind Kind { get; set; } = GeneratedEnumKind.B;
+}
+
 public sealed class GeneratedEnumAndObjectPayload
 {
     public GeneratedEnumKind Kind { get; set; }
@@ -1072,9 +1102,16 @@ internal sealed partial class TestTomlSerializerContextTomlObject : TomlSerializ
 {
 }
 
+[TomlSourceGenerationOptions(Converters = [typeof(TomlStringEnumConverter)])]
+[TomlSerializable(typeof(GeneratedEnumOptionsPayload))]
+internal sealed partial class TestTomlSerializerContextStringEnumOptions : TomlSerializerContext
+{
+}
+
 [TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedStringEnumPayload))]
 [TomlSerializable(typeof(GeneratedCustomNameEnumPayload))]
+[TomlSerializable(typeof(GeneratedTomlStringEnumPayload))]
 internal sealed partial class TestTomlSerializerContextStringEnums : TomlSerializerContext
 {
 }
@@ -2798,6 +2835,43 @@ public class NewApiSourceGenerationTests
             GeneratedStringEnumKind.Time,
             GeneratedStringEnumKind.Component,
         }, roundtrip!.Order);
+    }
+
+    [Fact]
+    public void TomlStringEnumConverter_WritesAndReadsNames()
+    {
+        const string Expected = "one = \"first-value\"\nboth = \"first-value, Second\"\nmember = \"B\"\nnullableMember = \"B\"\nplain = 1\n";
+        var typeInfo = TestTomlSerializerContextStringEnums.Default.GeneratedTomlStringEnumPayload;
+        var camelCase = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
+
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedTomlStringEnumPayload(), camelCase).ReplaceLineEndings("\n"));
+        Assert.Equal(Expected, TomlSerializer.Serialize(new GeneratedTomlStringEnumPayload(), typeInfo).ReplaceLineEndings("\n"));
+
+        const string Toml = "one = 'FIRST-VALUE'\nboth = 'Second, first-value'\nmember = 'a'\nnullableMember = 'a'\nplain = 'A'\n";
+        foreach (var value in new[] { TomlSerializer.Deserialize<GeneratedTomlStringEnumPayload>(Toml, camelCase)!, TomlSerializer.Deserialize(Toml, typeInfo)! })
+        {
+            Assert.Equal(GeneratedTomlStringEnum.First, value.One);
+            Assert.Equal(GeneratedTomlStringEnum.First | GeneratedTomlStringEnum.Second, value.Both);
+            Assert.Equal(GeneratedEnumKind.A, value.Member);
+            Assert.Equal(GeneratedEnumKind.A, value.NullableMember);
+            Assert.Equal(GeneratedEnumKind.A, value.Plain);
+        }
+    }
+
+    [Fact]
+    public void TomlStringEnumConverter_InOptions_AppliesToEveryEnum()
+    {
+        var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
+
+        Assert.Equal("Kind = \"B\"\n", TomlSerializer.Serialize(new GeneratedEnumOptionsPayload(), options).ReplaceLineEndings("\n"));
+        Assert.Equal("Kind = \"B\"\n", TomlSerializer.Serialize(new GeneratedEnumOptionsPayload(), TestTomlSerializerContextStringEnumOptions.Default.GeneratedEnumOptionsPayload).ReplaceLineEndings("\n"));
+        Assert.Equal(GeneratedEnumKind.A, TomlSerializer.Deserialize("Kind = 'A'", TestTomlSerializerContextStringEnumOptions.Default.GeneratedEnumOptionsPayload)!.Kind);
+    }
+
+    [Fact]
+    public void TomlStringEnumMemberNameAttribute_RejectsAnEmptyName()
+    {
+        Assert.Throws<ArgumentException>(() => new TomlStringEnumMemberNameAttribute(""));
     }
 
     [Fact]

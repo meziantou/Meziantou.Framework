@@ -1024,6 +1024,20 @@ namespace Meziantou.Framework.Toml.Serialization
         public System.Type[]? Converters { get => throw null; set { } }
     }
 
+    public sealed class TomlStringEnumConverter : Meziantou.Framework.Toml.Serialization.TomlConverter
+    {
+        public override bool CanConvert(System.Type typeToConvert) => throw null;
+        public override object? Read(Meziantou.Framework.Toml.Serialization.TomlReader reader, System.Type typeToConvert) => throw null;
+        public override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, object? value) { }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class TomlStringEnumMemberNameAttribute : Meziantou.Framework.Toml.Serialization.TomlAttribute
+    {
+        public string Name { get => throw null; }
+        public TomlStringEnumMemberNameAttribute(string name) { }
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class TomlStringStyleAttribute : Meziantou.Framework.Toml.Serialization.TomlAttribute
     {

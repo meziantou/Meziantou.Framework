@@ -115,7 +115,7 @@ The metadata used to map objects comes from one of two sources:
 | Numeric | `sbyte`, `byte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `nint`, `nuint`, `float`, `double`, `decimal`, `Half`, `Int128`, `UInt128` |
 | Text | `char`, `string` |
 | Date/time | `DateTime`, `DateTimeOffset`, `DateOnly`, `TimeOnly`, `TomlDateTime` |
-| Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums |
+| Other | `Guid`, `TimeSpan`, `Uri`, `Version`, enums (as numbers, or as names with [`TomlStringEnumConverter`](#enums-as-strings)) |
 | Collections | `T[]`, `List<T>`, `IList<T>`, `IReadOnlyList<T>`, `HashSet<T>`, `SortedSet<T>`, `ISet<T>`, `IReadOnlySet<T>`, `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableHashSet<T>`. Other collections, such as `Queue<T>` or `ConcurrentBag<T>`, are rejected (`TomlException`, or `MFTOML003` in generated code): use a converter. |
 | Dictionaries | `Dictionary<string, T>`, `IDictionary<string, T>`, `IReadOnlyDictionary<string, T>`, `SortedDictionary<string, T>`. `ImmutableDictionary<string, T>` can be written but not read. |
 | Document Object Model | `TomlTable`, `TomlArray`, `TomlTableArray`, `TomlObject`, `object` |
@@ -287,6 +287,7 @@ public sealed class FormattedConfig
 | `[TomlObjectCreationHandling]` | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
 | `[TomlUnmappedMemberHandling]` | `[JsonUnmappedMemberHandling]` | Skips or rejects unknown keys for a type. |
 | `[TomlSingleOrArray]` | | Accepts a single value for a collection member. |
+| `[TomlStringEnumMemberName]` | `[JsonStringEnumMemberName]` | Sets the name `TomlStringEnumConverter` uses for an enum value. |
 
 ```csharp
 public sealed class DatabaseConfig
@@ -373,6 +374,25 @@ TOML lets a document define a table in several places: an array of tables can be
 dotted keys can extend a table after another key. `TomlReader` parses the whole document on the first `Read`, so it
 reports syntax errors before any value is created, and it returns each table and array of tables as one block. A
 converter reads each key of a table once.
+
+### Enums as strings
+
+Enums are written as numbers. `TomlStringEnumConverter` writes their names instead, and reads names case-insensitively
+or numbers. Apply it to an enum or a member with `[TomlConverter]`, or add it to the converters of the options or of a
+source-generated context to apply it to every enum. `[TomlStringEnumMemberName]` sets the name of a value, and a flags
+value is written as a comma-separated list:
+
+```csharp
+[TomlConverter(typeof(TomlStringEnumConverter))]
+public enum LogLevel
+{
+    Information,
+    [TomlStringEnumMemberName("warn")]
+    Warning,
+}
+
+var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConverter()] };
+```
 
 ## Extension data
 

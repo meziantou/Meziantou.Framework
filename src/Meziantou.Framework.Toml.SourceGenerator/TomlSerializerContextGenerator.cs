@@ -171,6 +171,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private const string TomlOnSerializedMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnSerialized";
     private const string TomlOnDeserializingMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing";
     private const string TomlOnDeserializedMetadataName = "Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized";
+    private const string TomlStringEnumConverterMetadataName = "Meziantou.Framework.Toml.Serialization.TomlStringEnumConverter";
     private const string SetsRequiredMembersAttributeMetadataName = "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute";
     private const string GeneratedCodeTool = "Meziantou.Framework.Toml.SourceGenerator";
     private static readonly string GeneratedCodeVersion = typeof(TomlSerializerContextGenerator).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
@@ -963,7 +964,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             : propertyName;
         var propertyAccessibility = string.Equals(publicPropertyName, propertyName, StringComparison.Ordinal) ? "public" : "private";
         var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var usesJsonStringEnumConverter = type.TypeKind == TypeKind.Enum && HasJsonStringEnumConverterAttribute(type);
+        var usesJsonStringEnumConverter = type.TypeKind == TypeKind.Enum && (HasJsonStringEnumConverterAttribute(type) || HasOptionsStringEnumConverter(model.Options));
         ITypeSymbol? staticOptionsConverterType = null;
         var usesStaticOptionsConverter = !usesJsonStringEnumConverter && TryGetStaticOptionsConverterType(model.Options, type, out staticOptionsConverterType);
 
@@ -6138,6 +6139,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         return true;
     }
+
+    // TomlStringEnumConverter is not a TomlConverter<T>, so it is not matched to a type like the other converters of the options
+    private static bool HasOptionsStringEnumConverter(SourceGenOptions options)
+        => !options.ConverterTypes.IsDefaultOrEmpty &&
+           options.ConverterTypes.Any(static converterType => converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlStringEnumConverterMetadataName);
 
     private static bool HasJsonStringEnumConverterAttribute(ITypeSymbol type)
     {

@@ -245,6 +245,9 @@ public static class TomlFormatHelper
     // A UTC DateTime is an offset date-time with Z, a local DateTime keeps the offset of the machine, and an unspecified
     // DateTime is a local date-time. Local kinds keep the wall-clock value and never depend on the machine time zone.
     internal static TomlDateTime ToTomlDateTime(DateTime value, TomlPropertyDisplayKind displayKind = TomlPropertyDisplayKind.Default)
+        => ToTomlDateTime(value, displayKind, TimeZoneInfo.Local);
+
+    internal static TomlDateTime ToTomlDateTime(DateTime value, TomlPropertyDisplayKind displayKind, TimeZoneInfo localTimeZone)
     {
         var kind = displayKind == TomlPropertyDisplayKind.Default
             ? value.Kind switch
@@ -259,7 +262,7 @@ public static class TomlFormatHelper
         if (value.Kind == DateTimeKind.Local && kind is TomlDateTimeKind.OffsetDateTimeByZ or TomlDateTimeKind.OffsetDateTimeByNumber)
         {
             // Near MinValue or MaxValue, the machine offset can move the UTC instant out of range
-            offset = TimeZoneInfo.Local.GetUtcOffset(value);
+            offset = localTimeZone.GetUtcOffset(value);
             var utcTicks = value.Ticks - offset.Ticks;
             if (utcTicks < DateTime.MinValue.Ticks || utcTicks > DateTime.MaxValue.Ticks)
             {

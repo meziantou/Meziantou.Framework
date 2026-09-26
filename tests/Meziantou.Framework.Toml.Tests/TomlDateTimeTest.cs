@@ -41,6 +41,29 @@ public class TomlDateTimeTest
         }
     }
 
+    // The machines of the CI use UTC, where every local value is in range
+    [Theory]
+    [InlineData(false, 14, true)]
+    [InlineData(false, -12, false)]
+    [InlineData(true, -12, true)]
+    [InlineData(true, 14, false)]
+    public void LocalDateTime_OutOfRangeInUtc_IsDetectedInEveryTimeZone(bool maxValue, int offsetHours, bool throws)
+    {
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("test", TimeSpan.FromHours(offsetHours), "test", "test");
+        var value = DateTime.SpecifyKind(maxValue ? DateTime.MaxValue : DateTime.MinValue, DateTimeKind.Local);
+
+        if (throws)
+        {
+            Assert.Throws<TomlException>(() => TomlFormatHelper.ToTomlDateTime(value, TomlPropertyDisplayKind.Default, timeZone));
+        }
+        else
+        {
+            var dateTime = TomlFormatHelper.ToTomlDateTime(value, TomlPropertyDisplayKind.Default, timeZone);
+            Assert.Equal(TomlDateTimeKind.OffsetDateTimeByNumber, dateTime.Kind);
+            Assert.Equal(new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), TimeSpan.FromHours(offsetHours)), dateTime.DateTime);
+        }
+    }
+
     [Fact]
     public void LocalDateTime_OutOfRangeInUtc_ThrowsTomlException()
     {

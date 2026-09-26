@@ -238,6 +238,7 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     /// offset date-time with the offset of the machine, and an <see cref="DateTimeKind.Unspecified"/> value a local
     /// date-time. The fractional seconds are kept.
     /// </remarks>
+    /// <exception cref="TomlException">A local value near <see cref="DateTime.MinValue"/> or <see cref="DateTime.MaxValue"/> is out of range once converted to UTC.</exception>
     public static implicit operator TomlDateTime(DateTime dateTime)
     {
         return TomlFormatHelper.ToTomlDateTime(dateTime);

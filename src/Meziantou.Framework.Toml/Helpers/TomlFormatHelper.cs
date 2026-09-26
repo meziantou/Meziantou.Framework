@@ -215,6 +215,7 @@ public static class TomlFormatHelper
     /// <param name="dateTime">The date/time value.</param>
     /// <param name="displayKind">The display kind.</param>
     /// <returns>The TOML string.</returns>
+    /// <exception cref="TomlException">A local value near <see cref="DateTime.MinValue"/> or <see cref="DateTime.MaxValue"/> is out of range once converted to UTC.</exception>
     public static string ToString(DateTime dateTime, TomlPropertyDisplayKind displayKind) => ToTomlDateTime(dateTime, displayKind).ToString();
 
     /// <summary>
@@ -254,9 +255,19 @@ public static class TomlFormatHelper
             }
             : GetDateTimeDisplayKind(displayKind);
 
-        var dateTimeOffset = value.Kind == DateTimeKind.Local && kind is TomlDateTimeKind.OffsetDateTimeByZ or TomlDateTimeKind.OffsetDateTimeByNumber
-            ? new DateTimeOffset(value)
-            : new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), TimeSpan.Zero);
+        var offset = TimeSpan.Zero;
+        if (value.Kind == DateTimeKind.Local && kind is TomlDateTimeKind.OffsetDateTimeByZ or TomlDateTimeKind.OffsetDateTimeByNumber)
+        {
+            // Near MinValue or MaxValue, the machine offset can move the UTC instant out of range
+            offset = TimeZoneInfo.Local.GetUtcOffset(value);
+            var utcTicks = value.Ticks - offset.Ticks;
+            if (utcTicks < DateTime.MinValue.Ticks || utcTicks > DateTime.MaxValue.Ticks)
+            {
+                throw new TomlException($"The local date-time {value.ToString("O", CultureInfo.InvariantCulture)} cannot be written as an offset date-time because its UTC offset {offset} moves it out of range.");
+            }
+        }
+
+        var dateTimeOffset = new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Unspecified), offset);
         return new TomlDateTime(dateTimeOffset, GetSecondPrecision(value.Ticks), kind);
     }
 

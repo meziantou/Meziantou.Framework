@@ -1,12 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Meziantou.Framework.Toml.Helpers;
+using Meziantou.Framework.Toml.Model;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Toml.Tests;
 
 public class TomlDateTimeTest
 {
+    [Fact]
+    public void LocalDateTime_OutOfRangeInUtc_ThrowsTomlException()
+    {
+        foreach (var value in new[] { DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Local), DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Local) })
+        {
+            var utcTicks = value.Ticks - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
+            if (utcTicks < DateTime.MinValue.Ticks || utcTicks > DateTime.MaxValue.Ticks)
+            {
+                Assert.Throws<TomlException>(() => TomlFormatHelper.ToString(value, TomlPropertyDisplayKind.Default));
+                Assert.Throws<TomlException>(() => (TomlDateTime)value);
+                Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new Dictionary<string, DateTime> { ["value"] = value }));
+            }
+            else
+            {
+                Assert.Equal(value, TomlSerializer.Deserialize<Dictionary<string, DateTime>>(TomlSerializer.Serialize(new Dictionary<string, DateTime> { ["value"] = value }))!["value"].ToLocalTime());
+            }
+        }
+    }
+
     [Fact]
     public void TestIConvertibleToString_NoCulture()
     {

@@ -24,6 +24,9 @@ public sealed class TomlWriter
     private bool _documentStarted;
     private bool _documentEnded;
 
+    // The tables created by the expansion of a dotted key, which a table written later can extend
+    private HashSet<TomlTable>? _implicitTables;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TomlWriter"/> class.
     /// </summary>
@@ -139,8 +142,9 @@ public sealed class TomlWriter
         ValidateContainerDepth();
         var inline = _stack.Count > 0 && _stack.Peek() is TomlArray;
         var table = new TomlTable(inline);
-        WriteValue(table);
-        _stack.Push(table);
+
+        // The table can be an existing table created by the expansion of a dotted key
+        _stack.Push((TomlTable)WriteValue(table));
     }
 
     /// <summary>
@@ -312,7 +316,8 @@ public sealed class TomlWriter
         WriteValue(value);
     }
 
-    private void WriteValue(object value)
+    // Returns the value stored in the document
+    private object WriteValue(object value)
     {
         if (!_documentStarted)
         {
@@ -327,7 +332,7 @@ public sealed class TomlWriter
         if (_stack.Count == 0)
         {
             _root = value;
-            return;
+            return value;
         }
 
         var parent = _stack.Peek();
@@ -338,17 +343,17 @@ public sealed class TomlWriter
                 throw new InvalidOperationException("A property name must be written before writing a value into a table.");
             }
 
-            WriteTableValue(table, _pendingPropertyName, value, _pendingPropertyNameIsLiteral, _pendingPropertyDottedKeyHandling);
+            var stored = WriteTableValue(table, _pendingPropertyName, value, _pendingPropertyNameIsLiteral, _pendingPropertyDottedKeyHandling);
             _pendingPropertyName = null;
             _pendingPropertyNameIsLiteral = false;
             _pendingPropertyDottedKeyHandling = null;
-            return;
+            return stored;
         }
 
         if (parent is TomlArray array)
         {
             array.Add(value);
-            return;
+            return value;
         }
 
         if (parent is TomlTableArray tableArray)
@@ -359,7 +364,7 @@ public sealed class TomlWriter
             }
 
             tableArray.Add(childTable);
-            return;
+            return value;
         }
 
         throw new InvalidOperationException($"Unsupported container type `{parent.GetType().FullName}`.");
@@ -385,21 +390,19 @@ public sealed class TomlWriter
         }
     }
 
-    private void WriteTableValue(TomlTable table, string propertyName, object value, bool isLiteralPropertyName, TomlDottedKeyHandling? dottedKeyHandling)
+    private object WriteTableValue(TomlTable table, string propertyName, object value, bool isLiteralPropertyName, TomlDottedKeyHandling? dottedKeyHandling)
     {
         var effectiveDottedKeyHandling = dottedKeyHandling ?? Options.DottedKeyHandling;
         if (isLiteralPropertyName || effectiveDottedKeyHandling != TomlDottedKeyHandling.Expand || !propertyName.Contains('.', StringComparison.Ordinal))
         {
-            table[propertyName] = value;
-            return;
+            return SetValue(table, propertyName, value, propertyName);
         }
 
         // Expand "a.b.c" into nested tables.
         var segments = propertyName.Split('.');
         if (segments.Length < 2)
         {
-            table[propertyName] = value;
-            return;
+            return SetValue(table, propertyName, value, propertyName);
         }
 
         var current = table;
@@ -408,14 +411,14 @@ public sealed class TomlWriter
             var segment = segments[i];
             if (segment.Length == 0)
             {
-                table[propertyName] = value;
-                return;
+                return SetValue(table, propertyName, value, propertyName);
             }
 
             if (!current.TryGetValue(segment, out var existing) || existing is null)
             {
                 var next = new TomlTable();
                 current[segment] = next;
+                (_implicitTables ??= new HashSet<TomlTable>(ReferenceEqualityComparer.Instance)).Add(next);
                 current = next;
                 continue;
             }
@@ -432,11 +435,28 @@ public sealed class TomlWriter
         var leaf = segments[segments.Length - 1];
         if (leaf.Length == 0)
         {
-            table[propertyName] = value;
-            return;
+            return SetValue(table, propertyName, value, propertyName);
         }
 
-        current[leaf] = value;
+        return SetValue(current, leaf, value, propertyName);
+    }
+
+    // A key written twice (for example two members that map to the same name) would silently lose a value. Only a
+    // table created by the expansion of a dotted key (a.b = 1) can be extended by a table written later (a).
+    private object SetValue(TomlTable table, string key, object value, string propertyName)
+    {
+        if (table.TryGetValue(key, out var existing))
+        {
+            if (value is TomlTable { Kind: ObjectKind.Table, Count: 0 } && existing is TomlTable existingTable && _implicitTables?.Remove(existingTable) == true)
+            {
+                return existingTable;
+            }
+
+            throw new TomlException($"The TOML key '{propertyName}' is written more than once.");
+        }
+
+        table[key] = value;
+        return value;
     }
 
     private void ValidateContainerDepth()

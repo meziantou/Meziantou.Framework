@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -112,5 +113,72 @@ public class SerializationTests
         Assert.Equal("a = " + expected, toml.TrimEnd());
         Assert.Equal(value, TomlSerializer.Deserialize<TomlTable>(toml)!["a"]);
         Assert.Equal(expected, Helpers.TomlFormatHelper.ToString(value, displayKind));
+    }
+
+    [Fact]
+    public void Serialize_DictionaryKeysMappedToTheSameName_Throws()
+    {
+        var options = new TomlSerializerOptions { DictionaryKeyPolicy = TomlNamingPolicy.CamelCase };
+        var value = new Dictionary<string, int>(StringComparer.Ordinal) { ["Foo"] = 1, ["foo"] = 2 };
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(value, options));
+        Assert.Contains("'foo' is written more than once", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Serialize_MembersMappedToTheSameName_Throws()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new CollidingMembers(), new TomlSerializerOptions { IncludeFields = true }));
+    }
+
+    [Fact]
+    public void Serialize_ExpandedDottedKeyCollidingWithMember_Throws()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new CollidingDottedMember(), options));
+    }
+
+    [Fact]
+    public void Serialize_ExpandedDottedKeyExtendingMemberTable_Merges()
+    {
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+
+        var toml = TomlSerializer.Serialize(new ExtendingDottedMember(), options);
+
+        var table = (TomlTable)TomlSerializer.Deserialize<TomlTable>(toml)!["A"];
+        Assert.Equal(1L, table["X"]);
+        Assert.Equal(2L, table["Y"]);
+    }
+
+    private sealed class CollidingMembers
+    {
+        public int A { get; set; } = 1;
+
+        [TomlPropertyName("A")]
+#pragma warning disable CA1051 // The test needs a public field
+        public int B = 2;
+#pragma warning restore CA1051
+    }
+
+    private sealed class NestedX
+    {
+        public int X { get; set; } = 1;
+    }
+
+    private sealed class CollidingDottedMember
+    {
+        [TomlPropertyName("A.X")]
+        public int First { get; set; } = 2;
+
+        public NestedX A { get; set; } = new();
+    }
+
+    private sealed class ExtendingDottedMember
+    {
+        [TomlPropertyName("A.Y")]
+        public int First { get; set; } = 2;
+
+        public NestedX A { get; set; } = new();
     }
 }

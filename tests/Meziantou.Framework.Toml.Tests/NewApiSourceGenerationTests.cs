@@ -455,6 +455,30 @@ internal sealed partial class TestTomlSerializerContextInitOnlyPopulate : TomlSe
 {
 }
 
+public sealed class GeneratedInternalSetterModel
+{
+    public int Value { get; internal set; }
+}
+
+public sealed class GeneratedInternalConstructorModel
+{
+    [TomlConstructor]
+    internal GeneratedInternalConstructorModel(string name) => Name = name + "!";
+
+    public GeneratedInternalConstructorModel()
+    {
+        Name = "default";
+    }
+
+    public string Name { get; }
+}
+
+[TomlSerializable(typeof(GeneratedInternalSetterModel))]
+[TomlSerializable(typeof(GeneratedInternalConstructorModel))]
+internal sealed partial class TestTomlSerializerContextVisibility : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedBraceNameModel
 {
     [TomlRequired]
@@ -1916,6 +1940,20 @@ public class NewApiSourceGenerationTests
             Assert.Equal(1, value.Child.A);
             Assert.Equal(2, value.Child.B);
         }
+    }
+
+    [Fact]
+    public void InternalSetterAndConstructor_AreHandledTheSameInBothPaths()
+    {
+        var context = TestTomlSerializerContextVisibility.Default;
+
+        // An internal setter is not used without [TomlInclude]
+        Assert.Equal(0, TomlSerializer.Deserialize<GeneratedInternalSetterModel>("Value = 5\n")!.Value);
+        Assert.Equal(0, TomlSerializer.Deserialize("Value = 5\n", context.GeneratedInternalSetterModel)!.Value);
+
+        // An annotated constructor can be internal
+        Assert.Equal("a!", TomlSerializer.Deserialize<GeneratedInternalConstructorModel>("Name = \"a\"\n")!.Name);
+        Assert.Equal("a!", TomlSerializer.Deserialize("Name = \"a\"\n", context.GeneratedInternalConstructorModel)!.Name);
     }
 
     [Fact]

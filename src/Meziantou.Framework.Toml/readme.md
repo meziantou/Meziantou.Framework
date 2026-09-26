@@ -490,6 +490,7 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 | `MFTOML010` | Warning | The base type of a `[TomlDerivedTypeMapping]` has no polymorphic configuration; serializer defaults are used. |
 | `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
 | `MFTOML012` | Warning | A converter factory in `[TomlSourceGenerationOptions(Converters)]` is not used by generated code. |
+| `MFTOML013` | Error | A constructor annotated with `[TomlConstructor]` or `[JsonConstructor]` is private or protected. |
 
 ## NativeAOT and trimming
 

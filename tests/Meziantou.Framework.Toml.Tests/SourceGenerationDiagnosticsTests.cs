@@ -579,6 +579,32 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_PrivateAnnotatedConstructor_ReportsDiagnostic()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Person
+            {
+                [TomlConstructor]
+                private Person(string name) => Name = name;
+
+                public Person() { }
+
+                public string? Name { get; set; }
+            }
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.Contains(diagnostics, d => d.Id == "MFTOML013" && d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {
         var source = """

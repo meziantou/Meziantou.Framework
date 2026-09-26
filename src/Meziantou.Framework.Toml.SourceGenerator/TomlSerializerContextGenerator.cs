@@ -101,6 +101,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor InaccessibleConstructor = new(
+        id: "MFTOML013",
+        title: "Deserialization constructor is not accessible",
+        messageFormat: "The constructor of '{0}' annotated with [TomlConstructor] or [JsonConstructor] must be public or internal to be used by the generated code",
+        category: "Meziantou.Framework.Toml.SourceGeneration",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     private static readonly DiagnosticDescriptor UnusedConverterFactory = new(
         id: "MFTOML012",
         title: "Converter factory is not used by generated code",
@@ -3850,28 +3858,35 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 .Where(static ctor => !ctor.IsStatic && ctor.DeclaredAccessibility == Accessibility.Public)
                 .ToArray();
 
-            if (publicConstructors.Length == 0)
+            // Like the reflection resolver, an annotated constructor can be non-public
+            var annotated = named.InstanceConstructors
+                .Where(static ctor =>
+                    !ctor.IsStatic &&
+                    (HasAttribute(ctor, "Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute") ||
+                     HasAttribute(ctor, "System.Text.Json.Serialization.JsonConstructorAttribute")))
+                .ToArray();
+
+            if (annotated.Length > 1)
+            {
+                constructorError = "Multiple constructors were annotated for deserialization.";
+                selectedConstructor = annotated[0];
+            }
+            else if (annotated.Length == 1)
+            {
+                selectedConstructor = annotated[0];
+                if (!IsAccessibleFromGeneratedContext(selectedConstructor.DeclaredAccessibility))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(InaccessibleConstructor, selectedConstructor.Locations.FirstOrDefault(), named.ToDisplayString()));
+                    constructorError = "The constructor annotated for deserialization is not accessible from the generated code.";
+                }
+            }
+            else if (publicConstructors.Length == 0)
             {
                 constructorError = "No suitable constructor was found for deserialization.";
             }
             else
             {
-                var annotated = publicConstructors
-                    .Where(static ctor =>
-                        HasAttribute(ctor, "Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute") ||
-                        HasAttribute(ctor, "System.Text.Json.Serialization.JsonConstructorAttribute"))
-                    .ToArray();
-
-                if (annotated.Length > 1)
-                {
-                    constructorError = "Multiple constructors were annotated for deserialization.";
-                    selectedConstructor = annotated[0];
-                }
-                else if (annotated.Length == 1)
-                {
-                    selectedConstructor = annotated[0];
-                }
-                else if (publicConstructors.FirstOrDefault(static ctor => ctor.Parameters.Length == 0) is { } parameterlessConstructor)
+                if (publicConstructors.FirstOrDefault(static ctor => ctor.Parameters.Length == 0) is { } parameterlessConstructor)
                 {
                     selectedConstructor = null;
                     parameterlessConstructorSetsRequiredMembers = HasAttribute(parameterlessConstructor, SetsRequiredMembersAttributeMetadataName);
@@ -3924,9 +3939,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var getterAccessible = IsAccessibleFromGeneratedContext(member.GetMethod.DeclaredAccessibility);
             var getterAccessorName = getterAccessible ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
-            // Like the reflection resolver, [TomlInclude] makes a non-public setter usable
+            // Like the reflection resolver, a setter is used when it is public or the member has [TomlInclude]
             var setterAccessible = member.SetMethod is not null && IsAccessibleFromGeneratedContext(member.SetMethod.DeclaredAccessibility);
-            var canSet = member.SetMethod is not null && (setterAccessible || hasInclude);
+            var canSet = member.SetMethod is not null && (member.SetMethod.DeclaredAccessibility == Accessibility.Public || hasInclude);
             var setterAccessorName = canSet && !setterAccessible ? "__Set" + members.Count.ToString(CultureInfo.InvariantCulture) : null;
             var isInitOnly = member.SetMethod?.IsInitOnly == true;
             var isCompilerRequired = member.IsRequired;

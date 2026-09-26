@@ -231,6 +231,35 @@ public class MiscTests
         TestRoundtrip.RoundTrip(markdown);
     }
 
+    [Theory]
+    [InlineData("[", 3000)]
+    [InlineData("[", 9000)]
+    [InlineData("![", 5000)]
+    public void GlobalizationDoesNotOverflowTheStackOnDeepInlines(string pattern, int count)
+    {
+        var markdown = string.Concat(Enumerable.Repeat(pattern, count)) + "a";
+        var pipeline = new MarkdownPipelineBuilder().UseGlobalization().Build();
+
+        // 1 MB is the default stack size of thread-pool threads on Windows; a stack overflow kills the test process
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                MarkdownConverter.ToHtml(markdown, pipeline);
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        }, maxStackSize: 1024 * 1024);
+        thread.Start();
+        thread.Join();
+
+        var argumentException = Assert.IsType<ArgumentException>(exception);
+        Assert.Contains("depth limit", argumentException.Message);
+    }
+
     [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {

@@ -32,12 +32,14 @@ public class GlobalizationExtension : IMarkdownExtension
 
     private void Pipeline_DocumentProcessed(MarkdownDocument document)
     {
+        var cache = new Dictionary<MarkdownObject, bool>(ReferenceEqualityComparer.Instance);
+        var chain = new List<MarkdownObject>();
         foreach (var node in document.Descendants())
         {
             if (node is TableRow || node is TableCell || node is ListItemBlock)
                 continue;
 
-            if (ShouldBeRightToLeft(node))
+            if (ShouldBeRightToLeft(node, cache, chain))
             {
                 var attributes = node.GetAttributes();
                 attributes.AddPropertyIfNotExist("dir", "rtl");
@@ -58,28 +60,74 @@ public class GlobalizationExtension : IMarkdownExtension
 
     }
 
-    private static bool ShouldBeRightToLeft(MarkdownObject item)
+    // The direction of a node is the direction of its first child (the inline container for a leaf block). The chain of
+    // first children is followed with a loop and the result is cached for every node of the chain: a recursive walk
+    // overflows the stack on deeply nested inlines, and computing it again for each node is quadratic.
+    private static bool ShouldBeRightToLeft(MarkdownObject item, Dictionary<MarkdownObject, bool> cache, List<MarkdownObject> chain)
     {
-        if (item is IEnumerable<MarkdownObject> container)
+        chain.Clear();
+        MarkdownObject? current = item;
+        bool result;
+        while (true)
         {
-            foreach (var child in container)
-            {
-                // TaskList items contain an "X", which will cause
-                // the function to always return false.
-                if (child is TaskList)
-                    continue;
+            if (current is not null && cache.TryGetValue(current, out result))
+                break;
 
-                return ShouldBeRightToLeft(child);
+            if (current is IEnumerable<MarkdownObject> container)
+            {
+                MarkdownObject? firstChild = null;
+                foreach (var child in container)
+                {
+                    // TaskList items contain an "X", which will cause
+                    // the function to always return false.
+                    if (child is TaskList)
+                        continue;
+
+                    firstChild = child;
+                    break;
+                }
+
+                if (firstChild is not null)
+                {
+                    chain.Add(current);
+                    current = firstChild;
+                    continue;
+                }
             }
+            else if (current is LeafBlock leaf)
+            {
+                chain.Add(current);
+                current = leaf.Inline;
+                continue;
+            }
+            else if (current is LiteralInline literal)
+            {
+                chain.Add(current);
+                result = StartsWithRtlCharacter(literal.Content);
+                break;
+            }
+
+            if (current is not null)
+            {
+                chain.Add(current);
+            }
+
+            result = StartsWithRtlParagraph(current);
+            break;
         }
-        else if (item is LeafBlock leaf)
+
+        foreach (var node in chain)
         {
-            return ShouldBeRightToLeft(leaf.Inline!);
+            cache[node] = result;
         }
-        else if (item is LiteralInline literal)
-        {
-            return StartsWithRtlCharacter(literal.Content);
-        }
+
+        return result;
+    }
+
+    private static bool StartsWithRtlParagraph(MarkdownObject? item)
+    {
+        if (item is null)
+            return false;
 
         foreach (var paragraph in item.Descendants<ParagraphBlock>())
         {

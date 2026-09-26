@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.Hashing" Version="11.0.0-rc.1.26425.128" />
+    <InternalsVisibleTo Include="Meziantou.Framework.BloomFilters.Tests" />
   </ItemGroup>
 
 </Project>

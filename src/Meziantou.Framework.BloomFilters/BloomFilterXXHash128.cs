@@ -50,7 +50,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
                 for (var lane = 0; lane < Vector128<ulong>.Count; lane++)
                 {
-                    AddHash(new Hash128(low[lane], high[lane]));
+                    AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
                 }
 
                 index += Vector128<ulong>.Count;
@@ -74,7 +74,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
                 for (var lane = 0; lane < Vector256<ulong>.Count; lane++)
                 {
-                    AddHash(new Hash128(low[lane], high[lane]));
+                    AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
                 }
 
                 index += Vector256<ulong>.Count;
@@ -88,9 +88,9 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash128.HashToUInt128(value));
+        return BloomFilterHash.FromUInt128(XxHash128.HashToUInt128(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

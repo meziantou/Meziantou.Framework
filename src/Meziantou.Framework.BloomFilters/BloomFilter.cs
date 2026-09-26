@@ -24,103 +24,30 @@ public abstract partial class BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash128 hash)
+    private protected void AddHash(BloomFilterHash hash)
     {
         var bitCount = (ulong)Bits.BitCount;
         var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            Bits.Set(Reduce(combined, bitCount));
+            Bits.Set(BloomFilterHash.Reduce(combined, bitCount));
             combined += hash.Hash2;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected bool MayContainHash(Hash128 hash)
+    private protected bool MayContainHash(BloomFilterHash hash)
     {
         var bitCount = (ulong)Bits.BitCount;
         var combined = hash.Hash1;
         for (var i = 0; i < HashCount; i++)
         {
-            if (!Bits.IsSet(Reduce(combined, bitCount)))
+            if (!Bits.IsSet(BloomFilterHash.Reduce(combined, bitCount)))
                 return false;
+
             combined += hash.Hash2;
         }
 
         return true;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash64 hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Bits.Set(Reduce(combined, bitCount));
-            unchecked
-            {
-                combined += hash.Hash2;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected bool MayContainHash(Hash64 hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            if (!Bits.IsSet(Reduce(combined, bitCount)))
-                return false;
-
-            unchecked
-            {
-                combined += hash.Hash2;
-            }
-        }
-
-        return true;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(Hash32 hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Bits.Set(Reduce(combined, bitCount));
-            unchecked
-            {
-                combined += hash.Hash2;
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected bool MayContainHash(Hash32 hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            if (!Bits.IsSet(Reduce(combined, bitCount)))
-                return false;
-
-            unchecked
-            {
-                combined += hash.Hash2;
-            }
-        }
-
-        return true;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long Reduce(ulong hash, ulong range) => (long)(((UInt128)hash * range) >> 64);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static long Reduce(uint hash, ulong range) => (long)(((UInt128)hash * range) >> 32);
 }

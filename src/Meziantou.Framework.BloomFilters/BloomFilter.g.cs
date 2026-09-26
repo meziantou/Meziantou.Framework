@@ -101,14 +101,14 @@ partial class BloomFilterXXHash128 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -145,14 +145,14 @@ partial class BloomFilterXXHash64 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -189,14 +189,14 @@ partial class BloomFilterXXHash32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -233,14 +233,14 @@ partial class BloomFilterXXHash3 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -275,14 +275,14 @@ partial class BloomFilterCrc64 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -317,14 +317,14 @@ partial class BloomFilterCrc32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -359,14 +359,14 @@ partial class BloomFilterAdler32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -401,14 +401,14 @@ partial class CountingBloomFilterXXHash128 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash128 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -465,14 +465,14 @@ partial class CountingBloomFilterXXHash64 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -529,14 +529,14 @@ partial class CountingBloomFilterXXHash32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -593,14 +593,14 @@ partial class CountingBloomFilterXXHash3 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -653,14 +653,14 @@ partial class CountingBloomFilterCrc64 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -713,14 +713,14 @@ partial class CountingBloomFilterCrc32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));
@@ -773,14 +773,14 @@ partial class CountingBloomFilterAdler32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash<T>(in T value) where T : unmanaged
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
     {
         var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
         return Hash(bytes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(string value)
+    private static BloomFilterHash Hash(string value)
     {
         var chars = value.AsSpan();
         var bytes = unsafe(MemoryMarshal.AsBytes(chars));

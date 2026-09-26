@@ -61,6 +61,21 @@ public sealed class HexEscapeStringStyleHolder
     public string Default { get; set; } = "\u0001\u001B\u007F";
 }
 
+public sealed class InlineStyledChildHolder
+{
+    [TomlInlineTable(TomlInlineTablePolicy.Always)]
+    public StyledChild Child { get; set; } = new();
+}
+
+public sealed class StyledChild
+{
+    [TomlStringStyle(TomlStringStyle.Literal)]
+    public string Path { get; set; } = "C:\\temp";
+
+    [TomlStringStyle(TomlStringStyle.MultilineBasic)]
+    public string Text { get; set; } = "a\nb";
+}
+
 public sealed class InvalidStringStyleAttributeHolder
 {
     [TomlStringStyle(TomlStringStyle.Basic)]
@@ -73,6 +88,7 @@ public sealed class InvalidStringStyleAttributeHolder
 [TomlSerializable(typeof(AttributeStringStyleHolder))]
 [TomlSerializable(typeof(MultilineStringStyleHolder))]
 [TomlSerializable(typeof(HexEscapeStringStyleHolder))]
+[TomlSerializable(typeof(InlineStyledChildHolder))]
 internal sealed partial class TestTomlStyleAttributesContext : TomlSerializerContext
 {
 }
@@ -121,6 +137,19 @@ public class NewApiStyleAttributeTests
         Assert.Contains("[Other]", reflectionToml);
         Assert.Contains("Child = {X = 1}", generatedToml);
         Assert.Contains("[Other]", generatedToml);
+    }
+
+    [Fact]
+    public void MemberStyles_ApplyInsideInlineTables()
+    {
+        var expected = "Child = {Path = 'C:\\temp', Text = \"\"\"\na\nb\"\"\"}\n";
+
+        var reflectionToml = TomlSerializer.Serialize(new InlineStyledChildHolder());
+        var generatedToml = TomlSerializer.Serialize(new InlineStyledChildHolder(), TestTomlStyleAttributesContext.Default.InlineStyledChildHolder);
+
+        Assert.Equal(expected, reflectionToml.ReplaceLineEndings("\n"));
+        Assert.Equal(expected, generatedToml.ReplaceLineEndings("\n"));
+        Assert.Equal("a\nb", TomlSerializer.Deserialize<InlineStyledChildHolder>(reflectionToml)!.Child.Text);
     }
 
     [Fact]

@@ -368,7 +368,8 @@ internal static class TomlModelTextWriter
                     continue;
                 }
 
-                WriteValue(pair.Value, TomlPropertyDisplayKind.Default, depth);
+                var propertyMetadata = GetPropertyMetadata(table.PropertiesMetadata, pair.Key);
+                WriteValue(pair.Value, propertyMetadata?.DisplayKind ?? TomlPropertyDisplayKind.Default, depth, propertyMetadata);
             }
 
             _writer.Write("}");

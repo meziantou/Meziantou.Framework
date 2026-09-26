@@ -37,7 +37,7 @@ internal static class TomlTypeInfoResolverPipeline
             return cached;
         }
 
-        var resolved = ResolveUncached(state, type, out var errorMessage) ?? throw new TomlException(errorMessage!);
+        var resolved = ResolveUncached(state, type, out var errorMessage) ?? throw TomlException.CreateConfigurationError(errorMessage!);
         state.CacheTypeInfo(type, resolved);
         return resolved;
     }
@@ -237,12 +237,12 @@ internal static class TomlTypeInfoResolverPipeline
     {
         if (!typeof(TomlConverter).IsAssignableFrom(converterType))
         {
-            throw new TomlException($"Converter type '{converterType.FullName}' must derive from '{typeof(TomlConverter).FullName}'.");
+            throw TomlException.CreateConfigurationError($"Converter type '{converterType.FullName}' must derive from '{typeof(TomlConverter).FullName}'.");
         }
 
         if (converterType.GetConstructor(Type.EmptyTypes) is null)
         {
-            throw new TomlException($"Converter type '{converterType.FullName}' must declare a public parameterless constructor.");
+            throw TomlException.CreateConfigurationError($"Converter type '{converterType.FullName}' must declare a public parameterless constructor.");
         }
 
         TomlConverter converter;
@@ -252,7 +252,7 @@ internal static class TomlTypeInfoResolverPipeline
         }
         catch (Exception ex)
         {
-            throw new TomlException($"Failed to create converter '{converterType.FullName}'.", ex);
+            throw TomlException.CreateConfigurationError($"Failed to create converter '{converterType.FullName}'.", ex);
         }
 
         return ResolveAttributeConverter(converter, typeToConvert, options);
@@ -273,7 +273,7 @@ internal static class TomlTypeInfoResolverPipeline
 
         if (!converter.CanConvert(typeToConvert))
         {
-            throw new TomlException($"Converter '{converter.GetType().FullName}' cannot convert '{typeToConvert.FullName}'.");
+            throw TomlException.CreateConfigurationError($"Converter '{converter.GetType().FullName}' cannot convert '{typeToConvert.FullName}'.");
         }
 
         return converter;
@@ -284,17 +284,17 @@ internal static class TomlTypeInfoResolverPipeline
         var created = factory.CreateConverter(typeToConvert, options);
         if (created is null)
         {
-            throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned null.");
+            throw TomlException.CreateConfigurationError($"The converter factory '{factory.GetType().FullName}' returned null.");
         }
 
         if (created is TomlConverterFactory)
         {
-            throw new TomlException($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
+            throw TomlException.CreateConfigurationError($"The converter factory '{factory.GetType().FullName}' returned another {nameof(TomlConverterFactory)}.");
         }
 
         if (!created.CanConvert(typeToConvert))
         {
-            throw new TomlException(
+            throw TomlException.CreateConfigurationError(
                 $"The converter factory '{factory.GetType().FullName}' returned a converter that cannot convert '{typeToConvert.FullName}'.");
         }
 
@@ -363,7 +363,7 @@ internal static class TomlTypeInfoResolverPipeline
         // and Capacity properties, and read back empty
         if (type != typeof(string) && typeof(IEnumerable).IsAssignableFrom(type))
         {
-            throw new TomlException($"The collection type '{type.FullName}' is not supported. Use an array, a list, a set, or a dictionary with string keys, or register a converter for it.");
+            throw TomlException.CreateConfigurationError($"The collection type '{type.FullName}' is not supported. Use an array, a list, a set, or a dictionary with string keys, or register a converter for it.");
         }
 
         var typeInfo = TomlReflectionTypeInfoResolver.TryCreateTypeInfo(type, options);
@@ -378,7 +378,7 @@ internal static class TomlTypeInfoResolverPipeline
             return dispatch;
         }
 
-        throw new TomlException(
+        throw TomlException.CreateConfigurationError(
             $"No TOML metadata is available for type '{type.FullName}'. " +
             $"Reflection-based metadata could not be generated for this type. " +
             $"Provide {nameof(TomlSerializerOptions)}.{nameof(TomlSerializerOptions.TypeInfoResolver)} (source generation) or a custom resolver.");

@@ -125,7 +125,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         if (type == typeof(object)) return (TomlTypeInfo<T>)(object)new TomlUntypedConverterTypeInfo<object>(options, TomlUntypedObjectConverter.Instance);
         if (type.IsEnum) return new TomlUntypedConverterTypeInfo<T>(options, TomlEnumConverter.Instance);
 
-        throw new TomlException($"No built-in TOML metadata is available for type '{type.FullName}'.");
+        throw TomlException.CreateConfigurationError($"No built-in TOML metadata is available for type '{type.FullName}'.");
     }
 
     /// <summary>
@@ -447,7 +447,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
         var inner = context.GetTypeInfo(typeof(T), options);
         if (inner is null)
         {
-            throw new TomlException($"No TOML metadata is available for type '{typeof(T).FullName}'.");
+            throw TomlException.CreateConfigurationError($"No TOML metadata is available for type '{typeof(T).FullName}'.");
         }
 
         return inner is TomlTypeInfo<T>

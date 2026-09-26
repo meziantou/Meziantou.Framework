@@ -34,7 +34,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
             return dictionary;
         }
 
-        throw new TomlException($"Deserializing '{typeof(TDictionary).FullName}' is not supported: the dictionary type must implement IDictionary<string, TValue> and have a public parameterless constructor.");
+        throw TomlException.CreateConfigurationError($"Deserializing '{typeof(TDictionary).FullName}' is not supported: the dictionary type must implement IDictionary<string, TValue> and have a public parameterless constructor.");
     }
 
     public override void Write(TomlWriter writer, TDictionary value)

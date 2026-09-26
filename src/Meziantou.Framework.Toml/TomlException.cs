@@ -71,6 +71,16 @@ public sealed class TomlException : Exception
 
     internal static TomlException CreateRecordedValueError(DiagnosticsBag operationDiagnostics) => new(operationDiagnostics) { IsRecordedValueError = true };
 
+    // An error of the program rather than of the TOML input, such as a type without metadata: TryDeserialize does not hide it
+    internal bool IsConfigurationError { get; private init; }
+
+    internal static TomlException CreateConfigurationError(string message, Exception? innerException = null)
+    {
+        return innerException is null
+            ? new TomlException(message) { IsConfigurationError = true }
+            : new TomlException(message, innerException) { IsConfigurationError = true };
+    }
+
     /// <summary>
     /// Gets the optional source span associated with this exception.
     /// </summary>

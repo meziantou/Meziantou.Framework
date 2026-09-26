@@ -159,6 +159,36 @@ public sealed class NewApiSerializerOverloadTests
     }
 
     [Fact]
+    public void TryDeserialize_TypeMissingFromTheContext_Throws()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<NotInContext>(SampleToml, TestTomlSerializerContext.Default, out _));
+    }
+
+    [Fact]
+    public void TryDeserialize_NullResult_ReturnsFalse()
+    {
+        var options = new TomlSerializerOptions { Converters = [new NullResultConverter()] };
+
+        Assert.False(TomlSerializer.TryDeserialize<NotInContext>(SampleToml, out var value, options));
+        Assert.Null(value);
+    }
+
+    private sealed class NotInContext
+    {
+    }
+
+    private sealed class NullResultConverter : TomlConverter<NotInContext>
+    {
+        public override NotInContext? Read(TomlReader reader)
+        {
+            reader.Skip();
+            return null;
+        }
+
+        public override void Write(TomlWriter writer, NotInContext value) => throw new NotSupportedException();
+    }
+
+    [Fact]
     public void TryDeserialize_Stream_WithContext_ReturnsFalseOnFailure()
     {
         var context = TestTomlSerializerContext.Default;

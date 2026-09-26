@@ -681,4 +681,5 @@ Parsing and mapping errors throw `TomlException`. It exposes the location of the
 mapping errors of the whole document: a value that cannot be converted, an invalid collection element or a missing
 required key does not stop the reading. Set
 `TomlSerializerOptions.SourceName` to include a file name in the messages. Use `TryDeserialize` when invalid input is
-expected, for example user-provided configuration files.
+expected, for example user-provided configuration files. It returns `false` for invalid input and for a `null` result,
+but still throws for errors of the program, such as a type without metadata in the context.

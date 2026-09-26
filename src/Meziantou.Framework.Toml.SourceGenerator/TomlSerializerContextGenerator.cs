@@ -688,6 +688,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), _generated: true);");
         builder.AppendLine();
 
+        // The callbacks of a struct run on the value itself, not on a boxed copy
+        foreach (var (callbackInterface, callbackMethod) in new[] { ("ITomlOnSerializing", "OnTomlSerializing"), ("ITomlOnSerialized", "OnTomlSerialized"), ("ITomlOnDeserializing", "OnTomlDeserializing"), ("ITomlOnDeserialized", "OnTomlDeserialized") })
+        {
+            builder.Append("    private static void __").Append(callbackMethod).Append("<__TValue>(ref __TValue value) where __TValue : global::Meziantou.Framework.Toml.Serialization.").Append(callbackInterface).Append(" => value.").Append(callbackMethod).AppendLine("();");
+        }
+
+        builder.AppendLine();
+
         if (!model.Options.ConverterTypes.IsDefaultOrEmpty)
         {
             builder.AppendLine("    private static readonly global::System.Type[] s_sourceGenerationConverterTypes =");
@@ -1193,7 +1201,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         if (callsOnSerializing)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnSerializing)value).OnTomlSerializing();");
+            builder.AppendLine("            __OnTomlSerializing(ref value);");
         }
         builder.AppendLine("            writer.WriteStartTable();");
         builder.AppendLine("            AttachPropertiesMetadata(writer, value);");
@@ -1277,7 +1285,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            writer.WriteEndTable();");
         if (callsOnSerialized)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnSerialized)value).OnTomlSerialized();");
+            builder.AppendLine("            __OnTomlSerialized(ref value);");
         }
         builder.AppendLine("        }");
         builder.AppendLine();
@@ -1330,7 +1338,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            }");
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            __OnTomlDeserializing(ref value);");
             }
             var hasRequiredMembers = poco.Members.Any(static m => m.IsRequired);
             var throwOnDuplicate = ShouldThrowOnDuplicate(model.Options);
@@ -1434,7 +1442,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
             if (callsOnDeserialized)
             {
-                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+                builder.AppendLine("            __OnTomlDeserialized(ref value);");
             }
             builder.AppendLine("            return value;");
             builder.AppendLine("        }");
@@ -2405,7 +2413,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            __OnTomlDeserializing(ref value);");
             }
 
             // Without an accessible setter, the member is set after the object is created
@@ -2433,7 +2441,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (callsOnDeserializing)
             {
-                builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+                builder.AppendLine("            __OnTomlDeserializing(ref value);");
             }
 
             for (var i = 0; i < poco.Members.Length; i++)
@@ -2484,7 +2492,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+            builder.AppendLine("            __OnTomlDeserialized(ref value);");
         }
 
         builder.AppendLine("            return value;");
@@ -2607,7 +2615,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         if (callsOnDeserializing)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+            builder.AppendLine("            __OnTomlDeserializing(ref value);");
         }
 
         for (var i = 0; i < poco.Members.Length; i++)
@@ -2725,7 +2733,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("            var __propertiesMetadata = BeginPropertiesMetadata<").Append(typeName).AppendLine(">(reader);");
         if (callsOnDeserializing)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
+            builder.AppendLine("            __OnTomlDeserializing(ref value);");
         }
 
         var hasRequiredMembers = poco.Members.Any(static m => m.IsRequired);
@@ -2833,7 +2841,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {
-            builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized)value).OnTomlDeserialized();");
+            builder.AppendLine("            __OnTomlDeserialized(ref value);");
         }
 
         builder.AppendLine("            return value;");

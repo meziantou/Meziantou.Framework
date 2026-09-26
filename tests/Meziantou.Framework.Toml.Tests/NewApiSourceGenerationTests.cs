@@ -1591,6 +1591,35 @@ internal sealed partial class TestTomlSerializerContextPrivateExtensionData : To
 {
 }
 
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedCallbackStruct : ITomlOnDeserializing, ITomlOnDeserialized, ITomlOnSerializing
+{
+    public int A { get; set; }
+
+    [TomlIgnore]
+    public int Deserializing { get; set; }
+
+    [TomlIgnore]
+    public int Deserialized { get; set; }
+
+    public void OnTomlDeserializing() => Deserializing = A + 100;
+
+    public void OnTomlDeserialized() => Deserialized = A + 200;
+
+    public void OnTomlSerializing() => A = 55;
+}
+
+public sealed class GeneratedCallbackStructHolder
+{
+    public List<GeneratedCallbackStruct>? Items { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedCallbackStruct))]
+[TomlSerializable(typeof(GeneratedCallbackStructHolder))]
+internal sealed partial class TestTomlSerializerContextStructCallbacks : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedPrivateGetterChild
 {
     public int X { get; set; }
@@ -3651,6 +3680,25 @@ public class NewApiSourceGenerationTests
         Assert.Equal(4, parameterized.B);
         Assert.Equal(4, annotated.B);
         Assert.Contains("is obsolete with an error", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StructCallbacks_ChangeTheValue()
+    {
+        var context = TestTomlSerializerContextStructCallbacks.Default;
+
+        var generated = TomlSerializer.Deserialize("A = 1", context.GeneratedCallbackStruct);
+        var reflection = TomlSerializer.Deserialize<GeneratedCallbackStruct>("A = 1");
+        var generatedList = TomlSerializer.Deserialize("[[Items]]\nA = 1\n", context.GeneratedCallbackStructHolder)!;
+
+        foreach (var value in new[] { generated, reflection, generatedList.Items![0] })
+        {
+            Assert.Equal(100, value.Deserializing);
+            Assert.Equal(201, value.Deserialized);
+        }
+
+        Assert.Equal("A = 55\n", TomlSerializer.Serialize(new GeneratedCallbackStruct { A = 1 }, context.GeneratedCallbackStruct).ReplaceLineEndings("\n"));
+        Assert.Equal("A = 55\n", TomlSerializer.Serialize(new GeneratedCallbackStruct { A = 1 }).ReplaceLineEndings("\n"));
     }
 
     [Fact]

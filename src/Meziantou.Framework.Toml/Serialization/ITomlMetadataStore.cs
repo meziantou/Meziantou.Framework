@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml.Model;
 
 namespace Meziantou.Framework.Toml.Serialization;
@@ -10,7 +11,7 @@ public interface ITomlMetadataStore
     /// <summary>
     /// Tries to get metadata for an instance.
     /// </summary>
-    bool TryGetProperties(object instance, out TomlPropertiesMetadata? metadata);
+    bool TryGetProperties(object instance, [NotNullWhen(true)] out TomlPropertiesMetadata? metadata);
 
     /// <summary>
     /// Sets metadata for an instance.

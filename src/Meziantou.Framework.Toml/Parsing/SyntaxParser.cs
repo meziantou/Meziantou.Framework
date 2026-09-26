@@ -143,6 +143,36 @@ public static class SyntaxParser
     }
 
     /// <summary>
+    /// Parses a TOML payload from a <see cref="TextReader"/> into a syntax tree and throws on any parse/validation error.
+    /// </summary>
+    /// <param name="reader">The text reader.</param>
+    /// <param name="sourceName">An optional source name used in diagnostics.</param>
+    /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
+    /// <returns>The parsed syntax tree.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
+    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
+    public static DocumentSyntax ParseStrict(TextReader reader, string? sourceName = null, bool validate = true)
+        => ParseStrict(reader, TomlSerializerOptions.Default, sourceName, validate);
+
+    /// <summary>
+    /// Parses a TOML payload from a <see cref="TextReader"/> into a syntax tree and throws on any parse/validation error.
+    /// </summary>
+    /// <param name="reader">The text reader.</param>
+    /// <param name="options">Serializer options supplying shared behaviors such as <see cref="TomlSerializerOptions.MaxDepth"/>.</param>
+    /// <param name="sourceName">An optional source name used in diagnostics.</param>
+    /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
+    /// <returns>The parsed syntax tree.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
+    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
+    public static DocumentSyntax ParseStrict(TextReader reader, TomlSerializerOptions options, string? sourceName = null, bool validate = true)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+
+        return ParseStrict(reader.ReadToEnd(), options, sourceName, validate);
+    }
+
+    /// <summary>
     /// Parses a TOML payload into a syntax tree and throws on any parse/validation error.
     /// </summary>
     /// <param name="lexer">A TOML lexer positioned before the first token.</param>

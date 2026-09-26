@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
@@ -12,7 +13,7 @@ public sealed class TomlMetadataStore : ITomlMetadataStore
     private readonly ConditionalWeakTable<object, TomlPropertiesMetadata> _table = new();
 
     /// <inheritdoc />
-    public bool TryGetProperties(object instance, out TomlPropertiesMetadata? metadata)
+    public bool TryGetProperties(object instance, [NotNullWhen(true)] out TomlPropertiesMetadata? metadata)
     {
         ArgumentGuard.ThrowIfNull(instance, nameof(instance));
         return _table.TryGetValue(instance, out metadata);

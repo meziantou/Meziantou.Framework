@@ -612,7 +612,7 @@ var store = new TomlMetadataStore();
 var options = new TomlSerializerOptions { MetadataStore = store };
 var model = TomlSerializer.Deserialize<TomlTable>(toml, options)!;
 
-if (store.TryGetProperties(model, out var metadata) && metadata is not null && metadata.TryGetProperty("title", out var property) && property is not null)
+if (store.TryGetProperties(model, out var metadata) && metadata.TryGetProperty("title", out var property))
 {
     // property.LeadingTrivia, property.TrailingTrivia, property.Span, property.DisplayKind
 }

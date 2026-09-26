@@ -582,6 +582,8 @@ namespace Meziantou.Framework.Toml.Parsing
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax Parse(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlSerializerOptions options, string? sourceName = null, bool validate = true) => throw null;
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(string toml, string? sourceName = null, bool validate = true) => throw null;
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(string toml, Meziantou.Framework.Toml.TomlSerializerOptions options, string? sourceName = null, bool validate = true) => throw null;
+        public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(System.IO.TextReader reader, string? sourceName = null, bool validate = true) => throw null;
+        public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlSerializerOptions options, string? sourceName = null, bool validate = true) => throw null;
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(Meziantou.Framework.Toml.Parsing.TomlLexer lexer, bool validate = true) => throw null;
         public static Meziantou.Framework.Toml.Syntax.DocumentSyntax ParseStrict(Meziantou.Framework.Toml.Parsing.TomlLexer lexer, Meziantou.Framework.Toml.TomlSerializerOptions options, bool validate = true) => throw null;
     }
@@ -705,7 +707,7 @@ namespace Meziantou.Framework.Toml.Serialization
 {
     public interface ITomlMetadataStore
     {
-        bool TryGetProperties(object instance, out Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata);
+        bool TryGetProperties(object instance, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata);
         void SetProperties(object instance, Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata);
     }
 
@@ -836,7 +838,7 @@ namespace Meziantou.Framework.Toml.Serialization
 
     public sealed class TomlMetadataStore : Meziantou.Framework.Toml.Serialization.ITomlMetadataStore
     {
-        public bool TryGetProperties(object instance, out Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata) => throw null;
+        public bool TryGetProperties(object instance, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata) => throw null;
         public void SetProperties(object instance, Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata) { }
     }
 

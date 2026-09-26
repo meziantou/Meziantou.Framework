@@ -18,6 +18,20 @@ public class SyntaxTests
     }
 
     [Fact]
+    public void ParseStrict_TextReader()
+    {
+        using (var reader = new System.IO.StringReader("a = 1\n"))
+        {
+            Assert.False(SyntaxParser.ParseStrict(reader).HasErrors);
+        }
+
+        using (var reader = new System.IO.StringReader("a = \n"))
+        {
+            Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(reader, TomlSerializerOptions.Default, "config.toml"));
+        }
+    }
+
+    [Fact]
     public void Comment_WithTab_IsAccepted()
     {
         Assert.Equal("# a\tb", SyntaxFactory.Comment("a\tb").Text);

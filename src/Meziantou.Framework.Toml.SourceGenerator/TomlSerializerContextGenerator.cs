@@ -6976,14 +6976,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     // JsonUnmappedMemberHandling uses the same values as TomlUnmappedMemberHandling
                     if (options.UnmappedMemberHandling is null && value.Value is int unmappedMemberHandling) options.UnmappedMemberHandling = unmappedMemberHandling;
                     break;
+                // A value System.Text.Json accepts but TOML cannot represent, WhenWriting, WhenReading, or IndentSize = 0, is
+                // ignored rather than reported: the attribute configures JSON first. Always is invalid for both, and reported.
                 case "DefaultIgnoreCondition":
-                    if (options.DefaultIgnoreCondition is null && value.Value is int jsonIgnoreCondition) options.DefaultIgnoreCondition = ToTomlIgnoreCondition(jsonIgnoreCondition);
+                    if (options.DefaultIgnoreCondition is null && value.Value is int jsonIgnoreCondition && ToTomlIgnoreCondition(jsonIgnoreCondition) is not (4 or 5) and var tomlIgnoreCondition) options.DefaultIgnoreCondition = tomlIgnoreCondition;
                     break;
                 case "WriteIndented":
                     if (options.WriteIndented is null && value.Value is bool writeIndented) options.WriteIndented = writeIndented;
                     break;
                 case "IndentSize":
-                    if (options.IndentSize is null && value.Value is int indentSize) options.IndentSize = indentSize;
+                    if (options.IndentSize is null && value.Value is int indentSize and >= 1) options.IndentSize = indentSize;
                     break;
                 case "MaxDepth":
                     if (options.MaxDepth is null && value.Value is int maxDepth) options.MaxDepth = maxDepth;

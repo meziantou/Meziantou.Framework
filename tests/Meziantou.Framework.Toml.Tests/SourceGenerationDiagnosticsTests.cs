@@ -651,13 +651,15 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("JsonIgnoreCondition.WhenWritingNull", false)]
     [InlineData("JsonIgnoreCondition.WhenWritingDefault", false)]
     [InlineData("JsonIgnoreCondition.Always", true)]
+    [InlineData("JsonIgnoreCondition.WhenWriting", false)]
+    [InlineData("JsonIgnoreCondition.WhenReading", false)]
     public void Generator_JsonDefaultIgnoreCondition_IsValidatedLikeToml(string condition, bool isError)
     {
         var diagnostics = RunGenerator($$"""
             using System.Text.Json.Serialization;
             using Meziantou.Framework.Toml.Serialization;
 
-            [JsonSourceGenerationOptions(DefaultIgnoreCondition = {{condition}})]
+            [JsonSourceGenerationOptions(DefaultIgnoreCondition = {{condition}}, IndentSize = 0)]
             [TomlSerializable(typeof(Person))]
             internal partial class Ctx : TomlSerializerContext { }
 

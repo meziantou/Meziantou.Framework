@@ -500,7 +500,8 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
   `DictionaryKeyPolicy`, `PropertyNameCaseInsensitive`, `IncludeFields`, `IgnoreReadOnlyFields`,
   `IgnoreReadOnlyProperties`, `PreferredObjectCreationHandling`, `DefaultIgnoreCondition`, `UnmappedMemberHandling`,
   `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`, `WriteIndented`, `IndentSize`, and `MaxDepth`.
-  `JsonSerializerDefaults.Web` selects case-insensitive camelCase names, as in `System.Text.Json`.
+  `JsonSerializerDefaults.Web` selects case-insensitive camelCase names, as in `System.Text.Json`. A value TOML cannot
+  represent, such as `IndentSize = 0` or `DefaultIgnoreCondition = WhenWriting`, is ignored.
   `[TomlSourceGenerationOptions]` takes precedence.
 - `init` and `required` members are supported.
 - `[TomlConverter]` and `[JsonConverter]` on a type or member are supported, including converter factories. The

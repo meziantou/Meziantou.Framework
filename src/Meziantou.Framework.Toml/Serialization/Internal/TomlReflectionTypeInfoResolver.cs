@@ -1050,9 +1050,22 @@ internal static class TomlReflectionTypeInfoResolver
             var needsSeen = Options.DuplicateKeyHandling == TomlDuplicateKeyHandling.Error || _hasRequiredMembers;
             var seen = needsSeen ? new bool[_members.Count] : null;
 
+            string? inlineValueName = null;
             reader.Read(); // first property or end
-            while (reader.TokenType != TomlTokenType.EndTable)
+            while (true)
             {
+                // The trailing comment of an inline array or table follows its closing token, the token before this one
+                if (inlineValueName is not null)
+                {
+                    TomlPropertyMetadataCapture.AppendTrailingTrivia(propertiesMetadata, inlineValueName, reader.PreviousTrailingTrivia);
+                    inlineValueName = null;
+                }
+
+                if (reader.TokenType == TomlTokenType.EndTable)
+                {
+                    break;
+                }
+
                 if (reader.TokenType != TomlTokenType.PropertyName)
                 {
                     throw reader.CreateException($"Expected {TomlTokenType.PropertyName} token but was {reader.TokenType}.");
@@ -1063,6 +1076,10 @@ internal static class TomlReflectionTypeInfoResolver
                 var name = reader.PropertyName!;
                 reader.Read(); // value
                 TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
+                if (propertiesMetadata is not null && reader.IsInlineContainer)
+                {
+                    inlineValueName = name;
+                }
 
                 if (_indexByName.TryGetValue(name, out var memberIndex))
                 {
@@ -1443,9 +1460,22 @@ internal static class TomlReflectionTypeInfoResolver
             var memberSeen = new bool[_members.Count];
             Dictionary<string, object?>? extensionData = null;
 
+            string? inlineValueName = null;
             reader.Read(); // first property or end
-            while (reader.TokenType != TomlTokenType.EndTable)
+            while (true)
             {
+                // The trailing comment of an inline array or table follows its closing token, the token before this one
+                if (inlineValueName is not null)
+                {
+                    TomlPropertyMetadataCapture.AppendTrailingTrivia(propertiesMetadata, inlineValueName, reader.PreviousTrailingTrivia);
+                    inlineValueName = null;
+                }
+
+                if (reader.TokenType == TomlTokenType.EndTable)
+                {
+                    break;
+                }
+
                 if (reader.TokenType != TomlTokenType.PropertyName)
                 {
                     throw reader.CreateException($"Expected {TomlTokenType.PropertyName} token but was {reader.TokenType}.");
@@ -1456,6 +1486,10 @@ internal static class TomlReflectionTypeInfoResolver
                 var name = reader.PropertyName!;
                 reader.Read(); // value
                 TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
+                if (propertiesMetadata is not null && reader.IsInlineContainer)
+                {
+                    inlineValueName = name;
+                }
 
                 if (_indexByName.TryGetValue(name, out var ignoredMemberIndex) && _members[ignoredMemberIndex].IgnoreOnRead)
                 {

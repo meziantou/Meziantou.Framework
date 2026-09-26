@@ -18,10 +18,20 @@ public sealed class MetadataNestedModel
     public long C { get; set; }
 }
 
+public sealed class MetadataContainerCommentsModel
+{
+    public IList<long> Values { get; set; } = [];
+
+    public MetadataNestedModel? Nested { get; set; }
+
+    public string B { get; set; } = "";
+}
+
 public sealed record MetadataRecordModel(long A, string B);
 
 [TomlSerializable(typeof(MetadataFormattedModel))]
 [TomlSerializable(typeof(MetadataRecordModel))]
+[TomlSerializable(typeof(MetadataContainerCommentsModel))]
 internal sealed partial class TestTomlMetadataContext : TomlSerializerContext;
 
 [TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
@@ -65,6 +75,27 @@ public sealed class NewApiMetadataStoreTests
         {
             var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
             return TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataFormattedModel>(Toml, options), options).ReplaceLineEndings("\n");
+        }
+    }
+
+    [Fact]
+    public void MetadataStore_TrailingCommentsOfArraysAndInlineTables_StayOnTheirLine()
+    {
+        const string Toml = "Values = [1, 2] # values\nNested = {C = 2} # nested\nB = 'x' # b\n";
+
+        Assert.Equal(Toml, Roundtrip<TomlTable>(resolver: null));
+        Assert.Equal(Toml, Roundtrip<MetadataContainerCommentsModel>(resolver: null));
+        Assert.Equal(Toml, Roundtrip<MetadataContainerCommentsModel>(TestTomlMetadataContext.Default));
+
+        // A comment inside a multi-line array has nowhere to go, and does not move to the next key
+        var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() };
+        var multiline = TomlSerializer.Deserialize<TomlTable>("Values = [\n  1, # one\n  2,\n] # values\nB = 'x'\n", options);
+        Assert.Equal("Values = [1, 2] # values\nB = 'x'\n", TomlSerializer.Serialize(multiline, options).ReplaceLineEndings("\n"));
+
+        static string Roundtrip<T>(ITomlTypeInfoResolver? resolver)
+        {
+            var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
+            return TomlSerializer.Serialize(TomlSerializer.Deserialize<T>(Toml, options), options).ReplaceLineEndings("\n");
         }
     }
 

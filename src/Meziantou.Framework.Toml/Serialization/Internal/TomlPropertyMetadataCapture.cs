@@ -55,6 +55,26 @@ internal static class TomlPropertyMetadataCapture
         propertiesMetadata.SetProperty(name, propertyMetadata);
     }
 
+    // The trailing comment of an inline array or table is only known once its closing token is read
+    public static bool AppendTrailingTrivia(TomlPropertiesMetadata? propertiesMetadata, string name, TomlSyntaxTriviaMetadata[]? trailingTrivia)
+    {
+        if (propertiesMetadata is null || trailingTrivia is not { Length: > 0 })
+        {
+            return false;
+        }
+
+        if (propertiesMetadata.TryGetProperty(name, out var propertyMetadata) && propertyMetadata is not null)
+        {
+            (propertyMetadata.TrailingTrivia ??= []).AddRange(trailingTrivia);
+        }
+        else
+        {
+            propertiesMetadata.SetProperty(name, new TomlPropertyMetadata { TrailingTrivia = new List<TomlSyntaxTriviaMetadata>(trailingTrivia) });
+        }
+
+        return true;
+    }
+
     public static TomlPropertyDisplayKind GetDisplayKind(TomlReader reader)
     {
         switch (reader.TokenType)

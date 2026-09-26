@@ -264,7 +264,13 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 continue;
             }
 
+            var isInlineValue = reader.IsInlineContainer;
             table[name] = ReadValue(reader);
+            if (isInlineValue)
+            {
+                // The trailing comment of an inline array or table follows its closing token
+                capturedAnyMetadata |= TomlPropertyMetadataCapture.AppendTrailingTrivia(propertiesMetadata, name, reader.PreviousTrailingTrivia);
+            }
         }
 
         reader.Read();

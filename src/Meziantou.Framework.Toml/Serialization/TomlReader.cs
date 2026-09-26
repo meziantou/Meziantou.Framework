@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Toml.Serialization;
 public sealed class TomlReader
 {
     private readonly TomlSerializerOptions _options;
-    private List<(int Depth, TomlPropertiesMetadata Metadata)>? _metadataCaptures;
+    private List<(int Depth, TomlPropertiesMetadata Metadata, string? InlineValueName)>? _metadataCaptures;
     private int _depth;
     private readonly TomlSerializationOperationState _operationState;
     private readonly TomlParser? _parser;
@@ -61,6 +61,7 @@ public sealed class TomlReader
     private string? _currentRawText;
     private TomlSyntaxTriviaMetadata[]? _currentLeadingTrivia;
     private TomlSyntaxTriviaMetadata[]? _currentTrailingTrivia;
+    private TomlSyntaxTriviaMetadata[]? _previousTrailingTrivia;
     private TomlTokenType _tokenType;
 
     private TomlReader(TomlParser parser, TomlSerializerOptions options, TomlSerializationOperationState operationState)
@@ -238,6 +239,9 @@ public sealed class TomlReader
 
     internal TomlSyntaxTriviaMetadata[]? CurrentTrailingTrivia => _currentTrailingTrivia;
 
+    // The trailing trivia of the token before the current one, such as the end of the inline array or table just read
+    internal TomlSyntaxTriviaMetadata[]? PreviousTrailingTrivia => _previousTrailingTrivia;
+
     internal TokenKind CurrentStringTokenKind => _currentStringTokenKind;
 
     /// <summary>
@@ -264,12 +268,23 @@ public sealed class TomlReader
         if (isCapturedProperty)
         {
             TomlPropertyMetadataCapture.Capture(capture.Metadata, name!, nameSpan, leadingTrivia, _currentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(this));
+
+            // The trailing comment of an inline array or table follows its closing token
+            captures[^1] = capture with { InlineValueName = IsInlineContainer ? name : null };
         }
 
-        // A table left without EndPropertiesMetadataCapture, because an error was recovered from, stops capturing
+        // A table left without EndPropertiesMetadataCapture, because an error was recovered from, stops capturing. So does the
+        // capture of an inline table value when its end is read.
         while (captures.Count > 0 && captures[^1].Depth > _depth)
         {
             captures.RemoveAt(captures.Count - 1);
+        }
+
+        if (captures.Count > 0 && captures[^1] is { InlineValueName: { } inlineValueName } current && current.Depth == _depth &&
+            _tokenType is TomlTokenType.EndTable or TomlTokenType.EndArray)
+        {
+            TomlPropertyMetadataCapture.AppendTrailingTrivia(current.Metadata, inlineValueName, _currentTrailingTrivia);
+            captures[^1] = current with { InlineValueName = null };
         }
 
         return result;
@@ -299,7 +314,7 @@ public sealed class TomlReader
         }
 
         var metadata = new TomlPropertiesMetadata();
-        (_metadataCaptures ??= []).Add((_depth, metadata));
+        (_metadataCaptures ??= []).Add((_depth, metadata, null));
         return metadata;
     }
 
@@ -322,6 +337,7 @@ public sealed class TomlReader
 
     private bool ReadCore()
     {
+        _previousTrailingTrivia = _currentTrailingTrivia;
         if (_buffer is not null)
         {
             if (!_bufferStarted)

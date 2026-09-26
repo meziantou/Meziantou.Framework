@@ -1091,10 +1091,10 @@ public sealed partial class TomlParser
                 {
                     if (_token.Kind == TokenKind.CloseBracket)
                     {
-                        Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
+                        var trailingTrivia = ConsumeContainerClose(TokenKind.CloseBracket);
                         _containers.RemoveAt(_containers.Count - 1);
                         PopStructureValueScope();
-                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), trailingTrivia: trailingTrivia);
                         return true;
                     }
 
@@ -1118,10 +1118,10 @@ public sealed partial class TomlParser
                     SkipNewLines(LexerState.Value);
                     if (_token.Kind == TokenKind.CloseBracket)
                     {
-                        Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
+                        var trailingTrivia = ConsumeContainerClose(TokenKind.CloseBracket);
                         _containers.RemoveAt(_containers.Count - 1);
                         PopStructureValueScope();
-                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), trailingTrivia: trailingTrivia);
                         return true;
                     }
 
@@ -1132,10 +1132,10 @@ public sealed partial class TomlParser
 
                 if (_token.Kind == TokenKind.CloseBracket)
                 {
-                    Consume(TokenKind.CloseBracket, DetermineLexerStateAfterContainerClose());
+                    var trailingTrivia = ConsumeContainerClose(TokenKind.CloseBracket);
                     _containers.RemoveAt(_containers.Count - 1);
                     PopStructureValueScope();
-                    SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                    SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), trailingTrivia: trailingTrivia);
                     return true;
                 }
 
@@ -1170,10 +1170,10 @@ public sealed partial class TomlParser
                             return true;
                         }
 
-                        Consume(TokenKind.CloseBrace, DetermineLexerStateAfterContainerClose());
+                        var trailingTrivia = ConsumeContainerClose(TokenKind.CloseBrace);
                         _containers.RemoveAt(_containers.Count - 1);
                         PopStructureValueScope();
-                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                        SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), trailingTrivia: trailingTrivia);
                         return true;
                     }
 
@@ -1220,6 +1220,15 @@ public sealed partial class TomlParser
 
                 throw ParserCore.CreateException(CurrentSpan(), $"Expected `,` or `}}` while parsing inline table but was `{ToPrintable(_token)}`.");
             }
+        }
+
+        // The trivia before the closing token is inside the container, where the model cannot keep it. The trivia after it is the
+        // trailing comment of the value, as for a scalar.
+        private TomlSyntaxTriviaMetadata[]? ConsumeContainerClose(TokenKind closeTokenKind)
+        {
+            _pendingTrivia?.Clear();
+            Consume(closeTokenKind, DetermineLexerStateAfterContainerClose());
+            return ExtractPendingTrivia();
         }
 
         private LexerState DetermineLexerStateAfterContainerClose()

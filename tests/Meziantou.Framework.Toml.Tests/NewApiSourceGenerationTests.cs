@@ -1666,6 +1666,41 @@ internal sealed partial class TestTomlSerializerContextHidingAccessors : TomlSer
 {
 }
 
+public sealed class GeneratedCtorInit
+{
+    public GeneratedCtorInit(int a) => A = a;
+
+    public int A { get; }
+
+    public string Q { get; init; } = "q-init";
+
+    public int Z { get; set; }
+}
+
+public sealed class GeneratedGenericInitPopulate<T>
+{
+    public T? V { get; init; }
+
+    public int Z { get; set; }
+}
+
+public sealed class GeneratedInitPopulateHolder
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedCtorInit C { get; } = new(1) { Q = "q0" };
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedCtorInit C2 { get; set; } = new(3) { Q = "q3" };
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedGenericInitPopulate<string> G { get; } = new() { V = "v0" };
+}
+
+[TomlSerializable(typeof(GeneratedInitPopulateHolder))]
+internal sealed partial class TestTomlSerializerContextInitPopulate : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedObsoleteModel))]
 [TomlSerializable(typeof(GeneratedObsoleteConstructor))]
 internal sealed partial class TestTomlSerializerContextObsolete : TomlSerializerContext
@@ -3193,6 +3228,22 @@ public class NewApiSourceGenerationTests
         Assert.Equal("q", TomlSerializer.Deserialize("X = 'q'", context.GeneratedHidingAccessorDerived)!.X);
         Assert.Equal("q", TomlSerializer.Deserialize("X = 'q'", context.GeneratedPrivateHidingAccessorDerived)!.GetX());
         Assert.Equal("X = \"d2\"\n", TomlSerializer.Serialize(new GeneratedPrivateHidingAccessorDerived(), context.GeneratedPrivateHidingAccessorDerived).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void Populate_TypesWithInitMembersBuiltWithoutTheStreamingPath_KeepTheExistingInstance()
+    {
+        const string Toml = "[C]\nZ = 5\n[C2]\nA = 7\nZ = 6\n[G]\nZ = 8\n";
+
+        var reflection = TomlSerializer.Deserialize<GeneratedInitPopulateHolder>(Toml)!;
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextInitPopulate.Default.GeneratedInitPopulateHolder)!;
+
+        foreach (var value in new[] { reflection, generated })
+        {
+            Assert.Equal((1, "q0", 5), (value.C.A, value.C.Q, value.C.Z));
+            Assert.Equal((3, "q3", 6), (value.C2.A, value.C2.Q, value.C2.Z));
+            Assert.Equal(("v0", 8), (value.G.V, value.G.Z));
+        }
     }
 
     [Fact]

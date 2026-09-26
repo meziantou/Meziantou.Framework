@@ -13,7 +13,6 @@ internal sealed class SourceGenerationOptionsModel
     public bool? IncludeFields { get; set; }
     public bool? IgnoreReadOnlyFields { get; set; }
     public bool? IgnoreReadOnlyProperties { get; set; }
-    public bool? RejectUnmatchedProperties { get; set; }
     public bool? RespectRequiredConstructorParameters { get; set; }
     public bool? RespectNullableAnnotations { get; set; }
     public string? DefaultIgnoreCondition { get; set; }
@@ -48,7 +47,6 @@ internal sealed class SourceGenerationOptionsModel
         if (other.IncludeFields.HasValue) IncludeFields = other.IncludeFields;
         if (other.IgnoreReadOnlyFields.HasValue) IgnoreReadOnlyFields = other.IgnoreReadOnlyFields;
         if (other.IgnoreReadOnlyProperties.HasValue) IgnoreReadOnlyProperties = other.IgnoreReadOnlyProperties;
-        if (other.RejectUnmatchedProperties.HasValue) RejectUnmatchedProperties = other.RejectUnmatchedProperties;
         if (other.RespectRequiredConstructorParameters.HasValue) RespectRequiredConstructorParameters = other.RespectRequiredConstructorParameters;
         if (other.RespectNullableAnnotations.HasValue) RespectNullableAnnotations = other.RespectNullableAnnotations;
         if (!string.IsNullOrEmpty(other.DefaultIgnoreCondition)) DefaultIgnoreCondition = other.DefaultIgnoreCondition;

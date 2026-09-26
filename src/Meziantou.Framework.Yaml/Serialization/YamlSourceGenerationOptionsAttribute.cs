@@ -56,9 +56,6 @@ public sealed class YamlSourceGenerationOptionsAttribute : YamlAttribute
     /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
     public bool IgnoreReadOnlyProperties { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether deserialization rejects properties that do not match a .NET member.</summary>
-    public bool RejectUnmatchedProperties { get; set; }
-
     /// <summary>Gets or sets a value indicating whether required constructor parameters must be present during deserialization.</summary>
     public bool RespectRequiredConstructorParameters { get; set; }
 

@@ -184,6 +184,20 @@ public sealed class NewApiSerializerOverloadTests
         Assert.Null(value);
     }
 
+    [Theory]
+    [InlineData("name = \"a\"\nage = \"abc\"\n")]
+    [InlineData("name = 1\nage = 1\n")]
+    [InlineData("name = \"a\"\nage = [1]\n")]
+    [InlineData("name = \"a\"\nage = 1.5\n")]
+    public void Deserialize_InvalidValue_ReportsTheSameErrorWithReflectionAndGeneratedCode(string toml)
+    {
+        var reflectionError = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedPerson>(toml, CamelCaseOptions));
+        var generatedError = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedPerson>(toml, TestTomlSerializerContext.Default));
+
+        Assert.Equal(reflectionError.Message, generatedError.Message);
+        Assert.DoesNotContain("using converter", generatedError.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task DeserializeAsync_AllOverloads_ReadTheStream()
     {

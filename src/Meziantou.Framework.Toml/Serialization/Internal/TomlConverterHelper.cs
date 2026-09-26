@@ -20,11 +20,11 @@ internal static class TomlConverterHelper
             reader.SkipIfStateUnchanged(state);
             return value;
         }
-        catch (TomlException ex) when (ex.Diagnostics.Count == 0)
+        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !IsBuiltInConverter(converter))
         {
             throw CreateReadException(reader, converter, typeToConvert, ex);
         }
-        catch (Exception ex) when (ShouldWrapConverterException(ex))
+        catch (Exception ex) when (ex is not TomlException && ShouldWrapConverterException(ex))
         {
             throw CreateReadException(reader, converter, typeToConvert, ex);
         }
@@ -42,15 +42,19 @@ internal static class TomlConverterHelper
             reader.SkipIfStateUnchanged(state);
             return value;
         }
-        catch (TomlException ex) when (ex.Diagnostics.Count == 0)
+        catch (TomlException ex) when (ex.Diagnostics.Count == 0 && !IsBuiltInConverter(converter))
         {
             throw CreateReadException(reader, converter, typeof(T), ex);
         }
-        catch (Exception ex) when (ShouldWrapConverterException(ex))
+        catch (Exception ex) when (ex is not TomlException && ShouldWrapConverterException(ex))
         {
             throw CreateReadException(reader, converter, typeof(T), ex);
         }
     }
+
+    // The errors of the built-in converters already describe the TOML value, and the reflection-based metadata does not wrap
+    // them either, so only the errors of user converters get the converter name
+    private static bool IsBuiltInConverter(TomlConverter converter) => converter.GetType().Assembly == typeof(TomlConverterHelper).Assembly;
 
     private static TomlException CreateReadException(TomlReader reader, TomlConverter converter, Type typeToConvert, Exception innerException)
     {

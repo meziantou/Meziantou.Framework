@@ -143,4 +143,21 @@ d = true
     {
         Assert.Equal(hasErrors, SyntaxParser.Parse(toml).HasErrors);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Validate_Redefinitions_DoNotCopyThePreviousDefinition(bool isTable)
+    {
+        var first = isTable
+            ? "[t]\n" + string.Concat(Enumerable.Range(0, 5000).Select(i => $"k{i} = 1\n"))
+            : "t = [" + string.Join(",", Enumerable.Repeat("1", 5000)) + "]\n";
+        var toml = first + string.Concat(Enumerable.Repeat(isTable ? "[t]\n" : "t = 1\n", 200));
+
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.HasCount(200, doc.Diagnostics);
+        Assert.All(doc.Diagnostics, diagnostic => Assert.HasCountLessThan(200, diagnostic.Message));
+        Assert.StartsWith("The key `t` is already defined at (1,1)", doc.Diagnostics[0].Message);
+    }
 }

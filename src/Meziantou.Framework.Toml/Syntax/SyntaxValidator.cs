@@ -264,7 +264,9 @@ internal class SyntaxValidator : SyntaxVisitor
 
             if (!(ifNotTableOrExplicitImplicitMatches && areTypeMatching))
             {
-                _diagnostics.Error(node.Span, $"The key `{currentPath}` is already defined at {existingValue.Node.Span.Start} with `{existingValue.Node.ToString().TrimEnd('\r', '\n').ToPrintableString()}` and cannot be redefined");
+                // Like TomlParser, the message does not include the previous definition, which can be a whole table: a document
+                // that redefines a large table many times would build messages quadratic in its size
+                _diagnostics.Error(node.Span, $"The key `{currentPath}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
             }
             else if (existingValue.Kind == ObjectKind.TableArray)
             {

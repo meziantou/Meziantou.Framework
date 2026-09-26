@@ -890,6 +890,11 @@ internal sealed class Lexer
             {
                 _token = new SyntaxTokenValue(TokenKind.LocalTime, start, end, stringValue: dateTimeAsString);
             }
+            else if (DateTimeRFC3339.TryGetUnsupportedReason(dateTimeAsString, out var unsupportedReason))
+            {
+                _token = new SyntaxTokenValue(TokenKind.LocalDateTime, start, end, stringValue: dateTimeAsString);
+                AddError($"The date or time `{dateTimeAsString}` is valid TOML but cannot be represented: {unsupportedReason}", start, end);
+            }
             else
             {
                 // Try to recover the date using the standard C# (not necessarily RFC3339)

@@ -82,6 +82,52 @@ public sealed class Toml11ScalarTests
     }
 
     [Theory]
+    [InlineData("2016-12-31T23:59:60Z", "a leap second")]
+    [InlineData("23:59:60", "a leap second")]
+    [InlineData("2016-12-31 23:59:60.5", "a leap second")]
+    [InlineData("0000-01-01", "the year 0")]
+    [InlineData("0000-02-29T00:00:00", "the year 0")]
+    [InlineData("0000-01-01T00:00:00Z", "the year 0")]
+    [InlineData("2000-01-01T00:00:00+14:01", "the offset is further from UTC than ±14:00")]
+    [InlineData("2000-01-01T00:00:00-23:59", "the offset is further from UTC than ±14:00")]
+    [InlineData("0001-01-01T00:00:00+00:01", "the instant is outside the range of DateTimeOffset")]
+    [InlineData("9999-12-31T23:59:00-00:01", "the instant is outside the range of DateTimeOffset")]
+    public void Deserialize_DateTimeNotRepresentable_ThrowsAClearError(string literal, string reason)
+    {
+        var toml = "a = " + literal + "\n";
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
+        Assert.Contains($"The date or time `{literal}` is valid TOML but cannot be represented: {reason}", ex.Message, StringComparison.Ordinal);
+        Assert.True(Parsing.SyntaxParser.Parse(toml).HasErrors);
+    }
+
+    [Theory]
+    [InlineData("2000-01-01T00:00:00+14:00")]
+    [InlineData("2000-01-01T00:00:00-14:00")]
+    [InlineData("0001-01-01T00:00:00-00:01")]
+    [InlineData("0001-01-01T00:00:00Z")]
+    [InlineData("9999-12-31T23:59:59.9999999Z")]
+    [InlineData("9999-12-31T23:59:00+00:01")]
+    public void Deserialize_DateTimeAtTheLimits_IsAccepted(string literal)
+    {
+        var table = TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n")!;
+
+        Assert.IsType<TomlDateTime>(table["a"]);
+    }
+
+    [Theory]
+    [InlineData("2000-02-30")]
+    [InlineData("2000-01-01T24:00:00")]
+    [InlineData("2000-01-01T00:00:61Z")]
+    [InlineData("0001-02-29")]
+    public void Deserialize_InvalidDateTime_IsNotReportedAsUnsupported(string literal)
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>("a = " + literal + "\n"));
+
+        Assert.DoesNotContain("cannot be represented", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("1e400")]
     [InlineData("-1e400")]
     [InlineData("1.8e308")]

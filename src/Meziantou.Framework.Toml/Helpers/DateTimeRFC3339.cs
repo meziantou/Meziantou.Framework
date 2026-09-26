@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Meziantou.Framework.Toml.Model;
 
@@ -178,6 +179,183 @@ internal static class DateTimeRFC3339
     public static bool TryParseLocalTime(string str, out TomlDateTime time)
     {
         return TryParseExactWithPrecision(TruncateFractionalSeconds(str.ToUpperInvariant()), LocalTimeFormats, TryParseDateTime, DateTimeStyles.None, TomlDateTimeKind.LocalTime, out time);
+    }
+
+    /// <summary>
+    /// Gets why a date or time that follows the TOML grammar cannot be represented by the .NET types.
+    /// </summary>
+    /// <remarks>Only call it for a text that the other methods reject.</remarks>
+    public static bool TryGetUnsupportedReason(string text, [NotNullWhen(true)] out string? reason)
+    {
+        reason = null;
+        var hasDate = text.Length >= 10 && IsDigits(text, 0, 4) && text[4] == '-' && IsDigits(text, 5, 2) && text[7] == '-' && IsDigits(text, 8, 2);
+        int year = 0, month = 0, day = 0;
+        var position = 0;
+        if (hasDate)
+        {
+            year = ReadNumber(text, 0, 4);
+            month = ReadNumber(text, 5, 2);
+            day = ReadNumber(text, 8, 2);
+
+            // The year 0 is a leap year in the proleptic Gregorian calendar RFC 3339 uses
+            if (month is < 1 or > 12 || day < 1 || day > (year == 0 && month == 2 ? 29 : DateTime.DaysInMonth(year == 0 ? 2000 : year, month)))
+            {
+                return false;
+            }
+
+            if (text.Length == 10)
+            {
+                return year == 0 && TryGetReason(out reason, "the year 0 is before the first year .NET represents");
+            }
+
+            if (text[10] is not ('T' or 't' or ' '))
+            {
+                return false;
+            }
+
+            position = 11;
+        }
+
+        // hour ":" minute [ ":" second [ "." fraction ] ]
+        if (!IsDigits(text, position, 2) || position + 2 >= text.Length || text[position + 2] != ':' || !IsDigits(text, position + 3, 2))
+        {
+            return false;
+        }
+
+        var hour = ReadNumber(text, position, 2);
+        var minute = ReadNumber(text, position + 3, 2);
+        var second = 0;
+        position += 5;
+        if (position < text.Length && text[position] == ':')
+        {
+            if (!IsDigits(text, position + 1, 2))
+            {
+                return false;
+            }
+
+            second = ReadNumber(text, position + 1, 2);
+            position += 3;
+            if (position < text.Length && text[position] == '.')
+            {
+                position++;
+                var fractionStart = position;
+                while (position < text.Length && char.IsAsciiDigit(text[position]))
+                {
+                    position++;
+                }
+
+                if (position == fractionStart)
+                {
+                    return false;
+                }
+            }
+        }
+
+        var offsetMinutes = 0;
+        var hasOffset = false;
+        if (position < text.Length)
+        {
+            if (!hasDate)
+            {
+                return false;
+            }
+
+            if (text[position] is 'Z' or 'z' && position + 1 == text.Length)
+            {
+                hasOffset = true;
+            }
+            else if (text[position] is '+' or '-' && text.Length == position + 6 && IsDigits(text, position + 1, 2) && text[position + 3] == ':' && IsDigits(text, position + 4, 2))
+            {
+                var offsetHour = ReadNumber(text, position + 1, 2);
+                var offsetMinute = ReadNumber(text, position + 4, 2);
+                if (offsetHour > 23 || offsetMinute > 59)
+                {
+                    return false;
+                }
+
+                offsetMinutes = ((offsetHour * 60) + offsetMinute) * (text[position] == '-' ? -1 : 1);
+                hasOffset = true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        if (hour > 23 || minute > 59 || second > 60)
+        {
+            return false;
+        }
+
+        if (second == 60)
+        {
+            return TryGetReason(out reason, "a leap second cannot be represented in .NET");
+        }
+
+        if (!hasDate)
+        {
+            return false;
+        }
+
+        if (year == 0)
+        {
+            return TryGetReason(out reason, "the year 0 is before the first year .NET represents");
+        }
+
+        if (!hasOffset)
+        {
+            return false;
+        }
+
+        if (Math.Abs(offsetMinutes) > 14 * 60)
+        {
+            return TryGetReason(out reason, "the offset is further from UTC than ±14:00, the limit of DateTimeOffset");
+        }
+
+        // A valid offset date-time in the years 1 to 9999 is only rejected when its UTC instant is before the year 1 or after 9999
+        var local = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+        var offset = TimeSpan.FromMinutes(offsetMinutes);
+        if (offset > local - DateTime.MinValue || -offset > DateTime.MaxValue - local)
+        {
+            return TryGetReason(out reason, "the instant is outside the range of DateTimeOffset");
+        }
+
+        return false;
+
+        static bool TryGetReason(out string reason, string message)
+        {
+            reason = message;
+            return true;
+        }
+    }
+
+    private static bool IsDigits(string text, int start, int count)
+    {
+        if (start + count > text.Length)
+        {
+            return false;
+        }
+
+        for (var i = start; i < start + count; i++)
+        {
+            if (!char.IsAsciiDigit(text[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int ReadNumber(string text, int start, int count)
+    {
+        var result = 0;
+        for (var i = start; i < start + count; i++)
+        {
+            result = (result * 10) + (text[i] - '0');
+        }
+
+        return result;
     }
 
     // toml-specs: if the value contains greater precision than the implementation can support, the additional precision

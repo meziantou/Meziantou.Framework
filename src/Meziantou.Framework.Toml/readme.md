@@ -42,6 +42,9 @@ rules.
 Values are read into .NET types, which rejects a few documents that TOML accepts. Every parser reports them as errors:
 
 - A float that overflows a 64-bit `double`, such as `1e400`, is an error rather than infinity.
+- A leap second (`23:59:60`), the year `0000`, an offset further from UTC than ±14:00, and an offset date-time whose
+  UTC instant is before the year 1 or after 9999 are errors, because `DateTime` and `DateTimeOffset` cannot hold them.
+  The message says which limit applies.
 
 | Namespace | Content |
 | --- | --- |

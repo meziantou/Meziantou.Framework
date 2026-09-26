@@ -1,4 +1,7 @@
+using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using Meziantou.Framework.Toml.Serialization;
 
@@ -179,5 +182,221 @@ public sealed class NewApiSerializerOverloadTests
 
         Assert.False(ok);
         Assert.Null(value);
+    }
+
+    [Fact]
+    public async Task DeserializeAsync_AllOverloads_ReadTheStream()
+    {
+        var context = TestTomlSerializerContext.Default;
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        AssertPerson(await ReadAsync(stream => TomlSerializer.DeserializeAsync<GeneratedPerson>(stream, CamelCaseOptions, cancellationToken)));
+        AssertPerson(await ReadAsync(stream => TomlSerializer.DeserializeAsync<GeneratedPerson>(stream, context, cancellationToken)));
+        AssertPerson(await ReadAsync(stream => TomlSerializer.DeserializeAsync(stream, context.GeneratedPerson, cancellationToken)));
+        AssertPerson((GeneratedPerson?)await ReadAsync(stream => TomlSerializer.DeserializeAsync(stream, typeof(GeneratedPerson), CamelCaseOptions, cancellationToken)));
+        AssertPerson((GeneratedPerson?)await ReadAsync(stream => TomlSerializer.DeserializeAsync(stream, typeof(GeneratedPerson), context, cancellationToken)));
+        AssertPerson((GeneratedPerson?)await ReadAsync(stream => TomlSerializer.DeserializeAsync(stream, (TomlTypeInfo)context.GeneratedPerson, cancellationToken)));
+
+        static void AssertPerson(GeneratedPerson? person)
+        {
+            Assert.NotNull(person);
+            Assert.Equal("Ada", person.Name);
+            Assert.Equal(37, person.Age);
+        }
+    }
+
+    [Fact]
+    public async Task SerializeAsync_AllOverloads_WriteTheSameAsSerialize()
+    {
+        var context = TestTomlSerializerContext.Default;
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var person = new GeneratedPerson { Name = "Ada", Age = 37 };
+        var expected = TomlSerializer.Serialize(person, context);
+
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, CamelCaseOptions, cancellationToken)));
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, context, cancellationToken)));
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, context.GeneratedPerson, cancellationToken)));
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, typeof(GeneratedPerson), CamelCaseOptions, cancellationToken)));
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, typeof(GeneratedPerson), context, cancellationToken)));
+        Assert.Equal(expected, await WriteAsync(stream => TomlSerializer.SerializeAsync(stream, person, (TomlTypeInfo)context.GeneratedPerson, cancellationToken)));
+
+        static async Task<string> WriteAsync(Func<Stream, Task> write)
+        {
+            using var stream = new AsyncOnlyStream(allowSynchronousIO: false);
+            await write(stream);
+            return Encoding.UTF8.GetString(stream.ToArray());
+        }
+    }
+
+    [Fact]
+    public async Task DeserializeAsync_Canceled_Throws()
+    {
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await cancellationTokenSource.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await ReadAsync(stream => TomlSerializer.DeserializeAsync(stream, TestTomlSerializerContext.Default.GeneratedPerson, cancellationTokenSource.Token)));
+    }
+
+    [Fact]
+    public async Task MaxInputLength_LongerInput_Throws()
+    {
+        var options = new TomlSerializerOptions { MaxInputLength = SampleToml.Length - 1 };
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(SampleToml, options));
+        Assert.Contains(nameof(TomlSerializerOptions.MaxInputLength), ex.Message, StringComparison.Ordinal);
+        using (var reader = new StringReader(SampleToml))
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(reader, options));
+        }
+
+        using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(SampleToml)))
+        {
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(stream, options));
+        }
+
+        Assert.False(TomlSerializer.TryDeserialize<Model.TomlTable>(SampleToml, out _, options));
+        await Assert.ThrowsAsync<TomlException>(async () => await ReadAsync(stream => TomlSerializer.DeserializeAsync<Model.TomlTable>(stream, options, cancellationToken)));
+
+        var exactOptions = options with { MaxInputLength = SampleToml.Length };
+        Assert.NotNull(TomlSerializer.Deserialize<Model.TomlTable>(SampleToml, exactOptions));
+        using (var reader = new StringReader(SampleToml))
+        {
+            Assert.NotNull(TomlSerializer.Deserialize<Model.TomlTable>(reader, exactOptions));
+        }
+
+        Assert.NotNull(await ReadAsync(stream => TomlSerializer.DeserializeAsync<Model.TomlTable>(stream, exactOptions, cancellationToken)));
+    }
+
+    [Fact]
+    public async Task MaxInputLength_EndlessStream_StopsReading()
+    {
+        var options = new TomlSerializerOptions { MaxInputLength = 1_000_000 };
+        using var stream = new EndlessStream();
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(stream, options));
+        await Assert.ThrowsAsync<TomlException>(async () => await TomlSerializer.DeserializeAsync<Model.TomlTable>(stream, options, TestContext.Current.CancellationToken));
+    }
+
+    // The naming policy of TestTomlSerializerContext, for the overloads that use reflection
+    private static readonly TomlSerializerOptions CamelCaseOptions = new() { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
+
+    private static async Task<T> ReadAsync<T>(Func<Stream, ValueTask<T>> read)
+    {
+        using var stream = new AsyncOnlyStream(allowSynchronousIO: true);
+        stream.Write(Encoding.UTF8.GetBytes(SampleToml));
+        stream.Position = 0;
+        stream.AllowSynchronousIO = false;
+        return await read(stream);
+    }
+
+    [Fact]
+    public void MaxInputLength_Negative_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlSerializerOptions { MaxInputLength = -1 });
+    }
+
+    // Like an ASP.NET Core request or response body, which rejects synchronous I/O
+    private sealed class AsyncOnlyStream(bool allowSynchronousIO) : Stream
+    {
+        private readonly MemoryStream _inner = new();
+
+        public bool AllowSynchronousIO { get; set; } = allowSynchronousIO;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => true;
+
+        public override long Length => _inner.Length;
+
+        public override long Position { get => _inner.Position; set => _inner.Position = value; }
+
+        public byte[] ToArray() => _inner.ToArray();
+
+        public override void Flush() => EnsureSynchronousIO();
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            EnsureSynchronousIO();
+            return _inner.Read(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(_inner.Read(buffer.Span));
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            EnsureSynchronousIO();
+            _inner.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _inner.Write(buffer.Span);
+            return ValueTask.CompletedTask;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+
+        public override void SetLength(long value) => _inner.SetLength(value);
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void EnsureSynchronousIO()
+        {
+            if (!AllowSynchronousIO)
+            {
+                throw new InvalidOperationException("Synchronous I/O is disallowed.");
+            }
+        }
+    }
+
+    private sealed class EndlessStream : Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            buffer.AsSpan(offset, count).Fill((byte)'#');
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

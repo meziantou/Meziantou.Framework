@@ -141,6 +141,27 @@ public sealed record TomlSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets the maximum length of the TOML input that <see cref="TomlSerializer"/> reads.</summary>
+    /// <remarks>
+    /// The length is a number of characters for a <see cref="string"/> or a <see cref="System.IO.TextReader"/>, and a number of
+    /// bytes for a <see cref="System.IO.Stream"/>, which is read no further than the limit. Longer input throws a
+    /// <see cref="TomlException"/>. A value of <c>0</c>, the default, means no limit.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">Value is less than 0.</exception>
+    public int MaxInputLength
+    {
+        get;
+        init
+        {
+            if (value < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Max input length must be greater than or equal to 0.");
+            }
+
+            field = value;
+        }
+    }
+
     /// <summary>Gets or sets the default ignore condition for null/default values.</summary>
     /// <remarks>
     /// The default is <see cref="TomlIgnoreCondition.WhenWritingNull"/>, because TOML has no representation for <see langword="null"/>.

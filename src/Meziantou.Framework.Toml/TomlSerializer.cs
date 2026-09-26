@@ -26,11 +26,81 @@ public static class TomlSerializer
 
     private static readonly Encoding DefaultStreamEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-    // Invalid UTF-8 is reported as a TomlException with its location, so TryDeserialize returns false
+    private const int StreamReadBufferSize = 16 * 1024;
+
+    private static void ThrowIfInputTooLong(long length, TomlSerializerOptions options, string unit)
+    {
+        if (options.MaxInputLength > 0 && length > options.MaxInputLength)
+        {
+            throw new TomlException($"The TOML input is longer than {options.MaxInputLength} {unit}. Change {nameof(TomlSerializerOptions)}.{nameof(TomlSerializerOptions.MaxInputLength)} to allow longer input.");
+        }
+    }
+
+    private static string ReadText(TextReader reader, TomlSerializerOptions options)
+    {
+        if (options.MaxInputLength == 0)
+        {
+            return reader.ReadToEnd();
+        }
+
+        // Read no further than the limit, so a very long input is not loaded in memory
+        var builder = new StringBuilder();
+        var buffer = new char[Math.Min(StreamReadBufferSize, options.MaxInputLength) + 1];
+        int read;
+        while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            builder.Append(buffer, 0, read);
+            ThrowIfInputTooLong(builder.Length, options, "characters");
+        }
+
+        return builder.ToString();
+    }
+
     private static string ReadStream(Stream stream, TomlSerializerOptions options)
     {
         using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
+        if (options.MaxInputLength == 0)
+        {
+            stream.CopyTo(buffer);
+        }
+        else
+        {
+            var chunk = new byte[Math.Min(StreamReadBufferSize, options.MaxInputLength) + 1];
+            int read;
+            while ((read = stream.Read(chunk, 0, chunk.Length)) > 0)
+            {
+                buffer.Write(chunk, 0, read);
+                ThrowIfInputTooLong(buffer.Length, options, "bytes");
+            }
+        }
+
+        return DecodeStream(buffer, options);
+    }
+
+    private static async Task<string> ReadStreamAsync(Stream stream, TomlSerializerOptions options, CancellationToken cancellationToken)
+    {
+        using var buffer = new MemoryStream();
+        if (options.MaxInputLength == 0)
+        {
+            await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            var chunk = new byte[Math.Min(StreamReadBufferSize, options.MaxInputLength) + 1];
+            int read;
+            while ((read = await stream.ReadAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                buffer.Write(chunk, 0, read);
+                ThrowIfInputTooLong(buffer.Length, options, "bytes");
+            }
+        }
+
+        return DecodeStream(buffer, options);
+    }
+
+    // Invalid UTF-8 is reported as a TomlException with its location, so TryDeserialize returns false
+    private static string DecodeStream(MemoryStream buffer, TomlSerializerOptions options)
+    {
         var bytes = buffer.GetBuffer();
         var length = (int)buffer.Length;
         try
@@ -46,6 +116,16 @@ public static class TomlSerializer
             var position = new TomlTextPosition(DefaultStreamEncoding.GetCharCount(bytes, 0, index), line, column);
             throw new TomlException(new TomlSourceSpan(options.SourceName ?? string.Empty, position, position), $"Invalid UTF-8 byte sequence at byte offset {index}.", ex);
         }
+    }
+
+    private static async Task WriteToStreamAsync(Stream stream, Action<TextWriter> write, CancellationToken cancellationToken)
+    {
+        // The document is built in memory anyway, so only the copy to the stream is asynchronous
+        using var buffer = new MemoryStream();
+        WriteToStream(buffer, write);
+        buffer.Position = 0;
+        await buffer.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+        await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static void WriteToStream(Stream stream, Action<TextWriter> write)
@@ -415,9 +495,7 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
 
-        var operationState = new TomlSerializationOperationState(typeInfo.Options);
-        var tomlReader = TomlReader.Create(reader, typeInfo.Options, operationState);
-        return DeserializeCore(tomlReader, typeInfo);
+        return Deserialize(ReadText(reader, typeInfo.Options), typeInfo);
     }
 
     /// <summary>
@@ -492,6 +570,142 @@ public static class TomlSerializer
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
 
         return Deserialize(ReadStream(stream, typeInfo.Options), typeInfo);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding.
+    /// </summary>
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        var typeInfo = ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T));
+        return DeserializeAsyncCore<T>(stream, typeInfo, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding and generated metadata from a serializer context.
+    /// </summary>
+    public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlSerializerContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        return DeserializeAsyncCore<T>(stream, ResolveTypeInfo(context, typeof(T)), cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding and explicit metadata.
+    /// </summary>
+    public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        return DeserializeAsyncCore<T>(stream, typeInfo, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding into an explicit destination type.
+    /// </summary>
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    public static ValueTask<object?> DeserializeAsync(Stream stream, Type returnType, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        var typeInfo = ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType);
+        return DeserializeAsyncCore<object>(stream, typeInfo, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding into an explicit destination type using generated metadata from a serializer context.
+    /// </summary>
+    public static ValueTask<object?> DeserializeAsync(Stream stream, Type returnType, TomlSerializerContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        return DeserializeAsyncCore<object>(stream, ResolveTypeInfo(context, returnType), cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously deserializes a TOML payload from a stream using UTF-8 encoding and explicit metadata.
+    /// </summary>
+    public static ValueTask<object?> DeserializeAsync(Stream stream, TomlTypeInfo typeInfo, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        return DeserializeAsyncCore<object>(stream, typeInfo, cancellationToken);
+    }
+
+    private static async ValueTask<T?> DeserializeAsyncCore<T>(Stream stream, TomlTypeInfo typeInfo, CancellationToken cancellationToken)
+    {
+        var toml = await ReadStreamAsync(stream, typeInfo.Options, cancellationToken).ConfigureAwait(false);
+        return (T?)Deserialize(toml, typeInfo);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding.
+    /// </summary>
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    public static Task SerializeAsync<T>(Stream stream, T value, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        return SerializeAsync(stream, value, typeof(T), options, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding and an explicit input type.
+    /// </summary>
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
+    public static Task SerializeAsync(Stream stream, object? value, Type inputType, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        return WriteToStreamAsync(stream, writer => Serialize(writer, value, inputType, options), cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding and generated metadata from a serializer context.
+    /// </summary>
+    public static Task SerializeAsync<T>(Stream stream, T value, TomlSerializerContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        return SerializeAsync(stream, value, typeof(T), context, cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding, an explicit input type, and generated metadata from a serializer context.
+    /// </summary>
+    public static Task SerializeAsync(Stream stream, object? value, Type inputType, TomlSerializerContext context, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        return WriteToStreamAsync(stream, writer => Serialize(writer, value, inputType, context), cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding and explicit metadata.
+    /// </summary>
+    public static Task SerializeAsync(Stream stream, object? value, TomlTypeInfo typeInfo, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        return WriteToStreamAsync(stream, writer => Serialize(writer, value, typeInfo), cancellationToken);
+    }
+
+    /// <summary>
+    /// Asynchronously serializes a value to a stream using UTF-8 encoding and explicit metadata.
+    /// </summary>
+    public static Task SerializeAsync<T>(Stream stream, T value, TomlTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
+    {
+        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        return WriteToStreamAsync(stream, writer => Serialize(writer, value, typeInfo), cancellationToken);
     }
 
     /// <summary>
@@ -741,6 +955,7 @@ public static class TomlSerializer
     {
         ArgumentGuard.ThrowIfNull(toml, nameof(toml));
         ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ThrowIfInputTooLong(toml.Length, typeInfo.Options, "characters");
 
         var operationState = new TomlSerializationOperationState(typeInfo.Options);
         var reader = TomlReader.Create(toml, typeInfo.Options, operationState);

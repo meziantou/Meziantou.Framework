@@ -1275,7 +1275,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        public override ").Append(readReturnType).AppendLine(" Read(global::Meziantou.Framework.Toml.Serialization.TomlReader reader)");
             builder.AppendLine("        {");
             builder.AppendLine("            if (reader.TokenType != global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable) throw reader.CreateException($\"Expected StartTable token but was {reader.TokenType}.\");");
-            builder.Append("            throw reader.CreateException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage)).Append('"');
+            builder.Append("            throw CreateConfigurationException(\"").Append(EscapeStringLiteral(ctorError.ErrorMessage)).Append('"');
             if (ctorError.ErrorMessageSuffix is not null)
             {
                 builder.Append(" + typeof(").Append(typeName).Append(").FullName + \"").Append(EscapeStringLiteral(ctorError.ErrorMessageSuffix)).Append('"');

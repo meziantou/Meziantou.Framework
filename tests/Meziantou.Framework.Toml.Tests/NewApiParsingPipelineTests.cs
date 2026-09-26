@@ -405,7 +405,7 @@ public class NewApiParsingPipelineTests
         }
 
         Assert.Equal(
-            ["StartTable:False:", "StartTable:True:0", "StartArray:True:0", "StartTable:False:1", "StartTable:False:2", "StartArray:False:3", "StartTable:False:3"],
+            ["StartTable:False:0", "StartTable:True:0", "StartArray:True:0", "StartTable:False:1", "StartTable:False:2", "StartArray:False:3", "StartTable:False:3"],
             containers);
     }
 

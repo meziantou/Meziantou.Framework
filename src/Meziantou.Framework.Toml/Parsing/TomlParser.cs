@@ -712,7 +712,9 @@ public sealed partial class TomlParser
             {
                 _pendingDocumentStartStage = 0;
                 _pendingOperation = PendingOperationKind.None;
-                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: null, propertyName: null, stringValue: null, data: 0));
+                // The root table starts at the start of the document, where its errors, such as a missing required key, are reported
+                var documentStart = new TomlSourceSpan(_lexer.SourcePath, new TomlTextPosition(0, 0, 0), new TomlTextPosition(0, 0, 0));
+                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: documentStart, propertyName: null, stringValue: null, data: 0));
                 return true;
             }
 

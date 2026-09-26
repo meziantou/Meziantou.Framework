@@ -1442,6 +1442,7 @@ public sealed record GeneratedRequiredLocationRecord(int Y, int W);
 
 [TomlSourceGenerationOptions(RespectRequiredConstructorParameters = true)]
 [TomlSerializable(typeof(GeneratedRequiredLocationRoot))]
+[TomlSerializable(typeof(GeneratedRequiredLocationChild))]
 internal sealed partial class TestTomlSerializerContextRequiredLocation : TomlSerializerContext
 {
 }
@@ -3357,6 +3358,21 @@ public class NewApiSourceGenerationTests
         {
             Assert.Equal([0, 0, 2, 4, 6, 8, 9, 11], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).Order().ToArray());
         }
+    }
+
+    [Fact]
+    public void RootTableErrors_AreReportedAtTheStartOfTheDocument()
+    {
+        const string Toml = "X = 1\n\n[Sub]\nY = 2\n";
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedRequiredLocationChild>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextRequiredLocation.Default.GeneratedRequiredLocationChild));
+        var mismatch = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<List<int>>("value = 1"));
+
+        Assert.Equal(1, reflection.Line);
+        Assert.Equal(1, generated.Line);
+        Assert.Equal(1, mismatch.Line);
+        Assert.Single(mismatch.Diagnostics);
     }
 
     [Theory]

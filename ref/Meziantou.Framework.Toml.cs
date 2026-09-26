@@ -282,6 +282,9 @@ namespace Meziantou.Framework.Toml
         public Meziantou.Framework.Toml.TomlNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; init { } }
         public bool PropertyNameCaseInsensitive { get => throw null; init { } }
+        public bool IncludeFields { get => throw null; init { } }
+        public bool IgnoreReadOnlyFields { get => throw null; init { } }
+        public bool IgnoreReadOnlyProperties { get => throw null; init { } }
         public int MaxDepth { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; init { } }
@@ -971,6 +974,9 @@ namespace Meziantou.Framework.Toml.Serialization
         public Meziantou.Framework.Toml.TomlKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
         public bool PropertyNameCaseInsensitive { get => throw null; set { } }
+        public bool IncludeFields { get => throw null; set { } }
+        public bool IgnoreReadOnlyFields { get => throw null; set { } }
+        public bool IgnoreReadOnlyProperties { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; set { } }
         public int MaxDepth { get => throw null; set { } }

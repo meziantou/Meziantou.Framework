@@ -469,4 +469,58 @@ public class NewApiReflectionPocoTests
         Assert.Equal("FirstName = \"Ada\"\n[Values]\nITEM-COUNT = 1", toml.Trim());
         Assert.Equal("Ada", TomlSerializer.Deserialize<NamingPolicyModel>(toml, options)!.firstName);
     }
+
+    private sealed class MemberSelectionModel
+    {
+#pragma warning disable CA1051 // The test needs public fields
+        public int Field = 1;
+        public readonly int ReadOnlyField = 2;
+#pragma warning restore CA1051
+
+        public int GetOnly { get; } = 3;
+
+        public int InitOnly { get; init; } = 4;
+    }
+
+    [Fact]
+    public void IncludeFields_DoesNotIncludePublicFieldsByDefault()
+    {
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel());
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("Field = 10")!;
+
+        Assert.Equal("GetOnly = 3\nInitOnly = 4", toml.Trim());
+        Assert.Equal(1, model.Field);
+    }
+
+    [Fact]
+    public void IncludeFields_IncludesPublicFieldsForReadAndWrite()
+    {
+        var options = new TomlSerializerOptions { IncludeFields = true };
+
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel(), options);
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("Field = 10", options)!;
+
+        Assert.Equal("Field = 1\nReadOnlyField = 2\nGetOnly = 3\nInitOnly = 4", toml.Trim());
+        Assert.Equal(10, model.Field);
+    }
+
+    [Fact]
+    public void IgnoreReadOnlyMembers_SkipsReadOnlyMembersDuringSerialization()
+    {
+        var options = new TomlSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true };
+
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel(), options);
+
+        Assert.Equal("Field = 1\nInitOnly = 4", toml.Trim());
+    }
+
+    [Fact]
+    public void IgnoreReadOnlyMembers_DoesNotAffectDeserialization()
+    {
+        var options = new TomlSerializerOptions { IgnoreReadOnlyProperties = true };
+
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("InitOnly = 40", options)!;
+
+        Assert.Equal(40, model.InitOnly);
+    }
 }

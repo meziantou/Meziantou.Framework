@@ -90,6 +90,17 @@ public sealed record TomlSerializerOptions
     /// <summary>Gets or sets a value indicating whether property name matching is case-insensitive.</summary>
     public bool PropertyNameCaseInsensitive { get; init; }
 
+    /// <summary>Gets or sets a value indicating whether public fields are included during serialization and deserialization.</summary>
+    /// <remarks>Fields annotated with <see cref="TomlIncludeAttribute"/> are always included.</remarks>
+    public bool IncludeFields { get; init; }
+
+    /// <summary>Gets or sets a value indicating whether read-only fields are ignored during serialization.</summary>
+    public bool IgnoreReadOnlyFields { get; init; }
+
+    /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
+    /// <remarks>A property with an <c>init</c> accessor is not read-only.</remarks>
+    public bool IgnoreReadOnlyProperties { get; init; }
+
     /// <summary>Gets or sets the maximum allowed nesting depth for TOML tables and arrays during serialization and deserialization.</summary>
     /// <remarks>
     /// A value of <c>0</c> uses the default limit of 64.

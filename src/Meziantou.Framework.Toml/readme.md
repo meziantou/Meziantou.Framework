@@ -154,6 +154,9 @@ var toml = TomlSerializer.Serialize(config, options);
 | `PropertyNamingPolicy` | `null` | Naming policy for member names: `TomlNamingPolicy.CamelCase`, `PascalCase`, `SnakeCaseLower`, `SnakeCaseUpper`, `KebabCaseLower`, `KebabCaseUpper`, or a class deriving from `TomlNamingPolicy`. `null` uses the CLR names, like `System.Text.Json`. |
 | `DictionaryKeyPolicy` | `null` | Naming policy for dictionary keys when writing. |
 | `PropertyNameCaseInsensitive` | `false` | Matches member names case-insensitively when reading. |
+| `IncludeFields` | `false` | Includes public fields. Fields with `[TomlInclude]` are always included. |
+| `IgnoreReadOnlyFields` | `false` | Skips `readonly` fields when writing. |
+| `IgnoreReadOnlyProperties` | `false` | Skips properties without a public setter when writing. A property with an `init` accessor is not read-only. |
 | `PreferredObjectCreationHandling` | `Replace` | Replaces or populates object and collection members when reading. |
 | `DefaultIgnoreCondition` | `WhenWritingNull` | Skips `null` (or default) values when writing. |
 | `DuplicateKeyHandling` | `Error` | Behavior when a key is defined twice. |
@@ -450,8 +453,9 @@ var value = TomlSerializer.Deserialize(toml, typeof(ServerConfig), ServerContext
 
 - The generator creates a `Default` instance and one `TomlTypeInfo<T>` property per root.
   `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames the property.
-- `[TomlSourceGenerationOptions]` sets the options at build time. Member names are computed when building, so the naming
-  policy is not called at runtime.
+- `[TomlSourceGenerationOptions]` sets the options at build time. Member names and the members to serialize
+  (`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`) are computed when building, so the naming policy
+  is not called at runtime.
 - `init` and `required` members are supported.
 - `[TomlConverter]` and `[JsonConverter]` are not supported by generated metadata. Register converters with
   `[TomlSourceGenerationOptions(Converters = [...])]` or `TomlSerializerOptions.Converters`.

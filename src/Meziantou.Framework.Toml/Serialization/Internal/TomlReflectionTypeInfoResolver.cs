@@ -162,6 +162,9 @@ internal static class TomlReflectionTypeInfoResolver
                 setter = (instance, value) => property.SetValue(instance, value);
             }
 
+            // A property without an accessible setter is read-only; an init accessor makes it writable
+            var writeIgnoreCondition = setter is null && options.IgnoreReadOnlyProperties ? TomlIgnoreCondition.WhenWriting : ignore.WriteIgnoreCondition;
+
             members.Add(new MemberModel(
                 property,
                 name,
@@ -169,7 +172,7 @@ internal static class TomlReflectionTypeInfoResolver
                 instance => property.GetValue(instance),
                 setter,
                 GetOrder(property),
-                ignore.WriteIgnoreCondition,
+                writeIgnoreCondition,
                 ignore.IgnoreOnRead,
                 GetDefaultValue(property.PropertyType),
                 GetObjectCreationHandling(property, typeObjectCreationHandling),
@@ -184,7 +187,7 @@ internal static class TomlReflectionTypeInfoResolver
         var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         foreach (var field in fields)
         {
-            if (!HasIncludeAttribute(field))
+            if (!HasIncludeAttribute(field) && !(options.IncludeFields && field.IsPublic))
             {
                 continue;
             }
@@ -207,6 +210,8 @@ internal static class TomlReflectionTypeInfoResolver
                 setter = (instance, value) => field.SetValue(instance, value);
             }
 
+            var writeIgnoreCondition = field.IsInitOnly && options.IgnoreReadOnlyFields ? TomlIgnoreCondition.WhenWriting : ignore.WriteIgnoreCondition;
+
             members.Add(new MemberModel(
                 field,
                 name,
@@ -214,7 +219,7 @@ internal static class TomlReflectionTypeInfoResolver
                 instance => field.GetValue(instance),
                 setter,
                 GetOrder(field),
-                ignore.WriteIgnoreCondition,
+                writeIgnoreCondition,
                 ignore.IgnoreOnRead,
                 GetDefaultValue(field.FieldType),
                 GetObjectCreationHandling(field, typeObjectCreationHandling),
@@ -785,7 +790,7 @@ internal static class TomlReflectionTypeInfoResolver
             for (var i = 0; i < _members.Count; i++)
             {
                 var member = _members[i];
-                if (member.IsExtensionData)
+                if (member.IsExtensionData || member.WriteIgnoreCondition == TomlIgnoreCondition.WhenWriting)
                 {
                     continue;
                 }

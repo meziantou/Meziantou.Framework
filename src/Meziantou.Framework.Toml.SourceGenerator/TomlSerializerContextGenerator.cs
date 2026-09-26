@@ -192,6 +192,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         public string? DictionaryKeyPolicyExpression { get; set; }
         public int? PreferredObjectCreationHandling { get; set; }
         public bool? PropertyNameCaseInsensitive { get; set; }
+        public bool? IncludeFields { get; set; }
+        public bool? IgnoreReadOnlyFields { get; set; }
+        public bool? IgnoreReadOnlyProperties { get; set; }
         public int? DefaultIgnoreCondition { get; set; }
         public int? DuplicateKeyHandling { get; set; }
         public int? MaxDepth { get; set; }
@@ -519,6 +522,21 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         if (model.Options.PropertyNameCaseInsensitive is not null)
         {
             builder.Append("        options = options with { PropertyNameCaseInsensitive = ").Append(model.Options.PropertyNameCaseInsensitive.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.IncludeFields is not null)
+        {
+            builder.Append("        options = options with { IncludeFields = ").Append(model.Options.IncludeFields.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.IgnoreReadOnlyFields is not null)
+        {
+            builder.Append("        options = options with { IgnoreReadOnlyFields = ").Append(model.Options.IgnoreReadOnlyFields.Value ? "true" : "false").AppendLine(" };");
+        }
+
+        if (model.Options.IgnoreReadOnlyProperties is not null)
+        {
+            builder.Append("        options = options with { IgnoreReadOnlyProperties = ").Append(model.Options.IgnoreReadOnlyProperties.Value ? "true" : "false").AppendLine(" };");
         }
 
         if (model.Options.DefaultIgnoreCondition is not null && TryGetTomlIgnoreConditionExpression(model.Options.DefaultIgnoreCondition.Value, out var ignoreConditionExpression))
@@ -3638,6 +3656,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // Same rule as the reflection resolver: a property without a public setter (or [TomlInclude]) is read-only.
+            // An init accessor makes the property writable.
+            var isReadOnlyProperty = member.SetMethod is null || (member.SetMethod.DeclaredAccessibility != Accessibility.Public && !hasInclude);
+            var writeIgnore = isReadOnlyProperty && model.Options.IgnoreReadOnlyProperties == true ? WriteIgnoreKind.WhenWriting : ignore.WriteIgnore;
+
             var serializedName = GetSerializedName(member, member.Name, namingPolicy);
             var order = GetOrder(member);
             var required = IsRequired(member) && !ignore.IgnoreOnRead;
@@ -3653,12 +3676,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, ignore.WriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
+            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, writeIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
         }
 
         foreach (var member in EnumerateSerializableInstanceFields(named))
         {
-            if (member.IsImplicitlyDeclared || member.IsConst || member.IsStatic || member.IsReadOnly)
+            if (member.IsImplicitlyDeclared || member.IsConst || member.IsStatic)
             {
                 continue;
             }
@@ -3704,7 +3727,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute") ||
                 HasAttribute(member, "System.Text.Json.Serialization.JsonIncludeAttribute");
-            if (!hasInclude)
+            if (!hasInclude && !(model.Options.IncludeFields == true && member.DeclaredAccessibility == Accessibility.Public))
             {
                 continue;
             }
@@ -3728,7 +3751,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var order = GetOrder(member);
             var required = IsRequired(member) && !ignore.IgnoreOnRead;
             var getterAccessorName = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility) ? null : "__Get" + members.Count.ToString(CultureInfo.InvariantCulture);
-            var canSet = IsAccessibleFromGeneratedContext(member.DeclaredAccessibility);
+            var canSet = !member.IsReadOnly && IsAccessibleFromGeneratedContext(member.DeclaredAccessibility);
+            var fieldWriteIgnore = member.IsReadOnly && model.Options.IgnoreReadOnlyFields == true ? WriteIgnoreKind.WhenWriting : ignore.WriteIgnore;
             var formatting = GetFormattingMetadata(member);
             if (formatting.StringStyle is not null && member.Type.SpecialType != SpecialType.System_String)
             {
@@ -3741,7 +3765,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
-            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, ignore.WriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, member.IsRequired, canSet, isInitOnly: false, isField: true, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
+            members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, fieldWriteIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, member.IsRequired, canSet, isInitOnly: false, isField: true, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes));
         }
 
         PocoConstructor? constructorModel = null;
@@ -5381,6 +5405,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 case "PropertyNameCaseInsensitive":
                     if (options.PropertyNameCaseInsensitive is null && value.Value is bool pnci) options.PropertyNameCaseInsensitive = pnci;
                     break;
+                case "IncludeFields":
+                    if (options.IncludeFields is null && value.Value is bool includeFields) options.IncludeFields = includeFields;
+                    break;
+                case "IgnoreReadOnlyFields":
+                    if (options.IgnoreReadOnlyFields is null && value.Value is bool ignoreReadOnlyFields) options.IgnoreReadOnlyFields = ignoreReadOnlyFields;
+                    break;
+                case "IgnoreReadOnlyProperties":
+                    if (options.IgnoreReadOnlyProperties is null && value.Value is bool ignoreReadOnlyProperties) options.IgnoreReadOnlyProperties = ignoreReadOnlyProperties;
+                    break;
             }
         }
     }
@@ -5404,6 +5437,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     break;
                 case "PropertyNameCaseInsensitive":
                     if (value.Value is bool pnci) options.PropertyNameCaseInsensitive = pnci;
+                    break;
+                case "IncludeFields":
+                    if (value.Value is bool includeFields) options.IncludeFields = includeFields;
+                    break;
+                case "IgnoreReadOnlyFields":
+                    if (value.Value is bool ignoreReadOnlyFields) options.IgnoreReadOnlyFields = ignoreReadOnlyFields;
+                    break;
+                case "IgnoreReadOnlyProperties":
+                    if (value.Value is bool ignoreReadOnlyProperties) options.IgnoreReadOnlyProperties = ignoreReadOnlyProperties;
                     break;
                 case "PropertyNamingPolicy":
                     options.PropertyNamingPolicyExpression = ToNamingPolicyExpression(value);

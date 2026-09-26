@@ -29,6 +29,15 @@ public sealed class TomlSourceGenerationOptionsAttribute : TomlAttribute
     /// <summary>Gets or sets a value indicating whether property name matching is case-insensitive.</summary>
     public bool PropertyNameCaseInsensitive { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether public fields are included during serialization and deserialization.</summary>
+    public bool IncludeFields { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether read-only fields are ignored during serialization.</summary>
+    public bool IgnoreReadOnlyFields { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether read-only properties are ignored during serialization.</summary>
+    public bool IgnoreReadOnlyProperties { get; set; }
+
     /// <summary>Gets or sets the default ignore condition for null/default values.</summary>
     public TomlIgnoreCondition DefaultIgnoreCondition { get; set; }
 

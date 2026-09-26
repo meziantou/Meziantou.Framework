@@ -442,6 +442,50 @@ internal sealed partial class TestTomlSerializerContextPascalCase : TomlSerializ
 {
 }
 
+internal sealed class GeneratedMemberSelectionModel
+{
+#pragma warning disable CA1051 // The test needs public fields
+    public int Field = 1;
+    public readonly int ReadOnlyField = 2;
+#pragma warning restore CA1051
+
+    public int GetOnly { get; } = 3;
+
+    public int InitOnly { get; init; } = 4;
+}
+
+internal sealed class GeneratedIncludedReadOnlyFieldModel
+{
+    [TomlInclude]
+#pragma warning disable CA1051 // The test needs public fields
+    public readonly int ReadOnlyField = 2;
+#pragma warning restore CA1051
+}
+
+[TomlSerializable(typeof(GeneratedMemberSelectionModel))]
+[TomlSerializable(typeof(GeneratedIncludedReadOnlyFieldModel))]
+internal sealed partial class TestTomlSerializerContextDefaultMemberSelection : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(IncludeFields = true)]
+[TomlSerializable(typeof(GeneratedMemberSelectionModel))]
+internal sealed partial class TestTomlSerializerContextIncludeFields : TomlSerializerContext
+{
+}
+
+[JsonSourceGenerationOptions(IncludeFields = true)]
+[TomlSerializable(typeof(GeneratedMemberSelectionModel))]
+internal sealed partial class TestTomlSerializerContextJsonIncludeFields : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true)]
+[TomlSerializable(typeof(GeneratedMemberSelectionModel))]
+internal sealed partial class TestTomlSerializerContextIgnoreReadOnlyMembers : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedLowerCasePerson
 {
 #pragma warning disable IDE1006 // The member name is lowercase so the naming policy has something to convert
@@ -1079,6 +1123,69 @@ public class NewApiSourceGenerationTests
 
         Assert.NotNull(person);
         Assert.Equal("Ada", person!.FirstName);
+    }
+
+    [Fact]
+    public void GeneratedContext_IncludeFields_DoesNotIncludePublicFieldsByDefault()
+    {
+        var typeInfo = TestTomlSerializerContextDefaultMemberSelection.Default.GeneratedMemberSelectionModel;
+
+        var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), typeInfo);
+        var model = TomlSerializer.Deserialize("Field = 10", typeInfo)!;
+
+        Assert.Equal("GetOnly = 3\nInitOnly = 4", toml.Trim());
+        Assert.Equal(1, model.Field);
+        Assert.False(TestTomlSerializerContextDefaultMemberSelection.Default.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_IncludeFields_IncludesPublicFieldsForReadAndWrite()
+    {
+        var context = TestTomlSerializerContextIncludeFields.Default;
+
+        var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
+        var model = TomlSerializer.Deserialize("Field = 10", context.GeneratedMemberSelectionModel)!;
+
+        Assert.Equal("GetOnly = 3\nInitOnly = 4\nField = 1\nReadOnlyField = 2", toml.Trim());
+        Assert.Equal(10, model.Field);
+        Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_JsonSourceGenerationOptions_IncludeFieldsIsApplied()
+    {
+        var context = TestTomlSerializerContextJsonIncludeFields.Default;
+
+        var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
+
+        Assert.Contains("Field = 1", toml);
+        Assert.True(context.Options.IncludeFields);
+    }
+
+    [Fact]
+    public void GeneratedContext_IgnoreReadOnlyMembers_SkipsReadOnlyMembersDuringSerialization()
+    {
+        var context = TestTomlSerializerContextIgnoreReadOnlyMembers.Default;
+
+        var toml = TomlSerializer.Serialize(new GeneratedMemberSelectionModel(), context.GeneratedMemberSelectionModel);
+        var model = TomlSerializer.Deserialize("InitOnly = 40", context.GeneratedMemberSelectionModel)!;
+
+        Assert.Equal("InitOnly = 4\nField = 1", toml.Trim());
+        Assert.Equal(40, model.InitOnly);
+        Assert.True(context.Options.IgnoreReadOnlyFields);
+        Assert.True(context.Options.IgnoreReadOnlyProperties);
+    }
+
+    [Fact]
+    public void GeneratedContext_IncludedReadOnlyField_IsSerialized()
+    {
+        var typeInfo = TestTomlSerializerContextDefaultMemberSelection.Default.GeneratedIncludedReadOnlyFieldModel;
+
+        var toml = TomlSerializer.Serialize(new GeneratedIncludedReadOnlyFieldModel(), typeInfo);
+        var model = TomlSerializer.Deserialize("ReadOnlyField = 20", typeInfo)!;
+
+        Assert.Equal("ReadOnlyField = 2", toml.Trim());
+        Assert.Equal(2, model.ReadOnlyField);
     }
 
     [Fact]

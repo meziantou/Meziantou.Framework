@@ -22,6 +22,7 @@ internal partial class Parser
     private DiagnosticsBag? _diagnostics;
     private int _currentContainerDepth;
     private TableArrayPathNode _tableArrayPaths;
+    private bool _skippedToEndOfFile;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Parser"/> class.
@@ -49,6 +50,7 @@ internal partial class Parser
         _hideNewLine = true;
         _currentContainerDepth = 1;
         _tableArrayPaths = new TableArrayPathNode();
+        _skippedToEndOfFile = false;
         NextToken();
         while (TryParseTableEntry(out var itemEntry))
         {
@@ -381,7 +383,11 @@ internal partial class Parser
                 }
                 else
                 {
-                    LogError($"Unexpected token `{ToPrintable(_token)}` (token: `{_token.Kind}`). Expecting a closing `]` for an array");
+                    if (!_skippedToEndOfFile)
+                    {
+                        LogError($"Unexpected token `{ToPrintable(_token)}` (token: `{_token.Kind}`). Expecting a closing `]` for an array");
+                    }
+
                     break;
                 }
             }
@@ -472,7 +478,11 @@ internal partial class Parser
                 }
                 else
                 {
-                    LogError($"Unexpected token `{_token.Kind}` while parsing inline table. Expecting a bare key or string instead of `{ToPrintable(_token)}`");
+                    if (!_skippedToEndOfFile)
+                    {
+                        LogError($"Unexpected token `{_token.Kind}` while parsing inline table. Expecting a bare key or string instead of `{ToPrintable(_token)}`");
+                    }
+
                     break;
                 }
             }
@@ -617,6 +627,9 @@ internal partial class Parser
             {
                 SkipToken();
             }
+
+            // The enclosing containers are not closed, which is already reported
+            _skippedToEndOfFile = true;
 
             return false;
         }

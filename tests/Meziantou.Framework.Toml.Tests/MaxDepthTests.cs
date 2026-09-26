@@ -188,6 +188,21 @@ public sealed class MaxDepthTests
     }
 
     [Theory]
+    [InlineData(64)]
+    [InlineData(30_000)]
+    public void SyntaxParser_DeepContainer_ReportsOnlyTheDepthError(int depth)
+    {
+        foreach (var toml in new[] { CreateNestedArrayToml(depth), $"value = {string.Concat(Enumerable.Repeat("{a = ", depth))}1{new string('}', depth)}" })
+        {
+            var doc = SyntaxParser.Parse(toml);
+
+            var diagnostic = Assert.Single(doc.Diagnostics);
+            Assert.Contains("maximum depth of 64", diagnostic.Message);
+            Assert.Equal(toml, doc.ToString());
+        }
+    }
+
+    [Theory]
     [InlineData(63, true)]
     [InlineData(62, false)]
     public void SyntaxParser_TableArrayHeaderCountsTheElement(int segments, bool isError)

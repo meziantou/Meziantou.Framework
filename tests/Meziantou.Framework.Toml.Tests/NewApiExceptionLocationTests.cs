@@ -150,4 +150,25 @@ public class NewApiExceptionLocationTests
         Assert.True(ex.Column > 0);
         Assert.Contains("required.toml(", ex.Message);
     }
+
+    [Theory]
+    [InlineData("x = 1\n[Value]\ny = 2\n", 2, 2)]
+    [InlineData("x = 1\n[[Value]]\ny = 2\n", 2, 3)]
+    [InlineData("x = 1\nValue.y = 2\n", 2, 1)]
+    [InlineData("x = 1\n[other]\n[Value.y]\n", 3, 2)]
+    public void Deserialize_TableForAScalarMember_IncludesTheLocationOfTheKey(string toml, int line, int column)
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ScalarModel>(toml));
+
+        Assert.NotNull(ex.Span);
+        Assert.Equal(line, ex.Line);
+        Assert.Equal(column, ex.Column);
+    }
+
+    private sealed class ScalarModel
+    {
+        public int X { get; set; }
+
+        public int Value { get; set; }
+    }
 }

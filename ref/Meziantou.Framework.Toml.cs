@@ -876,6 +876,7 @@ namespace Meziantou.Framework.Toml.Serialization
         public int Line { get => throw null; }
         public int Column { get => throw null; }
         public Meziantou.Framework.Toml.Text.TomlSourceSpan? CurrentSpan { get => throw null; }
+        public bool IsInlineContainer { get => throw null; }
         public static Meziantou.Framework.Toml.Serialization.TomlReader Create(string toml, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         public static Meziantou.Framework.Toml.Serialization.TomlReader Create(System.IO.TextReader reader, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) => throw null;
         public bool Read() => throw null;

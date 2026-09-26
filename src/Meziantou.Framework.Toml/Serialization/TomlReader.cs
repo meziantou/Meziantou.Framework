@@ -222,6 +222,16 @@ public sealed class TomlReader
     /// </summary>
     public TomlSourceSpan? CurrentSpan => _currentSpan;
 
+    /// <summary>
+    /// Gets a value indicating whether the current <see cref="TomlTokenType.StartTable"/> or <see cref="TomlTokenType.StartArray"/>
+    /// token starts an inline table (<c>{</c>) or an inline array (<c>[</c>).
+    /// </summary>
+    /// <remarks>
+    /// It is <see langword="false"/> for a table or an array of tables opened by a header or a dotted key, which a later
+    /// header or dotted key can extend, and for any other token.
+    /// </remarks>
+    public bool IsInlineContainer => _tokenType is TomlTokenType.StartTable or TomlTokenType.StartArray && TomlParseEventData.IsInlineContainer(_currentData);
+
     internal TomlSyntaxTriviaMetadata[]? CurrentLeadingTrivia => _currentLeadingTrivia;
 
     internal TomlSyntaxTriviaMetadata[]? CurrentTrailingTrivia => _currentTrailingTrivia;
@@ -319,6 +329,7 @@ public sealed class TomlReader
             case TomlParseEventKind.StartTable:
                 TomlDepthHelper.EnsureSufficientExecutionStack(_currentSpan);
                 _tokenType = TomlTokenType.StartTable;
+                _currentData = parseEvent.Data;
                 break;
             case TomlParseEventKind.EndTable:
                 _tokenType = TomlTokenType.EndTable;
@@ -332,6 +343,7 @@ public sealed class TomlReader
             case TomlParseEventKind.StartArray:
                 TomlDepthHelper.EnsureSufficientExecutionStack(_currentSpan);
                 _tokenType = TomlTokenType.StartArray;
+                _currentData = parseEvent.Data;
                 break;
             case TomlParseEventKind.EndArray:
                 _tokenType = TomlTokenType.EndArray;

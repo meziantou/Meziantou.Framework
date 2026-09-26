@@ -54,6 +54,8 @@ public readonly struct TomlParseEvent
     /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.String"/>, this contains the underlying <see cref="Meziantou.Framework.Toml.Syntax.TokenKind"/> for the string literal.
     /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.PropertyName"/>, this contains an internal packed payload that includes the <see cref="Meziantou.Framework.Toml.Syntax.TokenKind"/>
     /// of the key literal (in the low 8 bits) as well as a case-sensitive hash of the decoded property name (in the remaining high bits).
+    /// When <see cref="Kind"/> is <see cref="TomlParseEventKind.StartTable"/> or <see cref="TomlParseEventKind.StartArray"/>, this is
+    /// <c>1</c> for an inline table or array, and <c>0</c> for a table or an array of tables opened by a header or a dotted key.
     /// </summary>
     public ulong Data => _data;
 

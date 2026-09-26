@@ -54,9 +54,9 @@ internal static class TomlParseEventMerger
 
                         var parent = stack[^1];
 
-                        // Only table headers and dotted keys, which have no span, can extend an existing container
+                        // Only table headers and dotted keys, not inline containers, can extend an existing container
                         string? name = null;
-                        if (!parseEvent.HasSpan && pendingName >= 0 && !parent.IsArray)
+                        if (!TomlParseEventData.IsInlineContainer(parseEvent.Data) && pendingName >= 0 && !parent.IsArray)
                         {
                             name = parser.DecodePropertyName(events[pendingName].ToParseEvent(sourceName));
                             if (parent.Children is not null && parent.Children.TryGetValue(name, out var existing))
@@ -175,7 +175,7 @@ internal static class TomlParseEventMerger
 
                 case TomlParseEventKind.StartTable:
                 case TomlParseEventKind.StartArray:
-                    if (!parseEvent.HasSpan && hasPendingName && containers.TryPeek(out var parent) && !parent.IsArray)
+                    if (!TomlParseEventData.IsInlineContainer(parseEvent.Data) && hasPendingName && containers.TryPeek(out var parent) && !parent.IsArray)
                     {
                         names ??= [];
                         if (!names.Add((parent.Id, pendingNameHash)))

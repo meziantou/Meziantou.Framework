@@ -10,7 +10,7 @@ internal static class TomlTableHeaderExtensionHelper
     public static bool IsTableHeaderExtension(TomlReader reader)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        return reader.TokenType == TomlTokenType.StartTable && reader.CurrentSpan is null;
+        return reader.TokenType == TomlTokenType.StartTable && !reader.IsInlineContainer;
     }
 
     public static bool TryReadIntoExisting(TomlReader reader, object? existingValue, TomlTypeInfo typeInfo, out object? populatedValue)

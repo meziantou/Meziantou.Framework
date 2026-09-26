@@ -798,9 +798,11 @@ public sealed partial class TomlParser
                     _pendingTableHeaderOpenEmitPropertyName = true;
                     _pendingTableHeaderOpenIndex++;
 
+                    // The span of the key segment that opens the container, so errors about its type have a location
+                    var openSpan = openFrame.Name?.Span;
                     SetPendingEvent(openFrame.Kind == ExplicitFrameKind.Array
-                        ? new TomlParseEvent(TomlParseEventKind.StartArray, span: null, propertyName: null, stringValue: null, data: 0)
-                        : new TomlParseEvent(TomlParseEventKind.StartTable, span: null, propertyName: null, stringValue: null, data: 0));
+                        ? new TomlParseEvent(TomlParseEventKind.StartArray, span: openSpan, propertyName: null, stringValue: null, data: 0)
+                        : new TomlParseEvent(TomlParseEventKind.StartTable, span: openSpan, propertyName: null, stringValue: null, data: 0));
                     _explicitFrames.Add(openFrame);
                     return true;
                 }
@@ -808,8 +810,10 @@ public sealed partial class TomlParser
                 var frame = _targetExplicitFrames[_pendingTableHeaderOpenIndex];
                 if (frame.Kind == ExplicitFrameKind.TableArrayElement)
                 {
+                    // An element follows the frame of its array, which has the name
+                    var elementSpan = _pendingTableHeaderOpenIndex > 0 ? _targetExplicitFrames[_pendingTableHeaderOpenIndex - 1].Name?.Span : null;
                     _pendingTableHeaderOpenIndex++;
-                    SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: null, propertyName: null, stringValue: null, data: 0));
+                    SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: elementSpan, propertyName: null, stringValue: null, data: 0));
                     _explicitFrames.Add(frame);
                     return true;
                 }
@@ -876,7 +880,7 @@ public sealed partial class TomlParser
                 _pendingKeyValueOpenEmitPropertyName = true;
                 _pendingKeyValueOpenIndex++;
                 _implicitFrames.Add(segment);
-                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: null, propertyName: null, stringValue: null, data: 0));
+                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: segment.Span, propertyName: null, stringValue: null, data: 0));
                 return true;
             }
 
@@ -1434,7 +1438,7 @@ public sealed partial class TomlParser
                 var span = new TomlSourceSpan(_lexer.SourcePath,
                     new TomlTextPosition(spanStart.Offset, spanStart.Line, spanStart.Column),
                     new TomlTextPosition(_token.End.Offset, _token.End.Line, _token.End.Column));
-                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartArray, span: span, propertyName: null, stringValue: null, data: 0));
+                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartArray, span: span, propertyName: null, stringValue: null, data: TomlParseEventData.InlineContainer));
                 Consume(TokenKind.OpenBracket, LexerState.Value);
                 _containers.Add(new ContainerFrame(ContainerKind.Array, inlineImplicitBase: 0));
                 PushStructureValueScope(isInlineTable: false);
@@ -1446,7 +1450,7 @@ public sealed partial class TomlParser
                 var span = new TomlSourceSpan(_lexer.SourcePath,
                     new TomlTextPosition(spanStart.Offset, spanStart.Line, spanStart.Column),
                     new TomlTextPosition(_token.End.Offset, _token.End.Line, _token.End.Column));
-                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: span, propertyName: null, stringValue: null, data: 0));
+                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartTable, span: span, propertyName: null, stringValue: null, data: TomlParseEventData.InlineContainer));
                 Consume(TokenKind.OpenBrace, LexerState.Key);
                 _containers.Add(new ContainerFrame(ContainerKind.InlineTable, inlineImplicitBase: _implicitFrames.Count));
                 PushStructureValueScope(isInlineTable: true);

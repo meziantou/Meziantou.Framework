@@ -311,4 +311,26 @@ public class NewApiParsingPipelineTests
 
         Assert.True(parser.HasErrors);
     }
+
+    [Fact]
+    public void TomlReader_IsInlineContainer_DistinguishesInlineContainersFromHeaders()
+    {
+        var reader = TomlReader.Create("a = {x = [1]}\nb.c = 1\n[d]\n[[e]]\n");
+        var containers = new List<string>();
+        while (reader.Read())
+        {
+            if (reader.TokenType is TomlTokenType.StartTable or TomlTokenType.StartArray)
+            {
+                containers.Add($"{reader.TokenType}:{reader.IsInlineContainer}:{reader.CurrentSpan?.Start.Line}");
+            }
+            else
+            {
+                Assert.False(reader.IsInlineContainer);
+            }
+        }
+
+        Assert.Equal(
+            ["StartTable:False:", "StartTable:True:0", "StartArray:True:0", "StartTable:False:1", "StartTable:False:2", "StartArray:False:3", "StartTable:False:3"],
+            containers);
+    }
 }

@@ -199,7 +199,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             throw reader.CreateException($"Expected {TomlTokenType.StartTable} token but was {reader.TokenType}.");
         }
 
-        var table = new TomlTable(inline: reader.CurrentSpan is not null);
+        var table = new TomlTable(inline: reader.IsInlineContainer);
         ReadTableInto(reader, table);
         return table;
     }
@@ -346,7 +346,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
                 };
             }
             case TomlTokenType.StartTable:
-                return reader.CurrentSpan is not null ? TomlPropertyDisplayKind.InlineTable : TomlPropertyDisplayKind.Default;
+                return reader.IsInlineContainer ? TomlPropertyDisplayKind.InlineTable : TomlPropertyDisplayKind.Default;
             default:
                 return TomlPropertyDisplayKind.Default;
         }
@@ -362,7 +362,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         // Prefer preserving arrays-of-tables as TomlTableArray to match TOML semantics and writer expectations.
         // Note that empty arrays can't be distinguished and are treated as TomlArray.
         reader.Read();
-        if (reader.TokenType == TomlTokenType.StartTable && reader.CurrentSpan is null)
+        if (reader.TokenType == TomlTokenType.StartTable && !reader.IsInlineContainer)
         {
             var tableArray = new TomlTableArray();
             while (reader.TokenType != TomlTokenType.EndArray)

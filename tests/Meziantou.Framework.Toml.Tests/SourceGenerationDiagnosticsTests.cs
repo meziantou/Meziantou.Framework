@@ -1051,6 +1051,19 @@ public sealed class SourceGenerationDiagnosticsTests
                 [TomlInclude, TomlSingleOrArray] private List<int> S { get; } = [1];
             }
 
+            public sealed class ObsoleteExtensionData
+            {
+                [Obsolete("x", true), TomlExtensionData] public Dictionary<string, object?>? Extra { get; set; }
+            }
+
+            public sealed class ObsoleteExtensionDataRecord(int A)
+            {
+                public int A { get; } = A;
+                [Obsolete("x", true), TomlExtensionData] public Dictionary<string, object?>? Extra { get; set; }
+            }
+
+            [TomlSerializable(typeof(ObsoleteExtensionData))]
+            [TomlSerializable(typeof(ObsoleteExtensionDataRecord))]
             [TomlSerializable(typeof(GetOnly))]
             [TomlSerializable(typeof(PrivateGetter))]
             [TomlSerializable(typeof(Generic<int>))]

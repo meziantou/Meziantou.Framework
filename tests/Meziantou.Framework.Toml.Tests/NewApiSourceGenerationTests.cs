@@ -1526,6 +1526,71 @@ internal sealed partial class TestTomlSerializerContextValidated : TomlSerialize
 {
 }
 
+public sealed class GeneratedPrivateExtensionProperty
+{
+    public int A { get; set; }
+
+    [TomlInclude]
+    [TomlExtensionData]
+    private Dictionary<string, object?>? Extra { get; set; }
+
+    public int Count => Extra?.Count ?? -1;
+}
+
+public sealed class GeneratedPrivateExtensionFieldWithoutInclude
+{
+    public int A { get; set; }
+
+    [TomlExtensionData]
+#pragma warning disable IDE0044 // Make field readonly: the serializer would set it with [TomlInclude]
+    private Dictionary<string, object?>? _extra = null;
+#pragma warning restore IDE0044
+
+    public int Count => _extra?.Count ?? -1;
+}
+
+public sealed class GeneratedPrivateExtensionGetOnly
+{
+    public int A { get; set; }
+
+    [TomlInclude]
+    [TomlExtensionData]
+    private Dictionary<string, object?> Extra { get; } = [];
+
+    public int Count => Extra.Count;
+}
+
+public sealed class GeneratedPrivateExtensionField
+{
+    public int A { get; set; }
+
+    [TomlInclude]
+    [TomlExtensionData]
+#pragma warning disable IDE0044 // Make field readonly: the serializer sets it
+    private Dictionary<string, object?>? _extra = null;
+#pragma warning restore IDE0044
+
+    public int Count => _extra?.Count ?? -1;
+}
+
+public sealed record GeneratedPrivateExtensionRecord(int A)
+{
+    [TomlInclude]
+    [TomlExtensionData]
+    private Dictionary<string, object?>? Extra { get; set; }
+
+    public int Count => Extra?.Count ?? -1;
+}
+
+[TomlSerializable(typeof(GeneratedPrivateExtensionProperty))]
+[TomlSerializable(typeof(GeneratedPrivateExtensionFieldWithoutInclude))]
+[TomlSerializable(typeof(GeneratedPrivateExtensionGetOnly))]
+[TomlSerializable(typeof(GeneratedPrivateExtensionField))]
+[TomlSerializable(typeof(GeneratedPrivateExtensionRecord))]
+internal sealed partial class TestTomlSerializerContextPrivateExtensionData : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedPrivateGetterChild
 {
     public int X { get; set; }
@@ -3463,6 +3528,28 @@ public class NewApiSourceGenerationTests
         Assert.False(TomlSerializer.TryDeserialize(toml, context.GeneratedValidatedHolder, out _));
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedValidatedHolder>(toml));
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, context.GeneratedValidatedHolder));
+    }
+
+    [Fact]
+    public void NonPublicExtensionData_IsReadAndWrittenThroughAccessors()
+    {
+        const string Toml = "A = 1\nB = 2\n";
+        var context = TestTomlSerializerContextPrivateExtensionData.Default;
+
+        Assert.Equal(1, Check(context.GeneratedPrivateExtensionProperty, value => value.Count));
+        Assert.Equal(-1, Check(context.GeneratedPrivateExtensionFieldWithoutInclude, value => value.Count));
+        Assert.Equal(1, Check(context.GeneratedPrivateExtensionGetOnly, value => value.Count));
+        Assert.Equal(1, Check(context.GeneratedPrivateExtensionField, value => value.Count));
+        Assert.Equal(1, Check(context.GeneratedPrivateExtensionRecord, value => value.Count));
+
+        static int Check<T>(TomlTypeInfo<T> typeInfo, Func<T, int> getCount)
+        {
+            var generated = TomlSerializer.Deserialize(Toml, typeInfo)!;
+            var reflection = TomlSerializer.Deserialize<T>(Toml)!;
+            Assert.Equal(getCount(reflection), getCount(generated));
+            Assert.Equal(TomlSerializer.Serialize(reflection), TomlSerializer.Serialize(generated, typeInfo));
+            return getCount(generated);
+        }
     }
 
     [Fact]

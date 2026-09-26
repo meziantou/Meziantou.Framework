@@ -1204,7 +1204,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 ? "global::System.StringComparer.OrdinalIgnoreCase"
                 : "global::System.StringComparer.Ordinal";
             usedKeysVariable = "__usedKeys";
-            builder.Append("            var __extensionData = value.").Append(extensionData.Identifier).AppendLine(";");
+            builder.Append("            var __extensionData = ").Append(GetExtensionDataReadExpression(extensionData, "value")).AppendLine(";");
             builder.AppendLine("            global::System.Collections.Generic.HashSet<string>? __usedKeys = null;");
             builder.AppendLine("            if (__extensionData is not null)");
             builder.AppendLine("            {");
@@ -1478,28 +1478,36 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         foreach (var member in poco.Members)
         {
-            if (member.GetterAccessorName is null)
+            if (member.GetterAccessorName is not null)
             {
-                continue;
+                EmitReflectionGetterAccessor(builder, member.GetterAccessorName, member.DeclaringType, member.MemberName, member.Type, member.IsField);
             }
-
-            var declaringTypeName = member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
-            // The member of the declaring type only: a member of a base type can have the same name
-            var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.DeclaredOnly";
-            builder.Append("        private static ").Append(memberTypeName).Append(' ').Append(member.GetterAccessorName).Append('(').Append(declaringTypeName).AppendLine(" __instance)");
-            builder.AppendLine("        {");
-            if (member.IsField)
-            {
-                builder.Append("            return (").Append(memberTypeName).Append(")typeof(").Append(declaringTypeName).Append(").GetField(\"").Append(EscapeStringLiteral(member.MemberName)).Append("\", ").Append(bindingFlags).AppendLine(")!.GetValue(__instance)!;");
-            }
-            else
-            {
-                builder.Append("            return (").Append(memberTypeName).Append(")typeof(").Append(declaringTypeName).Append(").GetProperty(\"").Append(EscapeStringLiteral(member.MemberName)).Append("\", ").Append(bindingFlags).AppendLine(")!.GetValue(__instance)!;");
-            }
-            builder.AppendLine("        }");
-            builder.AppendLine();
         }
+
+        if (poco.ExtensionData is { GetterAccessorName: { } extensionDataAccessorName, Symbol.ContainingType: { } extensionDataDeclaringType } extensionData)
+        {
+            EmitReflectionGetterAccessor(builder, extensionDataAccessorName, extensionDataDeclaringType, extensionData.MemberName, extensionData.MemberType, extensionData.IsField);
+        }
+    }
+
+    private static void EmitReflectionGetterAccessor(StringBuilder builder, string accessorName, ITypeSymbol declaringType, string memberName, ITypeSymbol memberType, bool isField)
+    {
+        var declaringTypeName = declaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var memberTypeName = memberType.ToDisplayString(FullyQualifiedNullableFormat);
+        // The member of the declaring type only: a member of a base type can have the same name
+        var bindingFlags = "global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.DeclaredOnly";
+        builder.Append("        private static ").Append(memberTypeName).Append(' ').Append(accessorName).Append('(').Append(declaringTypeName).AppendLine(" __instance)");
+        builder.AppendLine("        {");
+        builder.Append("            return (").Append(memberTypeName).Append(")typeof(").Append(declaringTypeName).Append(").").Append(isField ? "GetField" : "GetProperty").Append("(\"").Append(EscapeStringLiteral(memberName)).Append("\", ").Append(bindingFlags).AppendLine(")!.GetValue(__instance)!;");
+        builder.AppendLine("        }");
+        builder.AppendLine();
+    }
+
+    private static string GetExtensionDataReadExpression(PocoExtensionData extensionData, string instanceExpression)
+    {
+        return extensionData.GetterAccessorName is null
+            ? instanceExpression + "." + extensionData.Identifier
+            : extensionData.GetterAccessorName + "(" + instanceExpression + ")";
     }
 
     private static void EmitNonPublicSetterAccessors(StringBuilder builder, ContextModel model, ITypeSymbol type, PocoShape poco)
@@ -1513,7 +1521,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         if (poco.ExtensionData is { SetterAccessorName: { } extensionDataAccessorName, Symbol.ContainingType: { } extensionDataDeclaringType } extensionData)
         {
-            EmitReflectionSetterAccessor(builder, extensionDataAccessorName, extensionDataDeclaringType, extensionData.MemberName, extensionData.MemberType, isField: false);
+            EmitReflectionSetterAccessor(builder, extensionDataAccessorName, extensionDataDeclaringType, extensionData.MemberName, extensionData.MemberType, extensionData.IsField);
         }
 
         foreach (var member in poco.Members)
@@ -2306,7 +2314,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
             }
 
-            if (extensionData is { CanSet: true })
+            if (extensionData is { CanSet: true, IsSetterAccessible: true })
             {
                 needsTemplate = true;
                 finalInitializerAssignments.Add(extensionData.Identifier + " = __extensionDataValue");
@@ -2335,9 +2343,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     builder.AppendLine("            }");
                 }
 
-                if (extensionData is { CanSet: true })
+                if (extensionData is { CanSet: true, IsSetterAccessible: true })
                 {
-                    builder.Append("            var __extensionDataValue = __template.").Append(extensionData.Identifier).AppendLine(";");
+                    builder.Append("            var __extensionDataValue = ").Append(GetExtensionDataReadExpression(extensionData, "__template")).AppendLine(";");
                     builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                     builder.AppendLine("            {");
                     builder.AppendLine("                if (__extensionDataValue is null)");
@@ -2370,15 +2378,16 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.AppendLine("            ((global::Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing)value).OnTomlDeserializing();");
             }
 
-            if (extensionData is { CanSet: false })
+            // Without an accessible setter, the member is set after the object is created
+            if (extensionData is not (null or { CanSet: true, IsSetterAccessible: true }))
             {
-                var nullInitializationMessage = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
                 builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                 builder.AppendLine("            {");
-                builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
+                builder.Append("                var __target = ").Append(GetExtensionDataReadExpression(extensionData, "value")).AppendLine(";");
                 builder.AppendLine("                if (__target is null)");
                 builder.AppendLine("                {");
-                builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(nullInitializationMessage).AppendLine("\");");
+                builder.Append("                    __target = ").Append(extensionData.CreateExpression).AppendLine(";");
+                EmitExtensionDataAssignment(builder, "                    ", extensionData, "__target");
                 builder.AppendLine("                }");
                 builder.AppendLine("                foreach (var __pair in __extensionData)");
                 builder.AppendLine("                {");
@@ -2428,7 +2437,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
                 builder.AppendLine("            {");
-                builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
+                builder.Append("                var __target = ").Append(GetExtensionDataReadExpression(extensionData, "value")).AppendLine(";");
                 builder.AppendLine("                if (__target is null)");
                 builder.AppendLine("                {");
                 builder.Append("                    __target = ").Append(extensionData.CreateExpression).AppendLine(";");
@@ -2549,7 +2558,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
-        var extensionDataInInitializer = extensionData is { CanSet: true } && IsSetByObjectInitializer(extensionData.IsCompilerRequired, ctor);
+        var extensionDataInInitializer = extensionData is { CanSet: true, IsSetterAccessible: true } && IsSetByObjectInitializer(extensionData.IsCompilerRequired, ctor);
         if (extensionDataInInitializer)
         {
             builder.Append("            var __extensionDataValue = ").Append(extensionData!.CreateExpression).AppendLine(";");
@@ -2609,7 +2618,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine("            if (__extensionData is not null && __extensionData.Count != 0)");
         builder.AppendLine("            {");
-        builder.Append("                var __target = value.").Append(extensionData.Identifier).AppendLine(";");
+        builder.Append("                var __target = ").Append(GetExtensionDataReadExpression(extensionData, "value")).AppendLine(";");
         builder.AppendLine("                if (__target is null)");
         builder.AppendLine("                {");
         if (extensionData.CanSet)
@@ -3431,7 +3440,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (poco.ExtensionData is { } extensionData)
             {
-                builder.Append("                    var __extensionData = value.").Append(extensionData.Identifier).AppendLine(";");
+                builder.Append("                    var __extensionData = ").Append(GetExtensionDataReadExpression(extensionData, "value")).AppendLine(";");
                 builder.AppendLine("                    if (__extensionData is null)");
                 builder.AppendLine("                    {");
                 builder.Append("                        __extensionData = ").Append(extensionData.CreateExpression).AppendLine(";");
@@ -3589,7 +3598,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    {");
             builder.AppendLine("                        var name = reader.PropertyName!;");
             builder.AppendLine("                        reader.Read();");
-            builder.Append("                        var __extensionData = value.").Append(extensionDataRead.Identifier).AppendLine(";");
+            builder.Append("                        var __extensionData = ").Append(GetExtensionDataReadExpression(extensionDataRead, "value")).AppendLine(";");
             builder.AppendLine("                        if (__extensionData is null)");
             builder.AppendLine("                        {");
             builder.Append("                            __extensionData = ").Append(extensionDataRead.CreateExpression).AppendLine(";");
@@ -4379,6 +4388,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The accessor that sets the member when its setter is not accessible from the generated code or is init-only
         public string? SetterAccessorName { get; set; }
+
+        // The accessor that reads the member when it is not accessible from the generated code
+        public string? GetterAccessorName { get; set; }
+
+        // Whether the generated code can assign the member, in an object initializer for an init-only member
+        public bool IsSetterAccessible { get; set; }
+
+        public bool IsField { get; set; }
     }
 
     private sealed class PocoConstructor
@@ -4769,6 +4786,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     Symbol = member,
                     SetterAccessorName = canSet && (!setterAccessible || isInitOnly) ? "__SetExtensionData" : null,
+                    GetterAccessorName = getterAccessible ? null : "__GetExtensionData",
+                    IsSetterAccessible = canSet && setterAccessible,
                 };
                 continue;
             }
@@ -4849,6 +4868,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // Like the reflection resolver, an extension data field follows the rule of the other fields
+            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
+            if (!hasInclude && !(model.Options.IncludeFields == true && member.DeclaredAccessibility == Accessibility.Public))
+            {
+                continue;
+            }
+
             if (IsExtensionData(member))
             {
                 if (extensionData is not null)
@@ -4884,13 +4910,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     continue;
                 }
 
-                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet: true, isInitOnly: false, isCompilerRequired: member.IsRequired) { Symbol = member };
-                continue;
-            }
-
-            var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
-            if (!hasInclude && !(model.Options.IncludeFields == true && member.DeclaredAccessibility == Accessibility.Public))
-            {
+                var extensionFieldAccessible = IsAccessibleFromGeneratedContext(model, member, named) && !IsObsoleteError(member);
+                extensionData = new PocoExtensionData(member.Name, member.Type, extensionValueType, createExpression, canSet: !member.IsReadOnly, isInitOnly: false, isCompilerRequired: member.IsRequired)
+                {
+                    Symbol = member,
+                    SetterAccessorName = !member.IsReadOnly && !extensionFieldAccessible ? "__SetExtensionData" : null,
+                    GetterAccessorName = extensionFieldAccessible ? null : "__GetExtensionData",
+                    IsSetterAccessible = !member.IsReadOnly && extensionFieldAccessible,
+                    IsField = true,
+                };
                 continue;
             }
 

@@ -47,9 +47,9 @@ rules.
 | `Meziantou.Framework.Toml.Parsing` | `TomlLexer`, `TomlParser`, `SyntaxParser` |
 | `Meziantou.Framework.Toml.Syntax` | Lossless syntax tree: `DocumentSyntax`, `KeyValueSyntax`, `SyntaxVisitor`, diagnostics |
 
-The serializer reuses `System.Text.Json` types where it makes sense: naming policies (`JsonNamingPolicy`), object
-creation handling (`JsonObjectCreationHandling`), and the common `System.Text.Json.Serialization` attributes. A model can
-be shared between JSON and TOML; when both a TOML-specific and a JSON attribute are present, the TOML attribute wins.
+The serializer follows the `System.Text.Json` API shape and also honors the common `System.Text.Json.Serialization`
+attributes, so a model can be shared between JSON and TOML. When both a TOML-specific and a JSON attribute are present,
+the TOML attribute wins.
 
 ## Serialize and deserialize objects
 
@@ -134,14 +134,12 @@ empty array of tables.
 `TomlSerializerOptions` is an immutable record. It caches metadata on first use, so create an instance once and reuse it.
 
 ```csharp
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml;
 
 var options = new TomlSerializerOptions
 {
-    PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-    PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+    PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
+    PreferredObjectCreationHandling = TomlObjectCreationHandling.Replace,
     WriteIndented = true,
     IndentSize = 4,
     MaxDepth = 64,
@@ -153,7 +151,7 @@ var toml = TomlSerializer.Serialize(config, options);
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `PropertyNamingPolicy` | `null` | Naming policy for member names, for example `JsonNamingPolicy.CamelCase` or `JsonNamingPolicy.SnakeCaseLower`. `null` uses the CLR names, like `System.Text.Json`. |
+| `PropertyNamingPolicy` | `null` | Naming policy for member names: `TomlNamingPolicy.CamelCase`, `PascalCase`, `SnakeCaseLower`, `SnakeCaseUpper`, `KebabCaseLower`, `KebabCaseUpper`, or a class deriving from `TomlNamingPolicy`. `null` uses the CLR names, like `System.Text.Json`. |
 | `DictionaryKeyPolicy` | `null` | Naming policy for dictionary keys when writing. |
 | `PropertyNameCaseInsensitive` | `false` | Matches member names case-insensitively when reading. |
 | `PreferredObjectCreationHandling` | `Replace` | Replaces or populates object and collection members when reading. |
@@ -181,13 +179,13 @@ metadata is available.
 
 ### Populating existing values
 
-As in `System.Text.Json`, the default `JsonObjectCreationHandling.Replace` assigns new values to writable members and
+As in `System.Text.Json`, the default `TomlObjectCreationHandling.Replace` assigns new values to writable members and
 leaves read-only members untouched. `Populate` reuses the existing object and collection instances; collections are
 appended to, not cleared. It can be enabled globally with `PreferredObjectCreationHandling`, on a type, or on a member
-with `[JsonObjectCreationHandling]`:
+with `[TomlObjectCreationHandling]` (or `[JsonObjectCreationHandling]`):
 
 ```csharp
-[JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
 public sealed class ReleaserConfiguration
 {
     public List<string> Channels { get; } = ["stable"];
@@ -256,7 +254,7 @@ public sealed class FormattedConfig
 | `[TomlConverter]` | `[JsonConverter]` | Selects a converter for a type or member (reflection only). |
 | `[TomlPolymorphic]` | `[JsonPolymorphic]` | Enables polymorphism on a base type. |
 | `[TomlDerivedType]` | `[JsonDerivedType]` | Registers a derived type and its discriminator. |
-| | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
+| `[TomlObjectCreationHandling]` | `[JsonObjectCreationHandling]` | Replaces or populates a type or member when reading. |
 | `[TomlSingleOrArray]` | | Accepts a single value for a collection member. |
 
 ```csharp
@@ -430,11 +428,10 @@ Declare a `partial` class deriving from `TomlSerializerContext`, with a `[TomlSe
 type. Types reachable from a root are discovered automatically.
 
 ```csharp
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml;
 using Meziantou.Framework.Toml.Serialization;
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(ServerConfig))]
 internal partial class ServerContext : TomlSerializerContext;
 

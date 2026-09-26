@@ -85,7 +85,7 @@ public sealed class TableArrayItem
     public string Name { get; set; } = string.Empty;
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCollectionHolder))]
 [TomlSerializable(typeof(ObservableCollectionHolder))]
 [TomlSerializable(typeof(SingleOrArrayObservableCollectionHolder))]
@@ -98,7 +98,7 @@ internal sealed partial class TestTomlCollectionsContext : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(Issue117ArrayHolder))]
 internal sealed partial class TestTomlSnakeCaseCollectionsContext : TomlSerializerContext
 {
@@ -290,7 +290,7 @@ public class NewApiCollectionTests
     {
         var options = new TomlSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
         };
 
         var result = TomlSerializer.Deserialize<Issue117ArrayHolder>(CreateItemsToml(itemCount), options);

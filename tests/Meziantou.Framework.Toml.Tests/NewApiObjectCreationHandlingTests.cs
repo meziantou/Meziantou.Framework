@@ -106,6 +106,26 @@ public sealed class NewApiObjectCreationHandlingTests
         public ReflectionConstructorChild Child { get; } = new(7);
     }
 
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    private sealed class ReflectionTomlAttributeRoot
+    {
+        public ReflectionChild Child { get; } = new();
+
+        [TomlObjectCreationHandling(TomlObjectCreationHandling.Replace)]
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public List<int> Numbers { get; } = [1, 2, 3];
+    }
+
+    [Fact]
+    public void Reflection_TomlAttribute_PopulatesAndTakesPrecedenceOverJsonAttribute()
+    {
+        var result = TomlSerializer.Deserialize<ReflectionTomlAttributeRoot>(NestedToml);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
     [Fact]
     public void Reflection_DefaultReplace_DoesNotPopulateReadOnlyMembers()
     {
@@ -131,7 +151,7 @@ public sealed class NewApiObjectCreationHandlingTests
     {
         var options = TomlSerializerOptions.Default with
         {
-            PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate,
+            PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate,
         };
 
         var result = TomlSerializer.Deserialize<ReflectionReplaceRoot>(NestedToml, options);
@@ -283,6 +303,16 @@ public sealed class GeneratedPopulateOverrideObjectCreationRoot
     public List<int> Numbers { get; } = [1, 2, 3];
 }
 
+[TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+public sealed class GeneratedTomlAttributeObjectCreationRoot
+{
+    public GeneratedObjectCreationChild Child { get; } = new();
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Replace)]
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public List<int> Numbers { get; } = [1, 2, 3];
+}
+
 public sealed class GeneratedOptionsPopulateObjectCreationRoot
 {
     public GeneratedObjectCreationChild Child { get; } = new();
@@ -353,7 +383,12 @@ internal sealed partial class TestTomlSerializerContextObjectCreationOverride : 
 {
 }
 
-[TomlSourceGenerationOptions(PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedTomlAttributeObjectCreationRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationTomlAttribute : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
 [TomlSerializable(typeof(GeneratedOptionsPopulateObjectCreationRoot))]
 internal sealed partial class TestTomlSerializerContextObjectCreationPopulateOptions : TomlSerializerContext
 {
@@ -420,6 +455,18 @@ public sealed class NewApiSourceGenerationObjectCreationHandlingTests
     }
 
     [Fact]
+    public void GeneratedContext_TomlAttribute_PopulatesAndTakesPrecedenceOverJsonAttribute()
+    {
+        var context = TestTomlSerializerContextObjectCreationTomlAttribute.Default;
+
+        var result = TomlSerializer.Deserialize(NestedToml, context.GeneratedTomlAttributeObjectCreationRoot);
+
+        Assert.NotNull(result);
+        Assert.Equal(42, result!.Child.Value);
+        Assert.Equal(new[] { 1, 2, 3 }, result.Numbers);
+    }
+
+    [Fact]
     public void GeneratedContext_TomlSourceGenerationOptions_PopulateReadOnlyMembers()
     {
         var context = TestTomlSerializerContextObjectCreationPopulateOptions.Default;
@@ -429,7 +476,7 @@ public sealed class NewApiSourceGenerationObjectCreationHandlingTests
         Assert.NotNull(result);
         Assert.Equal(42, result!.Child.Value);
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
-        Assert.Equal(JsonObjectCreationHandling.Populate, context.Options.PreferredObjectCreationHandling);
+        Assert.Equal(TomlObjectCreationHandling.Populate, context.Options.PreferredObjectCreationHandling);
     }
 
     [Fact]
@@ -442,7 +489,7 @@ public sealed class NewApiSourceGenerationObjectCreationHandlingTests
         Assert.NotNull(result);
         Assert.Equal(42, result!.Child.Value);
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
-        Assert.Equal(JsonObjectCreationHandling.Populate, context.Options.PreferredObjectCreationHandling);
+        Assert.Equal(TomlObjectCreationHandling.Populate, context.Options.PreferredObjectCreationHandling);
     }
 
     [Fact]

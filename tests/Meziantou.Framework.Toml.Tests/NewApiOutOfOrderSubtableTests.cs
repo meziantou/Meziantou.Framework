@@ -59,8 +59,8 @@ public sealed class NestedTableArrayArgs
 }
 
 [TomlSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
-    PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate)]
+    PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower,
+    PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
 [TomlSerializable(typeof(OutOfOrderSubtableRoot))]
 [TomlSerializable(typeof(NestedTableArrayRoot))]
 internal sealed partial class TestOutOfOrderSubtableContext : TomlSerializerContext
@@ -107,8 +107,8 @@ public class NewApiOutOfOrderSubtableTests
     {
         var result = TomlSerializer.Deserialize<OutOfOrderSubtableRoot>(SampleToml, new TomlSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-            PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate,
+            PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
+            PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate,
             SourceName = "repro.toml",
         });
 
@@ -137,7 +137,7 @@ public class NewApiOutOfOrderSubtableTests
     {
         var result = TomlSerializer.Deserialize<Dictionary<string, object>>(SampleToml, new TomlSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
             SourceName = "repro.toml",
         });
 
@@ -158,7 +158,7 @@ public class NewApiOutOfOrderSubtableTests
     {
         var result = TomlSerializer.Deserialize<NestedTableArrayRoot>(NestedTableArrayToml, new TomlSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            PropertyNamingPolicy = TomlNamingPolicy.SnakeCaseLower,
             SourceName = "issue-124.toml",
         });
 

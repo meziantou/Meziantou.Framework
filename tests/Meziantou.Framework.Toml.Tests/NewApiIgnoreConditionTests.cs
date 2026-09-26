@@ -38,7 +38,7 @@ public sealed class DirectionalIgnoreConditionModel
     public int JsonReadOnly { get; set; }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(IgnoreConditionModel))]
 [TomlSerializable(typeof(DirectionalIgnoreConditionModel))]
 internal sealed partial class TestTomlIgnoreContext : TomlSerializerContext

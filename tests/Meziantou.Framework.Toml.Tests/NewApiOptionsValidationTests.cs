@@ -60,7 +60,7 @@ public sealed class NewApiOptionsValidationTests
         {
             _ = TomlSerializerOptions.Default with
             {
-                PreferredObjectCreationHandling = (JsonObjectCreationHandling)99,
+                PreferredObjectCreationHandling = (TomlObjectCreationHandling)99,
             };
         });
 

@@ -28,8 +28,8 @@ public sealed class SourceGenerationDiagnosticsTests
                 DefaultIgnoreCondition = TomlIgnoreCondition.Never,
                 DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins,
                 MappingOrder = TomlMappingOrderPolicy.Alphabetical,
-                DictionaryKeyPolicy = JsonKnownNamingPolicy.CamelCase,
-                PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate)]
+                DictionaryKeyPolicy = TomlKnownNamingPolicy.CamelCase,
+                PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
             [TomlSerializable(typeof(Person))]
             [TomlSerializable(typeof(CtorPerson))]
             internal partial class Ctx : TomlSerializerContext { }
@@ -328,7 +328,7 @@ public sealed class SourceGenerationDiagnosticsTests
                 public string Name { get; set; } = "";
             }
 
-            [TomlSourceGenerationOptions(PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate)]
+            [TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
             [TomlSerializable(typeof(Root))]
             internal partial class Ctx : TomlSerializerContext { }
             """;

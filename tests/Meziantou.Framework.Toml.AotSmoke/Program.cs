@@ -320,7 +320,7 @@ enabled = true
     }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(Program.RootConfig))]
 [TomlSerializable(typeof(TomlTable))]
 internal sealed partial class AotTomlSerializerContext : TomlSerializerContext

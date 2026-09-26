@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
@@ -29,12 +28,4 @@ public sealed class TomlSerializableAttribute : TomlAttribute
     /// Gets or sets the generated <see cref="Meziantou.Framework.Toml.TomlTypeInfo"/> property name for this root type.
     /// </summary>
     public string? TypeInfoPropertyName { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested source generation mode for this root type.
-    /// </summary>
-    /// <remarks>
-    /// The source generator always emits the metadata needed for TOML serialization and deserialization.
-    /// </remarks>
-    public JsonSourceGenerationMode GenerationMode { get; set; }
 }

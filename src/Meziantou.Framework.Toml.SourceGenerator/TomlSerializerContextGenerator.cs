@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -109,6 +107,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private const string JsonSerializableAttributeMetadataName = "System.Text.Json.Serialization.JsonSerializableAttribute";
     private const string JsonSourceGenerationOptionsAttributeMetadataName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
     private const string JsonObjectCreationHandlingAttributeMetadataName = "System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute";
+    private const string TomlObjectCreationHandlingAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlObjectCreationHandlingAttribute";
     private const string TomlSourceGenerationOptionsAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSourceGenerationOptionsAttribute";
     private const string TomlConverterMetadataName = "Meziantou.Framework.Toml.Serialization.TomlConverter";
     private const string TomlSingleOrArrayAttributeMetadataName = "Meziantou.Framework.Toml.Serialization.TomlSingleOrArrayAttribute";
@@ -379,7 +378,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("#nullable enable");
         builder.AppendLine("using System;");
         builder.AppendLine("using System.Collections.Generic;");
-        builder.AppendLine("using System.Text.Json;");
         builder.AppendLine("using Meziantou.Framework.Toml;");
         builder.AppendLine("using Meziantou.Framework.Toml.Serialization;");
         builder.AppendLine();
@@ -513,7 +511,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        options = options with { DictionaryKeyPolicy = ").Append(model.Options.DictionaryKeyPolicyExpression).AppendLine(" };");
         }
 
-        if (model.Options.PreferredObjectCreationHandling is not null && TryGetJsonObjectCreationHandlingExpression(model.Options.PreferredObjectCreationHandling.Value, out var objectCreationHandlingExpression))
+        if (model.Options.PreferredObjectCreationHandling is not null && TryGetObjectCreationHandlingExpression(model.Options.PreferredObjectCreationHandling.Value, out var objectCreationHandlingExpression))
         {
             builder.Append("        options = options with { PreferredObjectCreationHandling = ").Append(objectCreationHandlingExpression).AppendLine(" };");
         }
@@ -2389,7 +2387,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var populatedLocal = "__populated" + index.ToString(CultureInfo.InvariantCulture);
         var memberAccess = "value." + member.MemberName;
         var populateErrorPrefix =
-            $"Member '{EscapeStringLiteral(member.MemberName)}' on '{{value.GetType().FullName}}' uses JsonObjectCreationHandling.Populate";
+            $"Member '{EscapeStringLiteral(member.MemberName)}' on '{{value.GetType().FullName}}' uses TomlObjectCreationHandling.Populate";
         var isExplicitPopulate = member.HasExplicitObjectCreationHandling && member.ObjectCreationHandling == ObjectCreationHandlingKind.Populate;
 
         if (populateCondition is null)
@@ -4851,9 +4849,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return memberName;
     }
 
+    // [TomlObjectCreationHandling] takes precedence over [JsonObjectCreationHandling]
     private static ObjectCreationHandlingKind GetObjectCreationHandling(ISymbol symbol)
     {
-        if (TryGetAttribute(symbol, JsonObjectCreationHandlingAttributeMetadataName, out var attr))
+        if (TryGetAttribute(symbol, TomlObjectCreationHandlingAttributeMetadataName, out var attr) ||
+            TryGetAttribute(symbol, JsonObjectCreationHandlingAttributeMetadataName, out attr))
         {
             if (attr.ConstructorArguments.Length == 1 && attr.ConstructorArguments[0].Value is int constructorValue)
             {
@@ -4974,13 +4974,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static bool TryConvertKnownName(string name, string namingPolicyExpression, out string converted)
     {
-        JsonNamingPolicy? policy = namingPolicyExpression switch
+        TomlNamingPolicy? policy = namingPolicyExpression switch
         {
-            "global::System.Text.Json.JsonNamingPolicy.CamelCase" => JsonNamingPolicy.CamelCase,
-            "global::System.Text.Json.JsonNamingPolicy.SnakeCaseLower" => JsonNamingPolicy.SnakeCaseLower,
-            "global::System.Text.Json.JsonNamingPolicy.SnakeCaseUpper" => JsonNamingPolicy.SnakeCaseUpper,
-            "global::System.Text.Json.JsonNamingPolicy.KebabCaseLower" => JsonNamingPolicy.KebabCaseLower,
-            "global::System.Text.Json.JsonNamingPolicy.KebabCaseUpper" => JsonNamingPolicy.KebabCaseUpper,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.CamelCase" => TomlNamingPolicy.CamelCase,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.SnakeCaseLower" => TomlNamingPolicy.SnakeCaseLower,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.SnakeCaseUpper" => TomlNamingPolicy.SnakeCaseUpper,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.KebabCaseLower" => TomlNamingPolicy.KebabCaseLower,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.KebabCaseUpper" => TomlNamingPolicy.KebabCaseUpper,
+            "global::Meziantou.Framework.Toml.TomlNamingPolicy.PascalCase" => TomlNamingPolicy.PascalCase,
             _ => null,
         };
 
@@ -5369,10 +5370,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             switch (name)
             {
                 case "PropertyNamingPolicy":
-                    options.PropertyNamingPolicyExpression ??= ToJsonNamingPolicyExpression(value);
+                    options.PropertyNamingPolicyExpression ??= ToNamingPolicyExpression(value);
                     break;
                 case "DictionaryKeyPolicy":
-                    options.DictionaryKeyPolicyExpression ??= ToJsonNamingPolicyExpression(value);
+                    options.DictionaryKeyPolicyExpression ??= ToNamingPolicyExpression(value);
                     break;
                 case "PreferredObjectCreationHandling":
                     if (options.PreferredObjectCreationHandling is null && value.Value is int objectCreationHandling) options.PreferredObjectCreationHandling = objectCreationHandling;
@@ -5405,10 +5406,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     if (value.Value is bool pnci) options.PropertyNameCaseInsensitive = pnci;
                     break;
                 case "PropertyNamingPolicy":
-                    options.PropertyNamingPolicyExpression = ToJsonNamingPolicyExpression(value);
+                    options.PropertyNamingPolicyExpression = ToNamingPolicyExpression(value);
                     break;
                 case "DictionaryKeyPolicy":
-                    options.DictionaryKeyPolicyExpression = ToJsonNamingPolicyExpression(value);
+                    options.DictionaryKeyPolicyExpression = ToNamingPolicyExpression(value);
                     break;
                 case "PreferredObjectCreationHandling":
                     if (value.Value is int preferredObjectCreationHandling) options.PreferredObjectCreationHandling = preferredObjectCreationHandling;
@@ -5510,7 +5511,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             model.Options.IndentSize = null;
         }
 
-        ValidateEnumOption(context, model, "PreferredObjectCreationHandling", model.Options.PreferredObjectCreationHandling, TryGetJsonObjectCreationHandlingExpression, v => model.Options.PreferredObjectCreationHandling = v);
+        ValidateEnumOption(context, model, "PreferredObjectCreationHandling", model.Options.PreferredObjectCreationHandling, TryGetObjectCreationHandlingExpression, v => model.Options.PreferredObjectCreationHandling = v);
         ValidateEnumOption(context, model, "NewLine", model.Options.NewLine, TryGetTomlNewLineKindExpression, v => model.Options.NewLine = v);
         ValidateEnumOption(context, model, "DefaultIgnoreCondition", model.Options.DefaultIgnoreCondition, TryGetTomlIgnoreConditionExpression, v => model.Options.DefaultIgnoreCondition = v);
         ValidateEnumOption(context, model, "DuplicateKeyHandling", model.Options.DuplicateKeyHandling, TryGetTomlDuplicateKeyHandlingExpression, v => model.Options.DuplicateKeyHandling = v);
@@ -5614,21 +5615,24 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static string? ToJsonNamingPolicyExpression(TypedConstant constant)
+    // TomlKnownNamingPolicy uses the same values as System.Text.Json's JsonKnownNamingPolicy, so this also maps
+    // the values of [JsonSourceGenerationOptions]
+    private static string? ToNamingPolicyExpression(TypedConstant constant)
     {
         if (constant.Kind != TypedConstantKind.Enum || constant.Value is not int value)
         {
             return null;
         }
 
-        var policy = (JsonKnownNamingPolicy)value;
+        var policy = (TomlKnownNamingPolicy)value;
         return policy switch
         {
-            JsonKnownNamingPolicy.CamelCase => "global::System.Text.Json.JsonNamingPolicy.CamelCase",
-            JsonKnownNamingPolicy.SnakeCaseLower => "global::System.Text.Json.JsonNamingPolicy.SnakeCaseLower",
-            JsonKnownNamingPolicy.SnakeCaseUpper => "global::System.Text.Json.JsonNamingPolicy.SnakeCaseUpper",
-            JsonKnownNamingPolicy.KebabCaseLower => "global::System.Text.Json.JsonNamingPolicy.KebabCaseLower",
-            JsonKnownNamingPolicy.KebabCaseUpper => "global::System.Text.Json.JsonNamingPolicy.KebabCaseUpper",
+            TomlKnownNamingPolicy.CamelCase => "global::Meziantou.Framework.Toml.TomlNamingPolicy.CamelCase",
+            TomlKnownNamingPolicy.SnakeCaseLower => "global::Meziantou.Framework.Toml.TomlNamingPolicy.SnakeCaseLower",
+            TomlKnownNamingPolicy.SnakeCaseUpper => "global::Meziantou.Framework.Toml.TomlNamingPolicy.SnakeCaseUpper",
+            TomlKnownNamingPolicy.KebabCaseLower => "global::Meziantou.Framework.Toml.TomlNamingPolicy.KebabCaseLower",
+            TomlKnownNamingPolicy.KebabCaseUpper => "global::Meziantou.Framework.Toml.TomlNamingPolicy.KebabCaseUpper",
+            TomlKnownNamingPolicy.PascalCase => "global::Meziantou.Framework.Toml.TomlNamingPolicy.PascalCase",
             _ => null,
         };
     }
@@ -5649,12 +5653,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return expression is not null;
     }
 
-    private static bool TryGetJsonObjectCreationHandlingExpression(int value, out string expression)
+    private static bool TryGetObjectCreationHandlingExpression(int value, out string expression)
     {
         expression = value switch
         {
-            0 => "global::System.Text.Json.Serialization.JsonObjectCreationHandling.Replace",
-            1 => "global::System.Text.Json.Serialization.JsonObjectCreationHandling.Populate",
+            0 => "global::Meziantou.Framework.Toml.TomlObjectCreationHandling.Replace",
+            1 => "global::Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate",
             _ => null!,
         };
 

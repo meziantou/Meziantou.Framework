@@ -122,6 +122,17 @@ namespace Meziantou.Framework.Toml
         Always = 2,
     }
 
+    public enum TomlKnownNamingPolicy
+    {
+        Unspecified = 0,
+        CamelCase = 1,
+        SnakeCaseLower = 2,
+        SnakeCaseUpper = 3,
+        KebabCaseLower = 4,
+        KebabCaseUpper = 5,
+        PascalCase = 6,
+    }
+
     public enum TomlMappingOrderPolicy
     {
         Declaration = 0,
@@ -130,10 +141,27 @@ namespace Meziantou.Framework.Toml
         OrderThenAlphabetical = 3,
     }
 
+    public abstract class TomlNamingPolicy
+    {
+        public static Meziantou.Framework.Toml.TomlNamingPolicy CamelCase { get => throw null; }
+        public static Meziantou.Framework.Toml.TomlNamingPolicy SnakeCaseLower { get => throw null; }
+        public static Meziantou.Framework.Toml.TomlNamingPolicy SnakeCaseUpper { get => throw null; }
+        public static Meziantou.Framework.Toml.TomlNamingPolicy KebabCaseLower { get => throw null; }
+        public static Meziantou.Framework.Toml.TomlNamingPolicy KebabCaseUpper { get => throw null; }
+        public static Meziantou.Framework.Toml.TomlNamingPolicy PascalCase { get => throw null; }
+        public abstract string ConvertName(string name);
+    }
+
     public enum TomlNewLineKind
     {
         Lf = 0,
         CrLf = 1,
+    }
+
+    public enum TomlObjectCreationHandling
+    {
+        Replace = 0,
+        Populate = 1,
     }
 
     public sealed class TomlPolymorphismOptions : System.IEquatable<Meziantou.Framework.Toml.TomlPolymorphismOptions>
@@ -250,9 +278,9 @@ namespace Meziantou.Framework.Toml
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Toml.Serialization.TomlConverter> Converters { get => throw null; init { } }
         public Meziantou.Framework.Toml.ITomlTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
         public string? SourceName { get => throw null; init { } }
-        public System.Text.Json.JsonNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
-        public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
-        public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get => throw null; init { } }
+        public Meziantou.Framework.Toml.TomlNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
+        public Meziantou.Framework.Toml.TomlNamingPolicy? DictionaryKeyPolicy { get => throw null; init { } }
+        public Meziantou.Framework.Toml.TomlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; init { } }
         public bool PropertyNameCaseInsensitive { get => throw null; init { } }
         public int MaxDepth { get => throw null; init { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; init { } }
@@ -790,6 +818,13 @@ namespace Meziantou.Framework.Toml.Serialization
         public void SetProperties(object instance, Meziantou.Framework.Toml.Model.TomlPropertiesMetadata? metadata) { }
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class TomlObjectCreationHandlingAttribute : Meziantou.Framework.Toml.Serialization.TomlAttribute
+    {
+        public Meziantou.Framework.Toml.TomlObjectCreationHandling Handling { get => throw null; }
+        public TomlObjectCreationHandlingAttribute(Meziantou.Framework.Toml.TomlObjectCreationHandling handling) { }
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public sealed class TomlPolymorphicAttribute : Meziantou.Framework.Toml.Serialization.TomlAttribute
     {
@@ -855,7 +890,6 @@ namespace Meziantou.Framework.Toml.Serialization
     {
         public System.Type Type { get => throw null; }
         public string? TypeInfoPropertyName { get => throw null; set { } }
-        public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get => throw null; set { } }
         public TomlSerializableAttribute(System.Type type) { }
     }
 
@@ -933,9 +967,9 @@ namespace Meziantou.Framework.Toml.Serialization
         public bool WriteIndented { get => throw null; set { } }
         public int IndentSize { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlNewLineKind NewLine { get => throw null; set { } }
-        public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
-        public System.Text.Json.Serialization.JsonKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
-        public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
+        public Meziantou.Framework.Toml.TomlKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
+        public Meziantou.Framework.Toml.TomlKnownNamingPolicy DictionaryKeyPolicy { get => throw null; set { } }
+        public Meziantou.Framework.Toml.TomlObjectCreationHandling PreferredObjectCreationHandling { get => throw null; set { } }
         public bool PropertyNameCaseInsensitive { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlIgnoreCondition DefaultIgnoreCondition { get => throw null; set { } }
         public Meziantou.Framework.Toml.TomlDuplicateKeyHandling DuplicateKeyHandling { get => throw null; set { } }

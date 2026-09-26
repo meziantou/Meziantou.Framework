@@ -419,4 +419,54 @@ public class NewApiReflectionPocoTests
         Assert.False(roundtrip.NameWasAlreadyAssignedInOnDeserializing);
         Assert.Equal("Ada", roundtrip.NameSeenInOnDeserialized);
     }
+
+    [Theory]
+    [InlineData(TomlKnownNamingPolicy.CamelCase, "FirstName", "firstName")]
+    [InlineData(TomlKnownNamingPolicy.CamelCase, "URLValue", "urlValue")]
+    [InlineData(TomlKnownNamingPolicy.PascalCase, "firstName", "FirstName")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "FirstName", "first_name")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "URLValue", "url_value")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "Value1Name", "value1_name")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseUpper, "FirstName", "FIRST_NAME")]
+    [InlineData(TomlKnownNamingPolicy.KebabCaseLower, "FirstName", "first-name")]
+    [InlineData(TomlKnownNamingPolicy.KebabCaseUpper, "FirstName", "FIRST-NAME")]
+    public void NamingPolicy_ConvertName(TomlKnownNamingPolicy knownPolicy, string name, string expected)
+    {
+        var policy = knownPolicy switch
+        {
+            TomlKnownNamingPolicy.CamelCase => TomlNamingPolicy.CamelCase,
+            TomlKnownNamingPolicy.PascalCase => TomlNamingPolicy.PascalCase,
+            TomlKnownNamingPolicy.SnakeCaseLower => TomlNamingPolicy.SnakeCaseLower,
+            TomlKnownNamingPolicy.SnakeCaseUpper => TomlNamingPolicy.SnakeCaseUpper,
+            TomlKnownNamingPolicy.KebabCaseLower => TomlNamingPolicy.KebabCaseLower,
+            TomlKnownNamingPolicy.KebabCaseUpper => TomlNamingPolicy.KebabCaseUpper,
+            _ => throw new ArgumentOutOfRangeException(nameof(knownPolicy)),
+        };
+
+        Assert.Equal(expected, policy.ConvertName(name));
+    }
+
+    private sealed class NamingPolicyModel
+    {
+#pragma warning disable IDE1006 // The member names are lowercase so the naming policy has something to convert
+        public string? firstName { get; set; }
+
+        public Dictionary<string, int> values { get; set; } = [];
+#pragma warning restore IDE1006
+    }
+
+    [Fact]
+    public void SerializeDeserialize_CustomNamingPolicies()
+    {
+        var options = new TomlSerializerOptions
+        {
+            PropertyNamingPolicy = TomlNamingPolicy.PascalCase,
+            DictionaryKeyPolicy = TomlNamingPolicy.KebabCaseUpper,
+        };
+
+        var toml = TomlSerializer.Serialize(new NamingPolicyModel { firstName = "Ada", values = { ["itemCount"] = 1 } }, options);
+
+        Assert.Equal("FirstName = \"Ada\"\n[Values]\nITEM-COUNT = 1", toml.Trim());
+        Assert.Equal("Ada", TomlSerializer.Deserialize<NamingPolicyModel>(toml, options)!.firstName);
+    }
 }

@@ -1,7 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Internal;
@@ -64,30 +62,30 @@ public sealed record TomlSerializerOptions
     public string? SourceName { get; init; }
 
     /// <summary>Gets or sets the policy used to convert CLR property names.</summary>
-    public JsonNamingPolicy? PropertyNamingPolicy { get; init; }
+    public TomlNamingPolicy? PropertyNamingPolicy { get; init; }
 
     /// <summary>Gets or sets the policy used to convert dictionary keys during serialization.</summary>
-    public JsonNamingPolicy? DictionaryKeyPolicy { get; init; }
+    public TomlNamingPolicy? DictionaryKeyPolicy { get; init; }
 
     /// <summary>Gets or sets the preferred object creation handling for properties and fields during deserialization.</summary>
     /// <remarks>
     /// A member-level or type-level object creation handling attribute overrides this setting.
-    /// The default behavior is <see cref="JsonObjectCreationHandling.Replace"/>.
+    /// The default behavior is <see cref="TomlObjectCreationHandling.Replace"/>.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">Value is not a defined object creation handling.</exception>
-    public JsonObjectCreationHandling PreferredObjectCreationHandling
+    public TomlObjectCreationHandling PreferredObjectCreationHandling
     {
         get;
         init
         {
-            if (value is not JsonObjectCreationHandling.Replace and not JsonObjectCreationHandling.Populate)
+            if (value is not TomlObjectCreationHandling.Replace and not TomlObjectCreationHandling.Populate)
             {
                 throw new ArgumentOutOfRangeException(nameof(value), value, "Preferred object creation handling must be Replace or Populate.");
             }
 
             field = value;
         }
-    } = JsonObjectCreationHandling.Replace;
+    } = TomlObjectCreationHandling.Replace;
 
     /// <summary>Gets or sets a value indicating whether property name matching is case-insensitive.</summary>
     public bool PropertyNameCaseInsensitive { get; init; }

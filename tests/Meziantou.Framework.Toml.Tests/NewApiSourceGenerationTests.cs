@@ -429,38 +429,51 @@ public sealed class ThrowingGeneratedConverterFactory : TomlConverterFactory
     public override TomlConverter CreateConverter(Type typeToConvert, TomlSerializerOptions options) => throw new InvalidOperationException("Source-generated converter resolution should be static.");
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedPerson))]
 [TomlSerializable(typeof(GeneratedRuntimeConverterHolder))]
 internal sealed partial class TestTomlSerializerContext : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.PascalCase)]
+[TomlSerializable(typeof(GeneratedLowerCasePerson))]
+internal sealed partial class TestTomlSerializerContextPascalCase : TomlSerializerContext
+{
+}
+
+public sealed class GeneratedLowerCasePerson
+{
+#pragma warning disable IDE1006 // The member name is lowercase so the naming policy has something to convert
+    public string name { get; set; } = "";
+#pragma warning restore IDE1006
+}
+
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedPerson), TypeInfoPropertyName = "GeneratedPersonInfo")]
 internal sealed partial class TestTomlSerializerContextCustomPropertyName : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedIntPerson))]
 internal sealed partial class TestTomlSerializerContextInt : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlSerializable(typeof(GeneratedSnakePerson))]
 internal sealed partial class TestTomlSerializerContextSnakeCase : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedDerivedOptions))]
 internal sealed partial class TestTomlSerializerContextInheritedMembers : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedOverriddenDerivedOptions))]
 internal sealed partial class TestTomlSerializerContextOverriddenMembers : TomlSerializerContext
 {
@@ -470,8 +483,8 @@ internal sealed partial class TestTomlSerializerContextOverriddenMembers : TomlS
     WriteIndented = false,
     IndentSize = 4,
     NewLine = TomlNewLineKind.CrLf,
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    DictionaryKeyPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase,
+    DictionaryKeyPolicy = TomlKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true,
     DefaultIgnoreCondition = TomlIgnoreCondition.Never,
     DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins,
@@ -494,125 +507,125 @@ internal sealed partial class TestTomlSerializerContextWithConverter : TomlSeria
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedTransitiveConfig))]
 internal sealed partial class TestTomlSerializerContextTransitive : TomlSerializerContext
 {
 }
 
 [TomlSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase,
     MappingOrder = TomlMappingOrderPolicy.OrderThenDeclaration)]
 [TomlSerializable(typeof(GeneratedOrderedPerson))]
 internal sealed partial class TestTomlSerializerContextOrdering : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCollectionsPayload))]
 internal sealed partial class TestTomlSerializerContextCollections : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedNullablePayload))]
 internal sealed partial class TestTomlSerializerContextNullables : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedNullableReferencePayload))]
 internal sealed partial class TestTomlSerializerContextNullableReferences : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedIncludedInternalPropertyPayload))]
 internal sealed partial class TestTomlSerializerContextIncludedInternalProperty : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedIncludedPrivatePropertyPayload))]
 internal sealed partial class TestTomlSerializerContextIncludedPrivateProperty : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedEnumAndObjectPayload))]
 internal sealed partial class TestTomlSerializerContextEnumsAndObjects : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedTomlObjectPayload))]
 internal sealed partial class TestTomlSerializerContextTomlObject : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedStringEnumPayload))]
 internal sealed partial class TestTomlSerializerContextStringEnums : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCallbackPerson))]
 internal sealed partial class TestTomlSerializerContextCallbacks : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedRequiredPerson))]
 internal sealed partial class TestTomlSerializerContextRequired : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedInitOnlyPerson))]
 internal sealed partial class TestTomlSerializerContextInitOnly : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedRequiredInitPerson))]
 internal sealed partial class TestTomlSerializerContextRequiredInit : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCtorInitRequiredPerson))]
 internal sealed partial class TestTomlSerializerContextCtorInitRequired : TomlSerializerContext
 {
 }
 
 [TomlSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    DictionaryKeyPolicy = JsonKnownNamingPolicy.CamelCase)]
+    PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase,
+    DictionaryKeyPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedExtensionDataPerson))]
 internal sealed partial class TestTomlSerializerContextExtensionData : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCtorPerson))]
 internal sealed partial class TestTomlSerializerContextConstructor : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedCtorSelectionPerson))]
 internal sealed partial class TestTomlSerializerContextConstructorSelection : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(IGeneratedAnimal))]
 internal sealed partial class TestTomlSerializerContextPolymorphism : TomlSerializerContext
 {
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.SnakeCaseLower)]
 [TomlDerivedTypeMapping(typeof(GeneratedDepartLevel), typeof(GeneratedDepart1), "dd1")]
 [TomlDerivedTypeMapping(typeof(GeneratedGroupLevel), typeof(GeneratedGroup2), "gg2")]
 [TomlSerializable(typeof(GeneratedTwoLevelPolymorphicConfig))]
@@ -639,7 +652,7 @@ public sealed class GeneratedDefaultSquare : GeneratedDefaultShape
     public double Side { get; set; }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedDefaultShape))]
 internal sealed partial class TestTomlSerializerContextDefaultDerivedType : TomlSerializerContext
 {
@@ -657,7 +670,7 @@ public sealed class GeneratedAttrFallbackDerived : GeneratedAttrFallbackBase
     public int Extra { get; set; }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedAttrFallbackBase))]
 internal sealed partial class TestTomlSerializerContextAttrFallback : TomlSerializerContext
 {
@@ -675,7 +688,7 @@ public sealed class GeneratedJsonAttrFallbackDerived : GeneratedJsonAttrFallback
     public int Extra { get; set; }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedJsonAttrFallbackBase))]
 internal sealed partial class TestTomlSerializerContextJsonAttrFallback : TomlSerializerContext
 {
@@ -700,7 +713,7 @@ public sealed class GeneratedIntDiscrimSquare : GeneratedIntDiscrimShape
     public double Side { get; set; }
 }
 
-[TomlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[TomlSourceGenerationOptions(PropertyNamingPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedIntDiscrimShape))]
 internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSerializerContext
 {
@@ -1066,6 +1079,17 @@ public class NewApiSourceGenerationTests
 
         Assert.NotNull(person);
         Assert.Equal("Ada", person!.FirstName);
+    }
+
+    [Fact]
+    public void GeneratedContext_CanApplyPascalCaseNamingPolicy()
+    {
+        var context = TestTomlSerializerContextPascalCase.Default;
+
+        var toml = TomlSerializer.Serialize(new GeneratedLowerCasePerson { name = "Ada" }, context.GeneratedLowerCasePerson);
+
+        Assert.Equal("Name = \"Ada\"", toml.Trim());
+        Assert.Equal("Ada", TomlSerializer.Deserialize(toml, context.GeneratedLowerCasePerson)!.name);
     }
 
     [Fact]

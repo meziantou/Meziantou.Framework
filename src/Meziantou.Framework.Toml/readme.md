@@ -175,7 +175,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `IgnoreReadOnlyFields` | `false` | Skips `readonly` fields when writing. |
 | `IgnoreReadOnlyProperties` | `false` | Skips properties without a public setter when writing. A property with an `init` accessor is not read-only. |
 | `PreferredObjectCreationHandling` | `Replace` | Replaces or populates object and collection members when reading. |
-| `DefaultIgnoreCondition` | `WhenWritingNull` | Skips `null` (or default) values when writing. |
+| `DefaultIgnoreCondition` | `WhenWritingNull` | Skips `null` (or default) values when writing: `Never`, `WhenWritingNull`, or `WhenWritingDefault`. `[TomlIgnore(Condition = ...)]` overrides it for a member, including with `Never`. |
 | `DuplicateKeyHandling` | `Error` | Behavior when a key is assigned a value twice. `LastWins` keeps the last value; table redefinitions are always rejected. |
 | `UnmappedMemberHandling` | `Skip` | Skips (`Skip`) or rejects (`Disallow`) keys that match no member. Extension data still collects them. `[TomlUnmappedMemberHandling]` overrides it for a type. |
 | `RespectRequiredConstructorParameters` | `true` | A constructor parameter without a default value must be present. When `false`, it receives the default value of its type. |

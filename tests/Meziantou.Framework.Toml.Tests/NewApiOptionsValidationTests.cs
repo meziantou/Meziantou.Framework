@@ -162,6 +162,15 @@ public sealed class NewApiOptionsValidationTests
         Assert.Null(typeInfo);
     }
 
+    [Theory]
+    [InlineData(TomlIgnoreCondition.Always)]
+    [InlineData(TomlIgnoreCondition.WhenWriting)]
+    [InlineData(TomlIgnoreCondition.WhenReading)]
+    public void DefaultIgnoreCondition_OtherThanNullOrDefault_Throws(TomlIgnoreCondition condition)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TomlSerializerOptions { DefaultIgnoreCondition = condition });
+    }
+
     [Fact]
     public void TryGetTypeInfo_TypeReflectionCannotHandle_ReturnsFalse()
     {

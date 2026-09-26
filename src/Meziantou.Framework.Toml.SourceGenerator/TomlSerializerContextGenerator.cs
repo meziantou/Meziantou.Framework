@@ -4051,10 +4051,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     {
         return (options.DefaultIgnoreCondition ?? DefaultDefaultIgnoreCondition) switch
         {
-            0 or 5 => WriteIgnoreKind.None,
             1 => WriteIgnoreKind.WhenWritingNull,
             2 => WriteIgnoreKind.WhenWritingDefault,
-            3 or 4 => WriteIgnoreKind.WhenWriting,
             _ => WriteIgnoreKind.None,
         };
     }
@@ -6625,6 +6623,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         ValidateEnumOption(context, model, "PreferredObjectCreationHandling", model.Options.PreferredObjectCreationHandling, TryGetObjectCreationHandlingExpression, v => model.Options.PreferredObjectCreationHandling = v);
         ValidateEnumOption(context, model, "NewLine", model.Options.NewLine, TryGetTomlNewLineKindExpression, v => model.Options.NewLine = v);
         ValidateEnumOption(context, model, "DefaultIgnoreCondition", model.Options.DefaultIgnoreCondition, TryGetTomlIgnoreConditionExpression, v => model.Options.DefaultIgnoreCondition = v);
+
+        // Same rule as TomlSerializerOptions.DefaultIgnoreCondition: Never, WhenWritingNull, or WhenWritingDefault
+        if (model.Options.DefaultIgnoreCondition is > 2)
+        {
+            context.ReportDiagnostic(DiagnosticInfo.Create(
+                InvalidSourceGenerationOption,
+                model.ContextSymbol.Locations.FirstOrDefault(),
+                model.ContextSymbol.ToDisplayString(),
+                "DefaultIgnoreCondition must be Never, WhenWritingNull, or WhenWritingDefault."));
+            model.Options.DefaultIgnoreCondition = null;
+        }
         ValidateEnumOption(context, model, "DuplicateKeyHandling", model.Options.DuplicateKeyHandling, TryGetTomlDuplicateKeyHandlingExpression, v => model.Options.DuplicateKeyHandling = v);
         ValidateEnumOption(context, model, "UnmappedMemberHandling", model.Options.UnmappedMemberHandling, TryGetTomlUnmappedMemberHandlingExpression, v => model.Options.UnmappedMemberHandling = v);
         if (model.Options.MaxDepth is not null && model.Options.MaxDepth.Value < 0)

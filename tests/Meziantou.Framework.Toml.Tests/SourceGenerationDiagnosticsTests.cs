@@ -144,6 +144,29 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.True(diagnostics.Any(d => d.Id == "MFTOML005"));
     }
 
+    [Theory]
+    [InlineData("Always")]
+    [InlineData("WhenWriting")]
+    [InlineData("WhenReading")]
+    public void Generator_ReportsUnsupportedDefaultIgnoreCondition(string condition)
+    {
+        var source = """
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSourceGenerationOptions(DefaultIgnoreCondition = TomlIgnoreCondition.CONDITION)]
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person { public string Name { get; set; } = ""; }
+            """.Replace("CONDITION", condition, StringComparison.Ordinal);
+
+        var diagnostics = RunGenerator(source);
+
+        var diagnostic = Assert.Single(diagnostics, d => d.Id == "MFTOML005");
+        Assert.Contains("DefaultIgnoreCondition", diagnostic.GetMessage(CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Generator_ReportsInvalidEnumOption()
     {

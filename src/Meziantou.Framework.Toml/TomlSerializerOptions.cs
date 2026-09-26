@@ -165,8 +165,24 @@ public sealed record TomlSerializerOptions
     /// <summary>Gets or sets the default ignore condition for null/default values.</summary>
     /// <remarks>
     /// The default is <see cref="TomlIgnoreCondition.WhenWritingNull"/>, because TOML has no representation for <see langword="null"/>.
+    /// Like System.Text.Json, only <see cref="TomlIgnoreCondition.Never"/>, <see cref="TomlIgnoreCondition.WhenWritingNull"/>,
+    /// and <see cref="TomlIgnoreCondition.WhenWritingDefault"/> are allowed; use <see cref="Serialization.TomlIgnoreAttribute"/> to
+    /// ignore a member always or in one direction.
     /// </remarks>
-    public TomlIgnoreCondition DefaultIgnoreCondition { get; init; } = TomlIgnoreCondition.WhenWritingNull;
+    /// <exception cref="ArgumentOutOfRangeException">Value is another <see cref="TomlIgnoreCondition"/>.</exception>
+    public TomlIgnoreCondition DefaultIgnoreCondition
+    {
+        get;
+        init
+        {
+            if (value is not (TomlIgnoreCondition.Never or TomlIgnoreCondition.WhenWritingNull or TomlIgnoreCondition.WhenWritingDefault))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "DefaultIgnoreCondition must be Never, WhenWritingNull, or WhenWritingDefault.");
+            }
+
+            field = value;
+        }
+    } = TomlIgnoreCondition.WhenWritingNull;
 
     /// <summary>Gets or sets behavior when duplicate keys are encountered while reading.</summary>
     public TomlDuplicateKeyHandling DuplicateKeyHandling { get; init; } = TomlDuplicateKeyHandling.Error;

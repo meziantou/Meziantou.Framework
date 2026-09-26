@@ -143,8 +143,10 @@ public class LinkInlineParser : InlineParser
         SourceSpan labelSpan,
         LinkDelimiterInline parent,
         int endPosition,
-        LocalLabel localLabel)
+        LocalLabel localLabel,
+        out bool expansionLimitReached)
     {
+        expansionLimitReached = false;
         if (!state.Document.TryGetLinkReferenceDefinition(label, out LinkReferenceDefinition? linkRef))
         {
             return false;
@@ -154,6 +156,13 @@ public class LinkInlineParser : InlineParser
         // still-open link, which would break the outer one.
         if (!linkRef.AllowResolutionInsideOpenLink && HasActiveAncestorLink(parent))
         {
+            return false;
+        }
+
+        // The link copies the URL and the title of the definition. Past the limit, the reference stays literal text.
+        if (!state.TryAddReferenceExpansion((long)(linkRef.Url?.Length ?? 0) + (linkRef.Title?.Length ?? 0)))
+        {
+            expansionLimitReached = true;
             return false;
         }
 
@@ -336,6 +345,7 @@ public class LinkInlineParser : InlineParser
         bool isLabelSpanLocal = true;
 
         bool isShortcut = false;
+        bool isLabelFromOpenParent = false;
         LocalLabel localLabel = LocalLabel.Local;
         // Handle Collapsed links
         if (text.CurrentChar == '[')
@@ -345,6 +355,7 @@ public class LinkInlineParser : InlineParser
                 label = openParent.Label;
                 labelSpan = openParent.LabelSpan;
                 isLabelSpanLocal = false;
+                isLabelFromOpenParent = true;
                 localLabel = LocalLabel.Empty;
                 text.SkipChar(); // Skip [
                 text.SkipChar(); // Skip ]
@@ -355,6 +366,7 @@ public class LinkInlineParser : InlineParser
             localLabel = LocalLabel.None;
             label = openParent.Label;
             isShortcut = true;
+            isLabelFromOpenParent = true;
         }
 
         if (label != null || LinkHelper.TryParseLabelTrivia(ref text, true, out label, out labelSpan))
@@ -365,7 +377,7 @@ public class LinkInlineParser : InlineParser
                 labelSpan = inlineState.GetSourcePositionFromLocalSpan(labelSpan);
             }
 
-            if (ProcessLinkReference(inlineState, text, label!, labelWithTrivia, isShortcut, labelSpan, openParent, inlineState.GetSourcePosition(text.Start - 1), localLabel))
+            if (ProcessLinkReference(inlineState, text, label!, labelWithTrivia, isShortcut, labelSpan, openParent, inlineState.GetSourcePosition(text.Start - 1), localLabel, out var expansionLimitReached))
             {
                 // Remove the open parent
                 openParent.Remove();
@@ -374,6 +386,10 @@ public class LinkInlineParser : InlineParser
                     MarkParentAsInactive(parentDelimiter);
                 }
                 return true;
+            }
+            else if (expansionLimitReached && isLabelFromOpenParent)
+            {
+                // Handle the reference like an undefined label: the brackets become literal text below
             }
             else if (text.CurrentChar != ']' && text.CurrentChar != '[')
             {

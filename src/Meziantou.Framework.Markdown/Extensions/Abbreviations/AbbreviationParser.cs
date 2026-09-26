@@ -91,17 +91,19 @@ public class AbbreviationParser : BlockParser
 
         foreach (var leaf in inlineProcessor.Document.Descendants<LeafBlock>())
         {
-            if (leaf.Inline is not null)
+            if (leaf.Inline is not null && !SubstituteInlineTree(leaf.Inline, prefixTree, stack, inlineProcessor))
             {
-                SubstituteInlineTree(leaf.Inline, prefixTree, stack);
+                // The expansion limit is reached: the remaining occurrences stay literal text
+                break;
             }
         }
     }
 
-    private static void SubstituteInlineTree(
+    private static bool SubstituteInlineTree(
         ContainerInline root,
         CompactPrefixTree<Abbreviation> prefixTree,
-        Stack<ContainerInline> stack)
+        Stack<ContainerInline> stack,
+        InlineProcessor inlineProcessor)
     {
         stack.Push(root);
 
@@ -114,7 +116,11 @@ public class AbbreviationParser : BlockParser
                 var next = child.NextSibling;
                 if (child is LiteralInline literal)
                 {
-                    SubstituteInLiteral(literal, prefixTree);
+                    if (!SubstituteInLiteral(literal, prefixTree, inlineProcessor))
+                    {
+                        stack.Clear();
+                        return false;
+                    }
                 }
                 else if (child is ContainerInline childContainer)
                 {
@@ -123,9 +129,11 @@ public class AbbreviationParser : BlockParser
                 child = next;
             }
         }
+
+        return true;
     }
 
-    private static void SubstituteInLiteral(LiteralInline literal, CompactPrefixTree<Abbreviation> prefixTree)
+    private static bool SubstituteInLiteral(LiteralInline literal, CompactPrefixTree<Abbreviation> prefixTree, InlineProcessor inlineProcessor)
     {
         var content = literal.Content;
         var text = content.Text;
@@ -134,7 +142,7 @@ public class AbbreviationParser : BlockParser
         // Nothing to do if this literal has no parent to insert siblings into
         if (parent is null)
         {
-            return;
+            return true;
         }
 
         // Save original span end before any mutations: on the first substitution
@@ -171,6 +179,12 @@ public class AbbreviationParser : BlockParser
                 if (!IsValidAbbreviationEnding(match, content, i))
                 {
                     continue;
+                }
+
+                // The abbreviation copies its text into the document
+                if (!inlineProcessor.TryAddReferenceExpansion(abbreviationMatch.Value.Text.Length))
+                {
+                    return false;
                 }
 
                 var indexAfterMatch = i + match.Length;
@@ -231,6 +245,8 @@ public class AbbreviationParser : BlockParser
                 }
             }
         }
+
+        return true;
     }
 
     private static bool IsValidAbbreviationEnding(string match, StringSlice content, int matchIndex)

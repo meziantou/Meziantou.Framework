@@ -101,6 +101,27 @@ public class InlineProcessor
     /// </summary>
     internal InlineLinkScanCache LinkScanCache => _linkScanCache ??= new();
 
+    private long _referenceExpansionLength;
+
+    /// <summary>
+    /// Gets or sets the maximum total length of the text copied into the document when references are expanded (the URL
+    /// and title of a link reference definition, the text of an abbreviation). Each use copies the definition, so without
+    /// a limit a long definition used many times turns a small document into a huge one.
+    /// </summary>
+    internal long MaximumReferenceExpansionLength { get; set; } = long.MaxValue;
+
+    /// <summary>
+    /// Records the expansion of a reference, and returns <see langword="false"/> when it would exceed <see cref="MaximumReferenceExpansionLength"/>.
+    /// </summary>
+    internal bool TryAddReferenceExpansion(long length)
+    {
+        if (length > MaximumReferenceExpansionLength - _referenceExpansionLength)
+            return false;
+
+        _referenceExpansionLength += length;
+        return true;
+    }
+
     /// <summary>
     /// Gets or sets the debug log writer. No log if null.
     /// </summary>
@@ -550,6 +571,8 @@ public class InlineProcessor
         _lineOffsets.Clear();
         Array.Clear(ParserStates, 0, ParserStates.Length);
         _linkScanCache?.Clear();
+        _referenceExpansionLength = 0;
+        MaximumReferenceExpansionLength = long.MaxValue;
     }
 
     private static readonly InlineProcessorCache Cache = new();

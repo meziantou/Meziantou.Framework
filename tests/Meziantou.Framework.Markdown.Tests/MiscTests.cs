@@ -284,6 +284,56 @@ public class MiscTests
         Assert.Contains("depth limit", argumentException.Message);
     }
 
+    [Theory]
+    [InlineData("[a]", "<a ")]
+    [InlineData("![a]", "<img ")]
+    [InlineData("[t][a]", "<a ")]
+    public void ReferenceExpansionIsBounded(string reference, string expectedTag)
+    {
+        // Each use copies the 20,001 characters of the URL. Like cmark, the total is limited to max(100,000, input length).
+        var markdown = "[a]: /" + new string('x', 20_000) + "\n\n" + string.Concat(Enumerable.Repeat(reference, 10_000));
+
+        var html = MarkdownConverter.ToHtml(markdown);
+
+        Assert.Equal(4, CountOccurrences(html, expectedTag));
+        // Without the limit, the output is about 200 MB
+        Assert.HasCountLessThan(markdown.Length + 200_000, html);
+    }
+
+    [Fact]
+    public void ShortReferencesAreAllExpanded()
+    {
+        var markdown = "[a]: /url \"title\"\n\n" + string.Concat(Enumerable.Repeat("see [a] ", 10_000));
+
+        var html = MarkdownConverter.ToHtml(markdown);
+
+        Assert.Equal(10_000, CountOccurrences(html, "<a href=\"/url\" title=\"title\">a</a>"));
+    }
+
+    [Fact]
+    public void AbbreviationExpansionIsBounded()
+    {
+        var markdown = "*[A]: " + new string('x', 20_000) + "\n\n" + string.Concat(Enumerable.Repeat("A ", 10_000));
+        var pipeline = new MarkdownPipelineBuilder().UseAbbreviations().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal(5, CountOccurrences(html, "<abbr "));
+    }
+
+    private static int CountOccurrences(string text, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
+    }
+
     [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {

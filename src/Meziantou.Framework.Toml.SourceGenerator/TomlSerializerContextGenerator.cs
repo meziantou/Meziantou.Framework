@@ -1403,7 +1403,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine("            if (requiredMask != 0 && (seenMask & requiredMask) != requiredMask)");
                     builder.AppendLine("            {");
-                    builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                    builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                     for (var i = 0; i < poco.Members.Length; i++)
                     {
                         if (!poco.Members[i].IsRequired)
@@ -1431,7 +1431,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine("            if (seen is not null)");
                     builder.AppendLine("            {");
-                    builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                    builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                     for (var i = 0; i < poco.Members.Length; i++)
                     {
                         if (!poco.Members[i].IsRequired)
@@ -2143,7 +2143,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             else
             {
                 var keyName = EscapeInterpolatedStringLiteral(parameter.KeyName);
-                builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                 builder.Append("                throw span is { } locatedSpan ? new global::Meziantou.Framework.Toml.TomlException(locatedSpan, $\"Missing required constructor parameter '")
                     .Append(keyName)
                     .Append("' when deserializing '{typeof(")
@@ -2165,7 +2165,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (requiredMask != 0 && (seenMask & requiredMask) != requiredMask)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                 for (var i = 0; i < poco.Members.Length; i++)
                 {
                     if (!poco.Members[i].IsRequired)
@@ -2193,7 +2193,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (seen is not null)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                 for (var i = 0; i < poco.Members.Length; i++)
                 {
                     if (!poco.Members[i].IsRequired)
@@ -2746,7 +2746,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (requiredMask != 0 && (seenMask & requiredMask) != requiredMask)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                 for (var i = 0; i < poco.Members.Length; i++)
                 {
                     if (!poco.Members[i].IsRequired)
@@ -2774,7 +2774,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.AppendLine("            if (seen is not null)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                var span = endTableSpan ?? tableStartSpan;");
+                builder.AppendLine("                var span = tableStartSpan ?? endTableSpan;");
                 for (var i = 0; i < poco.Members.Length; i++)
                 {
                     if (!poco.Members[i].IsRequired)

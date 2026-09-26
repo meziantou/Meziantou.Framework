@@ -1473,6 +1473,28 @@ internal sealed partial class TestTomlSerializerContextPrivateHiding : TomlSeria
 {
 }
 
+public sealed class GeneratedRequiredLocationRoot
+{
+    public GeneratedRequiredLocationChild A { get; set; } = new() { Z = 0 };
+
+    public GeneratedRequiredLocationRecord B { get; set; } = new(0, 0);
+}
+
+public sealed class GeneratedRequiredLocationChild
+{
+    public required int Z { get; set; }
+
+    public int X { get; set; }
+}
+
+public sealed record GeneratedRequiredLocationRecord(int Y, int W);
+
+[TomlSourceGenerationOptions(RespectRequiredConstructorParameters = true)]
+[TomlSerializable(typeof(GeneratedRequiredLocationRoot))]
+internal sealed partial class TestTomlSerializerContextRequiredLocation : TomlSerializerContext
+{
+}
+
 [TomlPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [TomlDerivedType(typeof(GeneratedIntDiscrimCircle), 1)]
 [TomlDerivedType(typeof(GeneratedIntDiscrimSquare), 2)]
@@ -2955,6 +2977,24 @@ public class NewApiSourceGenerationTests
 
         Assert.IsType<GeneratedJsonAttrFallbackBase>(result);
         Assert.Equal("test", result!.Name);
+    }
+
+    [Theory]
+    [InlineData("[A]\nX = 1\n\n[B]\nY = 2\nW = 3\n", "Missing required TOML key 'Z'", 0)]
+    [InlineData("[A]\nZ = 1\n\n[B]\nY = 2\n\n[C]\n", "Missing required constructor parameter 'W'", 3)]
+    public void MissingRequiredKey_IsReportedAtTheStartOfItsTable(string toml, string message, int expectedLine)
+    {
+        var options = new TomlSerializerOptions { RespectRequiredConstructorParameters = true };
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedRequiredLocationRoot>(toml, options));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, TestTomlSerializerContextRequiredLocation.Default.GeneratedRequiredLocationRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            var diagnostic = Assert.Single(exception.Diagnostics);
+            Assert.Contains(message, diagnostic.Message, StringComparison.Ordinal);
+            Assert.Equal(expectedLine, diagnostic.Span.Start.Line);
+        }
     }
 
     [Fact]

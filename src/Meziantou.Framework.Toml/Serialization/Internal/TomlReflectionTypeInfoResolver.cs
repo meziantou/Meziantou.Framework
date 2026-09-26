@@ -1165,7 +1165,7 @@ internal static class TomlReflectionTypeInfoResolver
 
             if (seen is not null)
             {
-                ValidateRequiredMembers(seen, endTableSpan ?? tableStartSpan);
+                ValidateRequiredMembers(seen, tableStartSpan ?? endTableSpan);
             }
 
             if (propertiesMetadata is not null)
@@ -1668,20 +1668,16 @@ internal static class TomlReflectionTypeInfoResolver
                     continue;
                 }
 
-                if (endTableSpan is { } span)
+                // The end of the table has the span of whatever follows it, possibly another table
+                if ((tableStartSpan ?? endTableSpan) is { } span)
                 {
                     throw new TomlException(span, $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
-                }
-
-                if (tableStartSpan is { } startSpan)
-                {
-                    throw new TomlException(startSpan, $"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
                 }
 
                 throw new TomlException($"Missing required constructor parameter '{binding.KeyName}' when deserializing '{Type.FullName}'.");
             }
 
-            ValidateRequiredMembers(memberSeen, endTableSpan ?? tableStartSpan);
+            ValidateRequiredMembers(memberSeen, tableStartSpan ?? endTableSpan);
 
             object instance;
             try

@@ -62,7 +62,7 @@ public sealed class TomlArray : TomlObject, IList<object?>
     /// <inheritdoc />
     public bool Contains(object? item)
     {
-        return item != null && _list.Contains(item);
+        return _list.Contains(item);
     }
 
     /// <inheritdoc />
@@ -74,7 +74,7 @@ public sealed class TomlArray : TomlObject, IList<object?>
     /// <inheritdoc />
     public bool Remove(object? item)
     {
-        return item != null && _list.Remove(item);
+        return _list.Remove(item);
     }
 
     /// <inheritdoc />

@@ -69,14 +69,14 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         {
             if (_map.TryGetValue(item.Key, out var index))
             {
-                return _order[index].Value == item.Value;
+                return EqualityComparer<object>.Default.Equals(_order[index].Value, item.Value);
             }
 
             return false;
         }
 
         var linearIndex = IndexOfKey(item.Key);
-        return linearIndex >= 0 && _order[linearIndex].Value == item.Value;
+        return linearIndex >= 0 && EqualityComparer<object>.Default.Equals(_order[linearIndex].Value, item.Value);
     }
 
     void ICollection<KeyValuePair<string, object>>.CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
@@ -93,7 +93,7 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
     {
         if (_map is not null)
         {
-            if (_map.TryGetValue(item.Key, out var index) && _order[index].Value == item.Value)
+            if (_map.TryGetValue(item.Key, out var index) && EqualityComparer<object>.Default.Equals(_order[index].Value, item.Value))
             {
                 return Remove(item.Key);
             }
@@ -102,7 +102,7 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         }
 
         var linearIndex = IndexOfKey(item.Key);
-        if (linearIndex < 0 || _order[linearIndex].Value != item.Value)
+        if (linearIndex < 0 || !EqualityComparer<object>.Default.Equals(_order[linearIndex].Value, item.Value))
         {
             return false;
         }
@@ -120,6 +120,7 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
     /// <inheritdoc />
     public void Add(string key, object value)
     {
+        ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
         if (_map is not null)
         {
@@ -225,6 +226,8 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         }
         set
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             // If the key exists, update it without changing insertion order.
             if (_map is not null)
             {
@@ -310,8 +313,10 @@ public sealed class TomlTable : TomlObject, IDictionary<string, object>
         }
     }
 
+    // A null key is rejected up front, like Dictionary does, rather than only once the table switches to a dictionary
     private int IndexOfKey(string key)
     {
+        ArgumentNullException.ThrowIfNull(key);
         for (var i = 0; i < _order.Count; i++)
         {
             if (string.Equals(_order[i].Key, key, StringComparison.Ordinal))

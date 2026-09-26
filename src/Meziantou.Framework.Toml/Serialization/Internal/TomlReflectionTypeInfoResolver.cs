@@ -901,15 +901,12 @@ internal static class TomlReflectionTypeInfoResolver
             if (_extensionDataIndex != -1)
             {
                 var extensionMember = _members[_extensionDataIndex];
-                var extensionDictionary = extensionMember.Getter(value) as IDictionary;
+                var extensionDictionary = extensionMember.Getter(value);
                 if (extensionDictionary is not null)
                 {
-                    foreach (DictionaryEntry entry in extensionDictionary)
+                    foreach (var entry in EnumerateExtensionData(extensionDictionary))
                     {
-                        if (entry.Key is not string key)
-                        {
-                            throw new TomlException($"Extension data keys must be strings but encountered '{entry.Key?.GetType().FullName}'.");
-                        }
+                        var key = entry.Key;
 
                         if (Options.DictionaryKeyPolicy is { } keyPolicy)
                         {
@@ -1070,7 +1067,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     var extensionDictionary = EnsureExtensionDataDictionary(instance);
                     var extensionValue = ReadExtensionValue(reader);
-                    extensionDictionary[name] = extensionValue;
+                    SetExtensionData(extensionDictionary, name, extensionValue);
                     continue;
                 }
 
@@ -1267,7 +1264,46 @@ internal static class TomlReflectionTypeInfoResolver
             }
         }
 
-        private IDictionary EnsureExtensionDataDictionary(object instance)
+        // An extension data member is a non-generic IDictionary (Dictionary<string, T>) or an IDictionary<string, object>
+        // (TomlTable)
+        private static bool IsExtensionDataDictionary(object? value) => value is IDictionary or IDictionary<string, object>;
+
+        private static void SetExtensionData(object dictionary, string key, object? value)
+        {
+            if (dictionary is IDictionary nonGenericDictionary)
+            {
+                nonGenericDictionary[key] = value;
+            }
+            else
+            {
+                ((IDictionary<string, object>)dictionary)[key] = value!;
+            }
+        }
+
+        private static IEnumerable<KeyValuePair<string, object?>> EnumerateExtensionData(object dictionary)
+        {
+            if (dictionary is IDictionary nonGenericDictionary)
+            {
+                foreach (DictionaryEntry entry in nonGenericDictionary)
+                {
+                    if (entry.Key is not string key)
+                    {
+                        throw new TomlException($"Extension data keys must be strings but encountered '{entry.Key?.GetType().FullName}'.");
+                    }
+
+                    yield return new KeyValuePair<string, object?>(key, entry.Value);
+                }
+            }
+            else if (dictionary is IDictionary<string, object> genericDictionary)
+            {
+                foreach (var entry in genericDictionary)
+                {
+                    yield return new KeyValuePair<string, object?>(entry.Key, entry.Value);
+                }
+            }
+        }
+
+        private object EnsureExtensionDataDictionary(object instance)
         {
             if (_extensionDataIndex == -1)
             {
@@ -1276,9 +1312,9 @@ internal static class TomlReflectionTypeInfoResolver
 
             var extensionMember = _members[_extensionDataIndex];
             var existing = extensionMember.Getter(instance);
-            if (existing is IDictionary dictionary)
+            if (IsExtensionDataDictionary(existing))
             {
-                return dictionary;
+                return existing!;
             }
 
             if (existing is null)
@@ -1296,16 +1332,16 @@ internal static class TomlReflectionTypeInfoResolver
             throw new TomlException($"Extension data member '{extensionMember.Member.Name}' must be a dictionary-like type.");
         }
 
-        private IDictionary CreateExtensionDataDictionary(Type memberType)
+        private object CreateExtensionDataDictionary(Type memberType)
         {
             if (!memberType.IsInterface && !memberType.IsAbstract)
             {
                 try
                 {
                     var created = Activator.CreateInstance(memberType);
-                    if (created is IDictionary dictionary)
+                    if (IsExtensionDataDictionary(created))
                     {
-                        return dictionary;
+                        return created!;
                     }
                 }
                 catch
@@ -1591,7 +1627,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var dictionary = EnsureExtensionDataDictionary(instance);
                 foreach (var pair in extensionData)
                 {
-                    dictionary[pair.Key] = pair.Value;
+                    SetExtensionData(dictionary, pair.Key, pair.Value);
                 }
             }
 

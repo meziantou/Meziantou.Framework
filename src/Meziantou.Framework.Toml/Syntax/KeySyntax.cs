@@ -9,12 +9,14 @@ public sealed class KeySyntax : ValueSyntax
 {
     private BareKeyOrStringValueSyntax? _key;
 
+    // Created on first use: most keys are not dotted, and a list per key is a large part of the tree size
+    private SyntaxList<DottedKeyItemSyntax>? _dotKeys;
+
     /// <summary>
     /// Creates a new instance of a <see cref="KeySyntax"/>
     /// </summary>
     public KeySyntax() : base(SyntaxKind.Key)
     {
-        DotKeys = new SyntaxList<DottedKeyItemSyntax>() { Parent = this };
     }
 
     /// <summary>
@@ -51,7 +53,9 @@ public sealed class KeySyntax : ValueSyntax
     /// <summary>
     /// List of the dotted keys.
     /// </summary>
-    public SyntaxList<DottedKeyItemSyntax> DotKeys { get; }
+    public SyntaxList<DottedKeyItemSyntax> DotKeys => _dotKeys ??= new SyntaxList<DottedKeyItemSyntax>() { Parent = this };
+
+    internal SyntaxList<DottedKeyItemSyntax>? DotKeysIfCreated => _dotKeys;
 
     /// <inheritdoc />
     public override void Accept(SyntaxVisitor visitor)
@@ -66,7 +70,7 @@ public sealed class KeySyntax : ValueSyntax
     protected override SyntaxNode? GetChildImpl(int index)
     {
         if (index == 0) return Key;
-        return DotKeys;
+        return _dotKeys;
     }
 
     /// <inheritdoc />

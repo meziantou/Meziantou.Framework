@@ -409,7 +409,7 @@ internal partial class Parser
                     {
                         Span = GetSpanForToken(_token),
                         Kind = _token.Kind,
-                        Text = _token.GetText(_lexer.Text.Span),
+                        Text = GetTokenText(_token),
                     });
                     NextToken();
                     continue;
@@ -436,7 +436,7 @@ internal partial class Parser
                         {
                             Span = GetSpanForToken(_token),
                             Kind = _token.Kind,
-                            Text = _token.GetText(_lexer.Text.Span),
+                            Text = GetTokenText(_token),
                         });
                         NextToken();
                     }
@@ -623,7 +623,7 @@ internal partial class Parser
             }
         }
         syntax.TokenKind = tokenKind;
-        syntax.Text = _token.Kind.ToText() ?? _token.GetText(_lexer.Text.Span);
+        syntax.Text = _token.Kind.ToText() ?? GetTokenText(_token);
         if (tokenKind == TokenKind.NewLine)
         {
             // Once we have found a new line, we let all the other NewLines as trivias
@@ -637,7 +637,7 @@ internal partial class Parser
     {
         var syntax = Open<SyntaxToken>();
         syntax.TokenKind = _token.Kind;
-        syntax.Text = _token.Kind.ToText() ?? _token.GetText(_lexer.Text.Span);
+        syntax.Text = _token.Kind.ToText() ?? GetTokenText(_token);
         NextToken();
         return Close(syntax);
     }
@@ -734,9 +734,48 @@ internal partial class Parser
             {
                 Span = new SourceSpan(_lexer.SourcePath, token.Start, token.End),
                 Kind = token.Kind,
-                Text = token.GetText(_lexer.Text.Span),
+                Text = GetTokenText(token),
             });
         }
+    }
+
+    // Whitespace and newlines are most of the tokens of a document, so their texts are shared
+    private static readonly string[] SharedSpaces = CreateSpaces();
+
+    private static string[] CreateSpaces()
+    {
+        var spaces = new string[17];
+        for (var i = 0; i < spaces.Length; i++)
+        {
+            spaces[i] = new string(' ', i);
+        }
+
+        return spaces;
+    }
+
+    private string? GetTokenText(in SyntaxTokenValue token)
+    {
+        var length = token.End.Offset - token.Start.Offset + 1;
+        if (length > 0 && length < SharedSpaces.Length && token.Start.Offset + length <= _lexer.Text.Length)
+        {
+            var text = _lexer.Text.Span.Slice(token.Start.Offset, length);
+            if (text is "\n")
+            {
+                return "\n";
+            }
+
+            if (text is "\r\n")
+            {
+                return "\r\n";
+            }
+
+            if (!text.ContainsAnyExcept(' '))
+            {
+                return SharedSpaces[length];
+            }
+        }
+
+        return token.GetText(_lexer.Text.Span);
     }
 
     private void LogError(string text)

@@ -221,11 +221,11 @@ internal class SyntaxValidator : SyntaxVisitor
 
         _currentPath.Add(name!);
 
-        var items = key.DotKeys;
-        for (int i = 0; i < items.ChildrenCount; i++)
+        var items = key.DotKeysIfCreated;
+        for (int i = 0; i < (items?.ChildrenCount ?? 0); i++)
         {
             AddObjectPath(key, kind, true, fromDottedKeys);
-            var dotItem = SyntaxValidator.GetStringFromBasic(items.GetChild(i)!.Key!)!;
+            var dotItem = SyntaxValidator.GetStringFromBasic(items!.GetChild(i)!.Key!)!;
             if (dotItem is null) return false;
             _currentPath.Add(dotItem);
         }

@@ -108,4 +108,19 @@ val = true
         Assert.Equal([("a", "x\ty"), ("b", "c"), ("c", "dA")], values);
         Assert.Equal(toml, doc.ToString());
     }
+
+    [Fact]
+    public void KeySyntax_DotKeys_AreCreatedOnlyForDottedKeys()
+    {
+        var toml = "a = 1\nb.c = 2\n";
+
+        var doc = SyntaxParser.Parse(toml);
+
+        var simple = doc.KeyValues.GetChild(0)!.Key!;
+        var dotted = doc.KeyValues.GetChild(1)!.Key!;
+        Assert.Null(simple.GetChild(1));
+        Assert.Equal(1, dotted.DotKeys.ChildrenCount);
+        Assert.Equal(0, simple.DotKeys.ChildrenCount);
+        Assert.Equal(toml, doc.ToString());
+    }
 }

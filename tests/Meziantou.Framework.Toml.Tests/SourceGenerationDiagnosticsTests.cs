@@ -435,6 +435,45 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
     }
 
+    [Theory]
+    [InlineData("public required int Count { get; set; }")]
+    [InlineData("public int Count { get; init; }")]
+    [InlineData("public int Count { get; set; }")]
+    public void Generator_ExtensionDataWithConstructorOrInitializer_CompilesWithoutWarnings(string member)
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class WithInitializer
+            {
+                MEMBER
+
+                [TomlExtensionData]
+                public Dictionary<string, object>? Extra { get; set; }
+            }
+
+            public sealed class WithConstructor
+            {
+                public WithConstructor(string name) => Name = name;
+
+                public string Name { get; }
+
+                [TomlExtensionData]
+                public Dictionary<string, object>? Extra { get; set; }
+            }
+
+            [TomlSerializable(typeof(WithInitializer))]
+            [TomlSerializable(typeof(WithConstructor))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """.Replace("MEMBER", member, StringComparison.Ordinal);
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
     [Fact]
     public void Generator_WarnsForJsonSerializableUsage()
     {

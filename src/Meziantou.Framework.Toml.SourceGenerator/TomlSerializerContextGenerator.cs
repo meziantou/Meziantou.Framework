@@ -1569,7 +1569,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                    if (__extensionData is null) __extensionData = new();");
             builder.Append("                    __extensionData[name] = ").Append(GetTypeInfoReadExpression(extensionData.ValueType)).AppendLine(";");
             builder.AppendLine("                    continue;");
-            builder.AppendLine("                    reader.Skip();");
         }
         else
         {
@@ -1800,14 +1799,17 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                        continue;");
             builder.AppendLine("                    }");
         }
-
-        if (extensionData is null && poco.DisallowUnmappedMembers)
+        else
         {
-            builder.AppendLine("                    var name = reader.PropertyName!;");
-        }
+            // Extension data captures the unmapped keys, so this code would be unreachable (CS0162)
+            if (poco.DisallowUnmappedMembers)
+            {
+                builder.AppendLine("                    var name = reader.PropertyName!;");
+            }
 
-        builder.AppendLine("                    reader.Read();");
-        EmitUnmappedMember(builder, "                    ", extensionData is null && poco.DisallowUnmappedMembers, typeName);
+            builder.AppendLine("                    reader.Read();");
+            EmitUnmappedMember(builder, "                    ", poco.DisallowUnmappedMembers, typeName);
+        }
             builder.AppendLine("                }");
         }
         builder.AppendLine("            }");

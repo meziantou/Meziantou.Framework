@@ -321,12 +321,12 @@ public sealed class SourceGenerationDiagnosticsTests
 
         Assert.Empty(result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
         var generated = string.Join("\n", result.GeneratedSources);
-        Assert.Contains("public TomlTypeInfo<global::A.Item> Item", generated, StringComparison.Ordinal);
-        Assert.Contains("public TomlTypeInfo<global::B.Item> B_Item", generated, StringComparison.Ordinal);
-        Assert.Contains("public TomlTypeInfo<global::A.Item> FirstItem", generated, StringComparison.Ordinal);
-        Assert.Contains("public TomlTypeInfo<global::B.Item> Item", generated, StringComparison.Ordinal);
-        Assert.Contains("public TomlTypeInfo<global::Options> Options2", generated, StringComparison.Ordinal);
-        Assert.Contains("public TomlTypeInfo<global::Default> Default2", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::A.Item> Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::B.Item> B_Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::A.Item> FirstItem", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::B.Item> Item", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::Options> Options2", generated, StringComparison.Ordinal);
+        Assert.Contains("public global::Meziantou.Framework.Toml.TomlTypeInfo<global::Default> Default2", generated, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -526,6 +526,51 @@ public sealed class SourceGenerationDiagnosticsTests
             [TomlSerializable(typeof(Empty))]
             [TomlSerializable(typeof(EmptyWithConstructor))]
             internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
+    public void Generator_UserTypesNamedLikeFrameworkTypes_Compile()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            namespace App
+            {
+                public sealed class Type { }
+                public sealed class Exception { }
+                public sealed class StringComparison { }
+                public sealed class TomlException { }
+                public sealed class TomlTypeInfo { }
+                public sealed class TomlReader { }
+                public sealed class TomlWriter { }
+                public sealed class TomlSerializerOptions { }
+                public sealed class TomlTokenType { }
+                public sealed class List<T> { }
+
+                public sealed class Person
+                {
+                    [TomlRequired]
+                    public string? Name { get; set; }
+
+                    public System.Collections.Generic.List<int>? Values { get; set; }
+
+                    [TomlExtensionData]
+                    public System.Collections.Generic.Dictionary<string, object>? Extra { get; set; }
+                }
+
+                public sealed record Ctor(string Name, int Age);
+
+                [TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+                [TomlSerializable(typeof(Person))]
+                [TomlSerializable(typeof(Ctor))]
+                internal partial class Ctx : TomlSerializerContext { }
+            }
             """;
 
         var result = RunGeneratorTest(source);

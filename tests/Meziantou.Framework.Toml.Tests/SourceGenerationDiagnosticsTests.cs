@@ -830,6 +830,34 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.True(diagnostics.Any(d => d.Id == "MFTOML010"));
     }
 
+    [Fact]
+    public void Generator_UnrelatedEdit_KeepsTheGeneratedOutput()
+    {
+        var source = """
+            using Meziantou.Framework.Toml.Serialization;
+
+            [TomlSerializable(typeof(Person))]
+            internal partial class Ctx : TomlSerializerContext { }
+
+            public sealed class Person { public string Name { get; set; } = ""; }
+            """;
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
+        var compilation = CSharpCompilation.Create(
+            assemblyName: "Meziantou.Framework.Toml.SourceGeneration.Tests.Input",
+            syntaxTrees: [CSharpSyntaxTree.ParseText(source, parseOptions)],
+            references: CreateReferences(),
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        GeneratorDriver driver = CSharpGeneratorDriver.Create([new TomlSerializerContextGenerator().AsSourceGenerator()], parseOptions: parseOptions, driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true));
+        driver = driver.RunGenerators(compilation);
+
+        driver = driver.RunGenerators(compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("public sealed class Other { }", parseOptions)));
+
+        var result = Assert.Single(driver.GetRunResult().Results);
+        Assert.Single(result.GeneratedSources);
+        var outputs = result.TrackedSteps["TomlContextOutputs"].SelectMany(static step => step.Outputs);
+        Assert.All(outputs, output => Assert.True(output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged, output.Reason.ToString()));
+    }
+
     private static ImmutableArray<Diagnostic> RunGenerator(string source)
         => RunGeneratorTest(source).Diagnostics;
 

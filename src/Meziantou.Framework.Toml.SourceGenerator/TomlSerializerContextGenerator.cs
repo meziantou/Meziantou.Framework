@@ -4032,6 +4032,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         WhenWritingNull = 1,
         WhenWritingDefault = 2,
         WhenWriting = 4,
+
+        // An explicit [TomlIgnore(Condition = Never)] or [JsonIgnore(Condition = Never)]: overrides DefaultIgnoreCondition
+        Never = 8,
     }
 
     private static WriteIgnoreKind GetEffectiveWriteIgnore(PocoMember member, SourceGenOptions options)
@@ -5838,7 +5841,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var toml = TomlIgnoreAttributeModel.From(tomlAttr);
             return toml.Condition switch
             {
-                0 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None),
+                0 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.Never),
                 1 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingNull),
                 2 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingDefault),
                 4 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWriting),
@@ -5852,7 +5855,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var condition = JsonIgnoreAttributeModel.From(jsonAttr).Condition ?? 1;
             return condition switch
             {
-                0 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None),
+                0 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.Never),
                 1 => new IgnoreBehavior(ignoreAlways: true, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.None),
                 2 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingDefault),
                 3 => new IgnoreBehavior(ignoreAlways: false, ignoreOnRead: false, writeIgnore: WriteIgnoreKind.WhenWritingNull),

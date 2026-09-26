@@ -477,7 +477,8 @@ internal static class TomlReflectionTypeInfoResolver
         {
             return tomlIgnore.Condition switch
             {
-                TomlIgnoreCondition.Never => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: null),
+                // An explicit Never overrides DefaultIgnoreCondition, unlike a member without the attribute
+                TomlIgnoreCondition.Never => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.Never),
                 TomlIgnoreCondition.WhenWritingNull => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingNull),
                 TomlIgnoreCondition.WhenWritingDefault => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingDefault),
                 TomlIgnoreCondition.WhenWriting => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWriting),
@@ -491,7 +492,7 @@ internal static class TomlReflectionTypeInfoResolver
         {
             return (int)jsonIgnore.Condition switch
             {
-                0 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: null),
+                0 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.Never),
                 1 => new IgnoreBehavior(IgnoreAlways: true, IgnoreOnRead: false, WriteIgnoreCondition: null),
                 2 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingDefault),
                 3 => new IgnoreBehavior(IgnoreAlways: false, IgnoreOnRead: false, WriteIgnoreCondition: TomlIgnoreCondition.WhenWritingNull),

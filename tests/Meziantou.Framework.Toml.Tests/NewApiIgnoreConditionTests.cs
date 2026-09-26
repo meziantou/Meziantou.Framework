@@ -45,6 +45,23 @@ internal sealed partial class TestTomlIgnoreContext : TomlSerializerContext
 {
 }
 
+public sealed class NeverIgnoreConditionModel
+{
+    [TomlIgnore(Condition = TomlIgnoreCondition.Never)]
+    public int TomlNever { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+    public int JsonNever { get; set; }
+
+    public int Other { get; set; }
+}
+
+[TomlSourceGenerationOptions(DefaultIgnoreCondition = TomlIgnoreCondition.WhenWritingDefault)]
+[TomlSerializable(typeof(NeverIgnoreConditionModel))]
+internal sealed partial class TestTomlNeverIgnoreContext : TomlSerializerContext
+{
+}
+
 public class NewApiIgnoreConditionTests
 {
     [Fact]
@@ -191,5 +208,17 @@ public class NewApiIgnoreConditionTests
         Assert.Equal(0, deserialized.TomlReadOnly);
         Assert.Equal(50, deserialized.JsonWriteOnly);
         Assert.Equal(0, deserialized.JsonReadOnly);
+    }
+
+    [Fact]
+    public void IgnoreConditionNever_OverridesDefaultIgnoreCondition()
+    {
+        var options = new TomlSerializerOptions { DefaultIgnoreCondition = TomlIgnoreCondition.WhenWritingDefault };
+
+        var reflection = TomlSerializer.Serialize(new NeverIgnoreConditionModel(), options);
+        var generated = TomlSerializer.Serialize(new NeverIgnoreConditionModel(), TestTomlNeverIgnoreContext.Default.NeverIgnoreConditionModel);
+
+        Assert.Equal("TomlNever = 0\nJsonNever = 0\n", reflection);
+        Assert.Equal(reflection, generated);
     }
 }

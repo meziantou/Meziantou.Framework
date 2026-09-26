@@ -35,7 +35,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor InaccessibleType = new(
         id: "MFTOML015",
         title: "Type is not accessible from the generated code",
-        messageFormat: "Type '{0}' is not accessible from the code generated for context '{1}'. Make it public or internal, and not file-local.",
+        messageFormat: "Type '{0}' is not accessible from the code generated for context '{1}', or is less accessible than the context. Make it at least as accessible as the context, and not file-local.",
         category: "Meziantou.Framework.Toml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -607,7 +607,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return FindLessAccessibleType(model, array.ElementType);
 
             case INamedTypeSymbol named:
-                if (GetEffectiveAccessibilityRank(named) < GetEffectiveAccessibilityRank(model.ContextSymbol))
+                var typeAccessibility = GetEffectiveAccessibility(named);
+                var contextAccessibility = GetEffectiveAccessibility(model.ContextSymbol);
+                if (typeAccessibility.InAssembly < contextAccessibility.InAssembly || typeAccessibility.OutsideAssembly < contextAccessibility.OutsideAssembly)
                 {
                     return named;
                 }
@@ -627,22 +629,29 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
     }
 
-    private static int GetEffectiveAccessibilityRank(INamedTypeSymbol type)
+    // Accessibility levels are not ordered: internal and protected are each accessible where the other is not. So the code in
+    // the assembly and the code outside of it are compared separately: 2 is any code, 1 is derived types only, 0 is none.
+    private static (int InAssembly, int OutsideAssembly) GetEffectiveAccessibility(INamedTypeSymbol type)
     {
-        var rank = int.MaxValue;
+        var inAssembly = 2;
+        var outsideAssembly = 2;
         for (var current = type; current is not null; current = current.ContainingType)
         {
-            rank = Math.Min(rank, current.DeclaredAccessibility switch
+            var (currentInAssembly, currentOutsideAssembly) = current.DeclaredAccessibility switch
             {
-                Accessibility.Public => 4,
-                Accessibility.ProtectedOrInternal => 3,
-                Accessibility.Internal or Accessibility.Protected => 2,
-                Accessibility.ProtectedAndInternal => 1,
-                _ => 0,
-            });
+                Accessibility.Public => (2, 2),
+                Accessibility.ProtectedOrInternal => (2, 1),
+                Accessibility.Internal => (2, 0),
+                Accessibility.Protected => (1, 1),
+                Accessibility.ProtectedAndInternal => (1, 0),
+                _ => (0, 0),
+            };
+
+            inAssembly = Math.Min(inAssembly, currentInAssembly);
+            outsideAssembly = Math.Min(outsideAssembly, currentOutsideAssembly);
         }
 
-        return rank;
+        return (inAssembly, outsideAssembly);
     }
 
     private static string? GetUnserializableTypeReason(ITypeSymbol type) => type switch

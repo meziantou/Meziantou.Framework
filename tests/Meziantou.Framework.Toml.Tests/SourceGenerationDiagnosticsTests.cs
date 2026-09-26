@@ -924,6 +924,7 @@ public sealed class SourceGenerationDiagnosticsTests
     [InlineData("MFTOML015", "[TomlSerializable(typeof(Outer))] internal partial class Ctx : TomlSerializerContext { } public class Outer { private sealed class Inner { public int X { get; set; } } [TomlInclude] private System.Collections.Generic.List<Inner>? Values { get; set; } }")]
     [InlineData("MFTOML015", "public partial class Outer { private sealed class Person { public string Name { get; set; } = \"\"; } [TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } }")]
     [InlineData("MFTOML015", "public partial class Outer { private sealed class Person { public string Name { get; set; } = \"\"; } [TomlSerializable(typeof(Person[]))] internal partial class Ctx : TomlSerializerContext { } }")]
+    [InlineData("MFTOML015", "internal sealed class Person { public string Name { get; set; } = \"\"; } public partial class Outer { [TomlSerializable(typeof(Person))] protected partial class Ctx : TomlSerializerContext { } }")]
     [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public System.Action? Callback { get; set; } }")]
     [InlineData("MFTOML016", "[TomlSerializable(typeof(Person))] internal partial class Ctx : TomlSerializerContext { } public sealed class Person { public string Name { get; set; } = \"\"; public System.ReadOnlySpan<char> Span => System.MemoryExtensions.AsSpan(Name); }")]
     [InlineData("MFTOML017", "[TomlSerializable(typeof(Root))] internal partial class Ctx : TomlSerializerContext { } public abstract class Root { public int X { get; set; } }")]
@@ -1006,6 +1007,30 @@ public sealed class SourceGenerationDiagnosticsTests
 
                 [TomlSerializable(typeof(Person))]
                 private partial class Ctx : TomlSerializerContext { }
+            }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Theory]
+    [InlineData("public", "protected")]
+    [InlineData("internal", "private protected")]
+    [InlineData("internal", "internal")]
+    public void Generator_TypeAsAccessibleAsANestedContext_Compiles(string typeAccessibility, string contextAccessibility)
+    {
+        var source = $$"""
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            {{typeAccessibility}} sealed class Person { public string Name { get; set; } = ""; }
+
+            public partial class Outer
+            {
+                [TomlSerializable(typeof(Person))]
+                {{contextAccessibility}} partial class Ctx : TomlSerializerContext { }
             }
             """;
 

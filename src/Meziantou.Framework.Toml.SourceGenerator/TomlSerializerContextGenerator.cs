@@ -2479,8 +2479,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("}");
     }
 
-    // A member with a converter is read as a whole by its converter
-    private static bool CanEmitTableHeaderExtension(PocoMember member) => !member.Type.IsValueType && member.ConverterTypeInfoName is null;
+    // A member with a converter is read as a whole by its converter, and a member set by an accessor cannot be assigned
+    private static bool CanEmitTableHeaderExtension(PocoMember member) => !member.Type.IsValueType && member.ConverterTypeInfoName is null && member.SetterAccessorName is null;
 
     private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => !parameter.ParameterType.IsValueType && parameter.ConverterTypeInfoName is null;
 
@@ -4013,6 +4013,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     declaredConverter.ConverterType?.ToDisplayString() ?? "null",
                     converterError));
                 continue;
+            }
+
+            // An init-only member is set in an object initializer, which replaces its value. To populate it like the
+            // reflection resolver does, it is set after the construction with the generated accessor instead.
+            var effectiveObjectCreationHandling = objectCreationHandling == ObjectCreationHandlingKind.Default ? GetEffectiveObjectCreationHandling(model.Options) : objectCreationHandling;
+            if (isInitOnly && !isCompilerRequired && !member.Type.IsValueType && effectiveObjectCreationHandling == ObjectCreationHandlingKind.Populate)
+            {
+                isInitOnly = false;
+                setterAccessorName ??= "__Set" + members.Count.ToString(CultureInfo.InvariantCulture);
             }
 
             members.Add(new PocoMember(member.Name, serializedName, member.Type, member.ContainingType, order, writeIgnore, ignore.IgnoreOnRead, objectCreationHandling, hasExplicitObjectCreationHandling, hasSingleOrArray, required, isCompilerRequired, canSet, isInitOnly, isField: false, getterAccessorName, formatting.TableArrayStyle, formatting.InlineTablePolicy, formatting.StringStyle, formatting.PreferLiteralWhenNoEscapes, formatting.AllowHexEscapes)

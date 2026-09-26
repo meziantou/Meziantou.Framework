@@ -434,6 +434,27 @@ internal sealed partial class TestTomlSerializerContextGenericNullability : Toml
 {
 }
 
+public sealed class GeneratedInitOnlyPopulateModel
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public List<int> Items { get; init; } = [1];
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedInitOnlyPopulateChild Child { get; init; } = new() { A = 1 };
+}
+
+public sealed class GeneratedInitOnlyPopulateChild
+{
+    public int A { get; set; }
+
+    public int B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedInitOnlyPopulateModel))]
+internal sealed partial class TestTomlSerializerContextInitOnlyPopulate : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedBraceNameModel
 {
     [TomlRequired]
@@ -1878,6 +1899,23 @@ public class NewApiSourceGenerationTests
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedClassConstrainedGeneric<string>(), context.GeneratedClassConstrainedGenericString));
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedNullabilityAttributes { NotNullValue = null }));
         Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new GeneratedNullabilityAttributes { NotNullValue = null }, context.GeneratedNullabilityAttributes));
+    }
+
+    [Fact]
+    public void InitOnlyMember_WithPopulate_IsPopulatedInBothPaths()
+    {
+        const string Toml = "Items = [2]\n\n[Child]\nB = 2\n";
+
+        AssertPopulated(TomlSerializer.Deserialize<GeneratedInitOnlyPopulateModel>(Toml));
+        AssertPopulated(TomlSerializer.Deserialize(Toml, TestTomlSerializerContextInitOnlyPopulate.Default.GeneratedInitOnlyPopulateModel));
+
+        static void AssertPopulated(GeneratedInitOnlyPopulateModel? value)
+        {
+            Assert.NotNull(value);
+            Assert.Equal([1, 2], value.Items);
+            Assert.Equal(1, value.Child.A);
+            Assert.Equal(2, value.Child.B);
+        }
     }
 
     [Fact]

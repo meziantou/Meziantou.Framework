@@ -167,6 +167,10 @@ public sealed class MaxDepthTests
     [InlineData("[a]\nb.c.d = {e = [1]}\n")]
     [InlineData("a.b.c = [{d.e = [1]}]\n")]
     [InlineData("x = {a.b = {c = [[1]]}}\n")]
+    [InlineData("[[b]]\n[x]\n[[b.a.c]]\n")]
+    [InlineData("[[a]]\n[x]\n[a.b]\n")]
+    [InlineData("[[a]]\n[[a.b]]\n[x]\n[[a.b.c]]\n")]
+    [InlineData("[[a]]\n[[a.b]]\n[a.y]\n[[a.b.c]]\n")]
     public void SyntaxParser_CountsDepthLikeTheDeserializer(string toml)
     {
         for (var maxDepth = 1; maxDepth <= 12; maxDepth++)
@@ -184,6 +188,10 @@ public sealed class MaxDepthTests
 
             var doc = SyntaxParser.Parse(toml, options);
             Assert.Equal(deserializerFails, doc.HasErrors, message: $"MaxDepth = {maxDepth}: {doc.Diagnostics}");
+            if (!deserializerFails)
+            {
+                Assert.True(GetModelDepth(TomlSerializer.Deserialize<TomlTable>(toml, options)!) <= maxDepth, $"MaxDepth = {maxDepth}");
+            }
         }
     }
 
@@ -221,6 +229,30 @@ public sealed class MaxDepthTests
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         Assert.True(SyntaxParser.Parse(toml).HasErrors);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // The depth MaxDepth limits: the root table is one level, and an array of tables and its elements are one level each
+    private static int GetModelDepth(object value) => value switch
+    {
+        TomlTable table => 1 + table.Select(pair => GetModelDepth(pair.Value)).DefaultIfEmpty(0).Max(),
+        TomlTableArray tableArray => 1 + tableArray.Select(GetModelDepth).DefaultIfEmpty(0).Max(),
+        TomlArray array => 1 + array.Select(item => GetModelDepth(item!)).DefaultIfEmpty(0).Max(),
+        _ => 0,
+    };
+
+    [Fact]
+    public void Deserialize_HeadersReopeningArraysOfTables_RespectMaxDepth()
+    {
+        var builder = new System.Text.StringBuilder();
+        for (var i = 1; i <= 30; i++)
+        {
+            builder.Append("[[").Append(string.Join('.', Enumerable.Repeat("a", i))).Append("]]\n[x").Append(i).Append("]\n");
+        }
+
+        var toml = builder.ToString();
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml, TomlSerializerOptions.Default with { MaxDepth = 32 }));
+        Assert.True(SyntaxParser.Parse(toml, TomlSerializerOptions.Default with { MaxDepth = 32 }).HasErrors);
     }
 
     private static string CreateNestedArrayToml(int arrayDepth)

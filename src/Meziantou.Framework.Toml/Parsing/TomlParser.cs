@@ -23,6 +23,8 @@ public sealed partial class TomlParser
     private DiagnosticsBag? _diagnostics;
     private TomlParseEvent _current;
     private int _depth;
+    private int _modelDepth;
+    private List<(int Depth, int ExtraDepth)>? _extraDepths;
     private bool _stoppedAtMaxDepth;
 
     private TomlParser(IParserCore core, TomlSerializerOptions options, TomlParserOptions parserOptions, DiagnosticsBag? diagnostics)
@@ -262,8 +264,17 @@ public sealed partial class TomlParser
         {
             case TomlParseEventKind.StartTable:
             case TomlParseEventKind.StartArray:
+                // MaxDepth limits the depth of the data model, which a table can exceed by one level when it stands for an
+                // element of an array of tables
                 _depth++;
-                if (_depth > _effectiveMaxDepth)
+                _modelDepth++;
+                if (_core.ExtraDepth > 0)
+                {
+                    _modelDepth += _core.ExtraDepth;
+                    (_extraDepths ??= []).Add((_depth, _core.ExtraDepth));
+                }
+
+                if (_modelDepth > _effectiveMaxDepth)
                 {
                     // Tolerant mode records the error and ends the event stream instead of throwing
                     if (_parserOptions.Mode == TomlParserMode.Tolerant && _diagnostics is not null)
@@ -287,7 +298,14 @@ public sealed partial class TomlParser
                 break;
             case TomlParseEventKind.EndTable:
             case TomlParseEventKind.EndArray:
+                if (_extraDepths is { Count: > 0 } extraDepths && extraDepths[^1].Depth == _depth)
+                {
+                    _modelDepth -= extraDepths[^1].ExtraDepth;
+                    extraDepths.RemoveAt(extraDepths.Count - 1);
+                }
+
                 _depth = Math.Max(0, _depth - 1);
+                _modelDepth = Math.Max(0, _modelDepth - 1);
                 break;
         }
 
@@ -313,6 +331,9 @@ public sealed partial class TomlParser
         TomlSyntaxTriviaMetadata[]? LeadingTrivia { get; }
 
         TomlSyntaxTriviaMetadata[]? TrailingTrivia { get; }
+
+        // The levels the current StartTable event adds to the data model in addition to its own
+        int ExtraDepth { get; }
     }
 
     private sealed partial class ParserCore : IParserCore
@@ -336,6 +357,7 @@ public sealed partial class TomlParser
         private bool _hasPendingEvent;
         private TomlSyntaxTriviaMetadata[]? _pendingLeadingTrivia;
         private TomlSyntaxTriviaMetadata[]? _pendingTrailingTrivia;
+        private int _pendingExtraDepth;
 
         private PendingOperationKind _pendingOperation;
 
@@ -441,6 +463,8 @@ public sealed partial class TomlParser
 
         public TomlSyntaxTriviaMetadata[]? TrailingTrivia => _trailingTrivia;
 
+        public int ExtraDepth { get; private set; }
+
         public bool MoveNext(out TomlParseEvent parseEvent)
         {
             if (_hasPendingEvent)
@@ -448,9 +472,11 @@ public sealed partial class TomlParser
                 parseEvent = _pendingEvent;
                 _leadingTrivia = _pendingLeadingTrivia;
                 _trailingTrivia = _pendingTrailingTrivia;
+                ExtraDepth = _pendingExtraDepth;
                 _hasPendingEvent = false;
                 _pendingLeadingTrivia = null;
                 _pendingTrailingTrivia = null;
+                _pendingExtraDepth = 0;
                 return true;
             }
 
@@ -483,9 +509,11 @@ public sealed partial class TomlParser
                     parseEvent = _pendingEvent;
                     _leadingTrivia = _pendingLeadingTrivia;
                     _trailingTrivia = _pendingTrailingTrivia;
+                    ExtraDepth = _pendingExtraDepth;
                     _hasPendingEvent = false;
                     _pendingLeadingTrivia = null;
                     _pendingTrailingTrivia = null;
+                    _pendingExtraDepth = 0;
                     return true;
                 }
             }
@@ -638,7 +666,7 @@ public sealed partial class TomlParser
             NextToken();
         }
 
-        private void SetPendingEvent(in TomlParseEvent parseEvent, TomlSyntaxTriviaMetadata[]? leadingTrivia = null, TomlSyntaxTriviaMetadata[]? trailingTrivia = null)
+        private void SetPendingEvent(in TomlParseEvent parseEvent, TomlSyntaxTriviaMetadata[]? leadingTrivia = null, TomlSyntaxTriviaMetadata[]? trailingTrivia = null, int extraDepth = 0)
         {
             if (_hasPendingEvent)
             {
@@ -648,6 +676,7 @@ public sealed partial class TomlParser
             _pendingEvent = parseEvent;
             _pendingLeadingTrivia = leadingTrivia;
             _pendingTrailingTrivia = trailingTrivia;
+            _pendingExtraDepth = extraDepth;
             _hasPendingEvent = true;
         }
 
@@ -828,7 +857,8 @@ public sealed partial class TomlParser
                     SetPendingEvent(openFrame.Kind == ExplicitFrameKind.Array
                         ? new TomlParseEvent(TomlParseEventKind.StartArray, span: openSpan, propertyName: null, stringValue: null, data: 0)
                         : new TomlParseEvent(TomlParseEventKind.StartTable, span: openSpan, propertyName: null, stringValue: null, data: 0),
-                        trailingTrivia: trailingTrivia);
+                        trailingTrivia: trailingTrivia,
+                        extraDepth: openFrame.IsTableArrayElement ? 1 : 0);
                     _explicitFrames.Add(openFrame);
                     return true;
                 }
@@ -1347,8 +1377,10 @@ public sealed partial class TomlParser
                     continue;
                 }
 
+                // A table in the path that is an array of tables that is not open is written as a table, which the reader merges
+                // into the last element: the array and the element are two levels of the data model
                 reuse = false;
-                frames.Add(new ExplicitFrame(ExplicitFrameKind.Table, segment));
+                frames.Add(new ExplicitFrame(ExplicitFrameKind.Table, segment, isTableArrayElement: _headerPrefixIsTableArray[i]));
             }
 
             var last = path[path.Count - 1];
@@ -1917,15 +1949,19 @@ public sealed partial class TomlParser
 
         private readonly struct ExplicitFrame
         {
-            public ExplicitFrame(ExplicitFrameKind kind, KeySegment? name)
+            public ExplicitFrame(ExplicitFrameKind kind, KeySegment? name, bool isTableArrayElement = false)
             {
                 Kind = kind;
                 Name = name;
+                IsTableArrayElement = isTableArrayElement;
             }
 
             public ExplicitFrameKind Kind { get; }
 
             public KeySegment? Name { get; }
+
+            // A table that stands for the last element of an array of tables that is not open
+            public bool IsTableArrayElement { get; }
         }
     }
 }

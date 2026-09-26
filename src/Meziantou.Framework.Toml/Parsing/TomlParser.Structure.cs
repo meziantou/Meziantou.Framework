@@ -31,12 +31,17 @@ public sealed partial class TomlParser
         private int _currentStructureTable = RootStructureNode;
         private int _pendingStructureValue = -1;
 
+        // Whether each segment but the last of the current table header is an array of tables
+        private readonly List<bool> _headerPrefixIsTableArray = [];
+
         private void DefineStructureTableHeader(List<KeySegment> path, bool isTableArray)
         {
             var node = RootStructureNode;
+            _headerPrefixIsTableArray.Clear();
             for (var i = 0; i < path.Count - 1; i++)
             {
-                node = DefineStructureHeaderPrefix(node, path, i);
+                node = DefineStructureHeaderPrefix(node, path, i, out var prefixIsTableArray);
+                _headerPrefixIsTableArray.Add(prefixIsTableArray);
             }
 
             _currentStructureTable = isTableArray
@@ -91,8 +96,9 @@ public sealed partial class TomlParser
             }
         }
 
-        private int DefineStructureHeaderPrefix(int parent, List<KeySegment> path, int index)
+        private int DefineStructureHeaderPrefix(int parent, List<KeySegment> path, int index, out bool isTableArray)
         {
+            isTableArray = false;
             var key = path[index];
             var entryIndex = FindStructureEntry(parent, key, out var keyHash);
             if (entryIndex < 0)
@@ -102,6 +108,7 @@ public sealed partial class TomlParser
 
             var nodeIndex = _structureEntries[entryIndex].Node;
             ref var node = ref _structureNodes[nodeIndex];
+            isTableArray = node.Kind == StructureNodeKind.TableArray;
             return node.Kind switch
             {
                 StructureNodeKind.Table => nodeIndex,

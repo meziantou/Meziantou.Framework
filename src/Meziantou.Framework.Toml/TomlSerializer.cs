@@ -1160,7 +1160,7 @@ public static class TomlSerializer
             options.Converters.Count == 0 &&
             typeInfo.Type == typeof(Meziantou.Framework.Toml.Model.TomlTable) &&
             value is Meziantou.Framework.Toml.Model.TomlTable rootTable &&
-            Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.CanWriteDirectly(rootTable))
+            Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.CanWriteDirectly(rootTable, options))
         {
             Meziantou.Framework.Toml.Serialization.Internal.TomlModelTextWriter.WriteDocument(writer, rootTable, options);
             return;

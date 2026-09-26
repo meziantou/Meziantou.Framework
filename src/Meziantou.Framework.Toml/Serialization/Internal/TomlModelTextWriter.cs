@@ -11,37 +11,48 @@ namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 internal static class TomlModelTextWriter
 {
+    private const int MaxDirectWriteDepth = 1000;
+
     /// <summary>
     /// Gets a value indicating whether every value of the table is one the converters write unchanged, such as a string
     /// or an integer, rather than a value they convert, such as a <see cref="Guid"/>, an enum or an object.
     /// </summary>
-    public static bool CanWriteDirectly(TomlTable root)
+    public static bool CanWriteDirectly(TomlTable root, TomlSerializerOptions options)
     {
-        // A loop rather than a recursion, as the depth is only checked when writing
-        var pending = new Stack<object>();
-        pending.Push(root);
+        // A loop rather than a recursion. A table deeper than MaxDepth, which a table that contains itself is, is written by
+        // the converters, which report the error, instead of making this loop run forever. The converters also check the
+        // stack, so a very deep table goes through them even when MaxDepth allows it.
+        var maxDepth = Math.Min(TomlDepthHelper.GetEffectiveMaxDepth(options.MaxDepth), MaxDirectWriteDepth);
+        var pending = new Stack<(object Value, int Depth)>();
+        pending.Push((root, 1));
         while (pending.Count > 0)
         {
-            switch (pending.Pop())
+            var (value, depth) = pending.Pop();
+            if (depth > maxDepth)
+            {
+                return false;
+            }
+
+            switch (value)
             {
                 case TomlTable table:
                     foreach (var pair in table)
                     {
-                        pending.Push(pair.Value);
+                        pending.Push((pair.Value, depth + 1));
                     }
 
                     break;
                 case TomlArray array:
                     foreach (var item in array)
                     {
-                        pending.Push(item!);
+                        pending.Push((item!, depth + 1));
                     }
 
                     break;
                 case TomlTableArray tableArray:
                     foreach (var item in tableArray)
                     {
-                        pending.Push(item);
+                        pending.Push((item, depth + 1));
                     }
 
                     break;

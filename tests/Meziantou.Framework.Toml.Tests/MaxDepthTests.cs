@@ -314,6 +314,47 @@ public sealed class MaxDepthTests
     }
 
     // The default stack of a thread differs between platforms, so the tests choose one
+    // A regression would loop forever, so the serialization runs on a thread the test does not wait for indefinitely
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(int.MaxValue, false)]
+    public void Serialize_DomThatContainsItself_ThrowsInsteadOfLoopingForever(int maxDepth, bool isArray)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = maxDepth };
+        var table = new TomlTable();
+        if (isArray)
+        {
+            var array = new TomlArray();
+            array.Add(array);
+            table["a"] = array;
+        }
+        else
+        {
+            table["self"] = table;
+        }
+
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                TomlSerializer.Serialize(table, options);
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        }, maxStackSize: 512 * 1024)
+        {
+            IsBackground = true,
+        };
+        thread.Start();
+
+        Assert.True(thread.Join(TimeSpan.FromMinutes(2)), "Serialize did not complete");
+        Assert.IsType<TomlException>(exception);
+    }
+
     private static Exception? RunWithSmallStack(Action action)
     {
         Exception? exception = null;

@@ -45,11 +45,6 @@ internal static class TomlReflectionTypeInfoResolver
     private static ConstructorInfo? SelectConstructor(Type type, out string? error)
     {
         error = null;
-        if (type.IsValueType)
-        {
-            return null;
-        }
-
         if (type.IsAbstract)
         {
             // Abstract base types can participate in polymorphic graphs even though they can't be instantiated.
@@ -77,7 +72,8 @@ internal static class TomlReflectionTypeInfoResolver
             annotated = ctor;
         }
 
-        if (annotated is not null)
+        // Like System.Text.Json, a struct without an annotated constructor is created with its parameterless constructor
+        if (annotated is not null || type.IsValueType)
         {
             return annotated;
         }

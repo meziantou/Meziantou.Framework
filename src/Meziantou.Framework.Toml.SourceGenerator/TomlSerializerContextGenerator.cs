@@ -4514,7 +4514,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         string? constructorError = null;
         string? constructorErrorSuffix = null;
         var parameterlessConstructorSetsRequiredMembers = false;
-        if (named.TypeKind == TypeKind.Class)
+        if (named.TypeKind is TypeKind.Class or TypeKind.Struct)
         {
             var publicConstructors = named.InstanceConstructors
                 .Where(static ctor => !ctor.IsStatic && ctor.DeclaredAccessibility == Accessibility.Public)
@@ -4543,6 +4543,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     constructorError = "The constructor annotated for deserialization is not accessible from the generated code.";
                 }
             }
+            else if (named.TypeKind == TypeKind.Struct)
+            {
+                // Like System.Text.Json, a struct without an annotated constructor is created with its parameterless constructor
+            }
             else if (publicConstructors.Length == 0)
             {
                 constructorError = "No suitable constructor could be selected for type '";
@@ -4562,7 +4566,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 else
                 {
                     constructorError = "No suitable constructor could be selected for type '";
-                constructorErrorSuffix = "'.";
+                    constructorErrorSuffix = "'.";
                     selectedConstructor = publicConstructors[0];
                 }
             }

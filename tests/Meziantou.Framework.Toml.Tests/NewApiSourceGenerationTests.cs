@@ -1104,6 +1104,15 @@ public sealed class GeneratedGenericInit<T>
     public string Name { get; init; } = "default";
 }
 
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public readonly struct GeneratedStructWithConstructor
+{
+    [TomlConstructor]
+    public GeneratedStructWithConstructor(int x) => X = x * 10;
+
+    public int X { get; }
+}
+
 public sealed class GeneratedNormalizingConstructor
 {
     public GeneratedNormalizingConstructor(string name) => Name = name.ToUpperInvariant();
@@ -1170,6 +1179,7 @@ public sealed class GeneratedMultipleAnnotatedConstructors
     public int Value { get; }
 }
 
+[TomlSerializable(typeof(GeneratedStructWithConstructor))]
 [TomlSerializable(typeof(GeneratedNormalizingConstructor))]
 [TomlSerializable(typeof(GeneratedConvertingConstructor))]
 [TomlSerializable(typeof(GeneratedRequiredOfAnotherType))]
@@ -1368,6 +1378,13 @@ internal sealed partial class TestTomlSerializerContextIntDiscriminator : TomlSe
 
 public class NewApiSourceGenerationTests
 {
+    [Fact]
+    public void StructWithAnnotatedConstructor_IsCreatedWithIt()
+    {
+        Assert.Equal(50, TomlSerializer.Deserialize<GeneratedStructWithConstructor>("X = 5\n").X);
+        Assert.Equal(50, TomlSerializer.Deserialize("X = 5\n", TestTomlSerializerContextSingleConstruction.Default.GeneratedStructWithConstructor).X);
+    }
+
     [Fact]
     public void MembersBoundToConstructorParameters_GetTheirValueFromTheConstructorOnly()
     {

@@ -285,14 +285,16 @@ internal static class TomlModelTextWriter
                 WriteKey(pair.Key);
                 _writer.Write(" = ");
 
+                // Inside an inline table, tables and arrays of tables can only be written inline
                 if (pair.Value is TomlTable nestedTable)
                 {
-                    if (!IsInlineableTable(nestedTable, maxMemberCount: int.MaxValue, depth + 1))
-                    {
-                        throw new TomlException("Inline tables cannot contain non-inline tables or table arrays.");
-                    }
-
                     WriteInlineTable(nestedTable, depth + 1);
+                    continue;
+                }
+
+                if (pair.Value is TomlTableArray nestedTableArray)
+                {
+                    WriteInlineTableArray(nestedTableArray, depth + 1);
                     continue;
                 }
 
@@ -300,6 +302,24 @@ internal static class TomlModelTextWriter
             }
 
             _writer.Write("}");
+        }
+
+        // An array of tables written as an array of inline tables
+        private void WriteInlineTableArray(TomlTableArray tableArray, int depth)
+        {
+            ValidateDepth(depth);
+            _writer.Write("[");
+            for (var i = 0; i < tableArray.Count; i++)
+            {
+                if (i > 0)
+                {
+                    _writer.Write(", ");
+                }
+
+                WriteInlineTable(tableArray[i], depth + 1);
+            }
+
+            _writer.Write("]");
         }
 
         private void WriteValue(object value, TomlPropertyDisplayKind displayKind, int depth, TomlPropertyMetadata? propertyMetadata = null)
@@ -552,15 +572,17 @@ internal static class TomlModelTextWriter
                     _writer.Write(", ");
                 }
 
+                // Inside an array, tables and arrays of tables can only be written inline
                 var value = array[i]!;
                 if (value is TomlTable nestedTable)
                 {
-                    if (!IsInlineableTable(nestedTable, maxMemberCount: int.MaxValue, depth + 1))
-                    {
-                        throw new TomlException("Arrays cannot contain non-inline tables or table arrays.");
-                    }
-
                     WriteInlineTable(nestedTable, depth + 1);
+                    continue;
+                }
+
+                if (value is TomlTableArray nestedTableArray)
+                {
+                    WriteInlineTableArray(nestedTableArray, depth + 1);
                     continue;
                 }
 

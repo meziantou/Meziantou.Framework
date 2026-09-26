@@ -181,4 +181,39 @@ public class SerializationTests
 
         public NestedX A { get; set; } = new();
     }
+
+    [Fact]
+    public void Serialize_TableArrayInsideArray_IsWrittenInline()
+    {
+        var value = new NestedGroups { Groups = [[new GroupItem { Name = "n", Children = [new GroupItem { Name = "c" }] }]] };
+
+        var toml = TomlSerializer.Serialize(value);
+
+        Assert.Equal("Groups = [[{Name = \"n\", Children = [{Name = \"c\", Children = []}]}]]\n", toml);
+        var roundtrip = TomlSerializer.Deserialize<NestedGroups>(toml)!;
+        Assert.Equal("c", roundtrip.Groups[0][0].Children[0].Name);
+    }
+
+    [Fact]
+    public void Serialize_TableArrayInsideInlineTable_IsWrittenInline()
+    {
+        var table = new TomlTable { ["t"] = new TomlTable(inline: true) { ["children"] = new TomlTableArray { new TomlTable { ["name"] = "c", ["sub"] = new TomlTable { ["x"] = 1L } } } } };
+
+        var toml = TomlSerializer.Serialize(table);
+
+        Assert.Equal("t = {children = [{name = \"c\", sub = {x = 1}}]}\n", toml);
+        Assert.NotNull(TomlSerializer.Deserialize<TomlTable>(toml));
+    }
+
+    private sealed class NestedGroups
+    {
+        public List<List<GroupItem>> Groups { get; set; } = [];
+    }
+
+    private sealed class GroupItem
+    {
+        public string Name { get; set; } = "";
+
+        public List<GroupItem> Children { get; set; } = [];
+    }
 }

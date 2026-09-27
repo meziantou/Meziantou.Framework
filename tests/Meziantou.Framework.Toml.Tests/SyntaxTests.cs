@@ -444,6 +444,35 @@ val = true
         Assert.True(allocations < 2 * validAllocations, $"The errors allocated {allocations} bytes, and a number without errors {validAllocations} bytes");
     }
 
+    [Theory]
+    [InlineData("a = 0b___1\n", 6, 8)]
+    [InlineData("a = 0x_1\n", 6, 6)]
+    [InlineData("a = 0o7__\n", 8, 8)]
+    public void RunOfMisplacedUnderscoresInARadixNumber_IsReportedOnce(string toml, int startOffset, int endOffset)
+    {
+        var diagnostic = Assert.Single(SyntaxParser.Parse(toml).Diagnostics, diagnostic => diagnostic.Message.StartsWith("An underscore", StringComparison.Ordinal));
+
+        Assert.Equal((startOffset, endOffset), (diagnostic.Span.Start.Offset, diagnostic.Span.End.Offset));
+    }
+
+    [Fact]
+    public void RadixNumberWithManyMisplacedUnderscores_DoesNotAllocatePerUnderscore()
+    {
+        var toml = "a = 0x" + new string('_', 1_000_000) + "1\n";
+        var valid = "a = 0x" + new string('1', 1_000_001) + "\n";
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>("a = 0x__1\n"));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(valid));
+        var validAllocations = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        before = GC.GetAllocatedBytesForCurrentThread();
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var allocations = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.True(allocations < 2 * validAllocations + 100_000, $"The errors allocated {allocations} bytes, and a number without errors {validAllocations} bytes");
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

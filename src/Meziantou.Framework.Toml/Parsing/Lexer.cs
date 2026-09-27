@@ -738,6 +738,10 @@ internal sealed class Lexer
                 bool lastWasDigit = false;
                 bool isOutOfRange = false;
                 ulong value = 0;
+
+                // A run of misplaced underscores is reported once, over the whole run
+                TextPosition? invalidUnderscoresStart = null;
+                var invalidUnderscoresEnd = default(TextPosition);
                 while (true)
                 {
                     bool hasLocalCharInRange = false;
@@ -747,10 +751,13 @@ internal sealed class Lexer
                         if (!lastWasDigit && !nextIsDigit)
                         {
                             // toml-specs: each underscore must be surrounded by at least one digit on each side.
-                            AddError($"An underscore must be surrounded by at least one {name} digit on each side", start, start);
+                            invalidUnderscoresStart ??= CurrentPosition;
+                            invalidUnderscoresEnd = CurrentPosition;
                         }
                         else if (nextIsDigit)
                         {
+                            ReportInvalidUnderscores(ref invalidUnderscoresStart, invalidUnderscoresEnd, name);
+
                             // toml-specs: 64 bit (signed long) range expected (−9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
                             if (value > ((ulong)long.MaxValue >> shift))
                             {
@@ -781,6 +788,7 @@ internal sealed class Lexer
                     }
                 }
 
+                ReportInvalidUnderscores(ref invalidUnderscoresStart, invalidUnderscoresEnd, name);
                 if (!hasCharInRange)
                 {
                     AddError($"Invalid {name} integer. Expecting at least one {range} after {prefix}", start, start);
@@ -1117,6 +1125,15 @@ internal sealed class Lexer
             {
                 ArrayPool<char>.Shared.Return(rented);
             }
+        }
+    }
+
+    private void ReportInvalidUnderscores(ref TextPosition? start, TextPosition end, string numberKind)
+    {
+        if (start is { } position)
+        {
+            AddError($"An underscore must be surrounded by at least one {numberKind} digit on each side", position, end);
+            start = null;
         }
     }
 

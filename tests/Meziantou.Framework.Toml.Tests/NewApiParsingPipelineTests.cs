@@ -206,6 +206,19 @@ public class NewApiParsingPipelineTests
         Assert.Equal([TomlParseEventKind.EndTable, TomlParseEventKind.EndDocument], events.TakeLast(2));
     }
 
+    [Fact]
+    public void SyntaxParser_LexerThatWasRead_Throws()
+    {
+        var consumed = TomlLexer.Create("a = 'x'\nb = 2\n");
+        _ = SyntaxParser.Parse(consumed);
+        var advanced = TomlLexer.Create("a = 'x'\nb = 2\n");
+        advanced.MoveNext();
+
+        Assert.Equal("lexer", Assert.Throws<ArgumentException>(() => SyntaxParser.Parse(consumed)).ParamName);
+        Assert.Equal("lexer", Assert.Throws<ArgumentException>(() => SyntaxParser.ParseStrict(consumed)).ParamName);
+        Assert.Equal("lexer", Assert.Throws<ArgumentException>(() => SyntaxParser.Parse(advanced)).ParamName);
+    }
+
     // Like TomlSerializer, the readers reject a document longer than MaxInputLength, and read no further than the limit
     [Fact]
     public void Readers_ApplyMaxInputLength()

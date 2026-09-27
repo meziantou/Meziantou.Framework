@@ -18,6 +18,7 @@ public static class SyntaxParser
     /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
     /// <returns>The parsed syntax tree, possibly containing diagnostics.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="lexer"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="lexer"/> is not positioned before its first token.</exception>
     public static DocumentSyntax Parse(TomlLexer lexer, bool validate = true)
         => Parse(lexer, TomlSerializerOptions.Default, validate);
 
@@ -29,12 +30,19 @@ public static class SyntaxParser
     /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
     /// <returns>The parsed syntax tree, possibly containing diagnostics.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="lexer"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="lexer"/> is not positioned before its first token.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
     public static DocumentSyntax Parse(TomlLexer lexer, TomlSerializerOptions options, bool validate = true)
     {
         ArgumentNullException.ThrowIfNull(lexer);
 
         ArgumentNullException.ThrowIfNull(options);
+
+        // A lexer that was read gives a tree without the tokens it read: an empty and valid document when it was consumed
+        if (lexer.InternalLexer.HasStarted)
+        {
+            throw new ArgumentException("The lexer must be positioned before its first token. Create a new TomlLexer for each parse.", nameof(lexer));
+        }
 
         var parser = new Parser(lexer.InternalLexer, options);
         var doc = parser.Run();
@@ -179,6 +187,7 @@ public static class SyntaxParser
     /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
     /// <returns>The parsed syntax tree.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="lexer"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="lexer"/> is not positioned before its first token.</exception>
     /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static DocumentSyntax ParseStrict(TomlLexer lexer, bool validate = true)
         => ParseStrict(lexer, TomlSerializerOptions.Default, validate);
@@ -191,6 +200,7 @@ public static class SyntaxParser
     /// <param name="validate">When <c>true</c>, runs semantic validation after parsing.</param>
     /// <returns>The parsed syntax tree.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="lexer"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="lexer"/> is not positioned before its first token.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <c>null</c>.</exception>
     /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static DocumentSyntax ParseStrict(TomlLexer lexer, TomlSerializerOptions options, bool validate = true)

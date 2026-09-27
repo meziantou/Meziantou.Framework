@@ -85,8 +85,13 @@ internal sealed class Lexer
     /// </summary>
     public bool EmitHiddenTokens { get; set; } = true;
 
+    // Whether a token was read: a parser needs a lexer positioned before its first token
+    internal bool HasStarted { get; private set; }
+
     public bool MoveNext()
     {
+        HasStarted = true;
+
         // If we have errors or we are already at the end of the file, we don't continue
         if (_token.Kind == TokenKind.Eof)
         {

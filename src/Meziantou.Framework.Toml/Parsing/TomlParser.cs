@@ -61,7 +61,6 @@ public sealed partial class TomlParser
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="toml"/> is <c>null</c>.</exception>
-    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static TomlParser Create(string toml, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(toml);
@@ -85,7 +84,6 @@ public sealed partial class TomlParser
     /// <returns>A parser instance positioned before the first event.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="toml"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="parserOptions"/> is <c>null</c>.</exception>
-    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static TomlParser Create(string toml, TomlParserOptions parserOptions, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(toml);
@@ -106,7 +104,6 @@ public sealed partial class TomlParser
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
-    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static TomlParser Create(TextReader reader, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(reader);
@@ -123,7 +120,6 @@ public sealed partial class TomlParser
     /// <returns>A parser instance positioned before the first event.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="parserOptions"/> is <c>null</c>.</exception>
-    /// <exception cref="TomlException">The TOML payload is invalid.</exception>
     public static TomlParser Create(TextReader reader, TomlParserOptions parserOptions, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(reader);
@@ -253,6 +249,7 @@ public sealed partial class TomlParser
     /// Advances to the next parse event.
     /// </summary>
     /// <returns><c>true</c> when a parse event is available; otherwise <c>false</c>.</returns>
+    /// <exception cref="TomlException">The TOML payload is invalid and <see cref="TomlParserOptions.Mode"/> is <see cref="TomlParserMode.Strict"/>.</exception>
     public bool MoveNext()
     {
         if (_stoppedAtMaxDepth || !_core.MoveNext(out _current))

@@ -94,7 +94,9 @@ public class ListBlockParser : BlockParser
         // interpretations of a line, the thematic break takes precedence
         BlockState result;
         var thematicParser = ThematicBreakParser.Default;
-        if (processor.LastBlock is not FencedCodeBlock && thematicParser.HasOpeningCharacter(processor.CurrentChar))
+        // A line indented to the content column of the item is item content, even if it is a thematic break
+        var isItemContent = block is ListItemBlock item && processor.Indent >= Math.Abs(item.ColumnWidth);
+        if (!isItemContent && processor.LastBlock is not FencedCodeBlock && thematicParser.HasOpeningCharacter(processor.CurrentChar))
         {
             result = thematicParser.TryOpen(processor);
             if (result.IsBreak())
@@ -177,6 +179,8 @@ public class ListBlockParser : BlockParser
 
         if (state.Indent >= columnWidth)
         {
+            // An item that starts with a blank line has content now, so a blank line no longer ends it
+            listItem.ColumnWidth = columnWidth;
             if (state.Indent > columnWidth && state.IsCodeIndent)
             {
                 state.GoToColumn(state.ColumnBeforeIndent + columnWidth);
@@ -264,23 +268,24 @@ public class ListBlockParser : BlockParser
             }
 
             // Number of spaces required for the following content to be part of this list item
-            // If the list item starts with a blank line, the number of spaces
-            // following the list marker doesn't change the required indentation
-            columnWidth = (state.IsBlankLine ? columnBeforeIndent : state.Column) - initColumnBeforeIndent;
+            // If the list item starts with a blank line (only spaces or tabs after the marker), the number of spaces
+            // following the list marker doesn't change the required indentation, and the item ends at the next blank line
+            columnWidth = state.Line.AsSpan().TrimStart(" \t").IsEmpty
+                ? -(columnBeforeIndent - initColumnBeforeIndent + 1)
+                : state.Column - initColumnBeforeIndent;
         }
 
-        // Starts/continue the list unless:
-        // - an empty list item follows a paragraph
-        // - an ordered list is not starting by '1'
+        // Starts/continue the list unless it would interrupt an open paragraph with:
+        // - an empty list item
+        // - an ordered list not starting by '1'
         block ??= state.LastBlock;
-        if (block is not null && block.IsParagraphBlock)
+        if (block is not null && block.IsParagraphBlock && !state.HasUnmatchedBlocks && state.IsOpen(block))
         {
-            bool isOrderedListInterruptingParagraph = !state.HasUnmatchedBlocks &&
-                state.IsOpen(block) &&
+            bool isOrderedListInterruptingParagraph =
                 listInfo.BulletType == '1' &&
                 listInfo.OrderedStart is not "1";
 
-            if (state.IsBlankLine ||
+            if (columnWidth < 0 ||
                 isOrderedListInterruptingParagraph)
             {
                 state.GoToColumn(initColumn);

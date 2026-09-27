@@ -177,6 +177,33 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("a\n\n-", "<p>a</p>\n<ul>\n<li></li>\n</ul>")]
+    [InlineData("a\n\n1.", "<p>a</p>\n<ol>\n<li></li>\n</ol>")]
+    [InlineData("> a\n-", "<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>")]
+    [InlineData("a\n*     ", "<p>a\n*</p>")]
+    [InlineData("- \n     a", "<ul>\n<li>a</li>\n</ul>")]
+    [InlineData("-  \n\n  a", "<ul>\n<li></li>\n</ul>\n<p>a</p>")]
+    [InlineData("- \n  \n  a", "<ul>\n<li></li>\n</ul>\n<p>a</p>")]
+    [InlineData("-\n  foo\n\n  bar", "<ul>\n<li>\n<p>foo</p>\n<p>bar</p>\n</li>\n</ul>")]
+    [InlineData("-\n\n  foo", "<ul>\n<li></li>\n</ul>\n<p>foo</p>")]
+    public void ListItemStartingWithABlankLine(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
+    [InlineData("- foo\n\n  ***", "<ul>\n<li>\n<p>foo</p>\n<hr />\n</li>\n</ul>")]
+    [InlineData("*\n  ***", "<ul>\n<li>\n<hr />\n</li>\n</ul>")]
+    [InlineData("1.\n   ___", "<ol>\n<li>\n<hr />\n</li>\n</ol>")]
+    [InlineData("- foo\n  - - -", "<ul>\n<li>foo<hr />\n</li>\n</ul>")]
+    [InlineData("- foo\n***", "<ul>\n<li>foo</li>\n</ul>\n<hr />")]
+    [InlineData("- foo\n- - -", "<ul>\n<li>foo</li>\n</ul>\n<hr />")]
+    public void ThematicBreakIndentedAsListItemContentStaysInTheItem(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]
@@ -794,8 +821,10 @@ public class MiscTests
     [Theory(DisableParallelization = true)]
     [InlineData("- [\n", "=\n", 100_000, "<ul>\n<li>[\n=\n=\n=</li>\n</ul>\n")]
     [InlineData("> [\n", "=\n", 100_000, "<blockquote>\n<p>[\n=\n=\n=</p>\n</blockquote>\n")]
-    [InlineData("", "-\n> a\n", 220_000, "<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a\n-\na\n-\na</p>\n</blockquote>\n")]
-    [InlineData("", "> a\n-\n", 220_000, "<blockquote>\n<p>a\n-\na\n-\na\n-</p>\n</blockquote>\n")]
+    [InlineData("", "-\n> a\n", 220_000, "<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a</p>\n</blockquote>\n")]
+    [InlineData("", "> a\n-\n", 220_000, "<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a</p>\n</blockquote>\n<ul>\n<li></li>\n</ul>\n")]
+    [InlineData("-\n", "> a\n--\n", 220_000, "<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a\n--\na\n--\na\n--</p>\n</blockquote>\n")]
+    [InlineData("", "> a\n--\n", 220_000, "<blockquote>\n<p>a\n--\na\n--\na\n--</p>\n</blockquote>\n")]
     [InlineData("> [a]: b \"\n", "=\n", 140_000, "<blockquote>\n<p>[a]: b &quot;\n=\n=\n=</p>\n</blockquote>\n")]
     [InlineData(">  [a]: b \"\n", "> =\n", 120_000, "<blockquote>\n<p>[a]: b &quot;\n=\n=\n=</p>\n</blockquote>\n")]
     public void LazySetextUnderlinesAreParsedInLinearTime(string start, string line, int count, string expectedWithThreeLines)
@@ -1127,13 +1156,12 @@ $$
         var input = "\n- \n\n  term\n  :   definition\n";
 
         var expected = @"<ul>
-<li>
+<li></li>
+</ul>
 <dl>
 <dt>term</dt>
 <dd>definition</dd>
 </dl>
-</li>
-</ul>
 ";
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseDefinitionLists().Build());
     }

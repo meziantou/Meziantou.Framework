@@ -185,4 +185,18 @@ public class TestUnorderedList
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("a\n\n-")]
+    [InlineData("> a\n-")]
+    [InlineData("a\n*     ")]
+    [InlineData("- \n     a")]
+    [InlineData("- \n  \n  a")]
+    [InlineData("-\n  foo\n\n  bar")]
+    [InlineData("- foo\n\n  ***")]
+    [InlineData("*\n  ***")]
+    public void TestItemStartingWithABlankLineOrContainingAThematicBreak(string value)
+    {
+        RoundTrip(value);
+    }
 }

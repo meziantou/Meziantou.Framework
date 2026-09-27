@@ -859,6 +859,14 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("+\n    <a>", "+ \n    <a>\n")]
+    [InlineData("- a\n-\n    <div>", "- a\n- \n    <div>\n")]
+    public void IndentedHtmlBlockStartingListItemKeepsItsIndentation(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

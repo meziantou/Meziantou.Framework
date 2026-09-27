@@ -33,6 +33,12 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
             }
             else
             {
+                if (listItem[0] is HtmlBlock && StartsWithIndentation(listItem[0]))
+                {
+                    // The indentation of the HTML block would be taken as the spaces after the marker, so start it on the next line
+                    renderer.WriteLine();
+                }
+
                 renderer.WriteChildren(listItem);
             }
             renderer.PopIndent();

@@ -1627,7 +1627,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         if (!extensionData.CanSet)
         {
             var message = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
-            builder.Append(indent).Append("throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(message).AppendLine("\");");
+            builder.Append(indent).Append("throw CreateConfigurationException(\"").Append(message).AppendLine("\");");
         }
         else if (extensionData.SetterAccessorName is { } accessorName)
         {
@@ -1641,6 +1641,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
     private static string GetSetterAccessorCall(PocoMember member, string instanceExpression, string valueExpression)
         => member.SetterAccessorName + "(" + (member.DeclaringType.IsValueType ? "ref " : "") + instanceExpression + ", " + valueExpression + ")";
+
+    // The name of a type in a message, like the reflection resolver: its Type.FullName, from an interpolated string
+    private static string GetTypeFullNameInterpolation(ITypeSymbol type) => "{typeof(" + type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ").FullName}";
 
     private static string GetMemberReadExpression(PocoMember member, string instanceExpression)
     {
@@ -2299,15 +2302,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
                         builder.AppendLine("                if (__existing is null)");
                         builder.AppendLine("                {");
-                        builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+                        builder.Append("                    throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
                             .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.\");")
                             .AppendLine();
                         builder.AppendLine("                }");
                         if (addCollectionExpression is null)
                         {
-                            builder.Append("                throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+                            builder.Append("                throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
                                 .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but '")
-                                .Append(EscapeStringLiteral(member.Type.ToDisplayString(FullyQualifiedNullableFormat)))
+                                .Append(GetTypeFullNameInterpolation(member.Type))
                                 .AppendLine("' doesn't support populating the existing collection.\");");
                         }
                         else
@@ -2676,7 +2679,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         else
         {
             var nullInitializationMessage = EscapeStringLiteral($"Extension data member '{extensionData.MemberName}' is null and cannot be initialized.");
-            builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(nullInitializationMessage).AppendLine("\");");
+            builder.Append("                    throw CreateConfigurationException(\"").Append(nullInitializationMessage).AppendLine("\");");
         }
 
         builder.AppendLine("                }");
@@ -2695,15 +2698,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
         builder.AppendLine("                if (__existing is null)");
         builder.AppendLine("                {");
-        builder.Append("                    throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+        builder.Append("                    throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
             .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.\");")
             .AppendLine();
         builder.AppendLine("                }");
         if (addCollectionExpression is null)
         {
-            builder.Append("                throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+            builder.Append("                throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
                 .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but '")
-                .Append(EscapeStringLiteral(member.Type.ToDisplayString(FullyQualifiedNullableFormat)))
+                .Append(GetTypeFullNameInterpolation(member.Type))
                 .AppendLine("' doesn't support populating the existing collection.\");");
         }
         else
@@ -3050,8 +3053,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("{");
         if (createExpression is null)
         {
-            builder.Append(indent).Append("    throw new global::Meziantou.Framework.Toml.TomlException(\"").Append(errorPrefix)
-                .Append(" but '").Append(EscapeStringLiteral(collectionTypeName))
+            builder.Append(indent).Append("    throw CreateConfigurationException($\"").Append(errorPrefix)
+                .Append(" but '").Append(GetTypeFullNameInterpolation(collectionType))
                 .AppendLine("' is not a supported collection type.\");");
         }
         else
@@ -3085,7 +3088,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static void EmitRepeatedTableExtensionIntoReadOnlyMember(StringBuilder builder, PocoMember member, string indent)
     {
         var memberAccess = GetMemberReadExpression(member, "value");
-        var memberTypeName = member.Type.ToDisplayString(FullyQualifiedNullableFormat);
         builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer && ").Append(memberAccess).AppendLine(" is not null)");
         builder.Append(indent).AppendLine("{");
         builder.Append(indent).Append("    var __tableExtension = ").Append(GetMemberTypeInfoAccess(member)).Append(".ReadInto(reader, ").Append(memberAccess).AppendLine(");");
@@ -3093,7 +3095,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("    {");
         builder.Append(indent).Append("        throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
             .Append("' on '{value.GetType().FullName}' cannot be extended by an additional TOML table definition because '")
-            .Append(EscapeStringLiteral(memberTypeName))
+            .Append(GetTypeFullNameInterpolation(member.Type))
             .AppendLine("' does not support in-place population.\");");
         builder.Append(indent).AppendLine("    }");
         builder.Append(indent).AppendLine("    continue;");
@@ -3148,8 +3150,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 builder.Append(indent).Append("            if (!object.ReferenceEquals(").Append(memberAccess).Append(", __populated))").AppendLine();
                 builder.Append(indent).AppendLine("            {");
-                builder.Append(indent).Append("                throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
-                    .Append(" but '").Append(EscapeStringLiteral(memberTypeName))
+                builder.Append(indent).Append("                throw CreateConfigurationException($\"").Append(errorPrefix)
+                    .Append(" but '").Append(GetTypeFullNameInterpolation(member.Type))
                     .AppendLine("' doesn't support populating the existing collection.\");");
                 builder.Append(indent).AppendLine("            }");
             }
@@ -3160,8 +3162,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         if (!member.CanSet)
         {
-            builder.Append(indent).Append("            throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
-                .Append(" but '").Append(EscapeStringLiteral(memberTypeName))
+            builder.Append(indent).Append("            throw CreateConfigurationException($\"").Append(errorPrefix)
+                .Append(" but '").Append(GetTypeFullNameInterpolation(member.Type))
                 .AppendLine("' doesn't support populating the existing collection.\");");
         }
         else
@@ -3178,7 +3180,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("    {");
         if (!member.CanSet)
         {
-            builder.Append(indent).Append("        throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
+            builder.Append(indent).Append("        throw CreateConfigurationException($\"").Append(errorPrefix)
                 .AppendLine(" but the existing collection is null or cannot be populated.\");");
         }
         else
@@ -3191,8 +3193,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("{");
         if (createExpression is null)
         {
-            builder.Append(indent).Append("    throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
-                .Append(" but '").Append(EscapeStringLiteral(memberTypeName))
+            builder.Append(indent).Append("    throw CreateConfigurationException($\"").Append(errorPrefix)
+                .Append(" but '").Append(GetTypeFullNameInterpolation(member.Type))
                 .AppendLine("' is not a supported collection type.\");");
         }
         else
@@ -3211,8 +3213,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (!member.CanSet)
             {
-                builder.Append(indent).Append("            throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
-                    .Append(" but '").Append(EscapeStringLiteral(memberTypeName))
+                builder.Append(indent).Append("            throw CreateConfigurationException($\"").Append(errorPrefix)
+                    .Append(" but '").Append(GetTypeFullNameInterpolation(member.Type))
                     .AppendLine("' doesn't support populating the existing collection.\");");
             }
             else
@@ -3230,7 +3232,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append(indent).AppendLine("    {");
             if (!member.CanSet)
             {
-                builder.Append(indent).Append("        throw new global::Meziantou.Framework.Toml.TomlException($\"").Append(errorPrefix)
+                builder.Append(indent).Append("        throw CreateConfigurationException($\"").Append(errorPrefix)
                     .AppendLine(" but the existing collection is null or cannot be populated.\");");
             }
             else
@@ -3310,10 +3312,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             if (isExplicitPopulate)
             {
-                builder.Append(indent).Append("    throw new global::Meziantou.Framework.Toml.TomlException($\"")
+                builder.Append(indent).Append("    throw CreateConfigurationException($\"")
                     .Append(populateErrorPrefix)
                     .Append(" but requires a setter because '")
-                    .Append(EscapeStringLiteral(memberTypeName))
+                    .Append(GetTypeFullNameInterpolation(member.Type))
                     .AppendLine("' is a value type.\");");
             }
             else
@@ -3357,7 +3359,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 builder.Append(populateIndent).AppendLine("{");
                 if (isExplicitPopulate)
                 {
-                    builder.Append(populateIndent).Append("    throw new global::Meziantou.Framework.Toml.TomlException($\"")
+                    builder.Append(populateIndent).Append("    throw CreateConfigurationException($\"")
                         .Append(populateErrorPrefix)
                         .AppendLine(" but it doesn't support populating.\");");
                 }

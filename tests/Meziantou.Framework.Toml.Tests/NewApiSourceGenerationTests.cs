@@ -2008,6 +2008,40 @@ internal sealed partial class TestTomlSerializerContextFallback : TomlSerializer
 {
 }
 
+public sealed class GeneratedModelErrorSingleOrArray
+{
+    [TomlSingleOrArray]
+    public List<int>? L { get; }
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedModelErrorStruct
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedModelErrorPopulateStruct
+{
+    [TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)]
+    public GeneratedModelErrorStruct V { get; }
+}
+
+public sealed class GeneratedModelErrorExtensionData
+{
+    [TomlInclude]
+    [TomlExtensionData]
+    private Dictionary<string, object?>? Extra { get; }
+
+    public int Count => Extra?.Count ?? 0;
+}
+
+[TomlSerializable(typeof(GeneratedModelErrorSingleOrArray))]
+[TomlSerializable(typeof(GeneratedModelErrorPopulateStruct))]
+[TomlSerializable(typeof(GeneratedModelErrorExtensionData))]
+internal sealed partial class TestTomlSerializerContextModelErrors : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4415,6 +4449,24 @@ public class NewApiSourceGenerationTests
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
         Assert.False(TomlSerializer.TryDeserialize<GeneratedFallbackOuter>(toml, out _));
         Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+    }
+
+    // Errors of the model: TryDeserialize throws them in generated code too, with the message of the reflection resolver
+    [Fact]
+    public void ModelErrors_AreConfigurationErrorsInGeneratedCode()
+    {
+        var context = TestTomlSerializerContextModelErrors.Default;
+
+        Check(context.GeneratedModelErrorSingleOrArray, "L = 1\n");
+        Check(context.GeneratedModelErrorPopulateStruct, "V = { X = 1 }\n");
+        Check(context.GeneratedModelErrorExtensionData, "x = 'extra'\n");
+
+        static void Check<T>(TomlTypeInfo<T> typeInfo, string toml)
+        {
+            var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+            var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<T>(toml, out _));
+            Assert.Equal(reflection.Message, generated.Message);
+        }
     }
 
     [Fact]

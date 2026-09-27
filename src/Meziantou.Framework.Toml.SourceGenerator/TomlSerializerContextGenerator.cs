@@ -4801,6 +4801,12 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 continue;
             }
 
+            // A ref-returning property is not serialized, like in the reflection resolver
+            if (member.ReturnsByRef || member.ReturnsByRefReadonly)
+            {
+                continue;
+            }
+
             var hasInclude = HasAttribute(member, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute");
             if (member.GetMethod.DeclaredAccessibility != Accessibility.Public && !hasInclude)
             {

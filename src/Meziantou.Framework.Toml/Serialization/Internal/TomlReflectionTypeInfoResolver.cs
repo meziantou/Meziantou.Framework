@@ -199,6 +199,12 @@ internal static class TomlReflectionTypeInfoResolver
                 continue;
             }
 
+            // A ref-returning property is not serialized, like in generated code
+            if (property.PropertyType.IsByRef)
+            {
+                continue;
+            }
+
             if (!property.GetMethod.IsPublic && !HasIncludeAttribute(property))
             {
                 continue;

@@ -1956,6 +1956,20 @@ internal sealed partial class TestTomlSerializerContextGenericInitBase : TomlSer
 {
 }
 
+public sealed class GeneratedRefProperty
+{
+    private int _a;
+
+    public ref int A => ref _a;
+
+    public int B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedRefProperty))]
+internal sealed partial class TestTomlSerializerContextRefProperty : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4008,6 +4022,15 @@ public class NewApiSourceGenerationTests
             Assert.Equal(3, value.X);
             Assert.Equal(0, value.GetRequiredValueWhenDeserializing());
         }
+    }
+
+    [Fact]
+    public void RefReturningProperties_AreNotSerialized()
+    {
+        var value = new GeneratedRefProperty { B = 2 };
+
+        Assert.Equal("B = 2\n", TomlSerializer.Serialize(value, TestTomlSerializerContextRefProperty.Default.GeneratedRefProperty).ReplaceLineEndings("\n"));
+        Assert.Equal("B = 2\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
     }
 
     [Fact]

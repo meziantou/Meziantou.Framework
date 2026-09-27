@@ -1577,7 +1577,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static void EmitConstructorAccessor(StringBuilder builder, ContextModel model, ITypeSymbol type, ImmutableArray<PocoConstructorParameter> parameters)
     {
         var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var parameterList = string.Join(", ", parameters.Select((parameter, index) => parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + " __p" + index.ToString(CultureInfo.InvariantCulture)));
+        var parameterList = string.Join(", ", parameters.Select((parameter, index) => (parameter.IsPassedByReadOnlyReference ? "in " : "") + parameter.ParameterType.ToDisplayString(FullyQualifiedNullableFormat) + " __p" + index.ToString(CultureInfo.InvariantCulture)));
         if (CanUseInitAccessor(model, type))
         {
             builder.AppendLine("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
@@ -1586,7 +1586,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return;
         }
 
-        var parameterTypes = string.Join(", ", parameters.Select(parameter => "typeof(" + parameter.ParameterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ")"));
+        var parameterTypes = string.Join(", ", parameters.Select(parameter => "typeof(" + parameter.ParameterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ")" + (parameter.IsPassedByReadOnlyReference ? ".MakeByRefType()" : "")));
         var arguments = string.Join(", ", parameters.Select((_, index) => "__p" + index.ToString(CultureInfo.InvariantCulture)));
         builder.Append("        private static ").Append(typeName).Append(" __CreateInstance(").Append(parameterList).AppendLine(")");
         builder.AppendLine("        {");
@@ -2873,6 +2873,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 if (i != 0)
                 {
                     builder.Append(", ");
+                }
+
+                if (parameters[i].IsPassedByReadOnlyReference)
+                {
+                    builder.Append("in ");
                 }
 
                 builder.Append("__arg").Append(i.ToString(CultureInfo.InvariantCulture));
@@ -4537,6 +4542,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The converter type info of the linked member, like the reflection resolver
         public string? ConverterTypeInfoName { get; init; }
+
+        // An 'in' or 'ref readonly' parameter: the argument is passed with 'in'
+        public bool IsPassedByReadOnlyReference { get; init; }
     }
 
     private sealed class PocoShape
@@ -5181,6 +5189,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         constructorError ??= $"Constructor parameter name collision for key '{keyName}' on type '{type.ToDisplayString()}'.";
                     }
 
+                    // A value read from TOML can be passed with 'in', but not to a 'ref' or 'out' parameter, like the reflection resolver
+                    if (parameter.RefKind is RefKind.Ref or RefKind.Out && constructorError is null)
+                    {
+                        constructorError = $"Constructor parameter '{parameterName}' on type '";
+                        constructorErrorSuffix = "' is passed with 'ref' or 'out', which a TOML value cannot be.";
+                    }
+
                     var hasDefaultValue = parameter.HasExplicitDefaultValue;
                     string? defaultValueExpression = null;
                     if (hasDefaultValue && !TryGetDefaultValueExpression(parameter.Type, parameter.ExplicitDefaultValue, out defaultValueExpression))
@@ -5194,6 +5209,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     {
                         Symbol = parameter,
                         ConverterTypeInfoName = linkedMemberIndex >= 0 ? membersSoFar[linkedMemberIndex].ConverterTypeInfoName : null,
+                        IsPassedByReadOnlyReference = parameter.RefKind is RefKind.In or RefKind.RefReadOnlyParameter,
                     });
                 }
 

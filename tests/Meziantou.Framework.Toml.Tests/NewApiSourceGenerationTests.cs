@@ -2042,6 +2042,66 @@ internal sealed partial class TestTomlSerializerContextModelErrors : TomlSeriali
 {
 }
 
+public sealed class GeneratedInConstructor
+{
+    [TomlConstructor]
+    public GeneratedInConstructor(in int a) => A = a;
+
+    public int A { get; }
+}
+
+public sealed class GeneratedRefReadOnlyConstructor
+{
+    [TomlConstructor]
+    public GeneratedRefReadOnlyConstructor(ref readonly int a) => A = a;
+
+    public int A { get; }
+}
+
+public sealed class GeneratedObsoleteInConstructor
+{
+    [Obsolete("x", error: true)]
+    [TomlConstructor]
+    public GeneratedObsoleteInConstructor(in int a) => A = a;
+
+    public int A { get; }
+}
+
+public sealed class GeneratedObsoleteInConstructorGeneric<T>
+{
+    [Obsolete("x", error: true)]
+    [TomlConstructor]
+    public GeneratedObsoleteInConstructorGeneric(in int a) => A = a;
+
+    public int A { get; }
+}
+
+public sealed class GeneratedRefConstructor
+{
+    [TomlConstructor]
+    public GeneratedRefConstructor(ref int a) => A = a;
+
+    public int A { get; }
+}
+
+public sealed class GeneratedOutConstructor
+{
+    [TomlConstructor]
+    public GeneratedOutConstructor(out int a) => a = A = 1;
+
+    public int A { get; }
+}
+
+[TomlSerializable(typeof(GeneratedInConstructor))]
+[TomlSerializable(typeof(GeneratedRefReadOnlyConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteInConstructor))]
+[TomlSerializable(typeof(GeneratedObsoleteInConstructorGeneric<int>))]
+[TomlSerializable(typeof(GeneratedRefConstructor))]
+[TomlSerializable(typeof(GeneratedOutConstructor))]
+internal sealed partial class TestTomlSerializerContextByRefConstructors : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4467,6 +4527,31 @@ public class NewApiSourceGenerationTests
             var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<T>(toml, out _));
             Assert.Equal(reflection.Message, generated.Message);
         }
+    }
+
+    [Fact]
+    public void ConstructorParametersPassedByReadOnlyReference_AreRead()
+    {
+        var context = TestTomlSerializerContextByRefConstructors.Default;
+
+        Assert.Equal(1, TomlSerializer.Deserialize("A = 1", context.GeneratedInConstructor)!.A);
+        Assert.Equal(1, TomlSerializer.Deserialize<GeneratedInConstructor>("A = 1")!.A);
+        Assert.Equal(2, TomlSerializer.Deserialize("A = 2", context.GeneratedRefReadOnlyConstructor)!.A);
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedRefReadOnlyConstructor>("A = 2")!.A);
+        Assert.Equal(3, TomlSerializer.Deserialize("A = 3", context.GeneratedObsoleteInConstructor)!.A);
+        Assert.Equal(4, TomlSerializer.Deserialize("A = 4", context.GeneratedObsoleteInConstructorGenericInt32)!.A);
+    }
+
+    [Fact]
+    public void ConstructorParametersPassedWithRefOrOut_AreConfigurationErrors()
+    {
+        var context = TestTomlSerializerContextByRefConstructors.Default;
+
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1", context.GeneratedRefConstructor, out _));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedRefConstructor>("A = 1", out _));
+        Assert.Equal(reflection.Message, generated.Message);
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1", context.GeneratedOutConstructor, out _));
+        Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedOutConstructor>("A = 1", out _));
     }
 
     [Fact]

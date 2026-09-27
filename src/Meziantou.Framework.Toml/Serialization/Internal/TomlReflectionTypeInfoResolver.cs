@@ -33,6 +33,13 @@ internal static class TomlReflectionTypeInfoResolver
         var dottedKeyHandling = type.GetCustomAttribute<TomlDottedKeyHandlingAttribute>(inherit: true)?.Handling;
         var constructor = SelectConstructor(type, out var constructorError);
 
+        // A value read from TOML can be passed with 'in', but not to a 'ref' or 'out' parameter
+        if (constructor?.GetParameters().FirstOrDefault(static parameter => parameter.ParameterType.IsByRef && (parameter.IsOut || !parameter.IsIn)) is { } byRefParameter)
+        {
+            constructorError = $"Constructor parameter '{byRefParameter.Name}' on type '{type.FullName}' is passed with 'ref' or 'out', which a TOML value cannot be.";
+            constructor = null;
+        }
+
         // Like System.Text.Json, a constructor with [SetsRequiredMembers] makes the C# required modifier optional
         var honorRequiredModifier = constructor?.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: false) != true;
         var members = CollectMembers(type, options, mappingOrder, honorRequiredModifier);
@@ -470,6 +477,9 @@ internal static class TomlReflectionTypeInfoResolver
     }
 
     // The default value of an enum parameter is stored as its underlying integer, which cannot be passed for a nullable enum
+    // An 'in' or 'ref readonly' parameter reads a value of its element type
+    private static Type GetParameterValueType(ParameterInfo parameter) => parameter.ParameterType.IsByRef ? parameter.ParameterType.GetElementType()! : parameter.ParameterType;
+
     private static object? GetParameterDefaultValue(ParameterInfo parameter)
     {
         if (!parameter.HasDefaultValue)
@@ -479,7 +489,7 @@ internal static class TomlReflectionTypeInfoResolver
 
         // The metadata stores the constant of an enum or of a native integer as its underlying type, such as Int32 for nint
         var value = parameter.DefaultValue;
-        var type = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
+        var type = Nullable.GetUnderlyingType(GetParameterValueType(parameter)) ?? GetParameterValueType(parameter);
         if (value is null || value.GetType() == type)
         {
             return value;
@@ -777,7 +787,7 @@ internal static class TomlReflectionTypeInfoResolver
                 {
                     var fallback = $"arg{i}";
                     _parameterIndexByName.Add(fallback, i);
-                    _parameters[i] = new ParameterBinding(fallback, parameter.ParameterType, parameter.HasDefaultValue, GetParameterDefaultValue(parameter), MemberIndex: null, fallback, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
+                    _parameters[i] = new ParameterBinding(fallback, GetParameterValueType(parameter), parameter.HasDefaultValue, GetParameterDefaultValue(parameter), MemberIndex: null, fallback, DisallowNull(GetParameterValueType(parameter), nullabilityContext?.Create(parameter).WriteState));
                     continue;
                 }
 
@@ -792,7 +802,7 @@ internal static class TomlReflectionTypeInfoResolver
                 }
 
                 _parameterIndexByName.Add(keyName, i);
-                _parameters[i] = new ParameterBinding(keyName, parameter.ParameterType, parameter.HasDefaultValue, GetParameterDefaultValue(parameter), memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(parameter.ParameterType, nullabilityContext?.Create(parameter).WriteState));
+                _parameters[i] = new ParameterBinding(keyName, GetParameterValueType(parameter), parameter.HasDefaultValue, GetParameterDefaultValue(parameter), memberIndex >= 0 ? memberIndex : null, parameterName, DisallowNull(GetParameterValueType(parameter), nullabilityContext?.Create(parameter).WriteState));
                 if (memberIndex >= 0)
                 {
                     _memberBoundToConstructor[memberIndex] = true;

@@ -41,15 +41,27 @@ public record struct TomlDateTime(DateTimeOffset DateTime, int SecondPrecision, 
     public override string ToString() => ((IConvertible)this).ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// Indicates whether two values are the same TOML value: the same <see cref="Kind"/> and the same <see cref="DateTime"/>.
+    /// Indicates whether two values are the same TOML value: the same <see cref="Kind"/> and the same instant for offset
+    /// date-times, or the same date, time, or both for local values.
     /// </summary>
     /// <remarks>
     /// <see cref="SecondPrecision"/> only affects how the value is written, so <c>07:32:00.5</c> equals <c>07:32:00.50</c>.
+    /// A local value has no offset: the offset of <see cref="DateTime"/> is ignored, and so is the time of a local date and
+    /// the date of a local time.
     /// </remarks>
-    public readonly bool Equals(TomlDateTime other) => Kind == other.Kind && DateTime.Equals(other.DateTime);
+    public readonly bool Equals(TomlDateTime other) => Kind == other.Kind && GetComparableTicks() == other.GetComparableTicks();
 
     /// <inheritdoc />
-    public override readonly int GetHashCode() => HashCode.Combine(Kind, DateTime);
+    public override readonly int GetHashCode() => HashCode.Combine(Kind, GetComparableTicks());
+
+    // The part of the value that is written: the instant of an offset date-time, and the wall-clock value of a local one
+    private readonly long GetComparableTicks() => Kind switch
+    {
+        TomlDateTimeKind.LocalDateTime => DateTime.Ticks,
+        TomlDateTimeKind.LocalDate => DateTime.Date.Ticks,
+        TomlDateTimeKind.LocalTime => DateTime.TimeOfDay.Ticks,
+        _ => DateTime.UtcTicks,
+    };
 
     [ExcludeFromCodeCoverage]
     TypeCode IConvertible.GetTypeCode()

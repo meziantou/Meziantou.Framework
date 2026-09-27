@@ -274,6 +274,34 @@ public class TomlDateTimeTest
         Assert.NotEqual(utc, zeroOffset);
     }
 
+    [Theory]
+    [InlineData(TomlDateTimeKind.LocalDateTime)]
+    [InlineData(TomlDateTimeKind.LocalDate)]
+    [InlineData(TomlDateTimeKind.LocalTime)]
+    public void Equals_ComparesTheWallClockValueOfLocalKinds(TomlDateTimeKind kind)
+    {
+        var wallClock = new DateTime(2020, 1, 1, 7, 32, 0, DateTimeKind.Unspecified);
+        var utc = new TomlDateTime(new DateTimeOffset(wallClock, TimeSpan.Zero), 0, kind);
+        var otherOffset = new TomlDateTime(new DateTimeOffset(wallClock, TimeSpan.FromHours(10)), 0, kind);
+        var sameInstant = new TomlDateTime(new DateTimeOffset(wallClock, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(-10)), 0, kind);
+
+        Assert.Equal(utc, otherOffset);
+        Assert.Equal(utc.GetHashCode(), otherOffset.GetHashCode());
+        Assert.NotEqual(utc.ToString(), sameInstant.ToString());
+        Assert.NotEqual(utc, sameInstant);
+    }
+
+    [Fact]
+    public void Equals_ComparesTheWrittenPartOfLocalDatesAndTimes()
+    {
+        var morning = new DateTimeOffset(2020, 1, 1, 7, 32, 0, TimeSpan.Zero);
+        var evening = new DateTimeOffset(2020, 1, 1, 19, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(new TomlDateTime(morning, 0, TomlDateTimeKind.LocalDate), new TomlDateTime(evening, 0, TomlDateTimeKind.LocalDate));
+        Assert.Equal(new TomlDateTime(morning, 0, TomlDateTimeKind.LocalTime), new TomlDateTime(morning.AddDays(1), 0, TomlDateTimeKind.LocalTime));
+        Assert.NotEqual(new TomlDateTime(morning, 0, TomlDateTimeKind.LocalDateTime), new TomlDateTime(evening, 0, TomlDateTimeKind.LocalDateTime));
+    }
+
     [Fact]
     public void Deserialize_LocalTime_HasTheFirstDate()
     {

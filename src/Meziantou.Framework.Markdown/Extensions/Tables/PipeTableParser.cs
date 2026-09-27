@@ -1232,44 +1232,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
     /// </remarks>
     private static void PromoteNestedLineBreaksToRootLevel(ContainerInline root)
     {
-        List<Inline>? nestedLineBreaks = null;
-        var stack = new Stack<Inline>();
-        var child = root.LastChild;
-        while (child is not null)
-        {
-            stack.Push(child);
-            child = child.PreviousSibling;
-        }
-
-        while (stack.Count > 0)
-        {
-            var inline = stack.Pop();
-            if (inline is LineBreakInline && inline.Parent != root)
-            {
-                nestedLineBreaks ??= [];
-                nestedLineBreaks.Add(inline);
-            }
-
-            if (inline is ContainerInline container)
-            {
-                child = container.LastChild;
-                while (child is not null)
-                {
-                    stack.Push(child);
-                    child = child.PreviousSibling;
-                }
-            }
-        }
-
-        if (nestedLineBreaks is null)
-        {
-            return;
-        }
-
-        foreach (var lineBreak in nestedLineBreaks)
-        {
-            PromoteNestedDelimiterToRootLevel(lineBreak, root);
-        }
+        PromoteNestedInlinesToRootLevel(root, static (inline, _) => inline is LineBreakInline, state: (object?)null);
     }
 
     /// <summary>
@@ -1282,43 +1245,27 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
     /// </remarks>
     private static void PromoteNestedPipesToRootLevel(List<Inline> delimiters, ContainerInline root)
     {
-        for (int i = 0; i < delimiters.Count; i++)
+        if (!HasNestedDelimiters(delimiters, root))
         {
-            var delimiter = delimiters[i];
-
-            // Handle both pipe delimiters and line breaks
-            bool isPipe = delimiter is PipeTableDelimiterInline;
-            bool isLineBreak = delimiter is LineBreakInline;
-            if (!isPipe && !isLineBreak)
-                continue;
-
-            PromoteNestedDelimiterToRootLevel(delimiter, root);
-        }
-    }
-
-    private static void PromoteNestedDelimiterToRootLevel(Inline delimiter, ContainerInline root)
-    {
-        // Skip if already at root level
-        if (delimiter.Parent == root)
             return;
-
-        // Find the top-level ancestor (direct child of root). The delimiter will be inserted after this
-        // ancestor, splitting the open inline container at the exact table boundary.
-        var ancestor = delimiter.Parent;
-        while (ancestor?.Parent != null && ancestor.Parent != root)
-        {
-            ancestor = ancestor.Parent;
         }
 
-        if (ancestor is null || ancestor.Parent != root)
-            return;
+        var tracked = new HashSet<Inline>(delimiters.Count, ReferenceEqualityComparer.Instance);
+        foreach (var delimiter in delimiters)
+        {
+            if (delimiter is PipeTableDelimiterInline or LineBreakInline)
+            {
+                tracked.Add(delimiter);
+            }
+        }
 
-        // Split: promote delimiter to be sibling of ancestor
-        SplitContainerAtDelimiter(delimiter, ancestor);
+        PromoteNestedInlinesToRootLevel(root, static (inline, tracked) => tracked.Contains(inline), tracked);
     }
 
     /// <summary>
-    /// Splits a container at the delimiter, promoting the delimiter to root level.
+    /// Promotes the nested inlines matching <paramref name="isBoundary"/> to root level, in document order: each one splits
+    /// its parent, whose inlines after it move to a plain container, and is inserted after the child of the root that has
+    /// it, followed by that container.
     /// </summary>
     /// <remarks>
     /// For input `*a | b*`, the pipe is inside the emphasis container:
@@ -1327,41 +1274,141 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
     ///     EmphasisDelimiter { "a" }, Pipe, Container { "b" }
     /// The tail container is intentionally plain. It keeps post-pipe content attached to the root until cell
     /// extraction moves it into a TableCell, without preserving an unresolved delimiter span across the pipe.
+    ///
+    /// Moving the inlines after each boundary one boundary at a time moves them again for each boundary that follows
+    /// in the same container, which is quadratic. The inlines are walked once instead, to find where each boundary
+    /// goes and which inlines follow it, and then each inline is moved once. The result is the same: a boundary is
+    /// inserted right after the child of the root that has it when it is promoted (the parent of the inlines after a
+    /// previous boundary of the same container is the container of that previous boundary, which is a child of the
+    /// root), so the boundaries promoted after one child of the root come before the ones promoted earlier.
     /// </remarks>
-    private static void SplitContainerAtDelimiter(Inline delimiter, Inline ancestor)
+    private static void PromoteNestedInlinesToRootLevel<TState>(ContainerInline root, Func<Inline, TState, bool> isBoundary, TState state)
     {
-        if (delimiter.Parent is not { } parent) return;
+        // The boundaries promoted after each child of the root, with the container of the inlines that follow them
+        Dictionary<Inline, List<(Inline Boundary, ContainerInline? Tail)>>? promotions = null;
+        List<(Inline Boundary, ContainerInline? Tail)>? boundaries = null;
 
-        // Collect content after the delimiter
-        var contentAfter = new List<Inline>();
-        var current = delimiter.NextSibling;
-        while (current != null)
+        // The containers being walked, with the container that has their next children (the container of the inlines
+        // after their last boundary) and the child of the root that has it
+        var stack = new Stack<(Inline Child, ContainerInline Segment, Inline Top)>();
+        for (var rootChild = root.FirstChild; rootChild is not null; rootChild = rootChild.NextSibling)
         {
-            contentAfter.Add(current);
-            current = current.NextSibling;
-        }
-
-        // Remove content after delimiter from parent
-        foreach (var inline in contentAfter)
-        {
-            inline.Remove();
-        }
-
-        // Remove delimiter from parent
-        delimiter.Remove();
-
-        // Insert delimiter after the ancestor (at root level)
-        ancestor.InsertAfter(delimiter);
-
-        // If there's content after, wrap in new container and insert after delimiter
-        if (contentAfter.Count > 0)
-        {
-            var newContainer = CreateSplitContainer(parent);
-            foreach (var inline in contentAfter)
+            if (rootChild is not ContainerInline { FirstChild: { } first } rootContainer)
             {
-                newContainer.AppendChild(inline);
+                continue;
             }
-            delimiter.InsertAfter(newContainer);
+
+            stack.Push((first, rootContainer, rootContainer));
+            while (stack.Count > 0)
+            {
+                var (child, segment, top) = stack.Pop();
+                if (child.NextSibling is { } next)
+                {
+                    stack.Push((next, segment, top));
+                }
+
+                if (isBoundary(child, state))
+                {
+                    ContainerInline? tail = null;
+                    if (child.NextSibling is not null)
+                    {
+                        tail = CreateSplitContainer(segment);
+
+                        // The next children of the container go to the tail, which is a child of the root
+                        stack.Pop();
+                        stack.Push((child.NextSibling, tail, tail));
+                    }
+
+                    promotions ??= new(ReferenceEqualityComparer.Instance);
+                    if (!promotions.TryGetValue(top, out var list))
+                    {
+                        list = [];
+                        promotions.Add(top, list);
+                    }
+
+                    list.Add((child, tail));
+                    (boundaries ??= []).Add((child, tail));
+
+                    // A boundary with children is a child of the root when its children are promoted
+                    if (child is ContainerInline { FirstChild: { } boundaryChild } boundaryContainer)
+                    {
+                        stack.Push((boundaryChild, boundaryContainer, boundaryContainer));
+                    }
+                }
+                else if (child is ContainerInline { FirstChild: { } grandChild } container)
+                {
+                    stack.Push((grandChild, container, top));
+                }
+            }
+        }
+
+        if (boundaries is null)
+        {
+            return;
+        }
+
+        // Move the inlines after each boundary to its tail, until the next boundary of the same container
+        foreach (var (boundary, tail) in boundaries)
+        {
+            var next = boundary.NextSibling;
+            boundary.Remove();
+            while (tail is not null && next is not null && !isBoundary(next, state))
+            {
+                var inline = next;
+                next = next.NextSibling;
+                inline.Remove();
+                tail.AppendChild(inline);
+            }
+        }
+
+        // Insert the boundaries after the children of the root that have them
+        var children = new List<Inline>();
+        for (var rootChild = root.FirstChild; rootChild is not null; rootChild = rootChild.NextSibling)
+        {
+            children.Add(rootChild);
+        }
+
+        foreach (var rootChild in children)
+        {
+            if (promotions!.ContainsKey(rootChild))
+            {
+                InsertPromotedInlines(rootChild, promotions);
+            }
+        }
+    }
+
+    // Inserts the boundaries promoted after the given child of the root, the last one first. Each one is followed by the
+    // boundaries promoted after it (when it has children), its tail, and the boundaries promoted after its tail.
+    private static void InsertPromotedInlines(Inline top, Dictionary<Inline, List<(Inline Boundary, ContainerInline? Tail)>> promotions)
+    {
+        // The inlines to insert, in reverse order, and the inlines whose promoted boundaries are inserted next (Expand)
+        var pending = new Stack<(Inline Inline, bool Expand)>();
+        pending.Push((top, true));
+        var last = top;
+        while (pending.Count > 0)
+        {
+            var (inline, expand) = pending.Pop();
+            if (!expand)
+            {
+                last.InsertAfter(inline);
+                last = inline;
+                continue;
+            }
+
+            if (promotions.TryGetValue(inline, out var list))
+            {
+                foreach (var (boundary, tail) in list)
+                {
+                    if (tail is not null)
+                    {
+                        pending.Push((tail, true));
+                        pending.Push((tail, false));
+                    }
+
+                    pending.Push((boundary, true));
+                    pending.Push((boundary, false));
+                }
+            }
         }
     }
 

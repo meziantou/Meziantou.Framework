@@ -547,6 +547,54 @@ public sealed class TestPipeTable
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
+    [Theory]
+    [InlineData("*a|b\n-|-\nc|d\ne|f", "<table>\n<thead>\n<tr>\n<th>*a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n<tr>\n<td>e</td>\n<td>f</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("*a|b\n-|-\n**c|d\ne|f", "<table>\n<thead>\n<tr>\n<th>*a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>**c</td>\n<td>d</td>\n</tr>\n<tr>\n<td>e</td>\n<td>f</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("*a|*b|c\n-|-|-\nd|e|f", "<table>\n<thead>\n<tr>\n<th>*a</th>\n<th>*b</th>\n<th>c</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>d</td>\n<td>e</td>\n<td>f</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("[*a|b\n-|-\nc|d\ne|f", "<table>\n<thead>\n<tr>\n<th>[*a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n<tr>\n<td>e</td>\n<td>f</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("*a|b\n-|-\nc **d|e\nf|g** h\ni|j", "<table>\n<thead>\n<tr>\n<th>*a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c **d</td>\n<td>e</td>\n</tr>\n<tr>\n<td>f</td>\n<td>g** h</td>\n</tr>\n<tr>\n<td>i</td>\n<td>j</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("~~a|b\n-|-\n*c|d\ne|f~~", "<table>\n<thead>\n<tr>\n<th>~~a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>*c</td>\n<td>d</td>\n</tr>\n<tr>\n<td>e</td>\n<td>f~~</td>\n</tr>\n</tbody>\n</table>\n")]
+    public void RowsInAnUnclosedInlineAreSplitIntoCells(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build()));
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
+    public void ManyRowsInAnUnclosedInlineAreParsedInLinearTime()
+    {
+        // The line breaks nested in the emphasis delimiter were promoted one at a time, each one moving all the rows after it
+        const int Count = 32_000;
+        var markdown = "*" + string.Concat(Enumerable.Repeat("---|\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        var table = Assert.IsType<Table>(Assert.Single(document));
+        Assert.HasCount(Count - 1, table);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
+    public void ManyColumnsInAnUnclosedInlineAreParsedInLinearTime()
+    {
+        // The pipes nested in the emphasis delimiter were promoted one at a time, each one moving all the cells after it
+        const int Count = 40_000;
+        var markdown = "*" + string.Concat(Enumerable.Repeat("a|", Count)) + "\n" + string.Concat(Enumerable.Repeat("-|", Count));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        var table = Assert.IsType<Table>(Assert.Single(document));
+        Assert.HasCount(Count, Assert.IsType<TableRow>(Assert.Single(table)));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
     // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Theory(DisableParallelization = true)]
     [InlineData("text")]

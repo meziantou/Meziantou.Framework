@@ -25,6 +25,15 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             return;
         }
 
+        if (link.IsAutoLink && !link.IsImage && GetLiteralText(link) is { } text)
+        {
+            // The text of an autolink is raw, so it could contain the syntax of a link, or of any other inline
+            var destination = EscapeDestination(link.Url);
+            var markdown = string.Concat("[", renderer.EscapeLinkText(text, destination), "](", destination, ")");
+            renderer.Write(renderer.EscapeTablePipes ? markdown.Replace("|", "\\|", StringComparison.Ordinal) : markdown);
+            return;
+        }
+
         if (link.IsImage)
         {
             renderer.Write('!');
@@ -64,6 +73,22 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
         }
     }
 
+    private static string? GetLiteralText(LinkInline link)
+    {
+        var builder = new StringBuilder();
+        for (var inline = link.FirstChild; inline is not null; inline = inline.NextSibling)
+        {
+            if (inline is not LiteralInline literal)
+            {
+                return null;
+            }
+
+            builder.Append(literal.Content.AsSpan());
+        }
+
+        return builder.ToString();
+    }
+
     /// <summary>
     /// Writes a link destination, escaped so that it is parsed back to the same URL.
     /// </summary>
@@ -71,6 +96,12 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     /// <param name="url">The destination.</param>
     /// <param name="decodedEntities">Whether the parser decoded the entities of the destination, so that ampersands must be encoded.</param>
     internal static void WriteDestination(NormalizeRenderer renderer, string? url, bool decodedEntities = true)
+    {
+        var escaped = EscapeDestination(url, decodedEntities);
+        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+    }
+
+    internal static string EscapeDestination(string? url, bool decodedEntities = true)
     {
         url ??= string.Empty;
 
@@ -93,12 +124,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
         needsBrackets |= depth != 0;
         var escaped = Escape(url, needsBrackets ? "<>" : "", decodedEntities);
-        if (needsBrackets)
-        {
-            escaped = "<" + escaped + ">";
-        }
-
-        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+        return needsBrackets ? "<" + escaped + ">" : escaped;
     }
 
     /// <summary>

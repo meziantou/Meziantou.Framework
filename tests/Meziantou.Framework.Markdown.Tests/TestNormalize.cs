@@ -877,6 +877,22 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("Docs: https://docs.example/x](https://evil.example) end", "Docs: [https://docs.example/x\\](https://evil.example)](https://docs.example/x](https://evil.example)) end")]
+    [InlineData("Docs: https://docs.example/x](javascript:alert(1)) end", "Docs: [https://docs.example/x\\](javascript:alert(1))](https://docs.example/x](javascript:alert(1))) end")]
+    [InlineData("www.a.b/*c*d", "[www.a.b/\\*c\\*d](http://www.a.b/*c*d)")]
+    [InlineData("` http://a.b/``", "` [http://a.b/&#96;&#96;](http://a.b/``)")]
+    public void ExpandedAutoLinkTextIsEscaped(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseAutoLinks().Build());
+    }
+
+    [Fact]
+    public void ExpandedAutoLinkTextIsEscapedForThePipelineInlines()
+    {
+        AssertNormalizePreservesHtml("www.a.b/$", "[www\\.a\\.b\\/\\$](http://www.a.b/$)", new MarkdownPipelineBuilder().UseAutoLinks().UseMathematics().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

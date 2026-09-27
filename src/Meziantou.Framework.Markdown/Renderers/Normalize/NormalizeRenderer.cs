@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO;
+using System.Text;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
@@ -162,6 +163,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         try
         {
             renderer.EscapeTablePipes = EscapeTablePipes;
+            renderer.Pipeline = Pipeline;
             renderer.WriteLeafInline(leafBlock);
             var builder = ((StringWriter)renderer.Writer).GetStringBuilder();
             var text = builder.ToString();
@@ -244,6 +246,94 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
 
         return index;
+    }
+
+    /// <summary>
+    /// Escapes the text of a link, so that it is parsed back as the same text.
+    /// </summary>
+    internal string EscapeLinkText(string text, string destination)
+    {
+        // Code spans, autolinks and raw HTML take precedence over links, even outside the link text. Other inlines, such as
+        // emphasis, depend on the pipeline: escape more characters until the text is parsed back.
+        foreach (var characters in (ReadOnlySpan<string>)["`<[]&", "`<[]&*_~"])
+        {
+            var escaped = Escape(text, characters);
+            if (IsLinkWithText(string.Concat("[", escaped, "](", destination, ")"), text))
+            {
+                return escaped;
+            }
+        }
+
+        return Escape(text, characters: null);
+
+        static string Escape(string text, string? characters)
+        {
+            var builder = new StringBuilder(text.Length + 8);
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c == '`')
+                {
+                    // An escaped backtick still pairs with a backtick before the link
+                    builder.Append("&#96;");
+                    continue;
+                }
+
+                var escape = characters is null
+                    ? c.IsAsciiPunctuation()
+                    : (characters.Contains(c, StringComparison.Ordinal) && (c != '&' || LinkInlineRenderer.IsEntityStart(text.AsSpan(i + 1))))
+                        || (c == '\\' && (i + 1 == text.Length || text[i + 1].IsAsciiPunctuation()));
+                if (escape)
+                {
+                    builder.Append('\\');
+                }
+
+                builder.Append(c);
+            }
+
+            return builder.ToString();
+        }
+    }
+
+    private bool IsLinkWithText(string markdown, string text)
+    {
+        if (ParseBlocks(markdown) is not [ParagraphBlock paragraph])
+        {
+            return false;
+        }
+
+        var processor = InlineProcessor.Rent(new MarkdownDocument(), (Pipeline ?? MarkdownConverter.DefaultPipeline).InlineParsers, preciseSourcelocation: false, context: null, trackTrivia: false);
+        try
+        {
+            processor.ProcessInlineLeaf(paragraph);
+        }
+        finally
+        {
+            InlineProcessor.Release(processor);
+        }
+
+        if (paragraph.Inline?.FirstChild is not LinkInline { NextSibling: null } link)
+        {
+            return false;
+        }
+
+        var builder = new StringBuilder(text.Length);
+        for (var inline = link.FirstChild; inline is not null; inline = inline.NextSibling)
+        {
+            switch (inline)
+            {
+                case LiteralInline literal:
+                    builder.Append(literal.Content.AsSpan());
+                    break;
+                case HtmlEntityInline entity:
+                    builder.Append(entity.Transcoded.AsSpan());
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        return builder.Equals(text);
     }
 
     private bool CanOpenBlock(char c)

@@ -932,6 +932,12 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Fact]
+    public void ParagraphContinuationLineIsNotConsumedByBlockParser()
+    {
+        AssertNormalizePreservesHtml("a\n    *[b]: c", "a\n    *[b]: c", new MarkdownPipelineBuilder().UseAbbreviations().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

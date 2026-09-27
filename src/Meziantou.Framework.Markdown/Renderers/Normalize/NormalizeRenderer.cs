@@ -199,8 +199,9 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             return false;
         }
 
-        // Let the block parsers decide, as the rules are subtle (setext underlines, ordered lists starting at 1, HTML block kinds, extensions...)
-        return ParseBlocks(string.Concat("a\n", line)) is not [ParagraphBlock];
+        // Let the block parsers decide, as the rules are subtle (setext underlines, ordered lists starting at 1, HTML block kinds, extensions...).
+        // Some parsers consume the line without creating a block, such as an abbreviation definition.
+        return ParseBlocks(string.Concat("a\n", line)) is not [ParagraphBlock { Lines.Count: 2 }];
     }
 
     // Returns the index before which the first line must be escaped, or -1
@@ -219,7 +220,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             block = block is ListBlock { Count: 1 } list && list[0] is ListItemBlock { Count: > 0 } item ? item[0] : null;
         }
 
-        if (block is ParagraphBlock)
+        if (block is ParagraphBlock { Lines.Count: 1 })
         {
             return -1;
         }

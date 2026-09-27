@@ -2182,6 +2182,34 @@ internal sealed partial class TestTomlSerializerContextConverterRead : TomlSeria
 {
 }
 
+public sealed class GeneratedScalarFallbackConverter : TomlConverter<int>
+{
+    public override int Read(TomlReader reader)
+    {
+        try
+        {
+            return reader.Options.GetTypeInfo<int>().Read(reader);
+        }
+        catch (TomlException)
+        {
+            return -1;
+        }
+    }
+
+    public override void Write(TomlWriter writer, int value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedScalarFallbackOuter
+{
+    [TomlConverter(typeof(GeneratedScalarFallbackConverter))]
+    public int Value { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedScalarFallbackOuter))]
+internal sealed partial class TestTomlSerializerContextScalarFallback : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedFallbackOuter
 {
     [TomlConverter(typeof(GeneratedFallbackConverter))]
@@ -4951,6 +4979,19 @@ public class NewApiSourceGenerationTests
             Assert.Contains("read too much or not enough", generated.Message, StringComparison.Ordinal);
             Assert.Equal(reflection.Message, generated.Message);
         }
+    }
+
+    // Unlike the error of a table or an array, the error of a single value is not recorded: a converter can fall back on it
+    [Fact]
+    public void ErrorOfASingleValue_CaughtByAConverter_IsNotReported()
+    {
+        const string Toml = "Value = 'x'\n";
+        var typeInfo = TestTomlSerializerContextScalarFallback.Default.GeneratedScalarFallbackOuter;
+
+        Assert.Equal(-1, TomlSerializer.Deserialize(Toml, typeInfo)!.Value);
+        Assert.Equal(-1, TomlSerializer.Deserialize<GeneratedScalarFallbackOuter>(Toml)!.Value);
+        Assert.True(TomlSerializer.TryDeserialize(Toml, typeInfo, out _));
+        Assert.True(TomlSerializer.TryDeserialize<GeneratedScalarFallbackOuter>(Toml, out _));
     }
 
     // A converter cannot hide the error of a nested value it reads with the metadata of the library: both APIs report it

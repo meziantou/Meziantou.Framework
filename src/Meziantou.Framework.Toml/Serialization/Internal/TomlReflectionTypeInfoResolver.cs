@@ -137,6 +137,14 @@ internal static class TomlReflectionTypeInfoResolver
             CanHideBaseMember(other)));
     }
 
+    private static bool HidesMember(MemberInfo other, MemberInfo member)
+    {
+        return !ReferenceEquals(other, member) &&
+            string.Equals(other.Name, member.Name, StringComparison.Ordinal) &&
+            other.DeclaringType!.IsSubclassOf(member.DeclaringType!) &&
+            CanHideBaseMember(other);
+    }
+
     private static bool CanHideBaseMember(MemberInfo member)
     {
         return member switch
@@ -287,14 +295,11 @@ internal static class TomlReflectionTypeInfoResolver
                 DisallowNullOnDeserialize: DisallowNull(field.FieldType, nullabilityContext?.Create(field).WriteState)));
         }
 
-        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind
-        var hiddenMembers = members
-            .Where(member => members.Exists(other =>
-                string.Equals(other.Member.Name, member.Member.Name, StringComparison.Ordinal) &&
-                other.Member.DeclaringType!.IsSubclassOf(member.Member.DeclaringType!)))
-            .Select(member => member.Member)
-            .ToHashSet();
-        members.RemoveAll(member => hiddenMembers.Contains(member.Member));
+        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind, whether
+        // or not it is serialized
+        members.RemoveAll(member =>
+            Array.Exists(properties, other => HidesMember(other, member.Member)) ||
+            Array.Exists(fields, other => HidesMember(other, member.Member)));
 
         return OrderMembers(members, mappingOrder);
     }

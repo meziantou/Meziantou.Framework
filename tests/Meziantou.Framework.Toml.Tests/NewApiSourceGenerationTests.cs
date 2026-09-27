@@ -1822,6 +1822,40 @@ internal sealed partial class TestTomlSerializerContextMetadataPolymorphic : Tom
 {
 }
 
+#pragma warning disable CA1051 // The tests need public fields
+public class GeneratedHidingFieldBase
+{
+    public int X = 1;
+}
+
+public sealed class GeneratedIgnoredPropertyOverField : GeneratedHidingFieldBase
+{
+    [TomlIgnore]
+    public new int X { get; set; } = 2;
+}
+
+public class GeneratedHidingPropertyBase
+{
+    public int X { get; set; } = 1;
+}
+
+public sealed class GeneratedFieldOverProperty : GeneratedHidingPropertyBase
+{
+    public new int X = 2;
+}
+#pragma warning restore CA1051
+
+[TomlSourceGenerationOptions(IncludeFields = true)]
+[TomlSerializable(typeof(GeneratedIgnoredPropertyOverField))]
+internal sealed partial class TestTomlSerializerContextHidingIncludeFields : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedFieldOverProperty))]
+internal sealed partial class TestTomlSerializerContextHiding : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4122,6 +4156,18 @@ public class NewApiSourceGenerationTests
             Assert.Contains("# before name", toml, StringComparison.Ordinal);
             Assert.Contains("# trailing name", toml, StringComparison.Ordinal);
         }
+    }
+
+    // Like a member of the same kind, a derived member hides the base member even when it is not serialized
+    [Fact]
+    public void BaseMember_HiddenByAnUnserializedMemberOfTheOtherKind_IsNotSerialized()
+    {
+        var includeFields = new TomlSerializerOptions { IncludeFields = true };
+
+        Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), TestTomlSerializerContextHidingIncludeFields.Default.GeneratedIgnoredPropertyOverField));
+        Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), includeFields));
+        Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty(), TestTomlSerializerContextHiding.Default.GeneratedFieldOverProperty));
+        Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty()));
     }
 
     [Fact]

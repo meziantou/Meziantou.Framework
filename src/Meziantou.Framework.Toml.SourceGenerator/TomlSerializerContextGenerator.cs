@@ -5061,11 +5061,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         members.Clear();
         members.AddRange(orderedMembers);
 
-        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind
+        // A field hiding a base property, or a property hiding a base field, hides it like a member of the same kind, whether
+        // or not it is serialized, like the reflection resolver
         for (var i = members.Count - 1; i >= 0; i--)
         {
-            var member = members[i];
-            if (members.Any(other => !ReferenceEquals(other, member) && other.MemberName == member.MemberName && DerivesFrom(other.DeclaringType, member.DeclaringType)))
+            if (IsHiddenByDerivedMember(named, members[i]))
             {
                 members.RemoveAt(i);
             }
@@ -5324,6 +5324,32 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 yield return member;
             }
         }
+    }
+
+    private static bool IsHiddenByDerivedMember(INamedTypeSymbol type, PocoMember member)
+    {
+        for (var current = type; current is not null && !SymbolEqualityComparer.Default.Equals(current, member.DeclaringType); current = current.BaseType)
+        {
+            foreach (var other in current.GetMembers(member.MemberName))
+            {
+                var canHide = other switch
+                {
+                    IPropertySymbol { IsStatic: false } property => property.GetMethod?.DeclaredAccessibility == Accessibility.Public ||
+                        property.SetMethod?.DeclaredAccessibility == Accessibility.Public ||
+                        HasAttribute(property, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute"),
+                    IFieldSymbol { IsStatic: false, IsImplicitlyDeclared: false } field => field.DeclaredAccessibility == Accessibility.Public ||
+                        HasAttribute(field, "Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute"),
+                    _ => false,
+                };
+
+                if (canHide)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static int GetInheritanceDepth(ITypeSymbol type)
@@ -7442,19 +7468,6 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         converterType = null!;
-        return false;
-    }
-
-    private static bool DerivesFrom(ITypeSymbol type, ITypeSymbol baseType)
-    {
-        for (var current = type.BaseType; current is not null; current = current.BaseType)
-        {
-            if (SymbolEqualityComparer.Default.Equals(current, baseType))
-            {
-                return true;
-            }
-        }
-
         return false;
     }
 

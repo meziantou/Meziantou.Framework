@@ -20,7 +20,8 @@ public class CodeInlineRenderer : RoundtripObjectRenderer<CodeInline>
         renderer.Write(obj.Delimiter, obj.DelimiterCount);
         if (!obj.ContentSpan.IsEmpty)
         {
-            renderer.Write(obj.ContentWithTrivia);
+            // A code span can span lines, which start with the indent of the containers
+            renderer.WriteLines(obj.ContentWithTrivia);
         }
         renderer.Write(obj.Delimiter, obj.DelimiterCount);
     }

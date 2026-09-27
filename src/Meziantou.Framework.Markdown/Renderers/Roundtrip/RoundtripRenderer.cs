@@ -85,9 +85,13 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     /// <summary>
     /// Writes text that can span lines, starting each line with the indent of the containers, as the lines of a leaf block.
     /// </summary>
-    internal void WriteLines(StringSlice slice)
+    internal void WriteLines(StringSlice slice) => WriteLines(slice.AsSpan());
+
+    /// <summary>
+    /// Writes text that can span lines, starting each line with the indent of the containers, as the lines of a leaf block.
+    /// </summary>
+    internal void WriteLines(ReadOnlySpan<char> text)
     {
-        var text = slice.AsSpan();
         while (!text.IsEmpty)
         {
             var index = text.IndexOfAny('\r', '\n');

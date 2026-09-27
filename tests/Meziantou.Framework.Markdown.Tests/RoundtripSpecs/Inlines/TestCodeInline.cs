@@ -74,4 +74,15 @@ public class TestCodeInline
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("> `a\n> b`\n")]
+    [InlineData("> `a\r> b`\r")]
+    [InlineData("> ``a\n> b\n> c``\n")]
+    [InlineData(">> x `a\n>> b`\n")]
+    [InlineData("> - `a\n>   b`\n")]
+    public void TestSpanningLinesInContainer(string value)
+    {
+        RoundTrip(value);
+    }
 }

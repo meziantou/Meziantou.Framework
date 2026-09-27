@@ -21,7 +21,8 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
         {
             renderer.Write('!');
         }
-        // link text
+        // link text. The label, the title and the whitespace around the url can span lines, which start with the indent of the
+        // containers.
         renderer.Write('[');
         renderer.WriteChildren(link);
         renderer.Write(']');
@@ -33,7 +34,7 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
                 renderer.Write('[');
                 if (link.LocalLabel == LocalLabel.Local)
                 {
-                    renderer.Write(link.LabelWithTrivia);
+                    renderer.WriteLines(link.LabelWithTrivia);
                 }
                 renderer.Write(']');
             }
@@ -43,7 +44,7 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
             if (link.Url != null)
             {
                 renderer.Write('(');
-                renderer.Write(link.TriviaBeforeUrl);
+                renderer.WriteLines(link.TriviaBeforeUrl);
                 if (link.UrlHasPointyBrackets)
                 {
                     renderer.Write('<');
@@ -60,7 +61,7 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
                 {
                     renderer.Write('>');
                 }
-                renderer.Write(link.TriviaAfterUrl);
+                renderer.WriteLines(link.TriviaAfterUrl);
 
                 if (!string.IsNullOrEmpty(link.Title))
                 {
@@ -71,9 +72,9 @@ public class LinkInlineRenderer : RoundtripObjectRenderer<LinkInline>
                         close = ')';
                     }
                     renderer.Write(open);
-                    renderer.Write(link.UnescapedTitle);
+                    renderer.WriteLines(link.UnescapedTitle);
                     renderer.Write(close);
-                    renderer.Write(link.TriviaAfterTitle);
+                    renderer.WriteLines(link.TriviaAfterTitle);
                 }
 
                 renderer.Write(')');

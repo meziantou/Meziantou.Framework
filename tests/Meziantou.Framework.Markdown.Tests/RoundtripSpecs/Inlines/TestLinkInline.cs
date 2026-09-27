@@ -229,4 +229,13 @@ public class TestLinkInline
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("> [a](/u \"t\n> x\")\n")]
+    [InlineData("> [a](/u\n> \"t\"\n>  )\n")]
+    [InlineData("> [a](\n>   /u)\n")]
+    public void TestSpanningLinesInContainer(string value)
+    {
+        RoundTrip(value);
+    }
 }

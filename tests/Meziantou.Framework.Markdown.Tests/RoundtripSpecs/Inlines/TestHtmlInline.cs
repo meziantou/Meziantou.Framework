@@ -22,4 +22,12 @@ public class TestHtmlInline
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("> <a\n> href=\"x\">\n")]
+    [InlineData("> x <!--\n> c -->\n")]
+    public void TestSpanningLinesInContainer(string value)
+    {
+        RoundTrip(value);
+    }
 }

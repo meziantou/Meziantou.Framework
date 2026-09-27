@@ -16,6 +16,7 @@ public class RoundtripHtmlInlineRenderer : RoundtripObjectRenderer<HtmlInline>
     /// </summary>
     protected override void Write(RoundtripRenderer renderer, HtmlInline obj)
     {
-        renderer.Write(obj.Tag);
+        // A tag can span lines, which start with the indent of the containers
+        renderer.WriteLines(obj.Tag);
     }
 }

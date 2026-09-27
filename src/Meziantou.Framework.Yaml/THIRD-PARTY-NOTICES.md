@@ -11,6 +11,7 @@ available are reproduced below.
 - Project: SharpYaml
 - Source: <https://github.com/xoofx/SharpYaml>
 - License: <https://github.com/xoofx/SharpYaml/blob/main/LICENSE.txt>
+- Commit: b8debcdb3246b565550c583cee3bd4e0761666ae
 
 ```
 Copyright (c) 2013-2026 SharpYaml - Alexandre Mutel

@@ -119,7 +119,10 @@ public sealed class TestPipeTable
     [InlineData("| *e |\n|-:|\ntext* *em*", "<table>\n<thead>\n<tr>\n<th style=\"text-align: right;\">*e</th>\n</tr>\n</thead>\n</table>\n<p>text* <em>em</em></p>\n")]
     [InlineData("> a | b\n> --|--\n> c | d\n> text", "<blockquote>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n</blockquote>\n")]
     [InlineData("a | b\r\n--|--\r\ntext\r\nmore", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n<p>text\nmore</p>\n")]
-    [InlineData("a | b\n--|--\n[c | d\ntext](u)", "<p>a | b\n--|--\n<a href=\"u\">c | d\ntext</a></p>\n")]
+    [InlineData("a | b\n--|--\n[c | d\ntext](u)", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>[c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text](u)</p>\n")]
+    [InlineData("a | b\n--|--\nc | d\ntext\\\ne | f", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text<br />\ne | f</p>\n")]
+    [InlineData("a | b\n--|--\nc | d\n`e\nf` | g", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p><code>e f</code> | g</p>\n")]
+    [InlineData("[a]: /u\na | b\n--|--\nc | d\ntext", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n")]
     [InlineData("a | b\ntext\n--|--\nc | d", "<p>a | b\ntext\n--|--\nc | d</p>\n")]
     public void LineWithoutPipeEndsTheTable(string markdown, string expected)
     {
@@ -159,6 +162,37 @@ public sealed class TestPipeTable
         var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
         Assert.Equal(MarkdownConverter.ToHtml(markdownWithBlankLine, pipeline), MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Theory]
+    [InlineData("a|b\n-|-\nc|d\nx [^1]\n\n[^1]: n", "<p>x <a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>n<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("a|b\n-|-\nc|d\n`e|f` [^1]\n\n[^1]: n", "<p><code>e|f</code> <a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>n<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("a|b\n-|-\nc|d\ntext {.cls}", "<p class=\"cls\">text</p>\n")]
+    [InlineData("a|b\n-|-\nc|d\n`e|f` {.cls}", "<p class=\"cls\"><code>e|f</code></p>\n")]
+    [InlineData("a|b\n-|-\nc|d\n{.note}\ne|f", "<p class=\"note\">e|f</p>\n")]
+    public void LinesAfterTableAreParsedOnce(string markdown, string expectedAfterTable)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal("<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n" + expectedAfterTable, html);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("`|` ")]
+    public void ReferencesAfterTablesAreExpandedOnce(string linePrefix)
+    {
+        // The references of a line parsed twice were counted twice in the budget of the expanded references
+        var url = "/" + new string('u', 50);
+        var line = linePrefix + string.Join(' ', Enumerable.Repeat("[r]", 10));
+        var markdown = string.Concat(Enumerable.Repeat("a|b\n-|-\nc|d\n" + line + "\n", 100)) + "\n[r]: " + url + "\n";
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal(1000, html.Split("<a href=\"" + url + "\">").Length - 1);
     }
 
     [Fact]
@@ -511,6 +545,27 @@ public sealed class TestPipeTable
 
         Assert.Equal(string.Concat(Enumerable.Repeat(expectedItem, Count)), html);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("text")]
+    [InlineData("`e|f`")]
+    [InlineData("[e")]
+    public void TablesEndingInTheMiddleOfAParagraphAreParsedInLinearTime(string line)
+    {
+        // The lines after each table were parsed again in the paragraph after it, so the paragraph was parsed once per table
+        const int Count = 10_000;
+        var markdown = string.Concat(Enumerable.Repeat("a|b\n-|-\nc|d\n" + line + "\n", Count));
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.HasCount(Count, document.OfType<Table>());
+        Assert.HasCount(Count, document.OfType<ParagraphBlock>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky

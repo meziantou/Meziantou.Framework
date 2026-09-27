@@ -1416,4 +1416,37 @@ public class TestExtensionsPipeTable
 
         TestParser.TestSpec("a | b\n-- | --\n0 | 1\ntext\nc | d\n-- | --\n2 | 3", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n<table>\n<thead>\n<tr>\n<th>c</th>\n<th>d</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>2</td>\n<td>3</td>\n</tr>\n</tbody>\n</table>", "pipetables|advanced", context: "Example 40\nSection Extensions / Pipe Table\n");
     }
+
+    // The lines after a table are parsed as if a blank line separated them from the table: an inline, such as a link, cannot start in the table and end after it:
+    [Fact]
+    public void ExtensionsPipeTable_Example041()
+    {
+        // Example 41
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     a | b
+        //     -- | --
+        //     [0 | 1
+        //     text](/url)
+        //
+        // Should be rendered as:
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>a</th>
+        //     <th>b</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>[0</td>
+        //     <td>1</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+        //     <p>text](/url)</p>
+
+        TestParser.TestSpec("a | b\n-- | --\n[0 | 1\ntext](/url)", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>[0</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n<p>text](/url)</p>", "pipetables|advanced", context: "Example 41\nSection Extensions / Pipe Table\n");
+    }
 }

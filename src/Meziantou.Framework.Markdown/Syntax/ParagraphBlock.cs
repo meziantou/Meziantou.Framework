@@ -36,4 +36,7 @@ public class ParagraphBlock : LeafBlock
     /// Gets or sets the last line.
     /// </summary>
     public int LastLine => Line + Lines.Count - 1;
+
+    // The text of a paragraph made of the last lines of another paragraph, whose inlines are not processed yet
+    internal ParagraphTextContinuation? TextContinuation { get; set; }
 }

@@ -1088,3 +1088,28 @@ c | d
 </tbody>
 </table>
 ````````````````````````````````
+
+The lines after a table are parsed as if a blank line separated them from the table: an inline, such as a link, cannot start in the table and end after it:
+
+```````````````````````````````` example
+a | b
+-- | --
+[0 | 1
+text](/url)
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text](/url)</p>
+````````````````````````````````

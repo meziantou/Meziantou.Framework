@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,17 @@ public class InlineProcessor
     /// </summary>
     internal const int DefaultOpenContainersTrackingThreshold = 256;
 
-    private readonly List<StringLineGroup.LineOffset> _lineOffsets = [];
+    private List<StringLineGroup.LineOffset> _lineOffsets = [];
+
+    // The index in _lineOffsets of the first line of the block being processed: a paragraph that continues the text of
+    // another one uses its line offsets
+    private int _lineOffsetsBase;
+
+    // Whether _lineOffsets is used by a paragraph that continues the text of the block being processed
+    private bool _lineOffsetsShared;
+
+    // The text of the block being processed
+    private StringSlice _text;
     private int _previousSliceOffset;
     private int _previousLineIndexForSliceOffset;
     private int[]? _unescapedSourceOffsets;
@@ -96,6 +107,44 @@ public class InlineProcessor
         }
     }
 
+    // Creates a paragraph with the lines of the text being processed that start at the given position, e.g. the lines after
+    // a pipe table. Its inlines are processed from the same text and line offsets, so that neither the lines nor the text
+    // are copied: a paragraph can end many tables, each one before a paragraph with the rest of its lines.
+    internal ParagraphBlock CreateParagraphFromText(int textStart)
+    {
+        var paragraph = (ParagraphBlock)Block!;
+        var offsets = CollectionsMarshal.AsSpan(_lineOffsets);
+        var low = _lineOffsetsBase;
+        var high = offsets.Length - 1;
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (offsets[middle].Start < textStart)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        Debug.Assert(offsets[low].Start == textStart);
+        ref var lineOffset = ref offsets[low];
+        var trailingParagraph = new ParagraphBlock(paragraph.Parser)
+        {
+            Line = LineIndex + low - _lineOffsetsBase,
+            Column = lineOffset.Column,
+            Span = new SourceSpan(lineOffset.LinePosition, paragraph.Span.End),
+            NewLine = paragraph.NewLine,
+            Lines = new StringLineGroup(1, willRelease: true),
+            TextContinuation = new ParagraphTextContinuation(new StringSlice(_text.Text, textStart, _text.End), _lineOffsets, low),
+        };
+
+        _lineOffsetsShared = true;
+        return trailingParagraph;
+    }
+
     /// <summary>
     /// Gets or sets the current inline. Used by <see cref="InlineParser"/> to return a new inline if match was successfull
     /// </summary>
@@ -152,6 +201,13 @@ public class InlineProcessor
     internal AutoLinkScanCache AutoLinkScanCache => _autoLinkScanCache ??= new();
 
     private long _referenceExpansionLength;
+
+    // The total length of the text copied into the document when references are expanded
+    internal long ReferenceExpansionLength
+    {
+        get => _referenceExpansionLength;
+        set => _referenceExpansionLength = value;
+    }
 
     /// <summary>
     /// Gets or sets the maximum total length of the text copied into the document when references are expanded (the URL
@@ -223,7 +279,7 @@ public class InlineProcessor
             sliceOffset = sliceOffset == 0 ? _unescapedSourceStart : offsetsMap[sliceOffset - 1] + 1;
         }
         column = 0;
-        lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : 0;
+        lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : _lineOffsetsBase;
         int position = 0;
         if (PreciseSourceLocation)
         {
@@ -244,7 +300,7 @@ public class InlineProcessor
                     _previousLineIndexForSliceOffset = lineIndex;
 
                     // Return an absolute line index
-                    lineIndex = lineIndex + LineIndex;
+                    lineIndex = lineIndex - _lineOffsetsBase + LineIndex;
                     break;
                 }
             }
@@ -263,7 +319,7 @@ public class InlineProcessor
             sliceOffset = offsetsMap[sliceOffset];
         if (PreciseSourceLocation)
         {
-            int lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : 0;
+            int lineIndex = sliceOffset >= _previousSliceOffset ? _previousLineIndexForSliceOffset : _lineOffsetsBase;
 
             var offsets = CollectionsMarshal.AsSpan(_lineOffsets);
 
@@ -334,12 +390,27 @@ public class InlineProcessor
         _blocksInsertedAfter = 0;
         LineIndex = leafBlock.Line;
 
-        _previousSliceOffset = 0;
-        _previousLineIndexForSliceOffset = 0;
-        _lineOffsets.Clear();
         _htmlScanCache?.Clear();
         _genericAttributesScanCache?.Clear();
-        var text = leafBlock.Lines.ToSlice(_lineOffsets);
+        StringSlice text;
+        if (leafBlock is ParagraphBlock { TextContinuation: { } continuation } continuedParagraph)
+        {
+            // The text of the paragraph is the end of the text of a paragraph processed before it
+            continuedParagraph.TextContinuation = null;
+            _lineOffsets = continuation.LineOffsets;
+            _lineOffsetsBase = continuation.FirstLineOffset;
+            _lineOffsetsShared = false;
+            text = continuation.Text;
+        }
+        else
+        {
+            ClearLineOffsets();
+            text = leafBlock.Lines.ToSlice(_lineOffsets);
+        }
+
+        _previousSliceOffset = 0;
+        _previousLineIndexForSliceOffset = _lineOffsetsBase;
+        _text = text;
         _unescapedSourceStart = text.Start;
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
             ? GfmPipeTableParser.UnescapePipes(ref text) : null;
@@ -867,6 +938,22 @@ public class InlineProcessor
         }
     }
 
+    // Empties the line offsets for a new text, without changing the ones that a paragraph continuing the text still uses
+    private void ClearLineOffsets()
+    {
+        if (_lineOffsetsShared)
+        {
+            _lineOffsets = [];
+            _lineOffsetsShared = false;
+        }
+        else
+        {
+            _lineOffsets.Clear();
+        }
+
+        _lineOffsetsBase = 0;
+    }
+
     private void Reset()
     {
         _unescapedSourceOffsets = null;
@@ -888,10 +975,11 @@ public class InlineProcessor
         LineIndex = 0;
         _previousSliceOffset = 0;
         _previousLineIndexForSliceOffset = 0;
+        _text = default;
 
         LiteralInlineParser.PostMatch = null;
 
-        _lineOffsets.Clear();
+        ClearLineOffsets();
         Array.Clear(ParserStates, 0, ParserStates.Length);
         _linkScanCache?.Clear();
         _htmlScanCache?.Clear();

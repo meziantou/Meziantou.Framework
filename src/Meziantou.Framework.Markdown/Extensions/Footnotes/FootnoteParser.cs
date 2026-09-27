@@ -207,6 +207,13 @@ public class FootnoteParser : BlockParser
 
             foreach (var link in footnote.Links)
             {
+                // The inlines of a line can be parsed twice, and the first ones discarded (e.g. the first line after a pipe
+                // table, when its pipes must be parsed to know that they are not column delimiters)
+                if (!IsInDocument(link))
+                {
+                    continue;
+                }
+
                 linkIndex++;
                 link.Index = linkIndex;
                 var backLink = new FootnoteLink(footnote)
@@ -217,6 +224,19 @@ public class FootnoteParser : BlockParser
                 paragraphBlock.Inline.AppendChild(backLink);
             }
         }
+    }
+
+    private static bool IsInDocument(Inline inline)
+    {
+        for (var parent = inline.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent.Parent is null)
+            {
+                return parent.ParentBlock is not null;
+            }
+        }
+
+        return false;
     }
 
     private static FootnoteLink CreateLinkToFootnote(InlineProcessor state, LinkReferenceDefinition linkRef, Inline? child)

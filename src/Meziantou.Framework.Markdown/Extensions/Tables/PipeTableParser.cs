@@ -103,17 +103,48 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 {
                     tableState.IsInvalidTable = true;
                 }
-                else
+                else if (tableState.EndOfTable is null && !tableState.IsInvalidTable)
                 {
-                    tableState.EndOfTable ??= tableState.EndOfLines[^1];
+                    // The pipes of the line are not column delimiters (e.g. in a code span). Its inlines are removed from
+                    // this paragraph, and the line is parsed again in the paragraph after the table.
+                    tableState.EndOfTable = tableState.EndOfLines[^1];
+                    tableState.EndOfTableLineStart = tableState.LineStart;
+                    tableState.IsLineAfterTableParsed = true;
+                    if (EndTable(processor, tableState))
+                    {
+                        StopParsing(ref slice);
+                        return true;
+                    }
                 }
             }
             tableState.LineHasPipe = false;
             _lineBreakParser.Match(processor, ref slice);
             if (!isFirstLineEmpty)
             {
-                tableState.ColumnAndLineDelimiters.Add(processor.Inline!);
-                tableState.EndOfLines.Add(processor.Inline!);
+                var lineBreak = processor.Inline!;
+                tableState.ColumnAndLineDelimiters.Add(lineBreak);
+                tableState.EndOfLines.Add(lineBreak);
+                tableState.LineStart = slice.Start;
+                if (tableState.EndOfTable is null && !tableState.IsInvalidTable)
+                {
+                    if (!CanHaveColumnDelimiter(processor, slice))
+                    {
+                        // The next line ends the table: when the lines before it are a table, the parse of this paragraph
+                        // ends here, and the lines that follow are parsed once, in a paragraph after the table
+                        processor.Emit(lineBreak);
+                        tableState.EndOfTable = lineBreak;
+                        tableState.EndOfTableLineStart = slice.Start;
+                        if (EndTable(processor, tableState))
+                        {
+                            StopParsing(ref slice);
+                        }
+                    }
+                    else
+                    {
+                        // The state to restore if the next line has no column delimiter: it is parsed again after the table
+                        tableState.SaveLineStartState(processor);
+                    }
+                }
             }
         }
         else
@@ -134,6 +165,57 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         }
 
         return true;
+    }
+
+    // Whether the lines before the end of the table are a table, which ends the paragraph: the lines after it are a new
+    // paragraph. Else the paragraph is not a table: a table followed by other lines needs a header separator row, and must
+    // not end inside an inline (a link) that it would split.
+    private bool EndTable(InlineProcessor processor, TableState tableState)
+    {
+        var endOfTable = tableState.EndOfTable!;
+        var delimiters = tableState.ColumnAndLineDelimiters;
+        var columnDefinitions = FindHeaderRow(delimiters, delimiters.LastIndexOf(endOfTable) + 1);
+        if (columnDefinitions is null || !IsOutsideOfInlines(endOfTable, processor.Root!) || processor.Block!.Parent is null)
+        {
+            tableState.IsInvalidTable = true;
+            return false;
+        }
+
+        tableState.ColumnDefinitions = columnDefinitions;
+        tableState.IsParsingStopped = true;
+        return true;
+    }
+
+    // Ends the parse of the paragraph: the text that follows is parsed in the paragraph after the table
+    private static void StopParsing(ref StringSlice slice)
+    {
+        slice.Start = slice.End + 1;
+    }
+
+    // Whether the line starting at the slice can have a column delimiter: it has a pipe that is not escaped by a backslash.
+    // A pipe can also be in a code span, an HTML inline... but finding these inlines needs the other parsers.
+    private static bool CanHaveColumnDelimiter(InlineProcessor processor, StringSlice slice)
+    {
+        var text = slice.Text;
+        var end = slice.End;
+        var escapes = processor.Parsers.GetParsersForOpeningCharacter('\\');
+        var backslashEscapesPipes = escapes is { Length: > 0 } && escapes[0] is EscapeInlineParser;
+        for (var i = slice.Start; i <= end; i++)
+        {
+            switch (text[i])
+            {
+                case '\n' or '\r':
+                    return false;
+                case '\\' when backslashEscapesPipes && i < end && text[i + 1].IsAsciiPunctuation():
+                    // The escaped character is a literal
+                    i++;
+                    break;
+                case '|':
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsHeaderSeparatorColonBeforePipe(StringSlice slice, TableState tableState)
@@ -378,25 +460,33 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         // The table ends before the first line without a pipe, which starts a paragraph after the table
         var lastTableLineBreak = tableState.EndOfTable;
+        var trailingTextStart = tableState.EndOfTableLineStart;
         if (lastTableLineBreak is null && !tableState.LineHasPipe)
         {
+            // The last line has no column delimiter
             lastTableLineBreak = tableState.EndOfLines.Count > 0 ? tableState.EndOfLines[^1] : null;
             if (lastTableLineBreak is null)
             {
                 ReplacePipesByLiterals(tableState.ColumnAndLineDelimiters, 0);
                 return true;
             }
+
+            trailingTextStart = tableState.LineStart;
+            tableState.IsLineAfterTableParsed = true;
         }
 
         // Detect the header row
         var delimiters = tableState.ColumnAndLineDelimiters;
         var endOfTableIndex = lastTableLineBreak is null ? delimiters.Count : delimiters.IndexOf(lastTableLineBreak) + 1;
-        var aligns = FindHeaderRow(delimiters, endOfTableIndex);
+        // When the parse stopped at the end of the table, the table was validated there: the text after it is only parsed
+        // in the paragraph after the table
+        var aligns = tableState.IsParsingStopped ? tableState.ColumnDefinitions : FindHeaderRow(delimiters, endOfTableIndex);
 
         // A table followed by other lines needs a header separator row, and these lines must not be inside an inline (a
         // link) that the table would split
-        if ((aligns is null && (Options.RequireHeaderSeparator || lastTableLineBreak is not null)) ||
-            (lastTableLineBreak is not null && (!IsOutsideOfInlines(lastTableLineBreak, container) || state.Block!.Parent is null)))
+        if (!tableState.IsParsingStopped &&
+            ((aligns is null && (Options.RequireHeaderSeparator || lastTableLineBreak is not null)) ||
+            (lastTableLineBreak is not null && (!IsOutsideOfInlines(lastTableLineBreak, container) || state.Block!.Parent is null))))
         {
             // No valid header separator found - convert all pipe delimiters to literals
             ReplacePipesByLiterals(delimiters, 0);
@@ -410,7 +500,16 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             delimiters.RemoveRange(endOfTableIndex, delimiters.Count - endOfTableIndex);
             var endOfLinesCount = tableState.EndOfLines.IndexOf(lastTableLineBreak) + 1;
             tableState.EndOfLines.RemoveRange(endOfLinesCount, tableState.EndOfLines.Count - endOfLinesCount);
-            trailingParagraph = CreateParagraphAfter((ParagraphBlock)state.Block!, lastTableLineBreak.Line);
+
+            // The line after the table was parsed in this paragraph when its pipes had to be parsed to know that they are not
+            // column delimiters. Its inlines are removed below, and it is parsed again in the paragraph after the table.
+            if (tableState.IsLineAfterTableParsed)
+            {
+                tableState.RestoreLineStartState(state);
+            }
+
+            // The paragraph after the table has the rest of the text, which is only parsed there
+            trailingParagraph = state.CreateParagraphFromText(trailingTextStart);
         }
 
         var table = new Table();
@@ -440,7 +539,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         if (lastTableLineBreak is not null)
         {
-            // The lines after the table are parsed again as the paragraph that follows it
+            // The inlines after the table are the ones of the line after it when it was parsed, and the trivia of the paragraph
             while (lastTableLineBreak.NextSibling is { } trailingInline)
             {
                 trailingInline.Remove();
@@ -1056,34 +1155,6 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         return false;
     }
 
-    // Creates a paragraph with the lines of the paragraph after the given line. Its inlines are processed like the ones of
-    // the other paragraphs, so it may itself start a table.
-    private static ParagraphBlock CreateParagraphAfter(ParagraphBlock paragraph, int line)
-    {
-        var lines = paragraph.Lines;
-        var first = 0;
-        while (first < lines.Count && lines.Lines[first].Line <= line)
-        {
-            first++;
-        }
-
-        var trailingParagraph = new ParagraphBlock(paragraph.Parser)
-        {
-            Line = lines.Lines[first].Line,
-            Column = lines.Lines[first].Column,
-            Span = new SourceSpan(lines.Lines[first].Position, paragraph.Span.End),
-            Lines = new StringLineGroup(lines.Count - first, willRelease: true),
-            NewLine = paragraph.NewLine,
-        };
-
-        for (var i = first; i < lines.Count; i++)
-        {
-            trailingParagraph.Lines.Add(ref lines.Lines[i]);
-        }
-
-        return trailingParagraph;
-    }
-
     private static void AppendCellInline(ContainerInline cellContainer, Inline inline)
     {
         // SplitContainerAtDelimiter introduces plain wrappers for content that used to live after a promoted
@@ -1315,6 +1386,52 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         // The line break before the first line without a pipe, which ends the table
         public Inline? EndOfTable { get; set; }
+
+        // The position in the text of the first line after the table
+        public int EndOfTableLineStart { get; set; }
+
+        // Whether the parse of the paragraph ended with the table: the text after it is parsed in the paragraph after the table
+        public bool IsParsingStopped { get; set; }
+
+        // Whether the first line after the table was parsed in the paragraph of the table
+        public bool IsLineAfterTableParsed { get; set; }
+
+        // The columns of the table, found when the parse stopped at its end
+        public List<TableColumnDefinition>? ColumnDefinitions { get; set; }
+
+        // The position in the text of the line after the last line break
+        public int LineStart { get; set; }
+
+        // The state of the processor when the line after the last line break starts. If it ends the table, it is parsed
+        // again after the table, so its changes to the processor are undone: the references it expands, and the attributes
+        // it adds to the paragraph (copied to the table).
+        public long ReferenceExpansionAtLineStart { get; set; }
+
+        public HtmlAttributes? AttributesAtLineStart { get; set; }
+
+        public void SaveLineStartState(InlineProcessor processor)
+        {
+            ReferenceExpansionAtLineStart = processor.ReferenceExpansionLength;
+            AttributesAtLineStart = null;
+            if (processor.Block!.TryGetAttributes() is { } attributes)
+            {
+                AttributesAtLineStart = new HtmlAttributes();
+                attributes.CopyTo(AttributesAtLineStart, shared: false);
+            }
+        }
+
+        public void RestoreLineStartState(InlineProcessor processor)
+        {
+            processor.ReferenceExpansionLength = ReferenceExpansionAtLineStart;
+            if (AttributesAtLineStart is not null)
+            {
+                processor.Block!.SetAttributes(AttributesAtLineStart);
+            }
+            else
+            {
+                processor.Block!.RemoveData(typeof(HtmlAttributes));
+            }
+        }
 
         public bool LineHasPipe { get; set; }
 

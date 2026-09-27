@@ -549,6 +549,38 @@ val = true
         Assert.Equal(offsets.Order().ToArray(), offsets);
     }
 
+    // {S} and {L} stand for lone surrogates, which InlineData cannot hold
+    [Theory]
+    [InlineData("{S}")]
+    [InlineData("a{S} = 1")]
+    [InlineData("a = 1 {L}\n")]
+    [InlineData("{S} = 1")]
+    [InlineData("a = 😀{S}")]
+    public void LoneSurrogates_AreEscapedInMessages(string template)
+    {
+        var toml = template.Replace("{S}", "\uD800", StringComparison.Ordinal).Replace("{L}", "\uDC00", StringComparison.Ordinal);
+        var encoding = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+
+        foreach (var diagnostic in SyntaxParser.Parse(toml).Diagnostics)
+        {
+            _ = encoding.GetBytes(diagnostic.Message);
+        }
+
+        _ = encoding.GetBytes(deserialize.Message);
+        _ = encoding.GetBytes(parseStrict.Message);
+    }
+
+    [Fact]
+    public void SurrogatePairs_AreKeptInMessages()
+    {
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>("a = 😀"));
+
+        Assert.Contains("😀", exception.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("{S}")]
     [InlineData("{S} = 1")]

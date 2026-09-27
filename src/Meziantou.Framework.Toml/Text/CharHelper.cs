@@ -217,7 +217,16 @@ internal static partial class CharHelper
         for (int i = 0; i < text.Length; i++)
         {
             var c = text[i];
-            var str = text[i].ToPrintableString();
+
+            // A surrogate pair is a printable character; only a lone surrogate is escaped, as it cannot be encoded
+            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                builder?.Append(c).Append(text[i + 1]);
+                i++;
+                continue;
+            }
+
+            var str = c.ToPrintableString();
             if (str is not null)
             {
                 if (builder == null)
@@ -237,6 +246,12 @@ internal static partial class CharHelper
 
     public static string? ToPrintableString(this char c)
     {
+        // A single char cannot hold a surrogate pair, so a surrogate is always a lone surrogate
+        if (char.IsSurrogate(c))
+        {
+            return $"\\u{(int)c:X4}";
+        }
+
         if (c < ' ' || c == '\u007F' || IsWhiteSpace(c))
         {
             switch (c)

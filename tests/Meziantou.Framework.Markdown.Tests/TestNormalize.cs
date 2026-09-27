@@ -826,6 +826,12 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Fact]
+    public void AutoIdentifiersDoNotEmitGeneratedLinkReferenceDefinitionsNextToOtherDefinitions()
+    {
+        AssertNormalizePreservesHtml("[b]: /u\n\n# a\n\n[a] [b]", "[b]: /u\n\n# a\n\n[a] [b]", new MarkdownPipelineBuilder().UseAutoIdentifiers().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

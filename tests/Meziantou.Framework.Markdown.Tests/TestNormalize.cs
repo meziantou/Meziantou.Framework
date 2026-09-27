@@ -867,6 +867,16 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("```&#9;\n```", "```&#9;\n```")]
+    [InlineData("~~~ ~\n~~~", "~~~ ~\n~~~")]
+    [InlineData("``` &amp;lt;\n```", "```&amp;lt;\n```")]
+    [InlineData("``` a&#32;b\n```", "```a&#32;b\n```")]
+    public void FencedCodeBlockInfoIsEscaped(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

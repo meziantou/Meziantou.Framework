@@ -2,6 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Globalization;
+using System.Text;
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -27,9 +31,15 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
             int fencedCharCount = GetFencedCharCount(fencedCodeBlock);
 
             renderer.Write(fencedCodeBlock.FencedChar, fencedCharCount);
-            if (fencedCodeBlock.Info != null)
+            if (fencedCodeBlock.Info is { Length: > 0 } info)
             {
-                renderer.Write(fencedCodeBlock.Info);
+                // The info string must not lengthen the fence
+                if (info[0] == fencedCodeBlock.FencedChar)
+                {
+                    renderer.Write(' ');
+                }
+
+                renderer.Write(EscapeInfo(info, fencedCodeBlock.FencedChar));
             }
             if (!string.IsNullOrEmpty(fencedCodeBlock.Arguments))
             {
@@ -81,5 +91,40 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
         }
 
         return count;
+    }
+
+    // The info string is unescaped and its entities are decoded, and it ends at the first whitespace
+    private static string EscapeInfo(string info, char fencedChar)
+    {
+        StringBuilder? builder = null;
+        for (var i = 0; i < info.Length; i++)
+        {
+            var c = info[i];
+            string? replacement = null;
+            if (char.IsWhiteSpace(c) || (c == '`' && fencedChar == '`'))
+            {
+                replacement = "&#" + ((int)c).ToString(CultureInfo.InvariantCulture) + ";";
+            }
+            else if (c == '&' && LinkInlineRenderer.IsEntityStart(info.AsSpan(i + 1)))
+            {
+                replacement = "&amp;";
+            }
+            else if (c == '\\' && (i + 1 == info.Length || info[i + 1].IsAsciiPunctuation()))
+            {
+                replacement = "\\\\";
+            }
+
+            if (replacement is not null)
+            {
+                builder ??= new StringBuilder(info, 0, i, info.Length + 8);
+                builder.Append(replacement);
+            }
+            else
+            {
+                builder?.Append(c);
+            }
+        }
+
+        return builder?.ToString() ?? info;
     }
 }

@@ -140,7 +140,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
         return builder?.ToString() ?? text;
     }
 
-    private static bool IsEntityStart(ReadOnlySpan<char> text)
+    internal static bool IsEntityStart(ReadOnlySpan<char> text)
     {
         var length = text.Length > 0 && text[0] == '#' ? 1 : 0;
         while (length < text.Length && char.IsAsciiLetterOrDigit(text[length]))

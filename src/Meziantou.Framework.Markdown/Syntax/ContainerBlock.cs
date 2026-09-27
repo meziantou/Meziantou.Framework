@@ -195,7 +195,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         return false;
     }
 
-    private int LastIndexOf(Block item)
+    internal int LastIndexOf(Block item)
     {
         if (item is null)
             ThrowHelper.ArgumentNullException_item();

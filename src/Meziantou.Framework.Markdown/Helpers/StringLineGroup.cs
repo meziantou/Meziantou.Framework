@@ -182,6 +182,32 @@ public struct StringLineGroup : IEnumerable
     }
 
     /// <summary>
+    /// Creates an iterator over the lines starting at <paramref name="startLine"/>, whose positions are relative to the start of that line.
+    /// </summary>
+    /// <param name="startLine">The index of the first line.</param>
+    /// <param name="end">The position of the last character, as returned by <see cref="GetCharacterCount"/> minus one.</param>
+    internal readonly Iterator ToCharIterator(int startLine, int end)
+    {
+        return new Iterator(this, startLine, end);
+    }
+
+    /// <summary>
+    /// Gets the number of characters, new lines included, of the lines starting at <paramref name="startLine"/>.
+    /// </summary>
+    internal readonly int GetCharacterCount(int startLine)
+    {
+        int count = 0;
+        StringLine[] lines = Lines;
+        for (int i = startLine; i < Count && i < lines.Length; i++)
+        {
+            ref StringSlice slice = ref lines[i].Slice;
+            count += slice.Length + slice.NewLine.Length();
+        }
+
+        return count;
+    }
+
+    /// <summary>
     /// Trims each lines of the specified <see cref="StringLineGroup"/>.
     /// </summary>
     public void Trim()
@@ -192,20 +218,25 @@ public struct StringLineGroup : IEnumerable
         }
     }
 
-    internal SourceSpan ConvertToAbsoluteSpan(SourceSpan span)
-    {
-        if (span.IsEmpty || Count == 0) return span;
+    internal SourceSpan ConvertToAbsoluteSpan(SourceSpan span) => ConvertToAbsoluteSpan(span, startLine: 0);
 
-        var startPosition = GetAbsolutePosition(span.Start);
-        var endPosition = GetAbsolutePosition(span.End);
+    /// <summary>
+    /// Converts a span relative to the start of the line at <paramref name="startLine"/> to absolute positions.
+    /// </summary>
+    internal SourceSpan ConvertToAbsoluteSpan(SourceSpan span, int startLine)
+    {
+        if (span.IsEmpty || Count == startLine) return span;
+
+        var startPosition = GetAbsolutePosition(span.Start, startLine);
+        var endPosition = GetAbsolutePosition(span.End, startLine);
 
         return new SourceSpan(startPosition, endPosition);
     }
 
-    private int GetAbsolutePosition(int position)
+    private int GetAbsolutePosition(int position, int startLine)
     {
         int offset = 0;
-        for (int i = 0; i < Count; i++)
+        for (int i = startLine; i < Count; i++)
         {
             ref StringSlice slice = ref Lines[i].Slice;
             var lineLength = slice.Length + slice.NewLine.Length();
@@ -292,6 +323,7 @@ public struct StringLineGroup : IEnumerable
     public struct Iterator : ICharIterator
     {
         private readonly StringLineGroup _lines;
+        private readonly int _startLine;
         private StringSlice _currentSlice;
         private int _offset;
 
@@ -299,20 +331,20 @@ public struct StringLineGroup : IEnumerable
         /// Initializes a new instance of the Iterator class.
         /// </summary>
         public Iterator(StringLineGroup stringLineGroup)
+            : this(stringLineGroup, startLine: 0, stringLineGroup.GetCharacterCount(0) - 1)
+        {
+        }
+
+        internal Iterator(StringLineGroup stringLineGroup, int startLine, int end)
         {
             _lines = stringLineGroup;
+            _startLine = startLine;
             Start = -1;
             _offset = -1;
-            SliceIndex = 0;
+            SliceIndex = startLine;
             CurrentChar = '\0';
-            End = -1;
-            StringLine[] lines = stringLineGroup.Lines;
-            for (int i = 0; i < stringLineGroup.Count && i < lines.Length; i++)
-            {
-                ref StringSlice slice = ref lines[i].Slice;
-                End += slice.Length + slice.NewLine.Length(); // Add chars
-            }
-            _currentSlice = _lines.Lines[0].Slice;
+            End = end;
+            _currentSlice = _lines.Lines[startLine].Slice;
             SkipChar();
         }
 
@@ -364,6 +396,38 @@ public struct StringLineGroup : IEnumerable
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// Does what <see cref="Remaining"/> does to the first line left, without removing the lines before it.
+        /// </summary>
+        /// <param name="consumedCharacters">The number of characters before the first line left, or of all the lines when none is left.</param>
+        /// <returns>The index of the first line left, or -1 when the iterator reached its end.</returns>
+        internal readonly int SkipConsumedLines(out int consumedCharacters)
+        {
+            if (IsEmpty)
+            {
+                consumedCharacters = End + 1;
+                return -1;
+            }
+
+            consumedCharacters = 0;
+            StringLine[] lines = _lines.Lines;
+            for (int i = _startLine; i < SliceIndex && i < _lines.Count; i++)
+            {
+                ref StringSlice slice = ref lines[i].Slice;
+                consumedCharacters += slice.Length + slice.NewLine.Length();
+            }
+
+            if (SliceIndex < _lines.Count && _offset > 0)
+            {
+                ref StringLine line = ref lines[SliceIndex];
+                line.Column += _offset;
+                line.Slice.Start += _offset;
+                consumedCharacters += _offset;
+            }
+
+            return SliceIndex;
         }
 
         /// <summary>
@@ -431,11 +495,11 @@ public struct StringLineGroup : IEnumerable
             goto Return;
 
         MoveToNewLine:
-            if (SliceIndex < _lines.Lines.Length - 1)
+            if (SliceIndex - _startLine < _lines.Lines.Length - 1)
             {
                 SliceIndex++;
                 _offset = -1;
-                _currentSlice = _lines.Lines[SliceIndex];
+                _currentSlice = SliceIndex < _lines.Lines.Length ? _lines.Lines[SliceIndex].Slice : default;
             }
 
         Return:

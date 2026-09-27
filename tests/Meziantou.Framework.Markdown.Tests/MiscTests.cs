@@ -669,6 +669,47 @@ public class MiscTests
         Assert.Equal("<h1 id=\"a\">a</h1>\n<h1 id=\"a-1\">a-1</h1>\n<h1 id=\"a-2\">a</h1>\n<h1 id=\"a-3\">a-3</h1>\n<h1 id=\"a-4\">a</h1>\n<h1 id=\"a-5\">a</h1>\n", html);
     }
 
+    [Theory]
+    [InlineData("\n", false, 200_000)]
+    [InlineData("\n", true, 200_000)]
+    public void LinkReferenceDefinitionBlocksAreParsedInLinearTime(string separator, bool trackTrivia, int count)
+    {
+        // Each definition used to shift the lines of the paragraph that follow it, and to count the characters of all of them
+        var markdown = string.Concat(Enumerable.Repeat("[a]: /u" + separator, count)) + "[a]\n";
+        var builder = new MarkdownPipelineBuilder();
+        if (trackTrivia)
+        {
+            builder.EnableTrackTrivia();
+        }
+
+        var pipeline = builder.Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.Equal("<p><a href=\"/u\">a</a></p>\n", document.ToHtml(pipeline));
+        Assert.HasCount(trackTrivia ? count + 1 : 2, document);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("[a]: /u\n[b]: /v \"t\"\n[c]:\n/w\n'x\ny'\nz\n\n[a] [b] [c]\n", "a,b,c", "<p>z</p>\n<p><a href=\"/u\">a</a> <a href=\"/v\" title=\"t\">b</a> <a href=\"/w\" title=\"x\ny\">c</a></p>\n")]
+    [InlineData("[a]: /u\r\n[b]: /v\r\n  [c]: /w \"t\"  \r\n\r\n[a] [b] [c]\r\n", "a,b,c", "<p><a href=\"/u\">a</a> <a href=\"/v\">b</a> <a href=\"/w\" title=\"t\">c</a></p>\n")]
+    [InlineData("[a]: /u\n[b]: /v \"t\" x\n\n[a] [b]\n", "a", "<p>[b]: /v &quot;t&quot; x</p>\n<p><a href=\"/u\">a</a> [b]</p>\n")]
+    [InlineData("> [a]: /u\n> [b]:\n> /v\n> x\n\n[a] [b]\n", "a,b", "<blockquote>\n<p>x</p>\n</blockquote>\n<p><a href=\"/u\">a</a> <a href=\"/v\">b</a></p>\n")]
+    public void LinkReferenceDefinitionBlocksKeepTheirPositions(string markdown, string labels, string expected)
+    {
+        foreach (var pipeline in new[] { new MarkdownPipelineBuilder().Build(), new MarkdownPipelineBuilder().EnableTrackTrivia().Build() })
+        {
+            var document = MarkdownConverter.Parse(markdown, pipeline);
+
+            Assert.Equal(expected, document.ToHtml(pipeline));
+            var definitions = document.Descendants<LinkReferenceDefinition>().ToList();
+            Assert.Equal(labels.Split(','), definitions.Select(definition => markdown[definition.LabelSpan.Start..(definition.LabelSpan.End + 1)]));
+        }
+    }
+
     [Fact]
     public void SettingARoundtripLinkReferenceDefinitionAgainDoesNotAddItTwice()
     {

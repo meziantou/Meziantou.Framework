@@ -201,28 +201,41 @@ public class ParagraphBlockParser : BlockParser
     {
         bool atLeastOneFound = false;
 
-        while (true)
+        // The definitions are parsed from the first line left by the previous one, and the lines they use are removed
+        // once at the end: removing them after each definition makes a block of n definitions O(n²)
+        var startLine = 0;
+        var end = lines.GetCharacterCount(0) - 1;
+        while (startLine < lines.Count)
         {
             // If we have found a LinkReferenceDefinition, we can discard the previous paragraph
-            var iterator = lines.ToCharIterator();
+            var iterator = lines.ToCharIterator(startLine, end);
             if (LinkReferenceDefinition.TryParse(ref iterator, out LinkReferenceDefinition? linkReferenceDefinition))
             {
                 state.Document.SetLinkReferenceDefinition(linkReferenceDefinition.Label!, linkReferenceDefinition, true);
                 atLeastOneFound = true;
 
                 // Correct the locations of each field
-                linkReferenceDefinition.Line = lines.Lines[0].Line;
+                linkReferenceDefinition.Line = lines.Lines[startLine].Line;
 
-                linkReferenceDefinition.Span = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.Span);
-                linkReferenceDefinition.LabelSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.LabelSpan);
-                linkReferenceDefinition.UrlSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.UrlSpan);
-                linkReferenceDefinition.TitleSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.TitleSpan);
-                lines = iterator.Remaining();
+                linkReferenceDefinition.Span = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.Span, startLine);
+                linkReferenceDefinition.LabelSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.LabelSpan, startLine);
+                linkReferenceDefinition.UrlSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.UrlSpan, startLine);
+                linkReferenceDefinition.TitleSpan = lines.ConvertToAbsoluteSpan(linkReferenceDefinition.TitleSpan, startLine);
+                if (!SkipConsumedLines(ref iterator, ref startLine, ref end))
+                {
+                    lines.Clear();
+                    return true;
+                }
             }
             else
             {
                 break;
             }
+        }
+
+        if (startLine > 0)
+        {
+            lines.RemoveStartRange(startLine);
         }
 
         return atLeastOneFound;
@@ -232,10 +245,15 @@ public class ParagraphBlockParser : BlockParser
     {
         bool atLeastOneFound = false;
 
-        while (true)
+        // See TryMatchLinkReferenceDefinition. The definitions are inserted before the paragraph, which is usually the last
+        // block of its parent.
+        var startLine = 0;
+        var end = lines.GetCharacterCount(0) - 1;
+        var index = -1;
+        while (startLine < lines.Count)
         {
             // If we have found a LinkReferenceDefinition, we can discard the previous paragraph
-            var iterator = lines.ToCharIterator();
+            var iterator = lines.ToCharIterator(startLine, end);
             if (LinkReferenceDefinition.TryParseTrivia(
                 ref iterator,
                 out LinkReferenceDefinition? lrd,
@@ -252,34 +270,39 @@ public class ParagraphBlockParser : BlockParser
                 atLeastOneFound = true;
 
                 // Correct the locations of each field
-                lrd.Line = lines.Lines[0].Line;
-                var text = lines.Lines[0].Slice.Text;
+                lrd.Line = lines.Lines[startLine].Line;
+                var text = lines.Lines[startLine].Slice.Text;
 
-                triviaBeforeLabel = lines.ConvertToAbsoluteSpan(triviaBeforeLabel);
-                labelWithTrivia = lines.ConvertToAbsoluteSpan(labelWithTrivia);
-                triviaBeforeUrl = lines.ConvertToAbsoluteSpan(triviaBeforeUrl);
-                unescapedUrl = lines.ConvertToAbsoluteSpan(unescapedUrl);
-                triviaBeforeTitle = lines.ConvertToAbsoluteSpan(triviaBeforeTitle);
-                unescapedTitle = lines.ConvertToAbsoluteSpan(unescapedTitle);
-                triviaAfterTitle = lines.ConvertToAbsoluteSpan(triviaAfterTitle);
-                lrd.Span = lines.ConvertToAbsoluteSpan(lrd.Span);
+                triviaBeforeLabel = lines.ConvertToAbsoluteSpan(triviaBeforeLabel, startLine);
+                labelWithTrivia = lines.ConvertToAbsoluteSpan(labelWithTrivia, startLine);
+                triviaBeforeUrl = lines.ConvertToAbsoluteSpan(triviaBeforeUrl, startLine);
+                unescapedUrl = lines.ConvertToAbsoluteSpan(unescapedUrl, startLine);
+                triviaBeforeTitle = lines.ConvertToAbsoluteSpan(triviaBeforeTitle, startLine);
+                unescapedTitle = lines.ConvertToAbsoluteSpan(unescapedTitle, startLine);
+                triviaAfterTitle = lines.ConvertToAbsoluteSpan(triviaAfterTitle, startLine);
+                lrd.Span = lines.ConvertToAbsoluteSpan(lrd.Span, startLine);
                 lrd.TriviaBefore = new StringSlice(text, triviaBeforeLabel.Start, triviaBeforeLabel.End);
-                lrd.LabelSpan = lines.ConvertToAbsoluteSpan(lrd.LabelSpan);
+                lrd.LabelSpan = lines.ConvertToAbsoluteSpan(lrd.LabelSpan, startLine);
                 lrd.LabelWithTrivia = new StringSlice(text, labelWithTrivia.Start, labelWithTrivia.End);
                 lrd.TriviaBeforeUrl = new StringSlice(text, triviaBeforeUrl.Start, triviaBeforeUrl.End);
-                lrd.UrlSpan = lines.ConvertToAbsoluteSpan(lrd.UrlSpan);
+                lrd.UrlSpan = lines.ConvertToAbsoluteSpan(lrd.UrlSpan, startLine);
                 lrd.UnescapedUrl = new StringSlice(text, unescapedUrl.Start, unescapedUrl.End);
                 lrd.TriviaBeforeTitle = new StringSlice(text, triviaBeforeTitle.Start, triviaBeforeTitle.End);
-                lrd.TitleSpan = lines.ConvertToAbsoluteSpan(lrd.TitleSpan);
+                lrd.TitleSpan = lines.ConvertToAbsoluteSpan(lrd.TitleSpan, startLine);
                 lrd.UnescapedTitle = new StringSlice(text, unescapedTitle.Start, unescapedTitle.End);
                 lrd.TriviaAfter = new StringSlice(text, triviaAfterTitle.Start, triviaAfterTitle.End);
                 lrd.LinesBefore = paragraph.LinesBefore;
 
                 state.LinesBefore = paragraph.LinesAfter; // ensure closed paragraph with linesafter placed back on stack
 
-                lines = iterator.Remaining();
-                var index = paragraph.Parent!.IndexOf(paragraph);
-                paragraph.Parent.Insert(index, lrd);
+                var consumedAll = !SkipConsumedLines(ref iterator, ref startLine, ref end);
+                index = index < 0 ? paragraph.Parent!.LastIndexOf(paragraph) : index + 1;
+                paragraph.Parent!.Insert(index, lrd);
+                if (consumedAll)
+                {
+                    lines.Clear();
+                    return true;
+                }
             }
             else
             {
@@ -287,7 +310,25 @@ public class ParagraphBlockParser : BlockParser
             }
         }
 
+        if (startLine > 0)
+        {
+            lines.RemoveStartRange(startLine);
+        }
+
         return atLeastOneFound;
     }
 
+    // Moves to the first line left after a definition, or returns false when the definition used all the lines
+    private static bool SkipConsumedLines(ref StringLineGroup.Iterator iterator, ref int startLine, ref int end)
+    {
+        var nextLine = iterator.SkipConsumedLines(out var consumedCharacters);
+        if (nextLine < 0)
+        {
+            return false;
+        }
+
+        startLine = nextLine;
+        end -= consumedCharacters;
+        return true;
+    }
 }

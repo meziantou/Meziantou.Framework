@@ -255,20 +255,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Throws a <see cref="TomlException"/> when recoverable deserialization diagnostics were recorded for the reader.
-    /// </summary>
-    /// <param name="reader">The TOML reader.</param>
-    protected static void ThrowIfDeserializationDiagnostics(TomlReader reader)
-    {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-
-        if (reader.OperationState.Diagnostics is { Count: > 0 } diagnostics)
-        {
-            throw new TomlException(diagnostics);
-        }
-    }
-
-    /// <summary>
     /// Writes a TOML property name using an optional dotted-key handling override.
     /// </summary>
     /// <param name="writer">The TOML writer.</param>
@@ -511,17 +497,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Creates metadata for a single-dimensional array type.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<TElement[]> CreateArrayTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlArrayTypeInfo<TElement>(context.Options);
-    }
-
-    /// <summary>
     /// Creates metadata for a single-dimensional array type using source-generated resolution for nested elements.
     /// </summary>
     /// <remarks>
@@ -531,17 +506,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     {
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         return new TomlSourceGeneratedArrayTypeInfo<TElement>(context, options);
-    }
-
-    /// <summary>
-    /// Creates metadata for a <see cref="List{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<List<TElement>> CreateListTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlListTypeInfo<TElement>(context.Options);
     }
 
     /// <summary>
@@ -557,17 +521,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Creates metadata for a <see cref="HashSet{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<HashSet<TElement>> CreateHashSetTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlHashSetTypeInfo<TElement>(context.Options);
-    }
-
-    /// <summary>
     /// Creates metadata for a <see cref="HashSet{T}"/> using source-generated resolution for nested elements.
     /// </summary>
     /// <remarks>
@@ -577,18 +530,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     {
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         return new TomlSourceGeneratedHashSetTypeInfo<TElement>(context, options);
-    }
-
-    /// <summary>
-    /// Creates metadata for a set-like interface type backed by <see cref="HashSet{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<TEnumerable> CreateHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>(TomlSerializerContext context)
-        where TEnumerable : IEnumerable<TElement>
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>(context.Options);
     }
 
     /// <summary>
@@ -605,17 +546,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Creates metadata for <see cref="ImmutableArray{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<ImmutableArray<TElement>> CreateImmutableArrayTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlImmutableArrayTypeInfo<TElement>(context.Options);
-    }
-
-    /// <summary>
     /// Creates metadata for <see cref="ImmutableArray{T}"/> using source-generated resolution for nested elements.
     /// </summary>
     /// <remarks>
@@ -625,17 +555,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     {
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         return new TomlSourceGeneratedImmutableArrayTypeInfo<TElement>(context, options);
-    }
-
-    /// <summary>
-    /// Creates metadata for <see cref="ImmutableList{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<ImmutableList<TElement>> CreateImmutableListTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlImmutableListTypeInfo<TElement>(context.Options);
     }
 
     /// <summary>
@@ -651,17 +570,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     }
 
     /// <summary>
-    /// Creates metadata for <see cref="ImmutableHashSet{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<ImmutableHashSet<TElement>> CreateImmutableHashSetTypeInfo<TElement>(TomlSerializerContext context)
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlImmutableHashSetTypeInfo<TElement>(context.Options);
-    }
-
-    /// <summary>
     /// Creates metadata for <see cref="ImmutableHashSet{T}"/> using source-generated resolution for nested elements.
     /// </summary>
     /// <remarks>
@@ -671,18 +579,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     {
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         return new TomlSourceGeneratedImmutableHashSetTypeInfo<TElement>(context, options);
-    }
-
-    /// <summary>
-    /// Creates metadata for an enumerable interface type backed by <see cref="List{T}"/>.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<TEnumerable> CreateListBackedEnumerableTypeInfo<TEnumerable, TElement>(TomlSerializerContext context)
-        where TEnumerable : IEnumerable<TElement>
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlListBackedEnumerableTypeInfo<TEnumerable, TElement>(context.Options);
     }
 
     /// <summary>
@@ -709,18 +605,6 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     {
         ArgumentGuard.ThrowIfNull(context, nameof(context));
         return new TomlSourceGeneratedMutableCollectionTypeInfo<TCollection, TElement>(context, options);
-    }
-
-    /// <summary>
-    /// Creates metadata for a dictionary-like type with string keys.
-    /// </summary>
-    [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-    protected static TomlTypeInfo<TDictionary> CreateDictionaryTypeInfo<TDictionary, TValue>(TomlSerializerContext context)
-        where TDictionary : IEnumerable<KeyValuePair<string, TValue>>
-    {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
-        return new TomlDictionaryTypeInfo<TDictionary, TValue>(context.Options);
     }
 
     /// <summary>

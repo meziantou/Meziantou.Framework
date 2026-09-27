@@ -11,6 +11,7 @@ available are reproduced below.
 - Project: Markdig
 - Source: <https://github.com/xoofx/markdig>
 - License: <https://github.com/xoofx/markdig/blob/main/license.txt>
+- Commit: 56e9c238584a44a169f174c881855c049768634c
 
 ```
 Copyright (c) 2016-2026, Alexandre Mutel

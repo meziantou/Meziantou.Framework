@@ -160,7 +160,7 @@ public class LinkInlineParser : InlineParser
         }
 
         // The link copies the URL and the title of the definition. Past the limit, the reference stays literal text.
-        if (!state.TryAddReferenceExpansion((long)(linkRef.Url?.Length ?? 0) + (linkRef.Title?.Length ?? 0)))
+        if (!state.TryAddReferenceExpansion(linkRef.ExpansionLength))
         {
             expansionLimitReached = true;
             return false;

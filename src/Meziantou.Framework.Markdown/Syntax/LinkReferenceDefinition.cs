@@ -148,6 +148,11 @@ public class LinkReferenceDefinition : LeafBlock
     internal bool AllowResolutionInsideOpenLink { get; private protected init; }
 
     /// <summary>
+    /// Gets the length of the text that a reference to this definition copies into the document.
+    /// </summary>
+    internal virtual long ExpansionLength => (long)(Url?.Length ?? 0) + (Title?.Length ?? 0);
+
+    /// <summary>
     /// Tries to the parse the specified text into a definition.
     /// </summary>
     /// <typeparam name="T">Type of the text</typeparam>

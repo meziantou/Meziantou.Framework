@@ -322,6 +322,33 @@ public class MiscTests
         Assert.Equal(5, CountOccurrences(html, "<abbr "));
     }
 
+    [Theory]
+    [InlineData("a\n", "\n=\n\n")]
+    [InlineData("# a {#", "}\n\n")]
+    public void HeadingReferenceExpansionIsBounded(string headingStart, string headingEnd)
+    {
+        // Each reference to the heading copies its identifier of about 20,000 characters
+        var markdown = headingStart + new string('x', 20_000) + headingEnd + string.Concat(Enumerable.Repeat("[a] ", 10_000));
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal(4, CountOccurrences(html, "<a href=\"#"));
+        // Without the limit, the output is about 200 MB
+        Assert.HasCountLessThan(markdown.Length + 200_000, html);
+    }
+
+    [Fact]
+    public void ShortHeadingReferencesAreAllExpanded()
+    {
+        var markdown = "# Intro\n\n" + string.Concat(Enumerable.Repeat("see [Intro] ", 10_000));
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal(10_000, CountOccurrences(html, "<a href=\"#intro\">Intro</a>"));
+    }
+
     private static int CountOccurrences(string text, string value)
     {
         var count = 0;

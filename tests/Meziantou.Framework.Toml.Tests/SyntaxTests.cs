@@ -193,6 +193,36 @@ val = true
     }
 
     [Fact]
+    public void ConsecutiveComments_AreWrittenOnTheirOwnLines()
+    {
+        var doc = SyntaxParser.Parse("a = 1\nb = 2\n");
+        doc.KeyValues.GetChild(1)!.AddLeadingComment("c1").AddLeadingComment("c2");
+
+        Assert.Equal("a = 1\n# c1\n# c2\nb = 2\n", doc.ToString());
+    }
+
+    // The line that a comment ends is ended like the other lines of the tree
+    [Theory]
+    [InlineData("a = 1\r\nb = 2\r\n", "a = 1\r\n# c1\r\nb = 2\r\n")]
+    [InlineData("a = 1\nb = 2\n", "a = 1\n# c1\nb = 2\n")]
+    public void LineEndedAfterAComment_UsesTheLineEndingOfTheTree(string toml, string expected)
+    {
+        var doc = SyntaxParser.Parse(toml);
+        doc.KeyValues.GetChild(1)!.AddLeadingComment("c1");
+
+        Assert.Equal(expected, doc.ToString());
+    }
+
+    [Fact]
+    public void LeadingComment_OfTheFirstLine_UsesTheLineEndingOfTheTree()
+    {
+        var doc = SyntaxParser.Parse("a = 1\r\nb = 2\r\n");
+        doc.KeyValues.GetChild(0)!.AddLeadingComment("c1");
+
+        Assert.Equal("# c1\r\na = 1\r\nb = 2\r\n", doc.ToString());
+    }
+
+    [Fact]
     public void LeadingComment_DoesNotCommentOutTheNode()
     {
         var doc = new DocumentSyntax();

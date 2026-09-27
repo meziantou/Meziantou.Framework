@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Syntax;
@@ -85,9 +86,18 @@ public abstract class SyntaxNode : SyntaxNodeBase
     // A loop rather than a recursion: the tree of a deeply nested document can be deeper than the stack allows
     private void WriteToInternal(TextWriter writer)
     {
+        var state = new WriteState(this);
+        foreach (var (text, isComment) in EnumerateTexts(this))
+        {
+            Write(writer, text, isComment, ref state);
+        }
+    }
+
+    // The text of the tree in order, with the kind of each text
+    private static IEnumerable<(string? Text, bool IsComment)> EnumerateTexts(SyntaxNode root)
+    {
         var pending = new Stack<(SyntaxNode Node, int NextChild)>();
-        var afterComment = false;
-        pending.Push((this, -1));
+        pending.Push((root, -1));
         while (pending.Count > 0)
         {
             var (node, nextChild) = pending.Pop();
@@ -95,22 +105,52 @@ public abstract class SyntaxNode : SyntaxNodeBase
             {
                 if (node is DocumentSyntax { HasByteOrderMark: true })
                 {
-                    writer.Write('\uFEFF');
+                    yield return ("\uFEFF", false);
                 }
 
-                WriteTriviaTo(node.LeadingTrivia, writer, ref afterComment);
+                if (node.LeadingTrivia is { } leadingTrivia)
+                {
+                    foreach (var trivia in leadingTrivia)
+                    {
+                        if (trivia is not null)
+                        {
+                            yield return (trivia.Text, trivia.Kind == TokenKind.Comment);
+                        }
+                    }
+                }
+
                 if (node is InvalidSyntaxToken invalidToken)
                 {
                     // The text that was found instead of the expected token
-                    Write(writer, invalidToken.Text, isComment: false, ref afterComment);
-                    WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
+                    yield return (invalidToken.Text, false);
+                    if (node.TrailingTrivia is { } invalidTrailingTrivia)
+                    {
+                        foreach (var trivia in invalidTrailingTrivia)
+                        {
+                            if (trivia is not null)
+                            {
+                                yield return (trivia.Text, trivia.Kind == TokenKind.Comment);
+                            }
+                        }
+                    }
+
                     continue;
                 }
 
                 if (node is SyntaxToken token)
                 {
-                    Write(writer, token.TokenKind.ToText() ?? token.Text, isComment: false, ref afterComment);
-                    WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
+                    yield return (token.TokenKind.ToText() ?? token.Text, false);
+                    if (node.TrailingTrivia is { } tokenTrailingTrivia)
+                    {
+                        foreach (var trivia in tokenTrailingTrivia)
+                        {
+                            if (trivia is not null)
+                            {
+                                yield return (trivia.Text, trivia.Kind == TokenKind.Comment);
+                            }
+                        }
+                    }
+
                     continue;
                 }
 
@@ -128,44 +168,73 @@ public abstract class SyntaxNode : SyntaxNodeBase
                 continue;
             }
 
-            WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
+            if (node.TrailingTrivia is { } nodeTrailingTrivia)
+            {
+                foreach (var trivia in nodeTrailingTrivia)
+                {
+                    if (trivia is not null)
+                    {
+                        yield return (trivia.Text, trivia.Kind == TokenKind.Comment);
+                    }
+                }
+            }
         }
     }
 
-    private static void WriteTriviaTo(List<SyntaxTrivia>? trivias, TextWriter writer, ref bool afterComment)
-    {
-        if (trivias is null) return;
-        foreach (var trivia in trivias)
-        {
-            if (trivia == null) continue;
-            Write(writer, trivia.Text, trivia.Kind == TokenKind.Comment, ref afterComment);
-        }
-    }
-
-    // A comment runs to the end of its line: what follows it, such as a node given a comment with AddLeadingComment or an
-    // item after a comment in an inline table, starts on the next line instead of being commented out
-    private static void Write(TextWriter writer, string? text, bool isComment, ref bool afterComment)
+    // A comment runs to the end of its line: what follows it, such as a node given a comment with AddLeadingComment, another
+    // comment, or an item after a comment in an inline table, starts on the next line instead of being commented out. The
+    // line ends like the other lines of the tree.
+    private static void Write(TextWriter writer, string? text, bool isComment, ref WriteState state)
     {
         if (string.IsNullOrEmpty(text))
         {
             return;
         }
 
-        if (afterComment && !isComment && text[0] is not '\n' and not '\r' && text.AsSpan().IndexOfAnyExcept(' ', '\t') >= 0)
+        if (text[0] is '\n' or '\r')
         {
-            writer.Write('\n');
-            afterComment = false;
+            state.NewLine ??= text.StartsWith("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+            state.AfterComment = false;
         }
-        else if (text[0] is '\n' or '\r')
+        else if (state.AfterComment && (isComment || text.AsSpan().IndexOfAnyExcept(' ', '\t') >= 0))
         {
-            afterComment = false;
+            writer.Write(state.NewLine ??= FindNewLine(state.Root));
+            state.AfterComment = false;
         }
 
         writer.Write(text);
         if (isComment)
         {
-            afterComment = true;
+            state.AfterComment = true;
         }
+    }
+
+    private static string FindNewLine(SyntaxNode root)
+    {
+        foreach (var (text, _) in EnumerateTexts(root))
+        {
+            if (text is ['\r', '\n', ..])
+            {
+                return "\r\n";
+            }
+
+            if (text is ['\n', ..])
+            {
+                return "\n";
+            }
+        }
+
+        return "\n";
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct WriteState(SyntaxNode root)
+    {
+        public SyntaxNode Root { get; } = root;
+
+        public bool AfterComment { get; set; }
+
+        public string? NewLine { get; set; }
     }
 
     /// <summary>

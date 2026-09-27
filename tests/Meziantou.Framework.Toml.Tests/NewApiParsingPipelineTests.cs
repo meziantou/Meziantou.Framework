@@ -186,6 +186,26 @@ public class NewApiParsingPipelineTests
         Assert.Fail("Expected to encounter a string token.");
     }
 
+    [Theory]
+    [InlineData("\"\\q\" = 1\n")]
+    [InlineData("\"unterminated\n")]
+    [InlineData("# c\u0001\na = 1\n")]
+    [InlineData("a = 1\n\"\\q\" = 1\n")]
+    public void TomlParser_TolerantMode_ErrorInAToken_ClosesTheDocumentItStarted(string toml)
+    {
+        var parser = TomlParser.Create(toml, new Meziantou.Framework.Toml.Parsing.TomlParserOptions { Mode = Meziantou.Framework.Toml.Parsing.TomlParserMode.Tolerant });
+
+        var events = new List<TomlParseEventKind>();
+        while (parser.MoveNext())
+        {
+            events.Add(parser.Current.Kind);
+        }
+
+        Assert.True(parser.HasErrors);
+        Assert.Equal([TomlParseEventKind.StartDocument, TomlParseEventKind.StartTable], events.Take(2));
+        Assert.Equal([TomlParseEventKind.EndTable, TomlParseEventKind.EndDocument], events.TakeLast(2));
+    }
+
     [Fact]
     public void TomlParser_TolerantMode_RecordsDiagnosticsAndTerminates()
     {

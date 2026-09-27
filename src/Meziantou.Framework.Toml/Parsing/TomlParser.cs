@@ -532,14 +532,18 @@ public sealed partial class TomlParser
             if (_state == DocumentState.NotStarted)
             {
                 _state = DocumentState.Statement;
-                EnsureInitialized();
                 _pendingOperation = PendingOperationKind.DocumentStart;
                 _pendingDocumentStartStage = 1;
                 SetPendingEvent(new TomlParseEvent(TomlParseEventKind.StartDocument, span: null, propertyName: null, stringValue: null, data: 0));
                 return true;
             }
 
-            EnsureInitialized();
+            // The first token is read once the document and its root table are started, so that an error in it closes them
+            // like an error in any other token
+            if (_pendingOperation != PendingOperationKind.DocumentStart)
+            {
+                EnsureInitialized();
+            }
 
             if (_pendingOperation != PendingOperationKind.None)
             {

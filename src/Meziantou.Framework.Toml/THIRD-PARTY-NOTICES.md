@@ -11,6 +11,7 @@ available are reproduced below.
 - Project: Tomlyn
 - Source: <https://github.com/xoofx/Tomlyn>
 - License: <https://github.com/xoofx/Tomlyn/blob/main/license.txt>
+- Commit: 353e75df51929dc20df616cac2ecabe39297a72a
 
 ```
 Copyright (c) 2019-2026, Alexandre Mutel

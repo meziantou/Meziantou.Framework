@@ -23,7 +23,11 @@ public sealed class BareKeySyntax : BareKeyOrStringValueSyntax
     /// <param name="name">The name used for this key</param>
     public BareKeySyntax(string name) : this()
     {
-        if (!IsBareKey(name)) throw new ArgumentOutOfRangeException($"The key `{name}` does not contain valid characters [A-Za-z0-9_\\-]");
+        if (!IsBareKey(name))
+        {
+            throw new ArgumentOutOfRangeException(nameof(name), $"The key `{name.ToPrintableInputText()}` does not contain valid characters [A-Za-z0-9_\\-]");
+        }
+
         Key = new SyntaxToken(TokenKind.BasicKey, name);
     }
 

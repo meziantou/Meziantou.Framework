@@ -222,6 +222,16 @@ val = true
     }
 
     [Fact]
+    public void BareKey_WithInvalidCharacters_ThrowsForTheNameParameter()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new BareKeySyntax("a b\0" + new string('x', 1_000_000)));
+
+        Assert.Equal("name", exception.ParamName);
+        Assert.DoesNotContain('\0', exception.Message);
+        Assert.HasCountLessThan(1_000, exception.Message);
+    }
+
+    [Fact]
     public void GetChild_PastTheLastChild_Throws()
     {
         var doc = SyntaxParser.Parse("a = 1\n");

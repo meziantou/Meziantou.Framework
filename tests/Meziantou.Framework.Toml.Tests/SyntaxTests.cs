@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Parsing;
@@ -471,6 +472,44 @@ val = true
         var allocations = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.True(allocations < 2 * validAllocations + 100_000, $"The errors allocated {allocations} bytes, and a number without errors {validAllocations} bytes");
+    }
+
+    // Reading a number is linear in its length, whatever its first digit: the time is compared with a number of the same
+    // length that starts with 1
+    [Theory]
+    [InlineData("a = 0", '1', "")]
+    [InlineData("a = -0", '0', "")]
+    [InlineData("a = 0", '1', ".5")]
+    public void LongNumberWithALeadingZero_IsReadInLinearTime(string prefix, char digit, string suffix)
+    {
+        const int Length = 4_000_000;
+        var toml = prefix + new string(digit, Length) + suffix + "\n";
+        var control = "a = 1" + new string(digit, Length) + suffix + "\n";
+
+        var time = Measure(toml);
+        var controlTime = Measure(control);
+
+        Assert.True(time < (5 * controlTime) + TimeSpan.FromMilliseconds(200), $"{time.TotalMilliseconds} ms, and {controlTime.TotalMilliseconds} ms for a number that starts with 1");
+
+        static TimeSpan Measure(string toml)
+        {
+            var min = TimeSpan.MaxValue;
+            for (var i = 0; i < 3; i++)
+            {
+                var stopwatch = Stopwatch.StartNew();
+                try
+                {
+                    _ = TomlSerializer.Deserialize<TomlTable>(toml);
+                }
+                catch (TomlException)
+                {
+                }
+
+                min = TimeSpan.FromTicks(Math.Min(min.Ticks, stopwatch.Elapsed.Ticks));
+            }
+
+            return min;
+        }
     }
 
     // The errors of a number are listed in the order of the document, and a leading zero is reported once

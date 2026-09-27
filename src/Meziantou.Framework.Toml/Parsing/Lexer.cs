@@ -946,7 +946,8 @@ internal sealed class Lexer
         }
 
         // A decimal number whose integer part has more than one digit cannot start with 0
-        var hasInvalidLeadingZero = hasLeadingZero && HasMultipleDigitsInIntegerPart();
+        // The text has the sign and the digits of the integer part only: underscores are not kept
+        var hasInvalidLeadingZero = hasLeadingZero && _textBuilder.Length - (hasLeadingSign ? 1 : 0) > 1;
 
         // Read any number following
         if (CurrentCharacter == '.')
@@ -1032,42 +1033,46 @@ internal sealed class Lexer
     private bool TryParseDecimalInt64(out long value)
     {
         value = 0;
-        var length = _textBuilder.Length;
-        if (length == 0)
+        var negative = false;
+        var isFirst = true;
+        var hasDigit = false;
+        ulong accumulator = 0;
+
+        // The indexer of a StringBuilder walks its chunks, so reading a long number through it is quadratic
+        foreach (var chunk in _textBuilder.GetChunks())
+        {
+            foreach (var digitChar in chunk.Span)
+            {
+                if (isFirst)
+                {
+                    isFirst = false;
+                    if (digitChar is '+' or '-')
+                    {
+                        negative = digitChar == '-';
+                        continue;
+                    }
+                }
+
+                var digit = digitChar - '0';
+                if ((uint)digit > 9)
+                {
+                    return false;
+                }
+
+                var digitValue = (ulong)digit;
+                if (accumulator > (ulong.MaxValue - digitValue) / 10)
+                {
+                    return false;
+                }
+
+                accumulator = (accumulator * 10) + digitValue;
+                hasDigit = true;
+            }
+        }
+
+        if (!hasDigit)
         {
             return false;
-        }
-
-        var index = 0;
-        var negative = false;
-        var first = _textBuilder[0];
-        if (first == '+' || first == '-')
-        {
-            negative = first == '-';
-            index = 1;
-            if (index >= length)
-            {
-                return false;
-            }
-        }
-
-        ulong accumulator = 0;
-        for (; index < length; index++)
-        {
-            var digitChar = _textBuilder[index];
-            var digit = digitChar - '0';
-            if ((uint)digit > 9)
-            {
-                return false;
-            }
-
-            var digitValue = (ulong)digit;
-            if (accumulator > (ulong.MaxValue - digitValue) / 10)
-            {
-                return false;
-            }
-
-            accumulator = (accumulator * 10) + digitValue;
         }
 
         if (negative)
@@ -1166,40 +1171,6 @@ internal sealed class Lexer
 
             _errors[j + 1] = error;
         }
-    }
-
-    private bool HasMultipleDigitsInIntegerPart()
-    {
-        var length = _textBuilder.Length;
-        if (length <= 1)
-        {
-            return false;
-        }
-
-        var index = 0;
-        var first = _textBuilder[0];
-        if (first == '+' || first == '-')
-        {
-            index = 1;
-            if (index >= length)
-            {
-                return false;
-            }
-        }
-
-        var end = index;
-        while (end < length)
-        {
-            var c = _textBuilder[end];
-            if (c == '.' || c == 'e' || c == 'E')
-            {
-                break;
-            }
-
-            end++;
-        }
-
-        return (end - index) > 1;
     }
 
     /// <returns><see langword="true"/> when the digits contain an underscore.</returns>

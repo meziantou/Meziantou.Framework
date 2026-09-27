@@ -35,8 +35,10 @@ internal sealed class TomlEnumConverter : TomlConverter
         if (reader.TokenType == TomlTokenType.String)
         {
             // The exact name wins, so members that differ only by case are read as written
+            // Only a flags value is a list of names: Enum.TryParse would combine the values of any enum
             var name = reader.GetString();
-            if (!Enum.TryParse(typeToConvert, name, ignoreCase: false, out var parsed) && !Enum.TryParse(typeToConvert, name, ignoreCase: true, out parsed))
+            if ((name.Contains(',', StringComparison.Ordinal) && !typeToConvert.IsDefined(typeof(FlagsAttribute), inherit: false)) ||
+                (!Enum.TryParse(typeToConvert, name, ignoreCase: false, out var parsed) && !Enum.TryParse(typeToConvert, name, ignoreCase: true, out parsed)))
             {
                 throw reader.CreateException($"Invalid enum name `{name.ToPrintableInputText()}` for type '{typeToConvert.FullName}'.");
             }

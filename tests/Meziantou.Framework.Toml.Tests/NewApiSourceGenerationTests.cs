@@ -3851,6 +3851,10 @@ public class NewApiSourceGenerationTests
 
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, GeneratedRenamedEnum>>("V = 'Information, warn'", options));
         Assert.Equal(GeneratedFlagsEnum.A | GeneratedFlagsEnum.B, TomlSerializer.Deserialize<Dictionary<string, GeneratedFlagsEnum>>("V = 'A, B'", options)!["V"]);
+
+        // The same for the default enum converter, which reads names too
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Dictionary<string, GeneratedRenamedEnum>>("V = 'Information, Warning'"));
+        Assert.Equal(GeneratedFlagsEnum.A | GeneratedFlagsEnum.B, TomlSerializer.Deserialize<Dictionary<string, GeneratedFlagsEnum>>("V = 'A, B'")!["V"]);
     }
 
     [Fact]

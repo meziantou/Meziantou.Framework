@@ -176,9 +176,9 @@ public class Table : ContainerBlock
                     row.Add(new TableCell());
                 }
 
-                for (int j = maxColumn; j < row.Count; j++)
+                while (row.Count > maxColumn)
                 {
-                    row.RemoveAt(j);
+                    row.RemoveAt(row.Count - 1);
                 }
             }
         }

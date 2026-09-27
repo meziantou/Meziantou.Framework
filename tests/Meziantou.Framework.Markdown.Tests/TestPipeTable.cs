@@ -373,6 +373,55 @@ public sealed class TestPipeTable
     }
 
     [Fact]
+    public void ExtraCellsAreRemovedWhenTheHeaderGivesTheColumnCount()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseHeaderForColumnCount = true }).Build();
+
+        var table = Assert.Single(MarkdownConverter.Parse("a|b\n-|-\n1|2|3|4|5", pipeline).Descendants<Table>());
+
+        Assert.Equal(new[] { 2, 2 }, table.Select(row => ((TableRow)row).Count).ToArray());
+        Assert.Equal("1 2", string.Join(' ', ((TableRow)table[1]).Select(cell => ((ParagraphBlock)((TableCell)cell)[0]).Inline!.FirstChild!.ToString())));
+    }
+
+    [Fact]
+    public void NormalizeUsingMaxWidth()
+    {
+        var table = CreateTable(2, 4, 1);
+
+        table.NormalizeUsingMaxWidth();
+
+        Assert.Equal(new[] { 4, 4, 4 }, table.Select(row => ((TableRow)row).Count).ToArray());
+    }
+
+    [Fact]
+    public void NormalizeUsingHeaderRow()
+    {
+        var table = CreateTable(2, 5, 1);
+
+        table.NormalizeUsingHeaderRow();
+
+        Assert.Equal(new[] { 2, 2, 2 }, table.Select(row => ((TableRow)row).Count).ToArray());
+        new Table().NormalizeUsingHeaderRow();
+    }
+
+    private static Table CreateTable(params int[] cellCounts)
+    {
+        var table = new Table();
+        foreach (var cellCount in cellCounts)
+        {
+            var row = new TableRow();
+            for (var i = 0; i < cellCount; i++)
+            {
+                row.Add(new TableCell());
+            }
+
+            table.Add(row);
+        }
+
+        return table;
+    }
+
+    [Fact]
     public void LargeTableWithEmphasisDoesNotExceedTheDepthLimit()
     {
         // The whole table is a single paragraph: its emphasis delimiters nest across all the rows until they are resolved

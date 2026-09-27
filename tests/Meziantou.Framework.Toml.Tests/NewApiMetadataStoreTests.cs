@@ -104,6 +104,18 @@ public sealed class NewApiMetadataStoreTests
         }
     }
 
+    // The comments keep their text, and every line ends with the line ending of the options
+    [Theory]
+    [InlineData("# c1\r\nA = 1\r\n# c2\r\nB = 'x'\r\n", TomlNewLineKind.Lf, "# c1\nA = 1\n# c2\nB = 'x'\n")]
+    [InlineData("# c1\nA = 1\n# c2\nB = 'x'\n", TomlNewLineKind.CrLf, "# c1\r\nA = 1\r\n# c2\r\nB = 'x'\r\n")]
+    public void MetadataStore_LineEndingsOfComments_FollowTheOptions(string toml, TomlNewLineKind newLine, string expected)
+    {
+        var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), NewLine = newLine };
+
+        Assert.Equal(expected, TomlSerializer.Serialize(TomlSerializer.Deserialize<TomlTable>(toml, options)!, options));
+        Assert.Equal(expected, TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataFormattedModel>(toml, options), options));
+    }
+
     [Fact]
     public void MetadataStore_InlineTableDisplayKind_IsKeptByTypedModels()
     {

@@ -1048,6 +1048,13 @@ internal static class TomlModelTextWriter
                 throw new TomlException($"The {trivia.Kind} trivia `{text.ToPrintableString()}` of the metadata is not valid TOML.");
             }
 
+            // A line ending of the source is written like the other lines, with TomlSerializerOptions.NewLine
+            if (trivia.Kind == TokenKind.NewLine)
+            {
+                WriteNewLine();
+                return;
+            }
+
             _writer.Write(text);
         }
     }

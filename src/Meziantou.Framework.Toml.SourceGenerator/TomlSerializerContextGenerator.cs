@@ -6532,8 +6532,29 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         {
             error = "Converters must be accessible from the generated context (public, or internal to the same assembly).";
         }
+        else if (GetConverterValueType(named) is { } converterValueType && converterValueType is not ITypeParameterSymbol &&
+                 !SymbolEqualityComparer.Default.Equals(converterValueType, convertedType) &&
+                 !(TryGetNullableUnderlyingType(convertedType, out var convertedUnderlyingType) && SymbolEqualityComparer.Default.Equals(converterValueType, convertedUnderlyingType)))
+        {
+            // Like the reflection resolver, a TomlConverter<T> converts T, and T? for a value type: a factory chooses at runtime
+            error = $"The converter converts '{converterValueType.ToDisplayString()}', not '{convertedType.ToDisplayString()}'.";
+        }
 
         return new DeclaredConverter(converterType, isStringEnum: false, error);
+    }
+
+    // The T of the TomlConverter<T> a converter derives from, or null for a converter factory
+    private static ITypeSymbol? GetConverterValueType(INamedTypeSymbol converterType)
+    {
+        for (var current = converterType.BaseType; current is not null; current = current.BaseType)
+        {
+            if (current.IsGenericType && current.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::" + TomlConverterMetadataName + "<T>")
+            {
+                return current.TypeArguments[0];
+            }
+        }
+
+        return null;
     }
 
     private static bool IsTypeAccessibleFromGeneratedContext(INamedTypeSymbol type)

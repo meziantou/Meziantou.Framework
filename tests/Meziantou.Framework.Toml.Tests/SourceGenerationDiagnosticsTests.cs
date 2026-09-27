@@ -225,6 +225,43 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.True(diagnostics.Any(d => d.Id == "MFTOML005"));
     }
 
+    // Like the reflection resolver, which rejects the whole type, a TomlConverter<T> must convert the type of its member
+    [Fact]
+    public void Generator_ReportsAConverterOfAnotherType()
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Int32Converter : TomlConverter<int>
+            {
+                public override int Read(TomlReader reader) => 0;
+                public override void Write(TomlWriter writer, int value) { }
+            }
+
+            public sealed class Model
+            {
+                [TomlConverter(typeof(Int32Converter))]
+                public List<int>? Values { get; set; }
+
+                [TomlConverter(typeof(Int32Converter))]
+                public int? Nullable { get; set; }
+
+                [TomlConverter(typeof(Int32Converter))]
+                public int Value { get; set; }
+            }
+
+            [TomlSerializable(typeof(Model))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        var diagnostic = Assert.Single(diagnostics, d => d.Id == "MFTOML002");
+        Assert.Contains("not 'System.Collections.Generic.List<int>?'", diagnostic.GetMessage(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Generator_ReportsInvalidConverterType()
     {

@@ -171,6 +171,9 @@ d = true
     [InlineData("a = [1]\n[[a]]\n")]
     [InlineData("[a]\nb.c = 1\n[a.b]\n")]
     [InlineData("x = { a.b = 1, a.b.c = 2 }\n")]
+    [InlineData("[[x]]\n[[x]]\ny = 1\ny = 2\n")]
+    [InlineData("a = [{b = 1, b = 2}]\n")]
+    [InlineData("\"a.b\" = 1\n\"a.b\" = 2\n")]
     public void Validate_Redefinitions_AreReportedWhereTheDeserializerReportsThem(string toml)
     {
         var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<Model.TomlTable>(toml));
@@ -178,6 +181,9 @@ d = true
 
         Assert.Equal(exception.Span!.Value.Start.ToString(), diagnostic.Span.Start.ToString());
         Assert.Equal(GetPreviousDefinition(exception.Message), GetPreviousDefinition(diagnostic.Message));
+        Assert.Equal(GetKey(exception.Message), GetKey(diagnostic.Message));
+
+        static string GetKey(string message) => System.Text.RegularExpressions.Regex.Match(message, "The key `[^`]*`", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1)).Value;
 
         static string GetPreviousDefinition(string message) => System.Text.RegularExpressions.Regex.Match(message, @"defined at \(\d+,\d+\)", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1)).Value;
     }

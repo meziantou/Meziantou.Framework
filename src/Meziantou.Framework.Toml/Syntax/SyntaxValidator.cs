@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Text;
@@ -40,17 +41,25 @@ internal class SyntaxValidator : SyntaxVisitor
 
     private void AddToCurrentPath(ObjectPathItem item) => _currentPath = GetChildPath(_currentPath, item);
 
-    private string GetPathText(int path)
+    // Like TomlParser, the key is named as written, up to the segment that is redefined: the path of the validator also has
+    // the tables of the header and the indices of the arrays
+    private static string GetKeyText(KeySyntax key, int segmentIndex)
     {
-        var items = new List<ObjectPathItem>();
-        for (var current = path; current != RootPath; current = _pathNodeKeys[current].Parent)
+        var text = new StringBuilder(GetSegmentText(key.Key));
+        for (var i = 0; i < segmentIndex; i++)
         {
-            items.Add(_pathNodeKeys[current].Item);
+            text.Append('.').Append(GetSegmentText(key.DotKeys.GetChild(i)!.Key));
         }
 
-        items.Reverse();
-        return string.Join('.', items);
+        return text.ToString();
     }
+
+    private static string GetSegmentText(BareKeyOrStringValueSyntax? segment) => segment switch
+    {
+        BareKeySyntax bareKey => bareKey.Key?.Text ?? string.Empty,
+        StringValueSyntax stringKey => stringKey.Token?.Text ?? string.Empty,
+        _ => string.Empty,
+    };
 
     public override void Visit(KeyValueSyntax keyValue)
     {
@@ -115,7 +124,7 @@ internal class SyntaxValidator : SyntaxVisitor
                 _diagnostics.Error(keyValue.Span, keyValue.Value == null ? $"A KeyValueSyntax must have a non null Value" : $"Not supported type `{keyValue.Value.Kind}` for the value of a KeyValueSyntax");
                 return;
         }
-        AddObjectPath(GetLastSegment(keyValue.Key), kind, false, true);
+        AddObjectPath(keyValue.Key, GetLastSegmentIndex(keyValue.Key), kind, false, true);
 
         base.Visit(keyValue);
         _currentPath = savedPath;
@@ -166,7 +175,7 @@ internal class SyntaxValidator : SyntaxVisitor
             return;
         }
 
-        AddObjectPath(GetLastSegment(table.Name), ObjectKind.Table, false, false);
+        AddObjectPath(table.Name, GetLastSegmentIndex(table.Name), ObjectKind.Table, false, false);
 
         base.Visit(table);
 
@@ -181,7 +190,7 @@ internal class SyntaxValidator : SyntaxVisitor
         {
             return;
         }
-        var currentArrayTable = AddObjectPath(GetLastSegment(table.Name), ObjectKind.TableArray, false, false);
+        var currentArrayTable = AddObjectPath(table.Name, GetLastSegmentIndex(table.Name), ObjectKind.TableArray, false, false);
 
         var savedIndex = _currentArrayIndex;
         _currentArrayIndex = currentArrayTable.ArrayIndex;
@@ -255,7 +264,7 @@ internal class SyntaxValidator : SyntaxVisitor
         var items = key.DotKeysIfCreated;
         for (int i = 0; i < (items?.ChildrenCount ?? 0); i++)
         {
-            AddObjectPath(i == 0 ? key.Key! : items!.GetChild(i - 1)!.Key!, kind, true, fromDottedKeys);
+            AddObjectPath(key, i, kind, true, fromDottedKeys);
             var dotItem = SyntaxValidator.GetStringFromBasic(items!.GetChild(i)!.Key!)!;
             if (dotItem is null) return false;
             AddToCurrentPath(new ObjectPathItem(dotItem));
@@ -264,20 +273,13 @@ internal class SyntaxValidator : SyntaxVisitor
         return true;
     }
 
-    // Like TomlParser, errors are reported on the key segment that defines the path, and so are previous definitions
-    private static BareKeyOrStringValueSyntax GetLastSegment(KeySyntax key)
-    {
-        var items = key.DotKeysIfCreated;
-        if (items is { ChildrenCount: > 0 })
-        {
-            return items.GetChild(items.ChildrenCount - 1)!.Key!;
-        }
+    private static int GetLastSegmentIndex(KeySyntax key) => key.DotKeysIfCreated?.ChildrenCount ?? 0;
 
-        return key.Key!;
-    }
-
-    private ObjectPathValue AddObjectPath(SyntaxNode segment, ObjectKind kind, bool isImplicit, bool fromDottedKeys)
+    // Like TomlParser, errors are reported on the key segment that defines the path, and so are previous definitions. The
+    // segment is the one at segmentIndex in the key: 0 is its first segment, and i its dotted key i - 1.
+    private ObjectPathValue AddObjectPath(KeySyntax key, int segmentIndex, ObjectKind kind, bool isImplicit, bool fromDottedKeys)
     {
+        SyntaxNode segment = segmentIndex == 0 ? key.Key! : key.DotKeys.GetChild(segmentIndex - 1)!.Key!;
         var currentPath = _currentPath;
 
         // array-implicit.toml
@@ -308,7 +310,7 @@ internal class SyntaxValidator : SyntaxVisitor
             {
                 // Like TomlParser, the message does not include the previous definition, which can be a whole table: a document
                 // that redefines a large table many times would build messages quadratic in its size
-                _diagnostics.Error(segment.Span, $"The key `{GetPathText(currentPath)}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
+                _diagnostics.Error(segment.Span, $"The key `{GetKeyText(key, segmentIndex)}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
             }
             else if (existingValue.Kind == ObjectKind.TableArray)
             {

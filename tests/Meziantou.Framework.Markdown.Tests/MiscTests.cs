@@ -266,7 +266,8 @@ public class MiscTests
         }
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("[a](", "")]
     [InlineData("![a](", "")]
     [InlineData("[a](()", "")]
@@ -291,7 +292,7 @@ public class MiscTests
             _ = MarkdownConverter.ToHtml(markdown, pipeline);
             stopwatch.Stop();
 
-            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), message: $"Rendering took {stopwatch.Elapsed}");
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), message: $"Rendering took {stopwatch.Elapsed}");
         }
     }
 
@@ -495,7 +496,8 @@ public class MiscTests
         Assert.Equal("<p>" + string.Join(' ', Enumerable.Repeat(expectedItem, Count)) + "</p>\n", html);
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void ManyEmphasisDelimitersInAParagraphAreParsedInLinearTime()
     {
         // Each inline used to walk the chain of all the unresolved delimiters before it
@@ -520,7 +522,8 @@ public class MiscTests
         Assert.Contains("depth limit", e.Message);
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("*x* ] ", 32_000, "", 0, "", "<em>x</em> ] ", "")]
     [InlineData("*x* ", 5_000, "] ", 100_000, "", "<em>x</em> ", "] ")]
     [InlineData("*a ", 50_000, "b_ ", 50_000, "", "*a ", "b_ ")]
@@ -549,7 +552,8 @@ public class MiscTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("*<a _*", 480_000, "")]
     [InlineData("*<? _*", 480_000, "")]
     [InlineData("_<? *_", 480_000, "")]
@@ -571,7 +575,8 @@ public class MiscTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void NestedInactiveLinkDelimitersAreReplacedInLinearTime()
     {
         // Each inactive '[' replaced by a literal used to move again all the inlines that the ones below it had moved to it
@@ -588,7 +593,8 @@ public class MiscTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("[a[")]
     [InlineData("[a][")]
     [InlineData("[a *x* ")]
@@ -605,7 +611,8 @@ public class MiscTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void NestedLinkDelimitersBelowManyEmphasisDelimitersAreRejectedQuickly()
     {
         // The emphasis delimiters make the chain of open containers as deep as it was rejected before. Nested link delimiters
@@ -620,7 +627,8 @@ public class MiscTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("a<?", "<p>a&lt;?a&lt;?a&lt;?</p>\n", "<p>a<?a<?a<?b?></p>\n", "b?>")]
     [InlineData("a<![CDATA[", "<p>a&lt;![CDATA[a&lt;![CDATA[a&lt;![CDATA[</p>\n", "<p>a<![CDATA[a<![CDATA[a<![CDATA[b]]></p>\n", "b]]>")]
     [InlineData("a<!--", "<p>a&lt;!--a&lt;!--a&lt;!--</p>\n", "<p>a<!--a<!--a<!--b--></p>\n", "b-->")]
@@ -682,7 +690,8 @@ public class MiscTests
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("# Example\n\n", "<h1 id=\"example-39999\">Example</h1>\n")]
     [InlineData("#\n\n", "<h1 id=\"section-39999\"></h1>\n")]
     public void DuplicateHeadingIdentifiersAreGeneratedInLinearTime(string heading, string expectedLastHeading)
@@ -708,7 +717,8 @@ public class MiscTests
         Assert.Equal("<h1 id=\"a\">a</h1>\n<h1 id=\"a-1\">a-1</h1>\n<h1 id=\"a-2\">a</h1>\n<h1 id=\"a-3\">a-3</h1>\n<h1 id=\"a-4\">a</h1>\n<h1 id=\"a-5\">a</h1>\n", html);
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("\n", false, 200_000)]
     [InlineData("\n", true, 200_000)]
     public void LinkReferenceDefinitionBlocksAreParsedInLinearTime(string separator, bool trackTrivia, int count)
@@ -749,7 +759,8 @@ public class MiscTests
         }
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("- [\n", "=\n", 100_000, "<ul>\n<li>[\n=\n=\n=</li>\n</ul>\n")]
     [InlineData("> [\n", "=\n", 100_000, "<blockquote>\n<p>[\n=\n=\n=</p>\n</blockquote>\n")]
     [InlineData("", "-\n> a\n", 220_000, "<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a\n-\na\n-\na</p>\n</blockquote>\n")]

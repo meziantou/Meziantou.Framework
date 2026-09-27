@@ -388,7 +388,8 @@ public sealed class TestPipeTable
         Assert.Equal(expected, html);
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void LargeTableWithEmphasisAndLinksIsParsedInLinearTime()
     {
         const int RowCount = 8000;
@@ -406,7 +407,8 @@ public sealed class TestPipeTable
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void LargeTableWithUnclosedCodeSpansIsParsedInLinearTime()
     {
         // An unclosed code span followed by a line starting with a pipe looks for a pipe delimiter among its parents
@@ -425,7 +427,8 @@ public sealed class TestPipeTable
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
-    [Fact]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void ManyColonsBeforePipesOnALineAreParsedInLinearTime()
     {
         // Each ":|" checked whether its whole line is a header separator line

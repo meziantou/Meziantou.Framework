@@ -150,7 +150,8 @@ public class TestHtmlAttributes
         Assert.Equal(expected, GenericAttributesExtension.IsSafeAttributeName(name));
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("{#a", "")]
     [InlineData("{.a", "")]
     [InlineData("={a", "")]

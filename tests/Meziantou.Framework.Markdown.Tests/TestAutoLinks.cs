@@ -125,7 +125,8 @@ public class TestAutoLinks
         Assert.Equal("<p><em>www.a</em><sub><a href=\"http://www.a.b\">www.a.b</a>*</sub>&amp;</p>\n", html);
     }
 
-    [Theory]
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
     [InlineData("(www.a", "autolinks", true)]
     [InlineData("*http://a", "autolinks", false)]
     [InlineData("~ftp://a", "autolinks", true)]

@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Extensions.Alerts;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -17,14 +18,26 @@ public class QuoteBlockRenderer : NormalizeObjectRenderer<QuoteBlock>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, QuoteBlock obj)
     {
-        var quoteIndent = renderer.Options.SpaceAfterQuoteBlock ? obj.QuoteChar + " " : obj.QuoteChar.ToString();
+        // An alert has no quote character
+        var quoteChar = obj.QuoteChar == '\0' ? '>' : obj.QuoteChar;
+        var quoteIndent = renderer.Options.SpaceAfterQuoteBlock ? quoteChar + " " : quoteChar.ToString();
         renderer.PushIndent(quoteIndent);
-        if (obj.Count == 0)
+        if (obj is AlertBlock alert)
+        {
+            // The kind of the alert is the first line of the quote
+            renderer.Write("[!").Write(alert.Kind).Write(']');
+            if (obj.Count > 0)
+            {
+                renderer.WriteLine();
+            }
+        }
+        else if (obj.Count == 0)
         {
             // Emit the quote prefix and any pending list marker even without children.
             renderer.Write("");
         }
-        else
+
+        if (obj.Count > 0)
         {
             // The blocks of the quote are separated even when the quote is in a tight list
             var compact = renderer.CompactParagraph;

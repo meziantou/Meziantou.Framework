@@ -893,6 +893,14 @@ Text following the table.");
         AssertNormalizePreservesHtml("www.a.b/$", "[www\\.a\\.b\\/\\$](http://www.a.b/$)", new MarkdownPipelineBuilder().UseAutoLinks().UseMathematics().Build());
     }
 
+    [Theory]
+    [InlineData("> [!NOTE]\n> text", "> [!NOTE]\n> text")]
+    [InlineData("> [!warning]  \n> a\n>\n> - b", "> [!warning]\n> a\n> \n> - b")]
+    public void AlertKeepsItsKind(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseAlertBlocks().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

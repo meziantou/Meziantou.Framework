@@ -92,6 +92,28 @@ public sealed class TestPipeTable
         Assert.Equal("<p>" + markdown + "</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
+    [Theory]
+    [InlineData("a|b\n-|- *emph*", "<p>a|b\n-|- <em>emph</em></p>\n")]
+    [InlineData("a | b\n--- | ---  [link](/u)", "<p>a | b\n--- | ---  <a href=\"/u\">link</a></p>\n")]
+    [InlineData("a | b\n`x` - | -", "<p>a | b\n<code>x</code> - | -</p>\n")]
+    [InlineData("a | b\n**bold** - | -\nc | d", "<p>a | b\n<strong>bold</strong> - | -\nc | d</p>\n")]
+    [InlineData("|\n`a`-|", "<p>|\n<code>a</code>-|</p>\n")]
+    [InlineData("|\n&ap;-|", "<p>|\n≈-|</p>\n")]
+    public void SeparatorRowWithOtherInlinesRemainsParagraph(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build()));
+    }
+
+    [Theory]
+    [InlineData("a | b\n:-- | --:\nc | d")]
+    [InlineData("| a | b |\n| :-: | - |\n| c | d |")]
+    [InlineData("a | b\n:-\t| --  \nc | d")]
+    public void SeparatorRowWithOnlyDashesColonsAndWhitespaceIsATable(string markdown)
+    {
+        Assert.Contains("<table>", MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
+    }
+
     [Fact]
     public void TestColumnWidthIsNotSetWithoutConfigurationFlag()
     {

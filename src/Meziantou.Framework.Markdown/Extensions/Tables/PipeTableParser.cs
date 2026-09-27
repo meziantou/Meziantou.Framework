@@ -702,6 +702,13 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
                 continue;
             }
 
+            // The separator row is removed from the table, so it must only contain pipes, dashes, colons and whitespace.
+            // Any other inline (emphasis, link, code...) would be lost.
+            if (!IsSeparatorRowText(delimiters[i].NextSibling))
+            {
+                break;
+            }
+
             // Parse the separator row (second row) to extract column alignments
             for (int j = i + 1; j < delimiters.Count; j++)
             {
@@ -903,6 +910,32 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
     private static bool IsLine(Inline inline)
     {
         return inline is LineBreakInline;
+    }
+
+    private static bool IsSeparatorRowText(Inline? inline)
+    {
+        for (; inline is not null && !IsLine(inline); inline = inline.NextSibling)
+        {
+            if (inline is PipeTableDelimiterInline)
+            {
+                continue;
+            }
+
+            if (inline is not LiteralInline literal)
+            {
+                return false;
+            }
+
+            foreach (var c in literal.Content.AsSpan())
+            {
+                if (c is not ('-' or ':') && !c.IsWhitespace())
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private static bool IsStartOfLineColumnDelimiter(Inline? inline)

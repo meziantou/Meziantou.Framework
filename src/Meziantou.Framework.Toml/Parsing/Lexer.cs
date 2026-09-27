@@ -21,7 +21,7 @@ internal sealed class Lexer
 {
     private SyntaxTokenValue _token;
     private List<DiagnosticMessage>? _errors;
-    // The index of the first error of the token whose errors are found out of order, or -1
+    // The index of the first error of the token being read, whose errors are sorted once it ends, or -1 between tokens
     private int _unorderedErrorsStart = -1;
     private const int Eof = -1;
     private readonly ReadOnlyMemory<char> _text;
@@ -88,6 +88,11 @@ internal sealed class Lexer
         {
             return false;
         }
+        // The errors of a token are found out of order, such as a leading zero once the digits of a number are read, or an
+        // invalid character after an escape sequence: they are listed in the order of the document, so the first one is the
+        // first error of the token
+        var firstError = _errors?.Count ?? 0;
+        _unorderedErrorsStart = firstError;
         var emitHiddenTokens = EmitHiddenTokens;
         if (State == LexerState.Key)
         {
@@ -98,6 +103,8 @@ internal sealed class Lexer
             NextTokenForValue(emitHiddenTokens);
         }
 
+        _unorderedErrorsStart = -1;
+        SortErrorsByPosition(firstError);
         return true;
     }
 
@@ -649,17 +656,6 @@ internal sealed class Lexer
     }
 
     private void ReadNumberOrDate(Char32? signPrefix = null, TextPosition? signPrefixPos = null)
-    {
-        // The errors of a number are found out of order, such as a leading zero once the digits are read: they are listed in
-        // the order of the document, so the first one is the first error of the token
-        var firstError = _errors?.Count ?? 0;
-        _unorderedErrorsStart = firstError;
-        ReadNumberOrDateCore(signPrefix, signPrefixPos);
-        _unorderedErrorsStart = -1;
-        SortErrorsByPosition(firstError);
-    }
-
-    private void ReadNumberOrDateCore(Char32? signPrefix, TextPosition? signPrefixPos)
     {
         var start = signPrefixPos ?? CurrentPosition;
         var end = CurrentPosition;

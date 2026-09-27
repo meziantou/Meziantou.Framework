@@ -512,6 +512,31 @@ val = true
         }
     }
 
+    // Like the errors of a number, the errors of any token are listed in the order of the document. {S} stands for a lone
+    // surrogate, which InlineData cannot hold.
+    [Theory]
+    [InlineData("a = \"\\")]
+    [InlineData("a = \"\\u12")]
+    [InlineData("a = \"\"\"\\")]
+    [InlineData("a = \"\\x4{S}\"\n")]
+    [InlineData("a = \"\\uD800{S}\"\n")]
+    [InlineData("a = 1\r{S}\n")]
+    public void ErrorsOfAToken_AreInDocumentOrder(string template)
+    {
+        var toml = template.Replace("{S}", "\uD800", StringComparison.Ordinal);
+
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.Equal((parseStrict.Line, parseStrict.Column, parseStrict.Diagnostics![0].Message), (deserialize.Line, deserialize.Column, deserialize.Diagnostics![0].Message));
+        var offsets = parser.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray();
+        Assert.Equal(offsets.Order().ToArray(), offsets);
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

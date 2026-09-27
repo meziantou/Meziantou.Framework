@@ -68,7 +68,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         string marker;
         if (!listBlock.IsOrdered)
         {
-            marker = $"{renderer.Options.ListItemCharacter ?? listBlock.BulletType}";
+            marker = $"{GetBulletCharacter(renderer, listBlock)}";
         }
         else
         {
@@ -83,7 +83,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
                 number += index;
             }
 
-            marker = $"{number.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter}";
+            marker = $"{number.ToString(CultureInfo.InvariantCulture)}{GetBulletCharacter(renderer, listBlock)}";
         }
 
         // The indented lines of the block after the list would continue the last item, unless its content is indented further.
@@ -107,6 +107,25 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
 
         return marker + " ";
+    }
+
+    // Gets the bullet, or the delimiter of an ordered list. A list right after a list of the same kind uses another one,
+    // so that they are not merged.
+    private static char GetBulletCharacter(NormalizeRenderer renderer, ListBlock listBlock)
+    {
+        var character = listBlock.IsOrdered ? listBlock.OrderedDelimiter : renderer.Options.ListItemCharacter ?? listBlock.BulletType;
+        if (GetPreviousSibling(listBlock) is ListBlock previous && previous.IsOrdered == listBlock.IsOrdered && GetBulletCharacter(renderer, previous) == character)
+        {
+            return character switch
+            {
+                '.' => ')',
+                ')' => '.',
+                '-' => '*',
+                _ => '-',
+            };
+        }
+
+        return character;
     }
 
     // Gets the indentation of the first line of a block that keeps it

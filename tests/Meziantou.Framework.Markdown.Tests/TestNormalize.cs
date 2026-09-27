@@ -918,6 +918,14 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("-\n\n\n-", "- \n\n* ")]
+    [InlineData("1.\n\n\n2.\n\n\n3.", "1. \n\n2) \n\n3. ")]
+    public void AdjacentListsAreNotMerged(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

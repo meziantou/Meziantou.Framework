@@ -7,11 +7,11 @@ namespace Meziantou.Framework;
 
 static partial class PublicSuffixList
 {
-    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/ff02362b20e273fbcc66405b9b3c21e5dd3e4367/public_suffix_list.dat
-    // Commit date: 2026-09-18T18:42:44.0000000+00:00
-    private const int EntryCount = 10325;
-    private const int RuleCountValue = 10325;
-    private const long LastUpdatedTicks = 639253537640000000L;
+    // Public Suffix List source: https://raw.githubusercontent.com/publicsuffix/list/a179a48c465e818cfd8d626691cb317985da87fb/public_suffix_list.dat
+    // Commit date: 2026-09-24T13:26:24.0000000+00:00
+    private const int EntryCount = 10334;
+    private const int RuleCountValue = 10334;
+    private const long LastUpdatedTicks = 639258531840000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -7164,6 +7164,8 @@ static partial class PublicSuffixList
         "authgear-staging.com",
         "authgearapps.com",
         "avocat.fr",
+        "aws-gov.databricksapps.us",
+        "aws.databricksapps.com",
         "awsapps.com",
         "awsglobalaccelerator.com",
         "azerbaijan.su",
@@ -8031,6 +8033,7 @@ static partial class PublicSuffixList
         "game-host.org",
         "game-server.cc",
         "gb.net",
+        "gcp.databricksapps.com",
         "gda.pl",
         "gdansk.pl",
         "gdynia.pl",
@@ -8062,6 +8065,7 @@ static partial class PublicSuffixList
         "gitpage.si",
         "gl.srv.us",
         "gleeze.com",
+        "glideos.app",
         "gliwice.pl",
         "global.prod.fastly.net",
         "global.replit.dev",
@@ -8247,6 +8251,7 @@ static partial class PublicSuffixList
         "ipifony.net",
         "ipv64.de",
         "ipv64.net",
+        "iqhs.pl",
         "ir.md",
         "iran.liara.run",
         "is-a-anarchist.com",
@@ -9542,9 +9547,11 @@ static partial class PublicSuffixList
         "simplesite.pl",
         "sinaapp.com",
         "sisko.replit.dev",
+        "site.hosting-cluster.nl",
         "site.rb-hosting.io",
         "site.tb-hosting.com",
         "site.transip.me",
+        "site.webhosting.be",
         "siteleaf.net",
         "sk.eu.org",
         "skierniewice.pl",
@@ -9660,6 +9667,7 @@ static partial class PublicSuffixList
         "supabase.net",
         "supersale.jp",
         "support.site",
+        "surge.sh",
         "surveys.so",
         "svn-repos.de",
         "swedencentral-01.azurewebsites.net",
@@ -10167,6 +10175,7 @@ static partial class PublicSuffixList
         "auiusercontent.com",
         "awdev.ca",
         "awsapprunner.com",
+        "azure.databricksapps.com",
         "azurecontainer.io",
         "beget.app",
         "begetcdn.cloud",

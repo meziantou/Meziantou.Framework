@@ -1463,7 +1463,8 @@ public sealed partial class TomlParser
                 {
                     common = targetFrames.Count - 1;
                 }
-                else if (common >= targetFrames.Count - 1 && FramesEqualSequence(_explicitFrames, targetFrames, targetFrames.Count - 1))
+                // The frames before the element are the same: common counts the frames that are equal
+                else if (common >= targetFrames.Count - 1)
                 {
                     common = targetFrames.Count - 1;
                 }
@@ -1533,24 +1534,6 @@ public sealed partial class TomlParser
 
                     return TomlStringDecoder.Decode(raw, tokenKind);
             }
-        }
-
-        private bool FramesEqualSequence(List<ExplicitFrame> current, List<ExplicitFrame> target, int length)
-        {
-            if (current.Count < length || target.Count < length)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < length; i++)
-            {
-                if (!FramesEqual(current[i], target[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private void ProduceValueEvent(TextPosition spanStart, LexerState nextStateAfterScalar)

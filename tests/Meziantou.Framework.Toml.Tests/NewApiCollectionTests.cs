@@ -142,8 +142,188 @@ internal sealed partial class TestTomlSnakeCaseCollectionsContext : TomlSerializ
 {
 }
 
+// Every supported collection type, in both resolvers: written, read, read from a single value, and populated
+public sealed class CollectionMatrixHolder<TCollection>
+{
+    public TCollection? V { get; set; }
+}
+
+public sealed class CollectionMatrixSingleOrArrayHolder<TCollection>
+{
+    [TomlSingleOrArray]
+    public TCollection? V { get; set; }
+}
+
+public sealed class CollectionMatrixPopulateHolder<TCollection>
+    where TCollection : class, ICollection<int>, new()
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public TCollection V { get; } = CollectionMatrix.Create<TCollection>();
+}
+
+public sealed class CollectionMatrixSingleOrArrayPopulateHolder<TCollection>
+    where TCollection : class, ICollection<int>, new()
+{
+    [TomlSingleOrArray]
+    public TCollection V { get; } = CollectionMatrix.Create<TCollection>();
+}
+
+// Members whose type is an interface, populated through the existing collection
+public sealed class CollectionMatrixInterfacePopulateHolder
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public IList<int> List { get; } = new List<int> { 0 };
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public ICollection<int> Collection { get; } = new Collection<int> { 0 };
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public ISet<int> Set { get; } = new HashSet<int> { 0 };
+
+    [TomlSingleOrArray]
+    public ISet<int> SingleOrArraySet { get; } = new HashSet<int> { 0 };
+
+    [TomlSingleOrArray]
+    public IList<int> SingleOrArrayList { get; } = new List<int> { 0 };
+}
+
+public static class CollectionMatrix
+{
+    public static TCollection Create<TCollection>()
+        where TCollection : ICollection<int>, new()
+    {
+        return [0];
+    }
+}
+
+[TomlSerializable(typeof(CollectionMatrixHolder<int[]>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<int[]>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<List<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<List<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<IList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<IList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<IReadOnlyList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<IReadOnlyList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<ICollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<ICollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<IReadOnlyCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<IReadOnlyCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<IEnumerable<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<IEnumerable<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<Collection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<Collection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<ObservableCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<ObservableCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<HashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<HashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<SortedSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<SortedSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<ISet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<ISet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<IReadOnlySet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<IReadOnlySet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<System.Collections.Immutable.ImmutableArray<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<System.Collections.Immutable.ImmutableArray<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<System.Collections.Immutable.ImmutableList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<System.Collections.Immutable.ImmutableList<int>>))]
+[TomlSerializable(typeof(CollectionMatrixHolder<System.Collections.Immutable.ImmutableHashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayHolder<System.Collections.Immutable.ImmutableHashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixPopulateHolder<List<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayPopulateHolder<List<int>>))]
+[TomlSerializable(typeof(CollectionMatrixPopulateHolder<Collection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayPopulateHolder<Collection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixPopulateHolder<ObservableCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayPopulateHolder<ObservableCollection<int>>))]
+[TomlSerializable(typeof(CollectionMatrixPopulateHolder<HashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayPopulateHolder<HashSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixPopulateHolder<SortedSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixSingleOrArrayPopulateHolder<SortedSet<int>>))]
+[TomlSerializable(typeof(CollectionMatrixInterfacePopulateHolder))]
+internal sealed partial class TestTomlCollectionMatrixContext : TomlSerializerContext
+{
+}
+
 public class NewApiCollectionTests
 {
+    [Fact]
+    public void CollectionMatrix_EveryCollectionIsWrittenAndReadByBothResolvers()
+    {
+        Check<int[]>();
+        Check<List<int>>();
+        Check<IList<int>>();
+        Check<IReadOnlyList<int>>();
+        Check<ICollection<int>>();
+        Check<IReadOnlyCollection<int>>();
+        Check<IEnumerable<int>>();
+        Check<Collection<int>>();
+        Check<ObservableCollection<int>>();
+        Check<HashSet<int>>();
+        Check<SortedSet<int>>();
+        Check<ISet<int>>();
+        Check<IReadOnlySet<int>>();
+        Check<System.Collections.Immutable.ImmutableArray<int>>();
+        Check<System.Collections.Immutable.ImmutableList<int>>();
+        Check<System.Collections.Immutable.ImmutableHashSet<int>>();
+
+        static void Check<TCollection>()
+            where TCollection : IEnumerable<int>
+        {
+            var context = TestTomlCollectionMatrixContext.Default;
+            var name = typeof(TCollection).Name;
+
+            var generated = TomlSerializer.Deserialize<CollectionMatrixHolder<TCollection>>("V = [3, 1, 2]\n", context)!;
+            var reflection = TomlSerializer.Deserialize<CollectionMatrixHolder<TCollection>>("V = [3, 1, 2]\n")!;
+            Assert.Equal([1, 2, 3], generated.V!.Order(), name);
+            Assert.Equal([1, 2, 3], reflection.V!.Order(), name);
+
+            var written = TomlSerializer.Serialize(generated, context);
+            Assert.Equal(written, TomlSerializer.Serialize(generated), name);
+            Assert.Equal([1, 2, 3], TomlSerializer.Deserialize<CollectionMatrixHolder<TCollection>>(written, context)!.V!.Order(), name);
+
+            foreach (var (toml, expected) in new[] { ("V = 1\n", new[] { 1 }), ("V = [1, 2]\n", new[] { 1, 2 }) })
+            {
+                Assert.Equal(expected, TomlSerializer.Deserialize<CollectionMatrixSingleOrArrayHolder<TCollection>>(toml, context)!.V!.Order(), name);
+                Assert.Equal(expected, TomlSerializer.Deserialize<CollectionMatrixSingleOrArrayHolder<TCollection>>(toml)!.V!.Order(), name);
+            }
+        }
+    }
+
+    [Fact]
+    public void CollectionMatrix_EveryMutableCollectionIsPopulatedByBothResolvers()
+    {
+        Check<List<int>>();
+        Check<Collection<int>>();
+        Check<ObservableCollection<int>>();
+        Check<HashSet<int>>();
+        Check<SortedSet<int>>();
+
+        var context = TestTomlCollectionMatrixContext.Default;
+        const string InterfaceToml = "List = [1]\nCollection = [1]\nSet = [1]\nSingleOrArraySet = 1\nSingleOrArrayList = [1, 2]\n";
+        foreach (var holder in new[] { TomlSerializer.Deserialize<CollectionMatrixInterfacePopulateHolder>(InterfaceToml, context)!, TomlSerializer.Deserialize<CollectionMatrixInterfacePopulateHolder>(InterfaceToml)! })
+        {
+            Assert.Equal([0, 1], holder.List);
+            Assert.Equal([0, 1], holder.Collection);
+            Assert.Equal([0, 1], holder.Set.Order());
+            Assert.Equal([0, 1], holder.SingleOrArraySet.Order());
+            Assert.Equal([0, 1, 2], holder.SingleOrArrayList);
+        }
+
+        static void Check<TCollection>()
+            where TCollection : class, ICollection<int>, new()
+        {
+            var context = TestTomlCollectionMatrixContext.Default;
+            var name = typeof(TCollection).Name;
+
+            Assert.Equal([0, 1, 2], TomlSerializer.Deserialize<CollectionMatrixPopulateHolder<TCollection>>("V = [1, 2]\n", context)!.V.Order(), name);
+            Assert.Equal([0, 1, 2], TomlSerializer.Deserialize<CollectionMatrixPopulateHolder<TCollection>>("V = [1, 2]\n")!.V.Order(), name);
+            foreach (var (toml, expected) in new[] { ("V = 1\n", new[] { 0, 1 }), ("V = [1, 2]\n", new[] { 0, 1, 2 }) })
+            {
+                Assert.Equal(expected, TomlSerializer.Deserialize<CollectionMatrixSingleOrArrayPopulateHolder<TCollection>>(toml, context)!.V.Order(), name);
+                Assert.Equal(expected, TomlSerializer.Deserialize<CollectionMatrixSingleOrArrayPopulateHolder<TCollection>>(toml)!.V.Order(), name);
+            }
+        }
+    }
+
     [Fact]
     public void Reflection_CanRoundtripCollections()
     {

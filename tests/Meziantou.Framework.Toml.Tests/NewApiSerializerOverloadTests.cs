@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
@@ -14,6 +15,80 @@ public sealed class NewApiSerializerOverloadTests
         name = "Ada"
         age = 37
         """;
+
+    // Every public overload reads and writes the same document: each one is a thin wrapper, so a wrong argument or a missing
+    // check shows here
+    [Fact]
+    public async Task EveryOverload_ReadsAndWritesTheSameDocument()
+    {
+        var context = TestTomlSerializerContext.Default;
+        var expected = TomlSerializer.Serialize(new GeneratedPerson { Name = "Ada", Age = 37 }, context.GeneratedPerson);
+        var methods = typeof(TomlSerializer).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(method => method.Name is nameof(TomlSerializer.Serialize) or nameof(TomlSerializer.SerializeAsync) or nameof(TomlSerializer.Deserialize) or nameof(TomlSerializer.DeserializeAsync) or nameof(TomlSerializer.TryDeserialize))
+            .ToList();
+
+        foreach (var method in methods)
+        {
+            var target = method.IsGenericMethodDefinition ? method.MakeGenericMethod(typeof(GeneratedPerson)) : method;
+            var isWrite = method.Name.StartsWith("Serialize", StringComparison.Ordinal);
+            var parameters = target.GetParameters();
+            var arguments = new object?[parameters.Length];
+            MemoryStream? outputStream = null;
+            StringWriter? outputWriter = null;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var type = parameters[i].ParameterType;
+                arguments[i] = type switch
+                {
+                    _ when parameters[i].IsOut => null,
+                    _ when type == typeof(string) => SampleToml,
+                    _ when type == typeof(TextReader) => new StringReader(SampleToml),
+                    _ when type == typeof(TextWriter) => outputWriter = new StringWriter(),
+                    _ when type == typeof(Stream) => isWrite ? outputStream = new MemoryStream() : new MemoryStream(Encoding.UTF8.GetBytes(SampleToml)),
+                    _ when type == typeof(Type) => typeof(GeneratedPerson),
+                    _ when type == typeof(TomlSerializerOptions) => context.Options,
+                    _ when type == typeof(TomlSerializerContext) => context,
+                    _ when typeof(TomlTypeInfo).IsAssignableFrom(type) => context.GeneratedPerson,
+                    _ when type == typeof(CancellationToken) => TestContext.Current.CancellationToken,
+                    _ when type == typeof(GeneratedPerson) || type == typeof(object) => new GeneratedPerson { Name = "Ada", Age = 37 },
+                    _ => throw new InvalidOperationException($"No argument for {parameters[i]} of {method}"),
+                };
+            }
+
+            var result = target.Invoke(obj: null, arguments);
+            if (result is Task task)
+            {
+                await task;
+            }
+            else if (result is not null && result.GetType().IsGenericType && result.GetType().GetGenericTypeDefinition() == typeof(ValueTask<>))
+            {
+                var asTask = (Task)result.GetType().GetMethod(nameof(ValueTask<>.AsTask))!.Invoke(result, parameters: null)!;
+                await asTask;
+                // The task is completed: its result is read without blocking
+                result = asTask.GetType().GetProperty("Result")!.GetValue(asTask);
+            }
+
+            var description = target.ToString();
+            if (isWrite)
+            {
+                var written = result as string ?? outputWriter?.ToString() ?? Encoding.UTF8.GetString(outputStream!.ToArray());
+                Assert.Equal(expected, written, description);
+            }
+            else
+            {
+                if (method.Name == nameof(TomlSerializer.TryDeserialize))
+                {
+                    Assert.True((bool)result!, description);
+                    result = arguments[Array.FindIndex(parameters, parameter => parameter.IsOut)];
+                }
+
+                var person = Assert.IsType<GeneratedPerson>(result);
+                Assert.Equal(("Ada", 37), (person.Name, person.Age));
+            }
+        }
+
+        Assert.HasCount(66, methods);
+    }
 
     [Fact]
     public void Deserialize_String_WithContext_Works()

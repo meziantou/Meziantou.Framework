@@ -2057,6 +2057,310 @@ internal sealed partial class TestTomlSerializerContextStrictThrowingSetter : To
 {
 }
 
+// A type with more than 64 members tracks the keys it read in an array instead of a mask
+public sealed class GeneratedWideModel
+{
+    public int P0 { get; set; }
+
+    public int P1 { get; set; }
+
+    public int P2 { get; set; }
+
+    public int P3 { get; set; }
+
+    public int P4 { get; set; }
+
+    public int P5 { get; set; }
+
+    public int P6 { get; set; }
+
+    public int P7 { get; set; }
+
+    public int P8 { get; set; }
+
+    public int P9 { get; set; }
+
+    public int P10 { get; set; }
+
+    public int P11 { get; set; }
+
+    public int P12 { get; set; }
+
+    public int P13 { get; set; }
+
+    public int P14 { get; set; }
+
+    public int P15 { get; set; }
+
+    public int P16 { get; set; }
+
+    public int P17 { get; set; }
+
+    public int P18 { get; set; }
+
+    public int P19 { get; set; }
+
+    public int P20 { get; set; }
+
+    public int P21 { get; set; }
+
+    public int P22 { get; set; }
+
+    public int P23 { get; set; }
+
+    public int P24 { get; set; }
+
+    public int P25 { get; set; }
+
+    public int P26 { get; set; }
+
+    public int P27 { get; set; }
+
+    public int P28 { get; set; }
+
+    public int P29 { get; set; }
+
+    public int P30 { get; set; }
+
+    public int P31 { get; set; }
+
+    public int P32 { get; set; }
+
+    public int P33 { get; set; }
+
+    public int P34 { get; set; }
+
+    public int P35 { get; set; }
+
+    public int P36 { get; set; }
+
+    public int P37 { get; set; }
+
+    public int P38 { get; set; }
+
+    public int P39 { get; set; }
+
+    public int P40 { get; set; }
+
+    public int P41 { get; set; }
+
+    public int P42 { get; set; }
+
+    public int P43 { get; set; }
+
+    public int P44 { get; set; }
+
+    public int P45 { get; set; }
+
+    public int P46 { get; set; }
+
+    public int P47 { get; set; }
+
+    public int P48 { get; set; }
+
+    public int P49 { get; set; }
+
+    public int P50 { get; set; }
+
+    public int P51 { get; set; }
+
+    public int P52 { get; set; }
+
+    public int P53 { get; set; }
+
+    public int P54 { get; set; }
+
+    public int P55 { get; set; }
+
+    public int P56 { get; set; }
+
+    public int P57 { get; set; }
+
+    public int P58 { get; set; }
+
+    public int P59 { get; set; }
+
+    public int P60 { get; set; }
+
+    public int P61 { get; set; }
+
+    public int P62 { get; set; }
+
+    public int P63 { get; set; }
+
+    public required int Last { get; set; }
+}
+
+public sealed class GeneratedWideGenericModel<T>
+{
+    public int P0 { get; set; }
+
+    public int P1 { get; set; }
+
+    public int P2 { get; set; }
+
+    public int P3 { get; set; }
+
+    public int P4 { get; set; }
+
+    public int P5 { get; set; }
+
+    public int P6 { get; set; }
+
+    public int P7 { get; set; }
+
+    public int P8 { get; set; }
+
+    public int P9 { get; set; }
+
+    public int P10 { get; set; }
+
+    public int P11 { get; set; }
+
+    public int P12 { get; set; }
+
+    public int P13 { get; set; }
+
+    public int P14 { get; set; }
+
+    public int P15 { get; set; }
+
+    public int P16 { get; set; }
+
+    public int P17 { get; set; }
+
+    public int P18 { get; set; }
+
+    public int P19 { get; set; }
+
+    public int P20 { get; set; }
+
+    public int P21 { get; set; }
+
+    public int P22 { get; set; }
+
+    public int P23 { get; set; }
+
+    public int P24 { get; set; }
+
+    public int P25 { get; set; }
+
+    public int P26 { get; set; }
+
+    public int P27 { get; set; }
+
+    public int P28 { get; set; }
+
+    public int P29 { get; set; }
+
+    public int P30 { get; set; }
+
+    public int P31 { get; set; }
+
+    public int P32 { get; set; }
+
+    public int P33 { get; set; }
+
+    public int P34 { get; set; }
+
+    public int P35 { get; set; }
+
+    public int P36 { get; set; }
+
+    public int P37 { get; set; }
+
+    public int P38 { get; set; }
+
+    public int P39 { get; set; }
+
+    public int P40 { get; set; }
+
+    public int P41 { get; set; }
+
+    public int P42 { get; set; }
+
+    public int P43 { get; set; }
+
+    public int P44 { get; set; }
+
+    public int P45 { get; set; }
+
+    public int P46 { get; set; }
+
+    public int P47 { get; set; }
+
+    public int P48 { get; set; }
+
+    public int P49 { get; set; }
+
+    public int P50 { get; set; }
+
+    public int P51 { get; set; }
+
+    public int P52 { get; set; }
+
+    public int P53 { get; set; }
+
+    public int P54 { get; set; }
+
+    public int P55 { get; set; }
+
+    public int P56 { get; set; }
+
+    public int P57 { get; set; }
+
+    public int P58 { get; set; }
+
+    public int P59 { get; set; }
+
+    public int P60 { get; set; }
+
+    public int P61 { get; set; }
+
+    public int P62 { get; set; }
+
+    public int P63 { get; set; }
+
+    public required T? Last { get; init; }
+}
+
+public sealed class GeneratedWideParent
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedWideModel Child { get; } = new() { Last = 0, P1 = 1 };
+}
+
+public sealed class GeneratedRequiredLastWinsModel
+{
+    public required int A { get; set; }
+
+    public int B { get; set; }
+}
+
+// A generic type with a required member is created with an object initializer, once its members are read
+public sealed class GeneratedRequiredSingleOrArrayModel<T>
+{
+    public required T? A { get; init; }
+
+    [TomlSingleOrArray]
+    public List<int> L { get; } = [0];
+}
+
+[TomlSerializable(typeof(GeneratedWideModel))]
+[TomlSerializable(typeof(GeneratedWideGenericModel<int>))]
+[TomlSerializable(typeof(GeneratedWideParent))]
+[TomlSerializable(typeof(GeneratedRequiredSingleOrArrayModel<int>))]
+internal sealed partial class TestTomlSerializerContextWide : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true, DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins)]
+[TomlSerializable(typeof(GeneratedRequiredLastWinsModel))]
+[TomlSerializable(typeof(GeneratedWideModel))]
+internal sealed partial class TestTomlSerializerContextRequiredLastWins : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedConverterReadInner
 {
     public int A { get; set; }
@@ -4986,6 +5290,61 @@ public class NewApiSourceGenerationTests
 
         static string Format(TomlException exception) => string.Join('|', exception.Diagnostics!.Select(diagnostic =>
             $"({diagnostic.Span.Start.Line + 1},{diagnostic.Span.Start.Column + 1})" + (diagnostic.Message.StartsWith("Duplicate", StringComparison.Ordinal) ? " " + diagnostic.Message : "")));
+    }
+
+    [Fact]
+    public void WideModels_AreReadLikeTheReflectionResolver()
+    {
+        var context = TestTomlSerializerContextWide.Default;
+        const string Toml = "P0 = 1\nP63 = 63\nLast = 64\n";
+
+        Assert.Equal((1, 63, 64), Values(TomlSerializer.Deserialize<GeneratedWideModel>(Toml, context)!));
+        Assert.Equal((1, 63, 64), Values(TomlSerializer.Deserialize<GeneratedWideModel>(Toml)!));
+        var generic = TomlSerializer.Deserialize<GeneratedWideGenericModel<int>>(Toml, context)!;
+        Assert.Equal((1, 63, 64), (generic.P0, generic.P63, generic.Last));
+
+        // The child is populated: the key it does not have keeps its value
+        var parent = TomlSerializer.Deserialize<GeneratedWideParent>("[Child]\nP0 = 5\nLast = 6\n", context)!;
+        Assert.Equal((5, 1, 6), (parent.Child.P0, parent.Child.P1, parent.Child.Last));
+        var reflectionParent = TomlSerializer.Deserialize<GeneratedWideParent>("[Child]\nP0 = 5\nLast = 6\n")!;
+        Assert.Equal((5, 1, 6), (reflectionParent.Child.P0, reflectionParent.Child.P1, reflectionParent.Child.Last));
+
+        // A missing required member
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedWideModel>("P0 = 1\n", context));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedWideModel>("P0 = 1\n"));
+        Assert.Equal(reflection.Message, generated.Message);
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedWideGenericModel<int>>("P0 = 1\n", context));
+
+        static (int, int, int) Values(GeneratedWideModel model) => (model.P0, model.P63, model.Last);
+    }
+
+    // With case-insensitive names, the last of two keys that map to a member wins, and a required member is still checked
+    [Fact]
+    public void RequiredMembers_WithLastWinsDuplicateKeys_AreReadLikeTheReflectionResolver()
+    {
+        var context = TestTomlSerializerContextRequiredLastWins.Default;
+        var options = new TomlSerializerOptions { PropertyNameCaseInsensitive = true, DuplicateKeyHandling = TomlDuplicateKeyHandling.LastWins };
+
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedRequiredLastWinsModel>("a = 1\nA = 2\n", context)!.A);
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedRequiredLastWinsModel>("a = 1\nA = 2\n", options)!.A);
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedWideModel>("last = 1\nLast = 2\n", context)!.Last);
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedWideModel>("last = 1\nLast = 2\n", options)!.Last);
+
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedRequiredLastWinsModel>("B = 1\n", context));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedRequiredLastWinsModel>("B = 1\n", options));
+        Assert.Equal(reflection.Message, generated.Message);
+        Assert.Equal(
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedWideModel>("P1 = 1\n", options)).Message,
+            Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedWideModel>("P1 = 1\n", context)).Message);
+    }
+
+    [Theory]
+    [InlineData("A = 1\nL = 1\n", "0,1")]
+    [InlineData("A = 1\nL = [1, 2]\n", "0,1,2")]
+    public void GetOnlySingleOrArrayMember_OfATypeCreatedWithAnObjectInitializer_IsPopulated(string toml, string expected)
+    {
+        Assert.Equal(expected, string.Join(',', TomlSerializer.Deserialize<GeneratedRequiredSingleOrArrayModel<int>>(toml, TestTomlSerializerContextWide.Default)!.L));
+        Assert.Equal(expected, string.Join(',', TomlSerializer.Deserialize<GeneratedRequiredSingleOrArrayModel<int>>(toml)!.L));
     }
 
     // TryDeserialize stops at the first error, an unmapped key included: no setter runs on invalid input

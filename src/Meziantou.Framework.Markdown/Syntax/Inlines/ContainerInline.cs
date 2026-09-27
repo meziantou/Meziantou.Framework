@@ -53,6 +53,12 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     }
 
     /// <summary>
+    /// Gets or sets the container that received the children of this container when it was replaced. Its former children
+    /// still reference this container, and <see cref="Inline.Parent"/> follows it to the container that has them.
+    /// </summary>
+    internal ContainerInline? ChildrenMovedTo { get; set; }
+
+    /// <summary>
     /// Clears this instance by removing all its children.
     /// </summary>
     public void Clear()
@@ -88,6 +94,11 @@ public class ContainerInline : Inline, IEnumerable<Inline>
 
         if (FirstChild is null)
         {
+            if (ChildrenMovedTo is not null)
+            {
+                DetachMovedChildren();
+            }
+
             FirstChild = child;
             LastChild = child;
             child.Parent = this;
@@ -101,6 +112,65 @@ public class ContainerInline : Inline, IEnumerable<Inline>
             LastChild!.InsertAfter(child);
         }
         return this;
+    }
+
+    /// <summary>
+    /// Moves all the children of <paramref name="source"/> after <paramref name="previous"/>, one of the children of this
+    /// container, or first when it is <c>null</c>. The moved children are not visited, and the chain of open containers is
+    /// not notified.
+    /// </summary>
+    internal void MoveChildrenFrom(ContainerInline source, Inline? previous)
+    {
+        Debug.Assert(source.FirstChild is not null && source.ChildrenMovedTo is null);
+        if (ChildrenMovedTo is not null)
+        {
+            DetachMovedChildren();
+        }
+
+        var first = source.FirstChild!;
+        var last = source.LastChild!;
+        source.FirstChild = null;
+        source.LastChild = null;
+        source.ChildrenMovedTo = this;
+
+        var next = previous is null ? FirstChild : previous.NextSibling;
+        first.PreviousSibling = previous;
+        last.NextSibling = next;
+        if (previous is null)
+        {
+            FirstChild = first;
+        }
+        else
+        {
+            previous.NextSibling = first;
+        }
+
+        if (next is null)
+        {
+            LastChild = last;
+        }
+        else
+        {
+            next.PreviousSibling = last;
+        }
+    }
+
+    // This container receives children again, so its former children must not reference it anymore
+    private void DetachMovedChildren()
+    {
+        var parent = ChildrenMovedTo!;
+        while (parent.ChildrenMovedTo is { } movedTo)
+        {
+            parent = movedTo;
+        }
+
+        // Reading the parent of a child points it directly to the container that has it
+        for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
+        {
+            _ = child.Parent;
+        }
+
+        ChildrenMovedTo = null;
     }
 
     /// <summary>

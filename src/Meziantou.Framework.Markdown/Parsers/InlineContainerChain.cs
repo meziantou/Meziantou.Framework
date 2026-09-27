@@ -387,7 +387,23 @@ internal sealed class InlineContainerChain
         }
     }
 
-    internal static void OnChildrenMoved(ContainerInline container, Inline? previousLastChild, Inline firstChild, Inline lastChild)
+    /// <summary>
+    /// Determines whether the children of a container of the chain, except its last child, include an anchor candidate.
+    /// </summary>
+    /// <returns><c>null</c> when it is not known without walking the children.</returns>
+    internal static bool? HasAnchorBeforeLastChild(ContainerInline container)
+    {
+        if (container.IsInOpenChain && TryFind(container, out var chain, out var depth))
+        {
+            var level = chain._levels[depth];
+            return level.IsAnchorUnknown ? null : level.Anchor is not null;
+        }
+
+        return null;
+    }
+
+    // movedChildrenHaveAnchor tells whether the moved children, except the last one, include an anchor candidate, when it is known
+    internal static void OnChildrenMoved(ContainerInline container, Inline? previousLastChild, Inline firstChild, Inline lastChild, bool? movedChildrenHaveAnchor)
     {
         if (!TryFind(container, out var chain, out var depth))
         {
@@ -401,17 +417,27 @@ internal sealed class InlineContainerChain
 
         // Like ChildInserted for each child. The previous last child may now precede the last child.
         var hasAnchorCandidate = previousLastChild is HtmlInline previousHtml && IsAnchorCandidate(previousHtml);
-        for (var child = firstChild; ; child = child.NextSibling!)
+        if (depth > 0 && movedChildrenHaveAnchor is { } hasAnchor)
         {
-            if (depth == 0 && child is PipeTableDelimiterInline)
+            // The children are moved up one level at a time when delimiters are replaced one after the other, so walking them
+            // each time would be quadratic
+            hasAnchorCandidate |= hasAnchor || (lastChild is HtmlInline lastHtml && IsAnchorCandidate(lastHtml));
+        }
+        else
+        {
+            // The root is never replaced, so the children moved to it to count its pipe delimiters are not moved again
+            for (var child = firstChild; ; child = child.NextSibling!)
             {
-                chain._rootPipeDelimiterCount++;
-            }
+                if (depth == 0 && child is PipeTableDelimiterInline)
+                {
+                    chain._rootPipeDelimiterCount++;
+                }
 
-            hasAnchorCandidate |= child is HtmlInline html && IsAnchorCandidate(html);
-            if (ReferenceEquals(child, lastChild))
-            {
-                break;
+                hasAnchorCandidate |= child is HtmlInline html && IsAnchorCandidate(html);
+                if (ReferenceEquals(child, lastChild))
+                {
+                    break;
+                }
             }
         }
 

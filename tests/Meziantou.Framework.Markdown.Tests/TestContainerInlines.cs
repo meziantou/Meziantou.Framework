@@ -60,4 +60,101 @@ public class TestContainerInlines
         Assert.Same(destination, first.Parent);
         Assert.Same(destination, second.Parent);
     }
+
+    [Fact]
+    public void ReplaceByMovesChildrenToTheParentOfTheReplacement()
+    {
+        var root = new ContainerInline();
+        var outer = new ContainerInline();
+        var inner = new ContainerInline();
+        var x = new LiteralInline("x");
+        var a = new LiteralInline("a");
+        var b = new LiteralInline("b");
+        root.AppendChild(outer);
+        outer.AppendChild(x);
+        outer.AppendChild(inner);
+        inner.AppendChild(a);
+        inner.AppendChild(b);
+
+        var innerLiteral = new LiteralInline("[");
+        Assert.Same(b, inner.ReplaceBy(innerLiteral));
+        Assert.Same(outer, a.Parent);
+        Assert.Same(outer, b.Parent);
+        Assert.Same(b, outer.LastChild);
+
+        var outerLiteral = new LiteralInline("[");
+        Assert.Same(b, outer.ReplaceBy(outerLiteral));
+
+        Assert.Equal(new Inline[] { outerLiteral, x, innerLiteral, a, b }, root.ToArray());
+        Assert.Null(outerLiteral.PreviousSibling);
+        Assert.Same(a, b.PreviousSibling);
+        Assert.Same(b, root.LastChild);
+        Assert.All(root, child => Assert.Same(root, child.Parent));
+        Assert.Null(outer.FirstChild);
+        Assert.Null(outer.LastChild);
+        Assert.Null(outer.Parent);
+        Assert.Null(inner.FirstChild);
+        Assert.Null(inner.Parent);
+    }
+
+    [Fact]
+    public void ReplacedContainerCanBeReused()
+    {
+        var root = new ContainerInline();
+        var outer = new ContainerInline();
+        var inner = new ContainerInline();
+        var a = new LiteralInline("a");
+        var b = new LiteralInline("b");
+        root.AppendChild(outer);
+        outer.AppendChild(inner);
+        inner.AppendChild(a);
+        inner.AppendChild(b);
+        inner.ReplaceBy(new LiteralInline("["));
+        outer.ReplaceBy(new LiteralInline("["));
+
+        var c = new LiteralInline("c");
+        inner.AppendChild(c);
+        var d = new LiteralInline("d");
+        outer.AppendChild(d);
+        outer.AppendChild(inner);
+
+        Assert.Same(inner, c.Parent);
+        Assert.Same(outer, d.Parent);
+        Assert.Same(outer, inner.Parent);
+        Assert.Same(root, a.Parent);
+        Assert.Same(root, b.Parent);
+        Assert.Equal(new Inline[] { c }, inner.ToArray());
+        Assert.Equal(new Inline[] { d, inner }, outer.ToArray());
+
+        b.Remove();
+        Assert.Same(a, root.LastChild);
+        Assert.Null(b.Parent);
+    }
+
+    [Fact]
+    public void ReplaceByOpenContainerMovesChildrenIntoIt()
+    {
+        var root = new ContainerInline();
+        var delimiter = new ContainerInline();
+        var a = new LiteralInline("a");
+        var b = new LiteralInline("b");
+        root.AppendChild(new LiteralInline("x"));
+        root.AppendChild(delimiter);
+        delimiter.AppendChild(a);
+        delimiter.AppendChild(b);
+
+        var replacement = new ContainerInline();
+        var existing = new LiteralInline("e");
+        replacement.AppendChild(existing);
+
+        Assert.Same(b, delimiter.ReplaceBy(replacement));
+
+        Assert.Same(replacement, root.LastChild);
+        Assert.Same(root, replacement.Parent);
+        Assert.Equal(new Inline[] { existing, a, b }, replacement.ToArray());
+        Assert.Same(replacement, a.Parent);
+        Assert.Same(replacement, b.Parent);
+        Assert.Same(existing, a.PreviousSibling);
+        Assert.Same(b, replacement.LastChild);
+    }
 }

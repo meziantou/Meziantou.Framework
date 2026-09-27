@@ -27,15 +27,30 @@ public abstract class Inline : MarkdownObject, IInline
     [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The parameter only selects this overload")]
     private protected Inline(bool dummySkipTypeKind) { }
 
+    private ContainerInline? _parent;
+
     /// <summary>
     /// Gets the parent container of this inline.
     /// </summary>
-    public ContainerInline? Parent { get; internal set; }
+    public ContainerInline? Parent
+    {
+        get
+        {
+            var parent = _parent;
+            if (parent?.ChildrenMovedTo is not null)
+            {
+                parent = FindMovedParent();
+            }
+
+            return parent;
+        }
+        internal set => _parent = value;
+    }
 
     /// <summary>
     /// Gets the previous inline.
     /// </summary>
-    public Inline? PreviousSibling { get; private set; }
+    public Inline? PreviousSibling { get; internal set; }
 
     /// <summary>
     /// Gets the next sibling inline.
@@ -179,6 +194,19 @@ public abstract class Inline : MarkdownObject, IInline
         if (copyChildren && IsContainerInline)
         {
             var container = unsafe(Unsafe.As<ContainerInline>(this));
+            ContainerInline? newContainer = inline.IsContainerInline && !inline.IsClosed
+                ? unsafe(Unsafe.As<ContainerInline>(inline))
+                : null;
+
+            var child = container.FirstChild;
+            var lastChild = inline;
+
+            // A chain of open containers is notified once for all the children moved to the parent, instead of once for each
+            var chainParent = newContainer is null && child is not null && inline.Parent is { IsInOpenChain: true } flaggedParent ? flaggedParent : null;
+            var chainParentLastChild = chainParent?.LastChild;
+
+            // The chain knows the anchors among the children of this container only while it is one of its containers
+            var movedChildrenHaveAnchor = chainParent is not null ? InlineContainerChain.HasAnchorBeforeLastChild(container) : null;
 
             // The container left its parent, so a chain of open containers does not need to know about its children anymore
             if (parent is not null && container.IsInOpenChain)
@@ -186,46 +214,72 @@ public abstract class Inline : MarkdownObject, IInline
                 InlineContainerChain.OnContainerDetached(container);
             }
 
-            ContainerInline? newContainer = inline.IsContainerInline && !inline.IsClosed
-                ? unsafe(Unsafe.As<ContainerInline>(inline))
-                : null;
-
-            // TODO: This part is not efficient as it is using child.Remove()
-            // We need a method to quickly move all children without having to mess Next/Prev sibling
-            var child = container.FirstChild;
-            var lastChild = inline;
-
-            // A chain of open containers is notified once for all the children moved to the parent, instead of once for each
-            var chainParent = newContainer is null && child is not null && inline.Parent is { IsInOpenChain: true } flaggedParent ? flaggedParent : null;
-            var chainParentLastChild = chainParent?.LastChild;
-            chainParent?.IsInOpenChain = false;
-
-            while (child != null)
+            var inlineParent = inline.Parent;
+            var destination = newContainer ?? inlineParent;
+            if (child is not null && destination is not null && !ReferenceEquals(destination, container) && !ReferenceEquals(inlineParent, container) &&
+                !container.IsInOpenChain && (newContainer is null || !newContainer.IsInOpenChain))
             {
-                var nextChild = child.NextSibling;
-                child.Remove();
-                if (newContainer != null)
+                // Children accumulate in the unresolved delimiters that are replaced one after the other, so moving them one by
+                // one would be quadratic. Their parent is updated when it is read.
+                lastChild = container.LastChild!;
+                destination.MoveChildrenFrom(container, newContainer is null ? inline : newContainer.LastChild);
+            }
+            else
+            {
+                chainParent?.IsInOpenChain = false;
+
+                while (child != null)
                 {
-                    newContainer.AppendChild(child);
+                    var nextChild = child.NextSibling;
+                    child.Remove();
+                    if (newContainer != null)
+                    {
+                        newContainer.AppendChild(child);
+                    }
+                    else
+                    {
+                        lastChild.InsertAfter(child);
+                    }
+                    lastChild = child;
+                    child = nextChild;
                 }
-                else
-                {
-                    lastChild.InsertAfter(child);
-                }
-                lastChild = child;
-                child = nextChild;
+
+                chainParent?.IsInOpenChain = true;
             }
 
             if (chainParent is not null)
             {
-                chainParent.IsInOpenChain = true;
-                InlineContainerChain.OnChildrenMoved(chainParent, chainParentLastChild, inline.NextSibling!, lastChild);
+                InlineContainerChain.OnChildrenMoved(chainParent, chainParentLastChild, inline.NextSibling!, lastChild, movedChildrenHaveAnchor);
             }
 
             return lastChild;
         }
 
         return inline;
+    }
+
+    // A container whose children were moved to another container by ReplaceBy stays the parent that its former children
+    // reference, and forwards to the container that received them. Point the inline and the containers on the way to the
+    // container at the end, so that each forwarding is followed once.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private ContainerInline FindMovedParent()
+    {
+        var parent = _parent!;
+        while (parent.ChildrenMovedTo is { } movedTo)
+        {
+            parent = movedTo;
+        }
+
+        var container = _parent!;
+        while (!ReferenceEquals(container, parent))
+        {
+            var next = container.ChildrenMovedTo!;
+            container.ChildrenMovedTo = parent;
+            container = next;
+        }
+
+        _parent = parent;
+        return parent;
     }
 
     /// <summary>

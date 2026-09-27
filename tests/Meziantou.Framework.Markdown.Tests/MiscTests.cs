@@ -550,6 +550,45 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("*<a _*", 480_000, "")]
+    [InlineData("*<? _*", 480_000, "")]
+    [InlineData("_<? *_", 480_000, "")]
+    [InlineData("::[^1]\\:::", 480_000, "advanced")]
+    [InlineData("\"\"<? *\"\"", 800_000, "advanced")]
+    [InlineData("==1) _> 1) >\u200B==", 800_000, "advanced")]
+    public void UnmatchedDelimitersBetweenMatchedOnesAreReplacedInLinearTime(string item, int length, string extensions)
+    {
+        // The unmatched delimiters between two matched ones are replaced by literals from the innermost one, and each of them
+        // used to move again all the inlines that the ones below it had moved to it
+        var markdown = string.Concat(Enumerable.Repeat(item, length / item.Length));
+        var pipeline = new MarkdownPipelineBuilder().Configure(extensions).Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.StartsWith("<p>", html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void NestedInactiveLinkDelimitersAreReplacedInLinearTime()
+    {
+        // Each inactive '[' replaced by a literal used to move again all the inlines that the ones below it had moved to it
+        const int Depth = 10_000;
+        var paragraph = string.Concat(Enumerable.Repeat("[a ", Depth)) + "b" + string.Concat(Enumerable.Repeat("](u)", Depth));
+        var markdown = string.Join("\n\n", Enumerable.Repeat(paragraph, 16));
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown);
+        stopwatch.Stop();
+
+        var expectedParagraph = "<p>" + string.Concat(Enumerable.Repeat("[a ", Depth - 1)) + "<a href=\"u\">a b</a>" + string.Concat(Enumerable.Repeat("](u)", Depth - 1)) + "</p>\n";
+        Assert.Equal(string.Concat(Enumerable.Repeat(expectedParagraph, 16)), html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
     [InlineData("[a[")]
     [InlineData("[a][")]
     [InlineData("[a *x* ")]

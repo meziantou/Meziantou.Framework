@@ -396,7 +396,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         // A table followed by other lines needs a header separator row, and these lines must not be inside an inline (a
         // link) that the table would split
         if ((aligns is null && (Options.RequireHeaderSeparator || lastTableLineBreak is not null)) ||
-            (lastTableLineBreak is not null && !IsOutsideOfInlines(lastTableLineBreak, container)))
+            (lastTableLineBreak is not null && (!IsOutsideOfInlines(lastTableLineBreak, container) || state.Block!.Parent is null)))
         {
             // No valid header separator found - convert all pipe delimiters to literals
             ReplacePipesByLiterals(delimiters, 0);
@@ -675,7 +675,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             // Keep the paragraph as-is and insert the table after it.
             // We've processed inlines in the table, but not the leading paragraph itself yet.
             state.PostProcessInlines(0, leadingParagraph.Inline, null, isFinalProcessing: true);
-            state.InsertBlockAfter(table);
+            state.InsertBlockAfter(table, isProcessed: true);
         }
         else
         {
@@ -685,7 +685,7 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
 
         if (trailingParagraph is not null)
         {
-            state.InsertBlockAfter(trailingParagraph);
+            state.InsertBlockAfter(trailingParagraph, isProcessed: false);
         }
 
         // We don't want to continue procesing delimiters, as we are already processing them here

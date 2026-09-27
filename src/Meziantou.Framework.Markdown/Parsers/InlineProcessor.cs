@@ -73,14 +73,27 @@ public class InlineProcessor
     /// </summary>
     public Block? BlockNew { get; set; }
 
-    // Blocks to insert after the block being processed, in order. The markdown parser processes the inlines of the leaf
-    // blocks among them right after the block, and inserts all of them once the parent container is processed, so that
-    // inserting after many blocks of a container stays linear.
-    internal List<Block>? BlocksAfter { get; private set; }
+    // The index of the block being processed in its parent, when the markdown parser knows it, else -1
+    internal int BlockIndex { get; set; } = -1;
 
-    internal void InsertBlockAfter(Block block)
+    private int _blocksInsertedAfter;
+
+    // The blocks inserted after the block being processed whose inlines are already processed: the markdown parser skips them
+    internal List<Block>? ProcessedBlocksAfter { get; private set; }
+
+    // Inserts a block after the block being processed and the blocks inserted before it. It is inserted right away, so that
+    // the parsers of its inlines see it in the document, and the markdown parser processes it next unless its inlines are
+    // already processed.
+    internal void InsertBlockAfter(Block block, bool isProcessed)
     {
-        (BlocksAfter ??= []).Add(block);
+        var parent = Block!.Parent!;
+        var index = BlockIndex >= 0 ? BlockIndex : parent.IndexOf(Block);
+        parent.Insert(index + 1 + _blocksInsertedAfter, block);
+        _blocksInsertedAfter++;
+        if (isProcessed)
+        {
+            (ProcessedBlocksAfter ??= []).Add(block);
+        }
     }
 
     /// <summary>
@@ -317,7 +330,8 @@ public class InlineProcessor
         Inline = null;
         Block = leafBlock;
         BlockNew = null;
-        BlocksAfter = null;
+        ProcessedBlocksAfter = null;
+        _blocksInsertedAfter = 0;
         LineIndex = leafBlock.Line;
 
         _previousSliceOffset = 0;
@@ -859,7 +873,8 @@ public class InlineProcessor
         EndInlineParsing();
         Block = null;
         BlockNew = null;
-        BlocksAfter = null;
+        ProcessedBlocksAfter = null;
+        _blocksInsertedAfter = 0;
         Inline = null;
         Root = null;
         Parsers = null!;

@@ -22,6 +22,13 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
 {
     private BlockWrapper[] _children;
 
+    // The children are _children[0.._gapStart) followed by _children[_gapStart + _gapLength..Count + _gapLength). The gap is
+    // left where the last child was inserted, so inserting children one after the other in the middle of a container is
+    // linear, like the markdown parser does when a block adds blocks after itself. When there is a gap, it holds all the free
+    // slots of the array.
+    private int _gapStart;
+    private int _gapLength;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ContainerBlock"/> class.
     /// </summary>
@@ -40,16 +47,13 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            BlockWrapper[] children = _children;
             int index = Count - 1;
-            if ((uint)index < (uint)children.Length)
-            {
-                return children[index].Block;
-            }
-            else
+            if (index < 0)
             {
                 return null;
             }
+
+            return _children[PhysicalIndex(index)].Block;
         }
     }
 
@@ -85,16 +89,14 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
             ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
         }
 
-        if (Count == _children.Length)
-        {
-            Grow();
-        }
-        _children[Count] = new BlockWrapper(item);
-        Count++;
+        AddLast(item);
         item.Parent = this;
 
         UpdateSpanEnd(item.Span.End);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int PhysicalIndex(int index) => index < _gapStart ? index : index + _gapLength;
 
     private void Grow()
     {
@@ -104,11 +106,91 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         }
         else
         {
-            Debug.Assert(_children[_children.Length - 1].Block is not null);
+            Debug.Assert(_gapLength == 0);
 
             var newArray = new BlockWrapper[_children.Length * 2];
             Array.Copy(_children, 0, newArray, 0, Count);
             _children = newArray;
+        }
+    }
+
+    // Stores the block after the last child. The free slots are in the gap when there is one, so the gap is moved to the end
+    // and the block takes its first slot.
+    private void AddLast(Block item)
+    {
+        if (_gapLength > 0)
+        {
+            MoveGap(Count);
+            _children[_gapStart] = new BlockWrapper(item);
+            _gapStart++;
+            _gapLength--;
+        }
+        else
+        {
+            if (Count == _children.Length)
+            {
+                Grow();
+            }
+
+            _children[Count] = new BlockWrapper(item);
+        }
+
+        Count++;
+    }
+
+    // Moves the gap to the given index, opening a gap there when there is none
+    private void MoveGap(int index)
+    {
+        if (_gapLength == 0)
+        {
+            // Use at least as many free slots as there are children, so that the gap lasts for the next insertions
+            if (_children.Length - Count < Math.Max(4, Count))
+            {
+                var newArray = new BlockWrapper[Math.Max(8, Count * 2)];
+                var gapLength = newArray.Length - Count;
+                Array.Copy(_children, 0, newArray, 0, index);
+                Array.Copy(_children, index, newArray, index + gapLength, Count - index);
+                _children = newArray;
+                _gapStart = index;
+                _gapLength = gapLength;
+                return;
+            }
+
+            var free = _children.Length - Count;
+            Array.Copy(_children, index, _children, index + free, Count - index);
+            Array.Clear(_children, index, Math.Min(free, Count - index));
+            _gapStart = index;
+            _gapLength = free;
+            return;
+        }
+
+        // Only the slots of the moved children that become part of the gap are cleared: the other ones already are, and
+        // clearing the whole gap would make each move proportional to the number of free slots
+        if (index < _gapStart)
+        {
+            var count = _gapStart - index;
+            Array.Copy(_children, index, _children, index + _gapLength, count);
+            Array.Clear(_children, index, Math.Min(count, _gapLength));
+        }
+        else if (index > _gapStart)
+        {
+            var count = index - _gapStart;
+            var cleared = Math.Min(count, _gapLength);
+            Array.Copy(_children, _gapStart + _gapLength, _children, _gapStart, count);
+            Array.Clear(_children, index + _gapLength - cleared, cleared);
+        }
+
+        _gapStart = index;
+    }
+
+    private void CloseGap()
+    {
+        if (_gapLength > 0)
+        {
+            Array.Copy(_children, _gapStart + _gapLength, _children, _gapStart, Count - _gapStart);
+            Array.Clear(_children, Count, _gapLength);
+            _gapStart = 0;
+            _gapLength = 0;
         }
     }
 
@@ -117,13 +199,15 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void Clear()
     {
-        BlockWrapper[] children = _children;
-        for (int i = 0; i < Count && i < children.Length; i++)
+        for (int i = 0; i < Count; i++)
         {
-            children[i].Block.Parent = null;
-            children[i] = default;
+            _children[PhysicalIndex(i)].Block.Parent = null;
         }
+
+        Array.Clear(_children);
         Count = 0;
+        _gapStart = 0;
+        _gapLength = 0;
     }
 
     /// <summary>
@@ -146,6 +230,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
             return;
         }
 
+        CloseGap();
         var children = _children;
         int count = Count;
         for (int i = 0; i < count && i < children.Length; i++)
@@ -172,10 +257,9 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </summary>
     public void CopyTo(Block[] array, int arrayIndex)
     {
-        BlockWrapper[] children = _children;
-        for (int i = 0; i < Count && i < children.Length; i++)
+        for (int i = 0; i < Count; i++)
         {
-            array[arrayIndex + i] = children[i].Block;
+            array[arrayIndex + i] = _children[PhysicalIndex(i)].Block;
         }
     }
 
@@ -200,10 +284,9 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         if (item is null)
             ThrowHelper.ArgumentNullException_item();
 
-        BlockWrapper[] children = _children;
-        for (int i = Math.Min(Count, children.Length) - 1; i >= 0; i--)
+        for (int i = Count - 1; i >= 0; i--)
         {
-            if (ReferenceEquals(children[i].Block, item))
+            if (ReferenceEquals(_children[PhysicalIndex(i)].Block, item))
             {
                 return i;
             }
@@ -230,10 +313,9 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         if (item is null)
             ThrowHelper.ArgumentNullException_item();
 
-        BlockWrapper[] children = _children;
-        for (int i = 0; i < Count && i < children.Length; i++)
+        for (int i = 0; i < Count; i++)
         {
-            if (ReferenceEquals(children[i].Block, item))
+            if (ReferenceEquals(_children[PhysicalIndex(i)].Block, item))
             {
                 return i;
             }
@@ -257,56 +339,21 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         {
             ThrowHelper.ArgumentOutOfRangeException_index();
         }
-        if (Count == _children.Length)
+
+        if (index == Count)
         {
-            Grow();
+            AddLast(item);
         }
-        if (index < Count)
+        else
         {
-            Array.Copy(_children, index, _children, index + 1, Count - index);
+            MoveGap(index);
+            _children[_gapStart] = new BlockWrapper(item);
+            _gapStart++;
+            _gapLength--;
+            Count++;
         }
-        _children[index] = new BlockWrapper(item);
-        Count++;
+
         item.Parent = this;
-    }
-
-    // Inserts blocks after some children in one pass: the indexes are in increasing order, and refer to the children before
-    // the insertion (-1 inserts before the first child)
-    internal void InsertBlocksAfter(List<(int Index, List<Block> Blocks)> insertions)
-    {
-        var count = Count;
-        foreach (var insertion in insertions)
-        {
-            count += insertion.Blocks.Count;
-        }
-
-        var children = new BlockWrapper[count];
-        var next = 0;
-        var insertionIndex = 0;
-        for (var i = -1; i < Count; i++)
-        {
-            if (i >= 0)
-            {
-                children[next++] = _children[i];
-            }
-
-            for (; insertionIndex < insertions.Count && insertions[insertionIndex].Index == i; insertionIndex++)
-            {
-                foreach (var block in insertions[insertionIndex].Blocks)
-                {
-                    if (block.Parent is not null)
-                    {
-                        ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
-                    }
-
-                    block.Parent = this;
-                    children[next++] = new BlockWrapper(block);
-                }
-            }
-        }
-
-        _children = children;
-        Count = count;
     }
 
     /// <summary>
@@ -317,15 +364,24 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         if ((uint)index >= (uint)Count)
             ThrowHelper.ArgumentOutOfRangeException_index();
 
-        Count--;
-        // previous children
-        var item = _children[index].Block;
-        item.Parent = null;
-        if (index < Count)
+        _children[PhysicalIndex(index)].Block.Parent = null;
+        if (_gapLength == 0)
         {
-            Array.Copy(_children, index + 1, _children, index, Count - index);
+            Count--;
+            if (index < Count)
+            {
+                Array.Copy(_children, index + 1, _children, index, Count - index);
+            }
+            _children[Count] = default;
         }
-        _children[Count] = default;
+        else
+        {
+            // The removed child is added to the gap
+            MoveGap(index);
+            _children[_gapStart + _gapLength] = default;
+            _gapLength++;
+            Count--;
+        }
     }
 
     /// <summary>
@@ -336,13 +392,12 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            var array = _children;
-            if ((uint)index >= (uint)array.Length || index >= Count)
+            if ((uint)index >= (uint)Count)
             {
                 ThrowHelper.ThrowIndexOutOfRangeException();
                 return null;
             }
-            return array[index].Block;
+            return _children[PhysicalIndex(index)].Block;
         }
         set
         {
@@ -354,12 +409,12 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
             if (value.Parent != null)
                 ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
 
-            var existingChild = _children[index].Block;
+            var existingChild = _children[PhysicalIndex(index)].Block;
             if (existingChild != null)
                 existingChild.Parent = null;
 
             value.Parent = this;
-            _children[index] = new BlockWrapper(value);
+            _children[PhysicalIndex(index)] = new BlockWrapper(value);
         }
     }
 
@@ -375,10 +430,9 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     /// </returns>
     public bool HasValidSpan(bool recursive = false)
     {
-        var children = _children;
-        for (int i = 0; i < Count && i < children.Length; i++)
+        for (int i = 0; i < Count; i++)
         {
-            var child = children[i].Block;
+            var child = _children[PhysicalIndex(i)].Block;
             if (!ContainsSpan(Span, child.Span))
             {
                 return false;
@@ -435,10 +489,9 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
             hasUpdatedSpan = true;
         }
 
-        var children = _children;
-        for (int i = 0; i < Count && i < children.Length; i++)
+        for (int i = 0; i < Count; i++)
         {
-            var child = children[i].Block;
+            var child = _children[PhysicalIndex(i)].Block;
 
             if (recursive)
             {
@@ -487,6 +540,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     public void Sort(IComparer<Block> comparer)
     {
         if (comparer is null) ThrowHelper.ArgumentNullException(nameof(comparer));
+        CloseGap();
         Array.Sort(_children, 0, Count, new BlockComparerWrapper(comparer));
     }
 
@@ -496,6 +550,7 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
     public void Sort(Comparison<Block> comparison)
     {
         if (comparison is null) ThrowHelper.ArgumentNullException(nameof(comparison));
+        CloseGap();
         Array.Sort(_children, 0, Count, new BlockComparisonWrapper(comparison));
     }
 

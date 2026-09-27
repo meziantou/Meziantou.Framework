@@ -1,3 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Tests;
@@ -233,5 +236,120 @@ public class TestContainerBlocks
         Assert.HasCount(2, replacement);
         Assert.Equal(3, replacement[0].Column);
         Assert.Equal(4, replacement[1].Column);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void RandomInsertionsAndRemovalsKeepTheOrderOfTheChildren()
+    {
+        var random = new Random(42);
+        var container = new MockContainerBlock();
+        var expected = new List<Block>();
+        for (var i = 0; i < 5_000; i++)
+        {
+            var operation = random.Next(20);
+            if (operation < 7)
+            {
+                var block = new ParagraphBlock { Column = i };
+                var index = random.Next(expected.Count + 1);
+                container.Insert(index, block);
+                expected.Insert(index, block);
+            }
+            else if (operation < 11)
+            {
+                var block = new ParagraphBlock { Column = i };
+                container.Add(block);
+                expected.Add(block);
+            }
+            else if (operation < 17 && expected.Count > 0)
+            {
+                var index = random.Next(expected.Count);
+                var removed = expected[index];
+                container.RemoveAt(index);
+                expected.RemoveAt(index);
+                Assert.Null(removed.Parent);
+            }
+            else if (operation < 18 && expected.Count > 0)
+            {
+                var block = new ParagraphBlock { Column = i };
+                var index = random.Next(expected.Count);
+                var replaced = expected[index];
+                container[index] = block;
+                expected[index] = block;
+                Assert.Null(replaced.Parent);
+            }
+            else if (operation < 19)
+            {
+                container.Sort((a, b) => a.Column.CompareTo(b.Column));
+                expected.Sort((a, b) => a.Column.CompareTo(b.Column));
+            }
+            else if (random.Next(50) == 0)
+            {
+                container.Clear();
+                expected.Clear();
+            }
+
+            Assert.HasCount(expected.Count, container);
+            Assert.Equal(expected.Count, CountStoredBlocks(container));
+            Assert.Same(expected.LastOrDefault(), container.LastChild);
+            if (expected.Count > 0)
+            {
+                var index = random.Next(expected.Count);
+                Assert.Equal(index, container.IndexOf(expected[index]));
+            }
+        }
+
+        Assert.Equal(expected, container.ToList());
+        foreach (var block in container)
+        {
+            Assert.Same(container, block.Parent);
+        }
+
+        var copy = new Block[container.Count];
+        container.CopyTo(copy, 0);
+        Assert.Equal(expected, copy);
+
+        var destination = new MockContainerBlock();
+        container.TransferChildrenTo(destination);
+        Assert.Empty(container);
+        Assert.Equal(expected, destination.ToList());
+    }
+
+    // The free slots of the array must not keep references to removed or moved blocks
+    private static int CountStoredBlocks(ContainerBlock container)
+    {
+        var children = (BlockWrapper[])typeof(ContainerBlock).GetField("_children", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(container)!;
+        return children.Count(child => child.Block is not null);
+    }
+
+    [Fact]
+    public void BlocksInsertedOneAfterTheOtherInTheMiddleKeepTheirOrder()
+    {
+        var container = new MockContainerBlock();
+        var expected = new List<Block>();
+        for (var i = 0; i < 10; i++)
+        {
+            var block = new ParagraphBlock { Column = i };
+            container.Add(block);
+            expected.Add(block);
+        }
+
+        // Inserts two blocks after each of the first blocks, like a table followed by a paragraph
+        for (var i = 0; i < expected.Count && i < 30; i += 3)
+        {
+            for (var j = 1; j <= 2; j++)
+            {
+                var block = new ParagraphBlock { Column = 100 + i + j };
+                container.Insert(i + j, block);
+                expected.Insert(i + j, block);
+            }
+        }
+
+        container.Add(new ParagraphBlock { Column = 1000 });
+        expected.Add(container.LastChild!);
+
+        Assert.Equal(expected, container.ToList());
+        Assert.Equal(expected.Count - 1, container.IndexOf(container.LastChild!));
+        Assert.Equal(expected.Count - 1, container.LastIndexOf(container.LastChild!));
     }
 }

@@ -148,6 +148,29 @@ public sealed class TestPipeTable
         Assert.Equal(4, more.Line);
     }
 
+    [Theory]
+    [InlineData("c|d\n-|-\n{#id}\n", "c|d\n-|-\n\n{#id}\n")]
+    [InlineData("a | b\n--|--\nc | d\n{.note}\n# h", "a | b\n--|--\nc | d\n\n{.note}\n# h")]
+    [InlineData("> a | b\n> --|--\n> [!NOTE]\n> text", "> a | b\n> --|--\n>\n> [!NOTE]\n> text")]
+    [InlineData("> a | b\n> --|--\n> text\n>\n> [!NOTE]", "> a | b\n> --|--\n>\n> text\n>\n> [!NOTE]")]
+    [InlineData("> x\n> a | b\n> --|--\n>\n> [!NOTE]", "> x\n>\n> a | b\n> --|--\n>\n> [!NOTE]")]
+    public void ParagraphAfterTableIsProcessedInItsParent(string markdown, string markdownWithBlankLine)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        Assert.Equal(MarkdownConverter.ToHtml(markdownWithBlankLine, pipeline), MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void TaskAfterTableInAListItemIsNotTheFirstBlockOfTheItem()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+        var html = MarkdownConverter.ToHtml("- a | b\n  --|--\n  [ ] text", pipeline);
+
+        Assert.Equal("<ul>\n<li>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n[ ] text</li>\n</ul>\n", html);
+    }
+
     [Fact]
     public void TestColumnWidthIsNotSetWithoutConfigurationFlag()
     {

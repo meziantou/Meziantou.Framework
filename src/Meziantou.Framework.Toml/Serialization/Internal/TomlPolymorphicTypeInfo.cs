@@ -352,7 +352,8 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTy
                 return defaultTypeInfo.ReadAsObject(defaultReader);
             }
 
-            if (Type.IsInterface || Type.IsAbstract)
+            // Without the metadata of the base type, such as when reflection is disabled, the base cannot be read either
+            if (Type.IsInterface || Type.IsAbstract || _baseTypeInfo is null)
             {
                 var span = GetTableStartSpan(buffer);
                 if (span is { } tableSpan)
@@ -366,7 +367,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTy
             var fallbackReader = TomlReader.Create(buffer);
             fallbackReader.Read(); // StartDocument
             fallbackReader.Read(); // value start
-            return _baseTypeInfo!.ReadAsObject(fallbackReader);
+            return _baseTypeInfo.ReadAsObject(fallbackReader);
         }
 
         TomlTypeInfo targetTypeInfo;

@@ -579,6 +579,18 @@ public class NewApiPolymorphismTests
         Assert.Equal(3, Assert.IsType<StructShapeSquare>(read.S).X);
     }
 
+    // Without the metadata of the base type, as when reflection is disabled, a table without a discriminator is an input error
+    [Fact]
+    public void MissingDiscriminator_WithoutBaseMetadata_ThrowsTomlException()
+    {
+        var typeInfo = Meziantou.Framework.Toml.Serialization.Internal.TomlPolymorphicTypeInfo.TryCreate(typeof(SelfDefaultlessShape), TomlSerializerOptions.Default, baseTypeInfo: null)!;
+
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("Size = 4", typeInfo));
+
+        Assert.Contains("Missing discriminator key", exception.Message, StringComparison.Ordinal);
+        Assert.False(TomlSerializer.TryDeserialize("Size = 4", typeInfo, out _));
+    }
+
     // The generated polymorphic metadata is used as is, not wrapped again by the reflection-based polymorphism
     [Fact]
     public void BaseType_RegisteredAsItsOwnDerivedType_IsWrittenThroughAContextUsedAsResolver()
@@ -686,6 +698,16 @@ internal class SelfDerivedShape
 internal sealed class SelfDerivedCircle : SelfDerivedShape
 {
     public int Radius { get; set; }
+}
+
+[TomlDerivedType(typeof(SelfDefaultlessCircle), "circle")]
+internal class SelfDefaultlessShape
+{
+    public int Size { get; set; }
+}
+
+internal sealed class SelfDefaultlessCircle : SelfDefaultlessShape
+{
 }
 
 internal sealed class SelfDerivedHolderOutsideTheContext

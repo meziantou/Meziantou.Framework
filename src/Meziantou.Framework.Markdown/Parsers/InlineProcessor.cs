@@ -675,7 +675,7 @@ public class InlineProcessor
     }
 
     /// <summary>
-    /// Deactivates an inline and its parents that are link delimiters, up to the nearest image delimiter.
+    /// Deactivates an inline and its parents that are link delimiters. Image delimiters are left active.
     /// </summary>
     internal void DeactivateLinkDelimiters(Inline? inline)
     {
@@ -684,15 +684,11 @@ public class InlineProcessor
             return;
         }
 
+        // Image delimiters stay active: a link can be in the description of an image, but not in the text of another link
         for (; inline is not null; inline = inline.Parent)
         {
-            if (inline is LinkDelimiterInline linkDelimiter)
+            if (inline is LinkDelimiterInline { IsImage: false } linkDelimiter)
             {
-                if (linkDelimiter.IsImage)
-                {
-                    break;
-                }
-
                 linkDelimiter.IsActive = false;
             }
         }

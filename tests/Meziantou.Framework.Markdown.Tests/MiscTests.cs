@@ -107,6 +107,30 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("[x ![y [b](c) ] z](u)", "<p>[x ![y <a href=\"c\">b</a> ] z](u)</p>")]
+    [InlineData("[![a [b](c) d](i.png)](u)", "<p>[<img src=\"i.png\" alt=\"a b d\" />](u)</p>")]
+    [InlineData("[![[]()]]()", "<p>[![<a href=\"\"></a>]]()</p>")]
+    [InlineData("[x ![y ![z [b](c)]](i)](u)", "<p>[x <img src=\"i\" alt=\"y ![z b]\" />](u)</p>")]
+    [InlineData("[a ![b](c) [d](e)](f)", "<p>[a <img src=\"c\" alt=\"b\" /> <a href=\"e\">d</a>](f)</p>")]
+    [InlineData("![a [b](c) d](i.png)", "<p><img src=\"i.png\" alt=\"a b d\" /></p>")]
+    public void LinkDeactivatesTheLinkOpenersBeforeAnOpenImage(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(300)]
+    public void LinkDeactivatesTheLinkOpenersBeforeManyOpenImages(int imageCount)
+    {
+        var imageOpeners = string.Concat(Enumerable.Repeat("![y ", imageCount));
+        var closingBrackets = new string(']', imageCount + 1);
+        TestParser.TestSpec(
+            "[x " + imageOpeners + "[b](c)" + closingBrackets + "(u)",
+            "<p>[x " + imageOpeners + "<a href=\"c\">b</a>" + closingBrackets + "(u)</p>");
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]

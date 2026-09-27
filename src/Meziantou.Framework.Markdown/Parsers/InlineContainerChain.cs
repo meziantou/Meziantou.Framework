@@ -184,7 +184,7 @@ internal sealed class InlineContainerChain
     }
 
     /// <summary>
-    /// Deactivates an inline and its parents that are link (not image) delimiters, up to the nearest image delimiter.
+    /// Deactivates an inline and its parents that are link delimiters. Image delimiters are left active.
     /// </summary>
     /// <returns><c>false</c> when the inline is not attached below the chain.</returns>
     public bool TryDeactivateLinkDelimiters(Inline inline)
@@ -194,28 +194,19 @@ internal sealed class InlineContainerChain
             return false;
         }
 
-        if (!isOnChain && inline is LinkDelimiterInline self)
+        if (!isOnChain && inline is LinkDelimiterInline { IsImage: false } self)
         {
-            if (self.IsImage)
-            {
-                return true;
-            }
-
             self.IsActive = false;
         }
 
-        // Delimiters that are already deactivated are skipped, so each delimiter is visited once over the whole leaf block
+        // Delimiters that are already deactivated, and image delimiters, are skipped, so each delimiter is visited once over
+        // the whole leaf block
         var index = FindDelimiterToDeactivate(_levels[depth].LinkCount - 1);
         while (index >= 0)
         {
             var linkDelimiter = _links[index].Delimiter;
-            if (linkDelimiter is not null)
+            if (linkDelimiter is { IsImage: false })
             {
-                if (linkDelimiter.IsImage)
-                {
-                    break;
-                }
-
                 // The index of the delimiter is known, so it does not need to be notified
                 linkDelimiter.IsInOpenChain = false;
                 linkDelimiter.IsActive = false;
@@ -1089,7 +1080,7 @@ internal sealed class InlineContainerChain
         public int Live;
 
         // Index of the next delimiter to visit when deactivating from this one: itself, or a lower index when this one and the
-        // ones down to that index are deactivated links
+        // ones down to that index are deactivated links or images
         public int Next;
 
         // Number of active delimiters and balance of the active open and close delimiters up to this one

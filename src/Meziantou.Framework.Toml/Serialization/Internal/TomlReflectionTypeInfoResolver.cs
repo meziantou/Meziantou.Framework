@@ -157,7 +157,8 @@ internal static class TomlReflectionTypeInfoResolver
     {
         return member switch
         {
-            PropertyInfo property => property.GetMethod?.IsPublic == true || property.SetMethod?.IsPublic == true || HasIncludeAttribute(property),
+            // An indexer is named Item, or the name of its [IndexerName], but it does not hide a property with that name
+            PropertyInfo property => property.GetIndexParameters().Length == 0 && (property.GetMethod?.IsPublic == true || property.SetMethod?.IsPublic == true || HasIncludeAttribute(property)),
             FieldInfo field => field.IsPublic || HasIncludeAttribute(field),
             _ => true,
         };

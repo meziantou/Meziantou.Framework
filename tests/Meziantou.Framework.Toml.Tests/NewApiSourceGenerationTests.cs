@@ -2305,6 +2305,21 @@ internal sealed partial class TestTomlSerializerContextRequiredExtensionData : T
 {
 }
 
+public class GeneratedIndexerBase
+{
+    public int Item { get; set; }
+}
+
+public sealed class GeneratedIndexerDerived : GeneratedIndexerBase
+{
+    public int this[int index] => index;
+}
+
+[TomlSerializable(typeof(GeneratedIndexerDerived))]
+internal sealed partial class TestTomlSerializerContextIndexer : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4880,6 +4895,15 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal(2L, generated.Extra["q"]);
         Assert.Equal(2L, reflection.Extra["q"]);
+    }
+
+    [Fact]
+    public void Indexer_DoesNotHideABasePropertyWithItsName()
+    {
+        var value = new GeneratedIndexerDerived { Item = 3 };
+
+        Assert.Equal("Item = 3\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
+        Assert.Equal("Item = 3\n", TomlSerializer.Serialize(value, TestTomlSerializerContextIndexer.Default.GeneratedIndexerDerived).ReplaceLineEndings("\n"));
     }
 
     [Fact]

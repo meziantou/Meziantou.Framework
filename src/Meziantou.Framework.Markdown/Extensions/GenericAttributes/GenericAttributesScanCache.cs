@@ -1,5 +1,3 @@
-using System.Buffers;
-
 using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
@@ -44,7 +42,7 @@ internal sealed class GenericAttributesScanCache
         _scanOutcomesStart = 0;
         if (_scanOutcomes is not null)
         {
-            ArrayPool<byte>.Shared.Return(_scanOutcomes);
+            ScanTablePool<byte>.Return(_scanOutcomes);
             _scanOutcomes = null;
         }
     }
@@ -77,7 +75,7 @@ internal sealed class GenericAttributesScanCache
             var length = _textEnd + 2 - start;
             if (length > 0)
             {
-                _scanOutcomes = ArrayPool<byte>.Shared.Rent(length);
+                _scanOutcomes = ScanTablePool<byte>.Rent(length);
                 _scanOutcomesStart = start;
                 GenericAttributesParser.ComputeScanOutcomes(_text, start, _textEnd, _scanOutcomes.AsSpan(0, length));
             }

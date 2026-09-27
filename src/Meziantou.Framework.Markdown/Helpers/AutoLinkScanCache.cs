@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.Markdown.Helpers;
@@ -218,7 +217,7 @@ internal sealed class AutoLinkScanCache
         {
             if (array is not null)
             {
-                ArrayPool<int>.Shared.Return(array);
+                ScanTablePool<int>.Return(array);
                 array = null;
             }
         }
@@ -305,9 +304,9 @@ internal sealed class AutoLinkScanCache
         var length = text.Length;
 
         // The depth of the parentheses before each position of the run
-        var depths = ArrayPool<int>.Shared.Rent(length + 1);
-        var lastDots = ArrayPool<int>.Shared.Rent(length + 1);
-        var lastUnderscores = ArrayPool<int>.Shared.Rent(length + 1);
+        var depths = ScanTablePool<int>.Rent(length + 1);
+        var lastDots = ScanTablePool<int>.Rent(length + 1);
+        var lastUnderscores = ScanTablePool<int>.Rent(length + 1);
         var depth = 0;
         var minDepth = 0;
         var maxDepth = 0;
@@ -344,10 +343,10 @@ internal sealed class AutoLinkScanCache
         // A scan started at a position ends at the first ')' at the depth of that position. Going backward, remember the
         // nearest ')' at each depth. The depths are replaced by the closings, as each one is only read once.
         var endDepth = depth;
-        var nearestClosings = ArrayPool<int>.Shared.Rent(maxDepth - minDepth + 1);
+        var nearestClosings = ScanTablePool<int>.Rent(maxDepth - minDepth + 1);
         nearestClosings.AsSpan(0, maxDepth - minDepth + 1).Fill(NoPosition);
         var closings = depths;
-        var domainStops = ArrayPool<int>.Shared.Rent(length);
+        var domainStops = ScanTablePool<int>.Rent(length);
         var domainStop = _runEnd;
         for (var i = length - 1; i >= 0; i--)
         {
@@ -369,7 +368,7 @@ internal sealed class AutoLinkScanCache
             domainStops[i] = domainStop;
         }
 
-        ArrayPool<int>.Shared.Return(nearestClosings);
+        ScanTablePool<int>.Return(nearestClosings);
 
         _closings = closings;
         _domainStops = domainStops;

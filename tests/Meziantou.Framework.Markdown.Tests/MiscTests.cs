@@ -148,6 +148,21 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("  >\tfoo", "<blockquote>\n<p>foo</p>\n</blockquote>")]
+    [InlineData("  >\t>\tfoo", "<blockquote>\n<blockquote>\n<p>foo</p>\n</blockquote>\n</blockquote>")]
+    [InlineData("> >\tfoo", "<blockquote>\n<blockquote>\n<p>foo</p>\n</blockquote>\n</blockquote>")]
+    [InlineData("  >\t- foo", "<blockquote>\n<ul>\n<li>foo</li>\n</ul>\n</blockquote>")]
+    [InlineData("  > foo\n  >\tbar", "<blockquote>\n<p>foo\nbar</p>\n</blockquote>")]
+    [InlineData("  >\tfoo\nbar", "<blockquote>\n<p>foo\nbar</p>\n</blockquote>")]
+    [InlineData("- a\n\n  >\tquote", "<ul>\n<li>\n<p>a</p>\n<blockquote>\n<p>quote</p>\n</blockquote>\n</li>\n</ul>")]
+    [InlineData("   >\t\tcode", "<blockquote>\n<pre><code>   code\n</code></pre>\n</blockquote>")]
+    [InlineData("  >\t    code", "<blockquote>\n<pre><code>code\n</code></pre>\n</blockquote>")]
+    public void TabAfterQuoteMarkerCountsOnlyTheColumnsItCovers(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]

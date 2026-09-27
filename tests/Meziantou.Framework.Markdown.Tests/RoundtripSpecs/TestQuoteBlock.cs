@@ -303,4 +303,21 @@ public class TestQuoteBlock
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("  >\tq")]
+    [InlineData("  >\t")]
+    [InlineData("  >\t\n  >\tq")]
+    [InlineData("  >\t>\tq")]
+    [InlineData("  >\tq\n  >\tq")]
+    [InlineData("  > q\n  >\tq")]
+    [InlineData("  >\tq\nq")]
+    [InlineData("  >\tq\n\tq")]
+    [InlineData("  >\t<div>\n  >\t</div>")]
+    [InlineData("  >\t```\n  >\tq\n  >\t```")]
+    [InlineData("   >\t\tq")]
+    public void TestTabConsumedByQuoteMarker(string value)
+    {
+        RoundTrip(value);
+    }
 }

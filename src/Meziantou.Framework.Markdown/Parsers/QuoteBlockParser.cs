@@ -38,6 +38,7 @@ public class QuoteBlockParser : BlockParser
         var quoteChar = processor.CurrentChar;
         var column = processor.Column;
         var c = processor.NextChar();
+        var afterQuoteChar = processor.Start;
 
         var quoteBlock = new QuoteBlock(this)
         {
@@ -66,11 +67,11 @@ public class QuoteBlockParser : BlockParser
         if (processor.TrackTrivia)
         {
             var triviaBefore = processor.UseTrivia(sourcePosition - 1);
-            StringSlice triviaAfter = StringSlice.Empty;
+            var triviaAfter = GetConsumedTab(processor, c, afterQuoteChar);
             bool wasEmptyLine = false;
             if (processor.Line.IsEmptyOrWhitespace())
             {
-                processor.TriviaStart = processor.Start;
+                processor.TriviaStart = afterQuoteChar + (hasSpaceAfterQuoteChar ? 1 : 0);
                 triviaAfter = processor.UseTrivia(processor.Line.End);
                 wasEmptyLine = true;
             }
@@ -132,6 +133,7 @@ public class QuoteBlockParser : BlockParser
 
         bool hasSpaceAfterQuoteChar = false;
         c = processor.NextChar(); // Skip quote marker char
+        var afterQuoteChar = processor.Start;
         if (c == ' ')
         {
             processor.NextColumn();
@@ -146,11 +148,11 @@ public class QuoteBlockParser : BlockParser
         if (processor.TrackTrivia)
         {
             var triviaSpaceBefore = processor.UseTrivia(sourcePosition - 1);
-            StringSlice triviaAfter = StringSlice.Empty;
+            var triviaAfter = GetConsumedTab(processor, c, afterQuoteChar);
             bool wasEmptyLine = false;
             if (processor.Line.IsEmptyOrWhitespace())
             {
-                processor.TriviaStart = processor.Start;
+                processor.TriviaStart = afterQuoteChar + (hasSpaceAfterQuoteChar ? 1 : 0);
                 triviaAfter = processor.UseTrivia(processor.Line.End);
                 wasEmptyLine = true;
             }
@@ -171,5 +173,18 @@ public class QuoteBlockParser : BlockParser
 
         block.UpdateSpanEnd(processor.Line.End);
         return BlockState.Continue;
+    }
+
+    // A tab after the quote char can be consumed entirely by the marker (it ends at the next tab stop):
+    // it is then not part of the content, so it is kept with the quote line, like the space after the quote char
+    private static StringSlice GetConsumedTab(BlockProcessor processor, char c, int afterQuoteChar)
+    {
+        if (c != '\t' || processor.Start == afterQuoteChar)
+        {
+            return StringSlice.Empty;
+        }
+
+        processor.SkipFirstUnwindSpace = true;
+        return new StringSlice(processor.Line.Text, afterQuoteChar, processor.Start - 1);
     }
 }

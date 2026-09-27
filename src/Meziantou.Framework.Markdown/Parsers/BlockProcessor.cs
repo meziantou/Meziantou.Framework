@@ -261,15 +261,12 @@ public class BlockProcessor
     public void NextColumn()
     {
         var c = Line.CurrentChar;
-        // If we are across a tab, we should just add 1 column
-        if (c == '\t' && CharHelper.IsAcrossTab(Column))
-        {
-            Column++;
-        }
-        else
+        Column++;
+
+        // A tab is consumed one column at a time: move past it only when its last column is reached
+        if (c != '\t' || !CharHelper.IsAcrossTab(Column))
         {
             Line.NextChar();
-            Column++;
         }
     }
 
@@ -965,7 +962,20 @@ public class BlockProcessor
                     if (currentBlock.Parent is QuoteBlock qb)
                     {
                         var triviaAfter = UseTrivia(Start - 1);
-                        qb.QuoteLines.Last().TriviaAfter = triviaAfter;
+                        var quoteLine = qb.QuoteLines.Last();
+                        if (quoteLine.QuoteChar && !quoteLine.TriviaAfter.IsEmpty)
+                        {
+                            // The quote marker consumed a tab: keep it, and keep the trivia of a lazy line out of the line of the marker
+                            if (quoteLine.TriviaAfter.End + 1 == triviaAfter.Start)
+                            {
+                                triviaAfter.Start = quoteLine.TriviaAfter.Start;
+                                quoteLine.TriviaAfter = triviaAfter;
+                            }
+                        }
+                        else
+                        {
+                            quoteLine.TriviaAfter = triviaAfter;
+                        }
                     }
                 }
                 // We have just found a lazy continuation for a paragraph, early exit

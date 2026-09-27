@@ -116,6 +116,33 @@ public sealed class NewApiMetadataStoreTests
         Assert.Equal(expected, TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataFormattedModel>(toml, options), options));
     }
 
+    // A CR is escaped in a multi-line string, so the value is read back the same by a parser that normalizes line endings
+    [Theory]
+    [InlineData("m = \"\"\"\na\\r\\nb\"\"\"\n", "m = \"\"\"\na\\r\nb\"\"\"\n")]
+    [InlineData("m = '''\na\nb'''\n", "m = '''\na\nb'''\n")]
+    public void MultilineString_WithACarriageReturn_IsWrittenWithAnEscape(string toml, string expected)
+    {
+        var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() };
+
+        var written = TomlSerializer.Serialize(TomlSerializer.Deserialize<TomlTable>(toml, options)!, options);
+
+        Assert.Equal(expected, written);
+        Assert.Equal(TomlSerializer.Deserialize<TomlTable>(toml)!["m"], TomlSerializer.Deserialize<TomlTable>(written)!["m"]);
+    }
+
+    [Theory]
+    [InlineData(TomlStringStyle.MultilineBasic, "m = \"\"\"\na\\r\nb\"\"\"\n")]
+    [InlineData(TomlStringStyle.MultilineLiteral, "m = \"a\\r\\nb\"\n")]
+    public void MultilineStringStyles_WithACarriageReturn_AreWrittenWithAnEscape(TomlStringStyle style, string expected)
+    {
+        var options = new TomlSerializerOptions { StringStylePreferences = new TomlStringStylePreferences { DefaultStyle = style } };
+
+        var written = TomlSerializer.Serialize(new TomlTable { ["m"] = "a\r\nb" }, options);
+
+        Assert.Equal(expected, written);
+        Assert.Equal("a\r\nb", TomlSerializer.Deserialize<TomlTable>(written)!["m"]);
+    }
+
     [Fact]
     public void MetadataStore_InlineTableDisplayKind_IsKeptByTypedModels()
     {

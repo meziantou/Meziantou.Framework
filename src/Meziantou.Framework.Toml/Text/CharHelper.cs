@@ -126,9 +126,10 @@ internal static partial class CharHelper
             // Handle special characters for when multiline/spaces are allowed
             if (allowNewLinesAndSpace)
             {
+                // The CR is escaped: a parser can read a raw CR LF of a multi-line string as LF
                 if (c == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
                 {
-                    str = "\r\n";
+                    str = "\\r\n";
                     i++;
                     c = '\n';
                 }

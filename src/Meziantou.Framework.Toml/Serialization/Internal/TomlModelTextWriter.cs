@@ -797,13 +797,8 @@ internal static class TomlModelTextWriter
 
                 if (allowNewLinesAndTabs)
                 {
-                    if (c == '\r' && i + 1 < value.Length && value[i + 1] == '\n')
-                    {
-                        _writer.Write("\r\n");
-                        i++;
-                        continue;
-                    }
-
+                    // A parser can read a raw CR LF of a multi-line string as LF, so the CR is escaped: the value does not depend
+                    // on the line endings of the document
                     if (c == '\n')
                     {
                         _writer.Write('\n');
@@ -869,12 +864,6 @@ internal static class TomlModelTextWriter
 
                 if (allowNewLinesAndTabs)
                 {
-                    if (c == '\r' && i + 1 < value.Length && value[i + 1] == '\n')
-                    {
-                        i++;
-                        continue;
-                    }
-
                     if (c == '\n' || c == '\t')
                     {
                         continue;
@@ -922,8 +911,9 @@ internal static class TomlModelTextWriter
             for (var i = 0; i < text.Length; i++)
             {
                 var c = text[i];
-                // Newlines are permitted.
-                if ((c == '\r' && i + 1 < text.Length && text[i + 1] == '\n') || c == '\n')
+
+                // A LF is permitted. A CR cannot be escaped in a literal string, and a parser can read a raw CR LF as LF.
+                if (c == '\n')
                 {
                     continue;
                 }

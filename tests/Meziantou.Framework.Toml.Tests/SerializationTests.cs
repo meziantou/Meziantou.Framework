@@ -24,8 +24,9 @@ public class SerializationTests
 
         model["property"] = "string\r\nwith\r\nnewlines";
 
+        // A literal string cannot escape the CR, which a parser can read as a line ending: a basic string is written instead
         var result = TomlSerializer.Serialize(model, options).Trim();
-        AssertHelper.AreEqualNormalizeNewLine("property = '''\nstring\r\nwith\r\nnewlines'''", result);
+        Assert.Equal("property = \"string\\r\\nwith\\r\\nnewlines\"", result);
     }
 
     [Fact]

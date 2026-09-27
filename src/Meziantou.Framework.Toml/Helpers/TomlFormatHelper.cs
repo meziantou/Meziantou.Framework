@@ -385,8 +385,8 @@ public static class TomlFormatHelper
         for (var i = 0; i < text.Length; i++)
         {
             var c = text[i];
-            // new line are permitted
-            if ((c == '\r' && i + 1 < text.Length && text[i + 1] == '\n') || c == '\n')
+            // A LF is permitted. A CR cannot be escaped in a literal string, and a parser can read a raw CR LF as LF.
+            if (c == '\n')
             {
                 continue;
             }

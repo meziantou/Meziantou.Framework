@@ -1,3 +1,4 @@
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
@@ -264,5 +265,35 @@ public class TestLinkReferenceDefinition
     public void TestMultilineInBlockquote(string value)
     {
         RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("text\n\n[^1]: x\n")]
+    [InlineData("[^1]: x")]
+    [InlineData("a[^1]\n\n[^1]: x\n")]
+    [InlineData("a[^1]\n\n[^1]: x\n    y\n")]
+    [InlineData("a[^1]\n\n[^1]: x\ny\n")]
+    [InlineData("a[^2] b[^1]\n\n[^1]: x\n[^2]: y\n")]
+    [InlineData("a[^1]\n\n[^1]: x\n\ntext\n")]
+    [InlineData("[^1]: x\n\n[a]: /u\n\n[a] [^1]\n")]
+    [InlineData("[a]: /u\n\n[^1]: x\n\n[a] [^1]\n")]
+    [InlineData("a[^1]\n\n[^1]:\n    x\n\n    y\n")]
+    [InlineData("a[^1]\n\n[^1]: - x\n    - y\n")]
+    [InlineData("a [^1] b [^1]\n\n  [^1]:  x  \n")]
+    [InlineData("a[^1]\r\n\r\n[^1]: x\r\n")]
+    [InlineData("a[^1]\r\r[^1]: x\r")]
+    [InlineData("[^1]: a\n\n\n[^2]: b\n")]
+    [InlineData("[^1]: a\n    ```\n    code\n    ```\n")]
+    [InlineData("[^1]:   \r\n\r\n")]
+    [InlineData("[^a]: x\n\n[^A] [^ a ]\n")]
+    public void TestFootnote(string value)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseFootnotes().EnableTrackTrivia().Build();
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(MarkdownConverter.Parse(value, pipeline));
+
+        Assert.Equal(value, writer.ToString());
     }
 }

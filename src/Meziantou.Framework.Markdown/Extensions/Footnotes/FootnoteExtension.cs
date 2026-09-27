@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
 namespace Meziantou.Framework.Markdown.Extensions.Footnotes;
 
@@ -33,6 +34,13 @@ public class FootnoteExtension : IMarkdownExtension
         {
             htmlRenderer.ObjectRenderers.AddIfNotAlready(new HtmlFootnoteGroupRenderer());
             htmlRenderer.ObjectRenderers.AddIfNotAlready(new HtmlFootnoteLinkRenderer());
+        }
+        else if (renderer is RoundtripRenderer roundtripRenderer)
+        {
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripFootnoteDocumentRenderer());
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripFootnoteGroupRenderer());
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripFootnoteRenderer());
+            roundtripRenderer.ObjectRenderers.AddIfNotAlready(new RoundtripFootnoteLinkRenderer());
         }
     }
 }

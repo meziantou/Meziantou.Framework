@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Extensions.Footnotes;
@@ -34,4 +35,7 @@ public class FootnoteLink : Inline
     /// Gets or sets the footnote this link refers to.
     /// </summary>
     public Footnote Footnote { get; set; }
+
+    // With trivia, the label as written between the brackets of the reference, when it is known
+    internal StringSlice LabelWithTrivia { get; set; }
 }

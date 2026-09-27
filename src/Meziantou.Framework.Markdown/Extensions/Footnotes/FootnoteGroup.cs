@@ -22,4 +22,8 @@ public class FootnoteGroup : ContainerBlock
     }
 
     internal int CurrentOrder { get; set; }
+
+    // With trivia, the footnotes in the order of the source, including the ones without links that are removed from this group,
+    // so the roundtrip renderer writes them where they were
+    internal List<Footnote>? SourceFootnotes { get; set; }
 }

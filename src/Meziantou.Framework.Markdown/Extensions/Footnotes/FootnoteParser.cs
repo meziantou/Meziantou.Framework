@@ -67,6 +67,17 @@ public class FootnoteParser : BlockParser
             Span = new SourceSpan(processor.Start, processor.Line.End),
         };
 
+        if (processor.TrackTrivia)
+        {
+            footnote.LinesBefore = processor.TakeLinesBefore();
+            footnote.TriviaBefore = processor.UseTrivia(start - 1);
+            footnote.LabelWithTrivia = new StringSlice(processor.Line.Text, start + 1, processor.Start - 3);
+            processor.TriviaStart = processor.Start;
+
+            // The rest of an empty first line is kept as a blank line, before the content on the next lines
+            footnote.IsFirstLineEmpty = processor.Line.IsEmptyOrWhitespace();
+        }
+
         // Maintain a list of all footnotes at document level
         var footnotes = processor.Document.GetData(DocumentKey) as FootnoteGroup;
         if (footnotes == null)
@@ -77,6 +88,10 @@ public class FootnoteParser : BlockParser
             processor.Document.ProcessInlinesEnd += Document_ProcessInlinesEnd;
         }
         footnotes.Add(footnote);
+        if (processor.TrackTrivia)
+        {
+            (footnotes.SourceFootnotes ??= []).Add(footnote);
+        }
 
         var linkRef = new FootnoteLinkReferenceDefinition(footnote)
         {
@@ -87,7 +102,8 @@ public class FootnoteParser : BlockParser
             LabelSpan = labelSpan,
             Label = label
         };
-        processor.Document.SetLinkReferenceDefinition(footnote.Label, linkRef, true);
+        // With trivia, the group of definitions is not a block of the document: the roundtrip renderer would write it
+        processor.Document.SetLinkReferenceDefinition(footnote.Label, linkRef, !processor.TrackTrivia);
         processor.NewBlocks.Push(footnote);
         return BlockState.Continue;
     }
@@ -104,6 +120,13 @@ public class FootnoteParser : BlockParser
             if (processor.IsBlankLine)
             {
                 footnote.IsLastLineEmpty = true;
+                if (processor.TrackTrivia)
+                {
+                    // The blank line is written before the next block, in the footnote or after it
+                    processor.LinesBefore ??= [];
+                    processor.LinesBefore.Add(new StringSlice(processor.Line.Text, processor.TriviaStart, processor.Line.Start - 1, processor.Line.NewLine));
+                }
+
                 return BlockState.ContinueDiscard;
             }
 
@@ -208,6 +231,13 @@ public class FootnoteParser : BlockParser
 
         var link = new FootnoteLink(footnote);
         footnote.Links.Add(link);
+
+        // The text of a shortcut reference is its label, which may differ from the label of the footnote (case, whitespace)
+        if (state.TrackTrivia && child is LiteralInline { NextSibling: null } literal &&
+            string.Equals(literal.Content.ToString().Trim(), footnote.Label, StringComparison.OrdinalIgnoreCase))
+        {
+            link.LabelWithTrivia = literal.Content;
+        }
 
         return link;
     }

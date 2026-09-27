@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -42,4 +43,10 @@ public class Footnote : ContainerBlock
     public SourceSpan LabelSpan;
 
     internal bool IsLastLineEmpty { get; set; }
+
+    // With trivia, the label as written between the brackets
+    internal StringSlice LabelWithTrivia { get; set; }
+
+    // With trivia, whether the first line has no content after the colon
+    internal bool IsFirstLineEmpty { get; set; }
 }

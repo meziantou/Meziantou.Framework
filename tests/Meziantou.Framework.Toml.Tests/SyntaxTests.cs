@@ -291,6 +291,34 @@ val = true
         Assert.EndsWith("... and 900 more diagnostics.", exception.Message.TrimEnd());
     }
 
+    // The offset, the line and the column of a position designate the same character
+    [Theory]
+    [InlineData("a = '''abc\n\n")]
+    [InlineData("a = \"abc")]
+    [InlineData("a = \"abc\n")]
+    [InlineData("a = \"\"\"abc\n")]
+    [InlineData("a = '''x\r\n")]
+    public void EndOfFileErrors_HaveConsistentCoordinates(string toml)
+    {
+        var doc = SyntaxParser.Parse(toml);
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+
+        foreach (var diagnostic in doc.Diagnostics)
+        {
+            AssertConsistent(diagnostic.Span.Start.Offset, diagnostic.Span.Start.Line, diagnostic.Span.Start.Column);
+            AssertConsistent(diagnostic.Span.End.Offset, diagnostic.Span.End.Line, diagnostic.Span.End.Column);
+        }
+
+        AssertConsistent(exception.Offset!.Value, exception.Line!.Value - 1, exception.Column!.Value - 1);
+
+        void AssertConsistent(int offset, int line, int column)
+        {
+            var before = toml.AsSpan(0, Math.Min(offset, toml.Length));
+            Assert.Equal(before.Count('\n'), line);
+            Assert.Equal(before.Length - (before.LastIndexOf('\n') + 1), column);
+        }
+    }
+
     [Theory]
     [InlineData("x = 1\na = [\n")]
     [InlineData("x = 1\na = { b = \n")]

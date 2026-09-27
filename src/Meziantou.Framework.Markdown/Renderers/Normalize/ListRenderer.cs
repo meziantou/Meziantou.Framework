@@ -21,72 +21,51 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         renderer.EnsureLine();
         var compact = renderer.CompactParagraph;
         renderer.CompactParagraph = !listBlock.IsLoose;
-        if (listBlock.IsOrdered)
+        for (var i = 0; i < listBlock.Count; i++)
         {
-            int index = 0;
-            if (listBlock.OrderedStart != null)
+            var item = listBlock[i];
+            var listItem = (ListItemBlock) item;
+            renderer.EnsureLine();
+            renderer.PushHangingIndent(GetMarker(renderer, listBlock, i));
+            if (listItem.Count == 0)
             {
-                switch (listBlock.BulletType)
-                {
-                    case '1':
-                        _ = int.TryParse(listBlock.OrderedStart, NumberStyles.Integer, CultureInfo.InvariantCulture, out index);
-                        break;
-                }
+                renderer.Write(""); // trigger writing of indent
             }
-            for (var i = 0; i < listBlock.Count; i++)
+            else
             {
-                var item = listBlock[i];
-                var listItem = (ListItemBlock) item;
-                renderer.EnsureLine();
-                renderer.PushHangingIndent($"{index.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter} ");
-                if (listItem.Count == 0)
-                {
-                    renderer.Write(""); // trigger writing of indent
-                }
-                else
-                {
-                    renderer.WriteChildren(listItem);
-                }
-                renderer.PopIndent();
-                switch (listBlock.BulletType)
-                {
-                    case '1':
-                        index++;
-                        break;
-                }
-                if (i + 1 < listBlock.Count && listBlock.IsLoose)
-                {
-                    renderer.EnsureLine();
-                    renderer.WriteLine();
-                }
+                renderer.WriteChildren(listItem);
             }
-        }
-        else
-        {
-            for (var i = 0; i < listBlock.Count; i++)
+            renderer.PopIndent();
+            if (i + 1 < listBlock.Count && listBlock.IsLoose)
             {
-                var item = listBlock[i];
-                var listItem = (ListItemBlock) item;
                 renderer.EnsureLine();
-                renderer.PushHangingIndent($"{renderer.Options.ListItemCharacter ?? listBlock.BulletType} ");
-                if (listItem.Count == 0)
-                {
-                    renderer.Write(""); // trigger writing of indent
-                }
-                else
-                {
-                    renderer.WriteChildren(listItem);
-                }
-                renderer.PopIndent();
-                if (i + 1 < listBlock.Count && listBlock.IsLoose)
-                {
-                    renderer.EnsureLine();
-                    renderer.WriteLine();
-                }
+                renderer.WriteLine();
             }
         }
         renderer.CompactParagraph = compact;
 
         renderer.FinishBlock(true);
+    }
+
+    // Gets the marker, including the following space, of the item at the specified index
+    internal static string GetMarker(NormalizeRenderer renderer, ListBlock listBlock, int index)
+    {
+        if (!listBlock.IsOrdered)
+        {
+            return $"{renderer.Options.ListItemCharacter ?? listBlock.BulletType} ";
+        }
+
+        var number = 0;
+        if (listBlock.BulletType == '1')
+        {
+            if (listBlock.OrderedStart != null)
+            {
+                _ = int.TryParse(listBlock.OrderedStart, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
+            }
+
+            number += index;
+        }
+
+        return $"{number.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter} ";
     }
 }

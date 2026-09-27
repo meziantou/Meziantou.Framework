@@ -746,6 +746,16 @@ Text following the table.");
         AssertNormalizePreservesHtml("a\n    :   b", "a\n    :   b", new MarkdownPipelineBuilder().UseDefinitionLists().Build());
     }
 
+    [Theory]
+    [InlineData("*\n  ***", "* ___\n")]
+    [InlineData("-\n  ---", "- ___\n")]
+    [InlineData("-\n  --", "- \\--")]
+    [InlineData("-\n  -\n    --", "- - \\--")]
+    public void ListItemFirstLineDoesNotMergeWithTheMarker(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

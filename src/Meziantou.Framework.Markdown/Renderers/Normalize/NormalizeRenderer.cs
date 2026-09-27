@@ -7,6 +7,7 @@ using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize;
 
@@ -84,6 +85,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     /// <summary>
     /// Writes the inlines of a paragraph line by line. A continuation line that would start a block, or turn the paragraph
     /// into a setext heading, is indented by 4 spaces: the indentation is not part of the content, and cannot start a block.
+    /// The first line is escaped when it would start a block, for example with the list item markers written before it.
     /// </summary>
     internal void WriteParagraphInline(LeafBlock leafBlock)
     {
@@ -93,7 +95,17 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         {
             var end = remaining.IndexOf('\n');
             var line = end < 0 ? remaining : remaining[..end];
-            if (!isFirstLine)
+            if (isFirstLine)
+            {
+                var escapeIndex = GetFirstLineEscapeIndex(leafBlock, line);
+                if (escapeIndex >= 0)
+                {
+                    Write(line[..escapeIndex]);
+                    Write('\\');
+                    line = line[escapeIndex..];
+                }
+            }
+            else
             {
                 WriteLine();
                 if (CanInterruptParagraph(line))
@@ -152,28 +164,93 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
     }
 
+    /// <summary>
+    /// Gets the markers of the list items that start on the same line as the specified block.
+    /// </summary>
+    internal string GetListMarkersBefore(Block block)
+    {
+        var markers = string.Empty;
+        while (block.Parent is ListItemBlock item && item.Count > 0 && item[0] == block && item.Parent is ListBlock list)
+        {
+            markers = ListRenderer.GetMarker(this, list, list.IndexOf(item)) + markers;
+            block = list;
+        }
+
+        return markers;
+    }
+
     private bool CanInterruptParagraph(ReadOnlySpan<char> line)
     {
         var content = line.TrimStart(' ');
-        if (content.IsEmpty || line.Length - content.Length >= 4)
-        {
-            return false;
-        }
-
-        var parsers = (Pipeline ?? MarkdownConverter.DefaultPipeline).BlockParsers;
-        if (parsers.GetParsersForOpeningCharacter(content[0]) is null
-            && (parsers.GlobalParsers is null || Array.TrueForAll(parsers.GlobalParsers, parser => parser is ParagraphBlockParser or IndentedCodeBlockParser)))
+        if (content.IsEmpty || line.Length - content.Length >= 4 || !CanOpenBlock(content[0]))
         {
             return false;
         }
 
         // Let the block parsers decide, as the rules are subtle (setext underlines, ordered lists starting at 1, HTML block kinds, extensions...)
+        return ParseBlocks(string.Concat("a\n", line)) is not [ParagraphBlock];
+    }
+
+    // Returns the index before which the first line must be escaped, or -1
+    private int GetFirstLineEscapeIndex(LeafBlock leafBlock, ReadOnlySpan<char> line)
+    {
+        if (line.IsEmpty || !CanOpenBlock(line[0]))
+        {
+            return -1;
+        }
+
+        var markers = leafBlock.Parent is ListItemBlock ? GetListMarkersBefore(leafBlock) : string.Empty;
+        Block? block = ParseBlocks(string.Concat(markers, line)) is [var first] ? first : null;
+        for (var depth = markers.AsSpan().Count(' '); depth > 0; depth--)
+        {
+            // Each marker opens a list containing a single item
+            block = block is ListBlock { Count: 1 } list && list[0] is ListItemBlock { Count: > 0 } item ? item[0] : null;
+        }
+
+        if (block is ParagraphBlock)
+        {
+            return -1;
+        }
+
+        // Only a literal can be escaped
+        if (leafBlock.Inline?.FirstChild is not LiteralInline { IsFirstCharacterEscaped: false } literal || !line.StartsWith(literal.Content.AsSpan()[..Math.Min(literal.Content.Length, line.Length)]))
+        {
+            return -1;
+        }
+
+        var index = 0;
+        if (!line[0].IsAsciiPunctuation())
+        {
+            // An ordered list item, whose delimiter can be escaped
+            while (index < literal.Content.Length && char.IsAsciiLetterOrDigit(line[index]))
+            {
+                index++;
+            }
+
+            if (index == 0 || index >= literal.Content.Length || line[index] is not ('.' or ')'))
+            {
+                return -1;
+            }
+        }
+
+        return index;
+    }
+
+    private bool CanOpenBlock(char c)
+    {
+        var parsers = (Pipeline ?? MarkdownConverter.DefaultPipeline).BlockParsers;
+        return parsers.GetParsersForOpeningCharacter(c) is not null
+            || (parsers.GlobalParsers is not null && !Array.TrueForAll(parsers.GlobalParsers, parser => parser is ParagraphBlockParser or IndentedCodeBlockParser));
+    }
+
+    private MarkdownDocument ParseBlocks(string text)
+    {
         var document = new MarkdownDocument { IsOpen = true };
-        var processor = BlockProcessor.Rent(document, parsers, context: null, trackTrivia: false);
+        var processor = BlockProcessor.Rent(document, (Pipeline ?? MarkdownConverter.DefaultPipeline).BlockParsers, context: null, trackTrivia: false);
         try
         {
             processor.Open(document);
-            var lineReader = new LineReader(string.Concat("a\n", line));
+            var lineReader = new LineReader(text);
             while (lineReader.ReadLine() is { Text: not null } slice)
             {
                 processor.ProcessLine(slice);
@@ -186,7 +263,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             BlockProcessor.Release(processor);
         }
 
-        return document is not [ParagraphBlock];
+        return document;
     }
 
     ///// <summary>

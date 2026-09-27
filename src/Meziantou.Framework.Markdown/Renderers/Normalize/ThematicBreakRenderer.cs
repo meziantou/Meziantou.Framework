@@ -17,7 +17,9 @@ public class ThematicBreakRenderer : NormalizeObjectRenderer<ThematicBreakBlock>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, ThematicBreakBlock obj)
     {
-        renderer.WriteLine(new string(obj.ThematicChar, obj.ThematicCharCount));
+        // A list item marker written on the same line, with the same character, would be part of the thematic break
+        var thematicChar = renderer.GetListMarkersBefore(obj).Contains(obj.ThematicChar, StringComparison.Ordinal) ? '_' : obj.ThematicChar;
+        renderer.WriteLine(new string(thematicChar, obj.ThematicCharCount));
 
         renderer.FinishBlock(renderer.Options.EmptyLineAfterThematicBreak);
     }

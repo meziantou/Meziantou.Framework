@@ -768,10 +768,10 @@ public class BlockProcessor
                 {
                     if (TrackTrivia)
                     {
-                        if (block is FencedCodeBlock && block.Parent is ListItemBlock)
+                        if (block is FencedCodeBlock or HtmlBlock && block.Parent is ListItemBlock)
                         {
                             // the line was already given to the parent, rendering will ignore that parent line.
-                            // The child FencedCodeBlock should get the eaten whitespace at start of the line.
+                            // The child FencedCodeBlock or HtmlBlock should get the eaten whitespace at start of the line.
                             UnwindAllIndents();
                         }
                     }

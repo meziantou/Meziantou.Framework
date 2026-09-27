@@ -956,6 +956,16 @@ Text following the table.");
         Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized));
     }
 
+    [Theory]
+    [InlineData("a. x\nb. y", "a. x\nb. y")]
+    [InlineData("B) x\nC) y", "B) x\nC) y")]
+    [InlineData("iv. x\nv. y", "iv. x\nv. y")]
+    [InlineData("I. x\nII. y", "I. x\nII. y")]
+    public void ListExtrasKeepTheirMarkers(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseListExtras().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

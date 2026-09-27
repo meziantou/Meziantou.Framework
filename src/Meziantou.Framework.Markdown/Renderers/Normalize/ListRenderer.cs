@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -73,7 +74,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         else
         {
             var number = 0;
-            if (listBlock.BulletType == '1')
+            if (listBlock.BulletType is '1' or 'a' or 'A' or 'i' or 'I')
             {
                 if (listBlock.OrderedStart != null)
                 {
@@ -83,7 +84,15 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
                 number += index;
             }
 
-            marker = $"{number.ToString(CultureInfo.InvariantCulture)}{GetBulletCharacter(renderer, listBlock)}";
+            // The lists of letters and roman numbers come from the list extras
+            var text = listBlock.BulletType switch
+            {
+                'a' or 'A' when number is >= 1 and <= 26 => ((char)(listBlock.BulletType + number - 1)).ToString(),
+                'i' or 'I' when number is >= 1 and <= 3999 => ToRoman(number, listBlock.BulletType == 'i'),
+                _ => number.ToString(CultureInfo.InvariantCulture),
+            };
+
+            marker = $"{text}{GetBulletCharacter(renderer, listBlock)}";
         }
 
         // The indented lines of the block after the list would continue the last item, unless its content is indented further.
@@ -107,6 +116,24 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
 
         return marker + " ";
+    }
+
+    private static string ToRoman(int number, bool lowerCase)
+    {
+        ReadOnlySpan<int> values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+        ReadOnlySpan<string> symbols = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"];
+        var builder = new StringBuilder();
+        for (var i = 0; i < values.Length; i++)
+        {
+            while (number >= values[i])
+            {
+                builder.Append(symbols[i]);
+                number -= values[i];
+            }
+        }
+
+        var result = builder.ToString();
+        return lowerCase ? result.ToLowerInvariant() : result;
     }
 
     // Gets the bullet, or the delimiter of an ordered list. A list right after a list of the same kind uses another one,

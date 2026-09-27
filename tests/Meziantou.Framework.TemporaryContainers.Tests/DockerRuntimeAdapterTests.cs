@@ -694,9 +694,33 @@ public sealed class DockerRuntimeAdapterTests
             var failing = failingCommand is null ? "" : $"if [ \"$1\" = \"{failingCommand}\" ]; then exit 1; fi\n";
             File.WriteAllText(path, $"#!/bin/sh\n{failing}exit {exitCode}\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            WaitUntilExecutable(path);
         }
 
         return path;
+    }
+
+    // Linux refuses to run a file that a process has open for writing (ETXTBSY), and a process that another test starts
+    // while the stub is written inherits the handle until it runs its own program. Once the stub has run, no process can
+    // hold that handle any more, so the runtime under test starts it reliably.
+    private static void WaitUntilExecutable(string path)
+    {
+        const int TextFileBusy = 26;
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = false })!;
+                process.WaitForExit();
+                return;
+            }
+            catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode is TextFileBusy && stopwatch.Elapsed <= TimeSpan.FromSeconds(30))
+            {
+                Thread.Sleep(10);
+            }
+        }
     }
 
     private static ContainerRuntimeException ApiFailure(HttpStatusCode statusCode)

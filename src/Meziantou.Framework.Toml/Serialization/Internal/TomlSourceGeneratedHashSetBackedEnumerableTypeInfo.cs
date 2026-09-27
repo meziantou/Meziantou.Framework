@@ -1,0 +1,188 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+
+namespace Meziantou.Framework.Toml.Serialization.Internal;
+
+internal sealed class TomlSourceGeneratedHashSetBackedEnumerableTypeInfo<TEnumerable, TElement> : TomlTypeInfo<TEnumerable>
+    where TEnumerable : IEnumerable<TElement>
+{
+    private readonly TomlSerializerContext _context;
+    private TomlTypeInfo? _elementTypeInfo;
+    private TomlTypeInfo<TElement>? _typedElementTypeInfo;
+
+    public TomlSourceGeneratedHashSetBackedEnumerableTypeInfo(TomlSerializerContext context, TomlSerializerOptions? options = null)
+        : base(options ?? context.Options)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+    }
+
+    public override void Write(TomlWriter writer, TEnumerable value)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var items = (IEnumerable<TElement>)value;
+        var count = GetCollectionCount(value, ref items);
+        var writeTableArray = ShouldWriteTableArray(writer, count);
+        if (writeTableArray)
+        {
+            writer.WriteStartTableArray();
+        }
+        else
+        {
+            writer.WriteStartArray();
+        }
+
+        foreach (var element in items)
+        {
+            WriteElement(writer, element);
+        }
+
+        if (writeTableArray)
+        {
+            writer.WriteEndTableArray();
+        }
+        else
+        {
+            writer.WriteEndArray();
+        }
+    }
+
+    public override TEnumerable? Read(TomlReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        if (reader.TokenType != TomlTokenType.StartArray)
+        {
+            throw reader.CreateException($"Expected {TomlTokenType.StartArray} token but was {reader.TokenType}.");
+        }
+
+        var set = new HashSet<TElement>();
+        reader.Read();
+        while (reader.TokenType != TomlTokenType.EndArray)
+        {
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                set.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
+        }
+
+        reader.Read();
+        return (TEnumerable)(object)set;
+    }
+
+    public override object? ReadInto(TomlReader reader, object? existingValue)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        // A read-only collection, such as an array, cannot be populated: a new one is read instead
+        if (existingValue is not ICollection<TElement> { IsReadOnly: false } collection)
+        {
+            return Read(reader);
+        }
+
+        if (reader.TokenType != TomlTokenType.StartArray)
+        {
+            throw reader.CreateException($"Expected {TomlTokenType.StartArray} token but was {reader.TokenType}.");
+        }
+
+        reader.Read();
+        while (reader.TokenType != TomlTokenType.EndArray)
+        {
+            var elementStartState = reader.CurrentState;
+            try
+            {
+                collection.Add(ReadElement(reader));
+            }
+            catch (TomlException ex) when (reader.TryRecoverValue(ex, elementStartState))
+            {
+                // The error is recorded with the others, and the next element is read
+            }
+        }
+
+        reader.Read();
+        return existingValue;
+    }
+
+    private void EnsureElementTypeInfo()
+    {
+        if (_elementTypeInfo is not null)
+        {
+            return;
+        }
+
+        var resolved = _context.GetTypeInfo(typeof(TElement), Options);
+        if (resolved is null)
+        {
+            throw new InvalidOperationException(
+                $"No generated metadata is available for type '{typeof(TElement).FullName}' in the provided context.");
+        }
+
+        _elementTypeInfo = resolved;
+        _typedElementTypeInfo = resolved as TomlTypeInfo<TElement>;
+    }
+
+    private bool ShouldWriteTableArray(TomlWriter writer, int count)
+    {
+        if (count == 0 || !writer.CanWriteTableArrayValue)
+        {
+            return false;
+        }
+
+        EnsureElementTypeInfo();
+        return _elementTypeInfo!.WritesTable;
+    }
+
+    private static int GetCollectionCount(TEnumerable value, ref IEnumerable<TElement> items)
+    {
+        if (value is ICollection<TElement> collection)
+        {
+            return collection.Count;
+        }
+
+        if (value is IReadOnlyCollection<TElement> readOnlyCollection)
+        {
+            return readOnlyCollection.Count;
+        }
+
+        var list = new List<TElement>(items);
+        items = list;
+        return list.Count;
+    }
+
+    private void WriteElement(TomlWriter writer, TElement element, int index = -1)
+    {
+        EnsureElementTypeInfo();
+
+        if (element is null)
+        {
+            throw new TomlException(index >= 0
+                ? $"The element at index {index} of '{Type.FullName}' is null, which TOML cannot represent."
+                : $"An element of '{Type.FullName}' is null, which TOML cannot represent.");
+        }
+
+        if (_typedElementTypeInfo is not null)
+        {
+            _typedElementTypeInfo.Write(writer, element);
+            return;
+        }
+
+        _elementTypeInfo!.Write(writer, element);
+    }
+
+    private TElement ReadElement(TomlReader reader)
+    {
+        EnsureElementTypeInfo();
+
+        if (_typedElementTypeInfo is not null)
+        {
+            return _typedElementTypeInfo.Read(reader)!;
+        }
+
+        return (TElement)_elementTypeInfo!.ReadAsObject(reader)!;
+    }
+}

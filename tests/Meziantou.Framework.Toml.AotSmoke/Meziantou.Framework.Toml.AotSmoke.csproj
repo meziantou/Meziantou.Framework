@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>true</StripSymbols>
+    <IsPackable>false</IsPackable>
+
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Toml\Meziantou.Framework.Toml.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Toml.SourceGenerator\Meziantou.Framework.Toml.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="twitter.toml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

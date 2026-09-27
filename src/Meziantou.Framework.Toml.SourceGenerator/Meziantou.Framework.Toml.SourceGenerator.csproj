@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_TOML_SOURCE_GENERATOR</DefineConstants>
+    <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/Collections/ImmutableEquatableArray.cs" LinkBase="Collections" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlKnownNamingPolicy.cs" Link="TomlKnownNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlNamingPolicy.cs" Link="TomlNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlCamelCaseNamingPolicy.cs" Link="TomlCamelCaseNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlKebabCaseLowerNamingPolicy.cs" Link="TomlKebabCaseLowerNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlKebabCaseUpperNamingPolicy.cs" Link="TomlKebabCaseUpperNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlPascalCaseNamingPolicy.cs" Link="TomlPascalCaseNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlSeparatorNamingPolicy.cs" Link="TomlSeparatorNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlSnakeCaseLowerNamingPolicy.cs" Link="TomlSnakeCaseLowerNamingPolicy.cs" />
+    <Compile Include="../Meziantou.Framework.Toml/TomlSnakeCaseUpperNamingPolicy.cs" Link="TomlSnakeCaseUpperNamingPolicy.cs" />
+  </ItemGroup>
+</Project>

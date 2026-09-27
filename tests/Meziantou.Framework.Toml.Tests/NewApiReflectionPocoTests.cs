@@ -1,0 +1,629 @@
+using System.Collections.Generic;
+using Meziantou.Framework.Toml.Model;
+using Meziantou.Framework.Toml.Serialization;
+
+namespace Meziantou.Framework.Toml.Tests;
+
+public class NewApiReflectionPocoTests
+{
+    private sealed class CallbackModel : ITomlOnSerializing, ITomlOnSerialized, ITomlOnDeserializing, ITomlOnDeserialized
+    {
+        public string Name { get; set; } = "";
+
+        [TomlIgnore]
+        public int OnSerializingCount { get; private set; }
+
+        [TomlIgnore]
+        public int OnSerializedCount { get; private set; }
+
+        [TomlIgnore]
+        public int OnDeserializingCount { get; private set; }
+
+        [TomlIgnore]
+        public int OnDeserializedCount { get; private set; }
+
+        [TomlIgnore]
+        public bool NameWasAlreadyAssignedInOnDeserializing { get; private set; }
+
+        [TomlIgnore]
+        public string? NameSeenInOnDeserialized { get; private set; }
+
+        public void OnTomlSerializing() => OnSerializingCount++;
+
+        public void OnTomlSerialized() => OnSerializedCount++;
+
+        public void OnTomlDeserializing()
+        {
+            OnDeserializingCount++;
+            NameWasAlreadyAssignedInOnDeserializing = Name == "Ada";
+
+            // If this callback runs before TOML member mapping, this should be overwritten by TOML data.
+            Name = "from-callback";
+        }
+
+        public void OnTomlDeserialized()
+        {
+            OnDeserializedCount++;
+            NameSeenInOnDeserialized = Name;
+        }
+    }
+
+    private sealed class Person
+    {
+        public string Name { get; set; } = "";
+
+        public long Age { get; set; }
+    }
+
+    private sealed class NamedPerson
+    {
+        [TomlPropertyName("first_name")]
+        public string Name { get; set; } = "";
+
+        public long Age { get; set; }
+    }
+
+    private abstract class NamedBaseOptions
+    {
+        [TomlPropertyName("baseValue")]
+        public string? Base { get; init; }
+    }
+
+    private sealed class NamedDerivedOptions : NamedBaseOptions
+    {
+        [TomlPropertyName("derivedValue")]
+        public string? Derived { get; init; }
+    }
+
+    private abstract class NamedOverriddenBaseOptions
+    {
+        [TomlPropertyName("baseValue")]
+        public virtual string? Base { get; init; }
+    }
+
+    private sealed class NamedOverriddenDerivedOptions : NamedOverriddenBaseOptions
+    {
+        [TomlPropertyName("derivedValue")]
+        public string? Derived { get; init; }
+
+        public override string? Base { get; init; }
+    }
+
+    private sealed class PrivateSetterModel
+    {
+        [TomlInclude]
+        public int Value { get; private set; }
+    }
+
+    private sealed class IncludedFieldModel
+    {
+        [TomlInclude]
+        public int Value;
+    }
+
+    private sealed class IncludedNonPublicPropertyModel
+    {
+        [TomlInclude]
+        private bool MyProperty { get; set; } = true;
+
+        public bool GetMyProperty() => MyProperty;
+    }
+
+    private sealed class StringEnumModel
+    {
+        public List<StringEnumValue> Values { get; set; } = new();
+    }
+
+    [TomlConverter(typeof(TomlStringEnumConverter))]
+    private enum StringEnumValue
+    {
+        First,
+        Second,
+    }
+
+    private sealed class ReadOnlyPropertyModel
+    {
+        public int Value { get; } = 42;
+    }
+
+    private sealed class ParameterizedConstructorModel
+    {
+        public ParameterizedConstructorModel(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+    }
+
+    private sealed class AnnotatedConstructorModel
+    {
+        public AnnotatedConstructorModel()
+        {
+            Value = -1;
+        }
+
+        [TomlConstructor]
+        public AnnotatedConstructorModel(int value)
+        {
+            Value = value;
+        }
+
+        public int Value { get; }
+    }
+
+    private sealed class SingleCtorModel
+    {
+        public SingleCtorModel(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+    }
+
+    private sealed class RequiredModel
+    {
+        [TomlRequired]
+        public int Value { get; set; }
+    }
+
+    private sealed class EmptyModel
+    {
+    }
+
+    private sealed class TomlObjectModel
+    {
+        public TomlObject? Value { get; set; }
+    }
+
+    private sealed class MultipleAnnotatedConstructorsModel
+    {
+        [TomlConstructor]
+        public MultipleAnnotatedConstructorsModel(int value)
+        {
+            Value = value;
+        }
+
+        [TomlConstructor]
+        public MultipleAnnotatedConstructorsModel(string value)
+        {
+            Value = int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public int Value { get; }
+    }
+
+    private sealed class AmbiguousConstructorsModel
+    {
+        public AmbiguousConstructorsModel(int value)
+        {
+            Value = value;
+        }
+
+        public AmbiguousConstructorsModel(string value)
+        {
+            Value = int.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public int Value { get; }
+    }
+
+    [Fact]
+    public void SerializeDeserialize_Poco_UsesReflectionFallback()
+    {
+        var original = new Person { Name = "Ada", Age = 37 };
+        var toml = TomlSerializer.Serialize(original);
+        var roundtrip = TomlSerializer.Deserialize<Person>(toml);
+
+        Assert.NotNull(roundtrip);
+        Assert.Equal("Ada", roundtrip!.Name);
+        Assert.Equal(37, roundtrip.Age);
+    }
+
+    [Fact]
+    public void Deserialize_Poco_RespectsTomlPropertyName()
+    {
+        var toml = """
+            first_name = "Ada"
+            Age = 37
+            """;
+
+        var person = TomlSerializer.Deserialize<NamedPerson>(toml);
+
+        Assert.NotNull(person);
+        Assert.Equal("Ada", person!.Name);
+        Assert.Equal(37, person.Age);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_InheritedProperties_RespectTomlPropertyName()
+    {
+        var original = new NamedDerivedOptions
+        {
+            Base = "shared",
+            Derived = "leaf",
+        };
+
+        var toml = TomlSerializer.Serialize(original);
+        var roundtrip = TomlSerializer.Deserialize<NamedDerivedOptions>(toml);
+
+        Assert.Contains("baseValue = \"shared\"", toml);
+        Assert.Contains("derivedValue = \"leaf\"", toml);
+        Assert.NotNull(roundtrip);
+        Assert.Equal("shared", roundtrip!.Base);
+        Assert.Equal("leaf", roundtrip.Derived);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_OverriddenProperties_RespectInheritedTomlPropertyName()
+    {
+        var original = new NamedOverriddenDerivedOptions
+        {
+            Base = "shared",
+            Derived = "leaf",
+        };
+
+        var toml = TomlSerializer.Serialize(original);
+        var roundtrip = TomlSerializer.Deserialize<NamedOverriddenDerivedOptions>(toml);
+
+        Assert.Contains("baseValue = \"shared\"", toml);
+        Assert.Contains("derivedValue = \"leaf\"", toml);
+        Assert.NotNull(roundtrip);
+        Assert.Equal("shared", roundtrip!.Base);
+        Assert.Equal("leaf", roundtrip.Derived);
+    }
+
+    [Fact]
+    public void Deserialize_PrivateSetter_WithTomlInclude_Works()
+    {
+        var model = TomlSerializer.Deserialize<PrivateSetterModel>("Value = 123\n");
+        Assert.NotNull(model);
+        Assert.Equal(123, model!.Value);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_PublicField_WithTomlInclude_Works()
+    {
+        var original = new IncludedFieldModel { Value = 7 };
+        var toml = TomlSerializer.Serialize(original);
+        var roundtrip = TomlSerializer.Deserialize<IncludedFieldModel>(toml);
+        Assert.NotNull(roundtrip);
+        Assert.Equal(7, roundtrip!.Value);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_NonPublicProperty_WithTomlInclude_Works()
+    {
+        var toml = TomlSerializer.Serialize(new IncludedNonPublicPropertyModel());
+        var roundtrip = TomlSerializer.Deserialize<IncludedNonPublicPropertyModel>("MyProperty = false\n");
+
+        Assert.Contains("MyProperty = true", toml);
+        Assert.NotNull(roundtrip);
+        Assert.False(roundtrip!.GetMyProperty());
+    }
+
+    [Fact]
+    public void Serialize_ReadOnlyProperty_IsIncluded()
+    {
+        var toml = TomlSerializer.Serialize(new ReadOnlyPropertyModel());
+        Assert.Contains("Value", toml);
+        Assert.Contains("42", toml);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_EnumWithTomlStringEnumConverter_UsesStrings()
+    {
+        var original = new StringEnumModel { Values = [StringEnumValue.First, StringEnumValue.Second] };
+        var toml = TomlSerializer.Serialize(original);
+        var roundtrip = TomlSerializer.Deserialize<StringEnumModel>(toml);
+
+        Assert.Contains("Values = [\"First\", \"Second\"]", toml);
+        Assert.NotNull(roundtrip);
+        Assert.Equal(original.Values, roundtrip!.Values);
+    }
+
+    [Fact]
+    public void Deserialize_UsesSinglePublicConstructor_WhenNoParameterlessExists()
+    {
+        var model = TomlSerializer.Deserialize<SingleCtorModel>("Name = \"Ada\"\n");
+        Assert.NotNull(model);
+        Assert.Equal("Ada", model!.Name);
+    }
+
+    [Fact]
+    public void Deserialize_BindsConstructorParameter_ByMemberName()
+    {
+        var model = TomlSerializer.Deserialize<ParameterizedConstructorModel>("Value = 5\n");
+        Assert.NotNull(model);
+        Assert.Equal(5, model!.Value);
+    }
+
+    [Fact]
+    public void Deserialize_UsesTomlConstructor_WhenAnnotated()
+    {
+        var model = TomlSerializer.Deserialize<AnnotatedConstructorModel>("Value = 6\n");
+        Assert.NotNull(model);
+        Assert.Equal(6, model!.Value);
+    }
+
+    [Fact]
+    public void Deserialize_ThrowsWhenRequiredMemberMissing()
+    {
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<RequiredModel>("Other = 1\n"));
+    }
+
+    [Fact]
+    public void SerializeDeserialize_EmptyPoco_NoMembers_Works()
+    {
+        var toml = TomlSerializer.Serialize(new EmptyModel());
+        var model = TomlSerializer.Deserialize<EmptyModel>(toml);
+        Assert.NotNull(model);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_TomlObjectProperty_UsesRuntimeModelNode()
+    {
+        var arrayModel = TomlSerializer.Deserialize<TomlObjectModel>("Value = [1, 2]\n");
+
+        Assert.NotNull(arrayModel);
+        Assert.IsAssignableTo<TomlArray>(arrayModel!.Value);
+        Assert.Equal(new TomlArray { 1L, 2L }, (TomlArray)arrayModel.Value!);
+
+        var tableModel = new TomlObjectModel
+        {
+            Value = new TomlTable { ["Answer"] = 42L },
+        };
+
+        var toml = TomlSerializer.Serialize(tableModel);
+        var roundtrip = TomlSerializer.Deserialize<TomlObjectModel>(toml);
+
+        Assert.Contains("[Value]", toml);
+        Assert.NotNull(roundtrip);
+        Assert.IsAssignableTo<TomlTable>(roundtrip!.Value);
+        Assert.Equal(42L, ((TomlTable)roundtrip.Value!)["Answer"]);
+    }
+
+    [Fact]
+    public void Deserialize_MultipleAnnotatedConstructors_ThrowsTomlException()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<MultipleAnnotatedConstructorsModel>("Value = 1\n"));
+        Assert.Contains("Multiple constructors", ex!.Message);
+    }
+
+    [Fact]
+    public void Deserialize_AmbiguousConstructors_ThrowsTomlException()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<AmbiguousConstructorsModel>("Value = 1\n"));
+        Assert.Contains("No suitable constructor", ex!.Message);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_LifecycleCallbacks_AreInvoked()
+    {
+        var original = new CallbackModel { Name = "Ada" };
+        var toml = TomlSerializer.Serialize(original);
+
+        Assert.Equal(1, original.OnSerializingCount);
+        Assert.Equal(1, original.OnSerializedCount);
+        Assert.Equal(0, original.OnDeserializingCount);
+        Assert.Equal(0, original.OnDeserializedCount);
+
+        var roundtrip = TomlSerializer.Deserialize<CallbackModel>(toml);
+
+        Assert.NotNull(roundtrip);
+        Assert.Equal("Ada", roundtrip!.Name);
+        Assert.Equal(1, roundtrip.OnDeserializingCount);
+        Assert.Equal(1, roundtrip.OnDeserializedCount);
+        Assert.False(roundtrip.NameWasAlreadyAssignedInOnDeserializing);
+        Assert.Equal("Ada", roundtrip.NameSeenInOnDeserialized);
+    }
+
+    [Theory]
+    [InlineData(TomlKnownNamingPolicy.CamelCase, "FirstName", "firstName")]
+    [InlineData(TomlKnownNamingPolicy.CamelCase, "URLValue", "urlValue")]
+    [InlineData(TomlKnownNamingPolicy.PascalCase, "firstName", "FirstName")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "FirstName", "first_name")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "URLValue", "url_value")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseLower, "Value1Name", "value1_name")]
+    [InlineData(TomlKnownNamingPolicy.SnakeCaseUpper, "FirstName", "FIRST_NAME")]
+    [InlineData(TomlKnownNamingPolicy.KebabCaseLower, "FirstName", "first-name")]
+    [InlineData(TomlKnownNamingPolicy.KebabCaseUpper, "FirstName", "FIRST-NAME")]
+    public void NamingPolicy_ConvertName(TomlKnownNamingPolicy knownPolicy, string name, string expected)
+    {
+        var policy = knownPolicy switch
+        {
+            TomlKnownNamingPolicy.CamelCase => TomlNamingPolicy.CamelCase,
+            TomlKnownNamingPolicy.PascalCase => TomlNamingPolicy.PascalCase,
+            TomlKnownNamingPolicy.SnakeCaseLower => TomlNamingPolicy.SnakeCaseLower,
+            TomlKnownNamingPolicy.SnakeCaseUpper => TomlNamingPolicy.SnakeCaseUpper,
+            TomlKnownNamingPolicy.KebabCaseLower => TomlNamingPolicy.KebabCaseLower,
+            TomlKnownNamingPolicy.KebabCaseUpper => TomlNamingPolicy.KebabCaseUpper,
+            _ => throw new ArgumentOutOfRangeException(nameof(knownPolicy)),
+        };
+
+        Assert.Equal(expected, policy.ConvertName(name));
+    }
+
+    private sealed class NamingPolicyModel
+    {
+#pragma warning disable IDE1006 // The member names are lowercase so the naming policy has something to convert
+        public string? firstName { get; set; }
+
+        public Dictionary<string, int> values { get; set; } = [];
+#pragma warning restore IDE1006
+    }
+
+    [Fact]
+    public void SerializeDeserialize_CustomNamingPolicies()
+    {
+        var options = new TomlSerializerOptions
+        {
+            PropertyNamingPolicy = TomlNamingPolicy.PascalCase,
+            DictionaryKeyPolicy = TomlNamingPolicy.KebabCaseUpper,
+        };
+
+        var toml = TomlSerializer.Serialize(new NamingPolicyModel { firstName = "Ada", values = { ["itemCount"] = 1 } }, options);
+
+        Assert.Equal("FirstName = \"Ada\"\n[Values]\nITEM-COUNT = 1", toml.Trim());
+        Assert.Equal("Ada", TomlSerializer.Deserialize<NamingPolicyModel>(toml, options)!.firstName);
+    }
+
+    private sealed class MemberSelectionModel
+    {
+#pragma warning disable CA1051 // The test needs public fields
+        public int Field = 1;
+        public readonly int ReadOnlyField = 2;
+#pragma warning restore CA1051
+
+        public int GetOnly { get; } = 3;
+
+        public int InitOnly { get; init; } = 4;
+    }
+
+    [Fact]
+    public void IncludeFields_DoesNotIncludePublicFieldsByDefault()
+    {
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel());
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("Field = 10")!;
+
+        Assert.Equal("GetOnly = 3\nInitOnly = 4", toml.Trim());
+        Assert.Equal(1, model.Field);
+    }
+
+    [Fact]
+    public void IncludeFields_IncludesPublicFieldsForReadAndWrite()
+    {
+        var options = new TomlSerializerOptions { IncludeFields = true };
+
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel(), options);
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("Field = 10", options)!;
+
+        Assert.Equal("Field = 1\nReadOnlyField = 2\nGetOnly = 3\nInitOnly = 4", toml.Trim());
+        Assert.Equal(10, model.Field);
+    }
+
+    [Fact]
+    public void IgnoreReadOnlyMembers_SkipsReadOnlyMembersDuringSerialization()
+    {
+        var options = new TomlSerializerOptions { IncludeFields = true, IgnoreReadOnlyFields = true, IgnoreReadOnlyProperties = true };
+
+        var toml = TomlSerializer.Serialize(new MemberSelectionModel(), options);
+
+        Assert.Equal("Field = 1\nInitOnly = 4", toml.Trim());
+    }
+
+    [Fact]
+    public void IgnoreReadOnlyMembers_DoesNotAffectDeserialization()
+    {
+        var options = new TomlSerializerOptions { IgnoreReadOnlyProperties = true };
+
+        var model = TomlSerializer.Deserialize<MemberSelectionModel>("InitOnly = 40", options)!;
+
+        Assert.Equal(40, model.InitOnly);
+    }
+
+    [Fact]
+    public void UnmappedMembers_AreSkippedByDefault()
+    {
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"\nUnknown = 1")!.Name);
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1\nUnknown = 1")!.Name);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnmappedMembers_CanBeDisallowedViaOptions(bool caseInsensitive)
+    {
+        var options = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow, PropertyNameCaseInsensitive = caseInsensitive };
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"\nUnknown = 1", options));
+        Assert.Contains($"The TOML key 'Unknown' could not be mapped to '{typeof(ValidationModel).FullName}'.", ex.Message);
+
+        ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1\nUnknown = 1", options));
+        Assert.Contains($"The TOML key 'Unknown' could not be mapped to '{typeof(ValidationCtorModel).FullName}'.", ex.Message);
+
+        Assert.Equal("a", TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options)!.Name);
+    }
+
+    [Fact]
+    public void UnmappedMemberHandlingAttribute_OverridesOptions()
+    {
+        var disallow = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow };
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlDisallowUnmappedModel>("Unknown = 1"));
+        Assert.Equal("a", TomlSerializer.Deserialize<TomlSkipUnmappedModel>("Name = \"a\"\nUnknown = 1", disallow)!.Name);
+    }
+
+    [Fact]
+    public void UnmappedMemberHandling_DoesNotConflictWithExtensionData()
+    {
+        var options = new TomlSerializerOptions { UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow };
+
+        var model = TomlSerializer.Deserialize<ValidationExtensionDataModel>("Name = \"a\"\nUnknown = 1", options)!;
+
+        Assert.Equal(1L, model.Extra!["Unknown"]);
+    }
+
+    [Fact]
+    public void RespectRequiredConstructorParameters_RequiresNonOptionalParametersByDefault()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\""));
+
+        Assert.Contains($"Missing required constructor parameter 'Count' when deserializing '{typeof(ValidationCtorModel).FullName}'.", ex.Message);
+    }
+
+    [Fact]
+    public void RespectRequiredConstructorParameters_CanBeDisabled()
+    {
+        var options = new TomlSerializerOptions { RespectRequiredConstructorParameters = false };
+
+        var model = TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"", options)!;
+
+        Assert.Equal("a", model.Name);
+        Assert.Equal(0, model.Count);
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_RejectsNullDuringSerializationByDefault()
+    {
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Serialize(new ValidationModel { Name = null! }));
+
+        Assert.Equal($"The member 'Name' on '{typeof(ValidationModel).FullName}' cannot be serialized as null because it is declared as non-nullable.", ex.Message);
+        Assert.Equal("Name = \"a\"", TomlSerializer.Serialize(new ValidationModel { Name = "a" }).Trim());
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_CanBeDisabledForSerialization()
+    {
+        var options = new TomlSerializerOptions { RespectNullableAnnotations = false };
+
+        var toml = TomlSerializer.Serialize(new ValidationModel { Name = null! }, options);
+
+        Assert.Equal("", toml.Trim());
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_RejectsNullDuringDeserialization()
+    {
+        var options = new TomlSerializerOptions { Converters = [new NullStringConverter()] };
+
+        var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options));
+        Assert.Contains($"The TOML key 'Name' cannot be null because '{typeof(ValidationModel).FullName}' declares it as non-nullable.", ex.Message);
+
+        ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1", options));
+        Assert.Contains($"The constructor parameter 'name' on '{typeof(ValidationCtorModel).FullName}' cannot be null because it is declared as non-nullable.", ex.Message);
+
+        Assert.Null(TomlSerializer.Deserialize<ValidationModel>("Optional = \"a\"", options)!.Optional);
+        Assert.Null(TomlSerializer.Deserialize<ValidationAllowNullModel>("Name = \"a\"", options)!.Name);
+    }
+
+    [Fact]
+    public void RespectNullableAnnotations_CanBeDisabledForDeserialization()
+    {
+        var options = new TomlSerializerOptions { Converters = [new NullStringConverter()], RespectNullableAnnotations = false };
+
+        Assert.Null(TomlSerializer.Deserialize<ValidationModel>("Name = \"a\"", options)!.Name);
+        Assert.Null(TomlSerializer.Deserialize<ValidationCtorModel>("Name = \"a\"\nCount = 1", options)!.Name);
+    }
+}

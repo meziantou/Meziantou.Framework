@@ -142,6 +142,8 @@
     <Project Path="src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
     <Project Path="src/Meziantou.Framework.Threading/Meziantou.Framework.Threading.csproj" />
+    <Project Path="src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
     <Project Path="src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
     <Project Path="src/Meziantou.Framework.UndoRedo/Meziantou.Framework.UndoRedo.csproj" />
     <Project Path="src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
@@ -284,6 +286,8 @@
     <Project Path="tests/Meziantou.Framework.TextDiff.Tests/Meziantou.Framework.TextDiff.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Tests/Meziantou.Framework.Threading.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Threading.Windows.Tests/Meziantou.Framework.Threading.Windows.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.AotSmoke/Meziantou.Framework.Toml.AotSmoke.csproj" />
+    <Project Path="tests/Meziantou.Framework.Toml.Tests/Meziantou.Framework.Toml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.TypeConverter.Tests/Meziantou.Framework.TypeConverter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.UndoRedo.Tests/Meziantou.Framework.UndoRedo.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Unicode.Tests/Meziantou.Framework.Unicode.Tests.csproj" />

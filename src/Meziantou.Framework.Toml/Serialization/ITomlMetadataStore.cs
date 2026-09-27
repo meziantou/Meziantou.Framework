@@ -1,0 +1,21 @@
+using System.Diagnostics.CodeAnalysis;
+using Meziantou.Framework.Toml.Model;
+
+namespace Meziantou.Framework.Toml.Serialization;
+
+/// <summary>
+/// Associates TOML trivia/comment metadata with object instances.
+/// </summary>
+public interface ITomlMetadataStore
+{
+    /// <summary>
+    /// Tries to get metadata for an instance.
+    /// </summary>
+    bool TryGetProperties(object instance, [NotNullWhen(true)] out TomlPropertiesMetadata? metadata);
+
+    /// <summary>
+    /// Sets metadata for an instance.
+    /// </summary>
+    void SetProperties(object instance, TomlPropertiesMetadata? metadata);
+}
+

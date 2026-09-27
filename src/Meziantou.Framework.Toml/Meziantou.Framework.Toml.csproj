@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>A high-performance .NET TOML 1.1 parser, round-trippable syntax tree, and System.Text.Json-style object serializer, NativeAOT ready.</Description>
+    <PackageTags>toml, parser, serialization, deserialization, nativeaot</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)/../../Meziantou.Framework.Toml.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.Toml.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Meziantou.Framework.Toml.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.Toml.targets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ILLink.Substitutions.xml" LogicalName="ILLink.Substitutions.xml" />
+  </ItemGroup>
+</Project>

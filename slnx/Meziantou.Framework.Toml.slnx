@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
+    <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+    <Project Path="../src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Toml.AotSmoke/Meziantou.Framework.Toml.AotSmoke.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Toml.Tests/Meziantou.Framework.Toml.Tests.csproj" />
+  </Folder>
+</Solution>

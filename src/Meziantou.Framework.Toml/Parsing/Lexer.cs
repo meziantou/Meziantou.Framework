@@ -21,7 +21,8 @@ internal sealed class Lexer
 {
     private SyntaxTokenValue _token;
     private List<DiagnosticMessage>? _errors;
-    private bool _isCollectingUnorderedErrors;
+    // The index of the first error of the token whose errors are found out of order, or -1
+    private int _unorderedErrorsStart = -1;
     private const int Eof = -1;
     private readonly ReadOnlyMemory<char> _text;
     private readonly int _textLength;
@@ -650,11 +651,11 @@ internal sealed class Lexer
     private void ReadNumberOrDate(Char32? signPrefix = null, TextPosition? signPrefixPos = null)
     {
         // The errors of a number are found out of order, such as a leading zero once the digits are read: they are listed in
-        // the order of the document, so the first one is the first error of the token, and only then limited to MaxErrorCount
+        // the order of the document, so the first one is the first error of the token
         var firstError = _errors?.Count ?? 0;
-        _isCollectingUnorderedErrors = true;
+        _unorderedErrorsStart = firstError;
         ReadNumberOrDateCore(signPrefix, signPrefixPos);
-        _isCollectingUnorderedErrors = false;
+        _unorderedErrorsStart = -1;
         SortErrorsByPosition(firstError);
     }
 
@@ -1147,11 +1148,6 @@ internal sealed class Lexer
             }
 
             _errors[j + 1] = error;
-        }
-
-        if (_errors.Count > MaxErrorCount)
-        {
-            _errors.RemoveRange(MaxErrorCount, _errors.Count - MaxErrorCount);
         }
     }
 
@@ -1979,9 +1975,30 @@ internal sealed class Lexer
             return;
         }
 
-        if (_isCollectingUnorderedErrors || _errors.Count < MaxErrorCount)
+        if (_errors.Count < MaxErrorCount)
         {
             _errors.Add(new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message));
+            return;
+        }
+
+        // The errors of a token found out of order are sorted once it ends, so the limit keeps those closest to its start
+        // instead of the first ones found. Only MaxErrorCount errors are held at any time: a strict parser keeps one error
+        // however many the token has.
+        if (_unorderedErrorsStart >= 0)
+        {
+            var latest = -1;
+            for (var i = _unorderedErrorsStart; i < _errors.Count; i++)
+            {
+                if (latest < 0 || _errors[i].Span.Start.Offset >= _errors[latest].Span.Start.Offset)
+                {
+                    latest = i;
+                }
+            }
+
+            if (latest >= 0 && start.Offset < _errors[latest].Span.Start.Offset)
+            {
+                _errors[latest] = new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message);
+            }
         }
     }
 

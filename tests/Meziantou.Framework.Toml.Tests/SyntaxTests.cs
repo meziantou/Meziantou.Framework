@@ -422,6 +422,28 @@ val = true
         Assert.Contains("The key `a` is already defined", diagnostic.Message, StringComparison.Ordinal);
     }
 
+    // A strict parser keeps one error, however many errors a number has
+    [Fact]
+    public void NumberWithManyErrors_DoesNotHoldEveryError()
+    {
+        var toml = "a = 1" + string.Concat(Enumerable.Repeat("__1", 300_000)) + "\n";
+        // Without errors, the number only overflows
+        var valid = "a = 1" + string.Concat(Enumerable.Repeat("_11", 300_000)) + "\n";
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>("a = 1__1\n"));
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(valid));
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(valid));
+        var validAllocations = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        before = GC.GetAllocatedBytesForCurrentThread();
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var allocations = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Single(exception.Diagnostics!);
+        Assert.True(allocations < 2 * validAllocations, $"The errors allocated {allocations} bytes, and a number without errors {validAllocations} bytes");
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

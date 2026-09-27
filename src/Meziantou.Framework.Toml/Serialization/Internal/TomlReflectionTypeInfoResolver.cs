@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -470,9 +471,30 @@ internal static class TomlReflectionTypeInfoResolver
             return null;
         }
 
+        // The metadata stores the constant of an enum or of a native integer as its underlying type, such as Int32 for nint
         var value = parameter.DefaultValue;
         var type = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
-        return value is not null && type.IsEnum && value.GetType() != type ? Enum.ToObject(type, value) : value;
+        if (value is null || value.GetType() == type)
+        {
+            return value;
+        }
+
+        if (type.IsEnum)
+        {
+            return Enum.ToObject(type, value);
+        }
+
+        if (type == typeof(nint))
+        {
+            return (nint)Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        if (type == typeof(nuint))
+        {
+            return (nuint)Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        return value;
     }
 
     private static object? GetDefaultValue(Type type)

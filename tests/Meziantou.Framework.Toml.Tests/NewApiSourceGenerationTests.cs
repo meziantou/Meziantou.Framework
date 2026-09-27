@@ -1643,8 +1643,10 @@ public struct GeneratedDefaultPoint
 
 public sealed class GeneratedStructDefaults
 {
-    public GeneratedStructDefaults(int x, DateTime date = default, Guid id = default, TimeSpan span = new TimeSpan(), GeneratedDefaultPoint point = default, double negativeZero = -0.0, float negativeZeroSingle = -0.0f)
+    public GeneratedStructDefaults(int x, DateTime date = default, Guid id = default, TimeSpan span = new TimeSpan(), GeneratedDefaultPoint point = default, double negativeZero = -0.0, float negativeZeroSingle = -0.0f, nint native = 5, nuint unsignedNative = 6)
     {
+        Native = native;
+        UnsignedNative = unsignedNative;
         X = x;
         Date = date;
         Id = id;
@@ -1667,6 +1669,10 @@ public sealed class GeneratedStructDefaults
     public double NegativeZero { get; }
 
     public float NegativeZeroSingle { get; }
+
+    public nint Native { get; }
+
+    public nuint UnsignedNative { get; }
 }
 
 [TomlSerializable(typeof(GeneratedStructDefaults))]
@@ -4114,7 +4120,7 @@ public class NewApiSourceGenerationTests
     }
 
     [Fact]
-    public void ConstructorParameters_WithAStructOrNegativeZeroDefault_UseTheirDefault()
+    public void ConstructorParameterDefaults_AreUsedByBothResolvers()
     {
         var generated = TomlSerializer.Deserialize("X = 1", TestTomlSerializerContextStructDefaults.Default.GeneratedStructDefaults)!;
         var reflection = TomlSerializer.Deserialize<GeneratedStructDefaults>("X = 1")!;
@@ -4128,6 +4134,8 @@ public class NewApiSourceGenerationTests
             Assert.Equal(0, value.Point.X);
             Assert.True(double.IsNegative(value.NegativeZero));
             Assert.True(float.IsNegative(value.NegativeZeroSingle));
+            Assert.Equal(5, value.Native);
+            Assert.Equal(6u, value.UnsignedNative);
         }
     }
 

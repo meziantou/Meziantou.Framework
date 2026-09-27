@@ -253,6 +253,15 @@ val = true
     }
 
     [Fact]
+    public void NullArguments_ThrowForTheirParameter()
+    {
+        Assert.Equal("typeInfo", Assert.Throws<ArgumentNullException>(() => TomlSerializer.Serialize(new System.IO.StringWriter(), new TomlTable(), (TomlTypeInfo)null!)).ParamName);
+        Assert.Equal("key", Assert.Throws<ArgumentNullException>(() => new KeySyntax((string)null!)).ParamName);
+        Assert.Equal("messages", Assert.Throws<ArgumentNullException>(() => new DiagnosticsBag(null!)).ParamName);
+        Assert.Equal("messages", Assert.Throws<ArgumentNullException>(() => new DiagnosticsBag().AddRange(null!)).ParamName);
+    }
+
+    [Fact]
     public void BareKey_WithInvalidCharacters_ThrowsForTheNameParameter()
     {
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new BareKeySyntax("a b\0" + new string('x', 1_000_000)));

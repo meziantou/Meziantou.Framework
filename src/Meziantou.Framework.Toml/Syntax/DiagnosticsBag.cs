@@ -29,6 +29,7 @@ public class DiagnosticsBag : IEnumerable<DiagnosticMessage>
     /// <param name="messages">An existing list of messages.</param>
     public DiagnosticsBag(IEnumerable<DiagnosticMessage> messages) : this()
     {
+        ArgumentNullException.ThrowIfNull(messages);
         foreach (var message in messages)
         {
             Add(message);
@@ -72,6 +73,7 @@ public class DiagnosticsBag : IEnumerable<DiagnosticMessage>
     /// <param name="messages">A list of messages.</param>
     public void AddRange(IEnumerable<DiagnosticMessage> messages)
     {
+        ArgumentNullException.ThrowIfNull(messages);
         foreach (var diagnosticMessage in messages)
         {
             Add(diagnosticMessage);

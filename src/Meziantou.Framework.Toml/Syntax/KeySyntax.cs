@@ -25,6 +25,7 @@ public sealed class KeySyntax : ValueSyntax
     /// <param name="key">A simple name of this key</param>
     public KeySyntax(string key) : this()
     {
+        ArgumentNullException.ThrowIfNull(key);
         Key = BareKeySyntax.IsBareKey(key) ? (BareKeyOrStringValueSyntax)new BareKeySyntax(key) : new StringValueSyntax(key);
     }
 

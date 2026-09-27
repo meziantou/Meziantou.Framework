@@ -1179,7 +1179,11 @@ public static class TomlSerializer
     /// Serializes a value to a writer using explicit metadata.
     /// </summary>
     public static void Serialize(TextWriter writer, object? value, TomlTypeInfo typeInfo)
-        => Serialize(writer, value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
+    {
+        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+
+        Serialize(writer, value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
+    }
 
     private static void Serialize(TextWriter writer, object? value, TomlTypeInfo typeInfo, TomlSerializationOperationState operationState)
     {

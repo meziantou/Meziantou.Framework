@@ -19,6 +19,13 @@ public class ThematicBreakRenderer : NormalizeObjectRenderer<ThematicBreakBlock>
     {
         // A list item marker written on the same line, with the same character, would be part of the thematic break
         var thematicChar = renderer.GetListMarkersBefore(obj).Contains(obj.ThematicChar, StringComparison.Ordinal) ? '_' : obj.ThematicChar;
+
+        // Right after a paragraph, as in a tight list, dashes would be a setext heading underline
+        if (thematicChar == '-' && renderer.CompactParagraph && obj.Parent is { } parent && parent.IndexOf(obj) is > 0 and var index && parent[index - 1] is ParagraphBlock)
+        {
+            thematicChar = '*';
+        }
+
         renderer.WriteLine(new string(thematicChar, obj.ThematicCharCount));
 
         renderer.FinishBlock(renderer.Options.EmptyLineAfterThematicBreak);

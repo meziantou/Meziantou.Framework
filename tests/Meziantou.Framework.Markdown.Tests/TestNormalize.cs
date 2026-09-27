@@ -788,6 +788,14 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("- a\n  - - -", "- a\n  ***\n")]
+    [InlineData("- a\n  - - -\n  b", "- a\n  ***\n  b")]
+    public void ThematicBreakAfterParagraphIsNotSetextUnderline(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

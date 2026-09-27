@@ -669,10 +669,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         foreach (var containingType in containingTypes)
         {
-            builder.Append("partial ").Append(GetTypeDeclarationKeyword(containingType)).Append(' ').Append(containingType.Name);
+            // A name can be a keyword, such as @class
+            builder.Append("partial ").Append(GetTypeDeclarationKeyword(containingType)).Append(' ').Append(EscapeIdentifier(containingType.Name));
             if (containingType.TypeParameters.Length > 0)
             {
-                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(static parameter => parameter.Name))).Append('>');
+                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(static parameter => EscapeIdentifier(parameter.Name)))).Append('>');
             }
 
             builder.AppendLine();
@@ -680,13 +681,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         AppendGeneratedTypeAttributes(builder, string.Empty);
-        builder.Append("partial class ").Append(model.TypeName).AppendLine();
+        var contextTypeName = EscapeIdentifier(model.TypeName);
+        builder.Append("partial class ").Append(contextTypeName).AppendLine();
         builder.AppendLine("{");
 
-        builder.Append("    private ").Append(model.TypeName).AppendLine("(global::Meziantou.Framework.Toml.TomlSerializerOptions options, bool _generated) : base(options) { }");
+        builder.Append("    private ").Append(contextTypeName).AppendLine("(global::Meziantou.Framework.Toml.TomlSerializerOptions options, bool _generated) : base(options) { }");
         builder.AppendLine();
 
-        builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), _generated: true);");
+        builder.Append("    public static ").Append(contextTypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), _generated: true);");
         builder.AppendLine();
 
         // A null test in a condition makes the compiler consider the value maybe null afterwards, even when the condition is part
@@ -1172,11 +1174,11 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         AppendGeneratedTypeAttributes(builder, "    ");
         builder.Append("    private sealed class __TomlTypeInfo_").Append(propertyName).Append(" : global::Meziantou.Framework.Toml.TomlTypeInfo<").Append(typeName).AppendLine(">");
         builder.AppendLine("    {");
-        builder.Append("        private readonly ").Append(model.TypeName).AppendLine(" _context;");
+        builder.Append("        private readonly ").Append(EscapeIdentifier(model.TypeName)).AppendLine(" _context;");
         // The metadata is shared by the threads that use the same options, and some types are only resolved when read
         builder.AppendLine("        private readonly global::System.Collections.Concurrent.ConcurrentDictionary<global::System.Type, global::Meziantou.Framework.Toml.TomlTypeInfo>? _typeInfoCache;");
         builder.AppendLine();
-        builder.Append("        public __TomlTypeInfo_").Append(propertyName).Append('(').Append(model.TypeName).AppendLine(" context, global::Meziantou.Framework.Toml.TomlSerializerOptions options) : base(options)");
+        builder.Append("        public __TomlTypeInfo_").Append(propertyName).Append('(').Append(EscapeIdentifier(model.TypeName)).AppendLine(" context, global::Meziantou.Framework.Toml.TomlSerializerOptions options) : base(options)");
         builder.AppendLine("        {");
         builder.AppendLine("            _context = context;");
         // The member types are resolved when first used: for options other than the context's, the context creates new metadata

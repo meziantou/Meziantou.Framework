@@ -747,6 +747,33 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_ContextAndContainingTypesNamedWithKeywords_Compile()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            namespace Ns.@namespace
+            {
+                public sealed class Model
+                {
+                    public int A { get; set; }
+                }
+
+                public partial class @event<@int>
+                {
+                    [TomlSerializable(typeof(Model))]
+                    internal sealed partial class @class : TomlSerializerContext { }
+                }
+            }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
     public void Generator_PreservesNullableReferenceLocals()
     {
         var source = """

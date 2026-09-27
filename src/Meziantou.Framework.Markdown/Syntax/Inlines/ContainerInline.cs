@@ -215,7 +215,7 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     }
     internal IEnumerable<T> FindDescendantsInternal<T>() where T : MarkdownObject
     {
-        Debug.Assert(typeof(T).IsSubclassOf(typeof(Inline)));
+        Debug.Assert(typeof(Inline).IsAssignableFrom(typeof(T)));
 
         var stack = new Stack<Inline>();
 

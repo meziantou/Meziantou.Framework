@@ -9,11 +9,10 @@ namespace Meziantou.Framework.Markdown.Syntax;
 /// </summary>
 public static class BlockExtensions
 {
-    // TODO: Add test for this code
-
     /// <summary>
-    /// Performs the find block at position operation.
+    /// Finds the deepest block that contains a position, as <see cref="ContainsPosition"/> defines it.
     /// </summary>
+    /// <returns>The deepest block containing the position, or <c>null</c> when <paramref name="rootBlock"/> does not contain it.</returns>
     public static Block? FindBlockAtPosition(this Block rootBlock, int position)
     {
         var contains = rootBlock.CompareToPosition(position) == 0;
@@ -133,7 +132,8 @@ public static class BlockExtensions
 
 
     /// <summary>
-    /// Performs the contains position operation.
+    /// Determines whether a position is in a block: from its first character to the position just after its last character,
+    /// where a caret at the end of the block is.
     /// </summary>
     public static bool ContainsPosition(this Block block, int position)
     {
@@ -141,8 +141,9 @@ public static class BlockExtensions
     }
 
     /// <summary>
-    /// Performs the compare to position operation.
+    /// Compares a block to a position.
     /// </summary>
+    /// <returns>1 when the block is after the position, -1 when it is before, and 0 when it contains it (see <see cref="ContainsPosition"/>).</returns>
     public static int CompareToPosition(this Block block, int position)
     {
         return position < block.Span.Start ? 1 : position > block.Span.End + 1 ? -1 : 0;

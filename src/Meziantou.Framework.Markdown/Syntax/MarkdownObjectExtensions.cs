@@ -72,14 +72,14 @@ public static class MarkdownObjectExtensions
     /// <returns>An iteration over the descendant elements</returns>
     public static IEnumerable<T> Descendants<T>(this MarkdownObject markdownObject) where T : MarkdownObject
     {
-        if (typeof(T).IsSubclassOf(typeof(Block)))
+        if (typeof(Block).IsAssignableFrom(typeof(T)))
         {
             if (markdownObject is ContainerBlock containerBlock && containerBlock.Count > 0)
             {
                 return BlockDescendantsInternal<T>(containerBlock);
             }
         }
-        else // typeof(T).IsSubclassOf(typeof(Inline)))
+        else if (typeof(Inline).IsAssignableFrom(typeof(T)))
         {
             if (markdownObject is ContainerBlock containerBlock)
             {
@@ -96,6 +96,11 @@ public static class MarkdownObjectExtensions
             {
                 return leafBlock.Inline.FindDescendantsInternal<T>();
             }
+        }
+        else
+        {
+            // Both blocks and inlines, such as MarkdownObject itself
+            return markdownObject.Descendants().OfType<T>();
         }
 
         return Array.Empty<T>();
@@ -134,7 +139,7 @@ public static class MarkdownObjectExtensions
 
     private static IEnumerable<T> BlockDescendantsInternal<T>(ContainerBlock block) where T : MarkdownObject
     {
-        Debug.Assert(typeof(T).IsSubclassOf(typeof(Block)));
+        Debug.Assert(typeof(Block).IsAssignableFrom(typeof(T)));
 
         var stack = new Stack<Block>();
 
@@ -165,7 +170,7 @@ public static class MarkdownObjectExtensions
 
     private static IEnumerable<T> InlineDescendantsInternal<T>(ContainerBlock block) where T : MarkdownObject
     {
-        Debug.Assert(typeof(T).IsSubclassOf(typeof(Inline)));
+        Debug.Assert(typeof(Inline).IsAssignableFrom(typeof(T)));
 
         foreach (MarkdownObject descendant in block.Descendants())
         {

@@ -107,7 +107,7 @@ public abstract class MarkdownObject : IMarkdownObject
     /// <returns></returns>
     public string ToPositionText()
     {
-        return $"${Line}, {Column}, {Span.Start}-{Span.End}";
+        return $"{Line}, {Column}, {Span.Start}-{Span.End}";
     }
 
     /// <summary>

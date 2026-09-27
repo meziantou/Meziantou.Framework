@@ -211,4 +211,117 @@ public class TestCoreApi
             Assert.Equal("Hello, world!\n", plainText);
         }
     }
+
+    [Fact]
+    public void FindBlockAtPositionReturnsTheDeepestBlock()
+    {
+        // Paragraph 0-0, paragraph 3-4, list 7-13 with items 7-9 and 11-13 containing paragraphs 9-9 and 13-13. A block
+        // contains the position just after its last character.
+        var document = MarkdownConverter.Parse("a\n\nbb\n\n- c\n- d");
+        string?[] expected =
+        [
+            null,
+            "ParagraphBlock 0-0", "ParagraphBlock 0-0", "MarkdownDocument 0-13",
+            "ParagraphBlock 3-4", "ParagraphBlock 3-4", "ParagraphBlock 3-4", "MarkdownDocument 0-13",
+            "ListItemBlock 7-9", "ListItemBlock 7-9", "ParagraphBlock 9-9", "ParagraphBlock 9-9",
+            "ListItemBlock 11-13", "ListItemBlock 11-13", "ParagraphBlock 13-13", "ParagraphBlock 13-13",
+            null,
+        ];
+
+        for (var position = -1; position < expected.Length - 1; position++)
+        {
+            var block = document.FindBlockAtPosition(position);
+            Assert.Equal(expected[position + 1], block is null ? null : block.GetType().Name + " " + block.Span.ToString(), message: $"Position {position}");
+        }
+    }
+
+    [Theory]
+    [InlineData(2, 1)]
+    [InlineData(3, 0)]
+    [InlineData(4, 0)]
+    [InlineData(5, 0)]
+    [InlineData(6, -1)]
+    public void CompareToPositionIncludesThePositionAfterTheBlock(int position, int expected)
+    {
+        var paragraph = MarkdownConverter.Parse("a\n\nbb\n")[1];
+
+        Assert.Equal(new SourceSpan(3, 4), paragraph.Span);
+        Assert.Equal(expected, paragraph.CompareToPosition(position));
+        Assert.Equal(expected == 0, paragraph.ContainsPosition(position));
+    }
+
+    [Fact]
+    public void SourceSpanEquality()
+    {
+        var span = new SourceSpan(1, 3);
+
+        Assert.Equal("1-3", span.ToString());
+        Assert.Equal(3, span.Length);
+        Assert.False(span.IsEmpty);
+        Assert.True(SourceSpan.Empty.IsEmpty);
+        Assert.Equal(0, SourceSpan.Empty.Length);
+        Assert.True(span.Equals((object)new SourceSpan(1, 3)));
+        Assert.False(span.Equals((object)new SourceSpan(1, 4)));
+        Assert.False(span.Equals("1-3"));
+        Assert.True(span == new SourceSpan(1, 3));
+        Assert.True(span != new SourceSpan(0, 3));
+        Assert.Equal(new SourceSpan(1, 3).GetHashCode(), span.GetHashCode());
+        Assert.NotEqual(new SourceSpan(3, 1).GetHashCode(), span.GetHashCode());
+        Assert.Equal(new SourceSpan(3, 5), span.MoveForward(2));
+        Assert.Equal(new SourceSpan(1, 3), span);
+    }
+
+    [Fact]
+    public void ToPositionText()
+    {
+        var paragraph = MarkdownConverter.Parse("a\n\n  bb\n")[1];
+
+        Assert.Equal("2, 2, 5-6", paragraph.ToPositionText());
+    }
+
+    [Fact]
+    public void DescendantsOfAContainerBlock()
+    {
+        var document = MarkdownConverter.Parse("a *b*\n\n- c");
+        var paragraph = (ParagraphBlock)document[0];
+        var list = (ListBlock)document[1];
+        var listItem = (ListItemBlock)list[0];
+        var itemParagraph = (ParagraphBlock)listItem[0];
+        var a = paragraph.Inline!.FirstChild!;
+        var emphasis = (EmphasisInline)a.NextSibling!;
+        var b = emphasis.FirstChild!;
+        var c = itemParagraph.Inline!.FirstChild!;
+
+        MarkdownObject[] blocks = [paragraph, list, listItem, itemParagraph];
+        MarkdownObject[] all = [paragraph, a, emphasis, b, list, listItem, itemParagraph, c];
+        Assert.Equal(all, document.Descendants().ToArray());
+        Assert.Equal(all, document.Descendants<MarkdownObject>().ToArray());
+        Assert.Equal(blocks, document.Descendants<Block>().ToArray());
+        Assert.Equal(blocks, ((MarkdownObject)document).Descendants<Block>().ToArray());
+        Assert.Equal(new MarkdownObject[] { paragraph, itemParagraph }, document.Descendants<ParagraphBlock>().ToArray());
+        Assert.Equal(new MarkdownObject[] { list, listItem }, ((MarkdownObject)document).Descendants<ContainerBlock>().ToArray());
+        Assert.Equal(new MarkdownObject[] { a, emphasis, b, c }, ((MarkdownObject)document).Descendants<Inline>().ToArray());
+        Assert.Equal(new MarkdownObject[] { a, b, c }, ((MarkdownObject)document).Descendants<LiteralInline>().ToArray());
+        Assert.Empty(new MarkdownDocument().Descendants<Block>());
+        Assert.Empty(((MarkdownObject)new MarkdownDocument()).Descendants<Inline>());
+    }
+
+    [Fact]
+    public void DescendantsOfALeafBlock()
+    {
+        var paragraph = (ParagraphBlock)MarkdownConverter.Parse("a *b*")[0];
+        var a = paragraph.Inline!.FirstChild!;
+        var emphasis = (EmphasisInline)a.NextSibling!;
+        var b = emphasis.FirstChild!;
+
+        Assert.Equal(new MarkdownObject[] { a, emphasis, b }, paragraph.Descendants().ToArray());
+        Assert.Equal(new MarkdownObject[] { a, emphasis, b }, paragraph.Descendants<MarkdownObject>().ToArray());
+        Assert.Equal(new MarkdownObject[] { a, emphasis, b }, paragraph.Descendants<Inline>().ToArray());
+        Assert.Equal(new MarkdownObject[] { a, b }, paragraph.Descendants<LiteralInline>().ToArray());
+        Assert.Empty(paragraph.Descendants<Block>());
+        Assert.Empty(paragraph.Descendants<ParagraphBlock>());
+        Assert.Equal(new Inline[] { a, emphasis, b }, paragraph.Inline.Descendants<Inline>().ToArray());
+        Assert.Equal(new Inline[] { b }, emphasis.Descendants<LiteralInline>().ToArray());
+        Assert.Empty(((MarkdownObject)new ParagraphBlock()).Descendants<Inline>());
+    }
 }

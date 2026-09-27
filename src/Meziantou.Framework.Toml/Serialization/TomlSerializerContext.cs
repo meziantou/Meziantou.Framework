@@ -210,6 +210,20 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlException CreateConfigurationException(string message, Exception? innerException) => TomlException.CreateConfigurationError(message, innerException);
 
     /// <summary>
+    /// Reports a key that maps to a member that was already read, such as <c>Name</c> and <c>name</c> when property names are
+    /// case-insensitive. The error is recorded with the other deserialization diagnostics, and the value is skipped. It is
+    /// thrown directly when the diagnostics cannot be recorded.
+    /// </summary>
+    /// <param name="reader">The TOML reader, positioned on the first token of the value.</param>
+    /// <param name="name">The key.</param>
+    protected static void ReportDuplicateKey(TomlReader reader, string name)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        reader.ReportDuplicateKey(name);
+    }
+
+    /// <summary>
     /// Reads the current value into a buffer and moves the reader past it, so that the value can be read later, such as into
     /// a get-only member of an object that is created once its other members are read.
     /// </summary>

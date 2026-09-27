@@ -1063,7 +1063,8 @@ internal static class TomlReflectionTypeInfoResolver
                             continue;
                         }
 
-                        throw reader.CreateException($"Duplicate key '{name}' was encountered.");
+                        reader.ReportDuplicateKey(name);
+                        continue;
                     }
 
                     if (seen is not null)
@@ -1522,7 +1523,8 @@ internal static class TomlReflectionTypeInfoResolver
                             continue;
                         }
 
-                        throw reader.CreateException($"Duplicate key '{name}' was encountered.");
+                        reader.ReportDuplicateKey(name);
+                        continue;
                     }
 
                     ctorSeen[parameterIndex] = true;
@@ -1589,7 +1591,8 @@ internal static class TomlReflectionTypeInfoResolver
                             continue;
                         }
 
-                        throw reader.CreateException($"Duplicate key '{name}' was encountered.");
+                        reader.ReportDuplicateKey(name);
+                        continue;
                     }
 
                     memberSeen[memberIndex] = true;

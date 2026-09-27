@@ -932,6 +932,7 @@ namespace Meziantou.Framework.Toml.Serialization
         protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader, int diagnosticCount, Meziantou.Framework.Toml.Text.TomlSourceSpan? tableStartSpan) { }
         protected static Meziantou.Framework.Toml.TomlException CreateConfigurationException(string message) => throw null;
         protected static Meziantou.Framework.Toml.TomlException CreateConfigurationException(string message, System.Exception? innerException) => throw null;
+        protected static void ReportDuplicateKey(Meziantou.Framework.Toml.Serialization.TomlReader reader, string name) { }
         protected static Meziantou.Framework.Toml.Serialization.TomlReader CaptureValue(Meziantou.Framework.Toml.Serialization.TomlReader reader) => throw null;
         protected static void ReportDeserializationError(Meziantou.Framework.Toml.Serialization.TomlReader reader, Meziantou.Framework.Toml.Text.TomlSourceSpan? span, string message) { }
         protected static void ThrowIfDeserializationDiagnostics(Meziantou.Framework.Toml.Serialization.TomlReader reader) { }

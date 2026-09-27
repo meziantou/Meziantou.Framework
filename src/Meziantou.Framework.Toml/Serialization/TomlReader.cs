@@ -958,6 +958,20 @@ public sealed class TomlReader
         return new TomlException(message);
     }
 
+    // A key that maps to a member already read, such as Name and name when property names are case-insensitive, is an error
+    // of the document: it is recorded with the others, and its value is skipped. A table that repeats a member whose first
+    // table had errors cannot extend it; the document already has errors, so it is skipped without a misleading duplicate.
+    internal void ReportDuplicateKey(string name)
+    {
+        var isRepeatedTable = _tokenType == TomlTokenType.StartTable && !IsInlineContainer;
+        if (!isRepeatedTable || !_operationState.RecordsValueErrors || !_operationState.HasDiagnostics)
+        {
+            _operationState.RecordOrThrow(CreateException($"Duplicate key '{name}' was encountered."));
+        }
+
+        Skip();
+    }
+
     internal bool SkipIfStateUnchanged(TomlReaderState state)
     {
         if (!IsStateUnchanged(state))

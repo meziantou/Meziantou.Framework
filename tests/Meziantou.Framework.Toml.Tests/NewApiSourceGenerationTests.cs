@@ -2014,6 +2014,32 @@ public sealed class GeneratedFallbackConverter : TomlConverter<GeneratedFallback
     public override void Write(TomlWriter writer, GeneratedFallbackInner value) => throw new NotSupportedException();
 }
 
+public sealed class GeneratedCaseInsensitiveInner
+{
+    public int X { get; set; }
+
+    public int Y { get; set; }
+}
+
+public sealed class GeneratedCaseInsensitiveRoot
+{
+    public int N { get; set; }
+
+    public string? Name { get; set; }
+
+    public int M { get; set; }
+
+    public GeneratedCaseInsensitiveInner? Inner { get; set; }
+
+    public GeneratedCaseInsensitiveInner? Other { get; set; }
+}
+
+[TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[TomlSerializable(typeof(GeneratedCaseInsensitiveRoot))]
+internal sealed partial class TestTomlSerializerContextCaseInsensitiveDuplicates : TomlSerializerContext
+{
+}
+
 [TomlUnmappedMemberHandling(TomlUnmappedMemberHandling.Disallow)]
 public sealed class GeneratedStrictThrowingSetter
 {
@@ -4864,6 +4890,28 @@ public class NewApiSourceGenerationTests
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), includeFields));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty(), TestTomlSerializerContextHiding.Default.GeneratedFieldOverProperty));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty()));
+    }
+
+    // A key that maps to a member already read is recorded with the other errors. A table that repeats a member whose first
+    // table had errors is skipped: the duplicate would be misleading, as the document does not repeat the key.
+    [Theory]
+    [InlineData("N = 'bad'\nName = 'a'\nname = 'b'\nM = 'bad'\n", "(1,5)|(3,8) Duplicate key 'name' was encountered.|(4,5)")]
+    [InlineData("[Inner]\nX = 'bad'\n[inner]\nY = 2\n[other]\nX = 'bad2'\n", "(2,5)|(6,5)")]
+    public void CaseInsensitiveDuplicateKeys_AreReportedWithTheOtherErrors(string toml, string expected)
+    {
+        var options = new TomlSerializerOptions { PropertyNameCaseInsensitive = true };
+        var typeInfo = TestTomlSerializerContextCaseInsensitiveDuplicates.Default.GeneratedCaseInsensitiveRoot;
+
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedCaseInsensitiveRoot>(toml, options));
+
+        Assert.Equal(expected, Format(generated));
+        Assert.Equal(expected, Format(reflection));
+        Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedCaseInsensitiveRoot>(toml, out _, options));
+
+        static string Format(TomlException exception) => string.Join('|', exception.Diagnostics!.Select(diagnostic =>
+            $"({diagnostic.Span.Start.Line + 1},{diagnostic.Span.Start.Column + 1})" + (diagnostic.Message.StartsWith("Duplicate", StringComparison.Ordinal) ? " " + diagnostic.Message : "")));
     }
 
     // TryDeserialize stops at the first error, an unmapped key included: no setter runs on invalid input

@@ -2153,6 +2153,36 @@ internal sealed partial class TestTomlSerializerContextCustomExtensionDictionary
 {
 }
 
+public sealed class GeneratedValidatingA
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedValidatingB : ITomlOnDeserialized
+{
+    public int Y { get; set; }
+
+    public void OnTomlDeserialized()
+    {
+        if (Y != 2)
+        {
+            throw new TomlException("Y must be 2");
+        }
+    }
+}
+
+public sealed class GeneratedValidatingRoot
+{
+    public GeneratedValidatingA? A { get; set; }
+
+    public GeneratedValidatingB? B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedValidatingRoot))]
+internal sealed partial class TestTomlSerializerContextValidating : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4615,6 +4645,21 @@ public class NewApiSourceGenerationTests
         Assert.Equal("Name = \"n\"\nx = 1\n", TomlSerializer.Serialize(value, typeInfo).ReplaceLineEndings("\n"));
         Assert.Equal(2, TomlSerializer.Deserialize<GeneratedCustomExtensionDictionaryModel>("Name = 'n'\ny = 2\n")!.Extra!["y"]);
         Assert.Equal(2, TomlSerializer.Deserialize("Name = 'n'\ny = 2\n", typeInfo)!.Extra!["y"]);
+    }
+
+    [Fact]
+    public void ErrorWithoutALocation_IsReportedWithTheOtherErrors()
+    {
+        const string Toml = "[A]\nX = 'bad'\n[B]\nY = 1\n";
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedValidatingRoot>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextValidating.Default.GeneratedValidatingRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            Assert.HasCount(2, exception.Diagnostics);
+            Assert.Contains("Y must be 2", exception.Message, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

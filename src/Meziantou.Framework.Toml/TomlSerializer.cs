@@ -1153,7 +1153,12 @@ public static class TomlSerializer
         }
         catch (TomlException ex) when (reader.OperationState.HasDiagnostics && !ex.IsConfigurationError)
         {
-            reader.OperationState.AddDiagnostics(ex);
+            // An error without a location, such as one thrown by a validation callback, is reported with the others where the
+            // reading stopped, instead of being dropped
+            var located = ex.Diagnostics.Count == 0 && ex.Span is null && !reader.OperationState.IsRecordedValueError(ex)
+                ? new TomlException(reader.CurrentSpan ?? new TomlSourceSpan(reader.Options.SourceName ?? string.Empty, default, default), ex.Message, ex)
+                : ex;
+            reader.OperationState.AddDiagnostics(located);
             ThrowIfDiagnostics(reader.OperationState);
             throw;
         }

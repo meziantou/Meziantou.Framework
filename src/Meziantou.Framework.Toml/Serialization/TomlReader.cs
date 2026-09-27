@@ -38,6 +38,9 @@ public sealed class TomlReader
     private int _eventCount;
     private bool _eventsLoaded;
     private int _eventPosition;
+
+    // The values read by user converters, innermost last, to check that each converter reads exactly its value
+    private List<ConverterValue>? _converterValues;
     private int _currentEventIndex;
     private readonly TomlReaderToken[]? _buffer;
     private readonly int[]? _bufferContainerEnds;
@@ -252,6 +255,11 @@ public sealed class TomlReader
     /// <exception cref="TomlException">The TOML document is invalid. The first call reports errors anywhere in the document.</exception>
     public bool Read()
     {
+        if (_converterValues is { Count: > 0 })
+        {
+            CountReadsAfterConverterValues();
+        }
+
         if (_metadataCaptures is not { Count: > 0 } captures)
         {
             var hasToken = ReadCore();
@@ -302,7 +310,52 @@ public sealed class TomlReader
                 break;
             case TomlTokenType.EndTable or TomlTokenType.EndArray:
                 _depth--;
+                if (_converterValues is { Count: > 0 })
+                {
+                    EndConverterValues();
+                }
+
                 break;
+        }
+    }
+
+    // A converter reads its value and the token that follows it, as the built-in converters do: once the last token of the
+    // value is read, exactly one more Read must be done
+    internal object BeginConverterValue()
+    {
+        var isContainer = _tokenType is TomlTokenType.StartTable or TomlTokenType.StartArray;
+        var value = new ConverterValue(isContainer ? _depth - 1 : _depth, isEnded: !isContainer);
+        (_converterValues ??= []).Add(value);
+        return value;
+    }
+
+    internal bool EndConverterValue(object value)
+    {
+        var converterValue = (ConverterValue)value;
+        _converterValues!.Remove(converterValue);
+        return converterValue.IsEnded && converterValue.ReadsAfterEnd == 1;
+    }
+
+    private void CountReadsAfterConverterValues()
+    {
+        foreach (var value in _converterValues!)
+        {
+            if (value.IsEnded)
+            {
+                value.ReadsAfterEnd++;
+            }
+        }
+    }
+
+    // The end token that returns to the depth of the parent of a container ends it
+    private void EndConverterValues()
+    {
+        foreach (var value in _converterValues!)
+        {
+            if (!value.IsEnded && _depth <= value.ParentDepth)
+            {
+                value.IsEnded = true;
+            }
         }
     }
 
@@ -1027,6 +1080,10 @@ public sealed class TomlReader
             // The value has no end token: restore the depth of its parent, which the start token increased
             _bufferDepth--;
             _depth--;
+            if (_converterValues is { Count: > 0 })
+            {
+                EndConverterValues();
+            }
         }
 
         _bufferIndex = endExclusive;
@@ -1058,5 +1115,14 @@ public sealed class TomlReader
             _currentStringTokenKind,
             _currentDateTime,
             _hasDateTime));
+    }
+
+    private sealed class ConverterValue(int parentDepth, bool isEnded)
+    {
+        public int ParentDepth { get; } = parentDepth;
+
+        public bool IsEnded { get; set; } = isEnded;
+
+        public int ReadsAfterEnd { get; set; }
     }
 }

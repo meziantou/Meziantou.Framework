@@ -374,6 +374,11 @@ internal partial class ConverterContext : TomlSerializerContext;
 `GetTomlDateTime`, `GetRawText`, and `PropertyNameEquals`. `TomlWriter` exposes `WritePropertyName`, the
 `Write*Value` methods, and the start and end methods for tables, inline tables, arrays, and arrays of tables.
 
+A converter reads its whole value, then calls `Read` once more to move to the token that follows it, or it does not move
+the reader at all, as in the example above, and the value is skipped for it. Like `System.Text.Json`, a converter that
+stops within its value or reads past it is a configuration error, which `TryDeserialize` throws too: otherwise the rest
+of the value would be read as keys of the parent, or the keys that follow it would be lost.
+
 TOML lets a document define a table in several places: an array of tables can be reopened after another table, and
 dotted keys can extend a table after another key. `TomlReader` parses the whole document on the first `Read`, so it
 reports syntax errors before any value is created, and it returns each table and array of tables as one block. A

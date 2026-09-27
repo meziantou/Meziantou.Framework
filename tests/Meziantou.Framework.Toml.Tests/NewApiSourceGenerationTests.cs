@@ -2014,6 +2014,131 @@ public sealed class GeneratedFallbackConverter : TomlConverter<GeneratedFallback
     public override void Write(TomlWriter writer, GeneratedFallbackInner value) => throw new NotSupportedException();
 }
 
+public sealed class GeneratedConverterReadInner
+{
+    public int A { get; set; }
+
+    public string? B { get; set; }
+}
+
+// Reads the first key of the table only
+public sealed class GeneratedPartialTableConverter : TomlConverter<GeneratedConverterReadInner>
+{
+    public override GeneratedConverterReadInner Read(TomlReader reader)
+    {
+        reader.Read();
+        reader.Read();
+        var value = new GeneratedConverterReadInner { A = (int)reader.GetInt64() };
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, GeneratedConverterReadInner value) => throw new NotSupportedException();
+}
+
+// Reads the table to its end, and reads the token that follows it only when complete is true
+public class GeneratedTableConverter(bool complete) : TomlConverter<GeneratedConverterReadInner>
+{
+    public GeneratedTableConverter()
+        : this(complete: true)
+    {
+    }
+
+    public override GeneratedConverterReadInner Read(TomlReader reader)
+    {
+        var value = new GeneratedConverterReadInner();
+        reader.Read();
+        while (reader.TokenType == TomlTokenType.PropertyName)
+        {
+            var name = reader.PropertyName;
+            reader.Read();
+            if (name == "A")
+            {
+                value.A = (int)reader.GetInt64();
+            }
+            else
+            {
+                value.B = reader.GetString();
+            }
+
+            reader.Read();
+        }
+
+        if (complete)
+        {
+            reader.Read();
+        }
+
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, GeneratedConverterReadInner value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedUnfinishedTableConverter() : GeneratedTableConverter(complete: false);
+
+// Reads its integer and the key that follows it
+public sealed class GeneratedGreedyInt32Converter : TomlConverter<int>
+{
+    public override int Read(TomlReader reader)
+    {
+        var value = (int)reader.GetInt64();
+        reader.Read();
+        reader.Read();
+        return value;
+    }
+
+    public override void Write(TomlWriter writer, int value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedConverterReadPartialOuter
+{
+    public string? Name { get; set; }
+
+    [TomlConverter(typeof(GeneratedPartialTableConverter))]
+    public GeneratedConverterReadInner? I { get; set; }
+
+    public string? B { get; set; }
+
+    public GeneratedConverterReadInner? K { get; set; }
+}
+
+public sealed class GeneratedConverterReadUnfinishedOuter
+{
+    public string? Name { get; set; }
+
+    [TomlConverter(typeof(GeneratedUnfinishedTableConverter))]
+    public GeneratedConverterReadInner? I { get; set; }
+
+    public GeneratedConverterReadInner? K { get; set; }
+}
+
+public sealed class GeneratedConverterReadCompleteOuter
+{
+    public string? Name { get; set; }
+
+    [TomlConverter(typeof(GeneratedTableConverter))]
+    public GeneratedConverterReadInner? I { get; set; }
+
+    public GeneratedConverterReadInner? K { get; set; }
+}
+
+public sealed class GeneratedConverterReadGreedyOuter
+{
+    [TomlConverter(typeof(GeneratedGreedyInt32Converter))]
+    public int N { get; set; }
+
+    public int M { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedConverterReadPartialOuter))]
+[TomlSerializable(typeof(GeneratedConverterReadUnfinishedOuter))]
+[TomlSerializable(typeof(GeneratedConverterReadCompleteOuter))]
+[TomlSerializable(typeof(GeneratedConverterReadGreedyOuter))]
+internal sealed partial class TestTomlSerializerContextConverterRead : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedFallbackOuter
 {
     [TomlConverter(typeof(GeneratedFallbackConverter))]
@@ -4722,6 +4847,35 @@ public class NewApiSourceGenerationTests
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), includeFields));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty(), TestTomlSerializerContextHiding.Default.GeneratedFieldOverProperty));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty()));
+    }
+
+    // Like System.Text.Json, a converter must read its whole value and nothing more: otherwise the parent would read the rest
+    // of the value as its own keys, or miss the keys the converter read
+    [Fact]
+    public void ConverterThatReadsTooMuchOrNotEnough_IsAConfigurationError()
+    {
+        var context = TestTomlSerializerContextConverterRead.Default;
+        const string TableToml = "Name = 'outer'\n[I]\nA = 1\nB = 'inner-b'\n[K]\nA = 5\n";
+
+        Check(context.GeneratedConverterReadPartialOuter, TableToml);
+        Check(context.GeneratedConverterReadUnfinishedOuter, TableToml);
+        Check(context.GeneratedConverterReadGreedyOuter, "N = 1\nM = 2\n");
+
+        var generated = TomlSerializer.Deserialize(TableToml, context.GeneratedConverterReadCompleteOuter)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedConverterReadCompleteOuter>(TableToml)!;
+        Assert.Equal(("inner-b", 5), (generated.I!.B, generated.K!.A));
+        Assert.Equal(("inner-b", 5), (reflection.I!.B, reflection.K!.A));
+
+        static void Check<T>(TomlTypeInfo<T> typeInfo, string toml)
+        {
+            var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+            var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<T>(toml, out _));
+            _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+
+            Assert.True(generated.IsConfigurationError);
+            Assert.Contains("read too much or not enough", generated.Message, StringComparison.Ordinal);
+            Assert.Equal(reflection.Message, generated.Message);
+        }
     }
 
     // A converter cannot hide the error of a nested value it reads with the metadata of the library: both APIs report it

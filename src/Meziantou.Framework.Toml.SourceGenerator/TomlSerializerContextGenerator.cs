@@ -3106,7 +3106,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine(")");
         builder.Append(indent).AppendLine("{");
-        EmitRecoverableTableExtensionRead(builder, indent, GetTypeInfoAccess(type) + ".ReadInto(reader, " + existingExpression + ")");
+
+        // A nullable struct that has a value is populated like the struct
+        var populatedType = TryGetNullableUnderlyingType(type, out var underlyingType) ? underlyingType : type;
+        EmitRecoverableTableExtensionRead(builder, indent, GetTypeInfoAccess(populatedType) + ".ReadInto(reader, " + existingExpression + ")");
         builder.Append(indent).Append("    ").Append(assignment("(" + typeName + ")__tableExtension!")).AppendLine(";");
         builder.Append(indent).AppendLine("    continue;");
         builder.Append(indent).AppendLine("}");
@@ -3130,6 +3133,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     private static void EmitRepeatedTableExtensionIntoReadOnlyMember(StringBuilder builder, PocoMember member, string indent)
     {
         var memberAccess = GetMemberReadExpression(member, "value");
+
+        // Like the reflection resolver, a struct is populated as a copy, which the member cannot be set to
+        if (member.Type.IsValueType)
+        {
+            builder.Append(indent).AppendLine("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer)");
+            builder.Append(indent).AppendLine("{");
+            EmitRecoverableTableExtensionRead(builder, indent, GetMemberTypeInfoAccess(member) + ".ReadInto(reader, " + memberAccess + ")");
+            builder.Append(indent).AppendLine("    _ = __tableExtension;");
+            builder.Append(indent).AppendLine("    continue;");
+            builder.Append(indent).AppendLine("}");
+            return;
+        }
+
         builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer && ").Append(memberAccess).AppendLine(" is not null)");
         builder.Append(indent).AppendLine("{");
         EmitRecoverableTableExtensionRead(builder, indent, GetMemberTypeInfoAccess(member) + ".ReadInto(reader, " + memberAccess + ")");
@@ -3144,10 +3160,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("}");
     }
 
-    // A member with a converter is read as a whole by its converter, and a nullable struct cannot be populated
-    private static bool CanEmitTableHeaderExtension(PocoMember member) => member.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(member.Type, out _);
+    // A member with a converter is read as a whole by its converter
+    private static bool CanEmitTableHeaderExtension(PocoMember member) => member.ConverterTypeInfoName is null;
 
-    private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => parameter.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(parameter.ParameterType, out _);
+    private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => parameter.ConverterTypeInfoName is null;
 
     // The member is set like when it is read: with its setter accessor, its init accessor, or directly
     private static string GetMemberAssignment(PocoMember member, string valueExpression)
@@ -3509,7 +3525,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
+                            if (CanEmitTableHeaderExtension(member))
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                            ");
                             }
@@ -3539,7 +3555,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
+                            if (CanEmitTableHeaderExtension(member))
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                            ");
                             }
@@ -3648,7 +3664,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
+                            if (CanEmitTableHeaderExtension(member))
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                                        ");
                             }
@@ -3687,7 +3703,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
+                            if (CanEmitTableHeaderExtension(member))
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                                        ");
                             }

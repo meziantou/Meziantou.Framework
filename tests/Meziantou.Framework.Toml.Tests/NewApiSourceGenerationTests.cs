@@ -1923,7 +1923,25 @@ public sealed class GeneratedExtendStruct
 
 public sealed record GeneratedExtendStructRecord([property: TomlPropertyName("a")] GeneratedExtendValueStruct A, int C);
 
+public sealed class GeneratedExtendNullableStruct
+{
+    [TomlPropertyName("a")]
+    public GeneratedExtendValueStruct? A { get; set; }
+
+    public int C { get; set; }
+}
+
+public sealed class GeneratedExtendGetOnlyStruct
+{
+    [TomlPropertyName("a")]
+    public GeneratedExtendValueStruct A { get; }
+
+    public int C { get; set; }
+}
+
 [TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[TomlSerializable(typeof(GeneratedExtendNullableStruct))]
+[TomlSerializable(typeof(GeneratedExtendGetOnlyStruct))]
 [TomlSerializable(typeof(GeneratedExtendInit))]
 [TomlSerializable(typeof(GeneratedExtendPrivateSetter))]
 [TomlSerializable(typeof(GeneratedExtendStruct))]
@@ -4315,6 +4333,11 @@ public class NewApiSourceGenerationTests
         Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendPrivateSetter)!.A!, TomlSerializer.Deserialize<GeneratedExtendPrivateSetter>(toml, options)!.A!);
         Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendStruct)!.A, TomlSerializer.Deserialize<GeneratedExtendStruct>(toml, options)!.A);
         Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendStructRecord)!.A, TomlSerializer.Deserialize<GeneratedExtendStructRecord>(toml, options)!.A);
+        Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendNullableStruct)!.A!.Value, TomlSerializer.Deserialize<GeneratedExtendNullableStruct>(toml, options)!.A!.Value);
+
+        // A get-only struct member is populated as a copy, which is discarded
+        Assert.Equal(0, TomlSerializer.Deserialize(toml, context.GeneratedExtendGetOnlyStruct)!.A.D);
+        Assert.Equal(0, TomlSerializer.Deserialize<GeneratedExtendGetOnlyStruct>(toml, options)!.A.D);
 
         static void Check(IGeneratedExtendValue generated, IGeneratedExtendValue reflection)
         {

@@ -753,7 +753,7 @@ internal static class TomlReflectionTypeInfoResolver
             _hasRequiredMembers = false;
             for (var i = 0; i < _members.Count; i++)
             {
-                if (_members[i].IsRequired && !_members[i].IgnoreOnRead)
+                if (_members[i].IsRequired && !_members[i].IgnoreOnRead && !_members[i].IsExtensionData)
                 {
                     _hasRequiredMembers = true;
                     break;
@@ -1829,8 +1829,9 @@ internal static class TomlReflectionTypeInfoResolver
         {
             for (var i = 0; i < _members.Count; i++)
             {
+                // The keys of extension data are the unmapped ones, so it has no key of its own to be missing, like in generated code
                 var member = _members[i];
-                if (!member.IsRequired || member.IgnoreOnRead)
+                if (!member.IsRequired || member.IgnoreOnRead || member.IsExtensionData)
                 {
                     continue;
                 }

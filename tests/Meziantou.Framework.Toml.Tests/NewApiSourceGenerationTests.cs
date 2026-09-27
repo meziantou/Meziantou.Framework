@@ -2274,6 +2274,19 @@ internal sealed partial class TestTomlSerializerContextNonHiding : TomlSerialize
 {
 }
 
+public sealed class GeneratedRequiredExtensionData
+{
+    public int A { get; set; }
+
+    [TomlExtensionData]
+    public required Dictionary<string, object?> Extra { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedRequiredExtensionData))]
+internal sealed partial class TestTomlSerializerContextRequiredExtensionData : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4832,6 +4845,18 @@ public class NewApiSourceGenerationTests
             Assert.Equal("X = 3\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
             Assert.Equal(5, TomlSerializer.Deserialize("X = 5", typeInfo)!.X);
         }
+    }
+
+    [Fact]
+    public void RequiredExtensionData_IsRead()
+    {
+        const string Toml = "A = 1\nq = 2\n";
+
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextRequiredExtensionData.Default.GeneratedRequiredExtensionData)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedRequiredExtensionData>(Toml)!;
+
+        Assert.Equal(2L, generated.Extra["q"]);
+        Assert.Equal(2L, reflection.Extra["q"]);
     }
 
     [Fact]

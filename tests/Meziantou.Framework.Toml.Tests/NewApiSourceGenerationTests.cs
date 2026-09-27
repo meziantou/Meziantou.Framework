@@ -5150,6 +5150,11 @@ public class NewApiSourceGenerationTests
         var toml = "Q = [" + string.Concat(Enumerable.Repeat("{},", 50_000)) + "]\n";
         var typeInfo = generated ? (TomlTypeInfo)TestTomlSerializerContextManyErrors.Default.GeneratedManyErrorsRoot : TomlSerializerOptions.Default.GetTypeInfo<GeneratedManyErrorsRoot>();
 
+        // The first calls resolve and cache the metadata, which other tests may have done already: both methods are measured
+        // warm, so they only differ by the diagnostics Deserialize records
+        _ = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+        Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
+
         var before = GC.GetAllocatedBytesForCurrentThread();
         var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
         var deserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
@@ -5158,9 +5163,10 @@ public class NewApiSourceGenerationTests
         Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
         var tryDeserializeAllocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
+        // Each of the 1,000 diagnostics Deserialize records costs more than 1 KB, which TryDeserialize does not spend
         Assert.Equal(Meziantou.Framework.Toml.Serialization.Internal.TomlSerializationOperationState.MaxRecordedDiagnostics + 1, exception.Diagnostics.Count);
         Assert.True(deserializeAllocated < 100_000_000, $"Deserialize allocated {deserializeAllocated} bytes");
-        Assert.True(tryDeserializeAllocated < deserializeAllocated / 2, $"TryDeserialize allocated {tryDeserializeAllocated} bytes");
+        Assert.True(tryDeserializeAllocated < deserializeAllocated - 1_000_000, $"TryDeserialize allocated {tryDeserializeAllocated} bytes, and Deserialize {deserializeAllocated} bytes");
     }
 
     [Fact]

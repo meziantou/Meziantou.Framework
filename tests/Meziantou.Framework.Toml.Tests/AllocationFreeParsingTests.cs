@@ -19,25 +19,22 @@ public sealed class AllocationFreeParsingTests
                    "}\n";
 
         var lexerOptions = new TomlLexerOptions { DecodeScalars = false };
-
-        WarmUpLexer(toml, lexerOptions);
-
-        var lexer = TomlLexer.Create(toml, lexerOptions, "alloc.toml");
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var checksum = 0;
-        while (lexer.MoveNext())
-        {
-            var token = lexer.Current;
-            checksum = unchecked(checksum + (int)token.Kind + token.Start.Offset + token.End.Offset);
-        }
-        var after = GC.GetAllocatedBytesForCurrentThread();
+
+        var allocated = GetMinimumAllocatedBytes(
+            () => TomlLexer.Create(toml, lexerOptions, "alloc.toml"),
+            lexer =>
+            {
+                checksum = 0;
+                while (lexer.MoveNext())
+                {
+                    var token = lexer.Current;
+                    checksum = unchecked(checksum + (int)token.Kind + token.Start.Offset + token.End.Offset);
+                }
+            });
 
         Assert.NotEqual(0, checksum, message: "Sanity check: token loop should execute.");
-        Assert.Equal(0, after - before, message: "Lexer iteration should not allocate.");
+        Assert.Equal(0, allocated, message: "Lexer iteration should not allocate.");
     }
 
     [Fact]
@@ -57,25 +54,23 @@ public sealed class AllocationFreeParsingTests
             Mode = TomlParserMode.Strict,
         };
 
-        WarmUpParser(toml, parserOptions);
-
-        var parser = TomlParser.Create(toml, parserOptions);
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var checksum = 0;
-        while (parser.MoveNext())
-        {
-            var evt = parser.Current;
-            var span = evt.Span;
-            checksum = unchecked(checksum + (int)evt.Kind + (span?.Start.Offset ?? 0) + (span?.End.Offset ?? 0));
-        }
-        var after = GC.GetAllocatedBytesForCurrentThread();
+
+        var allocated = GetMinimumAllocatedBytes(
+            () => TomlParser.Create(toml, parserOptions),
+            parser =>
+            {
+                checksum = 0;
+                while (parser.MoveNext())
+                {
+                    var evt = parser.Current;
+                    var span = evt.Span;
+                    checksum = unchecked(checksum + (int)evt.Kind + (span?.Start.Offset ?? 0) + (span?.End.Offset ?? 0));
+                }
+            });
 
         Assert.NotEqual(0, checksum, message: "Sanity check: event loop should execute.");
-        Assert.Equal(0, after - before, message: "Parser iteration should not allocate.");
+        Assert.Equal(0, allocated, message: "Parser iteration should not allocate.");
     }
 
     // The parser tracks every key to reject duplicates. Its buffers are rented, and returned at the end of the document.
@@ -95,35 +90,39 @@ public sealed class AllocationFreeParsingTests
             Mode = TomlParserMode.Strict,
         };
 
-        WarmUpParser(toml, parserOptions);
-
-        var parser = TomlParser.Create(toml, parserOptions);
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var count = 0;
-        while (parser.MoveNext())
-        {
-            count++;
-        }
 
-        var after = GC.GetAllocatedBytesForCurrentThread();
+        var allocated = GetMinimumAllocatedBytes(
+            () => TomlParser.Create(toml, parserOptions),
+            parser =>
+            {
+                count = 0;
+                while (parser.MoveNext())
+                {
+                    count++;
+                }
+            });
 
         Assert.True(count > 4000, message: "Sanity check: event loop should execute.");
-        Assert.Equal(0, after - before, message: "Parser iteration should not allocate.");
+        Assert.Equal(0, allocated, message: "Parser iteration should not allocate.");
     }
 
-    private static void WarmUpLexer(string toml, TomlLexerOptions lexerOptions)
+    // The first iteration warms up the code and the buffers the parser rents from the shared ArrayPool. A gen2 GC caused by a
+    // test running in parallel can trim that pool before a measured iteration, which then rents new buffers: the smallest of
+    // a few measurements is the allocation of the iteration itself.
+    private static long GetMinimumAllocatedBytes<T>(Func<T> create, Action<T> iterate)
     {
-        var lexer = TomlLexer.Create(toml, lexerOptions, "warmup.toml");
-        while (lexer.MoveNext())
-        {
-        }
-    }
+        iterate(create());
 
-    private static void WarmUpParser(string toml, Meziantou.Framework.Toml.Parsing.TomlParserOptions parserOptions)
-    {
-        var parser = TomlParser.Create(toml, parserOptions);
-        while (parser.MoveNext())
+        var minimum = long.MaxValue;
+        for (var attempt = 0; attempt < 5 && minimum > 0; attempt++)
         {
+            var instance = create();
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            iterate(instance);
+            minimum = Math.Min(minimum, GC.GetAllocatedBytesForCurrentThread() - before);
         }
+
+        return minimum;
     }
 }

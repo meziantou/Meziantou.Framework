@@ -33,7 +33,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
             }
             else
             {
-                if (listItem[0] is HtmlBlock && StartsWithIndentation(listItem[0]))
+                if (listItem[0] is HtmlBlock && GetIndentation(listItem[0]) > 0)
                 {
                     // The indentation of the HTML block would be taken as the spaces after the marker, so start it on the next line
                     renderer.WriteLine();
@@ -85,24 +85,64 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
             marker = $"{number.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter}";
         }
 
-        // The indented lines of the block after the list would continue the last item, unless its content is indented further
-        if (index == listBlock.Count - 1 && StartsWithIndentation(GetNextSibling(listBlock)) && !StartsWithIndentation(listBlock[index] is ListItemBlock { Count: > 0 } item ? item[0] : null))
+        // The indented lines of the block after the list would continue the last item, unless its content is indented further.
+        // An empty item ends at the blank line after the list.
+        var indentation = GetIndentation(GetNextSibling(listBlock));
+        if (indentation > 0 && listBlock[^1] is ListItemBlock { Count: > 0 } last)
         {
-            return marker.PadRight(Math.Max(5, marker.Length + 1));
+            // The content of an item starting with an indented block is one space after the marker
+            var maxSpaces = GetIndentation(last[0]) > 0 ? 1 : 4;
+
+            // Indent all the items when the spaces after the marker are not enough, unless the list starts on the line of another
+            // marker, or would continue the list before it
+            var indent = Math.Max(0, indentation + 1 - marker.Length - maxSpaces);
+            if (indent > 3 || (indent > 0 && (renderer.GetListMarkersBefore(listBlock).Length > 0 || GetPreviousSibling(listBlock) is ListBlock)))
+            {
+                indent = 0;
+            }
+
+            var spaces = index == listBlock.Count - 1 ? Math.Clamp(Math.Max(5, indentation + 1) - indent - marker.Length, 1, maxSpaces) : 1;
+            return new string(' ', indent) + marker + new string(' ', spaces);
         }
 
         return marker + " ";
     }
 
-    private static bool StartsWithIndentation(Block? block)
+    // Gets the indentation of the first line of a block that keeps it
+    private static int GetIndentation(Block? block)
     {
-        return block switch
+        var line = block switch
         {
-            FencedCodeBlock => false,
-            CodeBlock => true,
-            HtmlBlock { Lines.Count: > 0 } htmlBlock => htmlBlock.Lines.Lines[0].Slice.AsSpan() is [' ' or '\t', ..],
-            _ => false,
+            FencedCodeBlock => default,
+            CodeBlock { Lines.Count: > 0 } codeBlock => codeBlock.Lines.Lines[0].Slice.AsSpan(),
+            HtmlBlock { Lines.Count: > 0 } htmlBlock => htmlBlock.Lines.Lines[0].Slice.AsSpan(),
+            _ => default,
         };
+
+        var indentation = block is CodeBlock and not FencedCodeBlock ? 4 : 0;
+        foreach (var c in line)
+        {
+            if (c == ' ')
+            {
+                indentation++;
+            }
+            else if (c == '\t')
+            {
+                indentation += 4 - (indentation % 4);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return indentation;
+    }
+
+    private static Block? GetPreviousSibling(Block block)
+    {
+        var index = block.Parent?.IndexOf(block) ?? -1;
+        return index > 0 ? block.Parent![index - 1] : null;
     }
 
     private static Block? GetNextSibling(Block block)

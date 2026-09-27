@@ -79,6 +79,19 @@ public class DiagnosticsBag : IEnumerable<DiagnosticMessage>
     }
 
     // A stable sort: diagnostics at the same position keep their order
+    internal void InsertRange(int index, IEnumerable<DiagnosticMessage> messages)
+    {
+        var count = _messages.Count;
+        _messages.InsertRange(index, messages);
+        for (var i = index; i < index + _messages.Count - count; i++)
+        {
+            if (_messages[i].Kind == DiagnosticMessageKind.Error)
+            {
+                HasErrors = true;
+            }
+        }
+    }
+
     internal void SortByPosition()
     {
         var sorted = _messages.OrderBy(static message => message.Span.Start.Offset).ToList();

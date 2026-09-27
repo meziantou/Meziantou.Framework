@@ -1990,9 +1990,12 @@ internal sealed class Lexer
     {
         // Initialize the position at -1 when starting
         _current = new LexerInternalState {Position = new TextPosition(0, 0, 0)};
+        _token = new SyntaxTokenValue();
+
+        // Reading the first character can report an error, such as a lone surrogate, so the errors are cleared before
+        _errors = null;
+
         // It is important to initialize this separately from the previous line
         _current.CurrentChar = NextCharFromReader();
-        _token = new SyntaxTokenValue();
-        _errors = null;
     }
 }

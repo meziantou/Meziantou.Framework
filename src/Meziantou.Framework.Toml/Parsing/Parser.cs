@@ -82,13 +82,10 @@ internal partial class Parser
 
         if (_lexer.HasErrors)
         {
-            foreach (var lexerError in _lexer.Errors)
-            {
-                Log(lexerError);
-            }
-
             // The lexer errors are known once the document is read: the diagnostics are listed in the order of the document,
-            // so the first one is the first error, as for TomlParser
+            // so the first one is the first error, as for TomlParser. At the same position, the error of the lexer comes first,
+            // as TomlParser reports it before the token is parsed.
+            _diagnostics.InsertRange(0, _lexer.Errors);
             _diagnostics.SortByPosition();
         }
 

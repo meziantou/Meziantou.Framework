@@ -537,6 +537,22 @@ val = true
         Assert.Equal(offsets.Order().ToArray(), offsets);
     }
 
+    [Theory]
+    [InlineData("{S}")]
+    [InlineData("{S} = 1")]
+    [InlineData("\uFEFF{S}")]
+    [InlineData("{L}# c")]
+    public void LoneSurrogateAsTheFirstCharacter_IsReported(string template)
+    {
+        var toml = template.Replace("{S}", "\uD800", StringComparison.Ordinal).Replace("{L}", "\uDC00", StringComparison.Ordinal);
+
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.Equal("Invalid UTF-16 surrogate sequence in TOML input.", deserialize.Diagnostics![0].Message);
+        Assert.Equal("Invalid UTF-16 surrogate sequence in TOML input.", doc.Diagnostics[0].Message);
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

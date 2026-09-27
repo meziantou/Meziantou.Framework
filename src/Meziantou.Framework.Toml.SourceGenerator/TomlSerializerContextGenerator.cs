@@ -6375,9 +6375,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
            TryGetAttribute(symbol, "System.ObsoleteAttribute", out var attribute) &&
            attribute.ConstructorArguments is [_, { Value: true }];
 
+    // Every type the generated code names can be experimental: the serialized types and their members, the types of the
+    // members (even when a converter reads them), the type arguments, the containing types, the converters, and the
+    // assemblies and modules they are declared in
     private static ImmutableArray<string> GetExperimentalDiagnosticIds(ImmutableArray<ITypeSymbol> types, ImmutableArray<ITypeSymbol> optionsConverterTypes)
     {
         var ids = new SortedSet<string>(StringComparer.Ordinal);
+        var referencedTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
         foreach (var type in types)
         {
             AddTypeAndMembers(type);
@@ -6386,26 +6390,31 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         // The generated code also creates the converters
         foreach (var converterType in optionsConverterTypes.IsDefault ? ImmutableArray<ITypeSymbol>.Empty : optionsConverterTypes)
         {
-            AddTypeAndMembers(converterType);
+            AddConverterType(converterType);
         }
 
         return ids.ToImmutableArray();
 
         void AddTypeAndMembers(ITypeSymbol type)
         {
+            AddTypeReference(type);
             for (var current = type.OriginalDefinition as INamedTypeSymbol; current is not null; current = current.BaseType)
             {
-                Add(current);
+                AddTypeReference(current);
                 AddConverter(current);
-                for (var containing = current.ContainingType; containing is not null; containing = containing.ContainingType)
-                {
-                    Add(containing);
-                }
-
                 foreach (var member in current.GetMembers())
                 {
                     Add(member);
                     AddConverter(member);
+                    switch (member)
+                    {
+                        case IPropertySymbol property:
+                            AddTypeReference(property.Type);
+                            break;
+                        case IFieldSymbol field:
+                            AddTypeReference(field.Type);
+                            break;
+                    }
                 }
             }
         }
@@ -6415,14 +6424,57 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             if (TryGetAttribute(symbol, TomlConverterAttributeMetadataName, out var attribute) &&
                 attribute.ConstructorArguments is [{ Value: INamedTypeSymbol converterType }])
             {
-                for (var current = converterType; current is not null; current = current.BaseType)
+                AddConverterType(converterType);
+            }
+        }
+
+        void AddConverterType(ITypeSymbol converterType)
+        {
+            for (var current = converterType as INamedTypeSymbol; current is not null; current = current.BaseType)
+            {
+                AddTypeReference(current);
+                foreach (var constructor in current.InstanceConstructors)
                 {
-                    Add(current);
-                    foreach (var constructor in current.InstanceConstructors)
-                    {
-                        Add(constructor);
-                    }
+                    Add(constructor);
                 }
+            }
+        }
+
+        void AddTypeReference(ITypeSymbol type)
+        {
+            if (!referencedTypes.Add(type))
+            {
+                return;
+            }
+
+            Add(type);
+            if (type.ContainingAssembly is { } assembly)
+            {
+                Add(assembly);
+            }
+
+            if (type.ContainingModule is { } module)
+            {
+                Add(module);
+            }
+
+            for (var containing = type.ContainingType; containing is not null; containing = containing.ContainingType)
+            {
+                AddTypeReference(containing);
+            }
+
+            switch (type)
+            {
+                case INamedTypeSymbol named:
+                    foreach (var typeArgument in named.TypeArguments)
+                    {
+                        AddTypeReference(typeArgument);
+                    }
+
+                    break;
+                case IArrayTypeSymbol array:
+                    AddTypeReference(array.ElementType);
+                    break;
             }
         }
 

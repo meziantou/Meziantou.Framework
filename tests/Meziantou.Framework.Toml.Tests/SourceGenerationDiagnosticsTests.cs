@@ -1100,6 +1100,57 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_ExperimentalTypeArgumentsConvertersAndMemberTypes_Compile()
+    {
+        var source = """
+            #nullable enable
+            using System.Diagnostics.CodeAnalysis;
+            using Meziantou.Framework.Toml;
+            using Meziantou.Framework.Toml.Serialization;
+
+            #pragma warning disable EXPA, EXPB, EXPC
+            [Experimental("EXPA")]
+            public sealed class Marker { }
+
+            public sealed class Generic<T> { public int A { get; set; } }
+
+            [Experimental("EXPB")]
+            public static class Outer
+            {
+                public sealed class Converter : TomlConverter<int>
+                {
+                    public override int Read(TomlReader reader) { var value = (int)reader.GetInt64(); reader.Read(); return value; }
+                    public override void Write(TomlWriter writer, int value) => writer.WriteIntegerValue(value);
+                }
+            }
+
+            [Experimental("EXPC")]
+            public struct ExperimentalValue { public int X { get; set; } }
+
+            public sealed class ExperimentalValueConverter : TomlConverter<ExperimentalValue>
+            {
+                public override ExperimentalValue Read(TomlReader reader) { var value = (int)reader.GetInt64(); reader.Read(); return new ExperimentalValue { X = value }; }
+                public override void Write(TomlWriter writer, ExperimentalValue value) => writer.WriteIntegerValue(value.X);
+            }
+
+            public sealed class Model
+            {
+                [TomlConverter(typeof(Outer.Converter))] public int X { get; set; }
+                [TomlConverter(typeof(ExperimentalValueConverter))] public ExperimentalValue Y { get; set; }
+            }
+
+            [TomlSerializable(typeof(Generic<Marker>))]
+            [TomlSerializable(typeof(Model))]
+            internal partial class Ctx : TomlSerializerContext { }
+            #pragma warning restore EXPA, EXPB, EXPC
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
     public void Generator_MembersWithAnInaccessibleGetter_Compile()
     {
         var source = """

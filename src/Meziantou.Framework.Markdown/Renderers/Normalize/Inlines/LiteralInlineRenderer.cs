@@ -31,5 +31,12 @@ public class LiteralInlineRenderer : NormalizeObjectRenderer<LiteralInline>
         {
             renderer.Write(ref obj.Content);
         }
+
+        // A backslash at the end of a line is a hard line break, so escape a literal one
+        if (obj.NextSibling is LineBreakInline { IsHard: false } && obj.Content.Length > 0 && obj.Content[obj.Content.End] == '\\'
+            && !(obj.IsFirstCharacterEscaped && obj.Content.Length == 1))
+        {
+            renderer.Write('\\');
+        }
     }
 }

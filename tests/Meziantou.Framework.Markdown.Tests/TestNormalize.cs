@@ -756,6 +756,14 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("a\\ \nb", "a\\\\\nb")]
+    [InlineData("\\ \nb", "\\\\\nb")]
+    public void LiteralBackslashBeforeLineBreakIsEscaped(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

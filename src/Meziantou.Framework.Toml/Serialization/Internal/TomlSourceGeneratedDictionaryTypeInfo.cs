@@ -106,7 +106,8 @@ internal sealed class TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        if (existingValue is not IDictionary<string, TValue> dict)
+        // A read-only dictionary cannot be populated: a new one is read instead
+        if (existingValue is not IDictionary<string, TValue> { IsReadOnly: false } dict)
         {
             return Read(reader);
         }

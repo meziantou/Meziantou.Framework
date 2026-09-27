@@ -79,7 +79,8 @@ internal sealed class TomlMutableCollectionTypeInfo<TCollection, TElement> : Tom
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        if (existingValue is not ICollection<TElement> collection)
+        // A read-only collection, such as an array, cannot be populated: a new one is read instead
+        if (existingValue is not ICollection<TElement> { IsReadOnly: false } collection)
         {
             return Read(reader);
         }

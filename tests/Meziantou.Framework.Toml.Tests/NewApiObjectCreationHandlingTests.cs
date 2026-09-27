@@ -140,6 +140,25 @@ public sealed class NewApiObjectCreationHandlingTests
         Assert.Equal(new[] { 1, 2, 3, 4, 5 }, result.Numbers);
     }
 
+    // A read-only collection cannot be populated: like a type that does not support populating, it is replaced when the
+    // member has a setter, left unchanged when the preference cannot be honored, and a configuration error when it is explicit
+    [Fact]
+    public void Reflection_PopulateReadOnlyCollections_ReplacesOrKeepsThemOrReportsAConfigurationError()
+    {
+        var options = TomlSerializerOptions.Default with
+        {
+            PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate,
+        };
+
+        var result = TomlSerializer.Deserialize<GeneratedReadOnlyCollectionsRoot>(GeneratedReadOnlyCollectionsRoot.Toml, options)!;
+        var getOnly = TomlSerializer.Deserialize<GeneratedReadOnlyCollectionPreferredGetOnlyRoot>("Values = [2]", options)!;
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedReadOnlyCollectionExplicitGetOnlyRoot>("Values = [2]", out _));
+
+        GeneratedReadOnlyCollectionsRoot.AssertReplaced(result);
+        Assert.Equal([1], getOnly.Values);
+        Assert.Contains("doesn't support populating", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Reflection_PropertyLevelReplace_OverridesTypeLevelPopulate()
     {
@@ -337,6 +356,52 @@ public sealed class GeneratedConstructorPopulateRoot
     public GeneratedConstructorObjectCreationChild Child { get; } = new(7);
 }
 
+public sealed class GeneratedReadOnlyCollectionsRoot
+{
+    public const string Toml = """
+        Tags = ['a']
+        Fixed = ['b']
+        [Map]
+        c = 1
+        """;
+
+    public IReadOnlyList<string> Tags { get; set; } = [];
+
+    public ICollection<string> Fixed { get; set; } = new[] { "x" };
+
+    public IDictionary<string, int> Map { get; set; } = new System.Collections.ObjectModel.ReadOnlyDictionary<string, int>(new Dictionary<string, int>(StringComparer.Ordinal));
+
+    public static void AssertReplaced(GeneratedReadOnlyCollectionsRoot value)
+    {
+        Assert.Equal(["a"], value.Tags);
+        Assert.Equal(["b"], value.Fixed);
+        Assert.Equal(1, Assert.Single(value.Map).Value);
+    }
+}
+
+public sealed class GeneratedReadOnlyCollectionPreferredGetOnlyRoot
+{
+    public IList<int> Values { get; } = new[] { 1 };
+}
+
+public sealed class GeneratedReadOnlyCollectionExplicitGetOnlyRoot
+{
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public IList<int> Values { get; } = new[] { 1 };
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionsRoot))]
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionPreferredGetOnlyRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationReadOnlyCollections : TomlSerializerContext
+{
+}
+
+[TomlSerializable(typeof(GeneratedReadOnlyCollectionExplicitGetOnlyRoot))]
+internal sealed partial class TestTomlSerializerContextObjectCreationReadOnlyCollectionExplicit : TomlSerializerContext
+{
+}
+
 [TomlSerializable(typeof(GeneratedReplaceObjectCreationRoot))]
 internal sealed partial class TestTomlSerializerContextObjectCreationReplace : TomlSerializerContext
 {
@@ -375,6 +440,20 @@ public sealed class NewApiSourceGenerationObjectCreationHandlingTests
         [Child]
         Value = 42
         """;
+
+    [Fact]
+    public void GeneratedContext_PopulateReadOnlyCollections_ReplacesOrKeepsThemOrReportsAConfigurationError()
+    {
+        var context = TestTomlSerializerContextObjectCreationReadOnlyCollections.Default;
+
+        var result = TomlSerializer.Deserialize(GeneratedReadOnlyCollectionsRoot.Toml, context.GeneratedReadOnlyCollectionsRoot)!;
+        var getOnly = TomlSerializer.Deserialize("Values = [2]", context.GeneratedReadOnlyCollectionPreferredGetOnlyRoot)!;
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedReadOnlyCollectionExplicitGetOnlyRoot>("Values = [2]", TestTomlSerializerContextObjectCreationReadOnlyCollectionExplicit.Default, out _));
+
+        GeneratedReadOnlyCollectionsRoot.AssertReplaced(result);
+        Assert.Equal([1], getOnly.Values);
+        Assert.Contains("doesn't support populating", exception.Message, StringComparison.Ordinal);
+    }
 
     [Fact]
     public void GeneratedContext_DefaultReplace_DoesNotPopulateReadOnlyMembers()

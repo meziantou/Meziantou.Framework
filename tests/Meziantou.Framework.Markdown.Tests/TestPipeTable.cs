@@ -317,6 +317,25 @@ public sealed class TestPipeTable
         Assert.InRange(cellCount, 524_288, 600_000);
     }
 
+    [Fact]
+    public void GfmTablesAfterTheCellBudgetKeepTheirRows()
+    {
+        // The first table needs 1,099,000 empty cells, more than the budget of the whole document: its first rows are
+        // completed, the others are kept as they are, and the budget left completes the short row of the second table
+        var markdown = string.Concat(Enumerable.Repeat("|a", 1100)) + "|\n" + string.Concat(Enumerable.Repeat("|-", 1100)) + "|\n" + string.Concat(Enumerable.Repeat("x\n", 1000)) + "\n| x | y |\n|---|---|\n| 1 | 2 |\n| 3 |\n";
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build();
+
+        var tables = MarkdownConverter.Parse(markdown, pipeline).Descendants<Table>().ToList();
+
+        Assert.HasCount(2, tables);
+        Assert.HasCount(1001, tables[0]);
+        Assert.HasCount(1100, (TableRow)tables[0][1]);
+        Assert.HasCount(1, (TableRow)tables[0][1000]);
+        Assert.HasCount(3, tables[1]);
+        Assert.HasCount(2, (TableRow)tables[1][1]);
+        Assert.HasCount(2, (TableRow)tables[1][2]);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

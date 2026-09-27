@@ -107,7 +107,7 @@ internal sealed class GfmPipeTableParser : BlockParser
             }
             table.ColumnDefinitions.Add(definition);
         }
-        AddRow(table, header, headerCells, true);
+        AddRow(table, header, headerCells, true, completeRow: true);
 
         paragraph.Lines.RemoveAt(paragraph.Lines.Count - 1);
         if (paragraph.Lines.Count == 0)
@@ -211,7 +211,7 @@ internal sealed class GfmPipeTableParser : BlockParser
         while (!cell.IsEmpty && cell.Text[cell.End].IsSpaceOrTab()) cell.End--;
     }
 
-    private static void AddRow(Table table, StringLine line, List<StringSlice> cells, bool isHeader)
+    private static void AddRow(Table table, StringLine line, List<StringSlice> cells, bool isHeader, bool completeRow)
     {
         var row = new TableRow
         {
@@ -220,7 +220,8 @@ internal sealed class GfmPipeTableParser : BlockParser
             Column = line.Column,
             Span = new SourceSpan(line.Slice.Start, line.Slice.End)
         };
-        for (int i = 0; i < table.ColumnDefinitions.Count; i++)
+        var cellCount = completeRow ? table.ColumnDefinitions.Count : Math.Min(cells.Count, table.ColumnDefinitions.Count);
+        for (int i = 0; i < cellCount; i++)
         {
             var content = i < cells.Count ? cells[i] : new StringSlice(line.Slice.Text, line.Slice.End + 1, line.Slice.End);
             int column = line.Column + content.Start - line.Slice.Start;
@@ -280,13 +281,14 @@ internal sealed class GfmPipeTableParser : BlockParser
             if (processor.CurrentBlock is not TableBlock pending || processor.IsBlankLine) return BlockState.None;
             // Tables, unlike paragraphs, cannot lazily continue a quote/list.
             if (pending.MatchedLine != processor.LineIndex) return BlockState.None;
-            // Match cmark-gfm's bound on amplification from padding short rows, for the whole document.
-            if (processor.Document.AutocompletedTableCells > Table.MaximumAutocompletedCells) return BlockState.None;
             var line = new StringLine(processor.Line, processor.LineIndex, processor.Column, processor.Line.Start, processor.Line.NewLine);
             var cells = SplitRow(line.Slice);
             if (cells.Count == 0) return BlockState.None;
-            processor.Document.AutocompletedTableCells += Math.Max(0, pending.Table.ColumnDefinitions.Count - cells.Count);
-            AddRow(pending.Table, line, cells, false);
+            // Match cmark-gfm's bound on amplification from padding short rows, for the whole document. Past the bound, a
+            // short row is kept without padding: ending the table would turn the rows of every later table into text.
+            var missingCells = pending.Table.ColumnDefinitions.Count - cells.Count;
+            var completeRow = missingCells <= 0 || Table.TryAddAutocompletedCells(processor.Document, missingCells);
+            AddRow(pending.Table, line, cells, false, completeRow);
             pending.IsOpen = true;
             return BlockState.BreakDiscard;
         }

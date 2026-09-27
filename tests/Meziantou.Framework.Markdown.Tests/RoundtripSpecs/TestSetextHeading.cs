@@ -49,4 +49,16 @@ public class TestSetextHeading
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("> y\n  ---\n")]
+    [InlineData("> y\n>   x\n  ---\n")]
+    [InlineData("> y\n>   x\n  ===\n")]
+    [InlineData("> y\nz\n  ===\n")]
+    [InlineData("> [b]: /u\n> x\n  ---\n")]
+    [InlineData(">> x\n   ---\n")]
+    public void TestLazyLineIsNotAnUnderline(string value)
+    {
+        RoundTrip(value);
+    }
 }

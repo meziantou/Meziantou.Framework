@@ -206,6 +206,17 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("> y\n  ---", "<blockquote>\n<p>y</p>\n</blockquote>\n<hr />")]
+    [InlineData("> y\n>   x\n  ===", "<blockquote>\n<p>y\nx\n===</p>\n</blockquote>")]
+    [InlineData(">> x\n   ---", "<blockquote>\n<blockquote>\n<p>x</p>\n</blockquote>\n</blockquote>\n<hr />")]
+    [InlineData("- y\n  ===", "<ul>\n<li><h1>y</h1>\n</li>\n</ul>")]
+    [InlineData("- y\n  ---", "<ul>\n<li><h2>y</h2>\n</li>\n</ul>")]
+    public void LazyContinuationLineIsNotASetextUnderline(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]

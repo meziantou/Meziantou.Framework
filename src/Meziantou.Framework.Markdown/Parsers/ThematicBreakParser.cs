@@ -75,8 +75,9 @@ public class ThematicBreakParser : BlockParser
         var isSetexHeading = previousParagraph != null && breakChar == '-' && !hasInnerSpaces;
         if (isSetexHeading)
         {
+            // A lazy continuation line (one that did not continue a container of the paragraph) is never an underline
             var parent = previousParagraph!.Parent!;
-            if (previousParagraph.Column != processor.Column && (parent is QuoteBlock or ListItemBlock))
+            if (processor.HasUnmatchedBlocks || (previousParagraph.Column != processor.Column && (parent is QuoteBlock or ListItemBlock)))
             {
                 isSetexHeading = false;
             }

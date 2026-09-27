@@ -56,6 +56,28 @@ public sealed class NewApiUtf8StreamExceptionLocationTests
         Assert.False(TomlSerializer.TryDeserialize<TomlTable>(new MemoryStream(bytes), out _));
     }
 
+    // The invalid byte is located like any other error: without the BOM, and with a column in characters
+    [Theory]
+    [InlineData(false, "a = 1 ")]
+    [InlineData(true, "a = 1 ")]
+    [InlineData(false, "x = '\U0001F600\U0001F600'\na = 1 ")]
+    [InlineData(true, "x = '\U0001F600\U0001F600'\na = 1 ")]
+    [InlineData(false, "a = '\U0001F600\U0001F600' ")]
+    [InlineData(true, "a = '\U0001F600\U0001F600' ")]
+    public void Deserialize_Stream_InvalidUtf8_IsLocatedLikeTheParserErrors(bool withBom, string prefix)
+    {
+        var bom = withBom ? new byte[] { 0xEF, 0xBB, 0xBF } : [];
+        var bytes = bom.Concat(Encoding.UTF8.GetBytes(prefix)).Concat(new byte[] { 0xFF }).ToArray();
+        var textBytes = bom.Concat(Encoding.UTF8.GetBytes(prefix + "@")).ToArray();
+
+        var invalidUtf8 = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(new MemoryStream(bytes)));
+        var parserError = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(new MemoryStream(textBytes)));
+
+        Assert.Equal(parserError.Line, invalidUtf8.Line);
+        Assert.Equal(parserError.Column, invalidUtf8.Column);
+        Assert.Equal(parserError.Offset, invalidUtf8.Offset);
+    }
+
     [Fact]
     public void Serialize_Stream_UnpairedSurrogate_ThrowsTomlException()
     {

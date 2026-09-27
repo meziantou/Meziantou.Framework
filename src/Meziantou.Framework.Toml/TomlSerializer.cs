@@ -109,11 +109,23 @@ public static class TomlSerializer
         }
         catch (DecoderFallbackException ex)
         {
+            // Located like the errors of the parser: the BOM is not part of the text, the offset counts UTF-16 code units and
+            // the column counts characters. The bytes before the invalid one are valid UTF-8.
             var index = Math.Clamp(ex.Index, 0, length);
-            var lineStart = index == 0 ? 0 : bytes.AsSpan(0, index).LastIndexOf((byte)'\n') + 1;
+            var textStart = length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? Math.Min(3, index) : 0;
+            var lineStart = Math.Max(textStart, bytes.AsSpan(0, index).LastIndexOf((byte)'\n') + 1);
             var line = bytes.AsSpan(0, index).Count((byte)'\n');
-            var column = DefaultStreamEncoding.GetCharCount(bytes, lineStart, index - lineStart);
-            var position = new TomlTextPosition(DefaultStreamEncoding.GetCharCount(bytes, 0, index), line, column);
+            var column = 0;
+            foreach (var b in bytes.AsSpan(lineStart, index - lineStart))
+            {
+                // A character starts with any byte but a continuation byte (10xxxxxx)
+                if ((b & 0xC0) != 0x80)
+                {
+                    column++;
+                }
+            }
+
+            var position = new TomlTextPosition(DefaultStreamEncoding.GetCharCount(bytes, textStart, index - textStart), line, column);
             throw new TomlException(new TomlSourceSpan(options.SourceName ?? string.Empty, position, position), $"Invalid UTF-8 byte sequence at byte offset {index}.", ex);
         }
     }

@@ -644,8 +644,9 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.AppendLine("#nullable enable");
 
         // The model can use obsolete and experimental types and members. The ones that are errors to use are accessed through
-        // accessors instead.
-        builder.Append("#pragma warning disable CS0612, CS0618");
+        // accessors instead. A member that can only be a configuration error, such as a get-only single-or-array array,
+        // throws on every path, so the code that follows its read is unreachable (CS0162).
+        builder.Append("#pragma warning disable CS0162, CS0612, CS0618");
         foreach (var diagnosticId in GetExperimentalDiagnosticIds(ordered, model.Options.ConverterTypes))
         {
             builder.Append(", ").Append(diagnosticId);

@@ -69,6 +69,27 @@ public sealed class SingleOrArrayImmutableArrayHolder
     public System.Collections.Immutable.ImmutableArray<string> Rid { get; set; }
 }
 
+// The collection of a get-only or constructor-bound member cannot be populated: the generated code compiles without warnings
+public sealed class SingleOrArrayConstructorArrayHolder
+{
+    public SingleOrArrayConstructorArrayHolder(string[] rid)
+    {
+        Rid = rid;
+    }
+
+    [TomlSingleOrArray]
+    public string[] Rid { get; }
+}
+
+public sealed class SingleOrArrayGetOnlyImmutableHolder
+{
+    [TomlSingleOrArray]
+    public System.Collections.Immutable.ImmutableList<int> Rid { get; } = [];
+
+    [TomlSingleOrArray]
+    public System.Collections.Immutable.ImmutableArray<int> Other { get; }
+}
+
 public sealed class TableArrayCollectionHolder
 {
     public TableArrayItem[] Foo { get; set; } = [];
@@ -99,6 +120,8 @@ public sealed class TableArrayItem
 [TomlSerializable(typeof(TableArrayCollectionHolder))]
 [TomlSerializable(typeof(TableArrayStyleOverrideHolder))]
 [TomlSerializable(typeof(SingleOrArrayImmutableArrayHolder))]
+[TomlSerializable(typeof(SingleOrArrayConstructorArrayHolder))]
+[TomlSerializable(typeof(SingleOrArrayGetOnlyImmutableHolder))]
 internal sealed partial class TestTomlCollectionsContext : TomlSerializerContext
 {
 }
@@ -389,6 +412,24 @@ public class NewApiCollectionTests
 
         Assert.Equal(expected, string.Join(',', generated.Rid));
         Assert.Equal(expected, string.Join(',', reflection.Rid));
+    }
+
+    [Theory]
+    [InlineData("rid = \"test\"\n", "test")]
+    [InlineData("rid = [\"test1\", \"test2\"]\n", "test1,test2")]
+    public void ConstructorBoundArray_WithTomlSingleOrArray_IsReadByGeneratedCode(string toml, string expected)
+    {
+        var result = TomlSerializer.Deserialize(toml, TestTomlCollectionsContext.Default.SingleOrArrayConstructorArrayHolder)!;
+
+        Assert.Equal(expected, string.Join(',', result.Rid));
+    }
+
+    [Fact]
+    public void GetOnlyImmutableCollection_WithTomlSingleOrArray_IsAConfigurationError()
+    {
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<SingleOrArrayGetOnlyImmutableHolder>("rid = 1\n", TestTomlCollectionsContext.Default, out _));
+
+        Assert.True(exception.IsConfigurationError);
     }
 
     [Fact]

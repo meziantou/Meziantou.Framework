@@ -1926,6 +1926,30 @@ internal sealed partial class TestTomlSerializerContextCaseInsensitiveExtension 
 {
 }
 
+public class GeneratedGenericInitBase<T>
+{
+    public List<int> L { get; init; } = [1];
+
+    public required T R { get; init; }
+}
+
+public sealed class GeneratedGenericInitDerived : GeneratedGenericInitBase<int>, ITomlOnDeserializing
+{
+    private int _requiredValueWhenDeserializing = -1;
+
+    public int X { get; set; }
+
+    public int GetRequiredValueWhenDeserializing() => _requiredValueWhenDeserializing;
+
+    public void OnTomlDeserializing() => _requiredValueWhenDeserializing = R;
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedGenericInitDerived))]
+internal sealed partial class TestTomlSerializerContextGenericInitBase : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3958,6 +3982,25 @@ public class NewApiSourceGenerationTests
                 Assert.Equal(1, value.B);
                 Assert.Equal(2, value.D);
             }
+        }
+    }
+
+    // The class is created without an object initializer even when its init members are declared by a generic base type
+    [Fact]
+    public void InitMembersOfAGenericBase_ArePopulatedAndSetAfterOnTomlDeserializing()
+    {
+        const string Toml = "R = 1\nL = [2]\nX = 3\n";
+        var options = new TomlSerializerOptions { PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate };
+
+        var generated = TomlSerializer.Deserialize(Toml, TestTomlSerializerContextGenericInitBase.Default.GeneratedGenericInitDerived)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedGenericInitDerived>(Toml, options)!;
+
+        foreach (var value in new[] { generated, reflection })
+        {
+            Assert.Equal([1, 2], value.L);
+            Assert.Equal(1, value.R);
+            Assert.Equal(3, value.X);
+            Assert.Equal(0, value.GetRequiredValueWhenDeserializing());
         }
     }
 

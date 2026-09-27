@@ -1542,7 +1542,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         foreach (var member in poco.Members)
         {
-            if (member.SetterAccessorName is not null && member.SetterAccessorIsInitAccessor)
+            // UnsafeAccessor cannot target a member of a generic base type, which is set with reflection
+            if (member.SetterAccessorName is not null && member.SetterAccessorIsInitAccessor && CanUseInitAccessor(model, member.DeclaringType))
             {
                 builder.Append("        [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"set_").Append(EscapeStringLiteral(member.MemberName)).AppendLine("\")]");
                 builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern void ").Append(member.SetterAccessorName).Append('(').Append(member.DeclaringType.IsValueType ? "ref " : "").Append(member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
@@ -5229,8 +5230,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             named.TypeKind == TypeKind.Class &&
             constructorError is null &&
             selectedConstructor is null or { Parameters.Length: 0 } &&
-            CanUseInitAccessor(model, named) &&
-            finalMembers.All(member => !member.IsInitOnly || member.SetterAccessorName is not null || CanUseInitAccessor(model, member.DeclaringType)))
+            CanUseInitAccessor(model, named))
         {
             for (var i = 0; i < finalMembers.Length; i++)
             {

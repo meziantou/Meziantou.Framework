@@ -36,7 +36,13 @@ internal sealed class TomlSerializationOperationState
 
     // Only TomlSerializer reports the recorded diagnostics once the document is read. A reader created by TomlReader.Create
     // has no one to report them, so its values throw instead of being skipped.
+    public bool RecordsValueErrors { get; set; }
+
+    // Deserialize continues after an error to report the errors of the whole document. TryDeserialize stops at the first one,
+    // but records it too: a converter that catches the error of a nested value does not hide it from either.
     public bool RecoversValueErrors { get; set; }
+
+    private TomlException? _lastRecordedException;
 
     public int DiagnosticCount => Diagnostics?.Count ?? 0;
 
@@ -50,6 +56,10 @@ internal sealed class TomlSerializationOperationState
     // array of tables starts at the same place as its first table, so the token type tells them apart.
     public bool IsRecordedValueError(TomlException exception, TomlTokenType valueTokenType, TomlSourceSpan? valueStart)
         => IsRecordedValueError(exception) && valueTokenType == TomlTokenType.StartTable && Nullable.Equals(exception.RecordedValueStart, valueStart);
+
+    // The reader of the value that started at valueStart continues with its next value when the errors are recovered from
+    public bool CanContinueAfterRecordedValueError(TomlException exception, TomlTokenType valueTokenType, TomlSourceSpan? valueStart)
+        => RecoversValueErrors && IsRecordedValueError(exception, valueTokenType, valueStart);
 
     // A table with errors cannot be used, but it was read completely, so its parent continues with its next value
     public void ThrowIfDiagnosticsSince(int diagnosticCount, TomlSourceSpan? tableStart)
@@ -96,7 +106,7 @@ internal sealed class TomlSerializationOperationState
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
-        return RecoversValueErrors &&
+        return RecordsValueErrors &&
             DiagnosticCount < MaxRecordedDiagnostics &&
             !IsRecordedValueError(exception) &&
             (exception.Diagnostics.Count > 0 || exception.Span.HasValue);
@@ -106,10 +116,13 @@ internal sealed class TomlSerializationOperationState
     {
         ArgumentGuard.ThrowIfNull(exception, nameof(exception));
 
-        if (IsRecordedValueError(exception) || ReferenceEquals(exception.Diagnostics, Diagnostics))
+        // An error that is not recovered from goes through the frames around its value, and is recorded once
+        if (IsRecordedValueError(exception) || ReferenceEquals(exception.Diagnostics, Diagnostics) || ReferenceEquals(exception, _lastRecordedException))
         {
             return;
         }
+
+        _lastRecordedException = exception;
 
         var diagnostics = Diagnostics ??= new DiagnosticsBag();
         if (exception.Diagnostics.Count > 0)

@@ -1110,6 +1110,7 @@ public static class TomlSerializer
     private static object? DeserializeCore(TomlReader reader, TomlTypeInfo typeInfo, bool recoverValueErrors = true)
     {
         // The errors of the values are recorded and reported together at the end
+        reader.OperationState.RecordsValueErrors = true;
         reader.OperationState.RecoversValueErrors = recoverValueErrors;
         object? value;
         try

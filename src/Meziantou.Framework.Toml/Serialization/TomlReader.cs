@@ -922,7 +922,7 @@ public sealed class TomlReader
     {
         if (_operationState.IsRecordedValueError(exception))
         {
-            return _operationState.IsRecordedValueError(exception, startState.TokenType, startState.Span);
+            return _operationState.CanContinueAfterRecordedValueError(exception, startState.TokenType, startState.Span);
         }
 
         if (!_operationState.CanAddDiagnostics(exception) || !IsStateUnchanged(startState))
@@ -931,6 +931,11 @@ public sealed class TomlReader
         }
 
         _operationState.AddDiagnostics(exception);
+        if (!_operationState.RecoversValueErrors)
+        {
+            return false;
+        }
+
         Skip();
         return true;
     }

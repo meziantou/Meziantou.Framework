@@ -704,4 +704,5 @@ required key does not stop the reading. The reading stops after 1,000 errors. Se
 `TomlSerializerOptions.SourceName` to include a file name in the messages. Use `TryDeserialize` when invalid input is
 expected, for example user-provided configuration files. It returns `false` for invalid input and for a `null` result,
 but still throws for errors of the program, such as a type without metadata in the context. It stops at the first
-error, as it does not report them.
+error, as it does not report them. The error of a value that a converter reads with the metadata of the options, such as
+`reader.Options.GetTypeInfo<T>().Read(reader)`, is reported by both methods even when the converter catches it.

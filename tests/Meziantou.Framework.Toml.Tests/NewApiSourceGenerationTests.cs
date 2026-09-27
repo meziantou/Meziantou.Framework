@@ -1970,6 +1970,44 @@ internal sealed partial class TestTomlSerializerContextRefProperty : TomlSeriali
 {
 }
 
+public sealed class GeneratedFallbackInner
+{
+    [TomlRequired]
+    public int A { get; set; }
+
+    public int B { get; set; }
+}
+
+// Returns a fallback value when the nested value cannot be read
+public sealed class GeneratedFallbackConverter : TomlConverter<GeneratedFallbackInner>
+{
+    public override GeneratedFallbackInner Read(TomlReader reader)
+    {
+        try
+        {
+            return reader.Options.GetTypeInfo<GeneratedFallbackInner>().Read(reader)!;
+        }
+        catch (TomlException)
+        {
+            return new GeneratedFallbackInner { A = -1 };
+        }
+    }
+
+    public override void Write(TomlWriter writer, GeneratedFallbackInner value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedFallbackOuter
+{
+    [TomlConverter(typeof(GeneratedFallbackConverter))]
+    public GeneratedFallbackInner? Inner { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedFallbackOuter))]
+[TomlSerializable(typeof(GeneratedFallbackInner))]
+internal sealed partial class TestTomlSerializerContextFallback : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4363,6 +4401,20 @@ public class NewApiSourceGenerationTests
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), includeFields));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty(), TestTomlSerializerContextHiding.Default.GeneratedFieldOverProperty));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty()));
+    }
+
+    // A converter cannot hide the error of a nested value it reads with the metadata of the library: both APIs report it
+    [Theory]
+    [InlineData("[Inner]\nB = 1\n")]
+    [InlineData("[Inner]\nA = 'bad'\n")]
+    public void ErrorOfANestedValue_CaughtByAConverter_IsReportedByDeserializeAndTryDeserialize(string toml)
+    {
+        var typeInfo = TestTomlSerializerContextFallback.Default.GeneratedFallbackOuter;
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedFallbackOuter>(toml));
+        Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(toml, typeInfo));
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedFallbackOuter>(toml, out _));
+        Assert.False(TomlSerializer.TryDeserialize(toml, typeInfo, out _));
     }
 
     [Fact]

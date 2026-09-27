@@ -127,6 +127,7 @@ public abstract class Inline : MarkdownObject, IInline
         }
 
         PreviousSibling = previous;
+        previous.PreviousSibling = previousSibling;
         previous.NextSibling = this;
 
         if (Parent != null)

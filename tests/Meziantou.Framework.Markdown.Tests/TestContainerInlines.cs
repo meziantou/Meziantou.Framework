@@ -1,5 +1,6 @@
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -221,6 +222,84 @@ public class TestContainerInlines
         other.AppendChild(a);
         Assert.Equal(new Inline[] { b, a }, other.Take(5).ToArray());
         Assert.Same(other, a.Parent);
+    }
+
+    [Fact]
+    public void InsertBeforeLinksBothSiblings()
+    {
+        var container = new ContainerInline();
+        var a = new LiteralInline("a");
+        var c = new LiteralInline("c");
+        container.AppendChild(a);
+        container.AppendChild(c);
+
+        var b = new LiteralInline("b");
+        c.InsertBefore(b);
+        var first = new LiteralInline("0");
+        a.InsertBefore(first);
+
+        Assert.Equal(new Inline[] { first, a, b, c }, container.ToArray());
+        Assert.Same(first, container.FirstChild);
+        Assert.Null(first.PreviousSibling);
+        Assert.Same(a, b.PreviousSibling);
+        Assert.Same(c, b.NextSibling);
+        Assert.Same(b, c.PreviousSibling);
+        Assert.Same(container, b.Parent);
+
+        var backward = new List<Inline>();
+        for (var inline = container.LastChild; inline is not null && backward.Count < 5; inline = inline.PreviousSibling)
+        {
+            backward.Add(inline);
+        }
+
+        Assert.Equal(new Inline[] { c, b, a, first }, backward);
+    }
+
+    [Fact]
+    public void ContainsParentOrSiblingOfType()
+    {
+        var root = new ContainerInline();
+        var html = new HtmlInline("<b>");
+        var link = new LinkDelimiterInline(new LinkInlineParser());
+        var emphasis = new EmphasisInline();
+        var text = new LiteralInline("x");
+        root.AppendChild(html);
+        root.AppendChild(link);
+        link.AppendChild(emphasis);
+        emphasis.AppendChild(text);
+
+        Assert.True(text.ContainsParentOrSiblingOfType<LinkDelimiterInline>());
+        Assert.True(text.ContainsParentOrSiblingOfType<EmphasisInline>());
+        Assert.True(text.ContainsParentOrSiblingOfType<LiteralInline>());
+        Assert.True(text.ContainsParentOrSiblingOfType<HtmlInline>());
+        Assert.True(html.ContainsParentOrSiblingOfType<LinkDelimiterInline>());
+        Assert.False(text.ContainsParentOrSiblingOfType<CodeInline>());
+        Assert.False(html.ContainsParentOrSiblingOfType<EmphasisInline>());
+        Assert.False(root.ContainsParentOrSiblingOfType<HtmlInline>());
+        Assert.False(new LiteralInline("y").ContainsParentOrSiblingOfType<HtmlInline>());
+    }
+
+    [Fact]
+    public void FindBestParent()
+    {
+        var root = new ContainerInline();
+        var outer = new ContainerInline();
+        var text = new LiteralInline("x");
+        root.AppendChild(new LiteralInline("a"));
+        root.AppendChild(outer);
+        outer.AppendChild(text);
+
+        Assert.Same(root, text.FindBestParent());
+        Assert.Same(root, outer.FindBestParent());
+        Assert.Same(root, root.FindBestParent());
+
+        // Without a parent, the first of the siblings
+        var first = new LiteralInline("1");
+        var second = new LiteralInline("2");
+        var third = new LiteralInline("3");
+        first.InsertAfter(second);
+        second.InsertAfter(third);
+        Assert.Same(first, third.FindBestParent());
     }
 
     [Theory]

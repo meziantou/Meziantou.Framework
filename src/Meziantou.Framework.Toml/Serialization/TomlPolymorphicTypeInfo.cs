@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Toml.Serialization;
 /// Provides source-generator-friendly discriminator-based polymorphism support for TOML serialization.
 /// </summary>
 /// <typeparam name="TBase">The base type.</typeparam>
-public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
+public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>, IPolymorphicTomlTypeInfo
 {
     private readonly TomlTypeInfo<TBase>? _baseTypeInfo;
     private readonly string _discriminatorPropertyName;

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
 [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
+internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTypeInfo
 {
     private readonly TomlTypeInfo? _baseTypeInfo;
     private readonly string _discriminatorPropertyName;
@@ -52,7 +52,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
         ArgumentGuard.ThrowIfNull(type, nameof(type));
         ArgumentGuard.ThrowIfNull(options, nameof(options));
 
-        if (baseTypeInfo is TomlPolymorphicTypeInfo)
+        if (baseTypeInfo is IPolymorphicTomlTypeInfo)
         {
             return baseTypeInfo;
         }

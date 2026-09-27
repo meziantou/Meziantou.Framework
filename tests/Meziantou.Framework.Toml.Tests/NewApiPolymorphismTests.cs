@@ -579,6 +579,21 @@ public class NewApiPolymorphismTests
         Assert.Equal(3, Assert.IsType<StructShapeSquare>(read.S).X);
     }
 
+    // The generated polymorphic metadata is used as is, not wrapped again by the reflection-based polymorphism
+    [Fact]
+    public void BaseType_RegisteredAsItsOwnDerivedType_IsWrittenThroughAContextUsedAsResolver()
+    {
+        var options = new TomlSerializerOptions { TypeInfoResolver = SelfDerivedTomlSerializerContext.Default };
+
+        var direct = TomlSerializer.Serialize<SelfDerivedShape>(new SelfDerivedShape { Size = 1 }, options);
+        var nested = TomlSerializer.Serialize(new SelfDerivedHolderOutsideTheContext { S = new SelfDerivedShape { Size = 2 } }, options);
+        var read = TomlSerializer.Deserialize<SelfDerivedHolderOutsideTheContext>(nested, options)!;
+
+        Assert.Equal("\"$type\" = \"base\"\nSize = 1\n", direct.ReplaceLineEndings("\n"));
+        Assert.Equal("[S]\n\"$type\" = \"base\"\nSize = 2\n", nested.ReplaceLineEndings("\n"));
+        Assert.Equal(2, Assert.IsType<SelfDerivedShape>(read.S).Size);
+    }
+
     // Like System.Text.Json, the base type can be one of its own derived types
     [Theory]
     [InlineData(false)]
@@ -671,6 +686,11 @@ internal class SelfDerivedShape
 internal sealed class SelfDerivedCircle : SelfDerivedShape
 {
     public int Radius { get; set; }
+}
+
+internal sealed class SelfDerivedHolderOutsideTheContext
+{
+    public SelfDerivedShape? S { get; set; }
 }
 
 internal sealed class SelfDerivedHolder

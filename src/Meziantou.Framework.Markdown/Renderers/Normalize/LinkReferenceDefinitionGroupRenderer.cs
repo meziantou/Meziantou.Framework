@@ -18,6 +18,8 @@ public class LinkReferenceDefinitionGroupRenderer : NormalizeObjectRenderer<Link
     {
         renderer.EnsureLine();
         renderer.WriteChildren(obj);
-        renderer.FinishBlock(false);
+
+        // The definitions are parsed from a paragraph, which the next lines would continue
+        renderer.FinishBlock(true);
     }
 }

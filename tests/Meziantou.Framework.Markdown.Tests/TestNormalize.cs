@@ -817,6 +817,15 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("[a]: b\n\nc", "[a]: b\n\nc")]
+    [InlineData("[a]: b\n\n    c", "[a]: b\n\n    c")]
+    [InlineData("[a]: b\n\n-", "[a]: b\n\n- ")]
+    public void LinkReferenceDefinitionsAreFollowedByBlankLine(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

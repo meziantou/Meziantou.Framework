@@ -47,6 +47,14 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         ObjectRenderers.Add(new NormalizeHtmlEntityInlineRenderer());
         ObjectRenderers.Add(new LinkInlineRenderer());
         ObjectRenderers.Add(new LiteralInlineRenderer());
+
+        ObjectWriteBefore += (_, obj) =>
+        {
+            if (obj is MarkdownDocument)
+            {
+                BulletCharacters.Clear();
+            }
+        };
     }
 
     /// <summary>
@@ -67,6 +75,9 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
 
     // Renders the inlines of a leaf block without indents, so that each line can be checked before it is written
     private NormalizeRenderer? _lineRenderer;
+
+    // The bullet, or the delimiter, written for each list of the document
+    internal Dictionary<ListBlock, char> BulletCharacters { get; } = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>
     /// Performs the finish block operation.

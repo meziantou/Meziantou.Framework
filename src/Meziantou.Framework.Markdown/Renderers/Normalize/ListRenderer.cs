@@ -137,22 +137,42 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
     }
 
     // Gets the bullet, or the delimiter of an ordered list. A list right after a list of the same kind uses another one,
-    // so that they are not merged.
+    // so that they are not merged. The characters of a run of adjacent lists are computed forward, without recursion, and
+    // kept, so that each list is computed once.
     private static char GetBulletCharacter(NormalizeRenderer renderer, ListBlock listBlock)
     {
-        var character = listBlock.IsOrdered ? listBlock.OrderedDelimiter : renderer.Options.ListItemCharacter ?? listBlock.BulletType;
-        if (GetPreviousSibling(listBlock) is ListBlock previous && previous.IsOrdered == listBlock.IsOrdered && GetBulletCharacter(renderer, previous) == character)
+        var characters = renderer.BulletCharacters;
+        if (characters.TryGetValue(listBlock, out var result))
         {
-            return character switch
-            {
-                '.' => ')',
-                ')' => '.',
-                '-' => '*',
-                _ => '-',
-            };
+            return result;
         }
 
-        return character;
+        var first = listBlock;
+        while (GetPreviousSibling(first) is ListBlock previous && previous.IsOrdered == first.IsOrdered && !characters.ContainsKey(previous))
+        {
+            first = previous;
+        }
+
+        for (var list = first; ; list = (ListBlock)GetNextSibling(list)!)
+        {
+            result = list.IsOrdered ? list.OrderedDelimiter : renderer.Options.ListItemCharacter ?? list.BulletType;
+            if (GetPreviousSibling(list) is ListBlock previous && previous.IsOrdered == list.IsOrdered && characters[previous] == result)
+            {
+                result = result switch
+                {
+                    '.' => ')',
+                    ')' => '.',
+                    '-' => '*',
+                    _ => '-',
+                };
+            }
+
+            characters[list] = result;
+            if (list == listBlock)
+            {
+                return result;
+            }
+        }
     }
 
     // Gets the indentation of the first line of a block that keeps it

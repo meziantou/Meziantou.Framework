@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -979,6 +980,40 @@ Text following the table.");
     public void CodeInlineNextToAutoLinkWithBacktickIsIdempotent()
     {
         AssertNormalizePreservesHtml("www.a.b/` ``a``", "[www.a.b/&#96;](http://www.a.b/`) `a`", new MarkdownPipelineBuilder().UseAutoLinks().Build());
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("- a\n* b\n", 4_096)]
+    [InlineData("- a\n+ b\n", 6_000)]
+    [InlineData("1. a\n1) b\n", 4_000)]
+    [InlineData("1. a\n\n\n2) b\n\n\n", 4_000)]
+    public void AdjacentListsAreNormalizedInLinearTime(string item, int count)
+    {
+        // The bullet of each list used to be computed again, recursively, from all the adjacent lists before it, which took
+        // more than a minute or overflowed the stack
+        var markdown = string.Concat(Enumerable.Repeat(item, count));
+
+        var stopwatch = Stopwatch.StartNew();
+        var normalized = MarkdownConverter.Normalize(markdown);
+        stopwatch.Stop();
+
+        Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Normalizing took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void AdjacentListsDoNotOverflowTheStack()
+    {
+        var markdown = string.Concat(Enumerable.Repeat("- a\n* b\n", 6_000));
+
+        // The bullet of each list used to be computed recursively from the list before it; a stack overflow kills the test process
+        string? normalized = null;
+        var thread = new Thread(() => normalized = MarkdownConverter.Normalize(markdown), maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized!));
     }
 
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)

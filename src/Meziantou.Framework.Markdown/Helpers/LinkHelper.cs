@@ -33,6 +33,27 @@ public static class LinkHelper
         return Urilize(headingText.AsSpan(), allowOnlyAscii, keepOpeningDigits);
     }
 
+    // String.Normalize throws on invalid code points, such as a lone surrogate or a noncharacter like U+FFFE. An identifier
+    // never keeps them, so they are removed first.
+    private static string NormalizeFormD(ReadOnlySpan<char> text)
+    {
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        while (!text.IsEmpty)
+        {
+            var status = Rune.DecodeFromUtf16(text, out var rune, out var length);
+            if (status == OperationStatus.Done && !IsNonCharacter(rune.Value))
+            {
+                builder.Append(text[..length]);
+            }
+
+            text = text[length..];
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormD);
+
+        static bool IsNonCharacter(int value) => (value & 0xFFFE) == 0xFFFE || value is >= 0xFDD0 and <= 0xFDEF;
+    }
+
     /// <summary>
     /// Performs the urilize operation.
     /// </summary>
@@ -46,7 +67,7 @@ public static class LinkHelper
         string normalizedString = string.Empty;
         if (allowOnlyAscii)
         {
-            normalizedString = headingText.ToString().Normalize(NormalizationForm.FormD);
+            normalizedString = NormalizeFormD(headingText);
         }
 
         var textToProcess = string.IsNullOrEmpty(normalizedString) ? headingText : normalizedString.AsSpan();

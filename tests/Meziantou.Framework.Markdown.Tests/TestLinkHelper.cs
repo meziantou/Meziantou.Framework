@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Xunit;
@@ -371,6 +372,17 @@ public class TestLinkHelper
     public void TestUrilizeOnlyAscii_Normalization(string input, string expectedResult)
     {
         Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
+    }
+
+    [Fact]
+    public void UrilizeOnlyAsciiIgnoresInvalidCodePoints()
+    {
+        // Built here: InlineData goes through UTF-8, which would replace the lone surrogate
+        Assert.Equal("ab-c", LinkHelper.Urilize("a\uFFFEb c", true));
+        Assert.Equal("ab-c", LinkHelper.Urilize("a\uD800b c\uFDD0", true));
+
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers(AutoIdentifierOptions.AutoLink | AutoIdentifierOptions.AllowOnlyAscii).Build();
+        Assert.Equal("<h1 id=\"a-b\">a\uFFFE b</h1>\n", MarkdownConverter.ToHtml("# a\uFFFE b", pipeline));
     }
 
     // Tests for NormalizeScandinavianOrGermanChar method mappings when allowOnlyAscii=true.

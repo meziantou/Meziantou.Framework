@@ -53,6 +53,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
             if (obj is MarkdownDocument)
             {
                 BulletCharacters.Clear();
+                LiteralDelimiterCache = null;
             }
         };
     }
@@ -78,6 +79,9 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
 
     // The bullet, or the delimiter, written for each list of the document
     internal Dictionary<ListBlock, char> BulletCharacters { get; } = new(ReferenceEqualityComparer.Instance);
+
+    // Whether a literal of an inline tree contains a code span delimiter, which all the code spans of the tree need
+    internal (ContainerInline Root, char Delimiter, bool Result)? LiteralDelimiterCache { get; set; }
 
     /// <summary>
     /// Performs the finish block operation.
@@ -175,6 +179,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         {
             renderer.EscapeTablePipes = EscapeTablePipes;
             renderer.Pipeline = Pipeline;
+            renderer.LiteralDelimiterCache = null;
             renderer.WriteLeafInline(leafBlock);
             var builder = ((StringWriter)renderer.Writer).GetStringBuilder();
             var text = builder.ToString();

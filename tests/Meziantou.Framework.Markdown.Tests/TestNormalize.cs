@@ -1016,6 +1016,24 @@ Text following the table.");
         Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized!));
     }
 
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("``a`` ", 40_000)]
+    [InlineData("``a`` x ", 64_000)]
+    [InlineData("` ``a`` ", 64_000)]
+    public void CodeInlinesAreNormalizedInLinearTime(string item, int count)
+    {
+        // Each code span whose fence is shortened used to look for backticks in all the literals of the paragraph
+        var markdown = string.Concat(Enumerable.Repeat(item, count));
+
+        var stopwatch = Stopwatch.StartNew();
+        var normalized = MarkdownConverter.Normalize(markdown);
+        stopwatch.Stop();
+
+        Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Normalizing took {stopwatch.Elapsed}");
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

@@ -42,7 +42,7 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
 
         // A literal backtick run of the same length would pair with a shorter fence, so keep the original fence in that case
         var delimiterCount = longestRun + 1;
-        if (delimiterCount != obj.DelimiterCount && obj.DelimiterCount > 0 && !hasRunOfOriginalCount && HasLiteralDelimiter(obj, delimiter))
+        if (delimiterCount != obj.DelimiterCount && obj.DelimiterCount > 0 && !hasRunOfOriginalCount && HasLiteralDelimiter(renderer, obj, delimiter))
         {
             delimiterCount = obj.DelimiterCount;
         }
@@ -68,7 +68,7 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
         renderer.Write(delimiter, delimiterCount);
     }
 
-    private static bool HasLiteralDelimiter(CodeInline obj, char delimiter)
+    private static bool HasLiteralDelimiter(NormalizeRenderer renderer, CodeInline obj, char delimiter)
     {
         var root = obj.Parent;
         while (root?.Parent is not null)
@@ -76,18 +76,29 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
             root = root.Parent;
         }
 
-        if (root is not null)
+        if (root is null)
         {
-            foreach (var literal in root.FindDescendants<LiteralInline>())
+            return false;
+        }
+
+        // Computed once for all the code spans of the tree
+        if (renderer.LiteralDelimiterCache is { } cache && cache.Root == root && cache.Delimiter == delimiter)
+        {
+            return cache.Result;
+        }
+
+        var result = false;
+        foreach (var literal in root.FindDescendants<LiteralInline>())
+        {
+            // The text of an expanded autolink is written with entities for its backticks
+            if (literal.Content.AsSpan().Contains(delimiter) && !(literal.Parent is LinkInline { IsAutoLink: true } link && LinkInlineRenderer.IsExpandedAutoLink(link)))
             {
-                // The text of an expanded autolink is written with entities for its backticks
-                if (literal.Content.AsSpan().Contains(delimiter) && !(literal.Parent is LinkInline { IsAutoLink: true } link && LinkInlineRenderer.IsExpandedAutoLink(link)))
-                {
-                    return true;
-                }
+                result = true;
+                break;
             }
         }
 
-        return false;
+        renderer.LiteralDelimiterCache = (root, delimiter, result);
+        return result;
     }
 }

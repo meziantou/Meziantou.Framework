@@ -3,7 +3,6 @@
 // See the license.txt file in the project root for more information.
 
 using Meziantou.Framework.Markdown.Syntax;
-using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Renderers.Roundtrip;
 
@@ -30,37 +29,29 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
             var wsa = quoteLine.TriviaAfter.ToString();
             indents[i] = (wsb + quoteChar + spaceAfterQuoteChar + wsa);
         }
-        bool noChildren = false;
-        if (quoteBlock.Count == 0)
-        {
-            noChildren = true;
-            // since this QuoteBlock instance has no children, indents will not be rendered. We
-            // work around this by adding empty LineBreakInlines to a ParagraphBlock.
-            // Wanted: a more elegant/better solution (although this is not *that* bad).
-            foreach (var quoteLine in quoteBlock.QuoteLines)
-            {
-                var emptyLeafBlock = new ParagraphBlock
-                {
-                    NewLine = quoteLine.NewLine
-                };
-                var newLine = new LineBreakInline
-                {
-                    NewLine = quoteLine.NewLine
-                };
-                var container = new ContainerInline();
-                container.AppendChild(newLine);
-                emptyLeafBlock.Inline = container;
-                quoteBlock.Add(emptyLeafBlock);
-            }
-        }
 
         renderer.PushIndent(indents);
         renderer.WriteChildren(quoteBlock);
-        renderer.PopIndent();
 
-        if (!noChildren)
+        // The quote lines that are not written yet have no content (all of them when the quote has no children). The parser
+        // attached them after the quote, before the blank lines that follow it.
+        var remaining = renderer.RemainingIndentLines;
+        var linesInQuote = 0;
+        for (var i = 0; i < remaining; i++)
         {
-            renderer.RenderLinesAfter(quoteBlock);
+            if (quoteBlock.LinesAfter is { } linesAfter && i < linesAfter.Count)
+            {
+                renderer.Write(linesAfter[i]);
+                renderer.WriteLine(linesAfter[i].NewLine);
+                linesInQuote++;
+            }
+            else
+            {
+                renderer.WriteLine(quoteBlock.QuoteLines[quoteBlock.QuoteLines.Count - remaining + i].NewLine);
+            }
         }
+
+        renderer.PopIndent();
+        renderer.RenderLinesAfter(quoteBlock, linesInQuote);
     }
 }

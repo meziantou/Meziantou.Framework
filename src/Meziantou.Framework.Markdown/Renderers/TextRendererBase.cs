@@ -111,6 +111,8 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
 
             return _lineSpecific![_position++];
         }
+
+        internal int RemainingLines => _lineSpecific is null ? 0 : _lineSpecific.Length - _position;
     }
 
     /// <summary>
@@ -230,6 +232,9 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     /// Performs the clear indent operation.
     /// </summary>
     public void ClearIndent() => _indents.Clear();
+
+    // The number of lines of the last indent specific to each line that are not written yet
+    internal int RemainingIndentLines => _indents.Count == 0 ? 0 : _indents[^1].RemainingLines;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void WriteIndent()

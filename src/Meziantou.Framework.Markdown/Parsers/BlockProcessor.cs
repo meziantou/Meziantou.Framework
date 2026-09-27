@@ -167,8 +167,9 @@ public class BlockProcessor
     /// </summary>
     internal bool HasUnmatchedBlocks { get; private set; }
 
-    // Whether the first container that did not continue on the current line is a quote that recorded the line
-    private bool _unmatchedQuoteRecordedLine;
+    // The first container that did not continue on the current line, when it is a quote that recorded the line: the line is removed
+    // from the quote when it closes it, as it is not a lazy continuation line of the quote
+    private QuoteBlock? _unmatchedQuoteWithLine;
 
     /// <summary>
     /// Gets the current stack of <see cref="Block"/> being processed.
@@ -623,6 +624,17 @@ public class BlockProcessor
             }
             if (TrackTrivia)
             {
+                if (ReferenceEquals(block, _unmatchedQuoteWithLine))
+                {
+                    _unmatchedQuoteWithLine.QuoteLines.RemoveAt(_unmatchedQuoteWithLine.QuoteLines.Count - 1);
+                    _unmatchedQuoteWithLine = null;
+                }
+
+                if (block is QuoteBlock closingQuote && LinesBefore is not null)
+                {
+                    MoveQuoteLinesWithoutContent(LinesBefore, closingQuote);
+                }
+
                 if (LinesBefore is { Count: > 0 })
                 {
                     // single emptylines are significant for the syntax tree, attach
@@ -706,7 +718,7 @@ public class BlockProcessor
     {
         IsLazy = false;
         HasUnmatchedBlocks = false;
-        _unmatchedQuoteRecordedLine = false;
+        _unmatchedQuoteWithLine = null;
 
         // Set all blocks non opened.
         // They will be marked as open in the following loop
@@ -743,7 +755,7 @@ public class BlockProcessor
             if (result == BlockState.None)
             {
                 HasUnmatchedBlocks = true;
-                _unmatchedQuoteRecordedLine = block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount;
+                _unmatchedQuoteWithLine = block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount ? unmatchedQuote : null;
                 break;
             }
 
@@ -792,6 +804,11 @@ public class BlockProcessor
                 {
                     if (TrackTrivia)
                     {
+                        if (block is QuoteBlock closedQuote && LinesBefore is not null)
+                        {
+                            MoveQuoteLinesWithoutContent(LinesBefore, closedQuote);
+                        }
+
                         LinesBefore ??= new List<StringSlice>();
                         var line = new StringSlice(Line.Text, TriviaStart, Line.Start - 1, Line.NewLine);
                         LinesBefore.Add(line);
@@ -857,12 +874,52 @@ public class BlockProcessor
         }
     }
 
+    // A new block takes the empty lines before it, which start with the quote lines without content of a quote that it closes
+    private void GiveBackQuoteLines(Block block)
+    {
+        for (int i = OpenedBlocks.Count - 1; i >= 1; i--)
+        {
+            if (!OpenedBlocks[i].Block.IsOpen && OpenedBlocks[i].Block is QuoteBlock quote)
+            {
+                MoveQuoteLinesWithoutContent(block.LinesBefore!, quote);
+                return;
+            }
+        }
+    }
+
+    // Moves the quote lines without content at the start of the empty lines to the end of the quote, where the roundtrip renderer
+    // writes them with the markers of the quote. Otherwise, they are written before the next block, outside the quote.
+    private static void MoveQuoteLinesWithoutContent(List<StringSlice> lines, QuoteBlock quote)
+    {
+        var count = 0;
+        while (count < lines.Count && IsQuoteLineWithoutContent(lines[count]))
+        {
+            count++;
+        }
+
+        if (count > 0)
+        {
+            (quote.LinesAfter ??= []).AddRange(lines.GetRange(0, count));
+            lines.RemoveRange(0, count);
+        }
+
+        static bool IsQuoteLineWithoutContent(StringSlice line)
+        {
+            var index = line.Start - 1;
+            if (index >= 0 && line.Text[index] is ' ' or '\t')
+            {
+                index--;
+            }
+
+            return index >= 0 && line.Text[index] == '>';
+        }
+    }
+
     // A lazy continuation line only reaches the outermost container that does not continue, so the quotes nested in it did not
     // record the line (nor that container when the line is indented as code). Without it, the roundtrip renderer writes their
     // markers on the lazy line and one line early after it.
     private void AddLazyQuoteLines()
     {
-        var foundUnmatched = false;
         for (int i = 1; i < OpenedBlocks.Count; i++)
         {
             var block = OpenedBlocks[i].Block;
@@ -871,7 +928,7 @@ public class BlockProcessor
                 continue;
             }
 
-            if (block is QuoteBlock quote && (foundUnmatched || !_unmatchedQuoteRecordedLine))
+            if (block is QuoteBlock quote && !ReferenceEquals(quote, _unmatchedQuoteWithLine))
             {
                 quote.QuoteLines.Add(new QuoteBlockLine
                 {
@@ -879,8 +936,6 @@ public class BlockProcessor
                     NewLine = Line.NewLine,
                 });
             }
-
-            foundUnmatched = true;
         }
     }
 
@@ -958,6 +1013,7 @@ public class BlockProcessor
                 if (TrackTrivia)
                 {
                     AddLazyQuoteLines();
+                    _unmatchedQuoteWithLine = null;
 
                     // special case: take care when refactoring this
                     if (currentBlock.Parent is QuoteBlock qb)
@@ -1053,6 +1109,11 @@ public class BlockProcessor
 
             if (allowClosing)
             {
+                if (TrackTrivia && block.LinesBefore is { Count: > 0 })
+                {
+                    GiveBackQuoteLines(block);
+                }
+
                 // Close any previous blocks not opened
                 CloseAll(false);
             }
@@ -1116,7 +1177,7 @@ public class BlockProcessor
         ContinueProcessingLine = false;
         IsLazy = false;
         HasUnmatchedBlocks = false;
-        _unmatchedQuoteRecordedLine = false;
+        _unmatchedQuoteWithLine = null;
 
         _currentStackIndex = 0;
         _originalLineStart = 0;

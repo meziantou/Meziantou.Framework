@@ -111,15 +111,20 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     /// <summary>
     /// Performs the render lines after operation.
     /// </summary>
-    public void RenderLinesAfter(Block block)
+    public void RenderLinesAfter(Block block) => RenderLinesAfter(block, start: 0);
+
+    // Writes the blank lines after a block, from the one at the specified index
+    internal void RenderLinesAfter(Block block, int start)
     {
         PreviousWasLine = true;
         if (block.LinesAfter is null)
         {
             return;
         }
-        foreach (var line in block.LinesAfter)
+
+        for (var i = start; i < block.LinesAfter.Count; i++)
         {
+            var line = block.LinesAfter[i];
             Write(line);
             WriteLine(line.NewLine);
         }

@@ -320,4 +320,21 @@ public class TestQuoteBlock
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData(">>\n>\n")]
+    [InlineData(">>\n>>\n")]
+    [InlineData(">>\n>\n>\n")]
+    [InlineData("> >\n> \n")]
+    [InlineData("> ***\n>\n")]
+    [InlineData("> # h\n>\n")]
+    [InlineData("> ```\n> x\n> ```\n>\n")]
+    [InlineData(">\ny\n")]
+    [InlineData(">\n\ny\n")]
+    [InlineData(">\r\ny\r\n")]
+    [InlineData(">\ry\r")]
+    public void TestLinesWithoutContent(string value)
+    {
+        RoundTrip(value);
+    }
 }

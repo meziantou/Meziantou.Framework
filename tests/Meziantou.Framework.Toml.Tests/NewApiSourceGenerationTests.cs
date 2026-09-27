@@ -2183,6 +2183,26 @@ internal sealed partial class TestTomlSerializerContextValidating : TomlSerializ
 {
 }
 
+public sealed class GeneratedExtendedTableInner
+{
+    public int X { get; set; }
+
+    public int Y { get; set; }
+}
+
+public sealed class GeneratedExtendedTableRoot
+{
+    public GeneratedExtendedTableInner? Inner { get; set; }
+
+    public GeneratedExtendedTableInner? Other { get; set; }
+}
+
+[TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[TomlSerializable(typeof(GeneratedExtendedTableRoot))]
+internal sealed partial class TestTomlSerializerContextExtendedTable : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4659,6 +4679,21 @@ public class NewApiSourceGenerationTests
         {
             Assert.HasCount(2, exception.Diagnostics);
             Assert.Contains("Y must be 2", exception.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ErrorsOfATableThatExtendsAMember_AreReportedWithTheOtherErrors()
+    {
+        const string Toml = "[Inner]\nX = 1\n[inner]\nY = 'bad'\n[other]\nX = 'bad2'\n";
+        var options = new TomlSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedExtendedTableRoot>(Toml, options));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextExtendedTable.Default.GeneratedExtendedTableRoot));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            Assert.Equal([3, 5], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).ToArray());
         }
     }
 

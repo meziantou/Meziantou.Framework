@@ -1043,7 +1043,19 @@ internal static class TomlReflectionTypeInfoResolver
                     // seen also tracks the required members, so it can exist when duplicate keys are allowed
                     if (seen is not null && seen[memberIndex] && Options.DuplicateKeyHandling == TomlDuplicateKeyHandling.Error)
                     {
-                        if (TryReadTableHeaderExtension(reader, instance, member))
+                        // The errors of the table that extends the member are recovered from like those of any value
+                        var extensionStartState = reader.CurrentState;
+                        bool extended;
+                        try
+                        {
+                            extended = TryReadTableHeaderExtension(reader, instance, member);
+                        }
+                        catch (TomlException ex) when (reader.TryRecoverValue(ex, extensionStartState))
+                        {
+                            continue;
+                        }
+
+                        if (extended)
                         {
                             continue;
                         }
@@ -1483,7 +1495,19 @@ internal static class TomlReflectionTypeInfoResolver
                     if (ctorSeen[parameterIndex] && Options.DuplicateKeyHandling == TomlDuplicateKeyHandling.Error)
                     {
                         var duplicateBinding = _parameters[parameterIndex];
-                        if (ReflectionObjectTomlTypeInfo.TryReadTableHeaderExtension(reader, ctorArgs, parameterIndex, duplicateBinding.ParameterType, out var updatedArgument))
+                        var extensionStartState = reader.CurrentState;
+                        bool extended;
+                        object? updatedArgument;
+                        try
+                        {
+                            extended = ReflectionObjectTomlTypeInfo.TryReadTableHeaderExtension(reader, ctorArgs, parameterIndex, duplicateBinding.ParameterType, out updatedArgument);
+                        }
+                        catch (TomlException ex) when (reader.TryRecoverValue(ex, extensionStartState))
+                        {
+                            continue;
+                        }
+
+                        if (extended)
                         {
                             ctorArgs[parameterIndex] = updatedArgument;
                             if (duplicateBinding.MemberIndex is { } duplicateLinkedMemberIndex && duplicateLinkedMemberIndex >= 0 && duplicateLinkedMemberIndex < _members.Count)
@@ -1546,7 +1570,18 @@ internal static class TomlReflectionTypeInfoResolver
                     if (memberSeen[memberIndex] && Options.DuplicateKeyHandling == TomlDuplicateKeyHandling.Error)
                     {
                         var duplicateMember = _members[memberIndex];
-                        if (ReflectionObjectTomlTypeInfo.TryReadTableHeaderExtension(reader, memberValues, memberIndex, duplicateMember))
+                        var extensionStartState = reader.CurrentState;
+                        bool extended;
+                        try
+                        {
+                            extended = ReflectionObjectTomlTypeInfo.TryReadTableHeaderExtension(reader, memberValues, memberIndex, duplicateMember);
+                        }
+                        catch (TomlException ex) when (reader.TryRecoverValue(ex, extensionStartState))
+                        {
+                            continue;
+                        }
+
+                        if (extended)
                         {
                             continue;
                         }

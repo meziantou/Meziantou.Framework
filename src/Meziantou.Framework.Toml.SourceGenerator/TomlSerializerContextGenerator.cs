@@ -3087,10 +3087,25 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.AppendLine(")");
         builder.Append(indent).AppendLine("{");
-        builder.Append(indent).Append("    var __tableExtension = ").Append(GetTypeInfoAccess(type)).Append(".ReadInto(reader, ").Append(existingExpression).AppendLine(");");
+        EmitRecoverableTableExtensionRead(builder, indent, GetTypeInfoAccess(type) + ".ReadInto(reader, " + existingExpression + ")");
         builder.Append(indent).Append("    ").Append(assignment("(" + typeName + ")__tableExtension!")).AppendLine(";");
         builder.Append(indent).AppendLine("    continue;");
         builder.Append(indent).AppendLine("}");
+    }
+
+    // The errors of the table that extends the member are recovered from like those of any value
+    private static void EmitRecoverableTableExtensionRead(StringBuilder builder, string indent, string readExpression)
+    {
+        builder.Append(indent).AppendLine("    var __extensionSpan = reader.CurrentSpan;");
+        builder.Append(indent).AppendLine("    object? __tableExtension;");
+        builder.Append(indent).AppendLine("    try");
+        builder.Append(indent).AppendLine("    {");
+        builder.Append(indent).Append("        __tableExtension = ").Append(readExpression).AppendLine(";");
+        builder.Append(indent).AppendLine("    }");
+        builder.Append(indent).AppendLine("    catch (global::Meziantou.Framework.Toml.TomlException __extensionException) when (TryAddDeserializationDiagnostic(reader, global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable, __extensionSpan, __extensionException))");
+        builder.Append(indent).AppendLine("    {");
+        builder.Append(indent).AppendLine("        continue;");
+        builder.Append(indent).AppendLine("    }");
     }
 
     private static void EmitRepeatedTableExtensionIntoReadOnlyMember(StringBuilder builder, PocoMember member, string indent)
@@ -3098,7 +3113,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var memberAccess = GetMemberReadExpression(member, "value");
         builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer && ").Append(memberAccess).AppendLine(" is not null)");
         builder.Append(indent).AppendLine("{");
-        builder.Append(indent).Append("    var __tableExtension = ").Append(GetMemberTypeInfoAccess(member)).Append(".ReadInto(reader, ").Append(memberAccess).AppendLine(");");
+        EmitRecoverableTableExtensionRead(builder, indent, GetMemberTypeInfoAccess(member) + ".ReadInto(reader, " + memberAccess + ")");
         builder.Append(indent).Append("    if (!object.ReferenceEquals(").Append(memberAccess).Append(", __tableExtension))").AppendLine();
         builder.Append(indent).AppendLine("    {");
         builder.Append(indent).Append("        throw new global::Meziantou.Framework.Toml.TomlException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
@@ -3110,8 +3125,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append(indent).AppendLine("}");
     }
 
-    // A member with a converter is read as a whole by its converter, and a member set by an accessor cannot be assigned
-    // A nullable struct cannot be populated
+    // A member with a converter is read as a whole by its converter, and a nullable struct cannot be populated
     private static bool CanEmitTableHeaderExtension(PocoMember member) => member.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(member.Type, out _);
 
     private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => parameter.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(parameter.ParameterType, out _);

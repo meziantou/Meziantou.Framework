@@ -1591,7 +1591,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("        private static ").Append(typeName).Append(" __CreateInstance(").Append(parameterList).AppendLine(")");
         builder.AppendLine("        {");
         builder.Append("            var __constructor = typeof(").Append(typeName).Append(").GetConstructor(global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic, null, new global::System.Type[] { ").Append(parameterTypes).AppendLine(" }, null)!;");
-        builder.Append("            return (").Append(typeName).Append(")__constructor.Invoke(new object?[] { ").Append(arguments).AppendLine(" })!;");
+        // Like the reflection resolver and the UnsafeAccessor, an exception of the constructor is not wrapped
+        builder.Append("            return (").Append(typeName).Append(")__constructor.Invoke(global::System.Reflection.BindingFlags.DoNotWrapExceptions, null, new object?[] { ").Append(arguments).AppendLine(" }, null)!;");
         builder.AppendLine("        }");
         builder.AppendLine();
     }

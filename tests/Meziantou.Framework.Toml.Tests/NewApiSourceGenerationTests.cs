@@ -2042,6 +2042,14 @@ internal sealed partial class TestTomlSerializerContextModelErrors : TomlSeriali
 {
 }
 
+public sealed class GeneratedThrowingObsoleteConstructor<T>
+{
+    [Obsolete("x", error: true)]
+    public GeneratedThrowingObsoleteConstructor() => throw new InvalidOperationException("boom");
+
+    public int A { get; set; }
+}
+
 public sealed class GeneratedInConstructor
 {
     [TomlConstructor]
@@ -2092,6 +2100,7 @@ public sealed class GeneratedOutConstructor
     public int A { get; }
 }
 
+[TomlSerializable(typeof(GeneratedThrowingObsoleteConstructor<int>))]
 [TomlSerializable(typeof(GeneratedInConstructor))]
 [TomlSerializable(typeof(GeneratedRefReadOnlyConstructor))]
 [TomlSerializable(typeof(GeneratedObsoleteInConstructor))]
@@ -4658,6 +4667,16 @@ public class NewApiSourceGenerationTests
         Assert.Equal(2, TomlSerializer.Deserialize<GeneratedRefReadOnlyConstructor>("A = 2")!.A);
         Assert.Equal(3, TomlSerializer.Deserialize("A = 3", context.GeneratedObsoleteInConstructor)!.A);
         Assert.Equal(4, TomlSerializer.Deserialize("A = 4", context.GeneratedObsoleteInConstructorGenericInt32)!.A);
+    }
+
+    [Fact]
+    public void ObsoleteConstructorOfAGenericType_ThatThrows_IsReportedWithItsException()
+    {
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize("A = 1", TestTomlSerializerContextByRefConstructors.Default.GeneratedThrowingObsoleteConstructorInt32));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedThrowingObsoleteConstructor<int>>("A = 1"));
+
+        Assert.IsType<InvalidOperationException>(generated.InnerException);
+        Assert.IsType<InvalidOperationException>(reflection.InnerException);
     }
 
     [Fact]

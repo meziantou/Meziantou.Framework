@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 using Meziantou.Framework.Toml.Serialization.Internal;
@@ -81,8 +80,8 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         TomlUnknownDerivedTypeHandling? unknownDerivedTypeHandling)
         : base(options)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(derivedTypeInfoByDiscriminator, nameof(derivedTypeInfoByDiscriminator));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(derivedTypeInfoByDiscriminator);
 
         _baseTypeInfo = baseTypeInfo;
         _defaultDerivedTypeInfo = defaultDerivedTypeInfo;
@@ -172,7 +171,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
     /// <inheritdoc />
     public override void Write(TomlWriter writer, TBase value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         if (value is null)
         {
             throw new TomlException("TOML does not support null values.");
@@ -234,7 +233,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
     /// <inheritdoc />
     public override TBase? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         if (reader.TokenType != TomlTokenType.StartTable)
         {

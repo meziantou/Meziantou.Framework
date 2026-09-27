@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Internal;
 using Meziantou.Framework.Toml.Text;
@@ -177,7 +176,7 @@ public static class TomlSerializer
     /// </summary>
     public static string Serialize<T>(T value, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return Serialize(value, typeof(T), context);
     }
 
@@ -188,7 +187,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static string Serialize(object? value, Type inputType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        ArgumentNullException.ThrowIfNull(inputType);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var operationState = new TomlSerializationOperationState(effectiveOptions);
         var typeInfo = ResolveTypeInfo(operationState, inputType);
@@ -200,8 +199,8 @@ public static class TomlSerializer
     /// </summary>
     public static string Serialize(object? value, Type inputType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(inputType);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, inputType);
         return SerializeToString(value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
@@ -212,7 +211,7 @@ public static class TomlSerializer
     /// </summary>
     public static string Serialize<T>(T value, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return SerializeToString(value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
     }
 
@@ -221,8 +220,8 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize<T>(TextWriter writer, T value, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         Serialize(writer, (object?)value, (TomlTypeInfo)typeInfo);
     }
 
@@ -231,7 +230,7 @@ public static class TomlSerializer
     /// </summary>
     public static string Serialize(object? value, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return SerializeToString(value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
     }
 
@@ -270,7 +269,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static void Serialize<T>(TextWriter writer, T value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         Serialize(writer, (object?)value, typeof(T), options);
     }
 
@@ -281,8 +280,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static void Serialize(TextWriter writer, object? value, Type inputType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(inputType);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, inputType);
         Serialize(writer, value, typeInfo);
@@ -293,8 +292,8 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize<T>(TextWriter writer, T value, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(context);
         Serialize(writer, (object?)value, typeof(T), context);
     }
 
@@ -303,9 +302,9 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize(TextWriter writer, object? value, Type inputType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(inputType);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, inputType);
         Serialize(writer, value, typeInfo);
@@ -318,7 +317,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static void Serialize<T>(Stream stream, T value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
         Serialize(stream, (object?)value, typeof(T), options);
     }
 
@@ -329,8 +328,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static void Serialize(Stream stream, object? value, Type inputType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(inputType);
 
         WriteToStream(stream, writer => Serialize(writer, value, inputType, options));
     }
@@ -340,8 +339,8 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize<T>(Stream stream, T value, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
         Serialize(stream, (object?)value, typeof(T), context);
     }
 
@@ -350,9 +349,9 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize(Stream stream, object? value, Type inputType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(inputType);
+        ArgumentNullException.ThrowIfNull(context);
 
         WriteToStream(stream, writer => Serialize(writer, value, inputType, context));
     }
@@ -362,8 +361,8 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize(Stream stream, object? value, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
 
         WriteToStream(stream, writer => Serialize(writer, value, typeInfo));
     }
@@ -373,8 +372,8 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize<T>(Stream stream, T value, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         WriteToStream(stream, writer => Serialize(writer, value, typeInfo));
     }
 
@@ -385,7 +384,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static T? Deserialize<T>(string toml, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
+        ArgumentNullException.ThrowIfNull(toml);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
         return (T?)Deserialize(toml, typeInfo);
@@ -396,8 +395,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(string toml, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, typeof(T));
         return (T?)Deserialize(toml, typeInfo);
@@ -408,8 +407,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(string toml, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return (T?)Deserialize(toml, (TomlTypeInfo)typeInfo);
     }
 
@@ -420,8 +419,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static object? Deserialize(string toml, Type returnType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(returnType);
 
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, returnType);
@@ -433,9 +432,9 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(string toml, Type returnType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, returnType);
         return Deserialize(toml, typeInfo);
@@ -448,7 +447,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static T? Deserialize<T>(TextReader reader, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
         return (T?)Deserialize(reader, typeInfo);
@@ -459,8 +458,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(TextReader reader, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, typeof(T));
         return (T?)Deserialize(reader, typeInfo);
@@ -471,8 +470,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(TextReader reader, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return (T?)Deserialize(reader, (TomlTypeInfo)typeInfo);
     }
 
@@ -483,8 +482,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static object? Deserialize(TextReader reader, Type returnType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(returnType);
 
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, returnType);
@@ -496,9 +495,9 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(TextReader reader, Type returnType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, returnType);
         return Deserialize(reader, typeInfo);
@@ -509,8 +508,8 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(TextReader reader, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
 
         return Deserialize(ReadText(reader, typeInfo.Options), typeInfo);
     }
@@ -522,7 +521,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static T? Deserialize<T>(Stream stream, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, typeof(T));
         return (T?)Deserialize(stream, typeInfo);
@@ -533,8 +532,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(Stream stream, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, typeof(T));
         return (T?)Deserialize(stream, typeInfo);
@@ -545,8 +544,8 @@ public static class TomlSerializer
     /// </summary>
     public static T? Deserialize<T>(Stream stream, TomlTypeInfo<T> typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return (T?)Deserialize(stream, (TomlTypeInfo)typeInfo);
     }
 
@@ -557,8 +556,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static object? Deserialize(Stream stream, Type returnType, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
 
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var typeInfo = ResolveTypeInfo(effectiveOptions, returnType);
@@ -570,9 +569,9 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(Stream stream, Type returnType, TomlSerializerContext context)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
 
         var typeInfo = ResolveTypeInfo(context, returnType);
         return Deserialize(stream, typeInfo);
@@ -583,8 +582,8 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(Stream stream, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
 
         return Deserialize(ReadStream(stream, typeInfo.Options), typeInfo);
     }
@@ -596,7 +595,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
         var typeInfo = ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T));
         return DeserializeAsyncCore<T>(stream, typeInfo, cancellationToken);
     }
@@ -606,8 +605,8 @@ public static class TomlSerializer
     /// </summary>
     public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlSerializerContext context, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
         return DeserializeAsyncCore<T>(stream, ResolveTypeInfo(context, typeof(T)), cancellationToken);
     }
 
@@ -616,8 +615,8 @@ public static class TomlSerializer
     /// </summary>
     public static ValueTask<T?> DeserializeAsync<T>(Stream stream, TomlTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return DeserializeAsyncCore<T>(stream, typeInfo, cancellationToken);
     }
 
@@ -628,8 +627,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static ValueTask<object?> DeserializeAsync(Stream stream, Type returnType, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
         var typeInfo = ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType);
         return DeserializeAsyncCore<object>(stream, typeInfo, cancellationToken);
     }
@@ -639,9 +638,9 @@ public static class TomlSerializer
     /// </summary>
     public static ValueTask<object?> DeserializeAsync(Stream stream, Type returnType, TomlSerializerContext context, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
         return DeserializeAsyncCore<object>(stream, ResolveTypeInfo(context, returnType), cancellationToken);
     }
 
@@ -650,8 +649,8 @@ public static class TomlSerializer
     /// </summary>
     public static ValueTask<object?> DeserializeAsync(Stream stream, TomlTypeInfo typeInfo, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return DeserializeAsyncCore<object>(stream, typeInfo, cancellationToken);
     }
 
@@ -668,7 +667,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static Task SerializeAsync<T>(Stream stream, T value, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
         return SerializeAsync(stream, value, typeof(T), options, cancellationToken);
     }
 
@@ -679,8 +678,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static Task SerializeAsync(Stream stream, object? value, Type inputType, TomlSerializerOptions? options = null, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(inputType);
         return WriteToStreamAsync(stream, writer => Serialize(writer, value, inputType, options), cancellationToken);
     }
 
@@ -689,8 +688,8 @@ public static class TomlSerializer
     /// </summary>
     public static Task SerializeAsync<T>(Stream stream, T value, TomlSerializerContext context, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
         return SerializeAsync(stream, value, typeof(T), context, cancellationToken);
     }
 
@@ -699,9 +698,9 @@ public static class TomlSerializer
     /// </summary>
     public static Task SerializeAsync(Stream stream, object? value, Type inputType, TomlSerializerContext context, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(inputType, nameof(inputType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(inputType);
+        ArgumentNullException.ThrowIfNull(context);
         return WriteToStreamAsync(stream, writer => Serialize(writer, value, inputType, context), cancellationToken);
     }
 
@@ -710,8 +709,8 @@ public static class TomlSerializer
     /// </summary>
     public static Task SerializeAsync(Stream stream, object? value, TomlTypeInfo typeInfo, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return WriteToStreamAsync(stream, writer => Serialize(writer, value, typeInfo), cancellationToken);
     }
 
@@ -720,8 +719,8 @@ public static class TomlSerializer
     /// </summary>
     public static Task SerializeAsync<T>(Stream stream, T value, TomlTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         return WriteToStreamAsync(stream, writer => Serialize(writer, value, typeInfo), cancellationToken);
     }
 
@@ -732,7 +731,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize<T>(string toml, [NotNullWhen(true)] out T? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
+        ArgumentNullException.ThrowIfNull(toml);
         try
         {
             value = (T?)DeserializeToFirstError(toml, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
@@ -752,8 +751,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize(string toml, Type returnType, [NotNullWhen(true)] out object? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(returnType);
         try
         {
             value = DeserializeToFirstError(toml, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
@@ -771,8 +770,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(string toml, TomlSerializerContext context, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = (T?)DeserializeToFirstError(toml, ResolveTypeInfo(context, typeof(T)));
@@ -790,9 +789,9 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(string toml, Type returnType, TomlSerializerContext context, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = DeserializeToFirstError(toml, ResolveTypeInfo(context, returnType));
@@ -812,7 +811,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize<T>(TextReader reader, [NotNullWhen(true)] out T? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         try
         {
             value = (T?)DeserializeToFirstError(reader, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
@@ -832,8 +831,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize(TextReader reader, Type returnType, [NotNullWhen(true)] out object? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(returnType);
         try
         {
             value = DeserializeToFirstError(reader, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
@@ -851,8 +850,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(TextReader reader, TomlSerializerContext context, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = (T?)DeserializeToFirstError(reader, ResolveTypeInfo(context, typeof(T)));
@@ -870,9 +869,9 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(TextReader reader, Type returnType, TomlSerializerContext context, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = DeserializeToFirstError(reader, ResolveTypeInfo(context, returnType));
@@ -892,7 +891,7 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize<T>(Stream stream, [NotNullWhen(true)] out T? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
         try
         {
             value = (T?)DeserializeToFirstError(stream, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, typeof(T)));
@@ -912,8 +911,8 @@ public static class TomlSerializer
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static bool TryDeserialize(Stream stream, Type returnType, [NotNullWhen(true)] out object? value, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
         try
         {
             value = DeserializeToFirstError(stream, ResolveTypeInfo(options ?? TomlSerializerOptions.Default, returnType));
@@ -931,8 +930,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(Stream stream, TomlSerializerContext context, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = (T?)DeserializeToFirstError(stream, ResolveTypeInfo(context, typeof(T)));
@@ -950,9 +949,9 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(Stream stream, Type returnType, TomlSerializerContext context, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(returnType, nameof(returnType));
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(returnType);
+        ArgumentNullException.ThrowIfNull(context);
         try
         {
             value = DeserializeToFirstError(stream, ResolveTypeInfo(context, returnType));
@@ -970,8 +969,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(string toml, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = (T?)DeserializeToFirstError(toml, typeInfo);
@@ -989,8 +988,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(string toml, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = DeserializeToFirstError(toml, typeInfo);
@@ -1008,8 +1007,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(TextReader reader, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = (T?)DeserializeToFirstError(reader, typeInfo);
@@ -1027,8 +1026,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(TextReader reader, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = DeserializeToFirstError(reader, typeInfo);
@@ -1046,8 +1045,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize<T>(Stream stream, TomlTypeInfo<T> typeInfo, [NotNullWhen(true)] out T? value)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = (T?)DeserializeToFirstError(stream, typeInfo);
@@ -1065,8 +1064,8 @@ public static class TomlSerializer
     /// </summary>
     public static bool TryDeserialize(Stream stream, TomlTypeInfo typeInfo, [NotNullWhen(true)] out object? value)
     {
-        ArgumentGuard.ThrowIfNull(stream, nameof(stream));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         try
         {
             value = DeserializeToFirstError(stream, typeInfo);
@@ -1084,8 +1083,8 @@ public static class TomlSerializer
     /// </summary>
     public static object? Deserialize(string toml, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         ThrowIfInputTooLong(toml.Length, typeInfo.Options, "characters");
 
         var operationState = new TomlSerializationOperationState(typeInfo.Options);
@@ -1180,16 +1179,16 @@ public static class TomlSerializer
     /// </summary>
     public static void Serialize(TextWriter writer, object? value, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(typeInfo);
 
         Serialize(writer, value, typeInfo, new TomlSerializationOperationState(typeInfo.Options));
     }
 
     private static void Serialize(TextWriter writer, object? value, TomlTypeInfo typeInfo, TomlSerializationOperationState operationState)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
-        ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        ArgumentNullException.ThrowIfNull(operationState);
 
         // The non-generic overloads accept any value, which the metadata of another type cannot write
         if (value is not null && !typeInfo.Type.IsInstanceOfType(value))

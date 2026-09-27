@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -18,8 +17,8 @@ public sealed class TomlDerivedTypeAttribute : TomlAttribute
     /// <param name="discriminator">The discriminator value.</param>
     public TomlDerivedTypeAttribute(Type derivedType, string discriminator)
     {
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
-        ArgumentGuard.ThrowIfNull(discriminator, nameof(discriminator));
+        ArgumentNullException.ThrowIfNull(derivedType);
+        ArgumentNullException.ThrowIfNull(discriminator);
 
         DerivedType = derivedType;
         Discriminator = discriminator;
@@ -32,7 +31,7 @@ public sealed class TomlDerivedTypeAttribute : TomlAttribute
     /// <param name="discriminator">The integer discriminator value (converted to string via invariant culture).</param>
     public TomlDerivedTypeAttribute(Type derivedType, int discriminator)
     {
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
+        ArgumentNullException.ThrowIfNull(derivedType);
 
         DerivedType = derivedType;
         Discriminator = discriminator.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -46,7 +45,7 @@ public sealed class TomlDerivedTypeAttribute : TomlAttribute
     /// <param name="derivedType">The derived CLR type.</param>
     public TomlDerivedTypeAttribute(Type derivedType)
     {
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
+        ArgumentNullException.ThrowIfNull(derivedType);
 
         DerivedType = derivedType;
         Discriminator = null;

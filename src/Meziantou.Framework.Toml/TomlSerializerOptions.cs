@@ -123,7 +123,15 @@ public sealed record TomlSerializerOptions
     public TomlUnmappedMemberHandling UnmappedMemberHandling
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlUnmappedMemberHandling)}.");
+            }
+
+            field = value;
+        }
     } = TomlUnmappedMemberHandling.Skip;
 
     /// <summary>Gets or sets the maximum allowed nesting depth for TOML tables and arrays during serialization and deserialization.</summary>
@@ -194,7 +202,15 @@ public sealed record TomlSerializerOptions
     public TomlDuplicateKeyHandling DuplicateKeyHandling
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlDuplicateKeyHandling)}.");
+            }
+
+            field = value;
+        }
     } = TomlDuplicateKeyHandling.Error;
 
     /// <summary>
@@ -205,7 +221,15 @@ public sealed record TomlSerializerOptions
     public TomlMappingOrderPolicy MappingOrder
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlMappingOrderPolicy)}.");
+            }
+
+            field = value;
+        }
     } = TomlMappingOrderPolicy.OrderThenDeclaration;
 
     /// <summary>Gets or sets how member names and dictionary keys containing '.' are written. Reading is not affected.</summary>
@@ -213,7 +237,15 @@ public sealed record TomlSerializerOptions
     public TomlDottedKeyHandling DottedKeyHandling
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlDottedKeyHandling)}.");
+            }
+
+            field = value;
+        }
     } = TomlDottedKeyHandling.Literal;
 
     /// <summary>Gets polymorphism options.</summary>
@@ -258,7 +290,15 @@ public sealed record TomlSerializerOptions
     public TomlNewLineKind NewLine
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlNewLineKind)}.");
+            }
+
+            field = value;
+        }
     } = TomlNewLineKind.Lf;
 
     /// <summary>Gets or sets behavior for scalar/array roots that do not naturally map to a TOML document.</summary>
@@ -266,7 +306,15 @@ public sealed record TomlSerializerOptions
     public TomlRootValueHandling RootValueHandling
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlRootValueHandling)}.");
+            }
+
+            field = value;
+        }
     } = TomlRootValueHandling.Error;
 
     /// <summary>
@@ -302,7 +350,15 @@ public sealed record TomlSerializerOptions
     public TomlInlineTablePolicy InlineTablePolicy
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlInlineTablePolicy)}.");
+            }
+
+            field = value;
+        }
     } = TomlInlineTablePolicy.Never;
 
     /// <summary>Gets or sets array-of-table emission style.</summary>
@@ -310,7 +366,15 @@ public sealed record TomlSerializerOptions
     public TomlTableArrayStyle TableArrayStyle
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlTableArrayStyle)}.");
+            }
+
+            field = value;
+        }
     } = TomlTableArrayStyle.Headers;
 
     /// <summary>Gets or sets an optional metadata store used to capture or apply TOML trivia/comment metadata.</summary>

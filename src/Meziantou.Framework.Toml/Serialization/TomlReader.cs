@@ -103,7 +103,7 @@ public sealed class TomlReader
     /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     public static TomlReader Create(string toml, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
+        ArgumentNullException.ThrowIfNull(toml);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var operationState = new TomlSerializationOperationState(effectiveOptions);
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
@@ -121,7 +121,7 @@ public sealed class TomlReader
     /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     public static TomlReader Create(TextReader reader, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         var effectiveOptions = options ?? TomlSerializerOptions.Default;
         var operationState = new TomlSerializationOperationState(effectiveOptions);
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
@@ -135,9 +135,9 @@ public sealed class TomlReader
 
     internal static TomlReader Create(string toml, TomlSerializerOptions options, TomlSerializationOperationState operationState)
     {
-        ArgumentGuard.ThrowIfNull(toml, nameof(toml));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
+        ArgumentNullException.ThrowIfNull(toml);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(operationState);
 
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
@@ -150,9 +150,9 @@ public sealed class TomlReader
 
     internal static TomlReader Create(TextReader reader, TomlSerializerOptions options, TomlSerializationOperationState operationState)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(operationState, nameof(operationState));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(operationState);
 
         var parserOptions = new Meziantou.Framework.Toml.Parsing.TomlParserOptions
         {
@@ -165,7 +165,7 @@ public sealed class TomlReader
 
     internal static TomlReader Create(TomlReaderBuffer buffer, string? filteredPropertyName = null)
     {
-        ArgumentGuard.ThrowIfNull(buffer, nameof(buffer));
+        ArgumentNullException.ThrowIfNull(buffer);
         return new TomlReader(buffer, filteredPropertyName);
     }
 
@@ -549,7 +549,7 @@ public sealed class TomlReader
     /// <exception cref="TomlException">The current token does not have a source span.</exception>
     public bool PropertyNameEquals(string expected)
     {
-        ArgumentGuard.ThrowIfNull(expected, nameof(expected));
+        ArgumentNullException.ThrowIfNull(expected);
 
         if (_tokenType != TomlTokenType.PropertyName)
         {

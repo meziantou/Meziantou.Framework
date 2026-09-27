@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -39,8 +38,8 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
 
     public override void Write(TomlWriter writer, TDictionary value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(value, nameof(value));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
 
         writer.WriteStartTable();
         foreach (var pair in value)
@@ -65,7 +64,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
 
     public override TDictionary? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (reader.TokenType != TomlTokenType.StartTable)
         {
             throw reader.CreateException($"Expected {TomlTokenType.StartTable} token but was {reader.TokenType}.");
@@ -120,7 +119,7 @@ internal sealed class TomlDictionaryTypeInfo<TDictionary, TValue> : TomlTypeInfo
 
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         // A read-only dictionary cannot be populated: a new one is read instead
         if (existingValue is not IDictionary<string, TValue> { IsReadOnly: false } dict)
         {

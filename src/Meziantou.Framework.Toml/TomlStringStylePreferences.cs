@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml;
@@ -16,7 +15,15 @@ public sealed record TomlStringStylePreferences
     public TomlStringStyle DefaultStyle
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlStringStyle)}.");
+            }
+
+            field = value;
+        }
     } = TomlStringStyle.Basic;
 
     /// <summary>If true, prefer literal strings when no escaping is required.</summary>

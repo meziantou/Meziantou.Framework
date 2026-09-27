@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -18,7 +17,7 @@ public sealed class TomlConverterAttribute : TomlAttribute
     /// <param name="converterType">The converter type.</param>
     public TomlConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType)
     {
-        ArgumentGuard.ThrowIfNull(converterType, nameof(converterType));
+        ArgumentNullException.ThrowIfNull(converterType);
         ConverterType = converterType;
     }
 

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -20,8 +19,8 @@ internal sealed class TomlHashSetTypeInfo<TElement> : TomlTypeInfo<HashSet<TElem
 
     public override void Write(TomlWriter writer, HashSet<TElement> value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(value, nameof(value));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
 
         var writeTableArray = ShouldWriteTableArray(writer, value.Count);
         if (writeTableArray)
@@ -50,7 +49,7 @@ internal sealed class TomlHashSetTypeInfo<TElement> : TomlTypeInfo<HashSet<TElem
 
     public override HashSet<TElement>? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (reader.TokenType != TomlTokenType.StartArray)
         {
             throw reader.CreateException($"Expected {TomlTokenType.StartArray} token but was {reader.TokenType}.");
@@ -77,7 +76,7 @@ internal sealed class TomlHashSetTypeInfo<TElement> : TomlTypeInfo<HashSet<TElem
 
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (existingValue is not HashSet<TElement> set)
         {
             return Read(reader);

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Converters;
 
@@ -21,7 +20,7 @@ internal static class TomlTypeInfoResolverPipeline
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static TomlTypeInfo Resolve(TomlSerializerOptions options, Type type)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         return Resolve(new TomlSerializationOperationState(options), type);
     }
 
@@ -29,8 +28,8 @@ internal static class TomlTypeInfoResolverPipeline
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static TomlTypeInfo Resolve(TomlSerializationOperationState state, Type type)
     {
-        ArgumentGuard.ThrowIfNull(state, nameof(state));
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(type);
 
         if (state.TryGetCachedTypeInfo(type, out var cached))
         {
@@ -49,8 +48,8 @@ internal static class TomlTypeInfoResolverPipeline
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static TomlTypeInfo? TryResolve(TomlSerializerOptions options, Type type)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(type);
 
         var state = new TomlSerializationOperationState(options);
         TomlTypeInfo? resolved;
@@ -407,13 +406,13 @@ internal static class TomlTypeInfoResolverPipeline
 
         public override void Write(TomlWriter writer, object? value)
         {
-            ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
             _converter.Write(writer, value);
         }
 
         public override object? ReadAsObject(TomlReader reader)
         {
-            ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
             return TomlConverterHelper.Read(reader, _converter, Type);
         }
     }

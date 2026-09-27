@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Syntax;
 using Meziantou.Framework.Toml.Text;
 
@@ -19,7 +18,7 @@ internal sealed class TomlSerializationOperationState
 
     public TomlSerializationOperationState(TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         Options = options;
         _typeInfoCache = TypeInfoCaches.GetValue(options, static _ => new ConcurrentDictionary<Type, TomlTypeInfo>());
@@ -74,7 +73,7 @@ internal sealed class TomlSerializationOperationState
     // table checks for errors once all of them are found
     public void RecordOrThrow(TomlException exception)
     {
-        ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+        ArgumentNullException.ThrowIfNull(exception);
 
         if (!CanAddDiagnostics(exception))
         {
@@ -110,7 +109,7 @@ internal sealed class TomlSerializationOperationState
 
     public bool CanAddDiagnostics(TomlException exception)
     {
-        ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+        ArgumentNullException.ThrowIfNull(exception);
 
         return RecordsValueErrors &&
             DiagnosticCount < MaxRecordedDiagnostics &&
@@ -120,7 +119,7 @@ internal sealed class TomlSerializationOperationState
 
     public void AddDiagnostics(TomlException exception)
     {
-        ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+        ArgumentNullException.ThrowIfNull(exception);
 
         // An error that is not recovered from goes through the frames around its value, and is recorded once
         if (IsRecordedValueError(exception) || ReferenceEquals(exception.Diagnostics, Diagnostics) || ReferenceEquals(exception, _lastRecordedException))
@@ -147,21 +146,21 @@ internal sealed class TomlSerializationOperationState
     [RequiresDynamicCode(TomlTypeInfoResolverPipeline.ReflectionBasedSerializationMessage)]
     public TomlTypeInfo ResolveTypeInfo(Type type)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
 
         return TomlTypeInfoResolverPipeline.Resolve(this, type);
     }
 
     public bool TryGetCachedTypeInfo(Type type, [NotNullWhen(true)] out TomlTypeInfo? typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
         return _typeInfoCache.TryGetValue(type, out typeInfo);
     }
 
     public void CacheTypeInfo(Type type, TomlTypeInfo typeInfo)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
-        ArgumentGuard.ThrowIfNull(typeInfo, nameof(typeInfo));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(typeInfo);
         _typeInfoCache[type] = typeInfo;
     }
 

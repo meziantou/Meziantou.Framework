@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -17,8 +16,8 @@ public sealed class TomlDerivedTypeMappingAttribute : TomlAttribute
     /// <param name="derivedType">The derived CLR type.</param>
     public TomlDerivedTypeMappingAttribute(Type baseType, Type derivedType)
     {
-        ArgumentGuard.ThrowIfNull(baseType, nameof(baseType));
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
+        ArgumentNullException.ThrowIfNull(baseType);
+        ArgumentNullException.ThrowIfNull(derivedType);
 
         BaseType = baseType;
         DerivedType = derivedType;
@@ -32,9 +31,9 @@ public sealed class TomlDerivedTypeMappingAttribute : TomlAttribute
     /// <param name="discriminator">The discriminator value.</param>
     public TomlDerivedTypeMappingAttribute(Type baseType, Type derivedType, string discriminator)
     {
-        ArgumentGuard.ThrowIfNull(baseType, nameof(baseType));
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
-        ArgumentGuard.ThrowIfNull(discriminator, nameof(discriminator));
+        ArgumentNullException.ThrowIfNull(baseType);
+        ArgumentNullException.ThrowIfNull(derivedType);
+        ArgumentNullException.ThrowIfNull(discriminator);
 
         BaseType = baseType;
         DerivedType = derivedType;
@@ -49,8 +48,8 @@ public sealed class TomlDerivedTypeMappingAttribute : TomlAttribute
     /// <param name="discriminator">The integer discriminator value.</param>
     public TomlDerivedTypeMappingAttribute(Type baseType, Type derivedType, int discriminator)
     {
-        ArgumentGuard.ThrowIfNull(baseType, nameof(baseType));
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
+        ArgumentNullException.ThrowIfNull(baseType);
+        ArgumentNullException.ThrowIfNull(derivedType);
 
         BaseType = baseType;
         DerivedType = derivedType;

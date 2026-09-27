@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -19,8 +18,8 @@ internal sealed class TomlSourceGeneratedArrayTypeInfo<TElement> : TomlTypeInfo<
 
     public override void Write(TomlWriter writer, TElement[] value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(value, nameof(value));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
 
         var writeTableArray = ShouldWriteTableArray(writer, value.Length);
         if (writeTableArray)
@@ -49,7 +48,7 @@ internal sealed class TomlSourceGeneratedArrayTypeInfo<TElement> : TomlTypeInfo<
 
     public override TElement[]? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (reader.TokenType != TomlTokenType.StartArray)
         {
             throw reader.CreateException($"Expected {TomlTokenType.StartArray} token but was {reader.TokenType}.");

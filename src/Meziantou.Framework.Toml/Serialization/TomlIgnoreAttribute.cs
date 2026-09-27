@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -19,6 +18,14 @@ public sealed class TomlIgnoreAttribute : TomlAttribute
     public TomlIgnoreCondition Condition
     {
         get;
-        set => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        set
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlIgnoreCondition)}.");
+            }
+
+            field = value;
+        }
     } = TomlIgnoreCondition.Always;
 }

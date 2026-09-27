@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization;
 using Meziantou.Framework.Toml.Serialization.Converters;
@@ -21,8 +20,8 @@ internal static class TomlReflectionTypeInfoResolver
 {
     public static TomlTypeInfo? TryCreateTypeInfo(Type type, TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(options);
 
         if (!IsSupportedPocoType(type))
         {
@@ -840,7 +839,7 @@ internal static class TomlReflectionTypeInfoResolver
 
         public override void Write(TomlWriter writer, object? value)
         {
-            ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (value is null)
             {
@@ -945,7 +944,7 @@ internal static class TomlReflectionTypeInfoResolver
 
         public override object? ReadAsObject(TomlReader reader)
         {
-            ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
 
             if (reader.TokenType != TomlTokenType.StartTable)
             {
@@ -970,7 +969,7 @@ internal static class TomlReflectionTypeInfoResolver
 
         public override object? ReadInto(TomlReader reader, object? existingValue)
         {
-            ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
 
             if (existingValue is null || !Type.IsInstanceOfType(existingValue))
             {

@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -15,7 +14,7 @@ public sealed class TomlSerializableAttribute : TomlAttribute
     /// <param name="type">The root type to include in the generated context.</param>
     public TomlSerializableAttribute(Type type)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
         Type = type;
     }
 

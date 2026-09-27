@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -10,13 +9,13 @@ internal sealed class TomlUntypedNullableTypeInfo : TomlTypeInfo
     public TomlUntypedNullableTypeInfo(Type nullableType, TomlSerializerOptions options, TomlTypeInfo inner)
         : base(nullableType, options)
     {
-        ArgumentGuard.ThrowIfNull(inner, nameof(inner));
+        ArgumentNullException.ThrowIfNull(inner);
         _inner = inner;
     }
 
     public override void Write(TomlWriter writer, object? value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (value is null)
         {
@@ -28,13 +27,13 @@ internal sealed class TomlUntypedNullableTypeInfo : TomlTypeInfo
 
     public override object? ReadAsObject(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         return _inner.ReadAsObject(reader);
     }
 
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         if (existingValue is not null)
         {

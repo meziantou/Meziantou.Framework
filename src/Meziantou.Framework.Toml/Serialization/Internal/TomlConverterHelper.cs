@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -9,9 +8,9 @@ internal static class TomlConverterHelper
 
     internal static object? Read(TomlReader reader, TomlConverter converter, Type typeToConvert)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(converter, nameof(converter));
-        ArgumentGuard.ThrowIfNull(typeToConvert, nameof(typeToConvert));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(converter);
+        ArgumentNullException.ThrowIfNull(typeToConvert);
 
         var state = reader.CurrentState;
         var diagnosticCount = reader.OperationState.DiagnosticCount;
@@ -48,8 +47,8 @@ internal static class TomlConverterHelper
 
     internal static T? Read<T>(TomlReader reader, TomlConverter<T> converter)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(converter, nameof(converter));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var state = reader.CurrentState;
         var diagnosticCount = reader.OperationState.DiagnosticCount;

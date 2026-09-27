@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -17,7 +16,7 @@ public sealed class TomlPropertyNameAttribute : TomlAttribute
     /// <param name="name">The serialized member name.</param>
     public TomlPropertyNameAttribute(string name)
     {
-        ArgumentGuard.ThrowIfNull(name, nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
         if (name.Length == 0)
         {
             throw new ArgumentException("Property name cannot be empty.", nameof(name));

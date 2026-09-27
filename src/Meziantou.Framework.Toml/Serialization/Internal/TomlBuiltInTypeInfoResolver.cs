@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 
@@ -19,8 +18,8 @@ internal static class TomlBuiltInTypeInfoResolver
     [RequiresDynamicCode(ReflectionBasedSerializationMessage)]
     public static TomlTypeInfo? GetTypeInfo(Type type, TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(options);
 
         if (type == typeof(char)) return new BuiltInTomlTypeInfo<char>(options, TomlCharConverter.Instance);
         if (type == typeof(string)) return new BuiltInTomlTypeInfo<string>(options, TomlStringConverter.Instance);
@@ -267,13 +266,13 @@ internal static class TomlBuiltInTypeInfoResolver
 
         public override void Write(TomlWriter writer, object? value)
         {
-            ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
             _converter.Write(writer, value);
         }
 
         public override object? ReadAsObject(TomlReader reader)
         {
-            ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
             return _converter.Read(reader, Type);
         }
     }
@@ -294,13 +293,13 @@ internal static class TomlBuiltInTypeInfoResolver
 
         public override void Write(TomlWriter writer, T value)
         {
-            ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
             _converter.Write(writer, value);
         }
 
         public override T? Read(TomlReader reader)
         {
-            ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
             return _converter.Read(reader);
         }
     }

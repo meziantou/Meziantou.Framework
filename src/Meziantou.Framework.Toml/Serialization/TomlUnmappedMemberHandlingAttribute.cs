@@ -1,5 +1,3 @@
-using Meziantou.Framework.Toml.Helpers;
-
 namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>Determines how unmapped TOML members are handled when deserializing the annotated type.</summary>
@@ -13,7 +11,12 @@ public sealed class TomlUnmappedMemberHandlingAttribute : TomlAttribute
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="handling"/> is not a defined <see cref="TomlUnmappedMemberHandling"/>.</exception>
     public TomlUnmappedMemberHandlingAttribute(TomlUnmappedMemberHandling handling)
     {
-        Handling = ArgumentGuard.ThrowIfNotDefined(handling, nameof(handling));
+        if (!Enum.IsDefined(handling))
+        {
+            throw new ArgumentOutOfRangeException(nameof(handling), handling, $"The value is not a defined {nameof(TomlUnmappedMemberHandling)}.");
+        }
+
+        Handling = handling;
     }
 
     /// <summary>Gets the unmapped member handling to apply.</summary>

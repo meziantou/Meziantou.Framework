@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Toml;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 using Meziantou.Framework.Toml.Serialization.Internal;
@@ -30,7 +29,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="options">The options used by this context.</param>
     protected TomlSerializerContext(TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         if (options.TypeInfoResolver is null)
         {
@@ -66,8 +65,8 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns>Converter-based metadata, or <see langword="null" /> when no runtime converter matches.</returns>
     protected static TomlTypeInfo? ResolveRuntimeConverterTypeInfo(TomlSerializerOptions options, Type type, Type[]? ignoredConverterTypes)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(type);
         return TomlTypeInfoResolverPipeline.TryResolveFromConverters(options, type, ignoredConverterTypes);
     }
 
@@ -79,7 +78,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<T> GetBuiltInTypeInfo<T>(TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         var type = typeof(T);
 
@@ -139,8 +138,8 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns><c>true</c> when the diagnostic was recorded and the current value was skipped, or when the value was read and its errors were already recorded.</returns>
     protected static bool TryAddDeserializationDiagnostic(TomlReader reader, TomlTokenType tokenType, TomlSourceSpan? span, TomlException exception)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(exception, nameof(exception));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(exception);
 
         // The errors of the value that started at span were recorded when it was read. An error recorded for a nested value
         // that its reader has not finished, such as a converter reading a nested value, stops the reading.
@@ -172,7 +171,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns>The number of diagnostics.</returns>
     protected static int GetDeserializationDiagnosticCount(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         return reader.OperationState.DiagnosticCount;
     }
@@ -187,7 +186,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="tableStartSpan">The location of the start of the table, which identifies the value that was read.</param>
     protected static void ThrowIfDeserializationDiagnostics(TomlReader reader, int diagnosticCount, TomlSourceSpan? tableStartSpan)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         reader.OperationState.ThrowIfDiagnosticsSince(diagnosticCount, tableStartSpan);
     }
@@ -218,7 +217,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="name">The key.</param>
     protected static void ReportDuplicateKey(TomlReader reader, string name)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         reader.ReportDuplicateKey(name);
     }
@@ -231,7 +230,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns>A reader positioned on the first token of the captured value.</returns>
     protected static TomlReader CaptureValue(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         var captured = TomlReader.Create(reader.CaptureCurrentValueToBuffer());
         captured.Read(); // StartDocument
@@ -249,7 +248,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="message">The error message.</param>
     protected static void ReportDeserializationError(TomlReader reader, TomlSourceSpan? span, string message)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         reader.OperationState.RecordOrThrow(span is { } locatedSpan ? new TomlException(locatedSpan, message) : new TomlException(message));
     }
@@ -262,7 +261,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="dottedKeyHandling">The dotted-key handling override, or <see langword="null" /> to use the writer options.</param>
     protected static void WritePropertyName(TomlWriter writer, string name, TomlDottedKeyHandling? dottedKeyHandling)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         writer.WritePropertyName(name, dottedKeyHandling);
     }
 
@@ -274,8 +273,8 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="metadata">The metadata to merge.</param>
     protected static void ApplyPropertyMetadata(TomlWriter writer, string name, TomlPropertyMetadata metadata)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(metadata, nameof(metadata));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(metadata);
         writer.ApplyPropertyMetadata(name, metadata);
     }
 
@@ -288,7 +287,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TEnum> CreateStringEnumTypeInfo<TEnum>(TomlSerializerOptions options)
         where TEnum : struct, Enum
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         return new TomlUntypedConverterTypeInfo<TEnum>(options, TomlStringEnumConverter.Instance);
     }
 
@@ -301,7 +300,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns>The metadata to pass to <see cref="EndPropertiesMetadata{T}(TomlReader, TomlPropertiesMetadata?, T)"/>, or <see langword="null"/>.</returns>
     protected static TomlPropertiesMetadata? BeginPropertiesMetadata<T>(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         // The store associates metadata with an instance, which a value type does not have
         return typeof(T).IsValueType ? null : reader.BeginPropertiesMetadataCapture();
@@ -316,7 +315,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="value">The instance read from the table.</param>
     protected static void EndPropertiesMetadata<T>(TomlReader reader, TomlPropertiesMetadata? metadata, T value)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (metadata is not null && value is not null)
         {
             reader.EndPropertiesMetadataCapture(metadata, value);
@@ -331,7 +330,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <param name="value">The instance.</param>
     protected static void AttachPropertiesMetadata<T>(TomlWriter writer, T value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         if (!typeof(T).IsValueType && value is not null)
         {
             writer.TryAttachMetadata(value);
@@ -347,7 +346,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TEnum?> CreateNullableStringEnumTypeInfo<TEnum>(TomlSerializerOptions options)
         where TEnum : struct, Enum
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
         return new TomlUntypedConverterTypeInfo<TEnum?>(options, TomlTypeInfoResolverPipeline.ResolveAttributeConverter(TomlStringEnumConverter.Instance, typeof(TEnum?), options));
     }
 
@@ -360,8 +359,8 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <returns>Converter-based TOML metadata.</returns>
     protected static TomlTypeInfo<T> CreateConverterTypeInfo<T>(TomlSerializerOptions options, TomlConverter<T> converter)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(converter, nameof(converter));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(converter);
         return new TomlConverterTypeInfo<T>(options, converter);
     }
 
@@ -375,8 +374,8 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// <exception cref="TomlException">The converter cannot convert <typeparamref name="T"/>.</exception>
     protected static TomlTypeInfo<T> CreateAttributeConverterTypeInfo<T>(TomlSerializerOptions options, TomlConverter converter)
     {
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
-        ArgumentGuard.ThrowIfNull(converter, nameof(converter));
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(converter);
         var resolved = TomlTypeInfoResolverPipeline.ResolveAttributeConverter(converter, typeof(T), options);
         return resolved is TomlConverter<T> typedConverter
             ? new TomlConverterTypeInfo<T>(options, typedConverter)
@@ -482,7 +481,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<T?> CreateSourceGeneratedNullableTypeInfo<T>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where T : struct
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         options ??= context.Options;
 
         var inner = context.GetTypeInfo(typeof(T), options);
@@ -504,7 +503,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<TElement[]> CreateSourceGeneratedArrayTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedArrayTypeInfo<TElement>(context, options);
     }
 
@@ -516,7 +515,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<List<TElement>> CreateSourceGeneratedListTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedListTypeInfo<TElement>(context, options);
     }
 
@@ -528,7 +527,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<HashSet<TElement>> CreateSourceGeneratedHashSetTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedHashSetTypeInfo<TElement>(context, options);
     }
 
@@ -541,7 +540,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TEnumerable> CreateSourceGeneratedHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where TEnumerable : IEnumerable<TElement>
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>(context, options);
     }
 
@@ -553,7 +552,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<ImmutableArray<TElement>> CreateSourceGeneratedImmutableArrayTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedImmutableArrayTypeInfo<TElement>(context, options);
     }
 
@@ -565,7 +564,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<ImmutableList<TElement>> CreateSourceGeneratedImmutableListTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedImmutableListTypeInfo<TElement>(context, options);
     }
 
@@ -577,7 +576,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     /// </remarks>
     protected static TomlTypeInfo<ImmutableHashSet<TElement>> CreateSourceGeneratedImmutableHashSetTypeInfo<TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedImmutableHashSetTypeInfo<TElement>(context, options);
     }
 
@@ -590,7 +589,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TEnumerable> CreateSourceGeneratedListBackedEnumerableTypeInfo<TEnumerable, TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where TEnumerable : IEnumerable<TElement>
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedListBackedEnumerableTypeInfo<TEnumerable, TElement>(context, options);
     }
 
@@ -603,7 +602,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TCollection> CreateSourceGeneratedMutableCollectionTypeInfo<TCollection, TElement>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where TCollection : ICollection<TElement>, new()
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedMutableCollectionTypeInfo<TCollection, TElement>(context, options);
     }
 
@@ -616,7 +615,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TDictionary> CreateSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where TDictionary : IEnumerable<KeyValuePair<string, TValue>>
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>(context, options);
     }
 
@@ -630,7 +629,7 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlTypeInfo<TDictionary> CreateSourceGeneratedConcreteDictionaryTypeInfo<TDictionary, TValue>(TomlSerializerContext context, TomlSerializerOptions? options = null)
         where TDictionary : IDictionary<string, TValue>, new()
     {
-        ArgumentGuard.ThrowIfNull(context, nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
         return new TomlSourceGeneratedDictionaryTypeInfo<TDictionary, TValue>(context, options, static () => new TDictionary());
     }
 }

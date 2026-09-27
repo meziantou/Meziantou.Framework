@@ -37,7 +37,7 @@ public sealed class TomlWriter
 
     internal TomlWriter(TextWriter writer, TomlSerializerOptions? options, TomlSerializationOperationState? operationState)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         Writer = writer;
         Options = options ?? TomlSerializerOptions.Default;
         _operationState = operationState ?? new TomlSerializationOperationState(Options);
@@ -55,7 +55,7 @@ public sealed class TomlWriter
 
     internal void TryAttachMetadata(object instance)
     {
-        ArgumentGuard.ThrowIfNull(instance, nameof(instance));
+        ArgumentNullException.ThrowIfNull(instance);
 
         if (Options.MetadataStore is not { } store)
         {
@@ -209,7 +209,7 @@ public sealed class TomlWriter
 
     private void WritePropertyNameCore(string name, bool isLiteral, TomlDottedKeyHandling? dottedKeyHandling)
     {
-        ArgumentGuard.ThrowIfNull(name, nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
         if (_stack.Count == 0 || _stack.Peek() is not TomlTable)
         {
             throw new InvalidOperationException("Property names can only be written inside a table.");
@@ -277,7 +277,7 @@ public sealed class TomlWriter
     /// <param name="value">The value.</param>
     public void WriteStringValue(string value)
     {
-        ArgumentGuard.ThrowIfNull(value, nameof(value));
+        ArgumentNullException.ThrowIfNull(value);
         WriteValue(value);
     }
 
@@ -395,8 +395,8 @@ public sealed class TomlWriter
 
     internal void ApplyPropertyMetadata(string propertyName, TomlPropertyMetadata metadata)
     {
-        ArgumentGuard.ThrowIfNull(propertyName, nameof(propertyName));
-        ArgumentGuard.ThrowIfNull(metadata, nameof(metadata));
+        ArgumentNullException.ThrowIfNull(propertyName);
+        ArgumentNullException.ThrowIfNull(metadata);
         if (CurrentTable is not { } table)
         {
             throw new InvalidOperationException("Property metadata can only be applied inside a table.");

@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Parsing;
 
@@ -15,7 +14,15 @@ public sealed record TomlParserOptions
     public TomlParserMode Mode
     {
         get;
-        init => field = ArgumentGuard.ThrowIfNotDefined(value, nameof(value));
+        init
+        {
+            if (!Enum.IsDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"The value is not a defined {nameof(TomlParserMode)}.");
+            }
+
+            field = value;
+        }
     } = TomlParserMode.Strict;
 
     /// <summary>

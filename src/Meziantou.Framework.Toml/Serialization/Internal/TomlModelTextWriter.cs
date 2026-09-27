@@ -69,9 +69,9 @@ internal static class TomlModelTextWriter
 
     public static void WriteDocument(TextWriter writer, TomlTable root, TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(root, nameof(root));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(options);
 
         var state = new State(writer, options);
         var path = new List<string>();

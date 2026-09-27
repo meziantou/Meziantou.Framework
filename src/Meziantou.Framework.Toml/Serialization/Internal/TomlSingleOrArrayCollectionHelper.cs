@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -13,13 +12,13 @@ internal sealed class TomlSingleOrArrayCollectionHelper
 
     public static bool CanPopulateCollection<T>(object existingValue)
     {
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
+        ArgumentNullException.ThrowIfNull(existingValue);
         return existingValue is ICollection<T>;
     }
 
     public static object AddSingleElementToCollection<T>(object existingValue, T element)
     {
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
+        ArgumentNullException.ThrowIfNull(existingValue);
 
         var collection = existingValue as ICollection<T>
             ?? throw new InvalidOperationException($"Existing collection '{existingValue.GetType().FullName}' does not support population.");
@@ -29,8 +28,8 @@ internal sealed class TomlSingleOrArrayCollectionHelper
 
     public static object AddCollectionToExisting<T>(object existingValue, IEnumerable<T> incomingCollection)
     {
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
-        ArgumentGuard.ThrowIfNull(incomingCollection, nameof(incomingCollection));
+        ArgumentNullException.ThrowIfNull(existingValue);
+        ArgumentNullException.ThrowIfNull(incomingCollection);
 
         var collection = existingValue as ICollection<T>
             ?? throw new InvalidOperationException($"Existing collection '{existingValue.GetType().FullName}' does not support population.");
@@ -69,8 +68,8 @@ internal sealed class TomlSingleOrArrayCollectionHelper
     [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
     public bool CanPopulate(Type collectionType, object existingValue)
     {
-        ArgumentGuard.ThrowIfNull(collectionType, nameof(collectionType));
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
+        ArgumentNullException.ThrowIfNull(collectionType);
+        ArgumentNullException.ThrowIfNull(existingValue);
 
         return GetHandler(collectionType)?.CanPopulate(existingValue) == true;
     }
@@ -79,8 +78,8 @@ internal sealed class TomlSingleOrArrayCollectionHelper
     [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
     public object ReadSingleElementAsCollection(TomlReader reader, Type collectionType)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(collectionType, nameof(collectionType));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(collectionType);
 
         var handler = GetRequiredHandler(collectionType);
         var element = ReadElement(reader, handler.ElementType);
@@ -91,9 +90,9 @@ internal sealed class TomlSingleOrArrayCollectionHelper
     [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
     public object ReadSingleElementIntoExisting(TomlReader reader, Type collectionType, object existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
-        ArgumentGuard.ThrowIfNull(collectionType, nameof(collectionType));
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(collectionType);
+        ArgumentNullException.ThrowIfNull(existingValue);
 
         var handler = GetRequiredHandler(collectionType);
         var element = ReadElement(reader, handler.ElementType);
@@ -104,9 +103,9 @@ internal sealed class TomlSingleOrArrayCollectionHelper
     [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
     public object PopulateExistingFromCollection(Type collectionType, object existingValue, object incomingCollection)
     {
-        ArgumentGuard.ThrowIfNull(collectionType, nameof(collectionType));
-        ArgumentGuard.ThrowIfNull(existingValue, nameof(existingValue));
-        ArgumentGuard.ThrowIfNull(incomingCollection, nameof(incomingCollection));
+        ArgumentNullException.ThrowIfNull(collectionType);
+        ArgumentNullException.ThrowIfNull(existingValue);
+        ArgumentNullException.ThrowIfNull(incomingCollection);
 
         return GetRequiredHandler(collectionType).AddCollection(existingValue, incomingCollection);
     }

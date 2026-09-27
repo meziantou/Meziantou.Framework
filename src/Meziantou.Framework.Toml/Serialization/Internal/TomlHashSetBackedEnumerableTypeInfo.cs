@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -21,8 +20,8 @@ internal sealed class TomlHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>
 
     public override void Write(TomlWriter writer, TEnumerable value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
-        ArgumentGuard.ThrowIfNull(value, nameof(value));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(value);
 
         var items = (IEnumerable<TElement>)value;
         var count = GetCollectionCount(value, ref items);
@@ -53,7 +52,7 @@ internal sealed class TomlHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>
 
     public override TEnumerable? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         if (reader.TokenType != TomlTokenType.StartArray)
         {
             throw reader.CreateException($"Expected {TomlTokenType.StartArray} token but was {reader.TokenType}.");
@@ -80,7 +79,7 @@ internal sealed class TomlHashSetBackedEnumerableTypeInfo<TEnumerable, TElement>
 
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         // A read-only collection, such as an array, cannot be populated: a new one is read instead
         if (existingValue is not ICollection<TElement> { IsReadOnly: false } collection)
         {

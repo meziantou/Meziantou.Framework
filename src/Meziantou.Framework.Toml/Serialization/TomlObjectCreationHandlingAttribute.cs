@@ -1,5 +1,3 @@
-using Meziantou.Framework.Toml.Helpers;
-
 namespace Meziantou.Framework.Toml.Serialization;
 
 /// <summary>Determines how deserialization handles an existing instance for the annotated member or type.</summary>
@@ -17,7 +15,12 @@ public sealed class TomlObjectCreationHandlingAttribute : TomlAttribute
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="handling"/> is not a defined <see cref="TomlObjectCreationHandling"/>.</exception>
     public TomlObjectCreationHandlingAttribute(TomlObjectCreationHandling handling)
     {
-        Handling = ArgumentGuard.ThrowIfNotDefined(handling, nameof(handling));
+        if (!Enum.IsDefined(handling))
+        {
+            throw new ArgumentOutOfRangeException(nameof(handling), handling, $"The value is not a defined {nameof(TomlObjectCreationHandling)}.");
+        }
+
+        Handling = handling;
     }
 
     /// <summary>Gets the object creation handling to apply.</summary>

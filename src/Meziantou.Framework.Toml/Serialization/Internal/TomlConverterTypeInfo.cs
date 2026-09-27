@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -19,13 +18,13 @@ internal sealed class TomlConverterTypeInfo<T> : TomlTypeInfo<T>
 
     public override void Write(TomlWriter writer, T value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         _converter.Write(writer, value);
     }
 
     public override T? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         return TomlConverterHelper.Read(reader, _converter);
     }
 }

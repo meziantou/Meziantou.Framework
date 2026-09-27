@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Serialization;
 
 namespace Meziantou.Framework.Toml;
@@ -16,8 +15,8 @@ public abstract class TomlTypeInfo
     /// <param name="options">The options associated with the metadata.</param>
     protected TomlTypeInfo(Type type, TomlSerializerOptions options)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(options);
 
         Type = type;
         Options = options;
@@ -68,7 +67,7 @@ public abstract class TomlTypeInfo
     /// <returns>The populated or replacement value.</returns>
     public virtual object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         return ReadAsObject(reader);
     }
 }
@@ -101,14 +100,14 @@ public abstract class TomlTypeInfo<T> : TomlTypeInfo
     /// <inheritdoc />
     public sealed override void Write(TomlWriter writer, object? value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         Write(writer, (T)value!);
     }
 
     /// <inheritdoc />
     public sealed override object? ReadAsObject(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         return Read(reader);
     }
 }

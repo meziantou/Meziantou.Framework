@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization.Internal;
 
@@ -11,7 +10,7 @@ internal sealed class TomlNullableTypeInfo<T> : TomlTypeInfo<T?>
     public TomlNullableTypeInfo(TomlSerializerOptions options, TomlTypeInfo inner)
         : base(options)
     {
-        ArgumentGuard.ThrowIfNull(inner, nameof(inner));
+        ArgumentNullException.ThrowIfNull(inner);
 
         _inner = inner as TomlTypeInfo<T>
             ?? throw new TomlException($"The provided TOML metadata for type '{inner.Type.FullName}' cannot be used as metadata for '{typeof(T).FullName}'.");
@@ -19,7 +18,7 @@ internal sealed class TomlNullableTypeInfo<T> : TomlTypeInfo<T?>
 
     public override void Write(TomlWriter writer, T? value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (!value.HasValue)
         {
@@ -31,13 +30,13 @@ internal sealed class TomlNullableTypeInfo<T> : TomlTypeInfo<T?>
 
     public override T? Read(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
         return _inner.Read(reader);
     }
 
     public override object? ReadInto(TomlReader reader, object? existingValue)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         if (existingValue is T value)
         {

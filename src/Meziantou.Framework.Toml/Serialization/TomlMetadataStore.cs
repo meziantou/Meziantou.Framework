@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 
 namespace Meziantou.Framework.Toml.Serialization;
@@ -15,14 +14,14 @@ public sealed class TomlMetadataStore : ITomlMetadataStore
     /// <inheritdoc />
     public bool TryGetProperties(object instance, [NotNullWhen(true)] out TomlPropertiesMetadata? metadata)
     {
-        ArgumentGuard.ThrowIfNull(instance, nameof(instance));
+        ArgumentNullException.ThrowIfNull(instance);
         return _table.TryGetValue(instance, out metadata);
     }
 
     /// <inheritdoc />
     public void SetProperties(object instance, TomlPropertiesMetadata? metadata)
     {
-        ArgumentGuard.ThrowIfNull(instance, nameof(instance));
+        ArgumentNullException.ThrowIfNull(instance);
 
         if (metadata is null)
         {

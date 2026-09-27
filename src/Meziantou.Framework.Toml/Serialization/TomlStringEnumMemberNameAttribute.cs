@@ -1,5 +1,4 @@
 using System;
-using Meziantou.Framework.Toml.Helpers;
 
 namespace Meziantou.Framework.Toml.Serialization;
 
@@ -17,7 +16,7 @@ public sealed class TomlStringEnumMemberNameAttribute : TomlAttribute
     /// <exception cref="ArgumentException"><paramref name="name"/> is empty.</exception>
     public TomlStringEnumMemberNameAttribute(string name)
     {
-        ArgumentGuard.ThrowIfNull(name, nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
         if (name.Length == 0)
         {
             throw new ArgumentException("The enum member name cannot be empty.", nameof(name));

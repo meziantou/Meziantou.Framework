@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
 using Meziantou.Framework.Toml.Serialization.Converters;
 using Meziantou.Framework.Toml.Text;
@@ -49,8 +48,8 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
     public static TomlTypeInfo? TryCreate(Type type, TomlSerializerOptions options, TomlTypeInfo? baseTypeInfo)
     {
-        ArgumentGuard.ThrowIfNull(type, nameof(type));
-        ArgumentGuard.ThrowIfNull(options, nameof(options));
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(options);
 
         if (baseTypeInfo is { IsPolymorphic: true })
         {
@@ -192,7 +191,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
     private static void ValidateDefaultDerivedType(Type baseType, Type derivedType)
     {
-        ArgumentGuard.ThrowIfNull(derivedType, nameof(derivedType));
+        ArgumentNullException.ThrowIfNull(derivedType);
 
         if (!baseType.IsAssignableFrom(derivedType))
         {
@@ -203,7 +202,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
     private static void ValidateDerivedType(Type baseType, Type derivedType, string discriminator)
     {
         ValidateDefaultDerivedType(baseType, derivedType);
-        ArgumentGuard.ThrowIfNull(discriminator, nameof(discriminator));
+        ArgumentNullException.ThrowIfNull(discriminator);
 
         if (discriminator.Length == 0)
         {
@@ -238,7 +237,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
     public override void Write(TomlWriter writer, object? value)
     {
-        ArgumentGuard.ThrowIfNull(writer, nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
         if (value is null)
         {
             throw new TomlException("TOML does not support null values.");
@@ -314,7 +313,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 
     public override object? ReadAsObject(TomlReader reader)
     {
-        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         if (reader.TokenType != TomlTokenType.StartTable)
         {

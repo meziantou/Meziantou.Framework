@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace Meziantou.Framework.Toml.Syntax;
@@ -75,6 +76,14 @@ public class DiagnosticsBag : IEnumerable<DiagnosticMessage>
         {
             Add(diagnosticMessage);
         }
+    }
+
+    // A stable sort: diagnostics at the same position keep their order
+    internal void SortByPosition()
+    {
+        var sorted = _messages.OrderBy(static message => message.Span.Start.Offset).ToList();
+        _messages.Clear();
+        _messages.AddRange(sorted);
     }
 
     /// <summary>

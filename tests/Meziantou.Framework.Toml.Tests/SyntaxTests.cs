@@ -291,6 +291,20 @@ val = true
         Assert.EndsWith("... and 900 more diagnostics.", exception.Message.TrimEnd());
     }
 
+    // The first error of SyntaxParser is the first one of the document, as for TomlParser
+    [Theory]
+    [InlineData("a = 0123\nb = [1 2]\n")]
+    [InlineData("x = 1\na = 1__0\n[b\n")]
+    public void ParseStrict_ReportsTheFirstErrorOfTheDocument(string toml)
+    {
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.Equal(deserialize.Line, parseStrict.Line);
+        Assert.Equal(doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).Order().ToArray(), doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray());
+    }
+
     // The offset, the line and the column of a position designate the same character
     [Theory]
     [InlineData("a = '''abc\n\n")]

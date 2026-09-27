@@ -718,6 +718,34 @@ public sealed class SourceGenerationDiagnosticsTests
         Assert.All(diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && d.Id != "MFTOML005"), d => Assert.Equal("CS0534", d.Id));
     }
 
+    // A base member accessed through a cast, because a derived member has its name, keeps the nullable type arguments of the
+    // base type
+    [Fact]
+    public void Generator_CastToABaseTypeWithANullableTypeArgument_CompilesWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public class GenBase<T>
+            {
+                public T? X { get; set; }
+            }
+
+            public sealed class GenDerived : GenBase<string?>
+            {
+                public static new int X { get; set; }
+            }
+
+            [TomlSerializable(typeof(GenDerived))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
     [Fact]
     public void Generator_PreservesNullableReferenceLocals()
     {

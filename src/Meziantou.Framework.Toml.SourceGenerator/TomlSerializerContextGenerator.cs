@@ -5282,7 +5282,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             {
                 if (current.GetMembers(member.MemberName).Any(other => !SymbolEqualityComparer.Default.Equals(other, member.Symbol)))
                 {
-                    member.AccessTypeName = member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    // The nullable annotations of the type arguments are kept, or the cast is a nullability warning (CS8619)
+                    member.AccessTypeName = member.DeclaringType.ToDisplayString(FullyQualifiedNullableFormat);
                     break;
                 }
             }

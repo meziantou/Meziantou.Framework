@@ -2481,9 +2481,21 @@ public sealed class GeneratedInternalNewDerived : GeneratedNonHidingBase
 #pragma warning restore CS0649, IDE0044, IDE1006
 }
 
+public class GeneratedNonHidingGenericBase<T>
+{
+    public T? X { get; set; }
+}
+
+// The base type has a nullable type argument, which the cast to it keeps
+public sealed class GeneratedNonHidingNullableArgumentDerived : GeneratedNonHidingGenericBase<string?>
+{
+    public static new int X { get; set; }
+}
+
 [TomlSerializable(typeof(GeneratedStaticNewDerived))]
 [TomlSerializable(typeof(GeneratedConstNewDerived))]
 [TomlSerializable(typeof(GeneratedInternalNewDerived))]
+[TomlSerializable(typeof(GeneratedNonHidingNullableArgumentDerived))]
 internal sealed partial class TestTomlSerializerContextNonHiding : TomlSerializerContext
 {
 }
@@ -5143,6 +5155,7 @@ public class NewApiSourceGenerationTests
         Check(context.GeneratedStaticNewDerived);
         Check(context.GeneratedConstNewDerived);
         Check(context.GeneratedInternalNewDerived);
+        Assert.Equal("a", ((GeneratedNonHidingGenericBase<string?>)TomlSerializer.Deserialize("X = 'a'", context.GeneratedNonHidingNullableArgumentDerived)!).X);
 
         static void Check<T>(TomlTypeInfo<T> typeInfo)
             where T : GeneratedNonHidingBase, new()

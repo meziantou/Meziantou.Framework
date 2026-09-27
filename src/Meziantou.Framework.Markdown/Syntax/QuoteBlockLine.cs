@@ -40,4 +40,8 @@ public class QuoteBlockLine
     /// Gets or sets the newline of this QuoeBlockLine.
     /// </summary>
     public NewLine NewLine { get; set; }
+
+    // The lazy lines that follow this line and have no line of their own in this quote, so that a lazy line does not allocate one
+    // line for each nested quote. The roundtrip renderer writes no marker on them.
+    internal int LazyLinesAfter { get; set; }
 }

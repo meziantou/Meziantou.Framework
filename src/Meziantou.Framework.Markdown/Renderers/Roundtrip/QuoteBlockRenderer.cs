@@ -19,24 +19,42 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
         renderer.RenderLinesBefore(quoteBlock);
         renderer.Write(quoteBlock.TriviaBefore);
 
-        var indents = new string[quoteBlock.QuoteLines.Count];
-        for (int i = 0; i < quoteBlock.QuoteLines.Count; i++)
+        var quoteLines = quoteBlock.QuoteLines;
+        var indents = new string[quoteLines.Count];
+        int[]? lazyLines = null;
+        for (int i = 0; i < quoteLines.Count; i++)
         {
-            var quoteLine = quoteBlock.QuoteLines[i];
+            var quoteLine = quoteLines[i];
             var wsb = quoteLine.TriviaBefore.ToString();
             var quoteChar = quoteLine.QuoteChar ? ">" : "";
             var spaceAfterQuoteChar = quoteLine.HasSpaceAfterQuoteChar ? " " : "";
             var wsa = quoteLine.TriviaAfter.ToString();
             indents[i] = (wsb + quoteChar + spaceAfterQuoteChar + wsa);
+            if (quoteLine.LazyLinesAfter > 0)
+            {
+                (lazyLines ??= new int[quoteLines.Count])[i] = quoteLine.LazyLinesAfter;
+            }
         }
 
-        renderer.PushIndent(indents);
+        renderer.PushIndent(indents, lazyLines);
         renderer.WriteChildren(quoteBlock);
 
         // The quote lines that are not written yet have no content (all of them when the quote has no children). The parser
         // attached them after the quote, before the blank lines that follow it.
         var remaining = renderer.RemainingIndentLines;
         var linesInQuote = 0;
+
+        // Find the quote line of the first line not written yet, counting the lazy lines that follow each quote line
+        var lineIndex = quoteLines.Count;
+        var lineOffset = 0;
+        for (var skip = remaining; skip > 0;)
+        {
+            lineIndex--;
+            var lineCount = 1 + quoteLines[lineIndex].LazyLinesAfter;
+            lineOffset = Math.Max(0, lineCount - skip);
+            skip -= lineCount;
+        }
+
         for (var i = 0; i < remaining; i++)
         {
             if (quoteBlock.LinesAfter is { } linesAfter && i < linesAfter.Count)
@@ -47,7 +65,13 @@ public class QuoteBlockRenderer : RoundtripObjectRenderer<QuoteBlock>
             }
             else
             {
-                renderer.WriteLine(quoteBlock.QuoteLines[quoteBlock.QuoteLines.Count - remaining + i].NewLine);
+                renderer.WriteLine(quoteLines[lineIndex].NewLine);
+            }
+
+            if (++lineOffset > quoteLines[lineIndex].LazyLinesAfter)
+            {
+                lineIndex++;
+                lineOffset = 0;
             }
         }
 

@@ -1,3 +1,4 @@
+using Meziantou.Framework.Markdown.Syntax;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
@@ -299,6 +300,12 @@ public class TestQuoteBlock
     [InlineData("> a\n>   b\n> ===\n")]
     [InlineData("> a\nb\n> ===\n")]
     [InlineData("> a\n    b\n> ---\n")]
+    [InlineData(">>> a\nb\n  c\n")]
+    [InlineData(">>> a\nb\n>>> c\nd\n")]
+    [InlineData(">>> a\r\nb\nc\r\n")]
+    [InlineData("> > a\nb\n>\n")]
+    [InlineData("> > > a\nb\n>\n>\n")]
+    [InlineData("> - > a\nb\n  c\n")]
     public void TestLazyContinuation(string value)
     {
         RoundTrip(value);
@@ -336,5 +343,19 @@ public class TestQuoteBlock
     public void TestLinesWithoutContent(string value)
     {
         RoundTrip(value);
+    }
+
+    [Fact]
+    public void TestLazyLinesInNestedQuotesAreCounted()
+    {
+        const int Depth = 100;
+        const int LazyLines = 1000;
+        var markdown = new string('>', Depth) + " a\n" + string.Concat(Enumerable.Repeat("b\n", LazyLines));
+        var document = MarkdownConverter.Parse(markdown, new MarkdownPipelineBuilder().EnableTrackTrivia().Build());
+
+        // The outermost quote records each lazy line, the nested quotes only count them
+        var quoteLines = document.Descendants<QuoteBlock>().Sum(quote => quote.QuoteLines.Count);
+        Assert.True(quoteLines <= Depth + LazyLines, $"{quoteLines} quote lines");
+        RoundTrip(markdown);
     }
 }

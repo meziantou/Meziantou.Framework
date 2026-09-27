@@ -75,16 +75,28 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
         private readonly string? _constant;
         private readonly string[]? _lineSpecific;
         private readonly string? _marker;
+        private readonly int[]? _emptyLinesAfter;
         private int _position;
+        private int _emptyLines;
+        private int _remainingLines;
 
         internal Indent(string constant)
         {
             _constant = constant;
         }
 
-        internal Indent(string[] lineSpecific)
+        internal Indent(string[] lineSpecific, int[]? emptyLinesAfter = null)
         {
             _lineSpecific = lineSpecific;
+            _emptyLinesAfter = emptyLinesAfter;
+            _remainingLines = lineSpecific.Length;
+            if (emptyLinesAfter is not null)
+            {
+                foreach (var count in emptyLinesAfter)
+                {
+                    _remainingLines += count;
+                }
+            }
         }
 
         internal Indent(string marker, string rest)
@@ -106,13 +118,22 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
                 return _constant;
             }
 
+            if (_emptyLines > 0)
+            {
+                _emptyLines--;
+                _remainingLines--;
+                return string.Empty;
+            }
+
             //if (_lineSpecific.Count == 0) throw new Exception("Indents empty");
             if (_position == _lineSpecific!.Length) return string.Empty;
 
+            _emptyLines = _emptyLinesAfter is null ? 0 : _emptyLinesAfter[_position];
+            _remainingLines--;
             return _lineSpecific![_position++];
         }
 
-        internal int RemainingLines => _lineSpecific is null ? 0 : _lineSpecific.Length - _position;
+        internal int RemainingLines => _lineSpecific is null ? 0 : _remainingLines;
     }
 
     /// <summary>
@@ -192,6 +213,13 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
 
         // ensure that indents are written to the output stream
         // this assumes that calls after PushIndent wil write children content
+        PreviousWasLine = true;
+    }
+
+    // Same as PushIndent(string[]), where each line is followed by the specified number of lines without indent
+    internal void PushIndent(string[] lineSpecific, int[]? emptyLinesAfter)
+    {
+        _indents.Add(new Indent(lineSpecific, emptyLinesAfter));
         PreviousWasLine = true;
     }
 

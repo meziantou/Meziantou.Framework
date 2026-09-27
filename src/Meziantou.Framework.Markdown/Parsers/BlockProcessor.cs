@@ -917,7 +917,8 @@ public class BlockProcessor
 
     // A lazy continuation line only reaches the outermost container that does not continue, so the quotes nested in it did not
     // record the line (nor that container when the line is indented as code). Without it, the roundtrip renderer writes their
-    // markers on the lazy line and one line early after it.
+    // markers on the lazy line and one line early after it. The quotes count the line instead of adding one, or each lazy line
+    // would allocate one line per nested quote.
     private void AddLazyQuoteLines()
     {
         for (int i = 1; i < OpenedBlocks.Count; i++)
@@ -930,11 +931,19 @@ public class BlockProcessor
 
             if (block is QuoteBlock quote && !ReferenceEquals(quote, _unmatchedQuoteWithLine))
             {
-                quote.QuoteLines.Add(new QuoteBlockLine
+                var quoteLines = quote.QuoteLines;
+                if (quoteLines.Count == 0)
                 {
-                    QuoteChar = false,
-                    NewLine = Line.NewLine,
-                });
+                    quoteLines.Add(new QuoteBlockLine
+                    {
+                        QuoteChar = false,
+                        NewLine = Line.NewLine,
+                    });
+                }
+                else
+                {
+                    quoteLines[^1].LazyLinesAfter++;
+                }
             }
         }
     }
@@ -1019,8 +1028,23 @@ public class BlockProcessor
                     if (currentBlock.Parent is QuoteBlock qb)
                     {
                         var triviaAfter = UseTrivia(Start - 1);
-                        var quoteLine = qb.QuoteLines.Last();
-                        if (quoteLine.QuoteChar && !quoteLine.TriviaAfter.IsEmpty)
+                        var quoteLines = qb.QuoteLines;
+                        var quoteLine = quoteLines[^1];
+                        if (quoteLine.LazyLinesAfter > 0)
+                        {
+                            // The quote counted the lazy line: a line of its own keeps its trivia
+                            if (!triviaAfter.IsEmpty)
+                            {
+                                quoteLine.LazyLinesAfter--;
+                                quoteLines.Add(new QuoteBlockLine
+                                {
+                                    QuoteChar = false,
+                                    TriviaAfter = triviaAfter,
+                                    NewLine = Line.NewLine,
+                                });
+                            }
+                        }
+                        else if (quoteLine.QuoteChar && !quoteLine.TriviaAfter.IsEmpty)
                         {
                             // The quote marker consumed a tab: keep it, and keep the trivia of a lazy line out of the line of the marker
                             if (quoteLine.TriviaAfter.End + 1 == triviaAfter.Start)

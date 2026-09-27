@@ -561,6 +561,25 @@ public sealed class TestPipeTable
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
+    public void ManyGfmTablesAfterManyParagraphsAreParsedInLinearTime()
+    {
+        // Each table was inserted in the document at the index of its paragraph, found from the first block of the document
+        const int ParagraphCount = 500_000;
+        const int TableCount = 120_000;
+        var markdown = string.Concat(Enumerable.Repeat("a\n\n", ParagraphCount)) + string.Concat(Enumerable.Repeat("a|b\n-|-\n\n", TableCount));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.HasCount(ParagraphCount, document.OfType<ParagraphBlock>());
+        Assert.HasCount(TableCount, document.OfType<Table>());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void ManyRowsInAnUnclosedInlineAreParsedInLinearTime()
     {
         // The line breaks nested in the emphasis delimiter were promoted one at a time, each one moving all the rows after it

@@ -135,7 +135,8 @@ internal sealed class GfmPipeTableParser : BlockParser
             }
             ref var last = ref preceding.Lines.Lines[preceding.Lines.Count - 1].Slice;
             while (!last.IsEmpty && last.Text[last.End].IsSpaceOrTab()) last.End--;
-            paragraph.Parent!.Insert(paragraph.Parent.IndexOf(paragraph), preceding);
+            // The paragraph is the last block of its parent, or near it: search from the end
+            paragraph.Parent!.Insert(paragraph.Parent.LastIndexOf(paragraph), preceding);
             paragraph.Lines = new StringLineGroup(1);
         }
         processor.Close(paragraph);
@@ -153,7 +154,7 @@ internal sealed class GfmPipeTableParser : BlockParser
         {
             var parent = pending.Parent!;
             pending.Table.IsOpen = false;
-            parent.Insert(parent.IndexOf(pending), pending.Table);
+            parent.Insert(parent.LastIndexOf(pending), pending.Table);
             return false;
         }
         return true;

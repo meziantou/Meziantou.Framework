@@ -63,11 +63,15 @@ public class ContainerInline : Inline, IEnumerable<Inline>
     /// </summary>
     public void Clear()
     {
+        // The removed children are detached from each other too, so they can be added to another container
         var child = LastChild;
-        while (child != null)
+        while (child is not null)
         {
+            var previous = child.PreviousSibling;
             child.Parent = null;
-            child = child.PreviousSibling;
+            child.PreviousSibling = null;
+            child.NextSibling = null;
+            child = previous;
         }
         FirstChild = null;
         LastChild = null;

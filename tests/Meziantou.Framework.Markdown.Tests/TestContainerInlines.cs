@@ -157,4 +157,67 @@ public class TestContainerInlines
         Assert.Same(existing, a.PreviousSibling);
         Assert.Same(b, replacement.LastChild);
     }
+
+    [Fact]
+    public void ClearDetachesTheChildren()
+    {
+        var container = new ContainerInline();
+        var a = new LiteralInline("a");
+        var b = new LiteralInline("b");
+        var c = new LiteralInline("c");
+        container.AppendChild(a);
+        container.AppendChild(b);
+        container.AppendChild(c);
+
+        container.Clear();
+
+        Assert.Null(container.FirstChild);
+        Assert.Null(container.LastChild);
+        Assert.Empty(container);
+        foreach (var child in new Inline[] { a, b, c })
+        {
+            Assert.Null(child.Parent);
+            Assert.Null(child.PreviousSibling);
+            Assert.Null(child.NextSibling);
+        }
+
+        // The former siblings must not link the children appended again to the ones that were not
+        container.AppendChild(a);
+        container.AppendChild(c);
+        Assert.Equal(new Inline[] { a, c }, container.Take(5).ToArray());
+        Assert.Same(a, c.PreviousSibling);
+        Assert.Null(c.NextSibling);
+
+        var other = new ContainerInline();
+        other.AppendChild(b);
+        Assert.Equal(new Inline[] { b }, other.ToArray());
+    }
+
+    [Fact]
+    public void ClearDetachesTheChildrenMovedFromAReplacedContainer()
+    {
+        var root = new ContainerInline();
+        var delimiter = new ContainerInline();
+        var a = new LiteralInline("a");
+        var b = new LiteralInline("b");
+        root.AppendChild(delimiter);
+        delimiter.AppendChild(a);
+        delimiter.AppendChild(b);
+        delimiter.ReplaceBy(new LiteralInline("["));
+        Assert.Same(root, a.Parent);
+
+        root.Clear();
+
+        Assert.Empty(root);
+        Assert.Null(a.Parent);
+        Assert.Null(b.Parent);
+        Assert.Null(a.NextSibling);
+        Assert.Null(b.PreviousSibling);
+
+        var other = new ContainerInline();
+        other.AppendChild(b);
+        other.AppendChild(a);
+        Assert.Equal(new Inline[] { b, a }, other.Take(5).ToArray());
+        Assert.Same(other, a.Parent);
+    }
 }

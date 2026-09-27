@@ -23,6 +23,10 @@ internal sealed class Lexer
     private List<DiagnosticMessage>? _errors;
     // The index of the first error of the token being read, whose errors are sorted once it ends, or -1 between tokens
     private int _unorderedErrorsStart = -1;
+
+    // The index of the error recorded by the previous call to AddError in the current token, or -1 when that call dropped
+    // its error: only that error can be extended, so every path merges the same errors whatever MaxErrorCount drops
+    private int _lastErrorIndex = -1;
     private const int Eof = -1;
     private readonly ReadOnlyMemory<char> _text;
     private readonly int _textLength;
@@ -93,6 +97,7 @@ internal sealed class Lexer
         // first error of the token
         var firstError = _errors?.Count ?? 0;
         _unorderedErrorsStart = firstError;
+        _lastErrorIndex = -1;
         var emitHiddenTokens = EmitHiddenTokens;
         if (State == LexerState.Key)
         {
@@ -1951,17 +1956,19 @@ internal sealed class Lexer
         _errors ??= new List<DiagnosticMessage>();
 
         // A run of the same invalid character, such as NUL characters in a comment, is reported once over the whole run
-        if (_errors.Count > 0 && _errors[^1] is { } previous &&
+        if (_lastErrorIndex >= 0 && _errors[_lastErrorIndex] is { } previous &&
             previous.Span.End.Offset + 1 == start.Offset &&
             string.Equals(previous.Message, message, StringComparison.Ordinal))
         {
-            _errors[^1] = new DiagnosticMessage(previous.Kind, new SourceSpan(previous.Span.FileName, previous.Span.Start, end), message);
+            _errors[_lastErrorIndex] = new DiagnosticMessage(previous.Kind, new SourceSpan(previous.Span.FileName, previous.Span.Start, end), message);
             return;
         }
 
+        _lastErrorIndex = -1;
         if (_errors.Count < MaxErrorCount)
         {
             _errors.Add(new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message));
+            _lastErrorIndex = _errors.Count - 1;
             return;
         }
 
@@ -1982,6 +1989,7 @@ internal sealed class Lexer
             if (latest >= 0 && start.Offset < _errors[latest].Span.Start.Offset)
             {
                 _errors[latest] = new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message);
+                _lastErrorIndex = latest;
             }
         }
     }
@@ -1994,6 +2002,7 @@ internal sealed class Lexer
 
         // Reading the first character can report an error, such as a lone surrogate, so the errors are cleared before
         _errors = null;
+        _lastErrorIndex = -1;
 
         // It is important to initialize this separately from the previous line
         _current.CurrentChar = NextCharFromReader();

@@ -553,6 +553,25 @@ val = true
         Assert.Equal("Invalid UTF-16 surrogate sequence in TOML input.", doc.Diagnostics[0].Message);
     }
 
+    // A run of the same error is merged the same way in every path, whatever errors the path drops
+    [Theory]
+    [InlineData("a = \"x\r\r\"\n")]
+    [InlineData("\r\r")]
+    [InlineData("# \0\0\0\n")]
+    public void FirstErrorOfARun_HasTheSameSpanInEveryPath(string toml)
+    {
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        while (parser.MoveNext())
+        {
+        }
+
+        var expected = deserialize.Diagnostics![0].Span;
+        Assert.Equal((expected.Start.Offset, expected.End.Offset), (parseStrict.Diagnostics![0].Span.Start.Offset, parseStrict.Diagnostics[0].Span.End.Offset));
+        Assert.Equal((expected.Start.Offset, expected.End.Offset), (parser.Diagnostics[0].Span.Start.Offset, parser.Diagnostics[0].Span.End.Offset));
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

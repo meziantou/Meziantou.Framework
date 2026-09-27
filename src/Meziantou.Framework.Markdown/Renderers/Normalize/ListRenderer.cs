@@ -55,25 +55,58 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
     }
 
-    // Gets the marker, including the following space, of the item at the specified index
+    // Gets the marker, including the following spaces, of the item at the specified index
     internal static string GetMarker(NormalizeRenderer renderer, ListBlock listBlock, int index)
     {
+        string marker;
         if (!listBlock.IsOrdered)
         {
-            return $"{renderer.Options.ListItemCharacter ?? listBlock.BulletType} ";
+            marker = $"{renderer.Options.ListItemCharacter ?? listBlock.BulletType}";
         }
-
-        var number = 0;
-        if (listBlock.BulletType == '1')
+        else
         {
-            if (listBlock.OrderedStart != null)
+            var number = 0;
+            if (listBlock.BulletType == '1')
             {
-                _ = int.TryParse(listBlock.OrderedStart, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
+                if (listBlock.OrderedStart != null)
+                {
+                    _ = int.TryParse(listBlock.OrderedStart, NumberStyles.Integer, CultureInfo.InvariantCulture, out number);
+                }
+
+                number += index;
             }
 
-            number += index;
+            marker = $"{number.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter}";
         }
 
-        return $"{number.ToString(CultureInfo.InvariantCulture)}{listBlock.OrderedDelimiter} ";
+        // The indented lines of the block after the list would continue the last item, unless its content is indented further
+        if (index == listBlock.Count - 1 && StartsWithIndentation(GetNextSibling(listBlock)) && !StartsWithIndentation(listBlock[index] is ListItemBlock { Count: > 0 } item ? item[0] : null))
+        {
+            return marker.PadRight(Math.Max(5, marker.Length + 1));
+        }
+
+        return marker + " ";
+    }
+
+    private static bool StartsWithIndentation(Block? block)
+    {
+        return block switch
+        {
+            FencedCodeBlock => false,
+            CodeBlock => true,
+            HtmlBlock { Lines.Count: > 0 } htmlBlock => htmlBlock.Lines.Lines[0].Slice.AsSpan() is [' ' or '\t', ..],
+            _ => false,
+        };
+    }
+
+    private static Block? GetNextSibling(Block block)
+    {
+        if (block.Parent is not { } parent)
+        {
+            return null;
+        }
+
+        var index = parent.IndexOf(block);
+        return index >= 0 && index + 1 < parent.Count ? parent[index + 1] : null;
     }
 }

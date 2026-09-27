@@ -850,6 +850,15 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("  1. a\n\n    b", "1.   a\n\n    b")]
+    [InlineData("   - a\n\n    b", "-    a\n\n    b")]
+    [InlineData("- a\n-  b\n  <div", "- a\n-    b\n\n  <div\n")]
+    public void IndentedBlockAfterListIsNotPartOfTheLastItem(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

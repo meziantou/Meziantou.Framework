@@ -3061,12 +3061,22 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     }
 
     private static void EmitRepeatedTableExtensionIntoTarget(StringBuilder builder, ITypeSymbol type, string existingExpression, string targetExpression, string indent)
+        => EmitRepeatedTableExtensionIntoTarget(builder, type, existingExpression, value => targetExpression + " = " + value, indent);
+
+    // A struct is populated as a boxed copy, which is then assigned back
+    private static void EmitRepeatedTableExtensionIntoTarget(StringBuilder builder, ITypeSymbol type, string existingExpression, Func<string, string> assignment, string indent)
     {
         var typeName = type.ToDisplayString(FullyQualifiedNullableFormat);
-        builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer && ").Append(existingExpression).AppendLine(" is not null)");
+        builder.Append(indent).Append("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartTable && !reader.IsInlineContainer");
+        if (CanBeNull(type))
+        {
+            builder.Append(" && ").Append(existingExpression).Append(" is not null");
+        }
+
+        builder.AppendLine(")");
         builder.Append(indent).AppendLine("{");
         builder.Append(indent).Append("    var __tableExtension = ").Append(GetTypeInfoAccess(type)).Append(".ReadInto(reader, ").Append(existingExpression).AppendLine(");");
-        builder.Append(indent).Append("    ").Append(targetExpression).Append(" = (").Append(typeName).AppendLine(")__tableExtension!;");
+        builder.Append(indent).Append("    ").Append(assignment("(" + typeName + ")__tableExtension!")).AppendLine(";");
         builder.Append(indent).AppendLine("    continue;");
         builder.Append(indent).AppendLine("}");
     }
@@ -3090,9 +3100,26 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     }
 
     // A member with a converter is read as a whole by its converter, and a member set by an accessor cannot be assigned
-    private static bool CanEmitTableHeaderExtension(PocoMember member) => !member.Type.IsValueType && member.ConverterTypeInfoName is null && member.SetterAccessorName is null;
+    // A nullable struct cannot be populated
+    private static bool CanEmitTableHeaderExtension(PocoMember member) => member.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(member.Type, out _);
 
-    private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => !parameter.ParameterType.IsValueType && parameter.ConverterTypeInfoName is null;
+    private static bool CanEmitTableHeaderExtension(PocoConstructorParameter parameter) => parameter.ConverterTypeInfoName is null && !TryGetNullableUnderlyingType(parameter.ParameterType, out _);
+
+    // The member is set like when it is read: with its setter accessor, its init accessor, or directly
+    private static string GetMemberAssignment(PocoMember member, string valueExpression)
+    {
+        if (member.SetterAccessorName is not null)
+        {
+            return GetSetterAccessorCall(member, "value", valueExpression);
+        }
+
+        if (member.InitSetterAccessorName is not null)
+        {
+            return member.InitSetterAccessorName + "(" + (member.DeclaringType.IsValueType ? "ref " : "") + "value, " + valueExpression + ")";
+        }
+
+        return "value." + member.Identifier + " = " + valueExpression;
+    }
 
     private static void EmitSingleOrArrayMemberRead(StringBuilder builder, PocoMember member, string indent, SourceGenOptions options, string memberAccess)
     {
@@ -3431,14 +3458,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         builder.AppendLine("                        {");
                         if (member.CanSet)
                         {
-                            if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
+                            if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), value => GetMemberAssignment(member, value), "                            ");
                             }
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member))
+                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                            ");
                             }
@@ -3461,14 +3488,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         builder.AppendLine("                        {");
                         if (member.CanSet)
                         {
-                            if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
+                            if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                            ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), value => GetMemberAssignment(member, value), "                            ");
                             }
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member))
+                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                            ");
                             }
@@ -3570,14 +3597,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         }
                         if (member.CanSet)
                         {
-                            if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
+                            if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), value => GetMemberAssignment(member, value), "                                        ");
                             }
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member))
+                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                                        ");
                             }
@@ -3609,14 +3636,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         builder.AppendLine("                                        reader.Read();");
                         if (member.CanSet)
                         {
-                            if (CanEmitTableHeaderExtension(member) && member.InitSetterAccessorName is null)
+                            if (CanEmitTableHeaderExtension(member))
                             {
-                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), "value." + member.Identifier, "                                        ");
+                                EmitRepeatedTableExtensionIntoTarget(builder, member.Type, GetMemberReadExpression(member, "value"), value => GetMemberAssignment(member, value), "                                        ");
                             }
                         }
                         else
                         {
-                            if (CanEmitTableHeaderExtension(member))
+                            if (CanEmitTableHeaderExtension(member) && !member.Type.IsValueType)
                             {
                                 EmitRepeatedTableExtensionIntoReadOnlyMember(builder, member, "                                        ");
                             }

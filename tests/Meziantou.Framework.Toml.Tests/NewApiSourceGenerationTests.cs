@@ -1868,6 +1868,64 @@ internal sealed partial class TestTomlSerializerContextIgnoredPopulate : TomlSer
 {
 }
 
+public interface IGeneratedExtendValue
+{
+    int B { get; }
+
+    int D { get; }
+}
+
+public sealed class GeneratedExtendClass : IGeneratedExtendValue
+{
+    public int B { get; set; }
+
+    public int D { get; set; }
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+public struct GeneratedExtendValueStruct : IGeneratedExtendValue
+{
+    public int B { get; set; }
+
+    public int D { get; set; }
+}
+
+public sealed class GeneratedExtendInit
+{
+    [TomlPropertyName("a")]
+    public GeneratedExtendClass? A { get; init; }
+
+    public int C { get; set; }
+}
+
+public sealed class GeneratedExtendPrivateSetter
+{
+    [TomlInclude]
+    [TomlPropertyName("a")]
+    public GeneratedExtendClass? A { get; private set; }
+
+    public int C { get; set; }
+}
+
+public sealed class GeneratedExtendStruct
+{
+    [TomlPropertyName("a")]
+    public GeneratedExtendValueStruct A { get; set; }
+
+    public int C { get; set; }
+}
+
+public sealed record GeneratedExtendStructRecord([property: TomlPropertyName("a")] GeneratedExtendValueStruct A, int C);
+
+[TomlSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[TomlSerializable(typeof(GeneratedExtendInit))]
+[TomlSerializable(typeof(GeneratedExtendPrivateSetter))]
+[TomlSerializable(typeof(GeneratedExtendStruct))]
+[TomlSerializable(typeof(GeneratedExtendStructRecord))]
+internal sealed partial class TestTomlSerializerContextCaseInsensitiveExtension : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3878,6 +3936,29 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal([1], generated.L);
         Assert.Equal([1], reflection.L);
+    }
+
+    [Theory]
+    [InlineData("a.B = 1\nA.D = 2\nC = 1\n")]
+    [InlineData("C = 1\n[a]\nB = 1\n[A]\nD = 2\n")]
+    public void TableRepeatedInAnotherCase_ExtendsMembersSetThroughAccessorsAndStructs(string toml)
+    {
+        var options = new TomlSerializerOptions { PropertyNameCaseInsensitive = true };
+        var context = TestTomlSerializerContextCaseInsensitiveExtension.Default;
+
+        Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendInit)!.A!, TomlSerializer.Deserialize<GeneratedExtendInit>(toml, options)!.A!);
+        Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendPrivateSetter)!.A!, TomlSerializer.Deserialize<GeneratedExtendPrivateSetter>(toml, options)!.A!);
+        Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendStruct)!.A, TomlSerializer.Deserialize<GeneratedExtendStruct>(toml, options)!.A);
+        Check(TomlSerializer.Deserialize(toml, context.GeneratedExtendStructRecord)!.A, TomlSerializer.Deserialize<GeneratedExtendStructRecord>(toml, options)!.A);
+
+        static void Check(IGeneratedExtendValue generated, IGeneratedExtendValue reflection)
+        {
+            foreach (var value in new[] { generated, reflection })
+            {
+                Assert.Equal(1, value.B);
+                Assert.Equal(2, value.D);
+            }
+        }
     }
 
     [Fact]

@@ -7110,10 +7110,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     // Emits the statement handling a key that matches no member. The key must be in the "name" local.
     private static void EmitUnmappedMember(StringBuilder builder, string indent, bool disallow, string typeName)
     {
+        // Like a missing required key, the key is reported with the other errors of the table
         if (disallow)
         {
-            builder.Append(indent).Append("throw reader.CreateException($\"The TOML key '{name}' could not be mapped to '{typeof(").Append(typeName).AppendLine(").FullName}'.\");");
-            return;
+            builder.Append(indent).Append("ReportDeserializationError(reader, reader.CurrentSpan, $\"The TOML key '{name}' could not be mapped to '{typeof(").Append(typeName).AppendLine(").FullName}'.\");");
         }
 
         builder.Append(indent).AppendLine("reader.Skip();");

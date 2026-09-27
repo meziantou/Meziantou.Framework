@@ -2203,6 +2203,19 @@ internal sealed partial class TestTomlSerializerContextExtendedTable : TomlSeria
 {
 }
 
+[TomlUnmappedMemberHandling(Meziantou.Framework.Toml.TomlUnmappedMemberHandling.Disallow)]
+public sealed class GeneratedDisallowUnmapped
+{
+    public int A { get; set; }
+
+    public int B { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedDisallowUnmapped))]
+internal sealed partial class TestTomlSerializerContextDisallowUnmapped : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4699,6 +4712,23 @@ public class NewApiSourceGenerationTests
         {
             Assert.Equal([3, 5], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).ToArray());
         }
+    }
+
+    [Fact]
+    public void DisallowedUnmappedKeys_AreAllReportedWithTheValueErrors()
+    {
+        const string Toml = "A = 'x'\nZ = 1\nY = 2\nB = 'y'\n";
+
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedDisallowUnmapped>(Toml));
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(Toml, TestTomlSerializerContextDisallowUnmapped.Default.GeneratedDisallowUnmapped));
+
+        foreach (var exception in new[] { reflection, generated })
+        {
+            Assert.Equal([0, 1, 2, 3], exception.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Line).ToArray());
+        }
+
+        Assert.False(TomlSerializer.TryDeserialize("Z = 1\n", TestTomlSerializerContextDisallowUnmapped.Default.GeneratedDisallowUnmapped, out _));
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedDisallowUnmapped>("Z = 1\n", out _));
     }
 
     [Fact]

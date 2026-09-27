@@ -822,9 +822,10 @@ internal static class TomlReflectionTypeInfoResolver
 
         private void SkipUnmappedMember(TomlReader reader, string name)
         {
+            // Like a missing required key, the key is reported with the other errors of the table
             if (_unmappedMemberHandling == TomlUnmappedMemberHandling.Disallow)
             {
-                throw reader.CreateException($"The TOML key '{name}' could not be mapped to '{Type.FullName}'.");
+                reader.OperationState.RecordOrThrow(reader.CreateException($"The TOML key '{name}' could not be mapped to '{Type.FullName}'."));
             }
 
             reader.Skip();

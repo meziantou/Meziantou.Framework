@@ -5707,7 +5707,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 return false;
             }
 
-            if (derivedType is INamedTypeSymbol derivedNamed && (derivedNamed.TypeKind != TypeKind.Class || derivedNamed.IsAbstract))
+            // A struct can implement an interface base; like the reflection resolver, it is boxed
+            if (derivedType is INamedTypeSymbol derivedNamed && (derivedNamed.TypeKind is not (TypeKind.Class or TypeKind.Struct) || derivedNamed.IsAbstract))
             {
                 if (reportDiagnostics)
                 {
@@ -5715,7 +5716,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         InvalidPolymorphismConfiguration,
                         location,
                         type.ToDisplayString(),
-                        $"Derived type '{derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' must be a non-abstract class."));
+                        $"Derived type '{derivedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}' must be a non-abstract class or a struct."));
                 }
 
                 return false;
@@ -7181,14 +7182,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
 
             if (mapping.DerivedType is not INamedTypeSymbol derivedType ||
-                derivedType.TypeKind != TypeKind.Class ||
+                derivedType.TypeKind is not (TypeKind.Class or TypeKind.Struct) ||
                 derivedType.IsAbstract)
             {
                 context.ReportDiagnostic(DiagnosticInfo.Create(
                     InvalidDerivedTypeMapping,
                     mapping.Location ?? model.ContextSymbol.Locations.FirstOrDefault(),
                     model.ContextSymbol.ToDisplayString(),
-                    $"Derived type '{mapping.DerivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}' must be a non-abstract class."));
+                    $"Derived type '{mapping.DerivedType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}' must be a non-abstract class or a struct."));
                 continue;
             }
 

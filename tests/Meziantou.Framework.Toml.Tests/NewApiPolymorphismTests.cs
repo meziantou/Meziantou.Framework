@@ -564,6 +564,21 @@ public class NewApiPolymorphismTests
         Assert.Equal([.. Enumerable.Range(0, 30).Select(i => i.ToString(CultureInfo.InvariantCulture)), "last"], values);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StructDerivedType_OfAnInterface_IsReadAndWritten(bool generated)
+    {
+        var context = SelfDerivedTomlSerializerContext.Default;
+        var holder = new StructShapeHolder { S = new StructShapeSquare { X = 3 } };
+
+        var toml = generated ? TomlSerializer.Serialize(holder, context.StructShapeHolder) : TomlSerializer.Serialize(holder);
+        var read = generated ? TomlSerializer.Deserialize(toml, context.StructShapeHolder)! : TomlSerializer.Deserialize<StructShapeHolder>(toml)!;
+
+        Assert.Equal("[S]\n\"$type\" = \"s\"\nX = 3\n", toml.ReplaceLineEndings("\n"));
+        Assert.Equal(3, Assert.IsType<StructShapeSquare>(read.S).X);
+    }
+
     // Like System.Text.Json, the base type can be one of its own derived types
     [Theory]
     [InlineData(false)]
@@ -679,6 +694,24 @@ internal sealed class SelfDefaultHolder
     public SelfDefaultShape? S { get; set; }
 }
 
+[TomlDerivedType(typeof(StructShapeSquare), "s")]
+internal interface IStructShape
+{
+    int X { get; set; }
+}
+
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+internal struct StructShapeSquare : IStructShape
+{
+    public int X { get; set; }
+}
+
+internal sealed class StructShapeHolder
+{
+    public IStructShape? S { get; set; }
+}
+
+[TomlSerializable(typeof(StructShapeHolder))]
 [TomlSerializable(typeof(SelfDerivedHolder))]
 [TomlSerializable(typeof(SelfDefaultHolder))]
 internal sealed partial class SelfDerivedTomlSerializerContext : TomlSerializerContext

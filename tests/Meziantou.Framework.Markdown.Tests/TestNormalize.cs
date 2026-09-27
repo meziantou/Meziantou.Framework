@@ -966,6 +966,15 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseListExtras().Build());
     }
 
+    [Theory]
+    [InlineData("[Foo*bar\\]]:my_(url) 'title (with parens)'\n\n[Foo*bar\\]]", "[Foo*bar\\]]: my_(url) \"title (with parens)\"\n\n[Foo*bar\\]][Foo*bar\\]]")]
+    [InlineData("[foo][ref\\[]\n\n[ref\\[]: /uri", "[foo][ref\\[]\n\n[ref\\[]: /uri")]
+    [InlineData("[bar\\\\]: /uri\n\n[bar\\\\]", "[bar\\\\]: /uri\n\n[bar\\\\][bar\\\\]")]
+    public void LinkLabelIsEscaped(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

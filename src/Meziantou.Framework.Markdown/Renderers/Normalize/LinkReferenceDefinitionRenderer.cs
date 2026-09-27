@@ -26,7 +26,11 @@ public class LinkReferenceDefinitionRenderer : NormalizeObjectRenderer<LinkRefer
 
         renderer.EnsureLine();
         renderer.Write('[');
-        renderer.Write(linkDef.Label);
+        if (linkDef.Label is not null)
+        {
+            renderer.Write(LinkInlineRenderer.EscapeLabel(linkDef.Label));
+        }
+
         renderer.Write("]: ");
 
         // The entities of a definition are kept, and decoded when a link uses it

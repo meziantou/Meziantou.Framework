@@ -62,7 +62,8 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             else
             {
                 // full link
-                renderer.Write('[').Write(renderer.EscapeTablePipes ? link.Label.Replace("|", "\\|", StringComparison.Ordinal) : link.Label).Write(']');
+                var label = EscapeLabel(link.Label);
+                renderer.Write('[').Write(renderer.EscapeTablePipes ? label.Replace("|", "\\|", StringComparison.Ordinal) : label).Write(']');
             }
         }
         // A link with a dynamic URL, such as a reference to a heading, stays a shortcut reference
@@ -106,6 +107,11 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
         return builder.ToString();
     }
+
+    /// <summary>
+    /// Escapes a link label, which is stored without its backslash escapes.
+    /// </summary>
+    internal static string EscapeLabel(string label) => Escape(label, "[]", decodedEntities: false);
 
     /// <summary>
     /// Writes a link destination, escaped so that it is parsed back to the same URL.

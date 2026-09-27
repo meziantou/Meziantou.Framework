@@ -2,6 +2,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Xunit;
@@ -386,6 +388,8 @@ public class TestLinkHelper
     [InlineData("þing", "thing")]        // þ (thorn) -> th
     [InlineData("bað", "bad")]           // ð (eth) -> d
     [InlineData("øst-æble", "oest-aeble")] // ø->oe, æ->ae
+    [InlineData("Þór Ðað", "thor-dad")]  // Þ -> Th, Ð -> D (then lowercase)
+    [InlineData("ÆØß", "aeoess")]
     public void TestUrilizeOnlyAscii_ScandinavianGermanChars(string input, string expectedResult)
     {
         Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));
@@ -490,5 +494,44 @@ public class TestLinkHelper
     public void TestUnicodeInDomainNameOfLinkReferenceDefinition()
     {
         TestParser.TestSpec("[Foo]\n\n[Foo]: http://ünicode.com", "<p><a href=\"http://xn--nicode-2ya.com\">Foo</a></p>");
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void InlineLinkScanCacheGivesTheSameAnswersAsIndependentScans()
+    {
+        // The link parser tries the inline links of a leaf block from left to right, remembering the failed scans
+        string[] atoms = ["](", "](", "(", ")", "a", " ", " ", "\"", "'", "\\", "<", ">", "\n", "\\(", "\\)", "((", "))", "\"t\"", "(t)"];
+        var random = new Random(42);
+        for (var n = 0; n < 5000; n++)
+        {
+            var text = string.Concat(Enumerable.Range(0, random.Next(1, 25)).Select(_ => atoms[random.Next(atoms.Length)]));
+            var cache = new InlineLinkScanCache();
+            for (var start = 1; start < text.Length; start++)
+            {
+                if (text[start] != '(' || text[start - 1] != ']')
+                {
+                    continue;
+                }
+
+                var slice = new StringSlice(text, start, text.Length - 1);
+                cache.SetText(slice);
+                var cached = slice;
+                var independent = slice;
+                var isCachedValid = LinkHelper.TryParseInlineLink(ref cached, out var cachedLink, out var cachedTitle, out var cachedLinkSpan, out var cachedTitleSpan, cache);
+                var isValid = LinkHelper.TryParseInlineLink(ref independent, out var link, out var title, out var linkSpan, out var titleSpan, scanCache: null);
+
+                var message = $"{text} {start}";
+                Assert.Equal(isValid, isCachedValid, message);
+                if (isValid)
+                {
+                    Assert.Equal(link, cachedLink, message);
+                    Assert.Equal(title, cachedTitle, message);
+                    Assert.Equal(linkSpan, cachedLinkSpan, message);
+                    Assert.Equal(titleSpan, cachedTitleSpan, message);
+                    Assert.Equal(independent.Start, cached.Start, message);
+                }
+            }
+        }
     }
 }

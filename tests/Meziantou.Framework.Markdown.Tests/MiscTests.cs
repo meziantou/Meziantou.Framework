@@ -367,6 +367,8 @@ public class MiscTests
     [InlineData("[a](b ([a](b ([a](b (", "<p>[a](b ([a](b ([a](b (</p>")]
     [InlineData("[a](b ( [a](b (c) x", "<p>[a](b ( [a](b (c) x</p>")]
     [InlineData("[a](b (x) y [a](b (c))", "<p>[a](b (x) y <a href=\"b\" title=\"c\">a</a></p>")]
+    [InlineData("[a](b (c [d](e \"f\")", "<p>[a](b (c <a href=\"e\" title=\"f\">d</a></p>")]
+    [InlineData("[a](b (c [d](e 'f')", "<p>[a](b (c <a href=\"e\" title=\"f\">d</a></p>")]
     public void UnclosedInlineLinks(string markdown, string expected)
     {
         TestParser.TestSpec(markdown, expected);
@@ -1095,6 +1097,33 @@ $$
 
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"http://www.foo.bar\">www.foo.bar</a></p>", pipeline);
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"http://www.foo.bar\" target=\"_blank\">www.foo.bar</a></p>", newWindowPipeline);
+    }
+
+    [Theory]
+    [InlineData("NOTE", "alert-primary")]
+    [InlineData("note", "alert-primary")]
+    [InlineData("TIP", "alert-success")]
+    [InlineData("IMPORTANT", "alert-info")]
+    [InlineData("WARNING", "alert-warning")]
+    [InlineData("CAUTION", "alert-danger")]
+    [InlineData("OTHER", "alert-dark")]
+    public void BootstrapAddsTheClassOfTheAlertKind(string kind, string expectedClass)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAlertBlocks(renderKind: (_, _) => { }).UseBootstrap().Build();
+
+        Assert.Equal(
+            $"<div class=\"markdown-alert markdown-alert-{kind.ToLowerInvariant()} alert {expectedClass}\" role=\"alert\">\n<p class=\"mb-0\">a</p>\n</div>\n",
+            MarkdownConverter.ToHtml($"> [!{kind}]\n> a", pipeline));
+    }
+
+    [Theory]
+    [InlineData("&#x1F600; &#128512; &#x10000; &#x10FFFF;", "<p>\U0001F600 \U0001F600 \U00010000 \U0010FFFF</p>\n")]
+    [InlineData("&#x110000; &#xD800; &#xDFFF; &#0;", "<p>\uFFFD \uFFFD \uFFFD \uFFFD</p>\n")]
+    [InlineData("[a](/&#x1F600; \"&#x1F600;&#128512;\")", "<p><a href=\"/%F0%9F%98%80\" title=\"\U0001F600\U0001F600\">a</a></p>\n")]
+    [InlineData("[a]\n\n[a]: /&#x1F600; \"&#x1F600;\"", "<p><a href=\"/%F0%9F%98%80\" title=\"\U0001F600\">a</a></p>\n")]
+    public void NumericCharacterReferencesOutsideTheBasicMultilingualPlane(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown));
     }
 
     [Theory]

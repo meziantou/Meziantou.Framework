@@ -90,7 +90,7 @@ internal static class Program
         new Spec("Abbreviations",       "AbbreviationSpecs.md",         "abbreviations|advanced"),
         new Spec("List Extras",         "ListExtraSpecs.md",            "listextras|advanced"),
         new Spec("Math",                "MathSpecs.md",                 "mathematics|advanced"),
-        new Spec("Bootstrap",           "BootstrapSpecs.md",            "bootstrap+pipetables+figures+attributes"),
+        new Spec("Bootstrap",           "BootstrapSpecs.md",            "bootstrap+pipetables+figures+attributes+alerts"),
         new Spec("Media",               "MediaSpecs.md",                "medialinks|advanced+medialinks"),
         new Spec("Smarty Pants",        "SmartyPantsSpecs.md",          "pipetables+smartypants|advanced+smartypants"),
         new Spec("Auto Identifiers",    "AutoIdentifierSpecs.md",       "autoidentifiers|advanced"),

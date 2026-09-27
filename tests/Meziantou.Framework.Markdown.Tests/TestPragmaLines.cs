@@ -74,4 +74,14 @@ public class TestPragmaLines
 
         Assert.Equal(6, doc.FindClosestLine(50));
     }
+
+    [Theory]
+    [InlineData("# Title {#custom}\n\ntext", "<h1 id=\"custom\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\">text</p>\n")]
+    [InlineData("text\n\n# {#custom}\n\n---", "<p id=\"pragma-line-0\">text</p>\n<a id=\"pragma-line-2\"></a>\n<h1 id=\"custom\"></h1>\n<hr id=\"pragma-line-4\" />\n")]
+    public void BlockWithAnIdGetsAnAnchor(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePragmaLines().UseGenericAttributes().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
 }

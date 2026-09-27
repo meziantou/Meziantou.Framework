@@ -25,4 +25,16 @@ public class TestNewLine
         Assert.HasCount(1, inlines, message: "Invalid number of LineBreakInline");
         Assert.True(inlines[0].IsBackslash);
     }
+
+    [Theory]
+    [InlineData("> [!NOTE]\n> a\n")]
+    [InlineData("> [!NOTE]\r\n> a\r\n")]
+    [InlineData("> [!NOTE]\r> a\r")]
+    [InlineData("> [!NOTE]  \r\n> a")]
+    public void AlertKindIsFollowedByAnyNewLine(string markdown)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAlertBlocks((renderer, kind) => renderer.Write("[").Write(kind).Write("]")).Build();
+
+        Assert.Equal("<div class=\"markdown-alert markdown-alert-note\">\n[NOTE]<p>a</p>\n</div>\n", MarkdownConverter.ToHtml(markdown, pipeline));
+    }
 }

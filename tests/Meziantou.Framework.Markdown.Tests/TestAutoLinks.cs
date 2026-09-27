@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
+using Meziantou.Framework.Markdown.Helpers;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
@@ -126,6 +128,68 @@ public class TestAutoLinks
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ScanCacheGivesTheSameAnswersAsIndependentScans()
+    {
+        // Candidates after the first one of a run are answered from tables built for the run; a new cache answers the first
+        // candidate of its run directly
+        string[] atoms = ["www.", "http://", "mailto:", "a", "b", "0", "_", "_", ".", ".", "..", "(", ")", "/", "?", "#", ":", "@", "@", "&amp;", "&x", ";", ",", "*", "*", "~", "-", "!", "\"", "é"];
+        var random = new Random(42);
+        for (var n = 0; n < 3000; n++)
+        {
+            var text = string.Concat(Enumerable.Range(0, random.Next(1, 30)).Select(_ => atoms[random.Next(atoms.Length)]));
+            var cache = new AutoLinkScanCache();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var slice = new StringSlice(text, start, text.Length - 1);
+                var end = cache.ScanUrl(slice);
+                var independent = new AutoLinkScanCache();
+                Assert.Equal(independent.ScanUrl(slice), end, message: $"ScanUrl {text} {start}");
+                if (end < 0)
+                {
+                    continue;
+                }
+
+                var atIndex = text.AsSpan(start, end - start).IndexOf('@');
+                Assert.Equal(atIndex, cache.IndexOfAt(start, end), message: $"IndexOfAt {text} {start}");
+                for (var linkEnd = start; linkEnd <= end; linkEnd++)
+                {
+                    for (var domainStart = start; domainStart <= linkEnd; domainStart++)
+                    {
+                        foreach (var allowDomainWithoutPeriod in new[] { false, true })
+                        {
+                            Assert.Equal(
+                                independent.IsValidDomain(start, domainStart, linkEnd, allowDomainWithoutPeriod),
+                                cache.IsValidDomain(start, domainStart, linkEnd, allowDomainWithoutPeriod),
+                                message: $"IsValidDomain {text} {start} {domainStart} {linkEnd} {allowDomainWithoutPeriod}");
+                        }
+                    }
+                }
+            }
+
+            // The pending emphasis characters are the same for the candidates of a run, which often end at the same position
+            foreach (var characters in new[] { "*", "*_~" })
+            {
+                cache = new AutoLinkScanCache();
+                for (var start = 0; start < text.Length; start++)
+                {
+                    var end = cache.ScanUrl(new StringSlice(text, start, text.Length - 1));
+                    if (end >= 0)
+                    {
+                        var trimStart = end;
+                        while (trimStart > start && characters.Contains(text[trimStart - 1], StringComparison.Ordinal))
+                        {
+                            trimStart--;
+                        }
+
+                        Assert.Equal(trimStart, cache.GetTrailingCharactersStart(start, end, characters), message: $"Trailing {text} {start} {characters}");
+                    }
+                }
+            }
+        }
+    }
+
     [Theory(DisableParallelization = true)]
     [InlineData("(www.a", "autolinks", true)]
     [InlineData("*http://a", "autolinks", false)]

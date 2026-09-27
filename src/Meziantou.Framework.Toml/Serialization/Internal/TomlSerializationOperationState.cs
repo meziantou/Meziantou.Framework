@@ -82,6 +82,12 @@ internal sealed class TomlSerializationOperationState
         }
 
         AddDiagnostics(exception);
+
+        // Without recovery, as in TryDeserialize, the first error stops the reading: no member is set from invalid input
+        if (!RecoversValueErrors)
+        {
+            throw exception;
+        }
     }
 
     // The error of a value that was read completely, such as a buffered polymorphic value: it is recorded, unless it already

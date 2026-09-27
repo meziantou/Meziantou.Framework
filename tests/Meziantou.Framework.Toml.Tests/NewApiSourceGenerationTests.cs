@@ -2014,6 +2014,23 @@ public sealed class GeneratedFallbackConverter : TomlConverter<GeneratedFallback
     public override void Write(TomlWriter writer, GeneratedFallbackInner value) => throw new NotSupportedException();
 }
 
+[TomlUnmappedMemberHandling(TomlUnmappedMemberHandling.Disallow)]
+public sealed class GeneratedStrictThrowingSetter
+{
+    public int N { get; set; }
+
+    public int Throwing
+    {
+        get => N;
+        set => throw new InvalidOperationException("The setter ran on invalid input.");
+    }
+}
+
+[TomlSerializable(typeof(GeneratedStrictThrowingSetter))]
+internal sealed partial class TestTomlSerializerContextStrictThrowingSetter : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedConverterReadInner
 {
     public int A { get; set; }
@@ -4847,6 +4864,16 @@ public class NewApiSourceGenerationTests
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedIgnoredPropertyOverField(), includeFields));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty(), TestTomlSerializerContextHiding.Default.GeneratedFieldOverProperty));
         Assert.Equal("", TomlSerializer.Serialize(new GeneratedFieldOverProperty()));
+    }
+
+    // TryDeserialize stops at the first error, an unmapped key included: no setter runs on invalid input
+    [Fact]
+    public void TryDeserialize_StopsAtADisallowedUnmappedKey()
+    {
+        const string Toml = "Z = 1\nThrowing = 1\n";
+
+        Assert.False(TomlSerializer.TryDeserialize(Toml, TestTomlSerializerContextStrictThrowingSetter.Default.GeneratedStrictThrowingSetter, out _));
+        Assert.False(TomlSerializer.TryDeserialize<GeneratedStrictThrowingSetter>(Toml, out _));
     }
 
     // Like System.Text.Json, a converter must read its whole value and nothing more: otherwise the parent would read the rest

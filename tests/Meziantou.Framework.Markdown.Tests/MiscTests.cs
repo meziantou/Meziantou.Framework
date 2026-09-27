@@ -1098,6 +1098,17 @@ $$
     }
 
     [Theory]
+    [InlineData("```mermaid\nA --> B & C <x> \"q\"\n```", "<pre class=\"mermaid\">A --> B &amp; C &lt;x> \"q\"\n</pre>\n")]
+    [InlineData("```nomnoml\n[<a>A&B]\n```", "<div class=\"nomnoml\">[&lt;a>A&amp;B]\n</div>\n")]
+    public void DiagramContentIsEscapedForTheElementContent(string markdown, string expected)
+    {
+        // The content is read by a script, so only the characters that change the HTML structure are escaped
+        var pipeline = new MarkdownPipelineBuilder().UseDiagrams().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Theory]
     [InlineData("[a](/u)", "<p><a href=\"/u\" target=\"_blank\">a</a></p>")]
     [InlineData("[a](/u \"t\")", "<p><a href=\"/u\" target=\"_blank\" title=\"t\">a</a></p>")]
     [InlineData("[a][r]\n\n[r]: /u", "<p><a href=\"/u\" target=\"_blank\">a</a></p>")]

@@ -109,6 +109,21 @@ public class TestHtmlAttributes
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
+    [Theory]
+    [InlineData("# h {title=\"a&b<c>\"}", "<h1 title=\"a&amp;b&lt;c&gt;\">h</h1>\n")]
+    [InlineData("# h {title='a\"b'}", "<h1 title=\"a&quot;b\">h</h1>\n")]
+    [InlineData("[x](/u){title=\"a&b\"}", "<p><a href=\"/u\" title=\"a&amp;b\">x</a></p>\n")]
+    [InlineData("# h {#a&b}", "<h1 id=\"a&amp;b\">h</h1>\n")]
+    [InlineData("# h {.a&b .c<d}", "<h1 class=\"a&amp;b c&lt;d\">h</h1>\n")]
+    [InlineData("```a\"b&c<d>\nx\n```", "<pre><code class=\"language-a&quot;b&amp;c&lt;d&gt;\">x\n</code></pre>\n")]
+    [InlineData("```js {.a&b title=\"<t>\"}\nx\n```", "<pre><code class=\"a&amp;b language-js\" title=\"&lt;t&gt;\">x\n</code></pre>\n")]
+    public void GenericAttributesAreEscaped(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
     [Fact]
     public void GenericAttributesFilterCanBeReplaced()
     {

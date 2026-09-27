@@ -410,6 +410,9 @@ internal static class PublicApiModelReader
         foreach (var interfaceImplementationHandle in typeDefinition.GetInterfaceImplementations())
         {
             var interfaceImplementation = metadataReader.GetInterfaceImplementation(interfaceImplementationHandle);
+            if (!IsInterfaceExternallyVisible(metadataReader, interfaceImplementation.Interface))
+                continue;
+
             var interfaceTypeName = GetTypeFullName(metadataReader, interfaceImplementation.Interface);
             if (isUnionDeclaration && string.Equals(interfaceTypeName, IUnionInterfaceFullName, StringComparison.Ordinal))
                 continue;
@@ -426,6 +429,38 @@ internal static class PublicApiModelReader
             return string.Empty;
 
         return " : " + string.Join(", ", baseTypes.Distinct(StringComparer.Ordinal));
+    }
+
+    // Interfaces defined in the assembly must be visible from outside it, otherwise the stub would not compile.
+    // Interfaces defined in other assemblies cannot be resolved here, so they are kept.
+    private static bool IsInterfaceExternallyVisible(MetadataReader metadataReader, EntityHandle handle)
+    {
+        switch (handle.Kind)
+        {
+            case HandleKind.TypeDefinition:
+                return IsExternallyVisible(metadataReader, metadataReader.GetTypeDefinition((TypeDefinitionHandle)handle));
+
+            case HandleKind.TypeSpecification:
+                var typeSpecification = metadataReader.GetTypeSpecification((TypeSpecificationHandle)handle);
+                var blobReader = metadataReader.GetBlobReader(typeSpecification.Signature);
+                if (blobReader.ReadSignatureTypeCode() is not SignatureTypeCode.GenericTypeInstance)
+                    return true;
+
+                blobReader.ReadCompressedInteger(); // CLASS or VALUETYPE
+                return IsInterfaceExternallyVisible(metadataReader, blobReader.ReadTypeHandle());
+
+            default:
+                return true;
+        }
+    }
+
+    private static bool IsExternallyVisible(MetadataReader metadataReader, TypeDefinition typeDefinition)
+    {
+        var declaringTypeHandle = typeDefinition.GetDeclaringType();
+        if (declaringTypeHandle.IsNil)
+            return IsExternallyVisible(typeDefinition.Attributes);
+
+        return IsExternallyVisibleNested(typeDefinition.Attributes) && IsExternallyVisible(metadataReader, metadataReader.GetTypeDefinition(declaringTypeHandle));
     }
 
     private static List<string> BuildTypeConstraints(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle)

@@ -644,8 +644,9 @@ if (store.TryGetProperties(model, out var metadata) && metadata.TryGetProperty("
 
 `SyntaxParser` builds a lossless syntax tree that keeps every character of the input, including comments and whitespace.
 `ToString()` returns the original text, which makes it suitable for formatters, linters, and editors. Each token and
-trivia is an object with its own position, so the tree uses roughly 100 to 400 bytes of memory per input character; arrays
-of small values are the worst case. `Diagnostics` keeps every error, so a document with many errors uses more. To read
+trivia is an object with its own position, so the tree uses up to about 550 bytes of memory per input character; arrays of
+inline tables and of small values are the worst cases. `Diagnostics` keeps every error, so a document with many errors
+uses more. To read
 large or untrusted input, prefer `TomlSerializer` or `TomlParser`:
 
 ```csharp

@@ -87,6 +87,13 @@ public class NewApiPolymorphismTests
         public System.Collections.Generic.List<Animal> Animals { get; set; } = [];
     }
 
+    // The public API exposes public types only
+    [Fact]
+    public void PolymorphicTypeInfo_ImplementsPublicInterfacesOnly()
+    {
+        Assert.All(typeof(TomlPolymorphicTypeInfo<>).GetInterfaces(), type => Assert.True(type.IsPublic, type.FullName));
+    }
+
     [Fact]
     public void Serialize_Polymorphic_AppliesConvertersOnceAndNotToTheDiscriminator()
     {

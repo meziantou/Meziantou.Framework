@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Toml.Serialization.Internal;
 
 [RequiresUnreferencedCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
 [RequiresDynamicCode("Reflection-based TOML serialization is not compatible with trimming/NativeAOT. Use a source-generated TomlSerializerContext or pass a TomlTypeInfo instance.")]
-internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTypeInfo
+internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo
 {
     private readonly TomlTypeInfo? _baseTypeInfo;
     private readonly string _discriminatorPropertyName;
@@ -52,7 +52,7 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTy
         ArgumentGuard.ThrowIfNull(type, nameof(type));
         ArgumentGuard.ThrowIfNull(options, nameof(options));
 
-        if (baseTypeInfo is IPolymorphicTomlTypeInfo)
+        if (baseTypeInfo is { IsPolymorphic: true })
         {
             return baseTypeInfo;
         }
@@ -233,6 +233,8 @@ internal sealed class TomlPolymorphicTypeInfo : TomlTypeInfo, IPolymorphicTomlTy
 
     // A polymorphic value is always a table, so a collection of them is written as an array of tables
     public override bool WritesTable => true;
+
+    internal override bool IsPolymorphic => true;
 
     public override void Write(TomlWriter writer, object? value)
     {

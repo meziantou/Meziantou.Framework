@@ -38,6 +38,10 @@ public abstract class TomlTypeInfo
     /// </summary>
     public virtual bool WritesTable => false;
 
+    // Metadata that already dispatches to the derived types, whether from reflection or from generated code: it is not wrapped
+    // again, which would handle the discriminator twice
+    internal virtual bool IsPolymorphic => false;
+
     /// <summary>
     /// Writes a value to an existing TOML writer.
     /// </summary>

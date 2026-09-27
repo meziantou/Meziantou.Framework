@@ -355,6 +355,39 @@ val = true
         Assert.Equal(doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).Order().ToArray(), doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray());
     }
 
+    // The errors of a number are listed in the order of the document, and a leading zero is reported once
+    [Theory]
+    [InlineData("a = 0001\n")]
+    [InlineData("a = 000\n")]
+    [InlineData("a = 01__2\n")]
+    [InlineData("a = 00.5\n")]
+    [InlineData("a = 00.\n")]
+    [InlineData("a = 00e\n")]
+    [InlineData("a = 0_0_1\n")]
+    public void ErrorsOfANumber_AreInOrderAndReportALeadingZeroOnce(string toml)
+    {
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var parseStrict = Assert.Throws<TomlException>(() => SyntaxParser.ParseStrict(toml));
+        var doc = SyntaxParser.Parse(toml);
+        var parser = TomlParser.Create(toml, new TomlParserOptions { Mode = TomlParserMode.Tolerant });
+        while (parser.MoveNext())
+        {
+        }
+
+        Assert.Equal((deserialize.Line, deserialize.Column), (parseStrict.Line, parseStrict.Column));
+        Assert.Equal((1, toml.IndexOf('0', StringComparison.Ordinal) + 1), (deserialize.Line, deserialize.Column));
+        Assert.Single(doc.Diagnostics, diagnostic => diagnostic.Message.Contains("leading zero", StringComparison.Ordinal));
+        AssertInOrder(doc.Diagnostics);
+        AssertInOrder(parser.Diagnostics);
+        AssertInOrder(deserialize.Diagnostics!);
+
+        static void AssertInOrder(IEnumerable<DiagnosticMessage> diagnostics)
+        {
+            var offsets = diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray();
+            Assert.Equal(offsets.Order().ToArray(), offsets);
+        }
+    }
+
     // The offset, the line and the column of a position designate the same character
     [Theory]
     [InlineData("a = '''abc\n\n")]

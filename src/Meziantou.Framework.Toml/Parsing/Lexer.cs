@@ -21,6 +21,7 @@ internal sealed class Lexer
 {
     private SyntaxTokenValue _token;
     private List<DiagnosticMessage>? _errors;
+    private bool _isCollectingUnorderedErrors;
     private const int Eof = -1;
     private readonly ReadOnlyMemory<char> _text;
     private readonly int _textLength;
@@ -648,6 +649,17 @@ internal sealed class Lexer
 
     private void ReadNumberOrDate(Char32? signPrefix = null, TextPosition? signPrefixPos = null)
     {
+        // The errors of a number are found out of order, such as a leading zero once the digits are read: they are listed in
+        // the order of the document, so the first one is the first error of the token, and only then limited to MaxErrorCount
+        var firstError = _errors?.Count ?? 0;
+        _isCollectingUnorderedErrors = true;
+        ReadNumberOrDateCore(signPrefix, signPrefixPos);
+        _isCollectingUnorderedErrors = false;
+        SortErrorsByPosition(firstError);
+    }
+
+    private void ReadNumberOrDateCore(Char32? signPrefix, TextPosition? signPrefixPos)
+    {
         var start = signPrefixPos ?? CurrentPosition;
         var end = CurrentPosition;
         var isFloat = false;
@@ -795,16 +807,11 @@ internal sealed class Lexer
             }
         }
 
-        // Parse leading digits
-        var beforeFollowingZero = CurrentPosition;
-        bool hasMultipleLeadingZero = false;
-
-        // Skip leading zeros
+        // Parse leading digits, skipping leading zeros
         var previousCharIsDigit = false;
         var hasUnderscore = false;
         if (hasLeadingZero)
         {
-            int zeroDigit = 0;
             previousCharIsDigit = true;
             while (CurrentCharacter == '0' || CurrentCharacter == '_')
             {
@@ -813,13 +820,10 @@ internal sealed class Lexer
                 if (previousCharIsDigit)
                 {
                     _textBuilder.Append((char)CurrentCharacter);
-                    zeroDigit++;
                 }
                 end = CurrentPosition;
                 NextChar();
             }
-
-            hasMultipleLeadingZero = zeroDigit > 0;
         }
 
         hasUnderscore |= ReadDigits(ref end, previousCharIsDigit);
@@ -932,10 +936,8 @@ internal sealed class Lexer
             return;
         }
 
-        if (hasMultipleLeadingZero)
-        {
-            AddError("Multiple leading 0 are not allowed", beforeFollowingZero, beforeFollowingZero);
-        }
+        // A decimal number whose integer part has more than one digit cannot start with 0
+        var hasInvalidLeadingZero = hasLeadingZero && HasMultipleDigitsInIntegerPart();
 
         // Read any number following
         if (CurrentCharacter == '.')
@@ -948,6 +950,7 @@ internal sealed class Lexer
             if (!CharHelper.IsDigit(CurrentCharacter))
             {
                 AddError("Expecting at least one digit after the float dot .", CurrentPosition, CurrentPosition);
+                AddLeadingZeroError(hasInvalidLeadingZero, "float", positionFirstDigit);
                 _token = new SyntaxTokenValue(TokenKind.Invalid, start, end);
                 return;
             }
@@ -974,6 +977,7 @@ internal sealed class Lexer
             if (!CharHelper.IsDigit(CurrentCharacter))
             {
                 AddError("Expecting at least one digit after the exponent", CurrentPosition, CurrentPosition);
+                AddLeadingZeroError(hasInvalidLeadingZero, "float", positionFirstDigit);
                 _token = new SyntaxTokenValue(TokenKind.Invalid, start, end);
                 return;
             }
@@ -996,11 +1000,7 @@ internal sealed class Lexer
                 doubleValue = 0.0;
             }
 
-            if (hasLeadingZero && HasMultipleDigitsInIntegerPart())
-            {
-                var numberAsText = _textBuilder.ToString();
-                AddError($"Unexpected leading zero (`0`) for float `{numberAsText.ToPrintableInputText()}`", positionFirstDigit, positionFirstDigit);
-            }
+            AddLeadingZeroError(hasInvalidLeadingZero, "float", positionFirstDigit);
 
             var bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(doubleValue));
             _token = new SyntaxTokenValue(TokenKind.Float, start, end, stringValue: null, data: bits);
@@ -1014,11 +1014,7 @@ internal sealed class Lexer
                 longValue = 0;
             }
 
-            if (hasLeadingZero && longValue != 0)
-            {
-                var numberAsText = _textBuilder.ToString();
-                AddError($"Unexpected leading zero (`0`) for integer `{numberAsText.ToPrintableInputText()}`", positionFirstDigit, positionFirstDigit);
-            }
+            AddLeadingZeroError(hasInvalidLeadingZero, "integer", positionFirstDigit);
 
             _token = new SyntaxTokenValue(TokenKind.Integer, start, end, stringValue: null, data: unchecked((ulong)longValue));
         }
@@ -1120,6 +1116,42 @@ internal sealed class Lexer
             {
                 ArrayPool<char>.Shared.Return(rented);
             }
+        }
+    }
+
+    private void AddLeadingZeroError(bool hasInvalidLeadingZero, string numberKind, TextPosition position)
+    {
+        if (hasInvalidLeadingZero)
+        {
+            var numberAsText = _textBuilder.ToString();
+            AddError($"Unexpected leading zero (`0`) for {numberKind} `{numberAsText.ToPrintableInputText()}`", position, position);
+        }
+    }
+
+    private void SortErrorsByPosition(int firstError)
+    {
+        if (_errors is null)
+        {
+            return;
+        }
+
+        // A stable insertion sort: a token has few errors, and errors at the same position keep their order
+        for (var i = firstError + 1; i < _errors.Count; i++)
+        {
+            var error = _errors[i];
+            var j = i - 1;
+            while (j >= firstError && _errors[j].Span.Start.Offset > error.Span.Start.Offset)
+            {
+                _errors[j + 1] = _errors[j];
+                j--;
+            }
+
+            _errors[j + 1] = error;
+        }
+
+        if (_errors.Count > MaxErrorCount)
+        {
+            _errors.RemoveRange(MaxErrorCount, _errors.Count - MaxErrorCount);
         }
     }
 
@@ -1947,7 +1979,7 @@ internal sealed class Lexer
             return;
         }
 
-        if (_errors.Count < MaxErrorCount)
+        if (_isCollectingUnorderedErrors || _errors.Count < MaxErrorCount)
         {
             _errors.Add(new DiagnosticMessage(DiagnosticMessageKind.Error, new SourceSpan(_sourcePath, start, end), message));
         }

@@ -724,6 +724,28 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("a\n\t-", "a\n    -")]
+    [InlineData(">a\n=", "> a\n>     =")]
+    [InlineData("- a\n--", "- a\n      --")]
+    [InlineData("a\n    >", "a\n    >")]
+    [InlineData("a\n\t<div", "a\n    <div")]
+    [InlineData("]\n\t#", "]\n    #")]
+    [InlineData("a\n    1. b\n    2. c", "a\n    1. b\n2. c")]
+    [InlineData("a\n    ```", "a\n    ```")]
+    public void ParagraphContinuationLineDoesNotStartBlock(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
+    [Fact]
+    public void ParagraphContinuationLineUsesThePipelineBlockParsers()
+    {
+        AssertNormalizePreservesHtml("a\n    b. c", "a\nb. c");
+        AssertNormalizePreservesHtml("a\n    b. c", "a\n    b. c", new MarkdownPipelineBuilder().UseListExtras().Build());
+        AssertNormalizePreservesHtml("a\n    :   b", "a\n    :   b", new MarkdownPipelineBuilder().UseDefinitionLists().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

@@ -7,6 +7,7 @@ using System.IO;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -80,6 +81,11 @@ public sealed class MarkdownPipeline
         if (renderer is RendererBase rendererBase)
         {
             rendererBase.MaximumNestingDepth = MaximumNestingDepth;
+        }
+
+        if (renderer is NormalizeRenderer normalizeRenderer)
+        {
+            normalizeRenderer.Pipeline = this;
         }
 
         foreach (var extension in Extensions)

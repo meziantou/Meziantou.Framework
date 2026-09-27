@@ -17,7 +17,7 @@ public class ParagraphRenderer : NormalizeObjectRenderer<ParagraphBlock>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, ParagraphBlock obj)
     {
-        renderer.WriteLeafInline(obj);
+        renderer.WriteParagraphInline(obj);
         renderer.FinishBlock(!renderer.CompactParagraph);
     }
 }

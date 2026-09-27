@@ -4,6 +4,7 @@
 
 using System.IO;
 using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -59,6 +60,12 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     // Raw inline content must escape pipes when emitted inside a GFM table.
     internal bool EscapeTablePipes { get; set; }
 
+    // The pipeline set up with this renderer, which decides the lines that can start a block
+    internal MarkdownPipeline? Pipeline { get; set; }
+
+    // Renders the inlines of a leaf block without indents, so that each line can be checked before it is written
+    private NormalizeRenderer? _lineRenderer;
+
     /// <summary>
     /// Performs the finish block operation.
     /// </summary>
@@ -72,6 +79,114 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
                 WriteLine();
             }
         }
+    }
+
+    /// <summary>
+    /// Writes the inlines of a paragraph line by line. A continuation line that would start a block, or turn the paragraph
+    /// into a setext heading, is indented by 4 spaces: the indentation is not part of the content, and cannot start a block.
+    /// </summary>
+    internal void WriteParagraphInline(LeafBlock leafBlock)
+    {
+        var remaining = RenderLeafInline(leafBlock).AsSpan();
+        var isFirstLine = true;
+        while (true)
+        {
+            var end = remaining.IndexOf('\n');
+            var line = end < 0 ? remaining : remaining[..end];
+            if (!isFirstLine)
+            {
+                WriteLine();
+                if (CanInterruptParagraph(line))
+                {
+                    Write("    ");
+                }
+            }
+
+            if (line.IsEmpty)
+            {
+                // Still writes the pending indents, such as a list item marker
+                Write(string.Empty);
+            }
+            else
+            {
+                Write(line);
+            }
+
+            if (end < 0)
+            {
+                break;
+            }
+
+            remaining = remaining[(end + 1)..];
+            isFirstLine = false;
+        }
+    }
+
+    private string RenderLeafInline(LeafBlock leafBlock)
+    {
+        var renderer = _lineRenderer;
+        if (renderer is null)
+        {
+            renderer = new NormalizeRenderer(new StringWriter(), Options)
+            {
+                MaximumNestingDepth = MaximumNestingDepth,
+            };
+            renderer.ObjectRenderers.Clear();
+            renderer.ObjectRenderers.AddRange(ObjectRenderers);
+        }
+
+        // An inline renderer could render a nested leaf block
+        _lineRenderer = null;
+        try
+        {
+            renderer.EscapeTablePipes = EscapeTablePipes;
+            renderer.WriteLeafInline(leafBlock);
+            var builder = ((StringWriter)renderer.Writer).GetStringBuilder();
+            var text = builder.ToString();
+            builder.Clear();
+            return text;
+        }
+        finally
+        {
+            _lineRenderer = renderer;
+        }
+    }
+
+    private bool CanInterruptParagraph(ReadOnlySpan<char> line)
+    {
+        var content = line.TrimStart(' ');
+        if (content.IsEmpty || line.Length - content.Length >= 4)
+        {
+            return false;
+        }
+
+        var parsers = (Pipeline ?? MarkdownConverter.DefaultPipeline).BlockParsers;
+        if (parsers.GetParsersForOpeningCharacter(content[0]) is null
+            && (parsers.GlobalParsers is null || Array.TrueForAll(parsers.GlobalParsers, parser => parser is ParagraphBlockParser or IndentedCodeBlockParser)))
+        {
+            return false;
+        }
+
+        // Let the block parsers decide, as the rules are subtle (setext underlines, ordered lists starting at 1, HTML block kinds, extensions...)
+        var document = new MarkdownDocument { IsOpen = true };
+        var processor = BlockProcessor.Rent(document, parsers, context: null, trackTrivia: false);
+        try
+        {
+            processor.Open(document);
+            var lineReader = new LineReader(string.Concat("a\n", line));
+            while (lineReader.ReadLine() is { Text: not null } slice)
+            {
+                processor.ProcessLine(slice);
+            }
+
+            processor.CloseAll(true);
+        }
+        finally
+        {
+            BlockProcessor.Release(processor);
+        }
+
+        return document is not [ParagraphBlock];
     }
 
     ///// <summary>

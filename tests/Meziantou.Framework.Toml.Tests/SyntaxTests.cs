@@ -20,6 +20,15 @@ public class SyntaxTests
     }
 
     [Fact]
+    public void Comment_WithUnpairedSurrogate_Throws()
+    {
+        // Built here: InlineData goes through UTF-8, which replaces lone surrogates
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.Comment("a" + '\uD800'));
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.Comment('\uDC00' + "a"));
+        Assert.Equal("# \uD83D\uDE00", SyntaxFactory.Comment("\uD83D\uDE00").Text);
+    }
+
+    [Fact]
     public void ParseStrict_TextReader()
     {
         using (var reader = new System.IO.StringReader("a = 1\n"))

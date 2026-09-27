@@ -32,10 +32,17 @@ public static class SyntaxFactory
     /// </summary>
     /// <param name="comment">A comment trivia</param>
     /// <returns>A comment trivia</returns>
-    /// <exception cref="ArgumentException"><paramref name="comment"/> contains a control character other than tab, such as a newline.</exception>
+    /// <exception cref="ArgumentException"><paramref name="comment"/> contains a control character other than tab, such as a newline, or an unpaired surrogate.</exception>
     public static SyntaxTrivia Comment(string comment)
     {
         ArgumentNullException.ThrowIfNull(comment);
+
+        // TOML text is valid Unicode
+        var surrogateIndex = CharHelper.IndexOfUnpairedSurrogate(comment);
+        if (surrogateIndex >= 0)
+        {
+            throw new ArgumentException(CharHelper.GetUnpairedSurrogateMessage(comment, surrogateIndex, "comment"), nameof(comment));
+        }
 
         // A newline would end the comment, and turn the rest of the text into TOML
         foreach (var c in comment)

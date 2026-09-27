@@ -1037,7 +1037,7 @@ internal static class TomlModelTextWriter
             var text = trivia.Text!;
             var isValid = trivia.Kind switch
             {
-                TokenKind.Comment => text.Length > 0 && text[0] == '#' && !text.AsSpan(1).ContainsAny(InvalidCommentCharacters),
+                TokenKind.Comment => text.Length > 0 && text[0] == '#' && !text.AsSpan(1).ContainsAny(InvalidCommentCharacters) && CharHelper.IndexOfUnpairedSurrogate(text) < 0,
                 TokenKind.Whitespaces => text.AsSpan().IndexOfAnyExcept(' ', '\t') < 0,
                 TokenKind.NewLine => text is "\n" or "\r\n",
                 _ => false,

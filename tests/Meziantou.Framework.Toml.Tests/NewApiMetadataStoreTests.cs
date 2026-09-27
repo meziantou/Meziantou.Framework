@@ -168,6 +168,18 @@ public sealed class NewApiMetadataStoreTests
     }
 
     [Fact]
+    public void Serialize_MetadataCommentWithAnUnpairedSurrogate_Throws()
+    {
+        var store = new TomlMetadataStore();
+        var model = new TomlTable { ["name"] = "safe" };
+        var metadata = new TomlPropertiesMetadata();
+        metadata.SetProperty("name", new TomlPropertyMetadata { TrailingTrivia = [new TomlSyntaxTriviaMetadata(TokenKind.Comment, "# " + '\uD800')] });
+        store.SetProperties(model, metadata);
+
+        Assert.Throws<TomlException>(() => TomlSerializer.Serialize(model, new TomlSerializerOptions { MetadataStore = store }));
+    }
+
+    [Fact]
     public void Serialize_ValidMetadataTrivia_IsWritten()
     {
         var store = new TomlMetadataStore();

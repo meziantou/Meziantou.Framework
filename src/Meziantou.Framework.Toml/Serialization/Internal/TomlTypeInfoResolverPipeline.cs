@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Meziantou.Framework.Toml.Helpers;
@@ -84,6 +85,25 @@ internal static class TomlTypeInfoResolverPipeline
             // The runtime reports an attribute property that throws as a property that does not exist
             throw TomlException.CreateConfigurationError($"A TOML attribute of '{type.FullName}' or of one of its members has an undefined value: {valueError.Message}", ex);
         }
+        catch (ArgumentOutOfRangeException ex) when (IsThrownByTomlAttribute(ex))
+        {
+            // An attribute constructor that throws is not wrapped by the runtime
+            throw TomlException.CreateConfigurationError($"A TOML attribute of '{type.FullName}' or of one of its members has an undefined value: {ex.Message}", ex);
+        }
+    }
+
+    [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]
+    private static bool IsThrownByTomlAttribute(Exception exception)
+    {
+        foreach (var frame in new StackTrace(exception).GetFrames())
+        {
+            if (frame.GetMethod() is ConstructorInfo { DeclaringType: { } declaringType } && typeof(TomlAttribute).IsAssignableFrom(declaringType))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     [RequiresUnreferencedCode(ReflectionBasedSerializationMessage)]

@@ -66,11 +66,32 @@ public class NewApiAttributeContractTests
     [InlineData(typeof(InvalidIgnoreCondition))]
     [InlineData(typeof(InvalidUnknownDerivedTypeHandling))]
     [InlineData(typeof(InvalidHexEscapes))]
+    [InlineData(typeof(InvalidMappingOrder))]
+    [InlineData(typeof(InvalidInlineTable))]
     public void ReflectionMetadata_AttributeWithAnUndefinedValue_IsAConfigurationError(Type type)
     {
         var exception = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1\n", type, out _));
 
         Assert.Contains("has an undefined value", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TryGetTypeInfo_AttributeWithAnUndefinedValue_ReturnsFalse()
+    {
+        Assert.False(TomlSerializerOptions.Default.TryGetTypeInfo<InvalidMappingOrder>(out _));
+        Assert.False(TomlSerializerOptions.Default.TryGetTypeInfo<InvalidInlineTable>(out _));
+    }
+
+    [TomlMappingOrder((TomlMappingOrderPolicy)42)]
+    private sealed class InvalidMappingOrder
+    {
+        public int A { get; set; }
+    }
+
+    private sealed class InvalidInlineTable
+    {
+        [TomlInlineTable((TomlInlineTablePolicy)42)]
+        public int A { get; set; }
     }
 
     private sealed class InvalidIgnoreCondition

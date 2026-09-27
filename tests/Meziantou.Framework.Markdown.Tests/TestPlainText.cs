@@ -8,6 +8,7 @@ public class TestPlainText
     [InlineData(/* markdownText: */ "*foo\nbar*", /* expected: */ "foo\nbar\n")]
     [InlineData(/* markdownText: */ "[foo\nbar](http://example.com)", /* expected: */ "foo\nbar\n")]
     [InlineData(/* markdownText: */ "<http://foo.bar.baz>", /* expected: */ "http://foo.bar.baz\n")]
+    [InlineData(/* markdownText: */ "<http://foo.bar/?a&b>", /* expected: */ "http://foo.bar/?a&b\n")]
     [InlineData(/* markdownText: */ "# foo bar", /* expected: */ "foo bar\n")]
     [InlineData(/* markdownText: */ "# foo\nbar", /* expected: */ "foo\nbar\n")]
     [InlineData(/* markdownText: */ "> foo", /* expected: */ "foo\n")]
@@ -36,6 +37,7 @@ public class TestPlainText
     [Theory]
     [InlineData(/* markdownText: */ ":::\nfoo\n:::", /* expected: */ "foo\n", /*extensions*/ "customcontainers|advanced")]
     [InlineData(/* markdownText: */ ":::bar\nfoo\n:::", /* expected: */ "foo\n", /*extensions*/ "customcontainers+attributes|advanced")]
+    [InlineData(/* markdownText: */ "```mermaid\nA --> B & C <x> \"q\"\n```", /* expected: */ "A --> B & C <x> \"q\"\n", /*extensions*/ "diagrams|advanced")]
     [InlineData(/* markdownText: */ "| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", /* expected: */ "Header1 Header2 Header3 test value2 value3","pipetables")]
     public void TestPlainWithExtensions(string markdownText, string expected, string extensions)
     {

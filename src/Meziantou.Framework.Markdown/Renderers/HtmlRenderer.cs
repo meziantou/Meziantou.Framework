@@ -196,6 +196,13 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
         {
             WriteIndent();
 
+            // Without escaping, the characters are written as they are
+            if (!EnableHtmlEscape)
+            {
+                WriteRaw(content);
+                return;
+            }
+
             while (true)
             {
                 int indexOfCharToEscape = softEscape
@@ -209,17 +216,13 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
                 }
 
                 WriteRaw(content.Slice(0, indexOfCharToEscape));
-
-                if (EnableHtmlEscape)
+                WriteRaw(content[indexOfCharToEscape] switch
                 {
-                    WriteRaw(content[indexOfCharToEscape] switch
-                    {
-                        '<' => "&lt;",
-                        '>' => "&gt;",
-                        '&' => "&amp;",
-                        _ => "&quot;",
-                    });
-                }
+                    '<' => "&lt;",
+                    '>' => "&gt;",
+                    '&' => "&amp;",
+                    _ => "&quot;",
+                });
 
                 content = content.Slice(indexOfCharToEscape + 1);
             }

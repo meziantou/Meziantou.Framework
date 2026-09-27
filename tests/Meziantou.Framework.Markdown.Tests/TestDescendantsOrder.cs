@@ -60,6 +60,17 @@ public static class TestDescendantsOrder
                     paragraphBlock.Descendants<LiteralInline>());
 
                 Assert.Same(Array.Empty<ParagraphBlock>(), paragraphBlock.Descendants<ParagraphBlock>());
+
+                if (paragraphBlock.Inline is not null)
+                {
+                    AssertIEnumerablesAreEqual(
+                        Descendants_Legacy(paragraphBlock.Inline),
+                        paragraphBlock.Descendants());
+
+                    AssertIEnumerablesAreEqual(
+                        paragraphBlock.Inline.FindDescendants<LiteralInline>(),
+                        paragraphBlock.Descendants<LiteralInline>());
+                }
             }
 
             foreach (ContainerBlock containerBlock in syntaxTree.Descendants<ContainerBlock>())

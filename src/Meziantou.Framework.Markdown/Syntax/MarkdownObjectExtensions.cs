@@ -24,7 +24,8 @@ public static class MarkdownObjectExtensions
         var stack = new Stack<MarkdownObject>();
         var pushStack = new Stack<bool>();
 
-        stack.Push(markdownObject);
+        // The inlines of a leaf block are its descendants, as they are when the leaf block is visited as a descendant below
+        stack.Push(markdownObject is LeafBlock { Inline: { } rootInline } ? rootInline : markdownObject);
         pushStack.Push(false);
 
         while (stack.Count > 0)
@@ -90,6 +91,10 @@ public static class MarkdownObjectExtensions
             else if (markdownObject is ContainerInline containerInline && containerInline.FirstChild != null)
             {
                 return containerInline.FindDescendantsInternal<T>();
+            }
+            else if (markdownObject is LeafBlock { Inline.FirstChild: not null } leafBlock)
+            {
+                return leafBlock.Inline.FindDescendantsInternal<T>();
             }
         }
 

@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
@@ -538,6 +539,16 @@ public class MiscTests
         var group = document.GetLinkReferenceDefinitions(addGroup: false);
         Assert.Same(definition, Assert.Single(group));
         Assert.Equal("a", Assert.Single(group.Links).Key);
+    }
+
+    [Fact]
+    public void DescendantsOfALeafBlockIncludeItsInlines()
+    {
+        var heading = Assert.Single(MarkdownConverter.Parse("# Hello *world*").Descendants<HeadingBlock>());
+
+        Assert.Equal(["Hello ", "world"], heading.Descendants<LiteralInline>().Select(literal => literal.Content.ToString()).ToArray());
+        Assert.Equal([typeof(LiteralInline), typeof(EmphasisInline), typeof(LiteralInline)], heading.Descendants().Select(descendant => descendant.GetType()).ToArray());
+        Assert.Empty(heading.Descendants<ParagraphBlock>());
     }
 
     [Fact]

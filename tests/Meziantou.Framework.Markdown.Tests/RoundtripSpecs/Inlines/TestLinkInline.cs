@@ -238,4 +238,16 @@ public class TestLinkInline
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData("[a][ b ]\n\n[b]: /u\n")]
+    [InlineData("[a][\nb]\n\n[b]: /u\n")]
+    [InlineData("> [a][\n> b]\n\n[b]: /u\n")]
+    [InlineData("[a][  b  c ]\n\n[b c]: /u\n")]
+    [InlineData("![a][ b ]\n\n[b]: /u\n")]
+    [InlineData("[a][\tb\t]\n\n[b]: /u\n")]
+    public void TestFullReferenceLabelWithWhitespace(string value)
+    {
+        RoundTrip(value);
+    }
 }

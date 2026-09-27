@@ -346,6 +346,7 @@ public class LinkInlineParser : InlineParser
         SourceSpan labelSpan;
         string? label;
         bool isLabelSpanLocal = true;
+        SourceSpan? labelWithWhitespace = null;
 
         bool isShortcut = false;
         LocalLabel localLabel = LocalLabel.Local;
@@ -367,6 +368,8 @@ public class LinkInlineParser : InlineParser
             var labelText = text;
             if (text.CurrentChar == '[' && LinkHelper.TryParseLabelTrivia(ref labelText, true, out label, out labelSpan))
             {
+                // The roundtrip renderer writes the label with the whitespace around it, between the brackets
+                labelWithWhitespace = new SourceSpan(text.Start + 1, labelText.Start - 2);
                 text = labelText;
             }
             else if (StartsWithLinkLabel(text))
@@ -385,7 +388,7 @@ public class LinkInlineParser : InlineParser
 
         if (label is not null)
         {
-            var labelWithTrivia = new SourceSpan(labelSpan.Start, labelSpan.End);
+            var labelWithTrivia = labelWithWhitespace ?? new SourceSpan(labelSpan.Start, labelSpan.End);
             if (isLabelSpanLocal)
             {
                 labelSpan = inlineState.GetSourcePositionFromLocalSpan(labelSpan);

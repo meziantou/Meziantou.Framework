@@ -1856,6 +1856,18 @@ internal sealed partial class TestTomlSerializerContextHiding : TomlSerializerCo
 {
 }
 
+public sealed record GeneratedIgnoredOnReadPopulate(int A)
+{
+    [TomlIgnore(Condition = TomlIgnoreCondition.WhenReading)]
+    [TomlObjectCreationHandling(Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate)]
+    public List<int> L { get; } = [1];
+}
+
+[TomlSerializable(typeof(GeneratedIgnoredOnReadPopulate))]
+internal sealed partial class TestTomlSerializerContextIgnoredPopulate : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -3855,6 +3867,17 @@ public class NewApiSourceGenerationTests
 
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedExtensionKeyPolicyModel>(Toml, options), options).ReplaceLineEndings("\n"));
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize(Toml, typeInfo)!, typeInfo).ReplaceLineEndings("\n"));
+    }
+
+    // A member ignored when reading is never populated, so Populate on it is not an error
+    [Fact]
+    public void PopulateOnAGetOnlyMemberIgnoredWhenReading_IsAllowed()
+    {
+        var generated = TomlSerializer.Deserialize("A = 1\nL = [2]\n", TestTomlSerializerContextIgnoredPopulate.Default.GeneratedIgnoredOnReadPopulate)!;
+        var reflection = TomlSerializer.Deserialize<GeneratedIgnoredOnReadPopulate>("A = 1\nL = [2]\n")!;
+
+        Assert.Equal([1], generated.L);
+        Assert.Equal([1], reflection.L);
     }
 
     [Fact]

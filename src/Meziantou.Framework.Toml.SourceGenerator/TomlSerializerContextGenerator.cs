@@ -5111,7 +5111,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 var parameterNames = new HashSet<string>(selectedConstructor.Parameters.Select(static parameter => parameter.Name), StringComparer.OrdinalIgnoreCase);
                 foreach (var member in membersSoFar)
                 {
-                    if (!member.CanSet && !member.HasSingleOrArray && member.HasExplicitObjectCreationHandling &&
+                    if (!member.CanSet && !member.HasSingleOrArray && !member.IsIgnoredOnRead && member.HasExplicitObjectCreationHandling &&
                         member.ObjectCreationHandling == ObjectCreationHandlingKind.Populate && !parameterNames.Contains(member.MemberName))
                     {
                         context.ReportDiagnostic(DiagnosticInfo.Create(

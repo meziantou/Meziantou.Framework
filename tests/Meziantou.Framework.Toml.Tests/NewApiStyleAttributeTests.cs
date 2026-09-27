@@ -84,6 +84,30 @@ public sealed class ExpandedStyledHolder
     public string S { get; set; } = "x";
 }
 
+[TomlPolymorphic]
+[TomlDerivedType(typeof(ExpandedStyledDerived), "d")]
+public class ExpandedStyledBase
+{
+}
+
+public sealed class ExpandedStyledDerived : ExpandedStyledBase
+{
+    [TomlStringStyle(TomlStringStyle.MultilineBasic)]
+    public string Name { get; set; } = "n";
+}
+
+// The dotted member and the member named after its first segment write the same table
+[TomlDottedKeyHandling(TomlDottedKeyHandling.Expand)]
+public sealed class ExpandedStyledSharedTableHolder
+{
+    [TomlPropertyName("p.x")]
+    [TomlStringStyle(TomlStringStyle.Literal)]
+    public string X { get; set; } = "x";
+
+    [TomlPropertyName("p")]
+    public ExpandedStyledBase P { get; set; } = new ExpandedStyledDerived();
+}
+
 public sealed class InvalidStringStyleAttributeHolder
 {
     [TomlStringStyle(TomlStringStyle.Basic)]
@@ -98,6 +122,7 @@ public sealed class InvalidStringStyleAttributeHolder
 [TomlSerializable(typeof(HexEscapeStringStyleHolder))]
 [TomlSerializable(typeof(InlineStyledChildHolder))]
 [TomlSerializable(typeof(ExpandedStyledHolder))]
+[TomlSerializable(typeof(ExpandedStyledSharedTableHolder))]
 internal sealed partial class TestTomlStyleAttributesContext : TomlSerializerContext
 {
 }
@@ -168,6 +193,18 @@ public class NewApiStyleAttributeTests
 
         Assert.Equal(Expected, TomlSerializer.Serialize(new ExpandedStyledHolder()).ReplaceLineEndings("\n"));
         Assert.Equal(Expected, TomlSerializer.Serialize(new ExpandedStyledHolder(), TestTomlStyleAttributesContext.Default.ExpandedStyledHolder).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void MemberStyles_OfAnExpandedDottedName_AreKeptWhenAnotherMemberWritesTheSameTable()
+    {
+        var reflection = TomlSerializer.Serialize(new ExpandedStyledSharedTableHolder());
+        var generated = TomlSerializer.Serialize(new ExpandedStyledSharedTableHolder(), TestTomlStyleAttributesContext.Default.ExpandedStyledSharedTableHolder);
+
+        Assert.Contains("x = 'x'", reflection, System.StringComparison.Ordinal);
+        Assert.Contains("x = 'x'", generated, System.StringComparison.Ordinal);
+        Assert.Contains("Name = \"\"\"", reflection, System.StringComparison.Ordinal);
+        Assert.Contains("Name = \"\"\"", generated, System.StringComparison.Ordinal);
     }
 
     [Fact]

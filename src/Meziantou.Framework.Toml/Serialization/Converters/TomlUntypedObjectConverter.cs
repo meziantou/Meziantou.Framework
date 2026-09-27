@@ -422,7 +422,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         writer.TryAttachMetadata(table);
         if (table.PropertiesMetadata is { } metadata && writer.CurrentTable is { } current)
         {
-            current.PropertiesMetadata = metadata;
+            current.PropertiesMetadata = current.PropertiesMetadata is { } existing ? TomlPropertiesMetadata.Merge(existing, metadata) : metadata;
         }
 
         // The keys of a table are final: DottedKeyHandling applies to the names of members and dictionary keys, which

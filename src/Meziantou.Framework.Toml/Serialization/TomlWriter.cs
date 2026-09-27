@@ -70,7 +70,7 @@ public sealed class TomlWriter
         // The writer adds the formatting of the members to the metadata of the table, which must not change the store
         if (CurrentTable is { } table)
         {
-            table.PropertiesMetadata = metadata.Clone();
+            table.PropertiesMetadata = table.PropertiesMetadata is { } existing ? TomlPropertiesMetadata.Merge(existing, metadata) : metadata.Clone();
         }
     }
 

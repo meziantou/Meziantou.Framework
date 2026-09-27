@@ -67,4 +67,17 @@ public class TomlPropertiesMetadata
 
     // A copy that shares the property metadata objects, so they must be replaced rather than modified
     internal TomlPropertiesMetadata Clone() => new(_properties);
+
+    // A table can be written by several members, such as the implicit table of a dotted member name and the member with its
+    // name: the metadata of each one is kept, and neither is changed
+    internal static TomlPropertiesMetadata Merge(TomlPropertiesMetadata existing, TomlPropertiesMetadata incoming)
+    {
+        var merged = existing.Clone();
+        foreach (var pair in incoming._properties)
+        {
+            merged._properties[pair.Key] = pair.Value;
+        }
+
+        return merged;
+    }
 }

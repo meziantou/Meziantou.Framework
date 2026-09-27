@@ -94,7 +94,7 @@ var pipeline = new MarkdownPipelineBuilder()
 | `UseMediaLinks` | Links to YouTube, Vimeo, and audio or video files rendered as embedded players |
 | `UseNonAsciiNoEscape` | Keeps non-ASCII characters unescaped in URLs |
 | `UsePipeTables` | GitHub-style pipe tables. `PipeTableOptions.UseGfmRules` enables strict GFM parsing |
-| `UsePragmaLines` | Adds `id="pragma-line-N"` to blocks, to synchronize an editor and a preview |
+| `UsePragmaLines` | Adds `id="pragma-line-N"` to the outermost block that starts on each line, to synchronize an editor and a preview |
 | `UsePreciseSourceLocation` | Computes the exact source span of every inline |
 | `UseReferralLinks` | Adds `rel` values, such as `nofollow`, to links |
 | `UseSmartyPants` | Typographic quotes, dashes, and ellipses |

@@ -2,6 +2,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Text.RegularExpressions;
+
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Tests;
@@ -83,5 +85,37 @@ public class TestPragmaLines
         var pipeline = new MarkdownPipelineBuilder().UsePragmaLines().UseGenericAttributes().Build();
 
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Theory]
+    [InlineData("- a\n\n  b\n", "<ul id=\"pragma-line-0\">\n<li><p>a</p>\n<p id=\"pragma-line-2\">b</p>\n</li>\n</ul>\n")]
+    [InlineData("> - a\n>   - b\n> - c", "<blockquote id=\"pragma-line-0\">\n<ul>\n<li>a\n<ul id=\"pragma-line-1\">\n<li>b</li>\n</ul>\n</li>\n<li id=\"pragma-line-2\">c</li>\n</ul>\n</blockquote>\n")]
+    [InlineData("> # Title {#custom}\n\ntext", "<blockquote id=\"pragma-line-0\">\n<h1 id=\"custom\">Title</h1>\n</blockquote>\n<p id=\"pragma-line-2\">text</p>\n")]
+    [InlineData("a|b\n-|-\n1|2\n", "<table id=\"pragma-line-0\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr id=\"pragma-line-2\">\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("x[^1]\n\n[^1]: note\n", "<p id=\"pragma-line-0\">x<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p id=\"pragma-line-2\">note<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    public void OnlyTheOutermostBlockOfALineGetsTheId(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePragmaLines().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void IdsAreUniqueInTheSpecExamples()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePragmaLines().Build();
+        var exampleCount = 0;
+        foreach (var file in Directory.GetFiles(Path.Combine(TestParser.TestsDirectory, "Specs"), "*.md"))
+        {
+            foreach (Match match in Regex.Matches(File.ReadAllText(file), "^`{32} example\n(?<markdown>.*?)^\\.\n", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.ExplicitCapture))
+            {
+                var markdown = match.Groups["markdown"].Value.Replace('→', '\t');
+                var ids = Regex.Matches(MarkdownConverter.ToHtml(markdown, pipeline), "id=\"(?<id>pragma-line-[0-9]+)\"", RegexOptions.ExplicitCapture).Select(id => id.Groups["id"].Value).ToList();
+                Assert.HasCount(ids.Count, ids.Distinct(StringComparer.Ordinal), message: markdown);
+                exampleCount++;
+            }
+        }
+
+        Assert.True(exampleCount > 900, message: $"{exampleCount} examples");
     }
 }

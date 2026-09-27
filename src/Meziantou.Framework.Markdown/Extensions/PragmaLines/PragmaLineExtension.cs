@@ -2,6 +2,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Extensions.Footnotes;
+using Meziantou.Framework.Markdown.Extensions.Yaml;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Html;
@@ -34,46 +36,61 @@ public class PragmaLineExtension : IMarkdownExtension
 
     private static void PipelineOnDocumentProcessed(MarkdownDocument document)
     {
-        int index = 0;
-        AddPragmas(document, ref index);
+        // The id of a line must be unique, so it goes to the first block that starts on it: the outermost one, as the parents
+        // are visited before their children
+        var linesWithId = new HashSet<int>();
+        for (var i = 0; i < document.Count; i++)
+        {
+            AddPragmas(document[i], ref i, linesWithId);
+        }
     }
 
-    private static void AddPragmas(Block block, ref int index)
+    private static void AddPragmas(Block block, ref int index, HashSet<int> linesWithId)
     {
         var attribute = block.GetAttributes();
-        var pragmaId = GetPragmaId(block);
-        if ( attribute.Id is null)
+        if (!linesWithId.Contains(block.Line))
         {
-            attribute.Id = pragmaId;
-        }
-        else if (block.Parent != null)
-        {
-            var heading = block as HeadingBlock;
-
-            // If we have a heading, we will try to add the tag inside it
-            // otherwise we will add it just before
-            var tag = $"<a id=\"{pragmaId}\"></a>";
-            if (heading?.Inline?.FirstChild != null)
+            var pragmaId = GetPragmaId(block);
+            if (attribute.Id is null)
             {
-                heading.Inline.FirstChild.InsertBefore(new HtmlInline(tag));
+                // The HTML renderers of some blocks do not write their attributes: the id goes to a block inside or after them
+                if (RendersAttributes(block))
+                {
+                    attribute.Id = pragmaId;
+                    linesWithId.Add(block.Line);
+                }
             }
             else
             {
-                block.Parent.Insert(index, new HtmlBlock(null) { Lines = new StringLineGroup(tag) });
-                index++;
+                linesWithId.Add(block.Line);
+
+                var heading = block as HeadingBlock;
+
+                // If we have a heading, we will try to add the tag inside it
+                // otherwise we will add it just before
+                var tag = $"<a id=\"{pragmaId}\"></a>";
+                if (heading?.Inline?.FirstChild != null)
+                {
+                    heading.Inline.FirstChild.InsertBefore(new HtmlInline(tag));
+                }
+                else
+                {
+                    block.Parent!.Insert(index, new HtmlBlock(null) { Lines = new StringLineGroup(tag) });
+                    index++;
+                }
             }
         }
 
-        var container = block as ContainerBlock;
-        if (container != null)
+        if (block is ContainerBlock container)
         {
             for (int i = 0; i < container.Count; i++)
             {
-                var subBlock = container[i];
-                AddPragmas(subBlock, ref i);
+                AddPragmas(container[i], ref i, linesWithId);
             }
         }
     }
+
+    private static bool RendersAttributes(Block block) => block is not (BlankLineBlock or HtmlBlock or LinkReferenceDefinition or LinkReferenceDefinitionGroup or Footnote or FootnoteGroup or YamlFrontMatterBlock);
 
     private static string GetPragmaId(Block block)
     {

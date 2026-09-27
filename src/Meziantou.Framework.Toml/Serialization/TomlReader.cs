@@ -100,6 +100,7 @@ public sealed class TomlReader
     /// <summary>
     /// Creates a TOML reader over a string payload.
     /// </summary>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     public static TomlReader Create(string toml, TomlSerializerOptions? options = null)
     {
         ArgumentGuard.ThrowIfNull(toml, nameof(toml));
@@ -117,6 +118,7 @@ public sealed class TomlReader
     /// <summary>
     /// Creates a TOML reader over a text reader.
     /// </summary>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     public static TomlReader Create(TextReader reader, TomlSerializerOptions? options = null)
     {
         ArgumentGuard.ThrowIfNull(reader, nameof(reader));

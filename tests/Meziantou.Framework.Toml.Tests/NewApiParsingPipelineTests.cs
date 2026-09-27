@@ -206,6 +206,22 @@ public class NewApiParsingPipelineTests
         Assert.Equal([TomlParseEventKind.EndTable, TomlParseEventKind.EndDocument], events.TakeLast(2));
     }
 
+    // Like TomlSerializer, the readers reject a document longer than MaxInputLength, and read no further than the limit
+    [Fact]
+    public void Readers_ApplyMaxInputLength()
+    {
+        var options = new TomlSerializerOptions { MaxInputLength = 100 };
+        var toml = "a = [" + string.Concat(Enumerable.Repeat("1,", 100)) + "]\n";
+
+        Assert.Throws<TomlException>(() => TomlReader.Create(toml, options));
+        Assert.Throws<TomlException>(() => TomlReader.Create(new StringReader(toml), options));
+        Assert.Throws<TomlException>(() => TomlParser.Create(toml, options));
+        Assert.Throws<TomlException>(() => TomlParser.Create(new StringReader(toml), options));
+        Assert.Throws<TomlException>(() => TomlParser.Create(toml, new Meziantou.Framework.Toml.Parsing.TomlParserOptions(), options));
+        Assert.Throws<TomlException>(() => TomlParser.Create(new StringReader(toml), new Meziantou.Framework.Toml.Parsing.TomlParserOptions(), options));
+        Assert.True(TomlReader.Create("a = 1\n", options).Read());
+    }
+
     [Fact]
     public void TomlParser_TolerantMode_RecordsDiagnosticsAndTerminates()
     {

@@ -190,7 +190,7 @@ var toml = TomlSerializer.Serialize(config, options);
 | `UnmappedMemberHandling` | `Skip` | Skips (`Skip`) or rejects (`Disallow`) keys that match no member. Extension data still collects them. `[TomlUnmappedMemberHandling]` overrides it for a type. |
 | `RespectRequiredConstructorParameters` | `true` | A constructor parameter without a default value must be present. When `false`, it receives the default value of its type. |
 | `RespectNullableAnnotations` | `true` | Rejects `null` in members and constructor parameters declared as non-nullable reference types, when reading and writing. The check applies before `DefaultIgnoreCondition`, so such a member throws instead of being skipped, unless the member itself has `[TomlIgnore(Condition = WhenWritingNull)]` or `WhenWritingDefault`. |
-| `MaxInputLength` | `0` (no limit) | Maximum length of the input, in characters for a `string` or a `TextReader` and in bytes for a `Stream`. Longer input throws `TomlException`, and a `Stream` is not read further. |
+| `MaxInputLength` | `0` (no limit) | Maximum length of the input, in characters for a `string` or a `TextReader` and in bytes for a `Stream`. Longer input throws `TomlException`, and a `TextReader` or a `Stream` is not read further. `TomlSerializer`, `TomlReader.Create` and `TomlParser.Create` apply it. |
 | `MaxDepth` | `0` (64) | Maximum nesting depth of tables and arrays. With a larger value, a document nested deeper than the stack of the current thread allows throws `TomlException` instead of overflowing the stack. |
 | `WriteIndented` | `false` | Indents the header and the key/value pairs of a table once for each table it is nested in. |
 | `IndentSize` | `2` | Number of spaces per indentation level. |

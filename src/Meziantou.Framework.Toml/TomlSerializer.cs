@@ -28,7 +28,7 @@ public static class TomlSerializer
 
     private const int StreamReadBufferSize = 16 * 1024;
 
-    private static void ThrowIfInputTooLong(long length, TomlSerializerOptions options, string unit)
+    internal static void ThrowIfInputTooLong(long length, TomlSerializerOptions options, string unit)
     {
         if (options.MaxInputLength > 0 && length > options.MaxInputLength)
         {
@@ -36,7 +36,7 @@ public static class TomlSerializer
         }
     }
 
-    private static string ReadText(TextReader reader, TomlSerializerOptions options)
+    internal static string ReadText(TextReader reader, TomlSerializerOptions options)
     {
         if (options.MaxInputLength == 0)
         {

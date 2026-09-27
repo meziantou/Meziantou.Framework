@@ -60,10 +60,12 @@ public sealed partial class TomlParser
     /// <param name="toml">The TOML payload.</param>
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="toml"/> is <c>null</c>.</exception>
     public static TomlParser Create(string toml, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(toml);
+        TomlSerializer.ThrowIfInputTooLong(toml.Length, options ?? TomlSerializerOptions.Default, "characters");
 
         var memory = toml.AsMemory();
         if (!memory.IsEmpty && memory.Span[0] == '\uFEFF')
@@ -82,11 +84,13 @@ public sealed partial class TomlParser
     /// <param name="parserOptions">Parser options controlling error handling.</param>
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="toml"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="parserOptions"/> is <c>null</c>.</exception>
     public static TomlParser Create(string toml, TomlParserOptions parserOptions, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(toml);
+        TomlSerializer.ThrowIfInputTooLong(toml.Length, options ?? TomlSerializerOptions.Default, "characters");
 
         var memory = toml.AsMemory();
         if (!memory.IsEmpty && memory.Span[0] == '\uFEFF')
@@ -103,12 +107,14 @@ public sealed partial class TomlParser
     /// <param name="reader">The text reader.</param>
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
     public static TomlParser Create(TextReader reader, TomlSerializerOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(reader);
 
-        return Create(reader.ReadToEnd(), options);
+        // Read no further than TomlSerializerOptions.MaxInputLength
+        return Create(TomlSerializer.ReadText(reader, options ?? TomlSerializerOptions.Default), options);
     }
 
     /// <summary>
@@ -118,6 +124,7 @@ public sealed partial class TomlParser
     /// <param name="parserOptions">Parser options controlling error handling.</param>
     /// <param name="options">Optional parser/serializer options.</param>
     /// <returns>A parser instance positioned before the first event.</returns>
+    /// <exception cref="TomlException">The input is longer than <see cref="TomlSerializerOptions.MaxInputLength"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="reader"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="parserOptions"/> is <c>null</c>.</exception>
     public static TomlParser Create(TextReader reader, TomlParserOptions parserOptions, TomlSerializerOptions? options = null)
@@ -125,7 +132,9 @@ public sealed partial class TomlParser
         ArgumentNullException.ThrowIfNull(reader);
 
         ArgumentNullException.ThrowIfNull(parserOptions);
-        return Create(reader.ReadToEnd(), parserOptions, options);
+
+        // Read no further than TomlSerializerOptions.MaxInputLength
+        return Create(TomlSerializer.ReadText(reader, options ?? TomlSerializerOptions.Default), parserOptions, options);
     }
 
     /// <summary>

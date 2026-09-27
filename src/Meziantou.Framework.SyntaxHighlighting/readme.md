@@ -127,6 +127,7 @@ The package currently supports these language identifiers and common aliases:
 - `php`
 - `powershell`, `pwsh`, `ps`, `ps1`
 - `razor`, `cshtml`, `cshtml-razor`
+- `rust`, `rs`
 - `scss`
 - `sql`
 - `typescript`, `ts`, `tsx`, `mts`, `cts`

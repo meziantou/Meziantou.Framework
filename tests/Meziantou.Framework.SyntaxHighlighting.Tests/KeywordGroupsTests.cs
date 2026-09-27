@@ -23,6 +23,8 @@ public class KeywordGroupsTests
         "cpp:true:keyword+literal",
         "csharp:dynamic:keyword+built_in",
         "msil:native:built_in+keyword",
+        "rust:false:keyword+literal",
+        "rust:true:keyword+literal",
         "sql:bigint:keyword+type",
         "sql:binary:keyword+type",
         "sql:blob:keyword+type",

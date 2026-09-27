@@ -21,7 +21,7 @@ public class ThematicBreakRenderer : NormalizeObjectRenderer<ThematicBreakBlock>
         var thematicChar = renderer.GetListMarkersBefore(obj).Contains(obj.ThematicChar, StringComparison.Ordinal) ? '_' : obj.ThematicChar;
 
         // Right after a paragraph, as in a tight list, dashes would be a setext heading underline
-        if (thematicChar == '-' && renderer.CompactParagraph && obj.Parent is { } parent && parent.IndexOf(obj) is > 0 and var index && parent[index - 1] is ParagraphBlock)
+        if (thematicChar == '-' && renderer.CompactParagraph && renderer.GetPreviousSibling(obj) is ParagraphBlock)
         {
             thematicChar = '*';
         }

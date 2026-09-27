@@ -1034,6 +1034,27 @@ Text following the table.");
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Normalizing took {stopwatch.Elapsed}");
     }
 
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("", 0, "- a\n\nb\n\n", 200_000)]
+    [InlineData("", 0, "> a\n\nb\n\n", 400_000)]
+    [InlineData("- a\n", 1, "  - - -\n", 600_000)]
+    [InlineData("", 0, "- a\n", 750_000)]
+    [InlineData("a\n\n", 250_000, "- a\n", 250_000)]
+    public void SiblingBlocksAreNormalizedInLinearTime(string prefix, int prefixCount, string item, int count)
+    {
+        // Each list, list item, quote or thematic break used to search its parent for its own index, which took more than
+        // half a minute
+        var markdown = string.Concat(Enumerable.Repeat(prefix, prefixCount)) + string.Concat(Enumerable.Repeat(item, count));
+
+        var stopwatch = Stopwatch.StartNew();
+        var normalized = MarkdownConverter.Normalize(markdown);
+        stopwatch.Stop();
+
+        Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Normalizing took {stopwatch.Elapsed}");
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

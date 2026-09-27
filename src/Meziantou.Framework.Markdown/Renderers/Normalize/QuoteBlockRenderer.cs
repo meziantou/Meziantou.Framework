@@ -46,7 +46,7 @@ public class QuoteBlockRenderer : NormalizeObjectRenderer<QuoteBlock>
             renderer.CompactParagraph = compact;
         }
 
-        var next = GetNextSibling(obj);
+        var next = renderer.GetNextSibling(obj);
         if (renderer.CompactParagraph && next is ParagraphBlock && IsLastBlockParagraph(obj))
         {
             // Without a blank line, which would make the list loose, an empty quote line ends the paragraph
@@ -66,17 +66,6 @@ public class QuoteBlockRenderer : NormalizeObjectRenderer<QuoteBlock>
         {
             renderer.FinishBlock(true);
         }
-    }
-
-    private static Block? GetNextSibling(Block block)
-    {
-        if (block.Parent is not { } parent)
-        {
-            return null;
-        }
-
-        var index = parent.IndexOf(block);
-        return index >= 0 && index + 1 < parent.Count ? parent[index + 1] : null;
     }
 
     private static bool IsLastBlockParagraph(ContainerBlock container)

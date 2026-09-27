@@ -24,8 +24,7 @@ public class LinkReferenceDefinitionGroupRenderer : NormalizeObjectRenderer<Link
         if (!renderer.IsLastInContainer)
         {
             renderer.EnsureLine();
-            var index = obj.Parent?.IndexOf(obj) ?? -1;
-            if (index < 0 || index + 1 >= obj.Parent!.Count || obj.Parent[index + 1] is not ParagraphBlock next || !renderer.IsParagraphContinuationOnly(next))
+            if (renderer.GetNextSibling(obj) is not ParagraphBlock next || !renderer.IsParagraphContinuationOnly(next))
             {
                 renderer.WriteLine();
             }

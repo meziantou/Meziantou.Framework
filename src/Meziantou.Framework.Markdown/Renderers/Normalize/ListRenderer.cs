@@ -97,7 +97,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
 
         // The indented lines of the block after the list would continue the last item, unless its content is indented further.
         // An empty item ends at the blank line after the list.
-        var indentation = GetIndentation(GetNextSibling(listBlock));
+        var indentation = GetIndentation(renderer.GetNextSibling(listBlock));
         if (indentation > 0 && listBlock[^1] is ListItemBlock { Count: > 0 } last)
         {
             // The content of an item starting with an indented block is one space after the marker
@@ -106,7 +106,7 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
             // Indent all the items when the spaces after the marker are not enough, unless the list starts on the line of another
             // marker, or would continue the list before it
             var indent = Math.Max(0, indentation + 1 - marker.Length - maxSpaces);
-            if (indent > 3 || (indent > 0 && (renderer.GetListMarkersBefore(listBlock).Length > 0 || GetPreviousSibling(listBlock) is ListBlock)))
+            if (indent > 3 || (indent > 0 && (renderer.GetListMarkersBefore(listBlock).Length > 0 || renderer.GetPreviousSibling(listBlock) is ListBlock)))
             {
                 indent = 0;
             }
@@ -148,15 +148,15 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
 
         var first = listBlock;
-        while (GetPreviousSibling(first) is ListBlock previous && previous.IsOrdered == first.IsOrdered && !characters.ContainsKey(previous))
+        while (renderer.GetPreviousSibling(first) is ListBlock previous && previous.IsOrdered == first.IsOrdered && !characters.ContainsKey(previous))
         {
             first = previous;
         }
 
-        for (var list = first; ; list = (ListBlock)GetNextSibling(list)!)
+        for (var list = first; ; list = (ListBlock)renderer.GetNextSibling(list)!)
         {
             result = list.IsOrdered ? list.OrderedDelimiter : renderer.Options.ListItemCharacter ?? list.BulletType;
-            if (GetPreviousSibling(list) is ListBlock previous && previous.IsOrdered == list.IsOrdered && characters[previous] == result)
+            if (renderer.GetPreviousSibling(list) is ListBlock previous && previous.IsOrdered == list.IsOrdered && characters[previous] == result)
             {
                 result = result switch
                 {
@@ -204,22 +204,5 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
 
         return indentation;
-    }
-
-    private static Block? GetPreviousSibling(Block block)
-    {
-        var index = block.Parent?.IndexOf(block) ?? -1;
-        return index > 0 ? block.Parent![index - 1] : null;
-    }
-
-    private static Block? GetNextSibling(Block block)
-    {
-        if (block.Parent is not { } parent)
-        {
-            return null;
-        }
-
-        var index = parent.IndexOf(block);
-        return index >= 0 && index + 1 < parent.Count ? parent[index + 1] : null;
     }
 }

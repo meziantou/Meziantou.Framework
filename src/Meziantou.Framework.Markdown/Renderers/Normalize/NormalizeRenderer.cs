@@ -52,6 +52,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         {
             if (obj is MarkdownDocument)
             {
+                _childIndexes.Clear();
                 BulletCharacters.Clear();
                 LiteralDelimiterCache = null;
             }
@@ -76,6 +77,10 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
 
     // Renders the inlines of a leaf block without indents, so that each line can be checked before it is written
     private NormalizeRenderer? _lineRenderer;
+
+    // The index of the last block looked up in each container. The blocks are written in order, so the next lookup is
+    // the same block, the one before it, or a block after it: searching forward from there is linear over the container.
+    private readonly Dictionary<ContainerBlock, int> _childIndexes = new(ReferenceEqualityComparer.Instance);
 
     // The bullet, or the delimiter, written for each list of the document
     internal Dictionary<ListBlock, char> BulletCharacters { get; } = new(ReferenceEqualityComparer.Instance);
@@ -200,11 +205,50 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         var markers = string.Empty;
         while (block.Parent is ListItemBlock item && item.Count > 0 && item[0] == block && item.Parent is ListBlock list)
         {
-            markers = ListRenderer.GetMarker(this, list, list.IndexOf(item)) + markers;
+            markers = ListRenderer.GetMarker(this, list, GetChildIndex(item)) + markers;
             block = list;
         }
 
         return markers;
+    }
+
+    /// <summary>
+    /// Gets the index of the block in its parent, or -1.
+    /// </summary>
+    internal int GetChildIndex(Block block)
+    {
+        if (block.Parent is not { } parent)
+        {
+            return -1;
+        }
+
+        if (_childIndexes.TryGetValue(parent, out var previous))
+        {
+            for (var index = Math.Max(0, previous - 1); index < parent.Count; index++)
+            {
+                if (parent[index] == block)
+                {
+                    _childIndexes[parent] = index;
+                    return index;
+                }
+            }
+        }
+
+        var result = parent.IndexOf(block);
+        _childIndexes[parent] = result;
+        return result;
+    }
+
+    internal Block? GetPreviousSibling(Block block)
+    {
+        var index = GetChildIndex(block);
+        return index > 0 ? block.Parent![index - 1] : null;
+    }
+
+    internal Block? GetNextSibling(Block block)
+    {
+        var index = GetChildIndex(block);
+        return index >= 0 && index + 1 < block.Parent!.Count ? block.Parent[index + 1] : null;
     }
 
     private bool CanInterruptParagraph(ReadOnlySpan<char> line)

@@ -938,6 +938,14 @@ Text following the table.");
         AssertNormalizePreservesHtml("a\n    *[b]: c", "a\n    *[b]: c", new MarkdownPipelineBuilder().UseAbbreviations().Build());
     }
 
+    [Theory]
+    [InlineData("a*http://a.b*", "a*http://a.b*")]
+    [InlineData("__aa_http://a.b", "__aa_http://a.b")]
+    public void AutoLinkNextToDelimiterIsNotExpanded(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseAutoLinks().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

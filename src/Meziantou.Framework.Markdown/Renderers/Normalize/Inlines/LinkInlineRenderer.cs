@@ -27,6 +27,13 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
         if (link.IsAutoLink && !link.IsImage && GetLiteralText(link) is { } text)
         {
+            if (IsNextToDelimiter(link.PreviousSibling, link.Parent, before: true) || IsNextToDelimiter(link.NextSibling, link.Parent, before: false))
+            {
+                // The brackets of an expanded link would change whether the delimiters next to it open or close emphasis
+                renderer.Write(renderer.EscapeTablePipes ? text.Replace("|", "\\|", StringComparison.Ordinal) : text);
+                return;
+            }
+
             // The text of an autolink is raw, so it could contain the syntax of a link, or of any other inline
             var destination = EscapeDestination(link.Url);
             var markdown = string.Concat("[", renderer.EscapeLinkText(text, destination), "](", destination, ")");
@@ -71,6 +78,17 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
             renderer.Write(')');
         }
+    }
+
+    private static bool IsNextToDelimiter(Inline? sibling, ContainerInline? parent, bool before)
+    {
+        return sibling switch
+        {
+            null => parent is EmphasisInline,
+            EmphasisInline => true,
+            LiteralInline { Content.Length: > 0 } literal => (before ? literal.Content[literal.Content.End] : literal.Content[literal.Content.Start]) is '*' or '_' or '~' or '^' or '=' or '+',
+            _ => false,
+        };
     }
 
     private static string? GetLiteralText(LinkInline link)

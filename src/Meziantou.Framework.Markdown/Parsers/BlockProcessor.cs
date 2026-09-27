@@ -790,7 +790,7 @@ public class BlockProcessor
                     }
 
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
-                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }
             }
 
@@ -1008,7 +1008,7 @@ public class BlockProcessor
                     }
 
                     ParagraphBlock paragraphBlock = unsafe(Unsafe.As<ParagraphBlock>(currentBlock));
-                    paragraphBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    paragraphBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }
                 if (TrackTrivia)
                 {
@@ -1096,7 +1096,7 @@ public class BlockProcessor
                     }
 
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
-                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia);
+                    leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }
 
                 if (newBlocks.Count > 0)
@@ -1138,6 +1138,25 @@ public class BlockProcessor
         }
 
         ContinueProcessingLine = !result.IsDiscard();
+    }
+
+    // Whether the current character is a tab of which some columns were already consumed, by a container marker or an indent.
+    // The column where the tab starts is only known from the start of the line: a tab at a column that is not a tab stop is
+    // not necessarily consumed.
+    internal bool IsInPartiallyConsumedTab()
+    {
+        if (Line.CurrentChar != '\t' || !CharHelper.IsAcrossTab(Column))
+        {
+            return false;
+        }
+
+        var column = 0;
+        for (var i = _originalLineStart; i < Line.Start; i++)
+        {
+            column = Line.Text[i] == '\t' ? CharHelper.AddTab(column) : column + 1;
+        }
+
+        return column < Column;
     }
 
     private void ResetLine(StringSlice newLine, int column)

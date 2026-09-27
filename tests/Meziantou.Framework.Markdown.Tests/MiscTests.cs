@@ -165,6 +165,21 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("1.     \ta", "<ol>\n<li>\n<pre><code>\ta\n</code></pre>\n</li>\n</ol>")]
+    [InlineData("- a\n\n      \tb", "<ul>\n<li>\n<p>a</p>\n<pre><code>\tb\n</code></pre>\n</li>\n</ul>")]
+    [InlineData("-  ```\n   \tb\n   ```", "<ul>\n<li>\n<pre><code>\tb\n</code></pre>\n</li>\n</ul>")]
+    [InlineData("> \t<div>", "<blockquote>\n\t<div>\n</blockquote>")]
+    [InlineData("- a\n\n  \t<div>", "<ul>\n<li>\n<p>a</p>\n\t<div>\n</li>\n</ul>")]
+    [InlineData(" ```\na\n\t#", "<pre><code>a\n   #\n</code></pre>")]
+    [InlineData("  ```\n\tb\n  ```", "<pre><code>  b\n</code></pre>")]
+    [InlineData("> ```\n>\tb\n> ```", "<blockquote>\n<pre><code>  b\n</code></pre>\n</blockquote>")]
+    [InlineData("> \t\tfoo", "<blockquote>\n<pre><code>  foo\n</code></pre>\n</blockquote>")]
+    public void TabIsExpandedOnlyWhenPartiallyConsumed(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData("*a***a*", "<p><em>a</em>*<em>a</em></p>")]
     [InlineData("**a***a**", "<p><strong>a</strong><em>a</em>*</p>")]
     [InlineData("*>***<*", "<p><em>&gt;</em>*<em>&lt;</em></p>")]

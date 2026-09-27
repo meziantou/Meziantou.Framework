@@ -56,13 +56,13 @@ public class FencedCodeBlockParser : FencedBlockParserBase<FencedCodeBlock>
         if (result == BlockState.Continue && !processor.TrackTrivia)
         {
             var fence = (FencedCodeBlock)block;
-            // Remove any indent spaces
-            var c = processor.CurrentChar;
+            // Remove as many columns of indentation as the opening fence had. A tab counts for its columns only, so it can
+            // be partially removed.
             var indentCount = fence.IndentCount;
-            while (indentCount > 0 && c.IsSpace())
+            while (indentCount > 0 && processor.CurrentChar.IsSpaceOrTab())
             {
                 indentCount--;
-                c = processor.NextChar();
+                processor.NextColumn();
             }
         }
 

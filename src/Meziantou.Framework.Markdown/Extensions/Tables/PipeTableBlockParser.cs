@@ -48,7 +48,7 @@ public class PipeTableBlockParser : BlockParser
                 if (countPipe > 0)
                 {
                     // Mark the paragraph as open (important, otherwise we would have an infinite loop)
-                    paragraph.AppendLine(ref processor.Line, processor.Column, processor.LineIndex, processor.Line.Start, processor.TrackTrivia);
+                    paragraph.AppendLine(ref processor.Line, processor.Column, processor.LineIndex, processor.Line.Start, processor.TrackTrivia, processor.IsInPartiallyConsumedTab());
                     paragraph.IsOpen = true;
                     return BlockState.BreakDiscard;
                 }

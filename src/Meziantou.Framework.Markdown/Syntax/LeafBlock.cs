@@ -77,15 +77,21 @@ public abstract class LeafBlock : Block
     /// <param name="trackTrivia">Whether to keep track of trivia such as whitespace, extra heading characters and unescaped string values.</param>
     public void AppendLine(ref StringSlice slice, int column, int line, int sourceLinePosition, bool trackTrivia)
     {
+        AppendLine(ref slice, column, line, sourceLinePosition, trackTrivia, isInPartiallyConsumedTab: slice.CurrentChar == '\t' && CharHelper.IsAcrossTab(column));
+    }
+
+    // isInPartiallyConsumedTab: the line starts with a tab of which some columns were consumed (by a container marker or an
+    // indent), so only its remaining columns belong to the line. A tab that starts at the column of the line is kept.
+    internal void AppendLine(ref StringSlice slice, int column, int line, int sourceLinePosition, bool trackTrivia, bool isInPartiallyConsumedTab)
+    {
         if (Lines.Lines is null)
         {
             Lines = new StringLineGroup(4, ProcessInlines);
         }
 
         var stringLine = new StringLine(ref slice, line, column, sourceLinePosition, slice.NewLine);
-        // Regular case: we are not in the middle of a tab
 
-        if (slice.CurrentChar == '\t' && CharHelper.IsAcrossTab(column) && !trackTrivia)
+        if (isInPartiallyConsumedTab && !trackTrivia)
         {
             // We need to expand tabs to spaces
             var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));

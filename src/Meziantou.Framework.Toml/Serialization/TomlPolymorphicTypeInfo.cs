@@ -68,9 +68,10 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
     /// <param name="discriminatorPropertyName">Optional discriminator key name. When <see langword="null"/> or empty, <see cref="TomlSerializerOptions.PolymorphismOptions"/> is used.</param>
     /// <param name="derivedTypeInfoByDiscriminator">A mapping from discriminator values to derived type metadata.</param>
     /// <param name="defaultDerivedTypeInfo">Optional default derived type metadata, used when the discriminator is missing or unrecognized.</param>
-    /// <param name="unknownDerivedTypeHandling">Optional override for unknown discriminator handling. When <see langword="null"/>, uses options default.</param>
+    /// <param name="unknownDerivedTypeHandling">Optional override for unknown discriminator handling. When <see langword="null"/> or <see cref="TomlUnknownDerivedTypeHandling.Unspecified"/>, uses options default.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="derivedTypeInfoByDiscriminator"/> is <see langword="null"/>.</exception>
-    /// <exception cref="TomlException">Thrown when the mapping is invalid.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="unknownDerivedTypeHandling"/> is not a defined value.</exception>
+    /// <exception cref="TomlException">Thrown when the mapping is invalid, such as a derived type that does not derive from <typeparamref name="TBase"/>.</exception>
     public TomlPolymorphicTypeInfo(
         TomlSerializerOptions options,
         TomlTypeInfo<TBase>? baseTypeInfo,
@@ -85,7 +86,15 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
 
         _baseTypeInfo = baseTypeInfo;
         _defaultDerivedTypeInfo = defaultDerivedTypeInfo;
-        _unknownDerivedTypeHandling = unknownDerivedTypeHandling ?? options.PolymorphismOptions.UnknownDerivedTypeHandling;
+        if (unknownDerivedTypeHandling is { } handling && !Enum.IsDefined(handling))
+        {
+            throw new ArgumentOutOfRangeException(nameof(unknownDerivedTypeHandling), handling, $"The value is not a defined {nameof(TomlUnknownDerivedTypeHandling)}.");
+        }
+
+        // Like [TomlPolymorphic], Unspecified uses the default of the options
+        _unknownDerivedTypeHandling = unknownDerivedTypeHandling is null or TomlUnknownDerivedTypeHandling.Unspecified
+            ? options.PolymorphismOptions.UnknownDerivedTypeHandling
+            : unknownDerivedTypeHandling.Value;
         _discriminatorPropertyName = string.IsNullOrEmpty(discriminatorPropertyName)
             ? options.PolymorphismOptions.TypeDiscriminatorPropertyName
             : discriminatorPropertyName;
@@ -118,6 +127,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
             }
 
             var runtimeType = typeInfo.Type;
+            ThrowIfNotDerivedType(runtimeType);
             if (_derivedTypeInfoByRuntimeType.ContainsKey(runtimeType))
             {
                 throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{runtimeType.FullName}' more than once.");
@@ -130,6 +140,7 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         if (defaultDerivedTypeInfo is not null)
         {
             var defaultType = defaultDerivedTypeInfo.Type;
+            ThrowIfNotDerivedType(defaultType);
             if (_derivedTypeInfoByRuntimeType.ContainsKey(defaultType))
             {
                 throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register derived type '{defaultType.FullName}' more than once.");
@@ -141,6 +152,15 @@ public sealed class TomlPolymorphicTypeInfo<TBase> : TomlTypeInfo<TBase>
         if (_derivedTypeInfoByDiscriminator.Count == 0 && _defaultDerivedTypeInfo is null)
         {
             throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' must register at least one derived type.");
+        }
+    }
+
+    // A value read with the metadata of the derived type is returned as a TBase
+    private static void ThrowIfNotDerivedType(Type derivedType)
+    {
+        if (!typeof(TBase).IsAssignableFrom(derivedType))
+        {
+            throw TomlException.CreateConfigurationError($"Polymorphic type '{typeof(TBase).FullName}' cannot register type '{derivedType.FullName}', which does not derive from it.");
         }
     }
 

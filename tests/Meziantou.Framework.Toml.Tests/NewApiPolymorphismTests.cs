@@ -87,6 +87,32 @@ public class NewApiPolymorphismTests
         public System.Collections.Generic.List<Animal> Animals { get; set; } = [];
     }
 
+    [Fact]
+    public void PolymorphicTypeInfo_TypeThatDoesNotDeriveFromTheBase_IsAConfigurationError()
+    {
+        var options = new TomlSerializerOptions();
+        var mapping = new Dictionary<string, TomlTypeInfo>(StringComparer.Ordinal) { ["x"] = options.GetTypeInfo<PolymorphicCtorOther>() };
+
+        var exception = Assert.Throws<TomlException>(() => new TomlPolymorphicTypeInfo<PolymorphicCtorBase>(options, null, "kind", mapping));
+        var defaultException = Assert.Throws<TomlException>(() => new TomlPolymorphicTypeInfo<PolymorphicCtorBase>(options, null, "kind", new Dictionary<string, TomlTypeInfo>(StringComparer.Ordinal), options.GetTypeInfo<PolymorphicCtorOther>()));
+
+        Assert.True(exception.IsConfigurationError);
+        Assert.True(defaultException.IsConfigurationError);
+    }
+
+    [Fact]
+    public void PolymorphicTypeInfo_UnknownDerivedTypeHandling_IsValidated()
+    {
+        var options = new TomlSerializerOptions { PolymorphismOptions = new TomlPolymorphismOptions { UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType } };
+        var mapping = new Dictionary<string, TomlTypeInfo>(StringComparer.Ordinal) { ["derived"] = options.GetTypeInfo<PolymorphicCtorDerived>() };
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new TomlPolymorphicTypeInfo<PolymorphicCtorBase>(options, options.GetTypeInfo<PolymorphicCtorBase>(), "kind", mapping, null, (TomlUnknownDerivedTypeHandling)42));
+        var unspecified = new TomlPolymorphicTypeInfo<PolymorphicCtorBase>(options, options.GetTypeInfo<PolymorphicCtorBase>(), "kind", mapping, null, TomlUnknownDerivedTypeHandling.Unspecified);
+
+        Assert.Equal("unknownDerivedTypeHandling", exception.ParamName);
+        Assert.IsType<PolymorphicCtorBase>(TomlSerializer.Deserialize("kind = 'unknown'\n", unspecified));
+    }
+
     // The public API exposes public types only
     [Fact]
     public void PolymorphicTypeInfo_ImplementsPublicInterfacesOnly()
@@ -764,6 +790,20 @@ internal sealed class StructShapeHolder
 [TomlSerializable(typeof(SelfDerivedHolder))]
 [TomlSerializable(typeof(SelfDefaultHolder))]
 internal sealed partial class SelfDerivedTomlSerializerContext : TomlSerializerContext
+{
+}
+#pragma warning restore MA0048
+
+#pragma warning disable MA0048 // File name must match type name
+public class PolymorphicCtorBase
+{
+}
+
+public sealed class PolymorphicCtorDerived : PolymorphicCtorBase
+{
+}
+
+public sealed class PolymorphicCtorOther
 {
 }
 #pragma warning restore MA0048

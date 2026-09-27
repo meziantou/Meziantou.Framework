@@ -47,6 +47,12 @@ public class HeadingRenderer : NormalizeObjectRenderer<HeadingBlock>
 
             renderer.Write(' ');
             renderer.Write(text);
+
+            // A closing sequence keeps the number signs that end the content
+            if (text is [.., '#'])
+            {
+                renderer.Write(" #");
+            }
         }
 
         renderer.FinishBlock(renderer.Options.EmptyLineAfterHeading);

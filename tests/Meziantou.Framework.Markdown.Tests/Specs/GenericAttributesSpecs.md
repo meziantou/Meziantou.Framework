@@ -35,7 +35,7 @@ This is a paragraph with an attached attributes {#myparagraph aria-busy aria-dis
 <h1 id="heading-link2">This is a heading</h1>
 <p><a href="http://google.com" id="a-link" class="myclass" lang="fr" title="This is a value">This is a link</a></p>
 <h2 id="heading-link2">This is a heading</h2>
-<p id="myparagraph" aria-busy="" aria-disabled="">This is a paragraph with an attached attributes </p>
+<p id="myparagraph" aria-busy="" aria-disabled="">This is a paragraph with an attached attributes</p>
 ````````````````````````````````
 
 The following shows that attributes can be attached to the next block if they are used inside a single line just preceding the block (and preceded by a blank line or beginning of a block container):

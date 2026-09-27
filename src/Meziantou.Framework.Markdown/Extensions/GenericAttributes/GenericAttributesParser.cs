@@ -88,6 +88,27 @@ public class GenericAttributesParser : InlineParser
             currentHtmlAttributes.Column = column;
             currentHtmlAttributes.Span.End = currentHtmlAttributes.Span.Start + slice.Start - startPosition - 1;
 
+            // Attributes that end the text are not part of it, so the whitespace before them ends the text and is trimmed, like
+            // the whitespace at the end of a paragraph. With trivia, it is kept so that the roundtrip does not lose it.
+            if (!processor.TrackTrivia && slice.IsEmptyOrWhitespace())
+            {
+                var lastInline = processor.Inline;
+                while (lastInline is LiteralInline literal)
+                {
+                    var length = literal.Content.Length;
+                    if (!literal.Content.TrimEnd())
+                    {
+                        literal.Span.End -= length - literal.Content.Length;
+                        break;
+                    }
+
+                    // Other attributes can separate the literal from the whitespace before it
+                    lastInline = literal.PreviousSibling;
+                    literal.Remove();
+                    processor.Inline = null;
+                }
+            }
+
             // We don't set the processor.Inline as we don't want to add attach attributes to a particular entity
             return true;
         }

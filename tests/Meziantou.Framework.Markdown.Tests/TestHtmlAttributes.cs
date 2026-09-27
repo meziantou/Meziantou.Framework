@@ -97,7 +97,7 @@ public class TestHtmlAttributes
     [Theory]
     [InlineData("![x](y.png){onerror=alert(1)}", "<p><img src=\"y.png\" alt=\"x\" /></p>\n")]
     [InlineData("[click](http://ok){ONCLICK=\"alert(1)\" style=\"color:red\" data-x=1 title=t}", "<p><a href=\"http://ok\" title=\"t\">click</a></p>\n")]
-    [InlineData("hello {x-data x-init=\"alert(document.domain)\" hx-get=/delete hx-on:click=alert(1) data-bind=x v-html=x ng-click=x is=x lang=en}", "<p lang=\"en\">hello </p>\n")]
+    [InlineData("hello {x-data x-init=\"alert(document.domain)\" hx-get=/delete hx-on:click=alert(1) data-bind=x v-html=x ng-click=x is=x lang=en}", "<p lang=\"en\">hello</p>\n")]
     [InlineData("[click](http://ok){href=javascript:alert(1) title=t}", "<p><a href=\"http://ok\" title=\"t\">click</a></p>\n")]
     [InlineData("{#id .cls srcdoc=x formaction=javascript:alert(1) xmlns:x=y}\nparagraph", "<p id=\"id\" class=\"cls\">paragraph</p>\n")]
     [InlineData("# Title {onmouseover=alert(1) lang=en}", "<h1 id=\"title\" lang=\"en\">Title</h1>\n")]
@@ -137,6 +137,25 @@ public class TestHtmlAttributes
     [InlineData("# h {.}", "<h1>h {.}</h1>\n")]
     [InlineData("*a*{.c .}", "<p><em>a</em>{.c .}</p>\n")]
     public void GenericAttributesWithOneCharacterIdsAndClasses(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Theory]
+    [InlineData("text {#custom}", "<p id=\"custom\">text</p>\n")]
+    [InlineData("text  {#custom}  \n\nnext", "<p id=\"custom\">text</p>\n<p>next</p>\n")]
+    [InlineData("text\nmore {#custom}\n", "<p id=\"custom\">text\nmore</p>\n")]
+    [InlineData("*a* {.c}", "<p class=\"c\"><em>a</em></p>\n")]
+    [InlineData("*a {#i}", "<p id=\"i\">*a</p>\n")]
+    [InlineData("- a\n\n  text {#custom}", "<ul>\n<li><p>a</p>\n<p id=\"custom\">text</p>\n</li>\n</ul>\n")]
+    [InlineData("- text {#custom}", "<ul>\n<li>text</li>\n</ul>\n")]
+    [InlineData("> text {#custom}", "<blockquote>\n<p id=\"custom\">text</p>\n</blockquote>\n")]
+    [InlineData("# h {#custom}", "<h1 id=\"custom\">h</h1>\n")]
+    [InlineData("a {#i} b", "<p id=\"i\">a  b</p>\n")]
+    [InlineData("text {#i}\t{.c} ", "<p id=\"i\" class=\"c\">text</p>\n")]
+    public void GenericAttributesEndingTheTextDoNotLeaveWhitespace(string markdown, string expected)
     {
         var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
 
@@ -214,8 +233,8 @@ public class TestHtmlAttributes
     [InlineData("{#ab{#ab{#ab !}", "<p>{#ab{#ab{#ab !}</p>\n")]
     [InlineData("={a={a={a !}", "<p>={a={a={a !}</p>\n")]
     [InlineData("{#a{#a{#ab}", "<p id=\"a{#a{#ab\"></p>\n")]
-    [InlineData("text {#a {#ab}", "<p id=\"ab\">text {#a </p>\n")]
-    [InlineData("{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a {.cls}", "<p class=\"cls\">{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a </p>\n")]
+    [InlineData("text {#a {#ab}", "<p id=\"ab\">text {#a</p>\n")]
+    [InlineData("{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a {.cls}", "<p class=\"cls\">{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a{#a</p>\n")]
     [InlineData("={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a *b*{title=t lang=fr}", "<p>={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a={a <em title=\"t\" lang=\"fr\">b</em></p>\n")]
     [InlineData("{#a{#a{#a\n{#ab}", "<p>{#a{#a{#a</p>\n")]
     [InlineData("# t {#a{#a{#a", "<h1 id=\"t-aaa\">t {#a{#a{#a</h1>\n")]

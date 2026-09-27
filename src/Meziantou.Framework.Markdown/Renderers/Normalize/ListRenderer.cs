@@ -42,7 +42,8 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
                 renderer.WriteChildren(listItem);
             }
             renderer.PopIndent();
-            if (i + 1 < listBlock.Count && listBlock.IsLoose)
+            // An open HTML block already ends with the blank line between the items
+            if (i + 1 < listBlock.Count && listBlock.IsLoose && !HtmlBlockRenderer.EndsWithOpenHtmlBlock(listItem))
             {
                 renderer.EnsureLine();
                 renderer.WriteLine();

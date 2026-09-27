@@ -910,6 +910,14 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("+ <textarea\n\n+", "+ <textarea\n  \n+ ")]
+    [InlineData("- <!--\n\n- a", "- <!--\n  \n- a")]
+    public void OpenHtmlBlockInLooseListIsNotFollowedByAnotherBlankLine(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

@@ -745,7 +745,7 @@ public class BlockProcessor
 
             // If we have a discard, we can remove it from the current state
             UpdateLastBlockAndContainer(i);
-            var quoteLineCount = block is QuoteBlock { QuoteLines: var quoteLines } ? quoteLines.Count : 0;
+            var quoteLineCount = TrackTrivia && block is QuoteBlock { QuoteLines: var quoteLines } ? quoteLines.Count : 0;
             var result = parser.TryContinue(this, block);
             if (result == BlockState.Skip)
             {
@@ -755,7 +755,7 @@ public class BlockProcessor
             if (result == BlockState.None)
             {
                 HasUnmatchedBlocks = true;
-                _unmatchedQuoteWithLine = block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount ? unmatchedQuote : null;
+                _unmatchedQuoteWithLine = TrackTrivia && block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount ? unmatchedQuote : null;
                 break;
             }
 

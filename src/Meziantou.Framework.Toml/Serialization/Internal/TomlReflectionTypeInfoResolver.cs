@@ -684,6 +684,7 @@ internal static class TomlReflectionTypeInfoResolver
         private readonly bool _hasRequiredMembers;
         private readonly int _extensionDataIndex;
         private readonly Type? _extensionDataValueType;
+        private readonly ExtensionDataAccessor? _extensionDataAccessor;
         private readonly StringComparer _nameComparer;
         private readonly bool _invokeOnSerializing;
         private readonly bool _invokeOnSerialized;
@@ -730,6 +731,7 @@ internal static class TomlReflectionTypeInfoResolver
 
                 _extensionDataIndex = i;
                 _extensionDataValueType = valueType;
+                _extensionDataAccessor = (ExtensionDataAccessor)Activator.CreateInstance(typeof(ExtensionDataAccessor<>).MakeGenericType(valueType))!;
             }
 
             for (var i = 0; i < _members.Count; i++)
@@ -1305,25 +1307,52 @@ internal static class TomlReflectionTypeInfoResolver
 
         // An extension data member is a non-generic IDictionary (Dictionary<string, T>) or an IDictionary<string, object>
         // (TomlTable)
-        private static bool IsExtensionDataDictionary(object? value) => value is IDictionary or IDictionary<string, object>;
+        private bool IsExtensionDataDictionary(object? value) => _extensionDataAccessor!.IsDictionary(value);
 
-        private static void SetExtensionData(object dictionary, string key, object? value)
+        private void SetExtensionData(object dictionary, string key, object? value) => _extensionDataAccessor!.Set(dictionary, key, value);
+
+        private IEnumerable<KeyValuePair<string, object?>> EnumerateExtensionData(object dictionary) => _extensionDataAccessor!.Enumerate(dictionary);
+
+        // The extension data member can be any IDictionary<string, TValue>, like in generated code, not only a non-generic
+        // dictionary or an IDictionary<string, object>
+        private abstract class ExtensionDataAccessor
         {
-            if (dictionary is IDictionary nonGenericDictionary)
-            {
-                nonGenericDictionary[key] = value;
-            }
-            else
-            {
-                ((IDictionary<string, object>)dictionary)[key] = value!;
-            }
+            public abstract bool IsDictionary(object? value);
+
+            public abstract void Set(object dictionary, string key, object? value);
+
+            public abstract IEnumerable<KeyValuePair<string, object?>> Enumerate(object dictionary);
         }
 
-        private static IEnumerable<KeyValuePair<string, object?>> EnumerateExtensionData(object dictionary)
+        private sealed class ExtensionDataAccessor<TValue> : ExtensionDataAccessor
         {
-            if (dictionary is IDictionary nonGenericDictionary)
+            public override bool IsDictionary(object? value) => value is IDictionary or IDictionary<string, TValue>;
+
+            public override void Set(object dictionary, string key, object? value)
             {
-                foreach (DictionaryEntry entry in nonGenericDictionary)
+                if (dictionary is IDictionary<string, TValue> genericDictionary)
+                {
+                    genericDictionary[key] = (TValue)value!;
+                }
+                else
+                {
+                    ((IDictionary)dictionary)[key] = value;
+                }
+            }
+
+            public override IEnumerable<KeyValuePair<string, object?>> Enumerate(object dictionary)
+            {
+                if (dictionary is IDictionary<string, TValue> genericDictionary)
+                {
+                    foreach (var entry in genericDictionary)
+                    {
+                        yield return new KeyValuePair<string, object?>(entry.Key, entry.Value);
+                    }
+
+                    yield break;
+                }
+
+                foreach (DictionaryEntry entry in (IDictionary)dictionary)
                 {
                     if (entry.Key is not string key)
                     {
@@ -1331,13 +1360,6 @@ internal static class TomlReflectionTypeInfoResolver
                     }
 
                     yield return new KeyValuePair<string, object?>(key, entry.Value);
-                }
-            }
-            else if (dictionary is IDictionary<string, object> genericDictionary)
-            {
-                foreach (var entry in genericDictionary)
-                {
-                    yield return new KeyValuePair<string, object?>(entry.Key, entry.Value);
                 }
             }
         }

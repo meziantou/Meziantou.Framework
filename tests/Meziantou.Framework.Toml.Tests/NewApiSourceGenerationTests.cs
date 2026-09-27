@@ -2102,6 +2102,57 @@ internal sealed partial class TestTomlSerializerContextByRefConstructors : TomlS
 {
 }
 
+// Implements only the generic dictionary interface
+public sealed class GeneratedIntDictionary : IDictionary<string, int>
+{
+    private readonly Dictionary<string, int> _inner = new(StringComparer.Ordinal);
+
+    public int this[string key] { get => _inner[key]; set => _inner[key] = value; }
+
+    public ICollection<string> Keys => _inner.Keys;
+
+    public ICollection<int> Values => _inner.Values;
+
+    public int Count => _inner.Count;
+
+    public bool IsReadOnly => false;
+
+    public void Add(string key, int value) => _inner.Add(key, value);
+
+    public void Add(KeyValuePair<string, int> item) => _inner.Add(item.Key, item.Value);
+
+    public void Clear() => _inner.Clear();
+
+    public bool Contains(KeyValuePair<string, int> item) => ((ICollection<KeyValuePair<string, int>>)_inner).Contains(item);
+
+    public bool ContainsKey(string key) => _inner.ContainsKey(key);
+
+    public void CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => ((ICollection<KeyValuePair<string, int>>)_inner).CopyTo(array, arrayIndex);
+
+    public IEnumerator<KeyValuePair<string, int>> GetEnumerator() => _inner.GetEnumerator();
+
+    public bool Remove(string key) => _inner.Remove(key);
+
+    public bool Remove(KeyValuePair<string, int> item) => ((ICollection<KeyValuePair<string, int>>)_inner).Remove(item);
+
+    public bool TryGetValue(string key, out int value) => _inner.TryGetValue(key, out value);
+
+    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public sealed class GeneratedCustomExtensionDictionaryModel
+{
+    public string? Name { get; set; }
+
+    [TomlExtensionData]
+    public GeneratedIntDictionary? Extra { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedCustomExtensionDictionaryModel))]
+internal sealed partial class TestTomlSerializerContextCustomExtensionDictionary : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4552,6 +4603,18 @@ public class NewApiSourceGenerationTests
         Assert.Equal(reflection.Message, generated.Message);
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1", context.GeneratedOutConstructor, out _));
         Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedOutConstructor>("A = 1", out _));
+    }
+
+    [Fact]
+    public void ExtensionData_OfACustomGenericDictionary_IsReadAndWritten()
+    {
+        var typeInfo = TestTomlSerializerContextCustomExtensionDictionary.Default.GeneratedCustomExtensionDictionaryModel;
+        var value = new GeneratedCustomExtensionDictionaryModel { Name = "n", Extra = new GeneratedIntDictionary { ["x"] = 1 } };
+
+        Assert.Equal("Name = \"n\"\nx = 1\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
+        Assert.Equal("Name = \"n\"\nx = 1\n", TomlSerializer.Serialize(value, typeInfo).ReplaceLineEndings("\n"));
+        Assert.Equal(2, TomlSerializer.Deserialize<GeneratedCustomExtensionDictionaryModel>("Name = 'n'\ny = 2\n")!.Extra!["y"]);
+        Assert.Equal(2, TomlSerializer.Deserialize("Name = 'n'\ny = 2\n", typeInfo)!.Extra!["y"]);
     }
 
     [Fact]

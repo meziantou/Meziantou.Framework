@@ -81,6 +81,7 @@ public class HighlighterTests
     [InlineData("CSharp")]
     [InlineData("C#")]
     [InlineData("YAML")]
+    [InlineData("rs")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));
@@ -89,7 +90,7 @@ public class HighlighterTests
     [Theory]
     [InlineData("not-a-language")]
     [InlineData("")]
-    [InlineData("rust")]
+    [InlineData("cobol")]
     public void IsSupported_UnknownLanguage_ReturnsFalse(string language)
     {
         Assert.False(SyntaxHighlighter.IsSupported(language));

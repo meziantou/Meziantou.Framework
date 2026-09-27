@@ -92,6 +92,8 @@ internal static class LanguageRegistry
             ["msil"] = () => Msil.Instance,
             ["il"] = () => Msil.Instance,
             ["cil"] = () => Msil.Instance,
+            ["rust"] = () => Rust.Instance,
+            ["rs"] = () => Rust.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

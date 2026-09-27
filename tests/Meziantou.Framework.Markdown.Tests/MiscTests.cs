@@ -526,6 +526,21 @@ public class MiscTests
     }
 
     [Fact]
+    public void SettingARoundtripLinkReferenceDefinitionAgainDoesNotAddItTwice()
+    {
+        // With trivia, a definition is a child of the group and a block of the document
+        var document = MarkdownConverter.Parse("[a]: /u\n\n[a]\n", trackTrivia: true);
+        var definition = Assert.Single(document.Descendants<LinkReferenceDefinition>());
+        definition.Remove();
+
+        document.SetLinkReferenceDefinition("b", definition, addGroup: false);
+
+        var group = document.GetLinkReferenceDefinitions(addGroup: false);
+        Assert.Same(definition, Assert.Single(group));
+        Assert.Equal("a", Assert.Single(group.Links).Key);
+    }
+
+    [Fact]
     public void MaximumNestingDepthCanBeRaisedForDeepListExtras()
     {
         var markdown = "Krankenhaus\nD. " + string.Join(" ", Enumerable.Repeat("M.", 160));

@@ -30,6 +30,9 @@ public class LinkReferenceDefinitionGroup : ContainerBlock
     /// </summary>
     public Dictionary<string, LinkReferenceDefinition> Links { get; }
 
+    // Definitions that stay children of this group while their parent is another block (see SetDetached)
+    private HashSet<LinkReferenceDefinition>? _detachedLinks;
+
     /// <summary>
     /// Performs the set operation.
     /// </summary>
@@ -37,12 +40,29 @@ public class LinkReferenceDefinitionGroup : ContainerBlock
     {
         if (link is null) ThrowHelper.ArgumentNullException(nameof(link));
 
-        // A block has a single parent, so this is the same as Contains(link) without scanning all the definitions
-        if (link.Parent != this)
+        if (!IsChild(link))
         {
             Add(link);
             Links.TryAdd(label, link);
         }
+    }
+
+    /// <summary>
+    /// Sets a definition that is also a block of the document, as the roundtrip parser does: the definition stays a child
+    /// of this group, but it is detached from it so that it can be added to the document.
+    /// </summary>
+    internal void SetDetached(string label, LinkReferenceDefinition link)
+    {
+        Set(label, link);
+        link.Parent = null;
+        (_detachedLinks ??= new(ReferenceEqualityComparer.Instance)).Add(link);
+    }
+
+    // The children of this group have it as parent, except the detached ones, so this is the same as Contains(link)
+    // without scanning all the definitions for a new one
+    private bool IsChild(LinkReferenceDefinition link)
+    {
+        return link.Parent == this || (_detachedLinks is not null && _detachedLinks.Contains(link) && Contains(link));
     }
 
     /// <summary>

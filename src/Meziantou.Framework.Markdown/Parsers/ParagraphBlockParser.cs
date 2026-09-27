@@ -247,8 +247,8 @@ public class ParagraphBlockParser : BlockParser
                 out SourceSpan unescapedTitle,
                 out SourceSpan triviaAfterTitle))
             {
-                state.Document.SetLinkReferenceDefinition(lrd.Label!, lrd, false);
-                lrd.Parent = null; // remove LRDG parent from lrd
+                // The definition is also added to the document, where the roundtrip renderer writes it
+                state.Document.GetLinkReferenceDefinitions(false).SetDetached(lrd.Label!, lrd);
                 atLeastOneFound = true;
 
                 // Correct the locations of each field

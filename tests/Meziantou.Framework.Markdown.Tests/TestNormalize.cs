@@ -842,6 +842,12 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Fact]
+    public void MultilineHeadingWithCarriageReturnsIsSetextHeading()
+    {
+        AssertNormalizePreservesHtml("a\ra\r-", "a\ra\n---");
+    }
+
     [Theory]
     [InlineData("# # #", "# # #")]
     [InlineData("a #\n-", "## a # #")]

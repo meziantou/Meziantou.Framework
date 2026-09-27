@@ -22,6 +22,8 @@ public class LiteralInlineRenderer : RoundtripObjectRenderer<LiteralInline>
         {
             renderer.Write('\\');
         }
-        renderer.Write(ref obj.Content);
+
+        // The literal of a setext heading spans its lines, which start with the indent of the containers
+        renderer.WriteLines(obj.Content);
     }
 }

@@ -166,6 +166,9 @@ public class BlockProcessor
     /// </summary>
     internal bool HasUnmatchedBlocks { get; private set; }
 
+    // Whether the first container that did not continue on the current line is a quote that recorded the line
+    private bool _unmatchedQuoteRecordedLine;
+
     /// <summary>
     /// Gets the current stack of <see cref="Block"/> being processed.
     /// </summary>
@@ -705,6 +708,7 @@ public class BlockProcessor
     {
         IsLazy = false;
         HasUnmatchedBlocks = false;
+        _unmatchedQuoteRecordedLine = false;
 
         // Set all blocks non opened.
         // They will be marked as open in the following loop
@@ -731,6 +735,7 @@ public class BlockProcessor
 
             // If we have a discard, we can remove it from the current state
             UpdateLastBlockAndContainer(i);
+            var quoteLineCount = block is QuoteBlock { QuoteLines: var quoteLines } ? quoteLines.Count : 0;
             var result = parser.TryContinue(this, block);
             if (result == BlockState.Skip)
             {
@@ -740,6 +745,7 @@ public class BlockProcessor
             if (result == BlockState.None)
             {
                 HasUnmatchedBlocks = true;
+                _unmatchedQuoteRecordedLine = block is QuoteBlock unmatchedQuote && unmatchedQuote.QuoteLines.Count > quoteLineCount;
                 break;
             }
 
@@ -853,6 +859,33 @@ public class BlockProcessor
         }
     }
 
+    // A lazy continuation line only reaches the outermost container that does not continue, so the quotes nested in it did not
+    // record the line (nor that container when the line is indented as code). Without it, the roundtrip renderer writes their
+    // markers on the lazy line and one line early after it.
+    private void AddLazyQuoteLines()
+    {
+        var foundUnmatched = false;
+        for (int i = 1; i < OpenedBlocks.Count; i++)
+        {
+            var block = OpenedBlocks[i].Block;
+            if (block.IsOpen || block.IsParagraphBlock)
+            {
+                continue;
+            }
+
+            if (block is QuoteBlock quote && (foundUnmatched || !_unmatchedQuoteRecordedLine))
+            {
+                quote.QuoteLines.Add(new QuoteBlockLine
+                {
+                    QuoteChar = false,
+                    NewLine = Line.NewLine,
+                });
+            }
+
+            foundUnmatched = true;
+        }
+    }
+
     /// <summary>
     /// Tries to open new blocks using the specified list of <see cref="BlockParser"/>
     /// </summary>
@@ -926,6 +959,8 @@ public class BlockProcessor
                 }
                 if (TrackTrivia)
                 {
+                    AddLazyQuoteLines();
+
                     // special case: take care when refactoring this
                     if (currentBlock.Parent is QuoteBlock qb)
                     {
@@ -1070,6 +1105,7 @@ public class BlockProcessor
         ContinueProcessingLine = false;
         IsLazy = false;
         HasUnmatchedBlocks = false;
+        _unmatchedQuoteRecordedLine = false;
 
         _currentStackIndex = 0;
         _originalLineStart = 0;

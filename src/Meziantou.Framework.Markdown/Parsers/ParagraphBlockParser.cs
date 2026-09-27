@@ -270,39 +270,32 @@ public class ParagraphBlockParser : BlockParser
                 state.Document.GetLinkReferenceDefinitions(false).SetDetached(lrd.Label!, lrd);
                 atLeastOneFound = true;
 
-                // Correct the locations of each field
+                // Correct the locations of each field. A definition can span lines, so its text is taken from the lines: a slice of
+                // the source would also contain the quote markers of the lines after the first one.
                 lrd.Line = lines.Lines[startLine].Line;
-                var text = lines.Lines[startLine].Slice.Text;
-
-                triviaBeforeLabel = lines.ConvertToAbsoluteSpan(triviaBeforeLabel, startLine);
-                labelWithTrivia = lines.ConvertToAbsoluteSpan(labelWithTrivia, startLine);
-                triviaBeforeUrl = lines.ConvertToAbsoluteSpan(triviaBeforeUrl, startLine);
-                unescapedUrl = lines.ConvertToAbsoluteSpan(unescapedUrl, startLine);
-                triviaBeforeTitle = lines.ConvertToAbsoluteSpan(triviaBeforeTitle, startLine);
-                unescapedTitle = lines.ConvertToAbsoluteSpan(unescapedTitle, startLine);
-                triviaAfterTitle = lines.ConvertToAbsoluteSpan(triviaAfterTitle, startLine);
                 lrd.Span = lines.ConvertToAbsoluteSpan(lrd.Span, startLine);
-                lrd.TriviaBefore = new StringSlice(text, triviaBeforeLabel.Start, triviaBeforeLabel.End);
+                lrd.TriviaBefore = lines.GetText(triviaBeforeLabel, startLine);
                 lrd.LabelSpan = lines.ConvertToAbsoluteSpan(lrd.LabelSpan, startLine);
-                lrd.LabelWithTrivia = new StringSlice(text, labelWithTrivia.Start, labelWithTrivia.End);
-                lrd.TriviaBeforeUrl = new StringSlice(text, triviaBeforeUrl.Start, triviaBeforeUrl.End);
+                lrd.LabelWithTrivia = lines.GetText(labelWithTrivia, startLine);
+                lrd.TriviaBeforeUrl = lines.GetText(triviaBeforeUrl, startLine);
                 lrd.UrlSpan = lines.ConvertToAbsoluteSpan(lrd.UrlSpan, startLine);
-                lrd.UnescapedUrl = new StringSlice(text, unescapedUrl.Start, unescapedUrl.End);
-                lrd.TriviaBeforeTitle = new StringSlice(text, triviaBeforeTitle.Start, triviaBeforeTitle.End);
+                lrd.UnescapedUrl = lines.GetText(unescapedUrl, startLine);
+                lrd.TriviaBeforeTitle = lines.GetText(triviaBeforeTitle, startLine);
                 lrd.TitleSpan = lines.ConvertToAbsoluteSpan(lrd.TitleSpan, startLine);
-                lrd.UnescapedTitle = new StringSlice(text, unescapedTitle.Start, unescapedTitle.End);
-                lrd.TriviaAfter = new StringSlice(text, triviaAfterTitle.Start, triviaAfterTitle.End);
-                lrd.LinesBefore = paragraph.LinesBefore;
+                lrd.UnescapedTitle = lines.GetText(unescapedTitle, startLine);
+                lrd.TriviaAfter = lines.GetText(triviaAfterTitle, startLine);
 
-                state.LinesBefore = paragraph.LinesAfter; // ensure closed paragraph with linesafter placed back on stack
+                // The blank lines before the paragraph are written before its first definition only
+                lrd.LinesBefore = paragraph.LinesBefore;
+                paragraph.LinesBefore = null;
 
                 var consumedAll = !SkipConsumedLines(ref iterator, ref startLine, ref end);
                 index = index < 0 ? paragraph.Parent!.LastIndexOf(paragraph) : index + 1;
                 paragraph.Parent!.Insert(index, lrd);
                 if (consumedAll)
                 {
-                    lines.Clear();
-                    return true;
+                    startLine = lines.Count;
+                    break;
                 }
             }
             else
@@ -314,6 +307,13 @@ public class ParagraphBlockParser : BlockParser
         if (startLine > 0)
         {
             lines.RemoveStartRange(startLine);
+        }
+
+        // A paragraph made only of definitions is discarded, so the blank lines after it go back on the stack for the next block.
+        // A paragraph with lines left keeps them: giving them to the next block too wrote them twice.
+        if (atLeastOneFound && lines.Count == 0)
+        {
+            state.LinesBefore = paragraph.LinesAfter;
         }
 
         return atLeastOneFound;

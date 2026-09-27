@@ -212,6 +212,41 @@ public class TestLinkReferenceDefinition
     }
 
     [Theory]
+    [InlineData("[link]: https://example.com\n'Tis the season.\n\n[link]\n")]
+    [InlineData("> [link]: https://example.com\n>   'Tis the season.\n")]
+    [InlineData("[a]: /r\ntext\n\nx\n")]
+    [InlineData("[a]: /r\n'b\n\n")]
+    [InlineData("[a]: /r\n\"b\" c\n\nx\n")]
+    [InlineData("[a]: /r  \n\"b\" c\n")]
+    [InlineData("[a]: /r\n[b]: /s\ntext\n\n\nx\n")]
+    [InlineData("\n\n[a]: /r\n[b]: /s\n\nx\n")]
+    [InlineData("\n\n[a]: /r\ntext\n")]
+    [InlineData("- [a]: /r\n  text\n\n- x\n")]
+    [InlineData("> [a]: /r\n>   text\n")]
+    [InlineData("> [a]: /r\n>\ttext\n")]
+    [InlineData("> [a]: /r\n>   \"b\" c\n")]
+    [InlineData("> - [a]: /r\n>   text\n")]
+    [InlineData("> [a]: /r\n===\n\nx\n")]
+    [InlineData("- [a]: /r\n===\n\nx\n")]
+    public void TestParagraphAfterDefinition(string value)
+    {
+        RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("> [a]:\r> /r\r")]
+    [InlineData("> [a]:\r> /r\r> x\r")]
+    [InlineData("> [a]:\n>   /r\n      x\n")]
+    [InlineData("> [a]:\n>   /r\n    x\n> y\n")]
+    [InlineData(">> [a]:\n        /r\n>> [b]: <b>\n")]
+    [InlineData("> - [a]:\r\n    b\"\r> \"c\" d\r")]
+    [InlineData("> [a]: /r \"b\n> c\"\n>   x\n")]
+    public void TestMultilineInContainer(string value)
+    {
+        RoundTrip(value);
+    }
+
+    [Theory]
     [InlineData("[a]: /r\n===\n[a]")]
     public void TestSetextHeader(string value)
     {

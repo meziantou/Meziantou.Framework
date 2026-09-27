@@ -233,6 +233,61 @@ public struct StringLineGroup : IEnumerable
         return new SourceSpan(startPosition, endPosition);
     }
 
+    /// <summary>
+    /// Gets the text of a span relative to the start of the line at <paramref name="startLine"/>. The text of a span that crosses
+    /// lines is made of these lines only, without what their containers consumed between them (such as quote markers), which
+    /// the roundtrip renderer writes itself at the start of each line.
+    /// </summary>
+    internal readonly StringSlice GetText(SourceSpan span, int startLine)
+    {
+        var text = Lines[startLine].Slice.Text;
+        if (span.IsEmpty)
+        {
+            return new StringSlice(text, span.Start, span.End);
+        }
+
+        int offset = 0;
+        int i = startLine;
+        for (; i < Count - 1; i++)
+        {
+            ref StringSlice slice = ref Lines[i].Slice;
+            var lineLength = slice.Length + slice.NewLine.Length();
+            if (span.Start < offset + lineLength)
+            {
+                break;
+            }
+
+            offset += lineLength;
+        }
+
+        ref StringSlice first = ref Lines[i].Slice;
+        var start = first.Start + (span.Start - offset);
+        var firstLength = first.Length + first.NewLine.Length();
+        if (i == Count - 1 || span.End < offset + firstLength)
+        {
+            return new StringSlice(text, start, first.Start + (span.End - offset));
+        }
+
+        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        builder.Append(text.AsSpan(start, first.Start + firstLength - start));
+        offset += firstLength;
+        for (i++; ; i++)
+        {
+            ref StringSlice slice = ref Lines[i].Slice;
+            var lineLength = slice.Length + slice.NewLine.Length();
+            if (i == Count - 1 || span.End < offset + lineLength)
+            {
+                builder.Append(text.AsSpan(slice.Start, span.End - offset + 1));
+                break;
+            }
+
+            builder.Append(text.AsSpan(slice.Start, lineLength));
+            offset += lineLength;
+        }
+
+        return new StringSlice(builder.ToString());
+    }
+
     private int GetAbsolutePosition(int position, int startLine)
     {
         int offset = 0;

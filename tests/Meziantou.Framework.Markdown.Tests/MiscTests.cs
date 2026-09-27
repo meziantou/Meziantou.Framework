@@ -134,15 +134,17 @@ public class MiscTests
     [InlineData("[link]: https://example.com\n'Tis the season.\n\n[link]", "<p>'Tis the season.</p>\n<p><a href=\"https://example.com\">link</a></p>")]
     [InlineData("[a]: /u\n\"x\n\n[a]", "<p>&quot;x</p>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("[a]: /u\n(x\n\n[a]", "<p>(x</p>\n<p><a href=\"/u\">a</a></p>")]
-    [InlineData("[a]: /u \n  'x\n\n[a]", "<p>'x</p>\n<p><a href=\"/u\">a</a></p>")]
+    [InlineData("[a]: /u \n  'x\n\n[a]", "<p>'x</p>\n<p><a href=\"/u\">a</a></p>", "<p>  'x</p>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("[a]: /1\n[b]: /2\n\"x\n\n[a] [b]", "<p>&quot;x</p>\n<p><a href=\"/1\">a</a> <a href=\"/2\">b</a></p>")]
     [InlineData("[a]: /u\r\n'x\r\n\r\n[a]", "<p>'x</p>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("> [a]: /u\n> 'x\n\n[a]", "<blockquote>\n<p>'x</p>\n</blockquote>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("[a]: /u 'x\n\n[a]", "<p>[a]: /u 'x</p>\n<p>[a]</p>")]
-    public void LinkReferenceDefinitionEndsBeforeALineThatIsNotATitle(string markdown, string expected)
+    public void LinkReferenceDefinitionEndsBeforeALineThatIsNotATitle(string markdown, string expected, string? expectedWithTrivia = null)
     {
         TestParser.TestSpec(markdown, expected);
-        TestParser.TestSpec(markdown, expected, new MarkdownPipelineBuilder().EnableTrackTrivia().Build());
+
+        // With trivia, the paragraph keeps the whitespace at the start of its lines
+        TestParser.TestSpec(markdown, expectedWithTrivia ?? expected, new MarkdownPipelineBuilder().EnableTrackTrivia().Build());
     }
 
     [Theory]

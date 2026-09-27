@@ -289,4 +289,18 @@ public class TestQuoteBlock
     {
         RoundTrip(value);
     }
+
+    [Theory]
+    [InlineData(">> a\nb\n>> c\n")]
+    [InlineData(">> a\n        b\n>> c\n")]
+    [InlineData("> a\n    b\n> c\n")]
+    [InlineData("> - a\n    b\n> c\n")]
+    [InlineData("> a\n> b\n> ===\n")]
+    [InlineData("> a\n>   b\n> ===\n")]
+    [InlineData("> a\nb\n> ===\n")]
+    [InlineData("> a\n    b\n> ---\n")]
+    public void TestLazyContinuation(string value)
+    {
+        RoundTrip(value);
+    }
 }

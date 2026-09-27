@@ -21,10 +21,11 @@ public class LinkReferenceDefinitionRenderer : RoundtripObjectRenderer<LinkRefer
 
         renderer.Write(linkDef.TriviaBefore);
         renderer.Write('[');
-        renderer.Write(linkDef.LabelWithTrivia);
+        // The label, the title and the whitespace around the url can span lines, which start with the indent of the containers
+        renderer.WriteLines(linkDef.LabelWithTrivia);
         renderer.Write("]:");
 
-        renderer.Write(linkDef.TriviaBeforeUrl);
+        renderer.WriteLines(linkDef.TriviaBeforeUrl);
         if (linkDef.UrlHasPointyBrackets)
         {
             renderer.Write('<');
@@ -35,7 +36,7 @@ public class LinkReferenceDefinitionRenderer : RoundtripObjectRenderer<LinkRefer
             renderer.Write('>');
         }
 
-        renderer.Write(linkDef.TriviaBeforeTitle);
+        renderer.WriteLines(linkDef.TriviaBeforeTitle);
         if (linkDef.Title != null)
         {
             var open = linkDef.TitleEnclosingCharacter;
@@ -45,7 +46,7 @@ public class LinkReferenceDefinitionRenderer : RoundtripObjectRenderer<LinkRefer
                 close = ')';
             }
             renderer.Write(open);
-            renderer.Write(linkDef.UnescapedTitle);
+            renderer.WriteLines(linkDef.UnescapedTitle);
             renderer.Write(close);
         }
         renderer.Write(linkDef.TriviaAfter);

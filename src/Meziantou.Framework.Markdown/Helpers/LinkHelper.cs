@@ -1452,7 +1452,6 @@ public static class LinkHelper
         var c = text.CurrentChar;
         if (c == '\'' || c == '"' || c == '(')
         {
-            var beforeTitle = text;
             titleSpan.Start = text.Start;
             unescapedTitle.Start = text.Start + 1; // + 1; // skip opening enclosing character
             if (TryParseTitleTrivia(ref text, out title, out titleEnclosingCharacter))
@@ -1471,13 +1470,11 @@ public static class LinkHelper
             else if (newLineCount > 0)
             {
                 // The next line does not start with a title, so the definition ends with the url, like when there is no title
-                text = beforeTitle;
                 title = null;
                 titleEnclosingCharacter = '\0';
                 unescapedTitle = SourceSpan.Empty;
                 titleSpan = SourceSpan.Empty;
-                triviaBeforeTitle.End -= newLine.Length();
-                triviaAfterTitle = new SourceSpan(text.Start, text.Start - 1);
+                EndAtUrlLine(ref text, saved, triviaBeforeTitleStart, out triviaBeforeTitle, out newLine, out triviaAfterTitle);
                 return true;
             }
             else
@@ -1487,10 +1484,14 @@ public static class LinkHelper
         }
         else
         {
-            if (text.IsEmpty || newLineCount > 0)
+            if (newLineCount > 0)
             {
-                // If we have an end of line, we need to remove it from the trivia
-                triviaBeforeTitle.End -= newLine.Length();
+                EndAtUrlLine(ref text, saved, triviaBeforeTitleStart, out triviaBeforeTitle, out newLine, out triviaAfterTitle);
+                return true;
+            }
+
+            if (text.IsEmpty)
+            {
                 triviaAfterTitle = new SourceSpan(text.Start, text.Start - 1);
                 return true;
             }
@@ -1510,11 +1511,9 @@ public static class LinkHelper
             // we are still returning a valid definition
             if (newLineCount > 0 && title != null)
             {
-                text = saved;
                 title = null;
-                newLine = NewLine.None;
                 unescapedTitle = SourceSpan.Empty;
-                triviaAfterTitle = SourceSpan.Empty;
+                EndAtUrlLine(ref text, saved, triviaBeforeTitleStart, out triviaBeforeTitle, out newLine, out triviaAfterTitle);
                 return true;
             }
 
@@ -1544,6 +1543,33 @@ public static class LinkHelper
         }
 
         return true;
+    }
+
+    // Ends a definition with the line of its url, without a title. The next line belongs to the paragraph that continues there,
+    // with its leading whitespace, so the roundtrip writes it after the markers of the containers of that line.
+    private static void EndAtUrlLine<T>(ref T text, T afterUrl, int triviaBeforeTitleStart, out SourceSpan triviaBeforeTitle, out NewLine newLine, out SourceSpan triviaAfterTitle) where T : ICharIterator
+    {
+        text = afterUrl;
+        var c = text.CurrentChar;
+        while (c != '\n' && c != '\r' && c.IsWhitespace())
+        {
+            c = text.NextChar();
+        }
+
+        triviaBeforeTitle = new SourceSpan(triviaBeforeTitleStart, text.Start - 1);
+        triviaAfterTitle = new SourceSpan(text.Start, text.Start - 1);
+        newLine = c switch
+        {
+            '\r' when text.PeekChar() == '\n' => NewLine.CarriageReturnLineFeed,
+            '\n' => NewLine.LineFeed,
+            '\r' => NewLine.CarriageReturn,
+            _ => NewLine.None,
+        };
+
+        for (var i = 0; i < newLine.Length(); i++)
+        {
+            text.SkipChar();
+        }
     }
 
     /// <summary>

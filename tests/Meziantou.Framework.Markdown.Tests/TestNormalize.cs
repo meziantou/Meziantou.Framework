@@ -764,6 +764,17 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("<div>\n\n*text*", "<div>\n\n*text*")]
+    [InlineData("<div\n\na", "<div\n\na")]
+    [InlineData("> <p>\n>\n> *a*", "> <p>\n> \n> *a*")]
+    [InlineData("- <!--\na", "- <!--\na")]
+    [InlineData("+ <?\na", "+ <?\na")]
+    public void HtmlBlockKeepsItsEnd(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

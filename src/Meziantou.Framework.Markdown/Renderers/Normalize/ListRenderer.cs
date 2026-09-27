@@ -44,7 +44,15 @@ public class ListRenderer : NormalizeObjectRenderer<ListBlock>
         }
         renderer.CompactParagraph = compact;
 
-        renderer.FinishBlock(true);
+        // An open HTML block would include the blank line
+        if (HtmlBlockRenderer.EndsWithOpenHtmlBlock(listBlock))
+        {
+            renderer.EnsureLine();
+        }
+        else
+        {
+            renderer.FinishBlock(true);
+        }
     }
 
     // Gets the marker, including the following space, of the item at the specified index

@@ -832,6 +832,16 @@ Text following the table.");
         AssertNormalizePreservesHtml("[b]: /u\n\n# a\n\n[a] [b]", "[b]: /u\n\n# a\n\n[a] [b]", new MarkdownPipelineBuilder().UseAutoIdentifiers().Build());
     }
 
+    [Theory]
+    [InlineData("a\nb\n=", "a\nb\n===")]
+    [InlineData("a\nb\n---", "a\nb\n---")]
+    [InlineData("> a\n> b\n> -", "> a\n> b\n> ---")]
+    [InlineData("a\n    # b\n=", "a\n    # b\n===")]
+    public void MultilineHeadingIsSetextHeading(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

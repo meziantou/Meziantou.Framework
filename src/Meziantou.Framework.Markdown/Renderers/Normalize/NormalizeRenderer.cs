@@ -95,9 +95,11 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     /// into a setext heading, is indented by 4 spaces: the indentation is not part of the content, and cannot start a block.
     /// The first line is escaped when it would start a block, for example with the list item markers written before it.
     /// </summary>
-    internal void WriteParagraphInline(LeafBlock leafBlock)
+    internal void WriteParagraphInline(LeafBlock leafBlock) => WriteParagraphInline(leafBlock, RenderLeafInline(leafBlock));
+
+    internal void WriteParagraphInline(LeafBlock leafBlock, string text)
     {
-        var remaining = RenderLeafInline(leafBlock).AsSpan();
+        var remaining = text.AsSpan();
         var isFirstLine = true;
         while (true)
         {
@@ -142,7 +144,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
     }
 
-    private string RenderLeafInline(LeafBlock leafBlock)
+    internal string RenderLeafInline(LeafBlock leafBlock)
     {
         var renderer = _lineRenderer;
         if (renderer is null)

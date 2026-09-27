@@ -26,17 +26,28 @@ public class HeadingRenderer : NormalizeObjectRenderer<HeadingBlock>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, HeadingBlock obj)
     {
-        if (obj.Level is > 0 and <= 6)
+        var text = renderer.RenderLeafInline(obj);
+        if (obj.Level is 1 or 2 && text.Contains('\n', StringComparison.Ordinal))
         {
-            renderer.Write(HeadingTexts[obj.Level - 1]);
+            // An ATX heading is a single line, so a heading with line breaks is a setext heading
+            renderer.WriteParagraphInline(obj, text);
+            renderer.WriteLine();
+            renderer.Write(obj.Level == 1 ? '=' : '-', 3);
         }
         else
         {
-            renderer.Write('#', obj.Level);
-        }
+            if (obj.Level is > 0 and <= 6)
+            {
+                renderer.Write(HeadingTexts[obj.Level - 1]);
+            }
+            else
+            {
+                renderer.Write('#', obj.Level);
+            }
 
-        renderer.Write(' ');
-        renderer.WriteLeafInline(obj);
+            renderer.Write(' ');
+            renderer.Write(text);
+        }
 
         renderer.FinishBlock(renderer.Options.EmptyLineAfterHeading);
     }

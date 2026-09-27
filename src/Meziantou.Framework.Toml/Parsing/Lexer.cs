@@ -1669,7 +1669,7 @@ internal sealed class Lexer
             return false;
         }
 
-        AddError($"Unexpected escape character [{c}] in string. Only b t n f r e \\ \" xHH u0000-uFFFF U00000000-UFFFFFFFF are allowed", CurrentPosition, CurrentPosition);
+        AddError($"Unexpected escape character [{c.ToString().ToPrintableString()}] in string. Only b t n f r e \\ \" xHH u0000-uFFFF U00000000-UFFFFFFFF are allowed", CurrentPosition, CurrentPosition);
         return false;
     }
 

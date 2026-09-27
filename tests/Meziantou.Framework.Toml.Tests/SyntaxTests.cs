@@ -355,6 +355,20 @@ val = true
         Assert.Equal(doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).Order().ToArray(), doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray());
     }
 
+    [Theory]
+    [InlineData('\0', "\\u0000")]
+    [InlineData('\u001B', "\\u001B")]
+    [InlineData('\u007F', "\\u007F")]
+    public void InvalidEscapeOfAControlCharacter_IsPrintableInMessages(char character, string expected)
+    {
+        var toml = $"a = \"\\{character}\"\n";
+
+        var diagnostic = SyntaxParser.Parse(toml).Diagnostics.First(diagnostic => diagnostic.Message.StartsWith("Unexpected escape character", StringComparison.Ordinal));
+
+        Assert.DoesNotContain(character, diagnostic.Message);
+        Assert.Contains($"[{expected}]", diagnostic.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void RedefinedLongKeys_AreTruncatedInMessages()
     {

@@ -5284,6 +5284,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 {
                     // The nullable annotations of the type arguments are kept, or the cast is a nullability warning (CS8619)
                     member.AccessTypeName = member.DeclaringType.ToDisplayString(FullyQualifiedNullableFormat);
+
+                    // An object initializer names the member of the derived type, so an init-only member is set after the
+                    // construction with an accessor, which finds the member on its declaring type
+                    if (member.IsInitOnly && !member.IsCompilerRequired && member.SetterAccessorName is null)
+                    {
+                        member.IsInitOnly = false;
+                        member.SetterAccessorName = "__SetBase" + members.IndexOf(member).ToString(CultureInfo.InvariantCulture);
+                    }
+
                     break;
                 }
             }

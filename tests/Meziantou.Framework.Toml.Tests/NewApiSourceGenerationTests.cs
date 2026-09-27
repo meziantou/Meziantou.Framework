@@ -2492,10 +2492,30 @@ public sealed class GeneratedNonHidingNullableArgumentDerived : GeneratedNonHidi
     public static new int X { get; set; }
 }
 
+// A generic type is created with an object initializer, which cannot name the init-only member of the base type
+public class GeneratedNonHidingInitBase<T>
+{
+    public int X { get; init; }
+}
+
+public sealed class GeneratedNonHidingInitStaticDerived<T> : GeneratedNonHidingInitBase<T>
+{
+#pragma warning disable CA1000 // The static member hides the member of the base type on purpose
+    public static new int X => 3;
+#pragma warning restore CA1000
+}
+
+public sealed class GeneratedNonHidingInitMethodDerived<T> : GeneratedNonHidingInitBase<T>
+{
+    public new int X() => 3;
+}
+
 [TomlSerializable(typeof(GeneratedStaticNewDerived))]
 [TomlSerializable(typeof(GeneratedConstNewDerived))]
 [TomlSerializable(typeof(GeneratedInternalNewDerived))]
 [TomlSerializable(typeof(GeneratedNonHidingNullableArgumentDerived))]
+[TomlSerializable(typeof(GeneratedNonHidingInitStaticDerived<int>))]
+[TomlSerializable(typeof(GeneratedNonHidingInitMethodDerived<int>))]
 internal sealed partial class TestTomlSerializerContextNonHiding : TomlSerializerContext
 {
 }
@@ -5156,6 +5176,10 @@ public class NewApiSourceGenerationTests
         Check(context.GeneratedConstNewDerived);
         Check(context.GeneratedInternalNewDerived);
         Assert.Equal("a", ((GeneratedNonHidingGenericBase<string?>)TomlSerializer.Deserialize("X = 'a'", context.GeneratedNonHidingNullableArgumentDerived)!).X);
+        Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize("X = 5", context.GeneratedNonHidingInitStaticDerivedInt32)!).X);
+        Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize<GeneratedNonHidingInitStaticDerived<int>>("X = 5")!).X);
+        Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize("X = 5", context.GeneratedNonHidingInitMethodDerivedInt32)!).X);
+        Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize<GeneratedNonHidingInitMethodDerived<int>>("X = 5")!).X);
 
         static void Check<T>(TomlTypeInfo<T> typeInfo)
             where T : GeneratedNonHidingBase, new()

@@ -2321,7 +2321,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                         builder.Append("            if (__memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
                         builder.AppendLine("            {");
                         builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
-                        builder.AppendLine("                if (__existing is null)");
+                        builder.Append("                if (!(").Append(GetCollectionHasValueExpression(member.Type, "__existing")).AppendLine("))");
                         builder.AppendLine("                {");
                         builder.Append("                    throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
                             .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.\");")
@@ -2717,7 +2717,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("            if (__memberSeen").Append(index.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
         builder.AppendLine("            {");
         builder.Append("                var __existing = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
-        builder.AppendLine("                if (__existing is null)");
+        builder.Append("                if (!(").Append(GetCollectionHasValueExpression(member.Type, "__existing")).AppendLine("))");
         builder.AppendLine("                {");
         builder.Append("                    throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
             .Append("' on '{value.GetType().FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.\");")
@@ -3192,7 +3192,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         builder.Append(indent).AppendLine("if (reader.TokenType == global::Meziantou.Framework.Toml.Serialization.TomlTokenType.StartArray)");
         builder.Append(indent).AppendLine("{");
-        builder.Append(indent).Append("    if (").Append(populateCondition).Append(" && ").Append(memberAccess).AppendLine(" is not null)");
+        builder.Append(indent).Append("    if (").Append(populateCondition).Append(" && ").Append(GetCollectionHasValueExpression(member.Type, memberAccess)).AppendLine(")");
         builder.Append(indent).AppendLine("    {");
         if (canPopulateExpression is not null)
         {
@@ -3256,7 +3256,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else
         {
-            builder.Append(indent).Append("    if (").Append(populateCondition).Append(" && ").Append(memberAccess).AppendLine(" is not null)");
+            builder.Append(indent).Append("    if (").Append(populateCondition).Append(" && ").Append(GetCollectionHasValueExpression(member.Type, memberAccess)).AppendLine(")");
             builder.Append(indent).AppendLine("    {");
             if (canPopulateExpression is not null && addSingleExpression is not null)
             {
@@ -3872,6 +3872,24 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
 
         builder.Append(openIndent).Append(GetMemberTypeInfoAccess(member)).Append(".Write(writer, ").Append(writeArgument).AppendLine(");");
+    }
+
+    // Whether a collection has a value: a default ImmutableArray<T> has none, like a null collection, and cannot be compared
+    // with null
+    private static string GetCollectionHasValueExpression(ITypeSymbol type, string expression)
+    {
+        if (CanBeNull(type))
+        {
+            return expression + " is not null";
+        }
+
+        if (type is INamedTypeSymbol { IsGenericType: true } namedType &&
+            namedType.ConstructedFrom.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::System.Collections.Immutable.ImmutableArray<T>")
+        {
+            return "!" + expression + ".IsDefault";
+        }
+
+        return "true";
     }
 
     private static bool CanBeNull(ITypeSymbol type)

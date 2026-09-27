@@ -63,6 +63,12 @@ public sealed class SingleOrArraySettableCollectionHolder
     public List<string> RuntimeIdentifiers { get; set; } = new() { "existing" };
 }
 
+public sealed class SingleOrArrayImmutableArrayHolder
+{
+    [TomlSingleOrArray]
+    public System.Collections.Immutable.ImmutableArray<string> Rid { get; set; }
+}
+
 public sealed class TableArrayCollectionHolder
 {
     public TableArrayItem[] Foo { get; set; } = [];
@@ -92,6 +98,7 @@ public sealed class TableArrayItem
 [TomlSerializable(typeof(SingleOrArraySettableCollectionHolder))]
 [TomlSerializable(typeof(TableArrayCollectionHolder))]
 [TomlSerializable(typeof(TableArrayStyleOverrideHolder))]
+[TomlSerializable(typeof(SingleOrArrayImmutableArrayHolder))]
 internal sealed partial class TestTomlCollectionsContext : TomlSerializerContext
 {
 }
@@ -370,6 +377,18 @@ public class NewApiCollectionTests
         var ex = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<GeneratedCollectionHolder>("Values = 1\n"));
 
         Assert.Contains("Expected StartArray", ex!.Message);
+    }
+
+    [Theory]
+    [InlineData("rid = \"test\"\n", "test")]
+    [InlineData("rid = [\"test1\", \"test2\"]\n", "test1,test2")]
+    public void ImmutableArray_WithTomlSingleOrArray_IsReadByBothResolvers(string toml, string expected)
+    {
+        var generated = TomlSerializer.Deserialize(toml, TestTomlCollectionsContext.Default.SingleOrArrayImmutableArrayHolder)!;
+        var reflection = TomlSerializer.Deserialize<SingleOrArrayImmutableArrayHolder>(toml, new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase })!;
+
+        Assert.Equal(expected, string.Join(',', generated.Rid));
+        Assert.Equal(expected, string.Join(',', reflection.Rid));
     }
 
     [Fact]

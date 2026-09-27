@@ -142,16 +142,10 @@ public static class LinkHelper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsSpecialScandinavianOrGermanChar(char c)
     {
-        // German umlauts and ß
-        // Norwegian/Danish/Swedish æ, ø, å
-        // Icelandic þ (thorn), ð (eth)
-        return c == 'ä' || c == 'ö' || c == 'ü' ||
-               c == 'Ä' || c == 'Ö' || c == 'Ü' ||
-               c == 'ß' ||
-               c == 'æ' || c == 'ø' || c == 'å' ||
-               c == 'Æ' || c == 'Ø' || c == 'Å' ||
-               c == 'þ' || c == 'ð' ||
-               c == 'Þ' || c == 'Ð';
+        // German ß, Norwegian/Danish æ, ø, and Icelandic þ (thorn), ð (eth) do not decompose with FormD. The German umlauts and
+        // å do: the text is normalized first, so they are already a base letter followed by a combining mark, which is
+        // skipped (ü becomes u).
+        return c is 'ß' or 'æ' or 'ø' or 'Æ' or 'Ø' or 'þ' or 'ð' or 'Þ' or 'Ð';
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -160,20 +154,12 @@ public static class LinkHelper
         return c switch
         {
             // German
-            'ä' => "ae",
-            'ö' => "oe",
-            'ü' => "ue",
-            'Ä' => "Ae",
-            'Ö' => "Oe",
-            'Ü' => "Ue",
             'ß' => "ss",
-            // Norwegian/Danish/Swedish
+            // Norwegian/Danish
             'æ' => "ae",
             'ø' => "oe",
-            'å' => "aa",
             'Æ' => "Ae",
             'Ø' => "Oe",
-            'Å' => "Aa",
             // Icelandic
             'þ' => "th",
             'Þ' => "Th",

@@ -390,6 +390,9 @@ public class TestLinkHelper
     [InlineData("øst-æble", "oest-aeble")] // ø->oe, æ->ae
     [InlineData("Þór Ðað", "thor-dad")]  // Þ -> Th, Ð -> D (then lowercase)
     [InlineData("ÆØß", "aeoess")]
+    [InlineData("äöüÄÖÜåÅ", "aouaouaa")] // decomposed by NFD, not transliterated
+    [InlineData("Ärger über Öl", "arger-uber-ol")]
+    [InlineData("Åland på", "aland-pa")]
     public void TestUrilizeOnlyAscii_ScandinavianGermanChars(string input, string expectedResult)
     {
         Assert.Equal(expectedResult, LinkHelper.Urilize(input, true));

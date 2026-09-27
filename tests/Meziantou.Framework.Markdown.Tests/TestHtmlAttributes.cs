@@ -124,6 +124,25 @@ public class TestHtmlAttributes
         Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
     }
 
+    [Theory]
+    [InlineData("# h {#x}", "<h1 id=\"x\">h</h1>\n")]
+    [InlineData("# h {.c}", "<h1 class=\"c\">h</h1>\n")]
+    [InlineData("# h {#x .y}", "<h1 id=\"x\" class=\"y\">h</h1>\n")]
+    [InlineData("```js {#i .c}\ncode\n```", "<pre><code id=\"i\" class=\"c language-js\">code\n</code></pre>\n")]
+    [InlineData("```{.c}\ncode\n```", "<pre><code class=\"c\">code\n</code></pre>\n")]
+    [InlineData("{#x .y title=t}\ntext", "<p id=\"x\" class=\"y\" title=\"t\">text</p>\n")]
+    [InlineData("*a*{.c}", "<p><em class=\"c\">a</em></p>\n")]
+    [InlineData("[l](/u){#i}", "<p><a href=\"/u\" id=\"i\">l</a></p>\n")]
+    [InlineData("# h {#}", "<h1>h {#}</h1>\n")]
+    [InlineData("# h {.}", "<h1>h {.}</h1>\n")]
+    [InlineData("*a*{.c .}", "<p><em>a</em>{.c .}</p>\n")]
+    public void GenericAttributesWithOneCharacterIdsAndClasses(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
     [Fact]
     public void GenericAttributesFilterCanBeReplaced()
     {

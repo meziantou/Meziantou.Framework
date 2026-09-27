@@ -166,8 +166,9 @@ public class GenericAttributesParser : InlineParser
                 {
                     c = line.NextChar();
                 }
+                // An empty id or class makes the attributes invalid
                 var end = line.Start - 1;
-                if (end == start)
+                if (end < start)
                 {
                     break;
                 }
@@ -399,8 +400,8 @@ public class GenericAttributesParser : InlineParser
             }
             else if (c is '#' or '.')
             {
-                // An id or a class runs to the next '}' or whitespace. Note that a one-character id or class is rejected.
-                attributesValid = identifierEndAfter != position + 2 && Get(outcomes, start, identifierEndAfter, AttributesValid);
+                // An id or a class runs to the next '}' or whitespace, and cannot be empty
+                attributesValid = identifierEndAfter != position + 1 && Get(outcomes, start, identifierEndAfter, AttributesValid);
             }
             else if (!c.IsWhitespace())
             {

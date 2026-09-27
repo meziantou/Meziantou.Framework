@@ -192,6 +192,36 @@ val = true
     }
 
     [Fact]
+    public void LeadingComment_DoesNotCommentOutTheNode()
+    {
+        var doc = new DocumentSyntax();
+        doc.KeyValues.Add(new KeyValueSyntax("a", new IntegerValueSyntax(1)).AddLeadingComment("hello"));
+        doc.KeyValues.Add(new KeyValueSyntax("b", new IntegerValueSyntax(2)));
+        var table = new TableSyntax("t") { Items = { { "x", 1 } } }.AddLeadingComment("header");
+        doc.Tables.Add(table);
+
+        var toml = doc.ToString();
+        var parsed = TomlSerializer.Deserialize<TomlTable>(toml)!;
+
+        Assert.Equal("# hello\na = 1\nb = 2\n# header\n[t]\nx = 1\n", toml.ReplaceLineEndings("\n"));
+        Assert.Equal(1L, parsed["a"]);
+        Assert.Equal(1L, ((TomlTable)parsed["t"]!)["x"]);
+    }
+
+    [Fact]
+    public void TrailingComment_InAnInlineTable_DoesNotCommentOutTheNextItems()
+    {
+        var inlineTable = new InlineTableSyntax(new KeyValueSyntax("x", new IntegerValueSyntax(1)), new KeyValueSyntax("y", new IntegerValueSyntax(2)));
+        inlineTable.Items.GetChild(0)!.KeyValue!.Value!.AddTrailingComment("c");
+        var doc = new DocumentSyntax();
+        doc.KeyValues.Add(new KeyValueSyntax("a", inlineTable));
+
+        var parsed = TomlSerializer.Deserialize<TomlTable>(doc.ToString())!;
+
+        Assert.Equal(2L, ((TomlTable)parsed["a"]!)["y"]);
+    }
+
+    [Fact]
     public void GetChild_PastTheLastChild_Throws()
     {
         var doc = SyntaxParser.Parse("a = 1\n");

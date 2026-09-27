@@ -86,6 +86,7 @@ public abstract class SyntaxNode : SyntaxNodeBase
     private void WriteToInternal(TextWriter writer)
     {
         var pending = new Stack<(SyntaxNode Node, int NextChild)>();
+        var afterComment = false;
         pending.Push((this, -1));
         while (pending.Count > 0)
         {
@@ -97,19 +98,19 @@ public abstract class SyntaxNode : SyntaxNodeBase
                     writer.Write('\uFEFF');
                 }
 
-                WriteTriviaTo(node.LeadingTrivia, writer);
+                WriteTriviaTo(node.LeadingTrivia, writer, ref afterComment);
                 if (node is InvalidSyntaxToken invalidToken)
                 {
                     // The text that was found instead of the expected token
-                    writer.Write(invalidToken.Text);
-                    WriteTriviaTo(node.TrailingTrivia, writer);
+                    Write(writer, invalidToken.Text, isComment: false, ref afterComment);
+                    WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
                     continue;
                 }
 
                 if (node is SyntaxToken token)
                 {
-                    writer.Write(token.TokenKind.ToText() ?? token.Text);
-                    WriteTriviaTo(node.TrailingTrivia, writer);
+                    Write(writer, token.TokenKind.ToText() ?? token.Text, isComment: false, ref afterComment);
+                    WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
                     continue;
                 }
 
@@ -127,17 +128,43 @@ public abstract class SyntaxNode : SyntaxNodeBase
                 continue;
             }
 
-            WriteTriviaTo(node.TrailingTrivia, writer);
+            WriteTriviaTo(node.TrailingTrivia, writer, ref afterComment);
         }
     }
 
-    private static void WriteTriviaTo(List<SyntaxTrivia>? trivias, TextWriter writer)
+    private static void WriteTriviaTo(List<SyntaxTrivia>? trivias, TextWriter writer, ref bool afterComment)
     {
         if (trivias is null) return;
         foreach (var trivia in trivias)
         {
             if (trivia == null) continue;
-            writer.Write(trivia.Text);
+            Write(writer, trivia.Text, trivia.Kind == TokenKind.Comment, ref afterComment);
+        }
+    }
+
+    // A comment runs to the end of its line: what follows it, such as a node given a comment with AddLeadingComment or an
+    // item after a comment in an inline table, starts on the next line instead of being commented out
+    private static void Write(TextWriter writer, string? text, bool isComment, ref bool afterComment)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        if (afterComment && !isComment && text[0] is not '\n' and not '\r' && text.AsSpan().IndexOfAnyExcept(' ', '\t') >= 0)
+        {
+            writer.Write('\n');
+            afterComment = false;
+        }
+        else if (text[0] is '\n' or '\r')
+        {
+            afterComment = false;
+        }
+
+        writer.Write(text);
+        if (isComment)
+        {
+            afterComment = true;
         }
     }
 

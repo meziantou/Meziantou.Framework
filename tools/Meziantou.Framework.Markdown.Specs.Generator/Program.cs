@@ -64,11 +64,9 @@ internal static class Program
 
     // HTML examples whose result depends on ICU, so they cannot pass with InvariantGlobalization=true:
     // - CommonMark 540 matches link labels using Unicode case folding ("ẞ" and "SS").
-    // - Emphasis Extra 6 relies on the compatibility normalization done by TestParser ("™" becomes "TM").
     private static readonly HashSet<(string SpecName, int Example)> HtmlExamplesRequiringIcu =
     [
         ("CommonMarkSpecs", 540),
-        ("Emphasis Extra", 6),
     ];
 
     // NOTE: Beware of Copy/Pasting spec files - some characters may change (non-breaking space into space)!

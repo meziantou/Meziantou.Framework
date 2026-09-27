@@ -62,7 +62,7 @@ This is text MyBrand ^&reg;^ and MyTrademark ^&trade;^
 This is text MyBrand^&reg;^ and MyTrademark^&trade;^
 This is text MyBrand ~&reg;~ and MyCopyright ^&copy;^
 .
-<p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>TM</sup>
-This is text MyBrand^®^ and MyTrademark^TM^
+<p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>™</sup>
+This is text MyBrand^®^ and MyTrademark^™^
 This is text MyBrand <sub>®</sub> and MyCopyright <sup>©</sup></p>
 ````````````````````````````````

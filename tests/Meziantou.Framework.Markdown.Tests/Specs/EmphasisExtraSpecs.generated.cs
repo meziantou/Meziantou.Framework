@@ -118,7 +118,6 @@ public class TestExtensionsEmphasisOnHtmlEntities
     //
     // Note that Unicode symbols are treated as punctuation, which are not allowed to open the emphasis unless they are preceded by a space.
     [Fact]
-    [Meziantou.Xunit.RunIf(globalizationMode: Meziantou.Xunit.TestGlobalizationMode.NotInvariant)]
     public void ExtensionsEmphasisOnHtmlEntities_Example006()
     {
         // Example 6
@@ -130,10 +129,10 @@ public class TestExtensionsEmphasisOnHtmlEntities
         //     This is text MyBrand ~&reg;~ and MyCopyright ^&copy;^
         //
         // Should be rendered as:
-        //     <p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>TM</sup>
-        //     This is text MyBrand^®^ and MyTrademark^TM^
+        //     <p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>™</sup>
+        //     This is text MyBrand^®^ and MyTrademark^™^
         //     This is text MyBrand <sub>®</sub> and MyCopyright <sup>©</sup></p>
 
-        TestParser.TestSpec("This is text MyBrand ^&reg;^ and MyTrademark ^&trade;^\nThis is text MyBrand^&reg;^ and MyTrademark^&trade;^\nThis is text MyBrand ~&reg;~ and MyCopyright ^&copy;^", "<p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>TM</sup>\nThis is text MyBrand^®^ and MyTrademark^TM^\nThis is text MyBrand <sub>®</sub> and MyCopyright <sup>©</sup></p>", "emphasisextras|advanced", context: "Example 6\nSection Extensions / Emphasis on Html Entities\n");
+        TestParser.TestSpec("This is text MyBrand ^&reg;^ and MyTrademark ^&trade;^\nThis is text MyBrand^&reg;^ and MyTrademark^&trade;^\nThis is text MyBrand ~&reg;~ and MyCopyright ^&copy;^", "<p>This is text MyBrand <sup>®</sup> and MyTrademark <sup>™</sup>\nThis is text MyBrand^®^ and MyTrademark^™^\nThis is text MyBrand <sub>®</sub> and MyCopyright <sup>©</sup></p>", "emphasisextras|advanced", context: "Example 6\nSection Extensions / Emphasis on Html Entities\n");
     }
 }

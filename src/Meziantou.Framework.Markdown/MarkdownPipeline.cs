@@ -39,6 +39,12 @@ public sealed class MarkdownPipeline
     internal bool PreciseSourceLocation { get; set; }
 
     /// <summary>
+    /// Gets or sets the number of open inline containers or inlines that the inline processor walks before it tracks the chain
+    /// of open containers instead. Only tests lower it, so that the chain is used for small documents.
+    /// </summary>
+    internal int OpenContainersTrackingThreshold { get; set; } = InlineProcessor.DefaultOpenContainersTrackingThreshold;
+
+    /// <summary>
     /// The read-only list of extensions used to build this pipeline.
     /// </summary>
     public OrderedList<IMarkdownExtension> Extensions { get; }

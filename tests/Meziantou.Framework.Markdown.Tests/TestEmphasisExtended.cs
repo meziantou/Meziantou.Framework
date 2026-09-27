@@ -104,6 +104,7 @@ public class TestEmphasisExtended
     };
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Use<EmphasisTestExtension>().Build();
+    private static readonly MarkdownPipeline MinimumThresholdsPipeline = TestParser.UseMinimumThresholds(new MarkdownPipelineBuilder().Use<EmphasisTestExtension>().Build());
 
     [Theory]
     [InlineData("*foo**",         "<em>foo</em>*")]
@@ -164,5 +165,6 @@ public class TestEmphasisExtended
     public void TestEmphasis(string markdown, string expectedHtml)
     {
         TestParser.TestSpec(markdown, "<p>" + expectedHtml + "</p>", Pipeline);
+        TestParser.TestSpec(markdown, "<p>" + expectedHtml + "</p>", MinimumThresholdsPipeline);
     }
 }

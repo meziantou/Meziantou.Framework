@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
 
@@ -84,6 +85,88 @@ public class TestParser
         {
             TestSpec(inputText, expectedOutputText, pipeline.Value, plainText, context: context + $"Pipeline configured with extensions: {pipeline.Key}");
         }
+
+        // The chain of open containers and the openers bottoms are only used for long paragraphs, which the examples are not
+        foreach (var pipeline in GetPipeline(extensions))
+        {
+            TestSpec(inputText, expectedOutputText, UseMinimumThresholds(pipeline.Value), plainText, context: context + $"Pipeline configured with extensions: {pipeline.Key}, with the minimum thresholds");
+        }
+    }
+
+    /// <summary>
+    /// Makes the inline processor track the chain of open containers, and the emphasis parser track the openers bottoms, from
+    /// the first container and delimiter, instead of only for long paragraphs.
+    /// </summary>
+    internal static MarkdownPipeline UseMinimumThresholds(MarkdownPipeline pipeline)
+    {
+        pipeline.OpenContainersTrackingThreshold = 1;
+        foreach (var parser in pipeline.InlineParsers.OfType<EmphasisInlineParser>())
+        {
+            parser.OpenersBottomThreshold = 0;
+        }
+
+        return pipeline;
+    }
+
+    public static TheoryData<string, string, string> PaddedInlineExamples()
+    {
+        var data = new TheoryData<string, string, string>();
+        string? section = null;
+        var lines = File.ReadAllLines(Path.Combine(TestsDirectory, "Specs", "CommonMark.md"));
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].StartsWith("## ", StringComparison.Ordinal))
+            {
+                section = lines[i][3..];
+            }
+            else if (lines[i] == "```````````````````````````````` example")
+            {
+                var markdown = new StringBuilder();
+                while (lines[++i] != ".")
+                {
+                    markdown.Append(lines[i]).Append('\n');
+                }
+
+                var html = new StringBuilder();
+                while (lines[++i] != "````````````````````````````````")
+                {
+                    html.Append(lines[i]).Append('\n');
+                }
+
+                if (section is "Emphasis and strong emphasis" or "Links" or "Images")
+                {
+                    AddPaddedExample(data, markdown.ToString().Replace('→', '\t'), html.ToString().Replace('→', '\t'));
+                }
+            }
+        }
+
+        return data;
+
+        // The unmatched delimiters stay literal text before the example as long as the example cannot close them, starts the
+        // paragraph and is a single paragraph without link reference definitions
+        static void AddPaddedExample(TheoryData<string, string, string> data, string markdown, string html)
+        {
+            var delimiter = !markdown.Contains('_', StringComparison.Ordinal) ? "_" : !markdown.Contains('*', StringComparison.Ordinal) ? "*" : null;
+            if (delimiter is null || char.IsWhiteSpace(markdown[0]) || markdown.Contains("]:", StringComparison.Ordinal) ||
+                !html.StartsWith("<p>", StringComparison.Ordinal) || !html.EndsWith("</p>\n", StringComparison.Ordinal) || html.IndexOf("<p>", 1, StringComparison.Ordinal) >= 0)
+            {
+                return;
+            }
+
+            // 40 delimiters make the emphasis parser track the openers bottoms, and 300 make the inline processor track the chain
+            foreach (var count in new[] { 40, 300 })
+            {
+                var padding = string.Concat(Enumerable.Repeat(delimiter + "a ", count));
+                data.Add(padding + markdown, "<p>" + padding + html[3..], $"{count} '{delimiter}'");
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PaddedInlineExamples))]
+    public void InlineExamplesAreUnchangedAfterUnmatchedDelimiters(string markdown, string expected, string padding)
+    {
+        TestSpec(markdown, expected, new MarkdownPipelineBuilder().Build(), context: "Padded with " + padding);
     }
 
     internal static void TestSpec(string inputText, string expectedOutputText, MarkdownPipeline pipeline, bool plainText = false, string? context = null)

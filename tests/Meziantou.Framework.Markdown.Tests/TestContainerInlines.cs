@@ -1,3 +1,5 @@
+using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -219,5 +221,79 @@ public class TestContainerInlines
         other.AppendChild(a);
         Assert.Equal(new Inline[] { b, a }, other.Take(5).ToArray());
         Assert.Same(other, a.Parent);
+    }
+
+    [Theory]
+    [InlineData("*a *b %c c* d*", "<p><em>a <em>{c} c</em> d</em></p>\n")]
+    [InlineData("*a %c b*", "<p><em>{c} b</em></p>\n")]
+    [InlineData("[a [b %d](/u) c](/v)", "<p><a href=\"/v\">a [b {d}](/u) c</a></p>\n")]
+    [InlineData("[a [b %d] c](/v)", "<p><a href=\"/v\">a [b {d}] c</a></p>\n")]
+    [InlineData("[a ![b %i](/u) c](/v)", "<p>[a <a href=\"/u\">b {i}</a> c](/v)</p>\n")]
+    [InlineData("[a [b %i](/u) c](/v)", "<p><a href=\"/v\">a <img src=\"/u\" alt=\"b {i}\" /> c</a></p>\n")]
+    [InlineData("*a <a href=\"x\"> %h www.x.com*", "<p><em>a <b> {h} <a href=\"http://www.x.com\">www.x.com</a></em></p>\n")]
+    [InlineData("*a <b> %a www.x.com*", "<p><em>a <a href=\"y\"> {a} www.x.com</em></p>\n")]
+    public void ChangesToOpenContainersDuringParsingAreTracked(string markdown, string expected)
+    {
+        // A tracked chain of open containers must give the same result as walking the containers. The unmatched delimiter
+        // before the text puts the containers deep enough in the chain to be tracked.
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, CreatePipeline(minimumThresholds: false)));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, CreatePipeline(minimumThresholds: true)));
+        Assert.Equal("<p>_x " + expected[3..], MarkdownConverter.ToHtml("_x " + markdown, CreatePipeline(minimumThresholds: true)));
+
+        static MarkdownPipeline CreatePipeline(bool minimumThresholds)
+        {
+            var builder = new MarkdownPipelineBuilder().UseAutoLinks();
+            builder.InlineParsers.Insert(0, new OpenContainerMutatingParser());
+            var pipeline = builder.Build();
+            return minimumThresholds ? TestParser.UseMinimumThresholds(pipeline) : pipeline;
+        }
+    }
+
+    // Changes the containers that are still open when "%" is followed by: 'c' clears the deepest one, 'd' deactivates the
+    // nearest link delimiter, 'i' toggles whether it is an image, 'h' and 'a' change the tag of the last raw HTML inline
+    private sealed class OpenContainerMutatingParser : InlineParser
+    {
+        public OpenContainerMutatingParser()
+        {
+            OpeningCharacters = ['%'];
+        }
+
+        public override bool Match(InlineProcessor processor, ref StringSlice slice)
+        {
+            var action = slice.PeekChar();
+            var container = processor.Root!;
+            while (container.LastChild is ContainerInline { IsClosed: false } child)
+            {
+                container = child;
+            }
+
+            switch (action)
+            {
+                case 'c':
+                    container.Clear();
+                    break;
+
+                case 'd':
+                    container.FirstParentOfType<LinkDelimiterInline>()!.IsActive = false;
+                    break;
+
+                case 'i':
+                    var linkDelimiter = container.FirstParentOfType<LinkDelimiterInline>()!;
+                    linkDelimiter.IsImage = !linkDelimiter.IsImage;
+                    break;
+
+                case 'h':
+                case 'a':
+                    container.FindDescendants<HtmlInline>().Last().Tag = action == 'h' ? "<b>" : "<a href=\"y\">";
+                    break;
+
+                default:
+                    return false;
+            }
+
+            slice.Start += 2;
+            processor.Inline = new LiteralInline("{" + action + "}");
+            return true;
+        }
     }
 }

@@ -20,8 +20,9 @@ namespace Meziantou.Framework.Markdown.Parsers.Inlines;
 /// <seealso cref="IPostInlineProcessor" />
 public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
 {
-    // Paragraphs with more emphasis delimiters than this keep track of the openers already rejected by a closer
-    private const int OpenersBottomThreshold = 32;
+    // Paragraphs with more emphasis delimiters than this keep track of the openers already rejected by a closer. Only tests
+    // lower it, so that the tracking is used for small paragraphs.
+    internal int OpenersBottomThreshold { get; set; } = 32;
 
     private CharacterMap<EmphasisDescriptor>? _emphasisMap;
     private readonly DelimitersObjectCache _inlinesCache = new();

@@ -68,6 +68,7 @@ public static class MarkdownParser
 
         // Same limit as cmark: the expanded references can be as long as the document, and at least 100,000 characters
         inlineProcessor.MaximumReferenceExpansionLength = Math.Max(100_000, text.Length);
+        inlineProcessor.OpenContainersTrackingThreshold = pipeline.OpenContainersTrackingThreshold;
         inlineProcessor.DebugLog = pipeline.DebugLog;
         try
         {

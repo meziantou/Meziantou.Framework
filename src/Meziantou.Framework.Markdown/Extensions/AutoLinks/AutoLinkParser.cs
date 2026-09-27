@@ -215,7 +215,7 @@ public class AutoLinkParser : InlineParser
         var visitedCount = 0;
         while (currentInline != null)
         {
-            if (++visitedCount == InlineProcessor.OpenContainersTrackingThreshold && processor.TryGetAutoLinkContext(processor.Inline!, engage: true, out anchor, out linkDelimiterBalance, out emphasisCharacters))
+            if (++visitedCount == processor.OpenContainersTrackingThreshold && processor.TryGetAutoLinkContext(processor.Inline!, engage: true, out anchor, out linkDelimiterBalance, out emphasisCharacters))
             {
                 return IsValidContext(anchor, linkDelimiterBalance, emphasisCharacters, ref pendingEmphasis);
             }

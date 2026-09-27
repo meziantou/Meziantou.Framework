@@ -22,9 +22,9 @@ namespace Meziantou.Framework.Markdown.Parsers;
 public class InlineProcessor
 {
     /// <summary>
-    /// The number of open containers or inlines that are walked; beyond it, the chain of open containers is tracked instead.
+    /// The default number of open containers or inlines that are walked; beyond it, the chain of open containers is tracked instead.
     /// </summary>
-    internal const int OpenContainersTrackingThreshold = 256;
+    internal const int DefaultOpenContainersTrackingThreshold = 256;
 
     private readonly List<StringLineGroup.LineOffset> _lineOffsets = [];
     private int _previousSliceOffset;
@@ -136,6 +136,12 @@ public class InlineProcessor
     /// a limit a long definition used many times turns a small document into a huge one.
     /// </summary>
     internal long MaximumReferenceExpansionLength { get; set; } = long.MaxValue;
+
+    /// <summary>
+    /// Gets or sets the number of open containers or inlines that are walked; beyond it, the chain of open containers is
+    /// tracked instead. See <see cref="MarkdownPipeline.OpenContainersTrackingThreshold"/>.
+    /// </summary>
+    internal int OpenContainersTrackingThreshold { get; set; } = DefaultOpenContainersTrackingThreshold;
 
     /// <summary>
     /// Records the expansion of a reference, and returns <see langword="false"/> when it would exceed <see cref="MaximumReferenceExpansionLength"/>.
@@ -862,6 +868,7 @@ public class InlineProcessor
         _genericAttributesScanCache?.Clear();
         _referenceExpansionLength = 0;
         MaximumReferenceExpansionLength = long.MaxValue;
+        OpenContainersTrackingThreshold = DefaultOpenContainersTrackingThreshold;
     }
 
     private static readonly InlineProcessorCache Cache = new();

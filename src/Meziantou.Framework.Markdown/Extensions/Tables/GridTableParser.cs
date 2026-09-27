@@ -206,6 +206,9 @@ public class GridTableParser : BlockParser
 
     private static void TerminateCurrentRow(BlockProcessor processor, GridTableState tableState, Table gridTable, bool isLastRow)
     {
+        // Closing a cell closes the grid tables nested in it recursively
+        ThrowHelper.CheckSufficientExecutionStack();
+
         var columns = tableState.ColumnSlices;
         TableRow? currentRow = null;
         for (int i = 0; i < columns!.Count; i++)
@@ -262,6 +265,9 @@ public class GridTableParser : BlockParser
 
     private BlockState HandleContents(BlockProcessor processor, GridTableState tableState, Table gridTable)
     {
+        // Each cell is processed by a child processor, which can re-enter this parser for a nested grid table
+        ThrowHelper.CheckSufficientExecutionStack();
+
         var isRowLine = processor.CurrentChar == '+';
         var columns = tableState.ColumnSlices!;
         var line = processor.Line;

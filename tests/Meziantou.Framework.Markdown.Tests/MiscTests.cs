@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
@@ -283,6 +284,65 @@ public class MiscTests
 
         var argumentException = Assert.IsType<ArgumentException>(exception);
         Assert.Contains("depth limit", argumentException.Message);
+    }
+
+    [Fact]
+    public void NestedGridTablesAreParsed()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGridTables().Build();
+
+        var document = MarkdownConverter.Parse(CreateNestedGridTables(40), pipeline);
+
+        Assert.HasCount(40, document.Descendants<Table>());
+        Assert.Equal("x", Assert.Single(document.Descendants<ParagraphBlock>()).Inline!.FirstChild!.ToString());
+    }
+
+    [Theory]
+    [InlineData("gridtables", 128)]
+    [InlineData("advanced", 128)]
+    [InlineData("gridtables", 100_000)]
+    public void NestedGridTablesDoNotOverflowTheStack(string extensions, int maximumNestingDepth)
+    {
+        var markdown = CreateNestedGridTables(1000);
+        var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = maximumNestingDepth }.Configure(extensions).Build();
+
+        // Each nested grid table is parsed recursively; a stack overflow kills the test process
+        Exception? exception = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                MarkdownConverter.Parse(markdown, pipeline);
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        var argumentException = Assert.IsType<ArgumentException>(exception);
+        Assert.Contains("depth limit", argumentException.Message);
+    }
+
+    // Each table is nested in the single cell of its parent. The cell has no right border, so the column of the
+    // parent only has to be wider than the nested table.
+    private static string CreateNestedGridTables(int depth)
+    {
+        var sb = new StringBuilder();
+        for (var i = 0; i < depth; i++)
+        {
+            sb.Append('|', i).Append('+').Append('-', (2 * (depth - i)) - 1).Append("+\n");
+        }
+
+        sb.Append('|', depth).Append("x\n");
+        for (var i = depth - 1; i >= 0; i--)
+        {
+            sb.Append('|', i).Append('+').Append('-', (2 * (depth - i)) - 1).Append("+\n");
+        }
+
+        return sb.ToString();
     }
 
     [Theory]

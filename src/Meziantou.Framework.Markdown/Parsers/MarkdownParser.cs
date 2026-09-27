@@ -44,6 +44,7 @@ public static class MarkdownParser
         }
 
         var blockProcessor = BlockProcessor.Rent(document, pipeline.BlockParsers, context, pipeline.TrackTrivia);
+        blockProcessor.MaximumNestingDepth = pipeline.MaximumNestingDepth;
         try
         {
             blockProcessor.Open(document);

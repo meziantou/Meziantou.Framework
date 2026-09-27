@@ -20,6 +20,10 @@ public class BlockProcessor
     private int _currentStackIndex;
     private int _originalLineStart;
 
+    // Number of processors created with CreateChild above this one. A child processor parses its content
+    // recursively (e.g. a grid table cell), so each level adds frames to the call stack.
+    private int _childDepth;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BlockProcessor" /> class.
     /// </summary>
@@ -91,6 +95,11 @@ public class BlockProcessor
     /// Gets the root document.
     /// </summary>
     public MarkdownDocument Document { get; private set; } = null!; // Set in Setup
+
+    /// <summary>
+    /// Gets or sets the maximum number of nested child processors (see <see cref="CreateChild"/>).
+    /// </summary>
+    internal int MaximumNestingDepth { get; set; } = ThrowHelper.DefaultDepthLimit;
 
     /// <summary>
     /// The current line being processed.
@@ -1064,6 +1073,8 @@ public class BlockProcessor
 
         _currentStackIndex = 0;
         _originalLineStart = 0;
+        _childDepth = 0;
+        MaximumNestingDepth = ThrowHelper.DefaultDepthLimit;
         CurrentLineStartPosition = 0;
         ColumnBeforeIndent = 0;
         StartBeforeIndent = 0;
@@ -1081,7 +1092,16 @@ public class BlockProcessor
     /// <summary>
     /// Performs the create child operation.
     /// </summary>
-    public BlockProcessor CreateChild() => Rent(Document, Parsers, Context, TrackTrivia);
+    public BlockProcessor CreateChild()
+    {
+        var childDepth = _childDepth + 1;
+        ThrowHelper.CheckDepthLimit(childDepth, MaximumNestingDepth);
+
+        var child = Rent(Document, Parsers, Context, TrackTrivia);
+        child._childDepth = childDepth;
+        child.MaximumNestingDepth = MaximumNestingDepth;
+        return child;
+    }
 
     /// <summary>
     /// Performs the release child operation.

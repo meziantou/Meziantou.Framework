@@ -86,10 +86,17 @@ internal static class ThrowHelper
     {
         if (depth > limit)
             DepthLimitExceeded();
-
-        [DoesNotReturn]
-        static void DepthLimitExceeded() => throw new ArgumentException("Markdown elements in the input are too deeply nested - depth limit exceeded. Input is most likely not sensible or is a very large table.");
     }
+
+    // Backstop for recursive code paths when the configured depth limit is too high for the current thread's stack
+    public static void CheckSufficientExecutionStack()
+    {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            DepthLimitExceeded();
+    }
+
+    [DoesNotReturn]
+    private static void DepthLimitExceeded() => throw new ArgumentException("Markdown elements in the input are too deeply nested - depth limit exceeded. Input is most likely not sensible or is a very large table.");
 
     [DoesNotReturn]
     public static void ThrowArgumentNullException(ExceptionArgument argument)

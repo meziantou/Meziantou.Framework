@@ -1903,7 +1903,8 @@ internal sealed class Lexer
     private Char32 NextCharFromReader() => NextCharFromReaderCore();
 
     // The position of the last character of the text, when a token ends at the end of the file. Its line and column are the
-    // ones of that character, as for any other position, so they match its offset.
+    // ones of that character, as for any other position, so they match its offset. Like the end of any other token, the
+    // offset is the one of the last UTF-16 unit, so a token that ends with a surrogate pair covers both of its units.
     private TextPosition GetEndOfFilePosition(TextPosition end)
     {
         if (_textLength == 0)
@@ -1913,11 +1914,6 @@ internal sealed class Lexer
 
         var span = _text.Span;
         var offset = _textLength - 1;
-        if (offset > 0 && char.IsLowSurrogate(span[offset]) && char.IsHighSurrogate(span[offset - 1]))
-        {
-            offset--;
-        }
-
         // The end of the file is just after the last character: after a newline, it is at the start of the next line
         var endOfFile = CurrentPosition;
         if (span[offset] != '\n')

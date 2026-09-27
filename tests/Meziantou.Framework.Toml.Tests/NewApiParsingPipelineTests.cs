@@ -113,6 +113,27 @@ public class NewApiParsingPipelineTests
         Assert.Equal(2, lexer.Current.Start.Offset);
     }
 
+    [Theory]
+    [InlineData("a = \"ab")]
+    [InlineData("a = \"\"\"ab")]
+    [InlineData("a = 'ab")]
+    [InlineData("a = '''ab")]
+    public void TomlLexer_StringRunningToTheEndOfFile_EndingWithANonBmpCharacter_CoversTheSurrogatePair(string prefix)
+    {
+        var character = char.ConvertFromUtf32(0x1F600);
+        var toml = prefix + character;
+        var lexer = TomlLexer.Create(toml);
+        lexer.Mode = TomlLexerMode.Value;
+        while (lexer.MoveNext() && lexer.Current.Start.Offset < 4)
+        {
+        }
+
+        Assert.Equal(4, lexer.Current.Start.Offset);
+        Assert.Equal(toml.Length - 1, lexer.Current.End.Offset);
+        Assert.Equal(prefix.Length, lexer.Current.End.Column);
+        Assert.Equal(toml[4..], lexer.GetText(lexer.Current));
+    }
+
     [Fact]
     public void SyntaxParser_InvalidNonBmpCharacter_IsReportedWhole()
     {

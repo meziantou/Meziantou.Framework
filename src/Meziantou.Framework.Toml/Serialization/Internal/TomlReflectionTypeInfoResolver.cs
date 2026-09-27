@@ -1532,15 +1532,15 @@ internal static class TomlReflectionTypeInfoResolver
                     object? value;
                     try
                     {
-                        TomlConverter? converter = null;
-                        if (binding.MemberIndex is { } linkedIndex && linkedIndex >= 0 && linkedIndex < _members.Count)
-                        {
-                            converter = _members[linkedIndex].Converter;
-                        }
-
-                        if (converter is not null)
+                        MemberModel? linkedMember = binding.MemberIndex is { } linkedIndex && linkedIndex >= 0 && linkedIndex < _members.Count ? _members[linkedIndex] : null;
+                        if (linkedMember?.Converter is { } converter)
                         {
                             value = ReadWithConverter(reader, converter, binding.ParameterType);
+                        }
+                        else if (linkedMember is { HasSingleOrArray: true } && reader.TokenType != TomlTokenType.StartArray)
+                        {
+                            // Like the member, the parameter of a [TomlSingleOrArray] member reads a single value as a collection
+                            value = reader.OperationState.SingleOrArrayCollections.ReadSingleElementAsCollection(reader, binding.ParameterType);
                         }
                         else
                         {

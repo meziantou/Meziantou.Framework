@@ -81,6 +81,8 @@ public sealed class SingleOrArrayConstructorArrayHolder
     public string[] Rid { get; }
 }
 
+public sealed record SingleOrArrayRecordHolder([property: TomlSingleOrArray] List<string> Rid);
+
 public sealed class SingleOrArrayGetOnlyImmutableHolder
 {
     [TomlSingleOrArray]
@@ -121,6 +123,7 @@ public sealed class TableArrayItem
 [TomlSerializable(typeof(TableArrayStyleOverrideHolder))]
 [TomlSerializable(typeof(SingleOrArrayImmutableArrayHolder))]
 [TomlSerializable(typeof(SingleOrArrayConstructorArrayHolder))]
+[TomlSerializable(typeof(SingleOrArrayRecordHolder))]
 [TomlSerializable(typeof(SingleOrArrayGetOnlyImmutableHolder))]
 internal sealed partial class TestTomlCollectionsContext : TomlSerializerContext
 {
@@ -417,11 +420,19 @@ public class NewApiCollectionTests
     [Theory]
     [InlineData("rid = \"test\"\n", "test")]
     [InlineData("rid = [\"test1\", \"test2\"]\n", "test1,test2")]
-    public void ConstructorBoundArray_WithTomlSingleOrArray_IsReadByGeneratedCode(string toml, string expected)
+    public void ConstructorBoundMembers_WithTomlSingleOrArray_AreReadByBothResolvers(string toml, string expected)
     {
-        var result = TomlSerializer.Deserialize(toml, TestTomlCollectionsContext.Default.SingleOrArrayConstructorArrayHolder)!;
+        var options = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
 
-        Assert.Equal(expected, string.Join(',', result.Rid));
+        var generated = TomlSerializer.Deserialize(toml, TestTomlCollectionsContext.Default.SingleOrArrayConstructorArrayHolder)!;
+        var reflection = TomlSerializer.Deserialize<SingleOrArrayConstructorArrayHolder>(toml, options)!;
+        var generatedRecord = TomlSerializer.Deserialize(toml, TestTomlCollectionsContext.Default.SingleOrArrayRecordHolder)!;
+        var reflectionRecord = TomlSerializer.Deserialize<SingleOrArrayRecordHolder>(toml, options)!;
+
+        Assert.Equal(expected, string.Join(',', generated.Rid));
+        Assert.Equal(expected, string.Join(',', reflection.Rid));
+        Assert.Equal(expected, string.Join(',', generatedRecord.Rid));
+        Assert.Equal(expected, string.Join(',', reflectionRecord.Rid));
     }
 
     [Fact]

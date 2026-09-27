@@ -507,6 +507,68 @@ literal      ( 1, 2)  6-6
     }
 
     [Fact]
+    public void TestNestedListBlocksWithBlankLines()
+    {
+        // Each blank line updates the span end of the open list items, which must reach their ancestors
+        Check("- a\n  - b\n\n    c\n\n\n- d\n* e\n\n\n", @"
+list         ( 0, 0)  0-21
+listitem     ( 0, 0)  0-17
+paragraph    ( 0, 2)  2-2
+literal      ( 0, 2)  2-2
+list         ( 1, 2)  6-17
+listitem     ( 1, 2)  6-17
+paragraph    ( 1, 4)  8-8
+literal      ( 1, 4)  8-8
+paragraph    ( 3, 4) 15-15
+literal      ( 3, 4) 15-15
+listitem     ( 6, 0) 19-21
+paragraph    ( 6, 2) 21-21
+literal      ( 6, 2) 21-21
+list         ( 7, 0) 23-27
+listitem     ( 7, 0) 23-27
+paragraph    ( 7, 2) 25-25
+literal      ( 7, 2) 25-25
+");
+    }
+
+    [Fact]
+    public void TestNestedQuoteAndListBlocksWithBlankLines()
+    {
+        Check("> - > a\n>\n>   > b\n\n> ```js\n>\n10. ![i](/u)\n", @"
+quote        ( 0, 0)  0-16
+list         ( 0, 2)  2-16
+listitem     ( 0, 2)  2-16
+quote        ( 0, 4)  4-6
+paragraph    ( 0, 6)  6-6
+literal      ( 0, 6)  6-6
+quote        ( 2, 4) 14-16
+paragraph    ( 2, 6) 16-16
+literal      ( 2, 6) 16-16
+quote        ( 4, 0) 19-27
+fencedcode   ( 4, 2) 21-24
+attributes   ( 0, 0)  0--1
+list         ( 6, 0) 29-40
+listitem     ( 6, 0) 29-40
+paragraph    ( 6, 4) 33-40
+link         ( 6, 4) 33-40
+literal      ( 6, 6) 35-35
+");
+    }
+
+    [Theory]
+    [InlineData("123456789. ok\n", 12)]
+    [InlineData("- foo\n  - bar\n    - baz\n      - boo\n", 34)]
+    [InlineData("> 1. > Blockquote\ncontinued here.\n", 32)]
+    [InlineData("- a\n  - b\n\n    c\n\n\n- d\n* e\n\n\n", 27)]
+    public void TestDocumentSpanIncludesNestedBlocks(string text, int expectedEnd)
+    {
+        // The span end of a block is propagated to all its ancestors that end before it, up to the document
+        var document = MarkdownConverter.Parse(text, new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build());
+
+        Assert.Equal(new SourceSpan(0, expectedEnd), document.Span);
+    }
+
+    [Fact]
     public void TestListBlock2()
     {
         string test = @"

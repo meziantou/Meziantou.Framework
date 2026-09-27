@@ -181,19 +181,18 @@ public abstract class Block : MarkdownObject, IBlock
     /// </summary>
     public void UpdateSpanEnd(int spanEnd)
     {
-        // Update parent spans
-        int depth = 0;
-        var parent = this;
-        while (parent != null)
+        if (spanEnd > Span.End)
         {
-            if (spanEnd > parent.Span.End)
-            {
-                parent.Span.End = spanEnd;
-            }
-            parent = parent.Parent;
-            depth++;
+            Span.End = spanEnd;
         }
-        ThrowHelper.CheckDepthLimit(depth, useLargeLimit: true);
+
+        // The span of a container includes the spans of its children, so the ancestors from the first one that ends at or after
+        // spanEnd are up to date. Walking up to the root instead would make each update cost the depth of the block, for example
+        // for each open list item on a blank line.
+        for (var parent = Parent; parent is not null && spanEnd > parent.Span.End; parent = parent.Parent)
+        {
+            parent.Span.End = spanEnd;
+        }
     }
 
     /// <summary>

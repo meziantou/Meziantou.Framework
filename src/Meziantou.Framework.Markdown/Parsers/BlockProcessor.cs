@@ -1149,6 +1149,8 @@ public class BlockProcessor
                 CurrentContainer!.Add(block);
             }
 
+            CheckContainerDepth(block.Parent);
+
             block.IsOpen = result.IsContinue();
 
             // Add a block BlockProcessor to the stack (and leave it opened)
@@ -1162,6 +1164,19 @@ public class BlockProcessor
         }
 
         ContinueProcessingLine = !result.IsDiscard();
+    }
+
+    // Stops pathological inputs such as ">>>>..." before they are parsed further, as the span updates did when they walked up to
+    // the root: the depth of the container of a new block cannot exceed the large depth limit.
+    private static void CheckContainerDepth(ContainerBlock? container)
+    {
+        var depth = 0;
+        for (; container is not null && depth <= ThrowHelper.LargeDepthLimit; container = container.Parent)
+        {
+            depth++;
+        }
+
+        ThrowHelper.CheckDepthLimit(depth, useLargeLimit: true);
     }
 
     // Whether the current character is a tab of which some columns were already consumed, by a container marker or an indent.

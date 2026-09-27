@@ -706,6 +706,26 @@ public class MiscTests
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
+    public void BlankLinesInDeeplyNestedListsAreParsedInLinearTime()
+    {
+        // Each blank line used to update the span of each open list item up to the root, which took more than 30 seconds here
+        const int Depth = 2_700;
+        var markdown = string.Concat(Enumerable.Repeat("- ", Depth)) + "a" + new string('\n', Depth);
+        var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = 10_000 }.Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        stopwatch.Stop();
+
+        var items = document.Descendants<ListItemBlock>().ToList();
+        Assert.HasCount(Depth, items);
+        Assert.Equal(new SourceSpan(0, markdown.Length - 2), items[0].Span);
+        Assert.Equal(new SourceSpan(2 * (Depth - 1), markdown.Length - 2), items[^1].Span);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Fact(DisableParallelization = true)]
     public void NestedLinkDelimitersBelowManyEmphasisDelimitersAreRejectedQuickly()
     {
         // The emphasis delimiters make the chain of open containers as deep as it was rejected before. Nested link delimiters

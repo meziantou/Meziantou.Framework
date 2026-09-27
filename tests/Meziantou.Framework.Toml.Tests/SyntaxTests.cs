@@ -183,6 +183,15 @@ val = true
     }
 
     [Fact]
+    public void Token_WithoutAPredefinedText_ThrowsForTheKindParameter()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => SyntaxFactory.Token(TokenKind.NewLine));
+
+        Assert.Equal("kind", exception.ParamName);
+        Assert.Equal(TokenKind.NewLine, exception.ActualValue);
+    }
+
+    [Fact]
     public void GetChild_PastTheLastChild_Throws()
     {
         var doc = SyntaxParser.Parse("a = 1\n");

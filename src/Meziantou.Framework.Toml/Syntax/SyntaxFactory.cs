@@ -72,7 +72,11 @@ public static class SyntaxFactory
     /// <returns>The token</returns>
     public static SyntaxToken Token(TokenKind kind)
     {
-        if (kind == TokenKind.NewLine || !kind.IsToken()) throw new ArgumentOutOfRangeException($"The token kind `{kind}` is not supported for a plain token without a predefined value");
+        if (kind == TokenKind.NewLine || !kind.IsToken())
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, $"The token kind `{kind}` is not supported for a plain token without a predefined value.");
+        }
+
         var text = kind.ToText();
         Debug.Assert(text != null);
         return new SyntaxToken(kind, text);

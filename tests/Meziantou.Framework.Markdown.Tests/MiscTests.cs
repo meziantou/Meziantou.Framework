@@ -90,6 +90,23 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("see [a][b] c](u)", "<p>see [a][b] c](u)</p>")]
+    [InlineData("[a]: /u\n\n[a][b]c]", "<p>[a][b]c]</p>")]
+    [InlineData("[b[a][b]ar](#frag)", "<p><a href=\"#frag\">b[a][b]ar</a></p>")]
+    [InlineData("[[x][y]z](u)", "<p><a href=\"u\">[x][y]z</a></p>")]
+    [InlineData("[![a][b] c](u)", "<p><a href=\"u\">![a][b] c</a></p>")]
+    [InlineData("[][a]a]()", "<p>[][a]a]()</p>")]
+    [InlineData("[a]: /a\n\n[][][a]", "<p>[]<a href=\"/a\"></a></p>")]
+    [InlineData("[a]: /u\n\n[a][", "<p><a href=\"/u\">a</a>[</p>")]
+    [InlineData("[a]: /u\n\n[a][ b", "<p><a href=\"/u\">a</a>[ b</p>")]
+    [InlineData("[a]: /u\n\n[a][\\!]", "<p>[a][!]</p>")]
+    [InlineData("[a]: /u\n[b]: /b\n\n[a][b]", "<p><a href=\"/b\">a</a></p>")]
+    public void UnresolvedReferenceLinkReleasesItsOpeningBracket(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]

@@ -322,6 +322,20 @@ literal      ( 0, 4)  4-5
     }
 
     [Fact]
+    public void TestUnresolvedReferenceLink()
+    {
+        Check("a\n[b][c] d", @"
+paragraph    ( 0, 0)  0-9
+literal      ( 0, 0)  0-0
+linebreak    ( 0, 1)  1-1
+literal      ( 1, 0)  2-2
+literal      ( 1, 1)  3-4
+literal      ( 1, 3)  5-5
+literal      ( 1, 4)  6-9
+");
+    }
+
+    [Fact]
     public void TestAutolinkInline()
     {
         //     0123456789ABCD

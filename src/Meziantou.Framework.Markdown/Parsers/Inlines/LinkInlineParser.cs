@@ -143,10 +143,8 @@ public class LinkInlineParser : InlineParser
         SourceSpan labelSpan,
         LinkDelimiterInline parent,
         int endPosition,
-        LocalLabel localLabel,
-        out bool expansionLimitReached)
+        LocalLabel localLabel)
     {
-        expansionLimitReached = false;
         if (!state.Document.TryGetLinkReferenceDefinition(label, out LinkReferenceDefinition? linkRef))
         {
             return false;
@@ -162,7 +160,6 @@ public class LinkInlineParser : InlineParser
         // The link copies the URL and the title of the definition. Past the limit, the reference stays literal text.
         if (!state.TryAddReferenceExpansion(linkRef.ExpansionLength))
         {
-            expansionLimitReached = true;
             return false;
         }
 
@@ -340,36 +337,47 @@ public class LinkInlineParser : InlineParser
             text = savedText;
         }
 
-        var labelSpan = SourceSpan.Empty;
-        string? label = null;
+        SourceSpan labelSpan;
+        string? label;
         bool isLabelSpanLocal = true;
 
         bool isShortcut = false;
-        bool isLabelFromOpenParent = false;
         LocalLabel localLabel = LocalLabel.Local;
         // Handle Collapsed links
-        if (text.CurrentChar == '[')
+        if (text.CurrentChar == '[' && text.PeekChar() == ']')
         {
-            if (text.PeekChar() == ']')
-            {
-                label = openParent.Label;
-                labelSpan = openParent.LabelSpan;
-                isLabelSpanLocal = false;
-                isLabelFromOpenParent = true;
-                localLabel = LocalLabel.Empty;
-                text.SkipChar(); // Skip [
-                text.SkipChar(); // Skip ]
-            }
+            label = openParent.Label;
+            labelSpan = openParent.LabelSpan;
+            isLabelSpanLocal = false;
+            localLabel = LocalLabel.Empty;
+            text.SkipChar(); // Skip [
+            text.SkipChar(); // Skip ]
         }
         else
         {
-            localLabel = LocalLabel.None;
-            label = openParent.Label;
-            isShortcut = true;
-            isLabelFromOpenParent = true;
+            // A full reference link uses the following link label. When no link label follows, this is a shortcut
+            // reference link. A full reference link whose label is not defined is not a link: it does not fall back
+            // to the shortcut form, and a collapsed one does not use a later label.
+            var labelText = text;
+            if (text.CurrentChar == '[' && LinkHelper.TryParseLabelTrivia(ref labelText, true, out label, out labelSpan))
+            {
+                text = labelText;
+            }
+            else if (StartsWithLinkLabel(text))
+            {
+                label = null;
+                labelSpan = SourceSpan.Empty;
+            }
+            else
+            {
+                localLabel = LocalLabel.None;
+                label = openParent.Label;
+                labelSpan = SourceSpan.Empty;
+                isShortcut = true;
+            }
         }
 
-        if (label != null || LinkHelper.TryParseLabelTrivia(ref text, true, out label, out labelSpan))
+        if (label is not null)
         {
             var labelWithTrivia = new SourceSpan(labelSpan.Start, labelSpan.End);
             if (isLabelSpanLocal)
@@ -377,7 +385,7 @@ public class LinkInlineParser : InlineParser
                 labelSpan = inlineState.GetSourcePositionFromLocalSpan(labelSpan);
             }
 
-            if (ProcessLinkReference(inlineState, text, label!, labelWithTrivia, isShortcut, labelSpan, openParent, inlineState.GetSourcePosition(text.Start - 1), localLabel, out var expansionLimitReached))
+            if (ProcessLinkReference(inlineState, text, label, labelWithTrivia, isShortcut, labelSpan, openParent, inlineState.GetSourcePosition(text.Start - 1), localLabel))
             {
                 // Remove the open parent
                 openParent.Remove();
@@ -387,24 +395,16 @@ public class LinkInlineParser : InlineParser
                 }
                 return true;
             }
-            else if (expansionLimitReached && isLabelFromOpenParent)
-            {
-                // Handle the reference like an undefined label: the brackets become literal text below
-            }
-            else if (text.CurrentChar != ']' && text.CurrentChar != '[')
-            {
-                return false;
-            }
         }
 
-        // We have a nested [ ]
-        // firstParent.Remove();
-        // The opening [ will be transformed to a literal followed by all the children of the [
-
+        // No link (undefined label, or a reference past the expansion limit): the opening [ is transformed to a literal
+        // followed by all the children of the [, so a later ] cannot use it
         var literal = new LiteralInline()
         {
             Span = openParent.Span,
-            Content = new StringSlice(openParent.IsImage ? "![" : "[")
+            Line = openParent.Line,
+            Column = openParent.Column,
+            Content = new StringSlice(openParent.IsImage ? "![" : "["),
         };
 
         inlineState.Inline = openParent.ReplaceBy(literal);
@@ -456,5 +456,32 @@ public class LinkInlineParser : InlineParser
 
             return null;
         }
+    }
+
+    // Whether the text starts with a link label: [, then at most 999 characters without an unescaped bracket, then ].
+    // LinkHelper.TryParseLabel also rejects a backslash before other characters: such a label is still not a shortcut.
+    private static bool StartsWithLinkLabel(StringSlice text)
+    {
+        if (text.CurrentChar != '[')
+        {
+            return false;
+        }
+
+        var span = text.AsSpan()[1..];
+        for (int i = 0; i < span.Length && i <= 999; i++)
+        {
+            switch (span[i])
+            {
+                case '\\':
+                    i++;
+                    break;
+                case '[':
+                    return false;
+                case ']':
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

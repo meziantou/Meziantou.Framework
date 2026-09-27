@@ -2245,6 +2245,35 @@ internal sealed partial class TestTomlSerializerContextThrowingConverter : TomlS
 {
 }
 
+public class GeneratedNonHidingBase
+{
+    public int X { get; set; }
+}
+
+public sealed class GeneratedStaticNewDerived : GeneratedNonHidingBase
+{
+    public static new int X { get; set; }
+}
+
+public sealed class GeneratedConstNewDerived : GeneratedNonHidingBase
+{
+    public new const int X = 1;
+}
+
+public sealed class GeneratedInternalNewDerived : GeneratedNonHidingBase
+{
+#pragma warning disable CS0649, IDE0044, IDE1006 // The member only needs to exist, with the name of the base member
+    internal new int X;
+#pragma warning restore CS0649, IDE0044, IDE1006
+}
+
+[TomlSerializable(typeof(GeneratedStaticNewDerived))]
+[TomlSerializable(typeof(GeneratedConstNewDerived))]
+[TomlSerializable(typeof(GeneratedInternalNewDerived))]
+internal sealed partial class TestTomlSerializerContextNonHiding : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4781,6 +4810,28 @@ public class NewApiSourceGenerationTests
         Assert.Equal(reflection.Message, generated.Message);
         Assert.IsType<InvalidOperationException>(generated.InnerException);
         Assert.IsType<InvalidOperationException>(reflection.InnerException);
+    }
+
+    // A derived member that does not hide the base member, such as a static or internal one, does not change which member
+    // generated code accesses
+    [Fact]
+    public void BaseMember_WithANameUsedByANonHidingDerivedMember_IsAccessedByGeneratedCode()
+    {
+        var context = TestTomlSerializerContextNonHiding.Default;
+
+        Check(context.GeneratedStaticNewDerived);
+        Check(context.GeneratedConstNewDerived);
+        Check(context.GeneratedInternalNewDerived);
+
+        static void Check<T>(TomlTypeInfo<T> typeInfo)
+            where T : GeneratedNonHidingBase, new()
+        {
+            var value = new T();
+            ((GeneratedNonHidingBase)value).X = 3;
+            Assert.Equal("X = 3\n", TomlSerializer.Serialize(value, typeInfo).ReplaceLineEndings("\n"));
+            Assert.Equal("X = 3\n", TomlSerializer.Serialize(value).ReplaceLineEndings("\n"));
+            Assert.Equal(5, TomlSerializer.Deserialize("X = 5", typeInfo)!.X);
+        }
     }
 
     [Fact]

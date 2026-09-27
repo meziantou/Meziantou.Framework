@@ -1662,10 +1662,13 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
     // The name of a type in a message, like the reflection resolver: its Type.FullName, from an interpolated string
     private static string GetTypeFullNameInterpolation(ITypeSymbol type) => "{typeof(" + type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) + ").FullName}";
 
+    private static string GetMemberAccess(PocoMember member, string instanceExpression)
+        => member.AccessTypeName is null ? instanceExpression + "." + member.Identifier : "((" + member.AccessTypeName + ")" + instanceExpression + ")." + member.Identifier;
+
     private static string GetMemberReadExpression(PocoMember member, string instanceExpression)
     {
         return member.GetterAccessorName is null
-            ? instanceExpression + "." + member.Identifier
+            ? GetMemberAccess(member, instanceExpression)
             : member.GetterAccessorName + "(" + instanceExpression + ")";
     }
 
@@ -2400,7 +2403,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
                     builder.Append("            if (!__memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(")");
                     builder.AppendLine("            {");
-                    builder.Append("                __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = __template.").Append(member.Identifier).AppendLine(";");
+                    builder.Append("                __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).Append(" = ").Append(GetMemberAccess(member, "__template")).AppendLine(";");
                     builder.AppendLine("            }");
                 }
 
@@ -2488,7 +2491,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    builder.Append("                value.").Append(member.Identifier).Append(" = __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
+                    builder.Append("                ").Append(GetMemberAccess(member, "value")).Append(" = __memberValue").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(";");
                 }
 
                 builder.AppendLine("            }");
@@ -2667,7 +2670,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    builder.Append("value.").Append(member.Identifier).Append(" = ").Append(memberValue).AppendLine(";");
+                    builder.Append(GetMemberAccess(member, "value")).Append(" = ").Append(memberValue).AppendLine(";");
                 }
             }
         }
@@ -3159,7 +3162,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return member.InitSetterAccessorName + "(" + (member.DeclaringType.IsValueType ? "ref " : "") + "value, " + valueExpression + ")";
         }
 
-        return "value." + member.Identifier + " = " + valueExpression;
+        return GetMemberAccess(member, "value") + " = " + valueExpression;
     }
 
     private static void EmitSingleOrArrayMemberRead(StringBuilder builder, PocoMember member, string indent, SourceGenOptions options, string memberAccess)
@@ -3287,7 +3290,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var setterAccessorName = member.SetterAccessorName ?? member.InitSetterAccessorName;
         if (setterAccessorName is null && member.GetterAccessorName is null)
         {
-            EmitMemberRead(builder, member, index, indent, options, "value." + member.Identifier);
+            EmitMemberRead(builder, member, index, indent, options, GetMemberAccess(member, "value"));
             return;
         }
 
@@ -3303,7 +3306,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         }
         else if (member.CanSet)
         {
-            builder.Append(indent).Append("    value.").Append(member.Identifier).Append(" = ").Append(local).AppendLine(";");
+            builder.Append(indent).Append("    ").Append(GetMemberAccess(member, "value")).Append(" = ").Append(local).AppendLine(";");
         }
 
         builder.Append(indent).AppendLine("}");
@@ -4477,6 +4480,10 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
         // The property or the field, to report a diagnostic on it
         public ISymbol? Symbol { get; set; }
+
+        // The base type that declares the member, when a derived type declares another member with the same name, such as a
+        // static 'new' member: the generated code accesses it through a cast to that type
+        public string? AccessTypeName { get; set; }
     }
 
     private sealed class PocoExtensionData
@@ -5146,6 +5153,18 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             if (IsHiddenByDerivedMember(named, members[i]))
             {
                 members.RemoveAt(i);
+            }
+        }
+
+        foreach (var member in members)
+        {
+            for (var current = named; current is not null && !SymbolEqualityComparer.Default.Equals(current, member.DeclaringType); current = current.BaseType)
+            {
+                if (current.GetMembers(member.MemberName).Any(other => !SymbolEqualityComparer.Default.Equals(other, member.Symbol)))
+                {
+                    member.AccessTypeName = member.DeclaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    break;
+                }
             }
         }
 

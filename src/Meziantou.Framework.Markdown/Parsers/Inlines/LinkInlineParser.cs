@@ -200,11 +200,7 @@ public class LinkInlineParser : InlineParser
                 linkInline.LocalLabel = localLabel;
             }
 
-            if (Options.OpenInNewWindow)
-            {
-                linkInline.GetAttributes().AddPropertyIfNotExist("target", "_blank");
-            }
-
+            SetTarget(linkInline);
             link = linkInline;
         }
 
@@ -245,6 +241,15 @@ public class LinkInlineParser : InlineParser
         state.Inline = link;
 
         return true;
+    }
+
+    // A target only applies to links, images are not opened when clicked
+    private void SetTarget(LinkInline link)
+    {
+        if (Options.OpenInNewWindow && !link.IsImage)
+        {
+            link.GetAttributes().AddPropertyIfNotExist("target", "_blank");
+        }
     }
 
     private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
@@ -314,6 +319,7 @@ public class LinkInlineParser : InlineParser
 
             if (link is not null)
             {
+                SetTarget(link);
                 openParent.ReplaceBy(link);
                 // Notifies processor as we are creating an inline locally
                 inlineState.Inline = link;

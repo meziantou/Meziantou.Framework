@@ -4,6 +4,8 @@ using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Parsers;
+using Meziantou.Framework.Markdown.Parsers.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -1093,6 +1095,32 @@ $$
 
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"http://www.foo.bar\">www.foo.bar</a></p>", pipeline);
         TestParser.TestSpec("www.foo.bar", "<p><a href=\"http://www.foo.bar\" target=\"_blank\">www.foo.bar</a></p>", newWindowPipeline);
+    }
+
+    [Theory]
+    [InlineData("[a](/u)", "<p><a href=\"/u\" target=\"_blank\">a</a></p>")]
+    [InlineData("[a](/u \"t\")", "<p><a href=\"/u\" target=\"_blank\" title=\"t\">a</a></p>")]
+    [InlineData("[a][r]\n\n[r]: /u", "<p><a href=\"/u\" target=\"_blank\">a</a></p>")]
+    [InlineData("[r]\n\n[r]: /u", "<p><a href=\"/u\" target=\"_blank\">r</a></p>")]
+    [InlineData("![a](/i)", "<p><img src=\"/i\" alt=\"a\" /></p>")]
+    [InlineData("![a][r]\n\n[r]: /i", "<p><img src=\"/i\" alt=\"a\" /></p>")]
+    [InlineData("[a](/u&amp;\\*)", "<p><a href=\"/u&amp;*\" target=\"_blank\">a</a></p>")]
+    public void CanOpenLinksInNewWindow(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected, CreatePipeline(trackTrivia: false));
+        TestParser.TestSpec(markdown, expected, CreatePipeline(trackTrivia: true));
+
+        static MarkdownPipeline CreatePipeline(bool trackTrivia)
+        {
+            var builder = new MarkdownPipelineBuilder();
+            builder.InlineParsers.Replace<LinkInlineParser>(new LinkInlineParser(new LinkOptions { OpenInNewWindow = true }));
+            if (trackTrivia)
+            {
+                builder.EnableTrackTrivia();
+            }
+
+            return builder.Build();
+        }
     }
 
     [Fact]

@@ -201,6 +201,15 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlException CreateConfigurationException(string message) => TomlException.CreateConfigurationError(message);
 
     /// <summary>
+    /// Creates an exception for an error of the model rather than of the TOML input, such as a converter whose constructor
+    /// throws. <see cref="TomlSerializer"/>.TryDeserialize throws it instead of returning <see langword="false"/>.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    /// <param name="innerException">The exception that caused the error.</param>
+    /// <returns>The exception to throw.</returns>
+    protected static TomlException CreateConfigurationException(string message, Exception? innerException) => TomlException.CreateConfigurationError(message, innerException);
+
+    /// <summary>
     /// Reports an error found after a table was read, such as a missing required key. It is recorded with the other
     /// deserialization diagnostics, and <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int, TomlSourceSpan?)"/> throws
     /// once every error of the table is found. It is thrown directly when the diagnostics cannot be recorded.

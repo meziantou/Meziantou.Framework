@@ -407,7 +407,8 @@ internal static class TomlReflectionTypeInfoResolver
         TomlConverter converter;
         try
         {
-            converter = (TomlConverter)Activator.CreateInstance(converterType)!;
+            // Like generated code, the exception of the constructor is not wrapped
+            converter = (TomlConverter)Activator.CreateInstance(converterType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.DoNotWrapExceptions, binder: null, args: null, culture: null)!;
         }
         catch (Exception ex)
         {

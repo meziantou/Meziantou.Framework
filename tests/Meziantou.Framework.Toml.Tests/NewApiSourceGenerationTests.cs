@@ -2225,6 +2225,26 @@ internal sealed partial class TestTomlSerializerContextDisallowUnmapped : TomlSe
 {
 }
 
+public sealed class GeneratedThrowingConverter : TomlConverter<int>
+{
+    public GeneratedThrowingConverter() => throw new InvalidOperationException("ctor boom");
+
+    public override int Read(TomlReader reader) => throw new NotSupportedException();
+
+    public override void Write(TomlWriter writer, int value) => throw new NotSupportedException();
+}
+
+public sealed class GeneratedThrowingConverterModel
+{
+    [TomlConverter(typeof(GeneratedThrowingConverter))]
+    public int A { get; set; }
+}
+
+[TomlSerializable(typeof(GeneratedThrowingConverterModel))]
+internal sealed partial class TestTomlSerializerContextThrowingConverter : TomlSerializerContext
+{
+}
+
 public enum GeneratedManyErrorsKind
 {
     A,
@@ -4748,6 +4768,19 @@ public class NewApiSourceGenerationTests
 
         Assert.False(TomlSerializer.TryDeserialize("Z = 1\n", TestTomlSerializerContextDisallowUnmapped.Default.GeneratedDisallowUnmapped, out _));
         Assert.False(TomlSerializer.TryDeserialize<GeneratedDisallowUnmapped>("Z = 1\n", out _));
+    }
+
+    [Fact]
+    public void ConverterWhoseConstructorThrows_IsAConfigurationError()
+    {
+        var typeInfo = TestTomlSerializerContextThrowingConverter.Default.GeneratedThrowingConverterModel;
+
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize("A = 1", typeInfo, out _));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedThrowingConverterModel>("A = 1", out _));
+
+        Assert.Equal(reflection.Message, generated.Message);
+        Assert.IsType<InvalidOperationException>(generated.InnerException);
+        Assert.IsType<InvalidOperationException>(reflection.InnerException);
     }
 
     [Fact]

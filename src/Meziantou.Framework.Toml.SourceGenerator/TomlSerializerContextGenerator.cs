@@ -688,6 +688,19 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         builder.Append("    public static ").Append(model.TypeName).AppendLine(" Default { get; } = new(CreateDefaultOptions(), _generated: true);");
         builder.AppendLine();
 
+        builder.AppendLine("    private static __TConverter __CreateConverter<__TConverter>(global::System.Func<__TConverter> create)");
+        builder.AppendLine("    {");
+        builder.AppendLine("        try");
+        builder.AppendLine("        {");
+        builder.AppendLine("            return create();");
+        builder.AppendLine("        }");
+        builder.AppendLine("        catch (global::System.Exception exception)");
+        builder.AppendLine("        {");
+        builder.AppendLine("            throw CreateConfigurationException($\"Failed to create converter '{typeof(__TConverter).FullName}'.\", exception);");
+        builder.AppendLine("        }");
+        builder.AppendLine("    }");
+        builder.AppendLine();
+
         // The callbacks of a struct run on the value itself, not on a boxed copy
         foreach (var (callbackInterface, callbackMethod) in new[] { ("ITomlOnSerializing", "OnTomlSerializing"), ("ITomlOnSerialized", "OnTomlSerialized"), ("ITomlOnDeserializing", "OnTomlDeserializing"), ("ITomlOnDeserialized", "OnTomlDeserialized") })
         {
@@ -1484,13 +1497,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         return "CreateAttributeConverterTypeInfo<" + typeName + ">(" + optionsExpression + ", " + GetConverterCreationExpression(converter.ConverterType!) + ")";
     }
 
-    // A converter whose constructor is an error to use is created with reflection, like the reflection resolver does
+    // A converter whose constructor is an error to use is created with reflection, like the reflection resolver does. An
+    // exception of the constructor is a configuration error, as in the reflection resolver.
     private static string GetConverterCreationExpression(ITypeSymbol converterType)
     {
         var converterTypeName = converterType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        return converterType is INamedTypeSymbol named && named.InstanceConstructors.FirstOrDefault(static constructor => constructor.Parameters.Length == 0) is { } constructor && IsObsoleteError(constructor)
-            ? "((" + converterTypeName + ")global::System.Activator.CreateInstance(typeof(" + converterTypeName + "))!)"
+        var creation = converterType is INamedTypeSymbol named && named.InstanceConstructors.FirstOrDefault(static constructor => constructor.Parameters.Length == 0) is { } constructor && IsObsoleteError(constructor)
+            ? "(" + converterTypeName + ")global::System.Activator.CreateInstance(typeof(" + converterTypeName + "), global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.CreateInstance | global::System.Reflection.BindingFlags.DoNotWrapExceptions, null, null, null)!"
             : "new " + converterTypeName + "()";
+        return "__CreateConverter<" + converterTypeName + ">(() => " + creation + ")";
     }
 
     private static void EmitNonPublicGetterAccessors(StringBuilder builder, PocoShape poco)

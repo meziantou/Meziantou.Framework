@@ -382,6 +382,18 @@ val = true
     }
 
     [Theory]
+    [InlineData("a = \"\\😀\"\n", 6, 7)]
+    [InlineData("a = \"\\q\"\n", 6, 6)]
+    public void InvalidEscapeCharacter_IsCoveredWhole(string toml, int startOffset, int endOffset)
+    {
+        var diagnostic = Assert.Single(SyntaxParser.Parse(toml).Diagnostics, diagnostic => diagnostic.Message.StartsWith("Unexpected escape character", StringComparison.Ordinal));
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+
+        Assert.Equal((startOffset, endOffset), (diagnostic.Span.Start.Offset, diagnostic.Span.End.Offset));
+        Assert.Equal((startOffset, endOffset), (exception.Diagnostics![0].Span.Start.Offset, exception.Diagnostics[0].Span.End.Offset));
+    }
+
+    [Theory]
     [InlineData('\0', "\\u0000")]
     [InlineData('\u001B', "\\u001B")]
     [InlineData('\u007F', "\\u007F")]

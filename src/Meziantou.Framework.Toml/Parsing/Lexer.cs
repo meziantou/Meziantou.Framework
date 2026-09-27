@@ -1654,7 +1654,9 @@ internal sealed class Lexer
             return false;
         }
 
-        AddError($"Unexpected escape character [{c.ToString().ToPrintableString()}] in string. Only b t n f r e \\ \" xHH u0000-uFFFF U00000000-UFFFFFFFF are allowed", CurrentPosition, CurrentPosition);
+        // The error covers the whole character, including the low surrogate of a character outside the BMP
+        var characterEnd = new TextPosition(_current.NextPosition.Offset - 1, CurrentPosition.Line, CurrentPosition.Column);
+        AddError($"Unexpected escape character [{c.ToString().ToPrintableString()}] in string. Only b t n f r e \\ \" xHH u0000-uFFFF U00000000-UFFFFFFFF are allowed", CurrentPosition, characterEnd);
         return false;
     }
 

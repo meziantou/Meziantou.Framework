@@ -114,6 +114,40 @@ public sealed class TestPipeTable
         Assert.Contains("<table>", MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
     }
 
+    [Theory]
+    [InlineData("| *e* |\n|-:|\ntext *em*", "<table>\n<thead>\n<tr>\n<th style=\"text-align: right;\"><em>e</em></th>\n</tr>\n</thead>\n</table>\n<p>text <em>em</em></p>\n")]
+    [InlineData("| *e |\n|-:|\ntext* *em*", "<table>\n<thead>\n<tr>\n<th style=\"text-align: right;\">*e</th>\n</tr>\n</thead>\n</table>\n<p>text* <em>em</em></p>\n")]
+    [InlineData("> a | b\n> --|--\n> c | d\n> text", "<blockquote>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n</blockquote>\n")]
+    [InlineData("a | b\r\n--|--\r\ntext\r\nmore", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n<p>text\nmore</p>\n")]
+    [InlineData("a | b\n--|--\n[c | d\ntext](u)", "<p>a | b\n--|--\n<a href=\"u\">c | d\ntext</a></p>\n")]
+    [InlineData("a | b\ntext\n--|--\nc | d", "<p>a | b\ntext\n--|--\nc | d</p>\n")]
+    public void LineWithoutPipeEndsTheTable(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build()));
+    }
+
+    [Fact]
+    public void ParagraphAfterTableHasTheSourcePositionOfItsLines()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().UsePreciseSourceLocation().Build();
+        var document = MarkdownConverter.Parse("a | b\n--|--\nc | d\ntext *em*\nmore", pipeline);
+
+        Assert.HasCount(2, document);
+        Assert.IsType<Table>(document[0]);
+        var paragraph = Assert.IsType<ParagraphBlock>(document[1]);
+        Assert.Equal(3, paragraph.Line);
+        Assert.Equal(new SourceSpan(18, 31), paragraph.Span);
+        Assert.NotNull(paragraph.Inline);
+        var emphasis = paragraph.Inline.Descendants<EmphasisInline>().Single();
+        Assert.Equal(new SourceSpan(23, 26), emphasis.Span);
+        Assert.Equal(3, emphasis.Line);
+        Assert.Equal(5, emphasis.Column);
+        var more = paragraph.Inline.Descendants<LiteralInline>().Last();
+        Assert.Equal(new SourceSpan(28, 31), more.Span);
+        Assert.Equal(4, more.Line);
+    }
+
     [Fact]
     public void TestColumnWidthIsNotSetWithoutConfigurationFlag()
     {
@@ -435,6 +469,25 @@ public sealed class TestPipeTable
             + string.Concat(Enumerable.Repeat("<tr>\n<td><em>x</em></td>\n<td><strong>y</strong></td>\n</tr>\n", RowCount))
             + "</tbody>\n</table>\n";
         Assert.Equal(expected, html);
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("text\na | b\n--|--\nc | d\n\n", "<p>text</p>\n<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("a | b\n--|--\nc | d\ntext\n\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n")]
+    public void ManyTablesWithParagraphsAreParsedInLinearTime(string item, string expectedItem)
+    {
+        // The blocks added before or after a table were inserted one by one in the parent, which moved all the blocks after them
+        const int Count = 100_000;
+        var markdown = string.Concat(Enumerable.Repeat(item, Count));
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        stopwatch.Stop();
+
+        Assert.Equal(string.Concat(Enumerable.Repeat(expectedItem, Count)), html);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky

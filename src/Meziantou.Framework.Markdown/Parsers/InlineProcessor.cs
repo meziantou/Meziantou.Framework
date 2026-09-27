@@ -73,6 +73,16 @@ public class InlineProcessor
     /// </summary>
     public Block? BlockNew { get; set; }
 
+    // Blocks to insert after the block being processed, in order. The markdown parser processes the inlines of the leaf
+    // blocks among them right after the block, and inserts all of them once the parent container is processed, so that
+    // inserting after many blocks of a container stays linear.
+    internal List<Block>? BlocksAfter { get; private set; }
+
+    internal void InsertBlockAfter(Block block)
+    {
+        (BlocksAfter ??= []).Add(block);
+    }
+
     /// <summary>
     /// Gets or sets the current inline. Used by <see cref="InlineParser"/> to return a new inline if match was successfull
     /// </summary>
@@ -307,6 +317,7 @@ public class InlineProcessor
         Inline = null;
         Block = leafBlock;
         BlockNew = null;
+        BlocksAfter = null;
         LineIndex = leafBlock.Line;
 
         _previousSliceOffset = 0;
@@ -319,7 +330,6 @@ public class InlineProcessor
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
             ? GfmPipeTableParser.UnescapePipes(ref text) : null;
         var textEnd = text.End;
-        leafBlock.Lines.Release();
         int previousStart = -1;
 
         // The chain of open containers is only tracked while the parsers run, even when one of them throws
@@ -436,6 +446,10 @@ public class InlineProcessor
 
         // PostProcess all inlines
         PostProcessInlines(0, Root, null, true);
+
+        // The lines stay available to the parsers until they are done (a pipe table moves the lines that follow it to a
+        // new paragraph)
+        leafBlock.Lines.Release();
 
         // Unresolved delimiters nest the inlines that follow them, so the depth reached while parsing grows
         // with the number of delimiters even when post-processing resolves them into a flat tree
@@ -845,6 +859,7 @@ public class InlineProcessor
         EndInlineParsing();
         Block = null;
         BlockNew = null;
+        BlocksAfter = null;
         Inline = null;
         Root = null;
         Parsers = null!;

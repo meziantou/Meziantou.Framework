@@ -207,6 +207,7 @@ public static class MarkdownParser
                             inlineProcessor._newContainerToReplace = null;
                         }
 
+                        var blocksAfter = inlineProcessor.BlocksAfter;
                         if (leafBlock.RemoveAfterProcessInlines)
                         {
                             container.RemoveAt(item.Index);
@@ -215,6 +216,13 @@ public static class MarkdownParser
                         else if (inlineProcessor.BlockNew != null)
                         {
                             container[item.Index] = inlineProcessor.BlockNew;
+                        }
+
+                        if (blocksAfter is not null)
+                        {
+                            leafBlock.OnProcessInlinesEnd(inlineProcessor);
+                            (item.BlocksAfter ??= []).Add((item.Index, ProcessBlocksAfter(inlineProcessor, blocksAfter)));
+                            continue;
                         }
                     }
                     leafBlock.OnProcessInlinesEnd(inlineProcessor);
@@ -242,9 +250,53 @@ public static class MarkdownParser
                     goto process_new_block;
                 }
             }
+            if (item.BlocksAfter is { } insertions)
+            {
+                container.InsertBlocksAfter(insertions);
+            }
+
             container.OnProcessInlinesEnd(inlineProcessor);
             blocks[--blockCount] = default;
         }
+    }
+
+    // Processes the inlines of the leaf blocks that a parser added after a block, and returns the blocks to insert after it
+    private static List<Block> ProcessBlocksAfter(InlineProcessor inlineProcessor, List<Block> blocksAfter)
+    {
+        var result = new List<Block>(blocksAfter.Count);
+        var pending = new Stack<Block>();
+        for (var i = blocksAfter.Count - 1; i >= 0; i--)
+        {
+            pending.Push(blocksAfter[i]);
+        }
+
+        while (pending.TryPop(out var block))
+        {
+            if (block is not LeafBlock { ProcessInlines: true, Inline: null } leafBlock)
+            {
+                result.Add(block);
+                continue;
+            }
+
+            leafBlock.OnProcessInlinesBegin(inlineProcessor);
+            inlineProcessor.ProcessInlineLeaf(leafBlock);
+            var newBlocksAfter = inlineProcessor.BlocksAfter;
+            if (!leafBlock.RemoveAfterProcessInlines)
+            {
+                result.Add(inlineProcessor.BlockNew ?? leafBlock);
+            }
+
+            leafBlock.OnProcessInlinesEnd(inlineProcessor);
+            if (newBlocksAfter is not null)
+            {
+                for (var i = newBlocksAfter.Count - 1; i >= 0; i--)
+                {
+                    pending.Push(newBlocksAfter[i]);
+                }
+            }
+        }
+
+        return result;
     }
 
     private struct ContainerItem(ContainerBlock container)
@@ -252,5 +304,8 @@ public static class MarkdownParser
         public readonly ContainerBlock Container = container;
 
         public int Index = 0;
+
+        // Blocks to insert after the children at the given indexes, in order
+        public List<(int Index, List<Block> Blocks)>? BlocksAfter = null;
     }
 }

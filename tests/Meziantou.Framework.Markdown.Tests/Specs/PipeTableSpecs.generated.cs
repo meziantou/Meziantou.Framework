@@ -226,7 +226,7 @@ public class TestExtensionsPipeTable
     }
 
     // **Rule #2**
-    // A pipe table ends after a blank line or the end of the file.
+    // A pipe table ends after a blank line, before a line without a column delimiter, or at the end of the file.
     //
     // **Rule #3**
     // A cell content is trimmed (start and end) from white-spaces.
@@ -1236,5 +1236,184 @@ public class TestExtensionsPipeTable
         //     | 1 | 2 | 3 |</p>
 
         TestParser.TestSpec("| A | B | C |\n| | | |\n| 1 | 2 | 3 |", "<p>| A | B | C |\n| | | |\n| 1 | 2 | 3 |</p>", "pipetables|advanced", context: "Example 35\nSection Extensions / Pipe Table\n");
+    }
+
+    // A line without a column delimiter ends the table (Rule #2): it starts a paragraph after the table, with the lines that follow it:
+    [Fact]
+    public void ExtensionsPipeTable_Example036()
+    {
+        // Example 36
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     a | b
+        //     -- | --
+        //     0 | 1
+        //     text
+        //
+        // Should be rendered as:
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>a</th>
+        //     <th>b</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>0</td>
+        //     <td>1</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+        //     <p>text</p>
+
+        TestParser.TestSpec("a | b\n-- | --\n0 | 1\ntext", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>", "pipetables|advanced", context: "Example 36\nSection Extensions / Pipe Table\n");
+    }
+
+    // A table may have no rows before such a line:
+    [Fact]
+    public void ExtensionsPipeTable_Example037()
+    {
+        // Example 37
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     a | b
+        //     -- | --
+        //     text
+        //     more
+        //
+        // Should be rendered as:
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>a</th>
+        //     <th>b</th>
+        //     </tr>
+        //     </thead>
+        //     </table>
+        //     <p>text
+        //     more</p>
+
+        TestParser.TestSpec("a | b\n-- | --\ntext\nmore", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n</table>\n<p>text\nmore</p>", "pipetables|advanced", context: "Example 37\nSection Extensions / Pipe Table\n");
+    }
+
+    // A table may be both preceded and followed by a paragraph:
+    [Fact]
+    public void ExtensionsPipeTable_Example038()
+    {
+        // Example 38
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     Some text
+        //     | A |
+        //     |---|
+        //     | B |
+        //     more text
+        //
+        // Should be rendered as:
+        //     <p>Some text</p>
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>A</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>B</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+        //     <p>more text</p>
+
+        TestParser.TestSpec("Some text\n| A |\n|---|\n| B |\nmore text", "<p>Some text</p>\n<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>B</td>\n</tr>\n</tbody>\n</table>\n<p>more text</p>", "pipetables|advanced", context: "Example 38\nSection Extensions / Pipe Table\n");
+    }
+
+    // A pipe in a code inline or escaped by a backslash is not a column delimiter, and the lines after the table are a paragraph even if they contain a column delimiter:
+    [Fact]
+    public void ExtensionsPipeTable_Example039()
+    {
+        // Example 39
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     a | b
+        //     -- | --
+        //     0 | 1
+        //     `c|d` and c \| d
+        //     e | f
+        //
+        // Should be rendered as:
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>a</th>
+        //     <th>b</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>0</td>
+        //     <td>1</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+        //     <p><code>c|d</code> and c | d
+        //     e | f</p>
+
+        TestParser.TestSpec("a | b\n-- | --\n0 | 1\n`c|d` and c \\| d\ne | f", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n<p><code>c|d</code> and c | d\ne | f</p>", "pipetables|advanced", context: "Example 39\nSection Extensions / Pipe Table\n");
+    }
+
+    // The paragraph after a table may itself start a table:
+    [Fact]
+    public void ExtensionsPipeTable_Example040()
+    {
+        // Example 40
+        // Section: Extensions / Pipe Table
+        //
+        // The following Markdown:
+        //     a | b
+        //     -- | --
+        //     0 | 1
+        //     text
+        //     c | d
+        //     -- | --
+        //     2 | 3
+        //
+        // Should be rendered as:
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>a</th>
+        //     <th>b</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>0</td>
+        //     <td>1</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+        //     <p>text</p>
+        //     <table>
+        //     <thead>
+        //     <tr>
+        //     <th>c</th>
+        //     <th>d</th>
+        //     </tr>
+        //     </thead>
+        //     <tbody>
+        //     <tr>
+        //     <td>2</td>
+        //     <td>3</td>
+        //     </tr>
+        //     </tbody>
+        //     </table>
+
+        TestParser.TestSpec("a | b\n-- | --\n0 | 1\ntext\nc | d\n-- | --\n2 | 3", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>0</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n<p>text</p>\n<table>\n<thead>\n<tr>\n<th>c</th>\n<th>d</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>2</td>\n<td>3</td>\n</tr>\n</tbody>\n</table>", "pipetables|advanced", context: "Example 40\nSection Extensions / Pipe Table\n");
     }
 }

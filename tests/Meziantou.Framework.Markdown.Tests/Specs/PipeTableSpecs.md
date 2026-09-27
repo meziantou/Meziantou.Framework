@@ -161,7 +161,7 @@ a  | b
 ````````````````````````````````
 
 **Rule #2**
-A pipe table ends after a blank line or the end of the file.
+A pipe table ends after a blank line, before a line without a column delimiter, or at the end of the file.
 
 **Rule #3**
 A cell content is trimmed (start and end) from white-spaces.
@@ -948,4 +948,143 @@ A separator row containing only whitespace and pipes still remains a paragraph:
 <p>| A | B | C |
 | | | |
 | 1 | 2 | 3 |</p>
+````````````````````````````````
+
+A line without a column delimiter ends the table (Rule #2): it starts a paragraph after the table, with the lines that follow it:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+text
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text</p>
+````````````````````````````````
+
+A table may have no rows before such a line:
+
+```````````````````````````````` example
+a | b
+-- | --
+text
+more
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+</table>
+<p>text
+more</p>
+````````````````````````````````
+
+A table may be both preceded and followed by a paragraph:
+
+```````````````````````````````` example
+Some text
+| A |
+|---|
+| B |
+more text
+.
+<p>Some text</p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B</td>
+</tr>
+</tbody>
+</table>
+<p>more text</p>
+````````````````````````````````
+
+A pipe in a code inline or escaped by a backslash is not a column delimiter, and the lines after the table are a paragraph even if they contain a column delimiter:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+`c|d` and c \| d
+e | f
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><code>c|d</code> and c | d
+e | f</p>
+````````````````````````````````
+
+The paragraph after a table may itself start a table:
+
+```````````````````````````````` example
+a | b
+-- | --
+0 | 1
+text
+c | d
+-- | --
+2 | 3
+.
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th>b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>text</p>
+<table>
+<thead>
+<tr>
+<th>c</th>
+<th>d</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
 ````````````````````````````````

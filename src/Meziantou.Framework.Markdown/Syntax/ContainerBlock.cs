@@ -270,6 +270,45 @@ public abstract class ContainerBlock : Block, IList<Block>, IReadOnlyList<Block>
         item.Parent = this;
     }
 
+    // Inserts blocks after some children in one pass: the indexes are in increasing order, and refer to the children before
+    // the insertion (-1 inserts before the first child)
+    internal void InsertBlocksAfter(List<(int Index, List<Block> Blocks)> insertions)
+    {
+        var count = Count;
+        foreach (var insertion in insertions)
+        {
+            count += insertion.Blocks.Count;
+        }
+
+        var children = new BlockWrapper[count];
+        var next = 0;
+        var insertionIndex = 0;
+        for (var i = -1; i < Count; i++)
+        {
+            if (i >= 0)
+            {
+                children[next++] = _children[i];
+            }
+
+            for (; insertionIndex < insertions.Count && insertions[insertionIndex].Index == i; insertionIndex++)
+            {
+                foreach (var block in insertions[insertionIndex].Blocks)
+                {
+                    if (block.Parent is not null)
+                    {
+                        ThrowHelper.ArgumentException("Cannot add this block as it as already attached to another container (block.Parent != null)");
+                    }
+
+                    block.Parent = this;
+                    children[next++] = new BlockWrapper(block);
+                }
+            }
+        }
+
+        _children = children;
+        Count = count;
+    }
+
     /// <summary>
     /// Removes at.
     /// </summary>

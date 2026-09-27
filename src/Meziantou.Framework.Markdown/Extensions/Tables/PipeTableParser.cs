@@ -98,7 +98,15 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         {
             if (!isFirstLineEmpty && !tableState.LineHasPipe)
             {
-                tableState.IsInvalidTable = true;
+                // A line without a pipe ends the table: the table ends with the line break before it
+                if (tableState.EndOfLines.Count == 0)
+                {
+                    tableState.IsInvalidTable = true;
+                }
+                else
+                {
+                    tableState.EndOfTable ??= tableState.EndOfLines[^1];
+                }
             }
             tableState.LineHasPipe = false;
             _lineBreakParser.Match(processor, ref slice);
@@ -359,36 +367,50 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         state.ParserStates[Index] = null!;
 
         // Abort if not a valid table
-        if (tableState is null || container is null || tableState.IsInvalidTable || !tableState.LineHasPipe)
+        if (tableState is null || container is null || tableState.IsInvalidTable)
         {
             if (tableState is not null)
             {
-                foreach (var inline in tableState.ColumnAndLineDelimiters)
-                {
-                    if (inline is PipeTableDelimiterInline pipeDelimiter)
-                    {
-                        pipeDelimiter.ReplaceByLiteral();
-                    }
-                }
+                ReplacePipesByLiterals(tableState.ColumnAndLineDelimiters, 0);
             }
             return true;
         }
 
+        // The table ends before the first line without a pipe, which starts a paragraph after the table
+        var lastTableLineBreak = tableState.EndOfTable;
+        if (lastTableLineBreak is null && !tableState.LineHasPipe)
+        {
+            lastTableLineBreak = tableState.EndOfLines.Count > 0 ? tableState.EndOfLines[^1] : null;
+            if (lastTableLineBreak is null)
+            {
+                ReplacePipesByLiterals(tableState.ColumnAndLineDelimiters, 0);
+                return true;
+            }
+        }
+
         // Detect the header row
         var delimiters = tableState.ColumnAndLineDelimiters;
-        var aligns = FindHeaderRow(delimiters);
+        var endOfTableIndex = lastTableLineBreak is null ? delimiters.Count : delimiters.IndexOf(lastTableLineBreak) + 1;
+        var aligns = FindHeaderRow(delimiters, endOfTableIndex);
 
-        if (Options.RequireHeaderSeparator && aligns is null)
+        // A table followed by other lines needs a header separator row, and these lines must not be inside an inline (a
+        // link) that the table would split
+        if ((aligns is null && (Options.RequireHeaderSeparator || lastTableLineBreak is not null)) ||
+            (lastTableLineBreak is not null && !IsOutsideOfInlines(lastTableLineBreak, container)))
         {
             // No valid header separator found - convert all pipe delimiters to literals
-            foreach (var inline in delimiters)
-            {
-                if (inline is PipeTableDelimiterInline pipeDelimiter)
-                {
-                    pipeDelimiter.ReplaceByLiteral();
-                }
-            }
+            ReplacePipesByLiterals(delimiters, 0);
             return true;
+        }
+
+        ParagraphBlock? trailingParagraph = null;
+        if (lastTableLineBreak is not null)
+        {
+            ReplacePipesByLiterals(delimiters, endOfTableIndex);
+            delimiters.RemoveRange(endOfTableIndex, delimiters.Count - endOfTableIndex);
+            var endOfLinesCount = tableState.EndOfLines.IndexOf(lastTableLineBreak) + 1;
+            tableState.EndOfLines.RemoveRange(endOfLinesCount, tableState.EndOfLines.Count - endOfLinesCount);
+            trailingParagraph = CreateParagraphAfter((ParagraphBlock)state.Block!, lastTableLineBreak.Line);
         }
 
         var table = new Table();
@@ -415,6 +437,15 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             PromoteNestedLineBreaksToRootLevel(container);
         }
         PromoteNestedPipesToRootLevel(delimiters, container);
+
+        if (lastTableLineBreak is not null)
+        {
+            // The lines after the table are parsed again as the paragraph that follows it
+            while (lastTableLineBreak.NextSibling is { } trailingInline)
+            {
+                trailingInline.Remove();
+            }
+        }
 
         // The inline tree is now flat: all pipes and line breaks are siblings at root level.
         // For example, `| a | b \n| c | d \n` produces:
@@ -642,24 +673,19 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             // ```
             //
             // Keep the paragraph as-is and insert the table after it.
-            // Since we've already processed all the inlines in this table block,
-            // we can't insert it while the parent is still being processed.
-            // Hook up a callback that inserts the table after we're done with ProcessInlines for the parent block.
-
             // We've processed inlines in the table, but not the leading paragraph itself yet.
             state.PostProcessInlines(0, leadingParagraph.Inline, null, isFinalProcessing: true);
-
-            ContainerBlock parent = leadingParagraph.Parent!;
-
-            parent.ProcessInlinesEnd += (_, _) =>
-            {
-                parent.Insert(parent.IndexOf(leadingParagraph) + 1, table);
-            };
+            state.InsertBlockAfter(table);
         }
         else
         {
             // Nothing interesting in the existing block, just replace it.
             state.BlockNew = table;
+        }
+
+        if (trailingParagraph is not null)
+        {
+            state.InsertBlockAfter(trailingParagraph);
         }
 
         // We don't want to continue procesing delimiters, as we are already processing them here
@@ -690,12 +716,38 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         return false;
     }
 
-    private List<TableColumnDefinition>? FindHeaderRow(List<Inline> delimiters)
+    private static void ReplacePipesByLiterals(List<Inline> delimiters, int start)
+    {
+        for (var i = start; i < delimiters.Count; i++)
+        {
+            if (delimiters[i] is PipeTableDelimiterInline pipeDelimiter)
+            {
+                pipeDelimiter.ReplaceByLiteral();
+            }
+        }
+    }
+
+    // Whether the inline is at the root of the paragraph, or only inside delimiters that the table flattens
+    private static bool IsOutsideOfInlines(Inline inline, ContainerInline root)
+    {
+        for (var parent = inline.Parent; parent is not null && parent != root; parent = parent.Parent)
+        {
+            if (parent is not DelimiterInline)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // count: the number of delimiters of the table, the delimiters after them belong to the lines that follow the table
+    private List<TableColumnDefinition>? FindHeaderRow(List<Inline> delimiters, int count)
     {
         bool isValidRow = false;
         int totalDelimiterCount = 0;
         List<TableColumnDefinition>? columnDefinitions = null;
-        for (int i = 0; i < delimiters.Count; i++)
+        for (int i = 0; i < count; i++)
         {
             if (!IsLine(delimiters[i]))
             {
@@ -710,10 +762,10 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             }
 
             // Parse the separator row (second row) to extract column alignments
-            for (int j = i + 1; j < delimiters.Count; j++)
+            for (int j = i + 1; j < count; j++)
             {
                 var delimiter = delimiters[j];
-                var nextDelimiter = j + 1 < delimiters.Count ? delimiters[j + 1] : null;
+                var nextDelimiter = j + 1 < count ? delimiters[j + 1] : null;
 
                 var columnDelimiter = delimiter as PipeTableDelimiterInline;
                 if (j == i + 1 && IsStartOfLineColumnDelimiter(columnDelimiter))
@@ -1004,6 +1056,34 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
         return false;
     }
 
+    // Creates a paragraph with the lines of the paragraph after the given line. Its inlines are processed like the ones of
+    // the other paragraphs, so it may itself start a table.
+    private static ParagraphBlock CreateParagraphAfter(ParagraphBlock paragraph, int line)
+    {
+        var lines = paragraph.Lines;
+        var first = 0;
+        while (first < lines.Count && lines.Lines[first].Line <= line)
+        {
+            first++;
+        }
+
+        var trailingParagraph = new ParagraphBlock(paragraph.Parser)
+        {
+            Line = lines.Lines[first].Line,
+            Column = lines.Lines[first].Column,
+            Span = new SourceSpan(lines.Lines[first].Position, paragraph.Span.End),
+            Lines = new StringLineGroup(lines.Count - first, willRelease: true),
+            NewLine = paragraph.NewLine,
+        };
+
+        for (var i = first; i < lines.Count; i++)
+        {
+            trailingParagraph.Lines.Add(ref lines.Lines[i]);
+        }
+
+        return trailingParagraph;
+    }
+
     private static void AppendCellInline(ContainerInline cellContainer, Inline inline)
     {
         // SplitContainerAtDelimiter introduces plain wrappers for content that used to live after a promoted
@@ -1232,6 +1312,9 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
     private sealed class TableState
     {
         public bool IsInvalidTable { get; set; }
+
+        // The line break before the first line without a pipe, which ends the table
+        public Inline? EndOfTable { get; set; }
 
         public bool LineHasPipe { get; set; }
 

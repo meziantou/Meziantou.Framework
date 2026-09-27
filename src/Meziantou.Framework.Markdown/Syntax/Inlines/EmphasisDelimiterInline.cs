@@ -63,6 +63,14 @@ public class EmphasisDelimiterInline : DelimiterInline
     /// </summary>
     public int DelimiterCount { get; set; }
 
+    // The length of the delimiter run in the source, used by the rule of 3. It is unknown for a delimiter created by
+    // another parser, which then only gives its DelimiterCount.
+    internal int RunLength
+    {
+        get => field > 0 ? field : DelimiterCount;
+        set;
+    }
+
     /// <summary>
     /// The content as a <see cref="StringSlice"/>.
     /// </summary>

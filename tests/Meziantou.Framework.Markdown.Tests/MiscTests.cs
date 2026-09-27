@@ -163,6 +163,20 @@ public class MiscTests
     }
 
     [Theory]
+    [InlineData("*a***a*", "<p><em>a</em>*<em>a</em></p>")]
+    [InlineData("**a***a**", "<p><strong>a</strong><em>a</em>*</p>")]
+    [InlineData("*>***<*", "<p><em>&gt;</em>*<em>&lt;</em></p>")]
+    [InlineData("***a*a*a", "<p>*<em><em>a</em>a</em>a</p>")]
+    [InlineData("foo***bar*baz*", "<p>foo*<em><em>bar</em>baz</em></p>")]
+    [InlineData("*a****a**", "<p><em>a</em>***a**</p>")]
+    [InlineData("_a___a_", "<p><em>a___a</em></p>")]
+    [InlineData("*foo**bar*baz***", "<p><em>foo**bar</em>baz***</p>")]
+    public void RuleOfThreeUsesTheLengthsOfTheDelimiterRuns(string markdown, string expected)
+    {
+        TestParser.TestSpec(markdown, expected);
+    }
+
+    [Theory]
     [InlineData('[', 9 * 1024, true, false)]
     [InlineData('[', 11 * 1024, true, true)]
     [InlineData('[', 100, false, false)]

@@ -244,6 +244,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
             var delimiter = new EmphasisDelimiterInline(this, emphasisDesc, new StringSlice(slice.Text, startPosition, slice.Start - 1))
             {
                 DelimiterCount = delimiterCount,
+                RunLength = delimiterCount,
                 Type = delimiterType,
                 Span = new SourceSpan(processor.GetSourcePosition(startPosition, out int line, out int column), processor.GetSourcePosition(slice.Start - 1)),
                 Column = column,
@@ -310,10 +311,10 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                     {
                         var previousOpenDelimiter = delimiters[j];
 
+                        // The rule of 3 uses the lengths of the delimiter runs, not what remains of them after previous matches
                         var isOddMatch = (closeDelimiter.Type.HasFlag(DelimiterType.Open) || previousOpenDelimiter.Type.HasFlag(DelimiterType.Close)) &&
-                                         previousOpenDelimiter.DelimiterCount != closeDelimiter.DelimiterCount &&
-                                         (previousOpenDelimiter.DelimiterCount + closeDelimiter.DelimiterCount) % 3 == 0 &&
-                                         (previousOpenDelimiter.DelimiterCount % 3 != 0 || closeDelimiter.DelimiterCount % 3 != 0);
+                                         (previousOpenDelimiter.RunLength + closeDelimiter.RunLength) % 3 == 0 &&
+                                         (previousOpenDelimiter.RunLength % 3 != 0 || closeDelimiter.RunLength % 3 != 0);
 
                         if (previousOpenDelimiter.DelimiterChar == closeDelimiter.DelimiterChar &&
                             previousOpenDelimiter.Type.HasFlag(DelimiterType.Open) &&
@@ -497,7 +498,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                 characterIndex = Array.IndexOf(OpeningCharacters!, closeDelimiter.DelimiterChar);
             }
 
-            return characterIndex < 0 ? -1 : (characterIndex * 6) + (closeDelimiter.Type.HasFlag(DelimiterType.Open) ? 3 : 0) + (closeDelimiter.DelimiterCount % 3);
+            return characterIndex < 0 ? -1 : (characterIndex * 6) + (closeDelimiter.Type.HasFlag(DelimiterType.Open) ? 3 : 0) + (closeDelimiter.RunLength % 3);
         }
 
         static void RemoveFromStack(List<EmphasisDelimiterInline> delimiters, ref int stackCount, int index)

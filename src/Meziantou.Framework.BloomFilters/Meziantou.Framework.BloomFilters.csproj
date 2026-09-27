@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>High-performance in-memory Bloom filters and counting Bloom filters with atomic concurrent writes and segmented storage</Description>
     <PackageTags>bloom-filter, counting-bloom-filter, probabilistic, data-structures, performance</PackageTags>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.Hashing" Version="11.0.0-rc.1.26425.128" />
+    <InternalsVisibleTo Include="Meziantou.Framework.BloomFilters.Tests" />
   </ItemGroup>
 
 </Project>

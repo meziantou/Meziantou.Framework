@@ -16,7 +16,9 @@ public class BloomFilterBatchBenchmark
     private BloomFilterXXHash64 _xxHash64 = null!;
     private BloomFilterXXHash128 _xxHash128 = null!;
 
-    [IterationSetup]
+    // Re-adding a value sets the same bits, so the filters can be reused across invocations. An [IterationSetup]
+    // would force a single ~300 us invocation per iteration, which is too short to measure reliably.
+    [GlobalSetup]
     public void Setup()
     {
         _xxHash32 = BloomFilter.CreateXXHash32(FilterSize);

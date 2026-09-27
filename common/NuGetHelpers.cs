@@ -61,7 +61,7 @@ public static class NuGetHelpers
                 {
                     if (!IsCacheValid())
                     {
-                        throw new InvalidOperationException("Cannot download NuGet package " + packageName + "@" + version + "\n" + ex);
+                        throw new InvalidOperationException("Cannot download NuGet package " + packageName + "@" + version, ex);
                     }
                 }
             }

@@ -3195,7 +3195,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return attribute.Handling;
         }
 
-        return options.RejectUnmatchedProperties ? YamlUnmappedMemberHandling.Disallow : options.UnmappedMemberHandling;
+        return options.UnmappedMemberHandling;
     }
 
     private static YamlObjectCreationHandling GetPreferredObjectCreationHandling(Type type, YamlSerializerOptions options)

@@ -322,7 +322,6 @@ C: plain
 | Option | Default | Description |
 | --- | --- | --- |
 | `UnmappedMemberHandling` | `Skip` | `Disallow` throws when a mapping key matches no member. |
-| `RejectUnmatchedProperties` | `false` | Same effect as `UnmappedMemberHandling.Disallow`. |
 | `RespectRequiredConstructorParameters` | `true` | Requires a value for every non-optional constructor parameter. |
 | `RespectNullableAnnotations` | `true` | Rejects `null` for a member declared non-nullable. |
 | `PreferredObjectCreationHandling` | `Replace` | `Populate` adds to the collection or object already held by the member instead of replacing it. |

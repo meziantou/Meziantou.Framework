@@ -47,7 +47,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
 
             for (var lane = 0; lane < Vector<uint>.Count; lane++)
             {
-                AddHash(new Hash32(hashes[lane]));
+                AddHash(BloomFilterHash.FromUInt32(hashes[lane]));
             }
 
             index += Vector<uint>.Count;
@@ -60,9 +60,9 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash32.HashToUInt32(value));
+        return BloomFilterHash.FromUInt32(XxHash32.HashToUInt32(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

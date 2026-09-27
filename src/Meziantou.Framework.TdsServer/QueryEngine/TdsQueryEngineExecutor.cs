@@ -98,7 +98,7 @@ internal sealed class TdsQueryEngineExecutor
         catch (TdsQueryAuthorizationException ex)
         {
             var error = _options.NotAuthorizedErrorFactory(context, ex.ResourceKind, ex.ResourceName)
-                ?? throw new InvalidOperationException("The not-authorized error factory returned null.");
+                ?? throw new InvalidOperationException("The not-authorized error factory returned null.", ex);
             return TdsQueryResult.FromError(error);
         }
         catch (TdsQueryEngineException ex)

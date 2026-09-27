@@ -333,7 +333,6 @@ namespace Meziantou.Framework.Yaml
         public bool IncludeFields { get => throw null; init { } }
         public bool IgnoreReadOnlyFields { get => throw null; init { } }
         public bool IgnoreReadOnlyProperties { get => throw null; init { } }
-        public bool RejectUnmatchedProperties { get => throw null; init { } }
         public bool RespectRequiredConstructorParameters { get => throw null; init { } }
         public bool RespectNullableAnnotations { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; init { } }
@@ -1017,7 +1016,6 @@ namespace Meziantou.Framework.Yaml.Serialization
         public bool IncludeFields { get => throw null; set { } }
         public bool IgnoreReadOnlyFields { get => throw null; set { } }
         public bool IgnoreReadOnlyProperties { get => throw null; set { } }
-        public bool RejectUnmatchedProperties { get => throw null; set { } }
         public bool RespectRequiredConstructorParameters { get => throw null; set { } }
         public bool RespectNullableAnnotations { get => throw null; set { } }
         public Meziantou.Framework.Yaml.YamlUnmappedMemberHandling UnmappedMemberHandling { get => throw null; set { } }

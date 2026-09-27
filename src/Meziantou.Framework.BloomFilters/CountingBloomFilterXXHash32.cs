@@ -62,7 +62,7 @@ public sealed partial class CountingBloomFilterXXHash32 : CountingBloomFilter
 
             for (var lane = 0; lane < Vector<uint>.Count; lane++)
             {
-                UpdateHash(new Hash32(hashes[lane]), remove);
+                UpdateHash(BloomFilterHash.FromUInt32(hashes[lane]), remove);
             }
 
             index += Vector<uint>.Count;
@@ -75,7 +75,7 @@ public sealed partial class CountingBloomFilterXXHash32 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateHash(Hash32 hash, bool remove)
+    private void UpdateHash(BloomFilterHash hash, bool remove)
     {
         if (remove)
         {
@@ -88,9 +88,9 @@ public sealed partial class CountingBloomFilterXXHash32 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash32 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(XxHash32.HashToUInt32(value));
+        return BloomFilterHash.FromUInt32(XxHash32.HashToUInt32(value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

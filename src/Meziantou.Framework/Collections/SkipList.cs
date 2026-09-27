@@ -258,9 +258,9 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
                     node = node.Next[0];
                 }
             }
-            catch (ArrayTypeMismatchException)
+            catch (ArrayTypeMismatchException ex)
             {
-                throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array));
+                throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array), ex);
             }
 
             return;

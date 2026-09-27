@@ -4482,9 +4482,6 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
                 case "IgnoreReadOnlyProperties":
                     model.IgnoreReadOnlyProperties = argument.Value.Value as bool?;
                     break;
-                case "RejectUnmatchedProperties":
-                    model.RejectUnmatchedProperties = argument.Value.Value as bool?;
-                    break;
                 case "RespectRequiredConstructorParameters":
                     model.RespectRequiredConstructorParameters = argument.Value.Value as bool?;
                     break;

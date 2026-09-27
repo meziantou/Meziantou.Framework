@@ -296,6 +296,42 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task Inheritance_NonVisibleInterfacesAreExcluded()
+    {
+        await Validate("""
+            public interface IPublic { }
+            public interface IPublicGeneric<T> { }
+            internal interface IInternal { }
+            internal interface IInternalGeneric<T> { }
+
+            internal static class Container
+            {
+                public interface INested { }
+            }
+
+            public sealed class Sample : IInternal, IPublic, IInternalGeneric<int>, IPublicGeneric<string>, Container.INested
+            {
+            }
+            """, """
+            #nullable enable
+
+            public interface IPublic
+            {
+            }
+
+
+            public interface IPublicGeneric<T>
+            {
+            }
+
+
+            public sealed class Sample : IPublic, IPublicGeneric<string>
+            {
+            }
+            """);
+    }
+
+    [Fact]
     public async Task Struct_Empty()
     {
         await Validate("""

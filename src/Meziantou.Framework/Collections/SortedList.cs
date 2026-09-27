@@ -177,9 +177,9 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
             // Array.Copy will check for NULL.
             Array.Copy(_items, 0, array!, arrayIndex, Count);
         }
-        catch (ArrayTypeMismatchException)
+        catch (ArrayTypeMismatchException ex)
         {
-            throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array));
+            throw new ArgumentException("Target array type is not compatible with the type of items in the collection.", nameof(array), ex);
         }
     }
 

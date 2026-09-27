@@ -115,9 +115,13 @@ public sealed class BloomFilterTests
     }
 
     [Theory]
+    [InlineData(nameof(BloomFilter.CreateXXHash128))]
+    [InlineData(nameof(BloomFilter.CreateXXHash64))]
     [InlineData(nameof(BloomFilter.CreateXXHash32))]
+    [InlineData(nameof(BloomFilter.CreateXXHash3))]
+    [InlineData(nameof(BloomFilter.CreateCrc64))]
     [InlineData(nameof(BloomFilter.CreateCrc32))]
-    public void BloomFilter32_FalsePositiveRate_StaysNearTarget(string createMethodName)
+    public void BloomFilter_FalsePositiveRate_StaysNearTarget(string createMethodName)
     {
         const int ItemCount = 10_000;
         const int ProbeCount = 100_000;
@@ -250,11 +254,100 @@ public sealed class BloomFilterTests
     {
         var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(counterCount: 1, hashCount: 1));
 
-        Parallel.For(0, 10_000, _ => filter.Add("value"));
-        Assert.Equal(10_000, filter.GetEstimatedCount("value"));
+        // Stay below the counter saturation value, which would make the counter sticky
+        Parallel.For(0, 250, _ => filter.Add("value"));
+        Assert.Equal(250, filter.GetEstimatedCount("value"));
 
-        Parallel.For(0, 10_000, _ => filter.Remove("value"));
+        Parallel.For(0, 250, _ => filter.Remove("value"));
         Assert.Equal(0, filter.GetEstimatedCount("value"));
+    }
+
+    [Fact]
+    public void CountingBloomFilter_SaturatedCounter_StaysSaturated()
+    {
+        var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(counterCount: 1, hashCount: 1));
+
+        for (var i = 0; i < 300; i++)
+        {
+            filter.Add("value");
+        }
+
+        Assert.Equal(byte.MaxValue, filter.GetEstimatedCount("value"));
+
+        // The real count of a saturated counter is unknown, so decrementing it could create a false negative
+        for (var i = 0; i < 300; i++)
+        {
+            filter.Remove("value");
+        }
+
+        Assert.Equal(byte.MaxValue, filter.GetEstimatedCount("value"));
+        Assert.True(filter.MayContain("value"));
+    }
+
+    [Fact]
+    public void CountingBloomFilter_RemoveAbsentValue_LeavesCountersUnchanged()
+    {
+        const int ItemCount = 1_000;
+
+        var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateOptimalSize(ItemCount, 0.01));
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        var expectedCounts = Enumerable.Range(0, ItemCount).Select(filter.GetEstimatedCount).ToArray();
+
+        // These values have at least one empty counter, so the filter knows they were never added. Their other
+        // counters belong to the values above and must not be decremented.
+        var absentValues = Enumerable.Range(ItemCount, 10 * ItemCount).Where(value => !filter.MayContain(value)).ToArray();
+        Assert.NotEmpty(absentValues);
+        foreach (var value in absentValues)
+        {
+            filter.Remove(value);
+        }
+
+        Assert.Equal(expectedCounts, Enumerable.Range(0, ItemCount).Select(filter.GetEstimatedCount).ToArray());
+    }
+
+    [Theory]
+    [InlineData(1u)]
+    [InlineData(42u)]
+    [InlineData(uint.MaxValue)]
+    public void BloomFilterHash_FromUInt32_ReachesPositionsBeyond32Bits(uint seed)
+    {
+        AssertReachesPositionsBeyond32Bits(value => BloomFilterHash.FromUInt32(unchecked(seed * (uint)value)));
+    }
+
+    [Theory]
+    [InlineData(1ul)]
+    [InlineData(42ul)]
+    [InlineData(ulong.MaxValue)]
+    public void BloomFilterHash_FromUInt64_ReachesPositionsBeyond32Bits(ulong seed)
+    {
+        AssertReachesPositionsBeyond32Bits(value => BloomFilterHash.FromUInt64(unchecked(seed * 0x9E3779B97F4A7C15UL * (ulong)value)));
+    }
+
+    private static void AssertReachesPositionsBeyond32Bits(Func<int, BloomFilterHash> createHash)
+    {
+        // With 32-bit hash halves, a 2^40-bit filter can only reach multiples of 2^8, whatever the input
+        const ulong Range = 1UL << 40;
+        var positionsOffLattice = 0;
+        for (var value = 1; value <= 1_000; value++)
+        {
+            var hash = createHash(value);
+            var combined = hash.Hash1;
+            for (var i = 0; i < 7; i++)
+            {
+                if (BloomFilterHash.Reduce(combined, Range) % 256 != 0)
+                {
+                    positionsOffLattice++;
+                }
+
+                combined += hash.Hash2;
+            }
+        }
+
+        Assert.InRange(positionsOffLattice, 6_900, 7_000);
     }
 
     [Fact]
@@ -368,6 +461,17 @@ public sealed class BloomFilterTests
         {
             Assert.Equal(filter.GetEstimatedCount(value) > 0, filter.MayContain(value));
         }
+    }
+
+    [Theory]
+    [InlineData(0.5, 1)]
+    [InlineData(0.1, 3)]
+    [InlineData(0.01, 7)]
+    [InlineData(0.001, 10)]
+    public void CreateOptimalSize_PicksHashCountWithLowestFalsePositiveRate(double falsePositiveProbability, int expectedHashCount)
+    {
+        Assert.Equal(expectedHashCount, BloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability).HashCount);
+        Assert.Equal(expectedHashCount, CountingBloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability).HashCount);
     }
 
     [Fact]

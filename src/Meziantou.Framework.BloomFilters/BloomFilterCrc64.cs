@@ -6,8 +6,8 @@ namespace Meziantou.Framework.BloomFilters;
 public sealed partial class BloomFilterCrc64 : BloomFilter
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Hash64 Hash(ReadOnlySpan<byte> value)
+    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
-        return new(Crc64.HashToUInt64(value));
+        return BloomFilterHash.FromUInt64(Crc64.HashToUInt64(value));
     }
 }

@@ -33,7 +33,7 @@ public readonly struct CountingBloomFilterSize
             throw new ArgumentOutOfRangeException(nameof(expectedItemCount), expectedItemCount, "The optimal size for these parameters exceeds the maximum supported size. Lower expectedItemCount or raise falsePositiveProbability.");
 
         var counterCount = (long)exactCounterCount;
-        var hashCount = (int)Math.Ceiling(exactCounterCount / expectedItemCount * Ln2);
+        var hashCount = BloomFilterSize.GetOptimalHashCount(exactCounterCount / expectedItemCount);
 
         return new CountingBloomFilterSize(counterCount, hashCount);
     }

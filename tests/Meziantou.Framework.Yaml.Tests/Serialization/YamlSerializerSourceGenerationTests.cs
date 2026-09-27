@@ -2097,7 +2097,6 @@ public class YamlSerializerSourceGenerationTests
         Assert.False(options.IncludeFields);
         Assert.False(options.IgnoreReadOnlyFields);
         Assert.False(options.IgnoreReadOnlyProperties);
-        Assert.False(options.RejectUnmatchedProperties);
         Assert.True(options.RespectRequiredConstructorParameters);
         Assert.True(options.RespectNullableAnnotations);
         Assert.Same(context, options.TypeInfoResolver);
@@ -2362,9 +2361,9 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_RejectUnmatchedProperties_DisallowsUnknownMembers()
+    public void GeneratedContext_RuntimeUnmappedMemberHandling_DisallowsUnknownMembers()
     {
-        var context = new TestYamlSerializerContextWithOptions(new YamlSerializerOptions { RejectUnmatchedProperties = true });
+        var context = new TestYamlSerializerContextWithOptions(new YamlSerializerOptions { UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow });
 
         var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize(
             "displayName: Ada\nUnknown: test\n",
@@ -2374,9 +2373,9 @@ public class YamlSerializerSourceGenerationTests
     }
 
     [Fact]
-    public void GeneratedContext_RejectUnmatchedProperties_DoesNotConflictWithExtensionData()
+    public void GeneratedContext_RuntimeUnmappedMemberHandling_DoesNotConflictWithExtensionData()
     {
-        var context = new TestYamlSerializerContext(new YamlSerializerOptions { RejectUnmatchedProperties = true });
+        var context = new TestYamlSerializerContext(new YamlSerializerOptions { UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow });
 
         var value = YamlSerializer.Deserialize(
             "DisplayName: Ada\nUnknown: test\n",

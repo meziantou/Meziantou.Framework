@@ -81,6 +81,12 @@ public sealed class SingleOrArrayConstructorArrayHolder
     public string[] Rid { get; }
 }
 
+public sealed class SingleOrArrayNullGetOnlyHolder
+{
+    [TomlSingleOrArray]
+    public List<int> Rid { get; } = null!;
+}
+
 public sealed record SingleOrArrayRecordHolder([property: TomlSingleOrArray] List<string> Rid);
 
 public sealed class SingleOrArrayGetOnlyImmutableHolder
@@ -124,6 +130,7 @@ public sealed class TableArrayItem
 [TomlSerializable(typeof(SingleOrArrayImmutableArrayHolder))]
 [TomlSerializable(typeof(SingleOrArrayConstructorArrayHolder))]
 [TomlSerializable(typeof(SingleOrArrayRecordHolder))]
+[TomlSerializable(typeof(SingleOrArrayNullGetOnlyHolder))]
 [TomlSerializable(typeof(SingleOrArrayGetOnlyImmutableHolder))]
 internal sealed partial class TestTomlCollectionsContext : TomlSerializerContext
 {
@@ -433,6 +440,21 @@ public class NewApiCollectionTests
         Assert.Equal(expected, string.Join(',', reflection.Rid));
         Assert.Equal(expected, string.Join(',', generatedRecord.Rid));
         Assert.Equal(expected, string.Join(',', reflectionRecord.Rid));
+    }
+
+    // A get-only member without a collection cannot store a value, whether the TOML has an array or a single value
+    [Theory]
+    [InlineData("rid = [1, 2]\n")]
+    [InlineData("rid = 1\n")]
+    public void NullGetOnlyCollection_WithTomlSingleOrArray_IsAConfigurationError(string toml)
+    {
+        var options = new TomlSerializerOptions { PropertyNamingPolicy = TomlNamingPolicy.CamelCase };
+
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<SingleOrArrayNullGetOnlyHolder>(toml, TestTomlCollectionsContext.Default, out _));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<SingleOrArrayNullGetOnlyHolder>(toml, out _, options));
+
+        Assert.True(reflection.IsConfigurationError);
+        Assert.Equal(reflection.Message, generated.Message);
     }
 
     [Fact]

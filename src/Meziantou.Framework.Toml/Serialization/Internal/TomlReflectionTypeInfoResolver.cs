@@ -1237,6 +1237,13 @@ internal static class TomlReflectionTypeInfoResolver
             {
                 if (!shouldPopulateExisting)
                 {
+                    // Like a single value, an array cannot be stored in a get-only member without a collection
+                    if (member.Setter is null)
+                    {
+                        throw TomlException.CreateConfigurationError(
+                            $"Member '{member.Member.Name}' on '{Type.FullName}' uses [TomlSingleOrArray] but the existing collection is null or cannot be populated.");
+                    }
+
                     return ReflectionObjectTomlTypeInfo.ReadMemberValue(reader, member);
                 }
 

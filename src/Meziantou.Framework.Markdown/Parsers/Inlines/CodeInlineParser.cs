@@ -31,8 +31,9 @@ public class CodeInlineParser : InlineParser
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
     {
         char match = slice.CurrentChar;
-        if (slice.PeekCharExtra(-1) == match)
+        if (slice.PeekCharExtra(-1) == match && !IsEscaped(in slice, -1))
         {
+            // A backtick string is not preceded by a backtick, unless that backtick is escaped and so is literal text
             return false;
         }
 
@@ -53,6 +54,12 @@ public class CodeInlineParser : InlineParser
         // This allows you to include code that begins or ends with backtick characters, which must be separated by
         // whitespace from the opening or closing backtick strings.
 
+        var unclosedCodeSpans = processor.ParserStates[Index] as UnclosedCodeSpans;
+        if (unclosedCodeSpans is not null && unclosedCodeSpans.IsKnownUnclosed(slice, openSticks))
+        {
+            return false;
+        }
+
         ReadOnlySpan<char> span = slice.AsSpan();
         bool containsNewLines = false;
 
@@ -63,6 +70,8 @@ public class CodeInlineParser : InlineParser
             if ((uint)i >= (uint)span.Length)
             {
                 // We got to the end of the input before seeing the match character. CodeInline can't match here.
+                unclosedCodeSpans ??= processor.GetParserState<UnclosedCodeSpans>(this);
+                unclosedCodeSpans.SetUnclosed(slice, openSticks);
                 return false;
             }
 
@@ -140,6 +149,49 @@ public class CodeInlineParser : InlineParser
 
         processor.Inline = codeInline;
         return true;
+    }
+
+    // Remembers, for each length of backtick string, a position after which the inline text has no backtick string of this
+    // length. Without it, each opening backtick string without a closing one scans the rest of the text again, and inputs
+    // such as \``a repeated n times take O(n²) time.
+    private sealed class UnclosedCodeSpans
+    {
+        private readonly Dictionary<int, int> _noClosingStringAfter = [];
+        private string? _text;
+        private int _textEnd;
+
+        public bool IsKnownUnclosed(StringSlice slice, int openSticks)
+        {
+            return ReferenceEquals(_text, slice.Text) &&
+                _textEnd == slice.End &&
+                _noClosingStringAfter.TryGetValue(openSticks, out var start) &&
+                slice.Start >= start;
+        }
+
+        public void SetUnclosed(StringSlice slice, int openSticks)
+        {
+            // The result of a search only depends on the characters between its start and the end of the text
+            if (!ReferenceEquals(_text, slice.Text) || _textEnd != slice.End)
+            {
+                _noClosingStringAfter.Clear();
+                _text = slice.Text;
+                _textEnd = slice.End;
+            }
+
+            _noClosingStringAfter[openSticks] = _noClosingStringAfter.TryGetValue(openSticks, out var start) ? Math.Min(start, slice.Start) : slice.Start;
+        }
+    }
+
+    // A character is escaped when it follows an odd number of backslashes
+    private static bool IsEscaped(in StringSlice slice, int offset)
+    {
+        var backslashCount = 0;
+        while (slice.PeekCharExtra(offset - 1 - backslashCount) == '\\')
+        {
+            backslashCount++;
+        }
+
+        return (backslashCount & 1) != 0;
     }
 
     private static string ReplaceNewLines(ReadOnlySpan<char> content)

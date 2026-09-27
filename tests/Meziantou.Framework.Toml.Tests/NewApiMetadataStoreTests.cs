@@ -82,6 +82,28 @@ public sealed class NewApiMetadataStoreTests
         }
     }
 
+    // The comments after the last key of the document, such as a commented-out setting, follow that key
+    [Theory]
+    [InlineData("A = 1\nB = 'x'\n# C = 3\n")]
+    [InlineData("A = 1\nB = 'x'\n[Nested]\nC = 2\n# D = 4\n# end")]
+    [InlineData("A = 1\nB = 'x'\n# first\n# second\n")]
+    public void MetadataStore_CommentsAfterTheLastKey_Roundtrip(string toml)
+    {
+        var expected = toml.EndsWith("\n", StringComparison.Ordinal) ? toml : toml + "\n";
+
+        Assert.Equal(expected, Roundtrip(resolver: null));
+        Assert.Equal(expected, Roundtrip(TestTomlMetadataContext.Default));
+
+        var tableOptions = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() };
+        Assert.Equal(expected, TomlSerializer.Serialize(TomlSerializer.Deserialize<TomlTable>(toml, tableOptions)!, tableOptions).ReplaceLineEndings("\n"));
+
+        string Roundtrip(ITomlTypeInfoResolver? resolver)
+        {
+            var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore(), TypeInfoResolver = resolver };
+            return TomlSerializer.Serialize(TomlSerializer.Deserialize<MetadataFormattedModel>(toml, options), options).ReplaceLineEndings("\n");
+        }
+    }
+
     [Fact]
     public void MetadataStore_InlineTableDisplayKind_IsKeptByTypedModels()
     {

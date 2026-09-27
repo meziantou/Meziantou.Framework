@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Toml.Serialization;
 public sealed class TomlReader
 {
     private readonly TomlSerializerOptions _options;
-    private List<(int Depth, TomlPropertiesMetadata Metadata, string? InlineValueName)>? _metadataCaptures;
+    private List<(int Depth, TomlPropertiesMetadata Metadata, string? InlineValueName, string? LastPropertyName)>? _metadataCaptures;
     private int _depth;
     private readonly TomlSerializationOperationState _operationState;
     private readonly TomlParser? _parser;
@@ -280,7 +280,13 @@ public sealed class TomlReader
             TomlPropertyMetadataCapture.Capture(capture.Metadata, name!, nameSpan, leadingTrivia, _currentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(this));
 
             // The trailing comment of an inline array or table follows its closing token
-            captures[^1] = capture with { InlineValueName = IsInlineContainer ? name : null };
+            captures[^1] = capture with { InlineValueName = IsInlineContainer ? name : null, LastPropertyName = name };
+        }
+
+        // The comments after the last key of the document precede the end of its table
+        if (_tokenType is TomlTokenType.EndTable && captures.Count > 0 && captures[^1] is { LastPropertyName: { } lastPropertyName } endingCapture && endingCapture.Depth > _depth)
+        {
+            TomlPropertyMetadataCapture.AppendTrailingTriviaAfterEndOfLine(endingCapture.Metadata, lastPropertyName, _currentLeadingTrivia);
         }
 
         // A table left without EndPropertiesMetadataCapture, because an error was recovered from, stops capturing. So does the
@@ -369,7 +375,7 @@ public sealed class TomlReader
         }
 
         var metadata = new TomlPropertiesMetadata();
-        (_metadataCaptures ??= []).Add((_depth, metadata, null));
+        (_metadataCaptures ??= []).Add((_depth, metadata, null, null));
         return metadata;
     }
 

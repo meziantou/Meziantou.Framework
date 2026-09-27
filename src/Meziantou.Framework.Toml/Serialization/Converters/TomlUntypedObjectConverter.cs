@@ -234,6 +234,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
         }
 
         reader.Read();
+        string? lastPropertyName = null;
         while (reader.TokenType != TomlTokenType.EndTable)
         {
             if (reader.TokenType != TomlTokenType.PropertyName)
@@ -242,6 +243,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             }
 
             var name = reader.PropertyName!;
+            lastPropertyName = name;
             var nameSpan = reader.CurrentSpan;
             var leadingTrivia = reader.CurrentLeadingTrivia;
             reader.Read();
@@ -273,6 +275,7 @@ internal sealed class TomlUntypedObjectConverter : TomlConverter
             }
         }
 
+        capturedAnyMetadata |= TomlPropertyMetadataCapture.AppendTrailingTriviaAfterEndOfLine(propertiesMetadata, lastPropertyName, reader.CurrentLeadingTrivia);
         reader.Read();
         if (hasStore && propertiesMetadata is not null && capturedAnyMetadata)
         {

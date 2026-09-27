@@ -737,6 +737,8 @@ public sealed partial class TomlParser
             _state = DocumentState.Terminating;
         }
 
+        // The comments after the last key of the document are the leading trivia of the first event that ends it: the end of
+        // the last table, whose last key they follow
         private bool ProducePendingDocumentEnd()
         {
             while (true)
@@ -750,7 +752,7 @@ public sealed partial class TomlParser
                             if (frame.Kind == ContainerKind.InlineTable && _implicitFrames.Count > frame.InlineImplicitBase)
                             {
                                 _implicitFrames.RemoveAt(_implicitFrames.Count - 1);
-                                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                                SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                                 return true;
                             }
 
@@ -758,7 +760,7 @@ public sealed partial class TomlParser
                             PopStructureValueScope();
                             SetPendingEvent(frame.Kind == ContainerKind.Array
                                 ? new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0)
-                                : new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                                : new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                             return true;
                         }
 
@@ -769,7 +771,7 @@ public sealed partial class TomlParser
                         if (_implicitFrames.Count > 0)
                         {
                             _implicitFrames.RemoveAt(_implicitFrames.Count - 1);
-                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                             return true;
                         }
 
@@ -783,7 +785,7 @@ public sealed partial class TomlParser
                             _explicitFrames.RemoveAt(_explicitFrames.Count - 1);
                             SetPendingEvent(frame.Kind == ExplicitFrameKind.Array
                                 ? new TomlParseEvent(TomlParseEventKind.EndArray, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0)
-                                : new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                                : new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                             return true;
                         }
 
@@ -794,7 +796,7 @@ public sealed partial class TomlParser
                         if (!_pendingDocumentEndRootTableClosed)
                         {
                             _pendingDocumentEndRootTableClosed = true;
-                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0));
+                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndTable, span: CurrentSpan(), propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                             return true;
                         }
 
@@ -805,7 +807,7 @@ public sealed partial class TomlParser
                         if (!_pendingDocumentEndDocumentClosed)
                         {
                             _pendingDocumentEndDocumentClosed = true;
-                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndDocument, span: null, propertyName: null, stringValue: null, data: 0));
+                            SetPendingEvent(new TomlParseEvent(TomlParseEventKind.EndDocument, span: null, propertyName: null, stringValue: null, data: 0), leadingTrivia: ExtractPendingTrivia());
                             _pendingOperation = PendingOperationKind.None;
                             _state = DocumentState.Ended;
                             ReleaseStructure();

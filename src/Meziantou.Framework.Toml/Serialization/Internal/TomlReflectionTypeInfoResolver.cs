@@ -1004,6 +1004,7 @@ internal static class TomlReflectionTypeInfoResolver
             var seen = needsSeen ? new bool[_members.Count] : null;
 
             string? inlineValueName = null;
+            string? lastPropertyName = null;
             reader.Read(); // first property or end
             while (true)
             {
@@ -1029,6 +1030,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var name = reader.PropertyName!;
                 reader.Read(); // value
                 TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
+                lastPropertyName = name;
                 if (propertiesMetadata is not null && reader.IsInlineContainer)
                 {
                     inlineValueName = name;
@@ -1124,6 +1126,7 @@ internal static class TomlReflectionTypeInfoResolver
             }
 
             var endTableSpan = reader.CurrentSpan;
+            TomlPropertyMetadataCapture.AppendTrailingTriviaAfterEndOfLine(propertiesMetadata, lastPropertyName, reader.CurrentLeadingTrivia);
             reader.Read(); // consume EndTable
 
             if (seen is not null)
@@ -1465,6 +1468,7 @@ internal static class TomlReflectionTypeInfoResolver
             Dictionary<string, object?>? extensionData = null;
 
             string? inlineValueName = null;
+            string? lastPropertyName = null;
             reader.Read(); // first property or end
             while (true)
             {
@@ -1490,6 +1494,7 @@ internal static class TomlReflectionTypeInfoResolver
                 var name = reader.PropertyName!;
                 reader.Read(); // value
                 TomlPropertyMetadataCapture.Capture(propertiesMetadata, name, nameSpan, leadingTrivia, reader.CurrentTrailingTrivia, TomlPropertyMetadataCapture.GetDisplayKind(reader));
+                lastPropertyName = name;
                 if (propertiesMetadata is not null && reader.IsInlineContainer)
                 {
                     inlineValueName = name;
@@ -1672,6 +1677,7 @@ internal static class TomlReflectionTypeInfoResolver
             }
 
             var endTableSpan = reader.CurrentSpan;
+            TomlPropertyMetadataCapture.AppendTrailingTriviaAfterEndOfLine(propertiesMetadata, lastPropertyName, reader.CurrentLeadingTrivia);
             reader.Read(); // consume EndTable
 
             for (var i = 0; i < _parameters.Length; i++)

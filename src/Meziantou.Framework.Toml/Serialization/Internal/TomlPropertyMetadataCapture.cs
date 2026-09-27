@@ -81,6 +81,26 @@ internal static class TomlPropertyMetadataCapture
     }
 
     // The trailing comment of an inline array or table is only known once its closing token is read
+    // The comments that follow the last key of a table, on their own lines, are written after the line of that key
+    public static bool AppendTrailingTriviaAfterEndOfLine(TomlPropertiesMetadata? propertiesMetadata, string? name, TomlSyntaxTriviaMetadata[]? trivia)
+    {
+        if (propertiesMetadata is null || name is null || trivia is not { Length: > 0 })
+        {
+            return false;
+        }
+
+        if (propertiesMetadata.TryGetProperty(name, out var propertyMetadata) && propertyMetadata is not null)
+        {
+            (propertyMetadata.TrailingTriviaAfterEndOfLine ??= []).AddRange(trivia);
+        }
+        else
+        {
+            propertiesMetadata.SetProperty(name, new TomlPropertyMetadata { TrailingTriviaAfterEndOfLine = new List<TomlSyntaxTriviaMetadata>(trivia) });
+        }
+
+        return true;
+    }
+
     public static bool AppendTrailingTrivia(TomlPropertiesMetadata? propertiesMetadata, string name, TomlSyntaxTriviaMetadata[]? trailingTrivia)
     {
         if (propertiesMetadata is null || trailingTrivia is not { Length: > 0 })

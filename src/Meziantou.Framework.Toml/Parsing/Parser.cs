@@ -609,7 +609,12 @@ internal partial class Parser
             node = node?.GetOrAddChild(dotKey.Key);
         }
 
-        node?.IsTableArray = true;
+        if (node is not null)
+        {
+            // A new element of the array of tables starts empty: the arrays of tables of the previous element are not in it
+            node.ClearChildren();
+            node.IsTableArray = true;
+        }
     }
 
     private BareKeyOrStringValueSyntax? ParseBaseKey()
@@ -956,6 +961,8 @@ internal partial class Parser
         private Dictionary<string, TableArrayPathNode>? _children;
 
         public bool IsTableArray { get; set; }
+
+        public void ClearChildren() => _children?.Clear();
 
         public TableArrayPathNode? GetChild(BareKeyOrStringValueSyntax? key)
         {

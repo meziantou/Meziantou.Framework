@@ -228,6 +228,18 @@ public sealed class MaxDepthTests
         Assert.Equal(exception.Span!.Value.Start.Column, diagnostic.Span.Start.Column);
     }
 
+    // The arrays of tables of an element are not in the next element of its array of tables
+    [Theory]
+    [InlineData("[[b]]\n[[b.a]]\n[[b]]\n[b.a.x]\n", 5)]
+    [InlineData("[[b]]\n[[b.a]]\n[[b]]\n[[b.a]]\n[b.a.x]\n", 6)]
+    public void SyntaxParser_CountsTheDepthOfTheCurrentArrayOfTablesElement(string toml, int maxDepth)
+    {
+        var options = TomlSerializerOptions.Default with { MaxDepth = maxDepth };
+
+        Assert.NotNull(TomlSerializer.Deserialize<TomlTable>(toml, options));
+        Assert.Empty(SyntaxParser.Parse(toml, options).Diagnostics);
+    }
+
     [Theory]
     [InlineData(63, true)]
     [InlineData(62, false)]

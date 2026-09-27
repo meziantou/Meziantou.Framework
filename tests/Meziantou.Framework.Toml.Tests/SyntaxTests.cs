@@ -355,6 +355,21 @@ val = true
         Assert.Equal(doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).Order().ToArray(), doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray());
     }
 
+    // A missing comma is reported once, whatever the kind of the next value
+    [Theory]
+    [InlineData("1")]
+    [InlineData("inf")]
+    [InlineData("nan")]
+    [InlineData("+nan")]
+    [InlineData("-nan")]
+    [InlineData("'a'")]
+    public void MissingCommaBeforeAValue_IsReportedOnce(string value)
+    {
+        var doc = SyntaxParser.Parse($"a = [1 {value}, 2]\n");
+
+        Assert.Single(doc.Diagnostics);
+    }
+
     [Theory]
     [InlineData('\0', "\\u0000")]
     [InlineData('\u001B', "\\u001B")]

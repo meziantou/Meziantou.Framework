@@ -254,6 +254,9 @@ internal partial class Parser
             case TokenKind.Infinite:
             case TokenKind.PositiveInfinite:
             case TokenKind.NegativeInfinite:
+            case TokenKind.Nan:
+            case TokenKind.PositiveNan:
+            case TokenKind.NegativeNan:
             case TokenKind.Float:
             case TokenKind.String:
             case TokenKind.StringMulti:

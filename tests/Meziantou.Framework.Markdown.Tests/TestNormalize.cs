@@ -775,6 +775,19 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Theory]
+    [InlineData("* >\n  x", "* > \n  x")]
+    [InlineData("- # a\n  b", "- # a\n  b")]
+    [InlineData("-     a\n  b", "-     a\n  b")]
+    [InlineData("- ***\n  a", "- ***\n  a")]
+    [InlineData("- ```\n  x\n  ```\n  y", "- ```\n  x\n  ```\n  y")]
+    [InlineData("- > a\n  >\n  > b", "- > a\n  > \n  > b")]
+    [InlineData("- > a\n  >\n  b", "- > a\n  > \n  b")]
+    public void TightListItemBlocksAreNotSeparatedByBlankLines(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

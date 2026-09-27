@@ -26,10 +26,54 @@ public class QuoteBlockRenderer : NormalizeObjectRenderer<QuoteBlock>
         }
         else
         {
+            // The blocks of the quote are separated even when the quote is in a tight list
+            var compact = renderer.CompactParagraph;
+            renderer.CompactParagraph = false;
             renderer.WriteChildren(obj);
+            renderer.CompactParagraph = compact;
         }
+
+        var next = GetNextSibling(obj);
+        if (renderer.CompactParagraph && next is ParagraphBlock && IsLastBlockParagraph(obj))
+        {
+            // Without a blank line, which would make the list loose, an empty quote line ends the paragraph
+            renderer.WriteLine();
+            renderer.Write(string.Empty);
+        }
+
         renderer.PopIndent();
 
-        renderer.FinishBlock(true);
+        if (renderer.CompactParagraph && next is QuoteBlock)
+        {
+            // Adjacent quotes would merge
+            renderer.EnsureLine();
+            renderer.WriteLine();
+        }
+        else
+        {
+            renderer.FinishBlock(true);
+        }
+    }
+
+    private static Block? GetNextSibling(Block block)
+    {
+        if (block.Parent is not { } parent)
+        {
+            return null;
+        }
+
+        var index = parent.IndexOf(block);
+        return index >= 0 && index + 1 < parent.Count ? parent[index + 1] : null;
+    }
+
+    private static bool IsLastBlockParagraph(ContainerBlock container)
+    {
+        var block = container.LastChild;
+        while (block is ContainerBlock child)
+        {
+            block = child.LastChild;
+        }
+
+        return block is ParagraphBlock;
     }
 }

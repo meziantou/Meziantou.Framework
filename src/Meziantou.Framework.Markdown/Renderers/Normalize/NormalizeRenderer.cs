@@ -74,10 +74,18 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     {
         if (!IsLastInContainer)
         {
-            WriteLine();
-            if (emptyLine)
+            if (CompactParagraph)
+            {
+                // A blank line between the blocks of a tight list item would make the list loose
+                EnsureLine();
+            }
+            else
             {
                 WriteLine();
+                if (emptyLine)
+                {
+                    WriteLine();
+                }
             }
         }
     }

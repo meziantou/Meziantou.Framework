@@ -248,7 +248,7 @@ internal sealed class CompactPrefixTree<TValue> : IReadOnlyDictionary<string, TV
 
     #region RootChar
 
-    // Inspired by Markdig's CharacterMap
+    // Inspired by CharacterMap
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool TryGetRoot(char rootChar, out int rootNodeIndex)

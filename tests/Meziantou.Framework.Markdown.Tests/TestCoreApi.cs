@@ -4,7 +4,7 @@ using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
-public class TestMarkdigCoreApi
+public class TestCoreApi
 {
     [Fact]
     public void TestToHtml()

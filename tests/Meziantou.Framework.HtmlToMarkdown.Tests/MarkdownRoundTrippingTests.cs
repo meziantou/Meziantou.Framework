@@ -1,15 +1,15 @@
-using Markdig;
+using Meziantou.Framework.Markdown;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
 public sealed class MarkdownRoundTrippingTests
 {
-    private static readonly Lazy<List<MarkdigTestCase>> AllCases = new(LoadAllCases);
+    private static readonly Lazy<List<MarkdownSpecTestCase>> AllCases = new(LoadAllCases);
 
-    private static List<MarkdigTestCase> LoadAllCases()
+    private static List<MarkdownSpecTestCase> LoadAllCases()
     {
-        var cases = new List<MarkdigTestCase>();
+        var cases = new List<MarkdownSpecTestCase>();
         var assembly = typeof(MarkdownRoundTrippingTests).Assembly;
 
         // Find all embedded .md resources in the Specs folder
@@ -32,9 +32,9 @@ public sealed class MarkdownRoundTrippingTests
         return cases;
     }
 
-    public static TheoryData<MarkdigTestCase> GetTestCases()
+    public static TheoryData<MarkdownSpecTestCase> GetTestCases()
     {
-        var data = new TheoryData<MarkdigTestCase>();
+        var data = new TheoryData<MarkdownSpecTestCase>();
         foreach (var testCase in AllCases.Value)
         {
             // Some tests may not round-trip due to extension-specific parsing behaviors
@@ -47,27 +47,27 @@ public sealed class MarkdownRoundTrippingTests
     }
 
     /// <summary>
-    /// Round-trip test: take the HTML from Markdig's spec files, convert to Markdown using our converter,
-    /// then convert back to HTML using Markdig with advanced extensions, and verify the HTML is semantically equivalent.
+    /// Round-trip test: take the HTML from the extension spec files, convert to Markdown using our converter,
+    /// then convert back to HTML using Meziantou.Framework.Markdown with advanced extensions, and verify the HTML is semantically equivalent.
     /// </summary>
     [Theory]
     [MemberData(nameof(GetTestCases))]
-    public void RoundTrip(MarkdigTestCase testCase)
+    public void RoundTrip(MarkdownSpecTestCase testCase)
     {
         // 1. Convert the spec HTML to Markdown using our converter
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 
-        // 2. Convert the Markdown back to HTML using Markdig with advanced extensions
+        // 2. Convert the Markdown back to HTML using Meziantou.Framework.Markdown with advanced extensions
         var pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
             .Build();
-        var roundTrippedHtml = Markdown.ToHtml(markdown, pipeline);
+        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, pipeline);
 
         // 3. Compare the HTML outputs
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
     }
 
-    private static bool ShouldSkip(MarkdigTestCase testCase)
+    private static bool ShouldSkip(MarkdownSpecTestCase testCase)
     {
         // CommonMark.md contains the full CommonMark spec. We test those separately
         // in CommonMarkSpecTests. Skip the duplicate here to avoid 600+ duplicate tests.
@@ -93,7 +93,7 @@ public sealed class MarkdownRoundTrippingTests
 }
 
 #pragma warning disable MA0048 // File name must match type name
-public sealed class MarkdigTestCase : IXunitSerializable
+public sealed class MarkdownSpecTestCase : IXunitSerializable
 {
     public string Markdown { get; set; } = "";
     public string Html { get; set; } = "";

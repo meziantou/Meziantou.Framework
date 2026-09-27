@@ -2,8 +2,8 @@
 
 The eight table examples from the [GFM specification, section 4.10](https://github.github.com/gfm/#tables-extension-),
 retrieved from [cmark-gfm/test/spec.txt](https://github.com/github/cmark-gfm/blob/499789b49373bfa045d0e7547e5ee63444c77bca/test/spec.txt)
-on 2026-09-19. Markdown inputs are unchanged. Expected HTML uses Markdig's
-`style="text-align: ...;"` instead of the specification's `align="..."` attributes.
+on 2026-09-19. Markdown inputs are unchanged. Expected HTML uses the
+`style="text-align: ...;"` attributes of this library instead of the specification's `align="..."` attributes.
 The upstream specification is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 ## Basic table

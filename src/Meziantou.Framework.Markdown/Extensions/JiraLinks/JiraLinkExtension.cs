@@ -10,7 +10,7 @@ using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 namespace Meziantou.Framework.Markdown.Extensions.JiraLinks;
 
 /// <summary>
-/// Simple inline parser extension for Markdig to find, and
+/// Simple inline parser extension to find, and
 /// automatically add links to JIRA issue numbers.
 /// </summary>
 public class JiraLinkExtension : IMarkdownExtension

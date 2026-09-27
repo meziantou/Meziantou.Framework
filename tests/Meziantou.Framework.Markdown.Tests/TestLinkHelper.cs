@@ -246,6 +246,29 @@ public class TestLinkHelper
 
     }
 
+    [Theory]
+    [InlineData("[foo]: /url\n\"title")]
+    [InlineData("[foo]: /url\n'Tis the season.")]
+    [InlineData("[foo]: /url \n (see")]
+    [InlineData("[foo]: /url\n\"title\n\nnext")]
+    public void TestLinkReferenceDefinitionEndsBeforeALineThatIsNotATitle(string markdown)
+    {
+        var text = new StringSlice(markdown);
+        Assert.True(LinkHelper.TryParseLinkReferenceDefinition(ref text, out string? label, out string? url, out string? title, out _, out _, out SourceSpan titleSpan));
+        Assert.Equal("foo", label);
+        Assert.Equal("/url", url);
+        Assert.Null(title);
+        Assert.Equal(SourceSpan.Empty, titleSpan);
+        Assert.Equal(markdown.IndexOfAny(['"', '\'', '(']), text.Start);
+
+        text = new StringSlice(markdown);
+        Assert.True(LinkHelper.TryParseLinkReferenceDefinitionTrivia(ref text, out _, out label, out _, out _, out url, out _, out _, out _, out title, out _, out _, out _, out _, out _, out _, out titleSpan));
+        Assert.Equal("foo", label);
+        Assert.Equal("/url", url);
+        Assert.Null(title);
+        Assert.Equal(SourceSpan.Empty, titleSpan);
+    }
+
     [Fact]
     public void TestlLinkReferenceDefinitionInvalid()
     {

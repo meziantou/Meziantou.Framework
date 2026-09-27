@@ -201,6 +201,17 @@ public class TestLinkReferenceDefinition
     }
 
     [Theory]
+    [InlineData("[a]: /r\n'b\n")]
+    [InlineData("[a]: /r\n'b\n[a]\n")]
+    [InlineData("[a]: /r \n  \"b\n")]
+    [InlineData("[a]: /r\r\n(b\r\n")]
+    [InlineData("> [a]: /r\n> 'b\n")]
+    public void TestNextLineIsNotATitle(string value)
+    {
+        RoundTrip(value);
+    }
+
+    [Theory]
     [InlineData("[a]: /r\n===\n[a]")]
     public void TestSetextHeader(string value)
     {

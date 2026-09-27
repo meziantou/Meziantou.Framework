@@ -1309,6 +1309,7 @@ public static class LinkHelper
         var c = text.CurrentChar;
         if (c == '\'' || c == '"' || c == '(')
         {
+            var beforeTitle = text;
             titleSpan.Start = text.Start;
             if (TryParseTitle(ref text, out title, out _))
             {
@@ -1318,6 +1319,14 @@ public static class LinkHelper
                 {
                     return false;
                 }
+            }
+            else if (newLineCount > 0)
+            {
+                // The next line does not start with a title, so the definition ends with the url, like when there is no title
+                text = beforeTitle;
+                title = null;
+                titleSpan = SourceSpan.Empty;
+                return true;
             }
             else
             {
@@ -1443,6 +1452,7 @@ public static class LinkHelper
         var c = text.CurrentChar;
         if (c == '\'' || c == '"' || c == '(')
         {
+            var beforeTitle = text;
             titleSpan.Start = text.Start;
             unescapedTitle.Start = text.Start + 1; // + 1; // skip opening enclosing character
             if (TryParseTitleTrivia(ref text, out title, out titleEnclosingCharacter))
@@ -1457,6 +1467,18 @@ public static class LinkHelper
 
                 // Discard the newline if we have a title
                 newLine = NewLine.None;
+            }
+            else if (newLineCount > 0)
+            {
+                // The next line does not start with a title, so the definition ends with the url, like when there is no title
+                text = beforeTitle;
+                title = null;
+                titleEnclosingCharacter = '\0';
+                unescapedTitle = SourceSpan.Empty;
+                titleSpan = SourceSpan.Empty;
+                triviaBeforeTitle.End -= newLine.Length();
+                triviaAfterTitle = new SourceSpan(text.Start, text.Start - 1);
+                return true;
             }
             else
             {

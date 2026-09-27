@@ -2510,9 +2510,23 @@ public sealed class GeneratedNonHidingInitMethodDerived<T> : GeneratedNonHidingI
     public new int X() => 3;
 }
 
+public class GeneratedNonHidingExtensionDataBase
+{
+    public int A { get; set; }
+
+    [TomlExtensionData]
+    public Dictionary<string, object>? Extra { get; set; }
+}
+
+public sealed class GeneratedNonHidingExtensionDataDerived : GeneratedNonHidingExtensionDataBase
+{
+    public static new int Extra => 1;
+}
+
 [TomlSerializable(typeof(GeneratedStaticNewDerived))]
 [TomlSerializable(typeof(GeneratedConstNewDerived))]
 [TomlSerializable(typeof(GeneratedInternalNewDerived))]
+[TomlSerializable(typeof(GeneratedNonHidingExtensionDataDerived))]
 [TomlSerializable(typeof(GeneratedNonHidingNullableArgumentDerived))]
 [TomlSerializable(typeof(GeneratedNonHidingInitStaticDerived<int>))]
 [TomlSerializable(typeof(GeneratedNonHidingInitMethodDerived<int>))]
@@ -5177,6 +5191,10 @@ public class NewApiSourceGenerationTests
         Check(context.GeneratedInternalNewDerived);
         Assert.Equal("a", ((GeneratedNonHidingGenericBase<string?>)TomlSerializer.Deserialize("X = 'a'", context.GeneratedNonHidingNullableArgumentDerived)!).X);
         Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize("X = 5", context.GeneratedNonHidingInitStaticDerivedInt32)!).X);
+        var extensionData = TomlSerializer.Deserialize("A = 1\nzz = 5\n", context.GeneratedNonHidingExtensionDataDerived)!;
+        Assert.Equal(5L, ((GeneratedNonHidingExtensionDataBase)extensionData).Extra!["zz"]);
+        Assert.Equal("A = 1\nzz = 5\n", TomlSerializer.Serialize(extensionData, context.GeneratedNonHidingExtensionDataDerived).ReplaceLineEndings("\n"));
+        Assert.Equal("A = 1\nzz = 5\n", TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedNonHidingExtensionDataDerived>("A = 1\nzz = 5\n")).ReplaceLineEndings("\n"));
         Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize<GeneratedNonHidingInitStaticDerived<int>>("X = 5")!).X);
         Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize("X = 5", context.GeneratedNonHidingInitMethodDerivedInt32)!).X);
         Assert.Equal(5, ((GeneratedNonHidingInitBase<int>)TomlSerializer.Deserialize<GeneratedNonHidingInitMethodDerived<int>>("X = 5")!).X);

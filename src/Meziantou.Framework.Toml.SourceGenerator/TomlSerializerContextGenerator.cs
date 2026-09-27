@@ -5298,6 +5298,26 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
+        // Like a member, extension data whose name a derived member uses is read and set with accessors, which find it on its
+        // declaring type
+        if (extensionData is { Symbol: { ContainingType: { } extensionDataDeclaringType } extensionDataSymbol })
+        {
+            for (var current = named; current is not null && !SymbolEqualityComparer.Default.Equals(current, extensionDataDeclaringType); current = current.BaseType)
+            {
+                if (current.GetMembers(extensionData.MemberName).Any(other => !SymbolEqualityComparer.Default.Equals(other, extensionDataSymbol)))
+                {
+                    extensionData.GetterAccessorName ??= "__GetExtensionData";
+                    if (extensionData.CanSet)
+                    {
+                        extensionData.SetterAccessorName ??= "__SetExtensionData";
+                        extensionData.IsSetterAccessible = false;
+                    }
+
+                    break;
+                }
+            }
+        }
+
         // Reading would fill only one of the members, and writing would write the key twice
         var membersBySerializedName = new Dictionary<string, PocoMember>(GetEffectivePropertyNameCaseInsensitive(model.Options) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         foreach (var member in members)

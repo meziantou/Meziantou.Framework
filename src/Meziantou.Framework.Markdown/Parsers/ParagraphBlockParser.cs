@@ -114,20 +114,21 @@ public class ParagraphBlockParser : BlockParser
         {
             var paragraph = (ParagraphBlock)block;
 
-            bool foundLrd;
-            if (state.TrackTrivia)
-            {
-                foundLrd = TryMatchLinkReferenceDefinitionTrivia(ref paragraph.Lines, state, paragraph);
-            }
-            else
-            {
-                foundLrd = TryMatchLinkReferenceDefinition(ref paragraph.Lines, state);
-            }
+            // A line that is not an underline of the paragraph (a lazy continuation line) is added to it. Like commonmark.js, the
+            // definitions are then parsed when the paragraph is closed, not for each such line: that parsed the paragraph again each time.
+            var parent = block.Parent;
+            bool isSetTextHeading = !state.IsLazy || paragraph.Column == state.Column || !(parent is QuoteBlock || parent is ListItemBlock);
 
             // If we matched a LinkReferenceDefinition before matching the heading, and the remaining
             // lines are empty, we can early exit and remove the paragraph
-            var parent = block.Parent;
-            bool isSetTextHeading = !state.IsLazy || paragraph.Column == state.Column || !(parent is QuoteBlock || parent is ListItemBlock);
+            bool foundLrd = false;
+            if (isSetTextHeading)
+            {
+                foundLrd = state.TrackTrivia
+                    ? TryMatchLinkReferenceDefinitionTrivia(ref paragraph.Lines, state, paragraph)
+                    : TryMatchLinkReferenceDefinition(ref paragraph.Lines, state);
+            }
+
             if (!(foundLrd && paragraph.Lines.Count == 0) && isSetTextHeading)
             {
                 // We discard the paragraph that will be transformed to a heading

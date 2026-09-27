@@ -710,6 +710,50 @@ public class MiscTests
         }
     }
 
+    [Theory]
+    [InlineData("- [\n", "=\n", 100_000, "<ul>\n<li>[\n=\n=\n=</li>\n</ul>\n")]
+    [InlineData("> [\n", "=\n", 100_000, "<blockquote>\n<p>[\n=\n=\n=</p>\n</blockquote>\n")]
+    [InlineData("", "-\n> a\n", 220_000, "<ul>\n<li></li>\n</ul>\n<blockquote>\n<p>a\n-\na\n-\na</p>\n</blockquote>\n")]
+    [InlineData("", "> a\n-\n", 220_000, "<blockquote>\n<p>a\n-\na\n-\na\n-</p>\n</blockquote>\n")]
+    [InlineData("> [a]: b \"\n", "=\n", 140_000, "<blockquote>\n<p>[a]: b &quot;\n=\n=\n=</p>\n</blockquote>\n")]
+    [InlineData(">  [a]: b \"\n", "> =\n", 120_000, "<blockquote>\n<p>[a]: b &quot;\n=\n=\n=</p>\n</blockquote>\n")]
+    public void LazySetextUnderlinesAreParsedInLinearTime(string start, string line, int count, string expectedWithThreeLines)
+    {
+        Assert.Equal(expectedWithThreeLines, MarkdownConverter.ToHtml(start + line + line + line));
+
+        // Each lazy line that looks like an underline used to parse link reference definitions from the start of the paragraph again
+        var markdown = start + string.Concat(Enumerable.Repeat(line, count));
+
+        var stopwatch = Stopwatch.StartNew();
+        _ = MarkdownConverter.Parse(markdown);
+        stopwatch.Stop();
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData("> [a]: /u \"t\n=\n\"\n=\n\n[a]\n", "<blockquote>\n<p>=</p>\n</blockquote>\n<p><a href=\"/u\" title=\"t\n=\n\">a</a></p>\n")]
+    [InlineData("> x\n=\n[a]: /u\n=\n\n[a]\n", "<blockquote>\n<p>x\n=\n[a]: /u\n=</p>\n</blockquote>\n<p>[a]</p>\n")]
+    [InlineData("- [a]:\n=\n  /u\n=\n\n[a]\n", "<ul>\n<li>/u\n=</li>\n</ul>\n<p><a href=\"=\">a</a></p>\n")]
+    [InlineData("> [a]: /u\n\"t\n=\n\"\n\n[a]\n", "<blockquote>\n</blockquote>\n<p><a href=\"/u\" title=\"t\n=\n\">a</a></p>\n")]
+    [InlineData("- [a]: /u\n\"t\n=\nu\"\n\n[a]\n", "<ul>\n<li></li>\n</ul>\n<p><a href=\"/u\" title=\"t\n=\nu\">a</a></p>\n")]
+    public void LazySetextUnderlinesSeeTheLinesAddedSinceTheLastOne(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown));
+    }
+
+    [Theory]
+    [InlineData(995, true)]
+    [InlineData(996, false)]
+    public void LazySetextUnderlinesStopAtTheLengthLimitOfLabels(int length, bool isLink)
+    {
+        // The label is "x...x = =", the lazy underlines being part of it
+        var label = new string('x', length);
+        var markdown = "> [" + label + "\n=\n=\n]: /u\n=\n\n[" + label + " = =]\n";
+
+        Assert.Equal(isLink, MarkdownConverter.ToHtml(markdown).Contains("<a href=\"/u\">", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void SettingARoundtripLinkReferenceDefinitionAgainDoesNotAddItTwice()
     {

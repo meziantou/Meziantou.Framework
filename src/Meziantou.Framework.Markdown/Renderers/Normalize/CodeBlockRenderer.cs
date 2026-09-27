@@ -24,7 +24,7 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
     {
         if (obj is FencedCodeBlock fencedCodeBlock)
         {
-            int fencedCharCount = Math.Min(fencedCodeBlock.OpeningFencedCharCount, fencedCodeBlock.ClosingFencedCharCount);
+            int fencedCharCount = GetFencedCharCount(fencedCodeBlock);
 
             renderer.Write(fencedCodeBlock.FencedChar, fencedCharCount);
             if (fencedCodeBlock.Info != null)
@@ -46,6 +46,7 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
             */
             renderer.WriteLine();
 
+            // Always close the fence: a block closed by the end of its container, or unclosed, would otherwise swallow what follows
             renderer.WriteLeafRawLines(obj, true);
             renderer.Write(fencedCodeBlock.FencedChar, fencedCharCount);
         }
@@ -55,5 +56,30 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
         }
 
         renderer.FinishBlock(renderer.Options.EmptyLineAfterCodeBlock);
+    }
+
+    private static int GetFencedCharCount(FencedCodeBlock fencedCodeBlock)
+    {
+        var fencedChar = fencedCodeBlock.FencedChar;
+        if (fencedChar is not ('`' or '~'))
+        {
+            // Other fences (e.g. math blocks) accept a fixed number of characters
+            return Math.Max(fencedCodeBlock.OpeningFencedCharCount, fencedCodeBlock.ClosingFencedCharCount);
+        }
+
+        // The fence must be longer than any content line that would close it
+        var count = Math.Max(3, fencedCodeBlock.OpeningFencedCharCount);
+        var lines = fencedCodeBlock.Lines;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var line = lines.Lines[i].Slice.AsSpan().TrimStart(" \t");
+            var run = line.Length - line.TrimStart(fencedChar).Length;
+            if (run >= count && line[run..].IsWhiteSpace())
+            {
+                count = run + 1;
+            }
+        }
+
+        return count;
     }
 }

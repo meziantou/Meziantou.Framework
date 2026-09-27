@@ -691,6 +691,38 @@ Text following the table.");
         Assert.Null(column.SeparatorDashCount);
     }
 
+    [Theory]
+    [InlineData("```\n<img src=x onerror=alert(1)>", "```\n<img src=x onerror=alert(1)>\n```")]
+    [InlineData("1. ```\n   [x](javascript:alert(1))", "1. ```\n   [x](javascript:alert(1))\n   ```")]
+    [InlineData("> ~~~\n> *a*\n\n*b*", "> ~~~\n> *a*\n> ~~~\n\n*b*")]
+    public void FencedCodeBlockIsAlwaysClosed(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
+    [Fact]
+    public void FencedCodeBlockFenceIsLongerThanItsContent()
+    {
+        AssertSyntax("`````\n```\n  ```` \n`````", new FencedCodeBlock(null!)
+        {
+            FencedChar = '`',
+            Lines = new StringLineGroup(4)
+            {
+                new StringSlice("```"),
+                new StringSlice("  ```` "),
+            }
+        });
+    }
+
+    private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
+    {
+        pipeline ??= new MarkdownPipelineBuilder().Build();
+        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
+        Assert.Equal(expected, normalized);
+        Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
+        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
+    }
+
     private static void AssertSyntax(string expected, MarkdownObject syntax)
     {
         var writer = new StringWriter();

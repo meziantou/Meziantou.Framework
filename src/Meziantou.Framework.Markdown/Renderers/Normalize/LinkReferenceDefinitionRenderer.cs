@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
 using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize;
@@ -21,13 +22,13 @@ public class LinkReferenceDefinitionRenderer : NormalizeObjectRenderer<LinkRefer
         renderer.Write(linkDef.Label);
         renderer.Write("]: ");
 
-        renderer.Write(linkDef.Url);
+        // The entities of a definition are kept, and decoded when a link uses it
+        LinkInlineRenderer.WriteDestination(renderer, linkDef.Url, decodedEntities: false);
 
         if (linkDef.Title != null)
         {
-            renderer.Write(" \"");
-            renderer.Write(linkDef.Title.Replace("\"", "\\\"", StringComparison.Ordinal));
-            renderer.Write('"');
+            renderer.Write(' ');
+            LinkInlineRenderer.WriteTitle(renderer, linkDef.Title, decodedEntities: false);
         }
         renderer.FinishBlock(false);
     }

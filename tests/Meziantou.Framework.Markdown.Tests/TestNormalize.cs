@@ -796,6 +796,27 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Fact]
+    public void LinkWithEmptyDestinationKeepsIt()
+    {
+        AssertNormalizePreservesHtml("[]()", "[](<>)");
+
+        // A reference to a heading has no URL until the document is rendered
+        AssertNormalizePreservesHtml("# a\n\n[a]", "# a\n\n[a]", new MarkdownPipelineBuilder().UseAutoIdentifiers().Build());
+    }
+
+    [Theory]
+    [InlineData("[a](<b c>)", "[a](<b c>)")]
+    [InlineData("[a](<b)c>)", "[a](<b)c>)")]
+    [InlineData("[a](b \"c\\\\\")", "[a](b \"c\\\\\")")]
+    [InlineData("[a](&amp;lt;)", "[a](&amp;lt;)")]
+    [InlineData("[a]\n\n[a]: <>", "[a]\n\n[a]: <>")]
+    [InlineData("[a]\n\n[a]: <b c> \"t\"", "[a]\n\n[a]: <b c> \"t\"")]
+    public void LinkDestinationAndTitleAreEscaped(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

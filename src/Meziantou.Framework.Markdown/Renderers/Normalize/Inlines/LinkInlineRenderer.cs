@@ -2,6 +2,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Text;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
@@ -47,24 +49,105 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
                 renderer.Write('[').Write(renderer.EscapeTablePipes ? link.Label.Replace("|", "\\|", StringComparison.Ordinal) : link.Label).Write(']');
             }
         }
-        else
+        // A link with a dynamic URL, such as a reference to a heading, stays a shortcut reference
+        else if (link.Url is not null || link.GetDynamicUrl is null)
         {
-            if (link.Url is { Length: > 0 } url)
+            renderer.Write('(');
+            WriteDestination(renderer, link.Url);
+            if (link.Title is { Length: > 0 } title)
             {
-                renderer.Write('(').Write(renderer.EscapeTablePipes
-                    ? url.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal) : url);
+                renderer.Write(' ');
+                WriteTitle(renderer, title);
+            }
 
-                if (link.Title is { Length: > 0 })
-                {
-                    renderer.Write(" \"");
-                    var title = renderer.EscapeTablePipes
-                        ? link.Title.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal) : link.Title;
-                    renderer.Write(title.Replace(@"""", @"\""", StringComparison.Ordinal));
-                    renderer.Write('"');
-                }
+            renderer.Write(')');
+        }
+    }
 
-                renderer.Write(')');
+    /// <summary>
+    /// Writes a link destination, escaped so that it is parsed back to the same URL.
+    /// </summary>
+    /// <param name="renderer">The renderer.</param>
+    /// <param name="url">The destination.</param>
+    /// <param name="decodedEntities">Whether the parser decoded the entities of the destination, so that ampersands must be encoded.</param>
+    internal static void WriteDestination(NormalizeRenderer renderer, string? url, bool decodedEntities = true)
+    {
+        url ??= string.Empty;
+
+        // A destination with spaces or unbalanced parentheses, or an empty one, needs angle brackets
+        var depth = 0;
+        var needsBrackets = url.Length == 0 || url[0] == '<';
+        foreach (var c in url)
+        {
+            if (c <= ' ' || (c == ')' && --depth < 0))
+            {
+                needsBrackets = true;
+                break;
+            }
+
+            if (c == '(')
+            {
+                depth++;
             }
         }
+
+        needsBrackets |= depth != 0;
+        var escaped = Escape(url, needsBrackets ? "<>" : "", decodedEntities);
+        if (needsBrackets)
+        {
+            escaped = "<" + escaped + ">";
+        }
+
+        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+    }
+
+    /// <summary>
+    /// Writes a link title, escaped so that it is parsed back to the same text.
+    /// </summary>
+    /// <param name="renderer">The renderer.</param>
+    /// <param name="title">The title.</param>
+    /// <param name="decodedEntities">Whether the parser decoded the entities of the title, so that ampersands must be encoded.</param>
+    internal static void WriteTitle(NormalizeRenderer renderer, string title, bool decodedEntities = true)
+    {
+        var escaped = "\"" + Escape(title, "\"", decodedEntities) + "\"";
+        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+    }
+
+    // Escapes the specified characters, the backslashes that would escape the next character, and the ampersands that would start an entity
+    private static string Escape(string text, string characters, bool decodedEntities)
+    {
+        StringBuilder? builder = null;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (decodedEntities && c == '&' && IsEntityStart(text.AsSpan(i + 1)))
+            {
+                // The entity is decoded once, even where a backslash escape is not honored
+                builder ??= new StringBuilder(text, 0, i, text.Length + 8);
+                builder.Append("&amp;");
+                continue;
+            }
+
+            if (characters.Contains(c, StringComparison.Ordinal) || (c == '\\' && (i + 1 == text.Length || text[i + 1].IsAsciiPunctuation())))
+            {
+                builder ??= new StringBuilder(text, 0, i, text.Length + 8);
+                builder.Append('\\');
+            }
+
+            builder?.Append(c);
+        }
+
+        return builder?.ToString() ?? text;
+    }
+
+    private static bool IsEntityStart(ReadOnlySpan<char> text)
+    {
+        var length = text.Length > 0 && text[0] == '#' ? 1 : 0;
+        while (length < text.Length && char.IsAsciiLetterOrDigit(text[length]))
+        {
+            length++;
+        }
+
+        return length > 0 && length < text.Length && text[length] == ';';
     }
 }

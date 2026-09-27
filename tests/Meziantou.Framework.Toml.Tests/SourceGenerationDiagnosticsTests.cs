@@ -1079,6 +1079,27 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_TypeWithOnlyMembersIgnoredOnRead_CompilesWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class WriteOnly { [TomlIgnore(Condition = Meziantou.Framework.Toml.TomlIgnoreCondition.WhenReading)] public int X { get; set; } }
+
+            public sealed record WriteOnlyRecord(int A) { [TomlIgnore(Condition = Meziantou.Framework.Toml.TomlIgnoreCondition.WhenReading)] public int X { get; set; } }
+
+            [TomlSerializable(typeof(WriteOnly))]
+            [TomlSerializable(typeof(WriteOnlyRecord))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var diagnostics = RunGenerator(source);
+
+        Assert.DoesNotContain(diagnostics, d => d.Severity >= DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
     public void Generator_MembersWithAnInaccessibleGetter_Compile()
     {
         var source = """

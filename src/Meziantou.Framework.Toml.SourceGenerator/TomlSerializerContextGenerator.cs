@@ -1345,7 +1345,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             var throwOnDuplicate = ShouldThrowOnDuplicate(model.Options);
             if (poco.Members.Length <= 64)
             {
-                if (poco.Members.Length > 0 && (throwOnDuplicate || hasRequiredMembers))
+                // A member ignored when reading is never marked as seen
+                if (poco.Members.Any(static member => !member.IsIgnoredOnRead) && (throwOnDuplicate || hasRequiredMembers))
                 {
                     builder.AppendLine("            ulong seenMask = 0;");
                 }
@@ -1726,7 +1727,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         // Required/duplicate tracking for members.
         if (useSeenMask)
         {
-            if (poco.Members.Length > 0 && (throwOnDuplicate || hasRequiredMembers))
+            // A member ignored when reading is never marked as seen
+            if (poco.Members.Any(static member => !member.IsIgnoredOnRead) && (throwOnDuplicate || hasRequiredMembers))
             {
                 builder.AppendLine("            ulong seenMask = 0;");
             }
@@ -2745,7 +2747,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
         var throwOnDuplicate = ShouldThrowOnDuplicate(options);
         if (poco.Members.Length <= 64)
         {
-            if (poco.Members.Length > 0 && (throwOnDuplicate || hasRequiredMembers))
+            // A member ignored when reading is never marked as seen
+            if (poco.Members.Any(static member => !member.IsIgnoredOnRead) && (throwOnDuplicate || hasRequiredMembers))
             {
                 builder.AppendLine("            ulong seenMask = 0;");
             }

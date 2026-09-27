@@ -207,20 +207,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     // Returns the index before which the first line must be escaped, or -1
     private int GetFirstLineEscapeIndex(LeafBlock leafBlock, ReadOnlySpan<char> line)
     {
-        if (line.IsEmpty || !CanOpenBlock(line[0]))
-        {
-            return -1;
-        }
-
-        var markers = leafBlock.Parent is ListItemBlock ? GetListMarkersBefore(leafBlock) : string.Empty;
-        Block? block = ParseBlocks(string.Concat(markers, line)) is [var first] ? first : null;
-        for (var depth = markers.AsSpan().Count(' '); depth > 0; depth--)
-        {
-            // Each marker opens a list containing a single item
-            block = block is ListBlock { Count: 1 } list && list[0] is ListItemBlock { Count: > 0 } item ? item[0] : null;
-        }
-
-        if (block is ParagraphBlock { Lines.Count: 1 })
+        if (StartsParagraph(leafBlock, line))
         {
             return -1;
         }
@@ -335,6 +322,37 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
 
         return builder.Equals(text);
+    }
+
+    // Whether the first line of the paragraph, after the list item markers written on the same line, starts a paragraph
+    private bool StartsParagraph(LeafBlock leafBlock, ReadOnlySpan<char> line)
+    {
+        if (line.IsEmpty || !CanOpenBlock(line[0]))
+        {
+            return true;
+        }
+
+        var markers = leafBlock.Parent is ListItemBlock ? GetListMarkersBefore(leafBlock) : string.Empty;
+        Block? block = ParseBlocks(string.Concat(markers, line)) is [var first] ? first : null;
+        for (var depth = markers.AsSpan().Count(' '); depth > 0; depth--)
+        {
+            // Each marker opens a list containing a single item
+            block = block is ListBlock { Count: 1 } list && list[0] is ListItemBlock { Count: > 0 } item ? item[0] : null;
+        }
+
+        return block is ParagraphBlock { Lines.Count: 1 };
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the first line of the paragraph starts another block, and cannot be escaped, such as
+    /// an HTML tag alone on its line. Such a paragraph can only continue the lines before it.
+    /// </summary>
+    internal bool IsParagraphContinuationOnly(ParagraphBlock paragraph)
+    {
+        var text = RenderLeafInline(paragraph).AsSpan();
+        var end = text.IndexOf('\n');
+        var line = end < 0 ? text : text[..end];
+        return GetFirstLineEscapeIndex(paragraph, line) < 0 && !StartsParagraph(paragraph, line);
     }
 
     private bool CanOpenBlock(char c)

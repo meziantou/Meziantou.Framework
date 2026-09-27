@@ -946,6 +946,16 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected, new MarkdownPipelineBuilder().UseAutoLinks().Build());
     }
 
+    [Fact]
+    public void ParagraphStartingWithHtmlTagContinuesLinkReferenceDefinitions()
+    {
+        // The paragraph cannot start on its own line, so it stays after the definitions, as in the source
+        var markdown = "- [x]: /a\n\n[y]: /b\n<b>";
+        var normalized = MarkdownConverter.Normalize(markdown);
+        Assert.Equal("- \n\n[x]: /a\n[y]: /b\n<b>", normalized);
+        Assert.Equal(MarkdownConverter.ToHtml(markdown), MarkdownConverter.ToHtml(normalized));
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

@@ -19,12 +19,16 @@ public class LinkReferenceDefinitionGroupRenderer : NormalizeObjectRenderer<Link
         renderer.EnsureLine();
         renderer.WriteChildren(obj);
 
-        // The definitions are parsed from a paragraph, which the next lines would continue. The line can already be ended
-        // when the last definitions are not written.
+        // The definitions are parsed from a paragraph, which the next lines would continue, unless the next paragraph can only
+        // be a continuation, as in the source. The line can already be ended when the last definitions are not written.
         if (!renderer.IsLastInContainer)
         {
             renderer.EnsureLine();
-            renderer.WriteLine();
+            var index = obj.Parent?.IndexOf(obj) ?? -1;
+            if (index < 0 || index + 1 >= obj.Parent!.Count || obj.Parent[index + 1] is not ParagraphBlock next || !renderer.IsParagraphContinuationOnly(next))
+            {
+                renderer.WriteLine();
+            }
         }
     }
 }

@@ -714,6 +714,16 @@ Text following the table.");
         });
     }
 
+    [Theory]
+    [InlineData("``  a  ``", "`  a  `")]
+    [InlineData("`` `a ``", "`` `a ``")]
+    [InlineData("`` a` ``", "`` a` ``")]
+    [InlineData("`a``a``", "`a``a``")]
+    public void CodeInlinePaddingPreservesContent(string markdown, string expected)
+    {
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

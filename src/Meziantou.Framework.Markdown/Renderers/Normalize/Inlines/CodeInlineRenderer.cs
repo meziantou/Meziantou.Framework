@@ -17,41 +17,76 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, CodeInline obj)
     {
-        var delimiterCount = 0;
+        var delimiter = obj.Delimiter == '\0' ? '`' : obj.Delimiter;
         string content = renderer.EscapeTablePipes ? obj.Content.Replace("|", "\\|", StringComparison.Ordinal) : obj.Content;
+
+        var longestRun = 0;
+        var hasRunOfOriginalCount = false;
         for (var i = 0; i < content.Length; i++)
         {
-            var index = content.IndexOf(obj.Delimiter, i, StringComparison.Ordinal);
-            if (index == -1) break;
+            if (content[i] != delimiter)
+            {
+                continue;
+            }
 
             var count = 1;
-            for (i = index + 1; i < content.Length; i++)
+            while (i + 1 < content.Length && content[i + 1] == delimiter)
             {
-                if (content[i] == obj.Delimiter) count++;
-                else break;
+                count++;
+                i++;
             }
 
-            if (delimiterCount < count)
-                delimiterCount = count;
+            longestRun = Math.Max(longestRun, count);
+            hasRunOfOriginalCount |= count == obj.DelimiterCount;
         }
 
-        renderer.Write(obj.Delimiter, delimiterCount + 1);
-        if (content.Length != 0)
+        // A literal backtick run of the same length would pair with a shorter fence, so keep the original fence in that case
+        var delimiterCount = longestRun + 1;
+        if (delimiterCount != obj.DelimiterCount && obj.DelimiterCount > 0 && !hasRunOfOriginalCount && HasLiteralDelimiter(obj, delimiter))
         {
-            if (content[0] == obj.Delimiter)
-            {
-                renderer.Write(' ');
-            }
-            renderer.Write(content);
-            if (content[content.Length - 1] == obj.Delimiter)
-            {
-                renderer.Write(' ');
-            }
+            delimiterCount = obj.DelimiterCount;
         }
-        else
+
+        // The parser strips one space on each side when both are present, and a delimiter next to the fence would lengthen it
+        var pad = content.Length == 0
+            || content[0] == delimiter
+            || content[^1] == delimiter
+            || (content[0] == ' ' && content[^1] == ' ' && content.AsSpan().ContainsAnyExcept(' '));
+
+        renderer.Write(delimiter, delimiterCount);
+        if (pad)
         {
             renderer.Write(' ');
         }
-        renderer.Write(obj.Delimiter, delimiterCount + 1);
+
+        renderer.Write(content);
+        if (pad && content.Length != 0)
+        {
+            renderer.Write(' ');
+        }
+
+        renderer.Write(delimiter, delimiterCount);
+    }
+
+    private static bool HasLiteralDelimiter(CodeInline obj, char delimiter)
+    {
+        var root = obj.Parent;
+        while (root?.Parent is not null)
+        {
+            root = root.Parent;
+        }
+
+        if (root is not null)
+        {
+            foreach (var literal in root.FindDescendants<LiteralInline>())
+            {
+                if (literal.Content.AsSpan().Contains(delimiter))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

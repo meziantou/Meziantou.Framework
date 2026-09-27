@@ -2114,6 +2114,12 @@ public sealed class GeneratedExtensionKeyPolicyModel
     public Dictionary<string, object> Extra { get; set; } = [];
 }
 
+[TomlSourceGenerationOptions(DottedKeyHandling = Meziantou.Framework.Toml.TomlDottedKeyHandling.Expand)]
+[TomlSerializable(typeof(GeneratedExtensionKeyPolicyModel))]
+internal sealed partial class TestTomlSerializerContextExtensionDottedKeys : TomlSerializerContext
+{
+}
+
 [TomlSourceGenerationOptions(DictionaryKeyPolicy = TomlKnownNamingPolicy.CamelCase)]
 [TomlSerializable(typeof(GeneratedExtensionKeyPolicyModel))]
 internal sealed partial class TestTomlSerializerContextExtensionKeyPolicy : TomlSerializerContext
@@ -3835,6 +3841,17 @@ public class NewApiSourceGenerationTests
         const string Toml = "Name = \"n\"\nFooBar = 1\nfooBar = 2\n";
         var options = new TomlSerializerOptions { DictionaryKeyPolicy = TomlNamingPolicy.CamelCase };
         var typeInfo = TestTomlSerializerContextExtensionKeyPolicy.Default.GeneratedExtensionKeyPolicyModel;
+
+        Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedExtensionKeyPolicyModel>(Toml, options), options).ReplaceLineEndings("\n"));
+        Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize(Toml, typeInfo)!, typeInfo).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void ExtensionDataKeys_AreNotExpanded()
+    {
+        const string Toml = "Name = \"n\"\n\"server.port\" = 80\n";
+        var options = new TomlSerializerOptions { DottedKeyHandling = TomlDottedKeyHandling.Expand };
+        var typeInfo = TestTomlSerializerContextExtensionDottedKeys.Default.GeneratedExtensionKeyPolicyModel;
 
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize<GeneratedExtensionKeyPolicyModel>(Toml, options), options).ReplaceLineEndings("\n"));
         Assert.Equal(Toml, TomlSerializer.Serialize(TomlSerializer.Deserialize(Toml, typeInfo)!, typeInfo).ReplaceLineEndings("\n"));

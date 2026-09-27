@@ -1277,7 +1277,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.AppendLine("                {");
             builder.AppendLine("                    var __key = __pair.Key;");
             builder.AppendLine("                    if (__usedKeys is not null && __usedKeys.Contains(__key)) throw new global::Meziantou.Framework.Toml.TomlException($\"Extension data key '{__key}' conflicts with an existing member key.\");");
-            builder.AppendLine("                    writer.WritePropertyName(__key);");
+            // The keys of the document are written as they were read, so a key such as "a.b" is not expanded
+            builder.AppendLine("                    WritePropertyName(writer, __key, global::Meziantou.Framework.Toml.TomlDottedKeyHandling.Literal);");
             builder.Append("                    ").Append(GetTypeInfoAccess(extensionDataWrite.ValueType)).Append(".Write(writer, ").Append(writeValueArgument).AppendLine(");");
             builder.AppendLine("                }");
             builder.AppendLine("            }");

@@ -1311,12 +1311,11 @@ public static class LinkHelper
         }
         urlSpan.End = text.Start - 1;
 
-        var saved = text;
         var hasWhiteSpaces = CharIteratorHelper.TrimStartAndCountNewLines(ref text, out int newLineCount);
         var c = text.CurrentChar;
+        var beforeTitle = text;
         if (c == '\'' || c == '"' || c == '(')
         {
-            var beforeTitle = text;
             titleSpan.Start = text.Start;
             if (TryParseTitle(ref text, out title, out _))
             {
@@ -1361,8 +1360,11 @@ public static class LinkHelper
             // we are still returning a valid definition
             if (newLineCount > 0 && title != null)
             {
-                text = saved;
+                // The definition ends with the url and the text continues on the next line, as when that line does not
+                // start with a title: continuing after the url would leave the rest of its line as an empty paragraph line
+                text = beforeTitle;
                 title = null;
+                titleSpan = SourceSpan.Empty;
                 return true;
             }
 

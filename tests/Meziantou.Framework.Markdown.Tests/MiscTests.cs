@@ -141,6 +141,11 @@ public class MiscTests
     [InlineData("[a]: /u\r\n'x\r\n\r\n[a]", "<p>'x</p>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("> [a]: /u\n> 'x\n\n[a]", "<blockquote>\n<p>'x</p>\n</blockquote>\n<p><a href=\"/u\">a</a></p>")]
     [InlineData("[a]: /u 'x\n\n[a]", "<p>[a]: /u 'x</p>\n<p>[a]</p>")]
+    [InlineData("[a]: /u  \n\"t\" junk\n\n[a]", "<p>&quot;t&quot; junk</p>\n<p><a href=\"/u\">a</a></p>")]
+    [InlineData("[a]: /u  \r\n\"t\" junk\r\n\r\n[a]", "<p>&quot;t&quot; junk</p>\n<p><a href=\"/u\">a</a></p>")]
+    [InlineData("[a]: /u\n[b]: /v \t\n\"t\" junk\n\n[a] [b]", "<p>&quot;t&quot; junk</p>\n<p><a href=\"/u\">a</a> <a href=\"/v\">b</a></p>")]
+    [InlineData("> [a]: /u  \n> \"t\" junk\n\n[a]", "<blockquote>\n<p>&quot;t&quot; junk</p>\n</blockquote>\n<p><a href=\"/u\">a</a></p>")]
+    [InlineData("[a]: /u  \n\"t\n\" junk\n\n[a]", "<p>&quot;t\n&quot; junk</p>\n<p><a href=\"/u\">a</a></p>")]
     public void LinkReferenceDefinitionEndsBeforeALineThatIsNotATitle(string markdown, string expected, string? expectedWithTrivia = null)
     {
         TestParser.TestSpec(markdown, expected);

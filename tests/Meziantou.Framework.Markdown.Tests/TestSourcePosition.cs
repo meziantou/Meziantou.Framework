@@ -243,6 +243,28 @@ literal      ( 0, 6)  6-7
     }
 
     [Fact]
+    public void TestLinkReferenceDefinitionFollowedByATitleAndText()
+    {
+        //                                      0          1
+        //                                      0123456789 0 12 34567
+        var document = MarkdownConverter.Parse("[a]: /u  \n\"t\" junk", new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build());
+        var link = document.Descendants<LinkReferenceDefinition>().FirstOrDefault();
+        Assert.NotNull(link);
+
+        Assert.Null(link.Title);
+        Assert.Equal(new SourceSpan(0, 6), link.Span);
+        Assert.Equal(new SourceSpan(5, 6), link.UrlSpan);
+        Assert.Equal(SourceSpan.Empty, link.TitleSpan);
+
+        // The paragraph starts with the title, not with an empty line
+        var inline = document.Descendants<ParagraphBlock>().Single().Inline;
+        Assert.NotNull(inline);
+        Assert.IsType<LiteralInline>(inline.FirstChild);
+        Assert.Equal(10, inline.FirstChild.Span.Start);
+        Assert.Equal(17, inline.LastChild!.Span.End);
+    }
+
+    [Fact]
     public void TestLinkReferenceDefinition2()
     {
         //                         0          1

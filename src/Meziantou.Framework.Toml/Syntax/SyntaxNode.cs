@@ -52,7 +52,7 @@ public abstract class SyntaxNode : SyntaxNodeBase
     public SyntaxNode? GetChild(int index)
     {
         if (index < 0) throw ThrowHelper.GetIndexNegativeArgumentOutOfRangeException(nameof(index));
-        if (index > ChildrenCount) throw ThrowHelper.GetIndexArgumentOutOfRangeException(nameof(index), ChildrenCount);
+        if (index >= ChildrenCount) throw ThrowHelper.GetIndexArgumentOutOfRangeException(nameof(index), ChildrenCount);
         return GetChildImpl(index);
     }
 

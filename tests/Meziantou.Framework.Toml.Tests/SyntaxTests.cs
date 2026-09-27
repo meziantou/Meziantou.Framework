@@ -183,6 +183,17 @@ val = true
     }
 
     [Fact]
+    public void GetChild_PastTheLastChild_Throws()
+    {
+        var doc = SyntaxParser.Parse("a = 1\n");
+        var keyValue = doc.KeyValues.GetChild(0)!;
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => keyValue.GetChild(keyValue.ChildrenCount));
+        Assert.Throws<ArgumentOutOfRangeException>(() => doc.GetChild(doc.ChildrenCount));
+        Assert.Throws<ArgumentOutOfRangeException>(() => doc.KeyValues.GetChild(doc.KeyValues.ChildrenCount));
+    }
+
+    [Fact]
     public void InlineTableSyntax_FromKeyValues_IsWrittenOnOneLine()
     {
         var inlineTable = new InlineTableSyntax(new KeyValueSyntax("a", new IntegerValueSyntax(1)), new KeyValueSyntax("b", new IntegerValueSyntax(2)));

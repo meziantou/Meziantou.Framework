@@ -210,6 +210,22 @@ public abstract partial class TomlSerializerContext : ITomlTypeInfoResolver
     protected static TomlException CreateConfigurationException(string message, Exception? innerException) => TomlException.CreateConfigurationError(message, innerException);
 
     /// <summary>
+    /// Reads the current value into a buffer and moves the reader past it, so that the value can be read later, such as into
+    /// a get-only member of an object that is created once its other members are read.
+    /// </summary>
+    /// <param name="reader">The TOML reader, positioned on the first token of the value.</param>
+    /// <returns>A reader positioned on the first token of the captured value.</returns>
+    protected static TomlReader CaptureValue(TomlReader reader)
+    {
+        ArgumentGuard.ThrowIfNull(reader, nameof(reader));
+
+        var captured = TomlReader.Create(reader.CaptureCurrentValueToBuffer());
+        captured.Read(); // StartDocument
+        captured.Read(); // The start of the value
+        return captured;
+    }
+
+    /// <summary>
     /// Reports an error found after a table was read, such as a missing required key. It is recorded with the other
     /// deserialization diagnostics, and <see cref="ThrowIfDeserializationDiagnostics(TomlReader, int, TomlSourceSpan?)"/> throws
     /// once every error of the table is found. It is thrown directly when the diagnostics cannot be recorded.

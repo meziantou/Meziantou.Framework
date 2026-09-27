@@ -356,6 +356,56 @@ public sealed class GeneratedConstructorPopulateRoot
     public GeneratedConstructorObjectCreationChild Child { get; } = new(7);
 }
 
+// Generated code creates these types with an object initializer, once their members are read
+public sealed class GeneratedRequiredGenericPopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+[System.Runtime.InteropServices.StructLayout(LayoutKind.Auto)]
+public struct GeneratedRequiredStructPopulateRoot
+{
+    public GeneratedRequiredStructPopulateRoot()
+    {
+    }
+
+    public required int A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+public sealed class GeneratedRequiredGenericPreferredPopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    public GeneratedObjectCreationChild Child { get; } = new();
+}
+
+public sealed class GeneratedRequiredGenericValuePopulateRoot<T>
+{
+    public required T? A { get; init; }
+
+    [TomlObjectCreationHandling(TomlObjectCreationHandling.Populate)]
+    public GeneratedStructPayload Payload { get; }
+}
+
+[TomlSerializable(typeof(GeneratedRequiredGenericPopulateRoot<int>))]
+[TomlSerializable(typeof(GeneratedRequiredStructPopulateRoot))]
+[TomlSerializable(typeof(GeneratedRequiredGenericValuePopulateRoot<int>))]
+internal sealed partial class TestTomlSerializerContextObjectCreationRequiredPopulate : TomlSerializerContext
+{
+}
+
+[TomlSourceGenerationOptions(PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate)]
+[TomlSerializable(typeof(GeneratedRequiredGenericPreferredPopulateRoot<int>))]
+internal sealed partial class TestTomlSerializerContextObjectCreationRequiredPreferredPopulate : TomlSerializerContext
+{
+}
+
 public sealed class GeneratedReadOnlyCollectionsRoot
 {
     public const string Toml = """
@@ -453,6 +503,32 @@ public sealed class NewApiSourceGenerationObjectCreationHandlingTests
         GeneratedReadOnlyCollectionsRoot.AssertReplaced(result);
         Assert.Equal([1], getOnly.Values);
         Assert.Contains("doesn't support populating", exception.Message, StringComparison.Ordinal);
+    }
+
+    // A type created with an object initializer still populates its get-only members, like the reflection resolver
+    [Fact]
+    public void GeneratedContext_GetOnlyMemberOfATypeWithRequiredMembers_IsPopulated()
+    {
+        const string Toml = "A = 1\n[Child]\nValue = 42\n";
+        var context = TestTomlSerializerContextObjectCreationRequiredPopulate.Default;
+        var preferredOptions = TomlSerializerOptions.Default with { PreferredObjectCreationHandling = TomlObjectCreationHandling.Populate };
+
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, context.GeneratedRequiredGenericPopulateRootInt32)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredGenericPopulateRoot<int>>(Toml)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, context.GeneratedRequiredStructPopulateRoot).Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredStructPopulateRoot>(Toml).Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize(Toml, TestTomlSerializerContextObjectCreationRequiredPreferredPopulate.Default.GeneratedRequiredGenericPreferredPopulateRootInt32)!.Child.Value);
+        Assert.Equal(42, TomlSerializer.Deserialize<GeneratedRequiredGenericPreferredPopulateRoot<int>>(Toml, preferredOptions)!.Child.Value);
+
+        const string InvalidToml = "A = 1\n[Child]\nValue = 'bad'\n";
+        var error = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize(InvalidToml, context.GeneratedRequiredGenericPopulateRootInt32));
+        Assert.Equal((3, 9), (error.Line, error.Column));
+        Assert.False(TomlSerializer.TryDeserialize(InvalidToml, context.GeneratedRequiredGenericPopulateRootInt32, out _));
+
+        const string ValueToml = "A = 1\n[Payload]\nValue1 = 42\n";
+        var generated = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize(ValueToml, context.GeneratedRequiredGenericValuePopulateRootInt32, out _));
+        var reflection = Assert.Throws<TomlException>(() => TomlSerializer.TryDeserialize<GeneratedRequiredGenericValuePopulateRoot<int>>(ValueToml, out _));
+        Assert.Equal(reflection.Message, generated.Message);
     }
 
     [Fact]

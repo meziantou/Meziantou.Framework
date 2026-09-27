@@ -1737,6 +1737,15 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("            bool __memberSeen").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = false;");
         }
 
+        // A get-only member populated after the object is created: its value is captured when it is read
+        for (var i = 0; i < poco.Members.Length; i++)
+        {
+            if (IsPopulatedAfterConstruction(poco.Members[i], useObjectInitializerConstruction, model.Options))
+            {
+                builder.Append("            global::Meziantou.Framework.Toml.Serialization.TomlReader? __memberCapture").Append(i.ToString(CultureInfo.InvariantCulture)).AppendLine(" = null;");
+            }
+        }
+
         PocoExtensionData? extensionData = poco.ExtensionData;
         if (extensionData is not null)
         {
@@ -1920,7 +1929,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
 
             if (!member.CanSet && !member.HasSingleOrArray)
             {
-                builder.AppendLine("                        reader.Skip();");
+                EmitGetOnlyMemberReadBeforeConstruction(builder, member, i, typeName, "                        ", useObjectInitializerConstruction, model.Options);
                 builder.AppendLine("                        continue;");
                 builder.AppendLine("                    }");
                 continue;
@@ -2144,7 +2153,7 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
                     builder.AppendLine("                                    reader.Read();");
                     if (!member.CanSet && !member.HasSingleOrArray)
                     {
-                        builder.AppendLine("                                    reader.Skip();");
+                        EmitGetOnlyMemberReadBeforeConstruction(builder, member, action.Index, typeName, "                                    ", useObjectInitializerConstruction, model.Options);
                         builder.AppendLine("                                    continue;");
                     }
                     else
@@ -2516,6 +2525,14 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
+        for (var i = 0; i < poco.Members.Length; i++)
+        {
+            if (IsPopulatedAfterConstruction(poco.Members[i], useObjectInitializerConstruction, model.Options))
+            {
+                EmitCapturedMemberPopulate(builder, poco.Members[i], i);
+            }
+        }
+
         builder.AppendLine("            EndPropertiesMetadata(reader, __propertiesMetadata, value);");
         if (callsOnDeserialized)
         {
@@ -2532,6 +2549,69 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             builder.Append("        private static ").Append(model.UsesUpdatedMemorySafetyRules ? "safe " : "").Append("extern void ").Append(name).Append('(').Append(declaringType.IsValueType ? "ref " : "").Append(declaringType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
                 .Append(" __instance, ").Append(valueType.ToDisplayString(FullyQualifiedNullableFormat)).AppendLine(" __value);");
         }
+    }
+
+    // An object initializer needs the values of the required members, so the object is created after its members are read. Like
+    // the reflection resolver, which creates the object first, a get-only member is still populated: its value is captured,
+    // then read into the member once the object exists. A type created with a constructor that has parameters cannot do that
+    // either in the reflection resolver, and an explicit Populate on it is MFTOML011.
+    private static bool IsPopulatedAfterConstruction(PocoMember member, bool useObjectInitializerConstruction, SourceGenOptions options)
+    {
+        return useObjectInitializerConstruction &&
+            !member.CanSet &&
+            !member.HasSingleOrArray &&
+            !member.IsIgnoredOnRead &&
+            !member.Type.IsValueType &&
+            member.ConverterTypeInfoName is null &&
+            GetPopulateConditionExpression(member, options) == "true";
+    }
+
+    private static void EmitGetOnlyMemberReadBeforeConstruction(StringBuilder builder, PocoMember member, int index, string typeName, string indent, bool useObjectInitializerConstruction, SourceGenOptions options)
+    {
+        if (IsPopulatedAfterConstruction(member, useObjectInitializerConstruction, options))
+        {
+            builder.Append(indent).Append("__memberCapture").Append(index.ToString(CultureInfo.InvariantCulture)).AppendLine(" = CaptureValue(reader);");
+            return;
+        }
+
+        // Like the reflection resolver, a value type cannot be populated without a setter
+        if (useObjectInitializerConstruction && member.Type.IsValueType && member.ConverterTypeInfoName is null &&
+            member.HasExplicitObjectCreationHandling && member.ObjectCreationHandling == ObjectCreationHandlingKind.Populate)
+        {
+            builder.Append(indent).Append("throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+                .Append("' on '{typeof(").Append(typeName).Append(").FullName}' uses TomlObjectCreationHandling.Populate but requires a setter because '")
+                .Append(GetTypeFullNameInterpolation(member.Type))
+                .AppendLine("' is a value type.\");");
+            return;
+        }
+
+        builder.Append(indent).AppendLine("reader.Skip();");
+    }
+
+    private static void EmitCapturedMemberPopulate(StringBuilder builder, PocoMember member, int index)
+    {
+        var suffix = index.ToString(CultureInfo.InvariantCulture);
+        builder.Append("            if (__memberCapture").Append(suffix).AppendLine(" is not null)");
+        builder.AppendLine("            {");
+        builder.Append("                var __capturedExisting").Append(suffix).Append(" = ").Append(GetMemberReadExpression(member, "value")).AppendLine(";");
+        builder.Append("                if (__capturedExisting").Append(suffix).AppendLine(" is not null)");
+        builder.AppendLine("                {");
+        builder.Append("                    var __capturedPopulated").Append(suffix).Append(" = ").Append(GetMemberTypeInfoAccess(member)).Append(".ReadInto(__memberCapture").Append(suffix).Append(", __capturedExisting").Append(suffix).AppendLine(");");
+        if (member.HasExplicitObjectCreationHandling && member.ObjectCreationHandling == ObjectCreationHandlingKind.Populate)
+        {
+            builder.Append("                    if (!object.ReferenceEquals(__capturedExisting").Append(suffix).Append(", __capturedPopulated").Append(suffix).AppendLine("))");
+            builder.AppendLine("                    {");
+            builder.Append("                        throw CreateConfigurationException($\"Member '").Append(EscapeStringLiteral(member.MemberName))
+                .AppendLine("' on '{value.GetType().FullName}' uses TomlObjectCreationHandling.Populate but it doesn't support populating.\");");
+            builder.AppendLine("                    }");
+        }
+        else
+        {
+            builder.Append("                    _ = __capturedPopulated").Append(suffix).AppendLine(";");
+        }
+
+        builder.AppendLine("                }");
+        builder.AppendLine("            }");
     }
 
     // The init-only members that are not set by the object initializer are set with an [UnsafeAccessor] to their init

@@ -975,6 +975,12 @@ Text following the table.");
         AssertNormalizePreservesHtml(markdown, expected);
     }
 
+    [Fact]
+    public void CodeInlineNextToAutoLinkWithBacktickIsIdempotent()
+    {
+        AssertNormalizePreservesHtml("www.a.b/` ``a``", "[www.a.b/&#96;](http://www.a.b/`) `a`", new MarkdownPipelineBuilder().UseAutoLinks().Build());
+    }
+
     private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();

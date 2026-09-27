@@ -27,7 +27,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
         if (link.IsAutoLink && !link.IsImage && GetLiteralText(link) is { } text)
         {
-            if (IsNextToDelimiter(link.PreviousSibling, link.Parent, before: true) || IsNextToDelimiter(link.NextSibling, link.Parent, before: false))
+            if (!IsExpandedAutoLink(link))
             {
                 // The brackets of an expanded link would change whether the delimiters next to it open or close emphasis
                 renderer.Write(renderer.EscapeTablePipes ? text.Replace("|", "\\|", StringComparison.Ordinal) : text);
@@ -79,6 +79,12 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
 
             renderer.Write(')');
         }
+    }
+
+    // Gets a value indicating whether the autolink is written as a link, whose text escapes the backticks
+    internal static bool IsExpandedAutoLink(LinkInline link)
+    {
+        return !IsNextToDelimiter(link.PreviousSibling, link.Parent, before: true) && !IsNextToDelimiter(link.NextSibling, link.Parent, before: false);
     }
 
     private static bool IsNextToDelimiter(Inline? sibling, ContainerInline? parent, bool before)

@@ -3106,7 +3106,8 @@ public sealed class TomlSerializerContextGenerator : IIncrementalGenerator
             return null;
         }
 
-        var collectionTypeName = collectionType.ToDisplayString(FullyQualifiedNullableFormat);
+        // The type argument of a nullable member is not annotated: CreateSingleElementCollection requires a new() constraint
+        var collectionTypeName = collectionType.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(FullyQualifiedNullableFormat);
         var elementTypeName = elementType.ToDisplayString(FullyQualifiedNullableFormat);
         var readElementExpression = GetTypeInfoReadExpression(elementType);
 

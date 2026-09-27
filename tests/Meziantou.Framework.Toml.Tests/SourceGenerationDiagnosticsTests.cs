@@ -774,6 +774,36 @@ public sealed class SourceGenerationDiagnosticsTests
     }
 
     [Fact]
+    public void Generator_NullableSingleOrArrayCollections_CompileWithoutWarnings()
+    {
+        var source = """
+            #nullable enable
+            using System.Collections.Generic;
+            using System.Collections.ObjectModel;
+            using Meziantou.Framework.Toml.Serialization;
+
+            public sealed class Model
+            {
+                [TomlSingleOrArray]
+                public Collection<int>? Collection { get; set; }
+
+                [TomlSingleOrArray]
+                public SortedSet<int>? Set { get; set; }
+
+                [TomlSingleOrArray]
+                public List<string?>? List { get; set; }
+            }
+
+            [TomlSerializable(typeof(Model))]
+            internal partial class Ctx : TomlSerializerContext { }
+            """;
+
+        var result = RunGeneratorTest(source);
+
+        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= DiagnosticSeverity.Warning));
+    }
+
+    [Fact]
     public void Generator_PreservesNullableReferenceLocals()
     {
         var source = """

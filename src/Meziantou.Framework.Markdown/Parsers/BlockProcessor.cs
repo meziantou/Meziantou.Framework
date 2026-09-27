@@ -102,6 +102,11 @@ public class BlockProcessor
     /// </summary>
     internal int MaximumNestingDepth { get; set; } = ThrowHelper.DefaultDepthLimit;
 
+    // The number of containers in which a container makes the processing of the inlines reject the document (see
+    // MarkdownParser.GetContainerNestingLimit). A block opened in such a container is rejected right away: the document cannot
+    // be accepted anymore, and each line costs the number of open blocks.
+    internal int ContainerNestingLimit { get; set; } = int.MaxValue;
+
     /// <summary>
     /// The current line being processed.
     /// </summary>
@@ -1167,16 +1172,18 @@ public class BlockProcessor
     }
 
     // Stops pathological inputs such as ">>>>..." before they are parsed further, as the span updates did when they walked up to
-    // the root: the depth of the container of a new block cannot exceed the large depth limit.
-    private static void CheckContainerDepth(ContainerBlock? container)
+    // the root: the depth of the container of a new block cannot exceed the large depth limit, nor the nesting limit.
+    private void CheckContainerDepth(ContainerBlock? container)
     {
+        var limit = Math.Min(ThrowHelper.LargeDepthLimit, ContainerNestingLimit);
         var depth = 0;
-        for (; container is not null && depth <= ThrowHelper.LargeDepthLimit; container = container.Parent)
+        for (; container is not null && depth <= limit; container = container.Parent)
         {
             depth++;
         }
 
-        ThrowHelper.CheckDepthLimit(depth, useLargeLimit: true);
+        // The depth counts the document, which is not nested in a container
+        ThrowHelper.CheckDepthLimit(depth, limit);
     }
 
     // Whether the current character is a tab of which some columns were already consumed, by a container marker or an indent.
@@ -1241,6 +1248,7 @@ public class BlockProcessor
         _originalLineStart = 0;
         _childDepth = 0;
         MaximumNestingDepth = ThrowHelper.DefaultDepthLimit;
+        ContainerNestingLimit = int.MaxValue;
         CurrentLineStartPosition = 0;
         ColumnBeforeIndent = 0;
         StartBeforeIndent = 0;

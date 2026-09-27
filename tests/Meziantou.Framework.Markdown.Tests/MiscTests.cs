@@ -725,6 +725,43 @@ public class MiscTests
     }
 
     // Timed: tests running at the same time would slow it down and make the time budget flaky
+    [Theory(DisableParallelization = true)]
+    [InlineData("- ", 5_000, "\n", 400_000)]
+    [InlineData(">", 10_000, "\nb", 1_000_000)]
+    public void DeeplyNestedBlocksAreRejectedQuickly(string marker, int depth, string line, int lineCount)
+    {
+        // The nesting was only checked once all the lines were parsed, and each line costs the number of open blocks
+        var markdown = string.Concat(Enumerable.Repeat(marker, depth)) + "a" + string.Concat(Enumerable.Repeat(line, lineCount));
+
+        var stopwatch = Stopwatch.StartNew();
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(markdown));
+        stopwatch.Stop();
+
+        Assert.Contains("depth limit", e.Message);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    [InlineData(">", 128, 128)]
+    [InlineData("- ", 64, 128)]
+    [InlineData("> ", 4, 1)]
+    [InlineData("> ", 8, 5)]
+    [InlineData("> ", 16, 9)]
+    [InlineData("> ", 256, 200)]
+    public void DocumentsAreRejectedAtTheSameNestingWhileParsingBlocks(string marker, int rejectedCount, int maximumNestingDepth)
+    {
+        // The processing of the inlines rejects a container with 4, 8, 16... ancestors, the first of these numbers that is at least
+        // the maximum depth. The blocks are rejected at the same depth while they are parsed.
+        var pipeline = new MarkdownPipelineBuilder { MaximumNestingDepth = maximumNestingDepth }.Build();
+        var accepted = string.Concat(Enumerable.Repeat(marker, rejectedCount - 1)) + "a\n\nb\n";
+        var rejected = string.Concat(Enumerable.Repeat(marker, rejectedCount)) + "a\n\nb\n";
+
+        Assert.NotNull(MarkdownConverter.Parse(accepted, pipeline));
+        Exception e = Assert.Throws<ArgumentException>(() => MarkdownConverter.Parse(rejected, pipeline));
+        Assert.Contains("depth limit", e.Message);
+    }
+
+    // Timed: tests running at the same time would slow it down and make the time budget flaky
     [Fact(DisableParallelization = true)]
     public void NestedLinkDelimitersBelowManyEmphasisDelimitersAreRejectedQuickly()
     {

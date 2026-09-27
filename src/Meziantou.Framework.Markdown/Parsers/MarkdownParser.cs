@@ -45,6 +45,7 @@ public static class MarkdownParser
 
         var blockProcessor = BlockProcessor.Rent(document, pipeline.BlockParsers, context, pipeline.TrackTrivia);
         blockProcessor.MaximumNestingDepth = pipeline.MaximumNestingDepth;
+        blockProcessor.ContainerNestingLimit = GetContainerNestingLimit(pipeline.MaximumNestingDepth);
         try
         {
             blockProcessor.Open(document);
@@ -145,6 +146,20 @@ public static class MarkdownParser
                 rootMostContainerBlock.LinesAfter.AddRange(linesBefore);
             }
         }
+    }
+
+    // Gets the number of containers in which a container makes ProcessInlines reject the document. It checks the depth only when
+    // its stack of containers is full, at 4, 8, 16... containers: the document is rejected when a container is nested in the
+    // first of these numbers of containers that is at least the maximum depth.
+    internal static int GetContainerNestingLimit(int maximumNestingDepth)
+    {
+        var limit = 4;
+        while (limit < maximumNestingDepth && limit <= ThrowHelper.LargeDepthLimit)
+        {
+            limit *= 2;
+        }
+
+        return limit;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

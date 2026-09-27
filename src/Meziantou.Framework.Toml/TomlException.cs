@@ -150,7 +150,7 @@ public sealed class TomlException : Exception
 
     private static string Format(TomlSourceSpan span, string message)
     {
-        return $"{span.ToStringSimple()} : error : {message}";
+        return Truncate($"{span.ToStringSimple()} : error : {message}", MaxMessageLength);
     }
 
     private static TomlSourceSpan? GetFirstSpanOrNull(DiagnosticsBag diagnostics)
@@ -189,17 +189,20 @@ public sealed class TomlException : Exception
             }
 
             // A single diagnostic can embed long input text too
-            var text = diagnostics[i].ToString();
-            var remaining = MaxMessageLength - builder.Length;
-            if (text.Length > remaining)
-            {
-                var length = char.IsHighSurrogate(text[remaining - 1]) ? remaining - 1 : remaining;
-                text = string.Concat(text.AsSpan(0, length), "...");
-            }
-
-            builder.AppendLine(text);
+            builder.AppendLine(Truncate(diagnostics[i].ToString(), MaxMessageLength - builder.Length));
         }
 
         return builder.ToString();
+    }
+
+    private static string Truncate(string text, int maxLength)
+    {
+        if (text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        var length = char.IsHighSurrogate(text[maxLength - 1]) ? maxLength - 1 : maxLength;
+        return string.Concat(text.AsSpan(0, length), "...");
     }
 }

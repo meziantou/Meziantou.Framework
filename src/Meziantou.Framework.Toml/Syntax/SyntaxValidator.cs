@@ -20,6 +20,7 @@ internal class SyntaxValidator : SyntaxVisitor
     private readonly List<(int Parent, ObjectPathItem Item)> _pathNodeKeys = [(-1, default)];
     private int _currentPath = RootPath;
     private readonly Dictionary<int, ObjectPathValue> _maps = [];
+    private KeySyntax? _redefinedKey;
     private int _currentArrayIndex;
 
     public SyntaxValidator(DiagnosticsBag diagnostics)
@@ -51,7 +52,7 @@ internal class SyntaxValidator : SyntaxVisitor
             text.Append('.').Append(GetSegmentText(key.DotKeys.GetChild(i)!.Key));
         }
 
-        return text.ToString();
+        return text.ToString().ToPrintableInputText()!;
     }
 
     private static string GetSegmentText(BareKeyOrStringValueSyntax? segment) => segment switch
@@ -310,7 +311,13 @@ internal class SyntaxValidator : SyntaxVisitor
             {
                 // Like TomlParser, the message does not include the previous definition, which can be a whole table: a document
                 // that redefines a large table many times would build messages quadratic in its size
-                _diagnostics.Error(segment.Span, $"The key `{GetKeyText(key, segmentIndex)}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
+                // Like TomlParser, a key is reported once, on its first redefined segment: a dotted key that walks through an
+                // inline table would otherwise report each of its segments, with messages quadratic in the length of the key
+                if (_redefinedKey != key)
+                {
+                    _redefinedKey = key;
+                    _diagnostics.Error(segment.Span, $"The key `{GetKeyText(key, segmentIndex)}` is already defined at {existingValue.Node.Span.Start} and cannot be redefined.");
+                }
             }
             else if (existingValue.Kind == ObjectKind.TableArray)
             {

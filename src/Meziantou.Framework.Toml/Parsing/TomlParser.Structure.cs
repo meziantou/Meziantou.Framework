@@ -338,9 +338,10 @@ public sealed partial class TomlParser
             }
 
             ref var existing = ref _structureNodes[existingNode];
+            var keyText = name.ToString().ToPrintableInputText();
             var message = existing.HasPosition
-                ? $"The key `{name}` is already defined at {existing.Position} and cannot be redefined."
-                : $"The key `{name}` is already defined and cannot be redefined.";
+                ? $"The key `{keyText}` is already defined at {existing.Position} and cannot be redefined."
+                : $"The key `{keyText}` is already defined and cannot be redefined.";
             return CreateException(key.Span, message);
         }
 

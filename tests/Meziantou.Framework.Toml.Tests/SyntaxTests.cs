@@ -355,6 +355,34 @@ val = true
         Assert.Equal(doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).Order().ToArray(), doc.Diagnostics.Select(diagnostic => diagnostic.Span.Start.Offset).ToArray());
     }
 
+    [Fact]
+    public void RedefinedLongKeys_AreTruncatedInMessages()
+    {
+        var key = new string('k', 1_000_000);
+        var toml = $"{key} = 1\n{key} = 2\n";
+
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+        var doc = SyntaxParser.Parse(toml);
+
+        Assert.HasCountLessThan(1_000, deserialize.Message);
+        Assert.HasCountLessThan(1_000, Assert.Single(doc.Diagnostics).Message);
+        Assert.HasCountLessThan(100_100, new TomlException(new TomlSourceSpan(), new string('m', 1_000_000)).Message);
+    }
+
+    // Like TomlParser, SyntaxParser reports a redefined key once, on its first redefined segment
+    [Fact]
+    public void DottedKeyThroughAnInlineTable_IsReportedOnce()
+    {
+        var toml = "a = { b = { c = { d = {} } } }\na.b.c.d.e = 1\n";
+
+        var doc = SyntaxParser.Parse(toml);
+        var deserialize = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<TomlTable>(toml));
+
+        var diagnostic = Assert.Single(doc.Diagnostics);
+        Assert.Equal((deserialize.Line, deserialize.Column), (diagnostic.Span.Start.Line + 1, diagnostic.Span.Start.Column + 1));
+        Assert.Contains("The key `a` is already defined", diagnostic.Message, StringComparison.Ordinal);
+    }
+
     // The errors of a number are listed in the order of the document, and a leading zero is reported once
     [Theory]
     [InlineData("a = 0001\n")]

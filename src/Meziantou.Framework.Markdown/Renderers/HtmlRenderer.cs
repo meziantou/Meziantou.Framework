@@ -65,6 +65,9 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
     /// </remarks>
     public bool EnableHtmlForInline { get; set; }
 
+    // True while the description of an image is written as its alt attribute: raw HTML is then written as text
+    internal bool IsWritingImageAlt { get; set; }
+
     /// <summary>
     /// Gets or sets a value indicating whether to output HTML tags when rendering. See remarks.
     /// </summary>
@@ -119,6 +122,8 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
             BaseUrl = settings.BaseUrl;
             LinkRewriter = settings.LinkRewriter;
         }
+
+        IsWritingImageAlt = false;
     }
 
     private sealed record HtmlRendererSettings(bool EnableHtmlForInline, bool EnableHtmlForBlock, bool EnableHtmlEscape, bool ImplicitParagraph, bool UseNonAsciiNoEscape, Uri? BaseUrl, Func<string, string>? LinkRewriter);

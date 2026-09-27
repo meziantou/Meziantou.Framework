@@ -21,5 +21,10 @@ public class HtmlInlineRenderer : HtmlObjectRenderer<HtmlInline>
         {
             renderer.Write(obj.Tag);
         }
+        else if (renderer.IsWritingImageAlt)
+        {
+            // The alt text of an image is the plain text of its description: raw HTML is kept as text, as in commonmark.js and cmark
+            renderer.WriteEscape(obj.Tag);
+        }
     }
 }

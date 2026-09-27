@@ -36,9 +36,12 @@ public class LinkInlineRenderer : HtmlObjectRenderer<LinkInline>
                 renderer.WriteRaw(" alt=\"");
             }
             var wasEnableHtmlForInline = renderer.EnableHtmlForInline;
+            var wasWritingImageAlt = renderer.IsWritingImageAlt;
             renderer.EnableHtmlForInline = false;
+            renderer.IsWritingImageAlt = wasEnableHtmlForInline || wasWritingImageAlt;
             renderer.WriteChildren(link);
             renderer.EnableHtmlForInline = wasEnableHtmlForInline;
+            renderer.IsWritingImageAlt = wasWritingImageAlt;
             if (renderer.EnableHtmlForInline)
             {
                 renderer.WriteRaw('"');

@@ -122,6 +122,9 @@ internal static class LanguageRegistry
             ["erl"] = () => Erlang.Instance,
             ["haskell"] = () => Haskell.Instance,
             ["hs"] = () => Haskell.Instance,
+            ["clojure"] = () => Clojure.Instance,
+            ["clj"] = () => Clojure.Instance,
+            ["edn"] = () => Clojure.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

@@ -159,6 +159,23 @@ public sealed class LargeInputTests
         Assert.EndsWith("&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>", await highlight, StringComparison.Ordinal);
     }
 
+    // A Handlebars `[ abc ]` segment that is not closed used to be scanned to the end of the document from each `[` that
+    // follows it, in the same mustache or in a later one (40, 20 and 25 seconds for these documents).
+    [Theory]
+    [InlineData("{{x ", "[a", "}}", 1_000_000)]
+    [InlineData("{{x ", "a.[a", "}}", 1_000_000)]
+    [InlineData("", "{{x [a}}\n", "", 2_000_000)]
+    public async Task Highlight_HandlebarsUnclosedBracketSegments_CompletesInReasonableTime(string prefix, string part, string suffix, int length)
+    {
+        var code = prefix + string.Concat(Enumerable.Repeat(part, length / part.Length)) + suffix + "\n{{#if a}}";
+
+        var highlight = Task.Run(() => HighlightWithFallbackDetection(code, "handlebars", out _));
+        var finished = await Task.WhenAny(highlight, Task.Delay(Budget)) == highlight;
+
+        Assert.True(finished, $"Highlighting {code.Length} characters of 'handlebars' did not finish within {Budget.TotalSeconds:F0}s.");
+        Assert.EndsWith("{{#<span class=\"hljs-name\"><span class=\"hljs-built_in\">if</span></span> a}}</span>", await highlight, StringComparison.Ordinal);
+    }
+
     // The indentation of a Haml comment line used to be captured before checking that a comment follows, which rescanned
     // the indentation from each of its positions (about 50 seconds for this document).
     [Fact]

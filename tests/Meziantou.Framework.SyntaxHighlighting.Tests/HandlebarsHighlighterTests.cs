@@ -359,4 +359,20 @@ public class HandlebarsHighlighterTests
 <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>
 """);
     }
+
+    [Fact]
+    public void BracketSegmentsEndAtTheEndOfTheMustache()
+    {
+        AssertHighlighter("handlebars",
+"""
+{{articles.[10].[#comments]}} {{helper [] key=[a b]}}
+{{x [a}} <b>text</b> {{y]}}
+{{x [a[b] c}}
+""",
+"""
+<span class="hljs-template-variable">{{<span class="hljs-name">articles.[10].[#comments]</span>}}</span><span class="language-html"> </span><span class="hljs-template-variable">{{<span class="hljs-name">helper</span> [] <span class="hljs-attr">key</span>=[a b]}}</span><span class="language-html">
+</span><span class="hljs-template-variable">{{<span class="hljs-name">x</span> [a}}</span><span class="language-html"> <span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>text<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span> </span><span class="hljs-template-variable">{{<span class="hljs-name">y</span>]}}</span><span class="language-html">
+</span><span class="hljs-template-variable">{{<span class="hljs-name">x</span> [a[b] c}}</span>
+""");
+    }
 }

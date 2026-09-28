@@ -14,7 +14,11 @@ internal static class Handlebars
     // as helpers and paths like a/b, ./abc/cde and abc.bcd.
     private const string DoubleQuotedIdRe = "\"\"|\"[^\"]+\"";
     private const string SingleQuotedIdRe = "''|'[^']+'";
-    private const string BracketQuotedIdRe = @"\[\]|\[[^\]]+\]";
+
+    // Deviation from highlight.js, whose `[ abc ]` segment is `\[\]|\[[^\]]+\]`: a segment that is not closed was
+    // scanned to the end of the document from each `[` that follows it. A segment cannot contain a `[`, and it ends at
+    // the end of its mustache (`}`).
+    private const string BracketQuotedIdRe = @"\[[^\[\]}]*\]";
     private const string PlainIdChars = @"^\s!""#%&'()*+,./;<=>@\[\\\]^`{|}~";
     private const string PlainIdRe = "[" + PlainIdChars + "]+";
     private const string AnyIdRe = "(?:" + DoubleQuotedIdRe + "|" + SingleQuotedIdRe + "|" + BracketQuotedIdRe + "|" + PlainIdRe + ")";

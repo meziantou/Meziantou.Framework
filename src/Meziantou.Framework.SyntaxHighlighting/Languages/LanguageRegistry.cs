@@ -208,6 +208,7 @@ internal static class LanguageRegistry
             ["ino"] = () => Arduino.Instance,
             ["vbscript"] = () => VbScript.Instance,
             ["vbs"] = () => VbScript.Instance,
+            ["vbscript-html"] = () => VbScriptHtml.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

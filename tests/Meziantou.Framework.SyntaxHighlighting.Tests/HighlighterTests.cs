@@ -128,6 +128,7 @@ public class HighlighterTests
     [InlineData("clojure-repl")]
     [InlineData("ino")]
     [InlineData("vbs")]
+    [InlineData("vbscript-html")]
     public void IsSupported_KnownLanguage_ReturnsTrue(string language)
     {
         Assert.True(SyntaxHighlighter.IsSupported(language));

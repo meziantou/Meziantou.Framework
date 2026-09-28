@@ -179,6 +179,7 @@ The package currently supports these language identifiers and common aliases:
 - `urlencoded`, `x-www-form-urlencoded`
 - `vbnet`, `vb`
 - `vbscript`, `vbs`
+- `vbscript-html`
 - `x86asm`
 - `xml`, `xsd`, `xsl`, `plist`, `rss`, `atom`, `svg`
 - `yaml`, `yml`

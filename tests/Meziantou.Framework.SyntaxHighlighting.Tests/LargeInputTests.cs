@@ -13,11 +13,13 @@ public sealed class LargeInputTests
     private static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
 
     // A pattern that is tried from each position of a run and scans to the end of the run makes a grammar quadratic, which
-    // a single realistic document does not show. A run of one delimiter is where that happens most, so the time for such a
-    // run is compared between two sizes, which also catches a quadratic grammar that is still fast at one size (4x the
-    // input takes 16x the time). The time is the CPU time of the thread, and a garbage collection can still land in one
-    // measurement, so a run that looks quadratic is measured again before failing.
-    [Theory]
+    // a single realistic document does not show. A run of one delimiter is where that happens most, so a run of 40,000
+    // characters is compared with four runs of 10,000, which also catches a quadratic grammar that is still fast at one
+    // size (the long run then takes four times as long, a linear one as long). The time is the CPU time of the thread, so
+    // the other tests do not count, and both measurements are long enough for Windows' 15.6 ms clock. A garbage
+    // collection can still land in one measurement, so a run that looks quadratic is measured again before failing. The
+    // theory runs alone because it keeps a core busy, which would make the tests with a wall-clock budget miss it.
+    [Theory(DisableParallelization = true)]
     [MemberData(nameof(Grammars), MemberType = typeof(Helper))]
     public void Highlight_LongRunOfOneCharacter_ScalesLinearly(string language)
     {
@@ -31,26 +33,30 @@ public sealed class LargeInputTests
             var largeRun = new string(character, LargeSize);
             HighlightWithFallbackDetection(smallRun, language, out _);
 
-            var small = MeasureFastest(smallRun, language, attempts: 1);
-            var large = MeasureFastest(largeRun, language, attempts: 1);
-            if (!ScalesLinearly(small, large))
+            var smallRuns = MeasureFastest(smallRun, language, repetitions: 4, attempts: 1);
+            var large = MeasureFastest(largeRun, language, repetitions: 1, attempts: 1);
+            if (!ScalesLinearly(smallRuns, large))
             {
-                small = MeasureFastest(smallRun, language, attempts: 3);
-                large = MeasureFastest(largeRun, language, attempts: 3);
+                smallRuns = MeasureFastest(smallRun, language, repetitions: 4, attempts: 3);
+                large = MeasureFastest(largeRun, language, repetitions: 1, attempts: 3);
             }
 
-            Assert.True(ScalesLinearly(small, large), $"Highlighting a run of {LargeSize} '{character}' in '{language}' took {large.TotalMilliseconds:F0} ms of CPU time, and a run of {SmallSize} took {small.TotalMilliseconds:F0} ms.");
+            Assert.True(ScalesLinearly(smallRuns, large), $"Highlighting a run of {LargeSize} '{character}' in '{language}' took {large.TotalMilliseconds:F0} ms of CPU time, and four runs of {SmallSize} took {smallRuns.TotalMilliseconds:F0} ms.");
         }
 
-        static bool ScalesLinearly(TimeSpan small, TimeSpan large) => large <= (small * 8) + TimeSpan.FromMilliseconds(50);
+        static bool ScalesLinearly(TimeSpan smallRuns, TimeSpan large) => large <= (smallRuns * 2) + TimeSpan.FromMilliseconds(50);
 
-        static TimeSpan MeasureFastest(string code, string language, int attempts)
+        static TimeSpan MeasureFastest(string code, string language, int repetitions, int attempts)
         {
             var fastest = TimeSpan.MaxValue;
-            for (var i = 0; i < attempts; i++)
+            for (var attempt = 0; attempt < attempts; attempt++)
             {
                 var start = ThreadCpuTime.GetCurrent();
-                HighlightWithFallbackDetection(code, language, out _);
+                for (var i = 0; i < repetitions; i++)
+                {
+                    HighlightWithFallbackDetection(code, language, out _);
+                }
+
                 var elapsed = ThreadCpuTime.GetCurrent() - start;
                 if (elapsed < fastest)
                 {

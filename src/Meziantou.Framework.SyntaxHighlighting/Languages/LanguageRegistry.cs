@@ -239,6 +239,14 @@ internal static class LanguageRegistry
             ["coffee"] = () => CoffeeScript.Instance,
             ["cson"] = () => CoffeeScript.Instance,
             ["iced"] = () => CoffeeScript.Instance,
+            ["fortran"] = () => Fortran.Instance,
+            ["f90"] = () => Fortran.Instance,
+            ["f95"] = () => Fortran.Instance,
+            ["f03"] = () => Fortran.Instance,
+            ["f08"] = () => Fortran.Instance,
+            ["f77"] = () => Fortran.Instance,
+            ["for"] = () => Fortran.Instance,
+            ["f"] = () => Fortran.Instance,
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     // Grammars compiled with a non-default match timeout, keyed by the default grammar instance.

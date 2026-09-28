@@ -131,6 +131,7 @@ The package currently supports these language identifiers and common aliases:
 - `erb`
 - `erlang`, `erl`
 - `erlang-repl`
+- `fortran`, `f90`, `f95`, `f03`, `f08`, `f77`, `for`, `f`
 - `fsharp`, `fs`, `f#`
 - `gherkin`, `feature`
 - `glsl`, `vert`, `frag`
